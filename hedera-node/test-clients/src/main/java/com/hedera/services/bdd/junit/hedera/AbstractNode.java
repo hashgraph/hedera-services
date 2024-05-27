@@ -33,6 +33,11 @@ public abstract class AbstractNode implements HederaNode {
     }
 
     @Override
+    public String getHost() {
+        return metadata.host();
+    }
+
+    @Override
     public int getPort() {
         return metadata.grpcPort();
     }

@@ -25,7 +25,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RemoteNode extends AbstractNode implements HederaNode {
@@ -66,12 +65,14 @@ public class RemoteNode extends AbstractNode implements HederaNode {
 
     @Override
     public CompletableFuture<Void> statusFuture(
-            @NotNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
-        return null;
+            @NonNull final PlatformStatus status, @Nullable final Consumer<NodeStatus> nodeStatusObserver) {
+        // (FUTURE) Implement this via Prometheus and gRPC if it turns out to be useful
+        throw new UnsupportedOperationException("Cannot check the status of a remote node");
     }
 
     @Override
     public CompletableFuture<Void> stopFuture() {
-        return null;
+        // (FUTURE) Implement this via Prometheus and gRPC if it turns out to be useful
+        throw new UnsupportedOperationException("Cannot stop a remote node");
     }
 }

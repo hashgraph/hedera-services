@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -528,7 +527,7 @@ public class HapiSpecSetup {
         NodeConnectInfo.NEXT_DEFAULT_ACCOUNT_NUM = 3;
         return Stream.of(props.get("nodes").split(","))
                 .map(NodeConnectInfo::new)
-                .collect(toList());
+                .toList();
     }
 
     public NodeSelection nodeSelector() {

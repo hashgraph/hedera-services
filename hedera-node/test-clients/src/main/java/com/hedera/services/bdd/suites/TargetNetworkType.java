@@ -35,5 +35,9 @@ public enum TargetNetworkType {
     /**
      * A Docker network launched in CI via TestContainers.
      */
-    CI_DOCKER_NETWORK
+    CI_DOCKER_NETWORK,
+    /**
+     * A long-lived remote network
+     */
+    REMOTE_NETWORK
 }

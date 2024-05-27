@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -65,7 +67,10 @@ public interface HederaNetwork {
      * @param selector the selector
      * @return the nodes that match the selector
      */
-    List<HederaNode> nodesFor(@NonNull NodeSelector selector);
+    default List<HederaNode> nodesFor(@NonNull final NodeSelector selector) {
+        requireNonNull(selector);
+        return nodes().stream().filter(selector).toList();
+    }
 
     /**
      * Returns the node of the network that matches the given selector.
@@ -73,7 +78,10 @@ public interface HederaNetwork {
      * @param selector the selector
      * @return the nodes that match the selector
      */
-    HederaNode getRequiredNode(@NonNull NodeSelector selector);
+    default HederaNode getRequiredNode(@NonNull final NodeSelector selector) {
+        requireNonNull(selector);
+        return nodes().stream().filter(selector).findAny().orElseThrow();
+    }
 
     /**
      * Returns the name of the network.

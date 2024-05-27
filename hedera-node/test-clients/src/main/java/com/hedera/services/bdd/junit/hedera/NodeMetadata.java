@@ -17,14 +17,18 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 
 public record NodeMetadata(
         long nodeId,
         String name,
         AccountID accountId,
+        String host,
         int grpcPort,
         int gossipPort,
         int tlsGossipPort,
         int prometheusPort,
-        Path workingDir) {}
+        @Nullable Path workingDir) {
+    public static final int UNKNOWN_PORT = -1;
+}

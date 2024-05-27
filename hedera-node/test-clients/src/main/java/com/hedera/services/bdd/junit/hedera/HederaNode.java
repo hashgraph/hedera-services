@@ -28,6 +28,13 @@ import java.util.function.Consumer;
 
 public interface HederaNode {
     /**
+     * Gets the hostname of the node.
+     *
+     * @return the hostname of the node
+     */
+    String getHost();
+
+    /**
      * Gets the port number of the gRPC service.
      *
      * @return the port number of the gRPC service
@@ -122,6 +129,6 @@ public interface HederaNode {
      * @return this node's HAPI spec identifier
      */
     default String hapiSpecInfo() {
-        return "127.0.0.1:" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
+        return getHost() + ":" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }

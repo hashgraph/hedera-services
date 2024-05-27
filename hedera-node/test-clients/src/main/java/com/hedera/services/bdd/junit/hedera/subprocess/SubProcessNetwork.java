@@ -24,18 +24,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
-import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.hedera.utils.GrpcUtils;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -49,12 +44,13 @@ import java.util.stream.IntStream;
  * nodes in a remote or embedded network, its nodes support lifecycle operations like
  * stopping and restarting.
  */
-public class SubProcessNetwork implements HederaNetwork {
+public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetwork {
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
     private static final int LAST_CANDIDATE_PORT = 40000;
 
     private static final long FIRST_NODE_ACCOUNT_NUM = 3;
+    private static final String SUBPROCESS_HOST = "127.0.0.1";
     private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
     private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
@@ -70,23 +66,11 @@ public class SubProcessNetwork implements HederaNetwork {
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
 
     private final String configTxt;
-    /**
-     * If null, this is the shared network (only one is allowed per launcher session).
-     */
-    @Nullable
-    private final String networkName;
-    /**
-     * The clients for this network, if they are ready.
-     */
-    @Nullable
-    private HapiClients clients;
 
-    private final List<HederaNode> nodes;
     private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
 
-    private SubProcessNetwork(@Nullable final String networkName, @NonNull final List<HederaNode> nodes) {
-        this.nodes = requireNonNull(nodes);
-        this.networkName = networkName;
+    private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
+        super(networkName, nodes);
         this.configTxt = configTxtFor(name(), nodes);
     }
 
@@ -100,7 +84,7 @@ public class SubProcessNetwork implements HederaNetwork {
         if (SHARED_NETWORK.get() != null) {
             throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
         }
-        final var sharedNetwork = liveNetwork(null, size);
+        final var sharedNetwork = liveNetwork(SHARED_NETWORK_NAME, size);
         SHARED_NETWORK.set(sharedNetwork);
         return sharedNetwork;
     }
@@ -114,21 +98,8 @@ public class SubProcessNetwork implements HederaNetwork {
      * @return the network
      */
     public static HederaNetwork newSubProcessNetwork(@NonNull final String name, final int size) {
+        requireNonNull(name);
         return liveNetwork(name, size);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws NullPointerException if the clients are not ready
-     */
-    @Override
-    public @NonNull Response send(
-            @NonNull final Query query,
-            @NonNull final HederaFunctionality functionality,
-            @NonNull final com.hederahashgraph.api.proto.java.AccountID nodeAccountId) {
-        requireNonNull(clients, "clients are not ready");
-        return GrpcUtils.send(query, clients, functionality, nodeAccountId);
     }
 
     /**
@@ -139,44 +110,6 @@ public class SubProcessNetwork implements HederaNetwork {
      */
     public TargetNetworkType type() {
         return SHARED_HAPI_TEST_NETWORK;
-    }
-
-    /**
-     * Returns the nodes of the network.
-     *
-     * @return the nodes of the network
-     */
-    public List<HederaNode> nodes() {
-        return nodes;
-    }
-
-    /**
-     * Returns the nodes of the network that match the given selector.
-     *
-     * @param selector the selector
-     * @return the nodes that match the selector
-     */
-    public List<HederaNode> nodesFor(@NonNull final NodeSelector selector) {
-        return nodes.stream().filter(selector).toList();
-    }
-
-    /**
-     * Returns the node of the network that matches the given selector.
-     *
-     * @param selector the selector
-     * @return the nodes that match the selector
-     */
-    public HederaNode getRequiredNode(@NonNull final NodeSelector selector) {
-        return nodes.stream().filter(selector).findAny().orElseThrow();
-    }
-
-    /**
-     * Returns the name of the network.
-     *
-     * @return the name of the network
-     */
-    public String name() {
-        return networkName == null ? SHARED_NETWORK_NAME : networkName;
     }
 
     /**
@@ -219,7 +152,7 @@ public class SubProcessNetwork implements HederaNetwork {
      * @param size the number of nodes in the network
      * @return the network
      */
-    private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
+    private static synchronized HederaNetwork liveNetwork(@NonNull final String name, final int size) {
         if (!nextPortsInitialized) {
             initializeNextPortsForNetwork(size);
         }
@@ -260,18 +193,19 @@ public class SubProcessNetwork implements HederaNetwork {
         return sb.toString();
     }
 
-    private static NodeMetadata metadataFor(final int nodeId, @Nullable final String networkName) {
+    private static NodeMetadata metadataFor(final int nodeId, @NonNull final String networkName) {
         return new NodeMetadata(
                 nodeId,
                 NODE_NAMES[nodeId],
                 AccountID.newBuilder()
                         .accountNum(FIRST_NODE_ACCOUNT_NUM + nodeId)
                         .build(),
+                SUBPROCESS_HOST,
                 nextGrpcPort + nodeId * 2,
                 nextGossipPort + nodeId * 2,
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
-                workingDirFor(nodeId, networkName));
+                workingDirFor(nodeId, SHARED_NETWORK_NAME.equals(networkName) ? null : networkName));
     }
 
     private static void initializeNextPortsForNetwork(final int size) {

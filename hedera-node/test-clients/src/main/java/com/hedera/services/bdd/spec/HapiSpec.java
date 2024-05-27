@@ -65,6 +65,7 @@ import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
@@ -510,6 +511,9 @@ public class HapiSpec implements Runnable, Executable {
 
     private boolean init() {
         hapiClients = clientsFor(hapiSetup);
+        if (targetNetwork == null) {
+            targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), hapiClients);
+        }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
             if (sharedStates != null) {
