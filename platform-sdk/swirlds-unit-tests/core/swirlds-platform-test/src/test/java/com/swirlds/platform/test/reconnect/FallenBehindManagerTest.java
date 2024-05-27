@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.reconnect;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -25,13 +24,16 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
-import com.swirlds.platform.network.RandomGraph;
+import com.swirlds.platform.network.PeerInfo;
+import com.swirlds.platform.network.topology.NetworkTopology;
+import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import java.util.Random;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -42,17 +44,17 @@ class FallenBehindManagerTest {
             .build();
     private final double fallenBehindThreshold = 0.5;
     private final NodeId selfId = addressBook.getNodeId(0);
-    private final Random random = getRandomPrintSeed();
-    private final RandomGraph graph = new RandomGraph(random, numNodes, numNodes + (numNodes % 2), numNodes);
     private final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
     private final ReconnectConfig config = new TestConfigBuilder()
             .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, fallenBehindThreshold)
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
+    final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+    final NetworkTopology topology = new StaticTopology(peers, selfId);
     private final FallenBehindManager manager = new FallenBehindManagerImpl(
             addressBook,
             selfId,
-            graph,
+            topology,
             mock(StatusActionSubmitter.class),
             fallenBehindNotification::incrementAndGet,
             config);
