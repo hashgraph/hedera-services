@@ -28,7 +28,12 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.utils.GrpcUtils;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -70,6 +75,11 @@ public class SubProcessNetwork implements HederaNetwork {
      */
     @Nullable
     private final String networkName;
+    /**
+     * The clients for this network, if they are ready.
+     */
+    @Nullable
+    private HapiClients clients;
 
     private final List<HederaNode> nodes;
     private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
@@ -108,25 +118,17 @@ public class SubProcessNetwork implements HederaNetwork {
     }
 
     /**
-     * Creates a network of live (sub-process) nodes with the given name and size. This method is
-     * synchronized because we don't want to re-use any ports across different networks.
+     * {@inheritDoc}
      *
-     * @param name the name of the network
-     * @param size the number of nodes in the network
-     * @return the network
+     * @throws NullPointerException if the clients are not ready
      */
-    private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
-        if (!nextPortsInitialized) {
-            initializeNextPortsForNetwork(size);
-        }
-        final var network = new SubProcessNetwork(
-                name,
-                IntStream.range(0, size)
-                        .<HederaNode>mapToObj(
-                                nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
-                        .toList());
-        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
-        return network;
+    @Override
+    public @NonNull Response send(
+            @NonNull final Query query,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final com.hederahashgraph.api.proto.java.AccountID nodeAccountId) {
+        requireNonNull(clients, "clients are not ready");
+        return GrpcUtils.send(query, clients, functionality, nodeAccountId);
     }
 
     /**
@@ -199,6 +201,7 @@ public class SubProcessNetwork implements HederaNetwork {
             final var future = runAsync(() -> {
                 final var deadline = Instant.now().plus(timeout);
                 nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
+                this.clients = HapiClients.clientsFor(this);
             });
             if (!ready.compareAndSet(null, future)) {
                 // We only need one thread to wait for readiness
@@ -206,6 +209,28 @@ public class SubProcessNetwork implements HederaNetwork {
             }
         }
         ready.get().join();
+    }
+
+    /**
+     * Creates a network of live (sub-process) nodes with the given name and size. This method is
+     * synchronized because we don't want to re-use any ports across different networks.
+     *
+     * @param name the name of the network
+     * @param size the number of nodes in the network
+     * @return the network
+     */
+    private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
+        if (!nextPortsInitialized) {
+            initializeNextPortsForNetwork(size);
+        }
+        final var network = new SubProcessNetwork(
+                name,
+                IntStream.range(0, size)
+                        .<HederaNode>mapToObj(
+                                nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
+                        .toList());
+        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
+        return network;
     }
 
     private static String configTxtFor(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {

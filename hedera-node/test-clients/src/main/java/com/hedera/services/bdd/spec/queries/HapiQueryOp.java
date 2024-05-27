@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -109,6 +110,18 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected abstract boolean needsPayment();
 
     /**
+     * Returns the query to be sent to the network in the context of the given spec with the
+     * given payment, for the given response type.
+     *
+     * @param spec the context in which the query is to be sent
+     * @param payment the payment to be used for the query
+     * @param responseType the type of response the query should elicit
+     * @return the query to be sent to the network
+     */
+    protected abstract Query queryFor(
+            @NonNull HapiSpec spec, @NonNull Transaction payment, @NonNull ResponseType responseType);
+
+    /**
      * Returns the modified version of the query in the context of the given spec, if a mutation
      * is present; otherwise, returns the query as is.
      *
@@ -120,10 +133,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         // Save the unmodified version of the query
         this.query = query;
         return queryMutation != null ? queryMutation.apply(query, spec) : query;
-    }
-
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        return 0L;
     }
 
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
@@ -263,7 +272,9 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
                         "%sPaying for COST_ANSWER of %s with %s", spec.logPrefix(), this, txnToString(payment));
                 log.info(message);
             }
-            long realNodePayment = lookupCostWith(spec, payment);
+            query = maybeModified(queryFor(spec, payment, ResponseType.COST_ANSWER), spec);
+            response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec));
+            final var realNodePayment = costFrom(response);
             if (recordsNodePayment) {
                 spec.registry().saveAmount(nodePaymentName, realNodePayment);
             }

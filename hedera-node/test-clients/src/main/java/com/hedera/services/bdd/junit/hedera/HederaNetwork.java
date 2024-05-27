@@ -17,6 +17,10 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
@@ -25,6 +29,21 @@ import java.util.List;
  * A network of Hedera nodes.
  */
 public interface HederaNetwork {
+    /**
+     * Sends the given query to the network node with the given account id as if it
+     * was the given functionality. Blocks until the response is available.
+     *
+     * <p>For valid queries, the functionality can be inferred; but for invalid queries,
+     * the functionality must be provided.
+     *
+     * @param query the query
+     * @param functionality the functionality to use
+     * @param nodeAccountId the account id of the node to send the query to
+     * @return the network's response
+     */
+    @NonNull
+    Response send(@NonNull Query query, @NonNull HederaFunctionality functionality, @NonNull AccountID nodeAccountId);
+
     /**
      * Returns the network type; for now this is always
      * {@link TargetNetworkType#SHARED_HAPI_TEST_NETWORK}.

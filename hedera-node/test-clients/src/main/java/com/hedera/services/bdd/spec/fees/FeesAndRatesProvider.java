@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.toReadableStrin
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
@@ -69,7 +69,7 @@ public class FeesAndRatesProvider {
     private TxnFactory txns;
     private KeyFactory keys;
     private HapiSpecSetup setup;
-    private HapiApiClients clients;
+    private HapiClients clients;
     private HapiSpecRegistry registry;
     private static long gasPrice;
     private static FeeSchedule feeSchedule;
@@ -77,7 +77,7 @@ public class FeesAndRatesProvider {
     private final ScheduleTypePatching typePatching = new ScheduleTypePatching();
 
     public FeesAndRatesProvider(
-            TxnFactory txns, KeyFactory keys, HapiSpecSetup setup, HapiApiClients clients, HapiSpecRegistry registry) {
+            TxnFactory txns, KeyFactory keys, HapiSpecSetup setup, HapiClients clients, HapiSpecRegistry registry) {
         this.txns = txns;
         this.keys = keys;
         this.setup = setup;

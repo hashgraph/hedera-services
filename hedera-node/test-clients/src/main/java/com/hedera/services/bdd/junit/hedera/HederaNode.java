@@ -103,16 +103,6 @@ public interface HederaNode {
             @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver);
 
     /**
-     * Returns a future that resolves when the node has the given status.
-     *
-     * @param status the status to wait for
-     * @return a future that resolves when the node has the given status
-     */
-    default CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status) {
-        return statusFuture(status, null);
-    }
-
-    /**
      * Returns a future that resolves when the node has stopped.
      *
      * @return a future that resolves when the node has stopped
@@ -120,7 +110,7 @@ public interface HederaNode {
     CompletableFuture<Void> stopFuture();
 
     /**
-     * Returns the string that would identify this node as a target
+     * Returns the string that would summarize this node as a target
      * server in a {@link HapiSpec} that is submitting transactions
      * and sending queries via gRPC.
      *
@@ -131,7 +121,7 @@ public interface HederaNode {
      *
      * @return this node's HAPI spec identifier
      */
-    default String hapiSpecIdentifier() {
+    default String hapiSpecInfo() {
         return "127.0.0.1:" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }

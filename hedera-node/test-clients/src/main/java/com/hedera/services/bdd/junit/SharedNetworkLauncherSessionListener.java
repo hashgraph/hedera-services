@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit;
 
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
@@ -46,7 +46,7 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
-            HapiApiClients.tearDown();
+            HapiClients.tearDown();
             SubProcessNetwork.SHARED_NETWORK.get().terminate();
         }
     }

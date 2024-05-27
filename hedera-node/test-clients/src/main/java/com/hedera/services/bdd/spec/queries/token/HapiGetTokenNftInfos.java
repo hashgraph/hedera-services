@@ -25,12 +25,12 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -100,14 +100,6 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
     }
 
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getTokenNftInfosQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
-        return costFrom(response);
-    }
-
-    @Override
     protected boolean needsPayment() {
         return true;
     }
@@ -117,9 +109,15 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
         return this;
     }
 
-    public HapiGetTokenNftInfos hasNfts(HapiTokenNftInfo... nfts) {
-        this.expectedNfts = Optional.of(Arrays.asList(nfts));
-        return this;
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getTokenNftInfosQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getTokenNftInfosQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

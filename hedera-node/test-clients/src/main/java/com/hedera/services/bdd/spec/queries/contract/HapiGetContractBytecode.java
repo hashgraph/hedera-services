@@ -31,8 +31,9 @@ import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
@@ -99,12 +100,15 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
         bytecodeObs.ifPresent(obs -> obs.accept(code.toByteArray()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractBytecodeQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getContractBytecodeQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getContractBytecodeQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

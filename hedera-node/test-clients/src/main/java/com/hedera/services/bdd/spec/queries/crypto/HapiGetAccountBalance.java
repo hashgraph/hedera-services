@@ -36,10 +36,12 @@ import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -289,6 +291,17 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 System.out.println(".i. " + String.format("%20s | %20d |", repr, balance));
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getAccountBalanceQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getAccountBalanceQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

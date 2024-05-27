@@ -111,7 +111,7 @@ public class ContractCallLocalSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0L)
                                 .supplyKey(SUPPLY_KEY),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint"),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         // Create an account with alias
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1L)

@@ -27,9 +27,11 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -161,6 +163,24 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        if (forgetOp) {
+            return Query.getDefaultInstance();
+        }
+        return txnReceiptQueryFor(
+                explicitTxnId.orElseGet(
+                        () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn)),
+                requestDuplicates,
+                getChildReceipts);
+    }
+
     @Override
     protected void assertExpectationsGiven(HapiSpec spec) {
         var receipt = response.getTransactionGetReceipt().getReceipt();
@@ -204,11 +224,6 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) {
-        return 0L;
-    }
-
-    @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) {
         return 0L;
     }
 

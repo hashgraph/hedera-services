@@ -38,9 +38,10 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -336,12 +337,15 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getAccountInfoQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getAccountInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getAccountInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

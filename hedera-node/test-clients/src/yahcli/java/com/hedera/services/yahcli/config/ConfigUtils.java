@@ -21,7 +21,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
@@ -96,7 +96,7 @@ public class ConfigUtils {
             UpgradeHelperSuite.class,
             CostOfEveryThingSuite.class,
             MapPropertySource.class,
-            HapiApiClients.class,
+            HapiClients.class,
             FeesAndRatesProvider.class,
             HapiQueryOp.class,
             HapiTxnOp.class,

@@ -32,8 +32,10 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.nio.charset.Charset;
@@ -264,14 +266,6 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     }
 
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getFileContentQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
-        return costFrom(response);
-    }
-
-    @Override
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expContentFn.isPresent()) {
             ByteString expected = expContentFn.get().apply(spec);
@@ -284,6 +278,17 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                     actual.toString(Charset.defaultCharset()),
                     "Wrong file contents!");
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getFileContentQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getFileContentQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

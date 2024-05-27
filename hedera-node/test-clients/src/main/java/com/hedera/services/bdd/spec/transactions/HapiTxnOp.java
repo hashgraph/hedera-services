@@ -46,7 +46,7 @@ import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
@@ -466,7 +466,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 return true;
             } else if (isInternalError(e)) {
                 log.warn("Internal HTTP/2 error when {}, rebuilding channels", context);
-                HapiApiClients.rebuildChannels();
+                HapiClients.rebuildChannels();
                 Thread.sleep(250L);
                 return true;
             }

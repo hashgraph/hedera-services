@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
@@ -609,12 +609,15 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getTokenInfoQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getTokenInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getTokenInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
