@@ -39,7 +39,8 @@ public class TestService implements Service {
     public TestService(@NonNull final String name, @NonNull final List<Schema> schemas) {
         this.name = requireNonNull(name);
         this.schemas = requireNonNull(schemas);
-        // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.hapi
+        // Just something to keep checkModuleInfo from claiming we don't
+        // require com.hedera.node.hapi.utils
         requireNonNull(EthTxData.class);
     }
 
