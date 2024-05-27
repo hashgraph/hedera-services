@@ -136,9 +136,9 @@ public class ConnectionManagerFactory {
      * @return a map of connection managers
      */
     private Map<ConnectionMapping, ConnectionManager> createConnectionManagers() {
-        final List<NodeId> neighbors = topology.getNeighbors();
+        final Set<NodeId> neighbors = topology.getNeighbors();
         this.connectionManagers = HashMap.newHashMap(neighbors.size());
-        topology.getNeighbors().forEach(this::createConnectionManager);
+        neighbors.forEach(this::createConnectionManager);
 
         return connectionManagers;
     }

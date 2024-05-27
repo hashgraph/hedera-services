@@ -130,11 +130,14 @@ class ConnectionManagerFactoryTest {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 RandomAddressBookBuilder.create(r).withSize(10).build();
-        final NodeId selfId = addressBook.getNodeId(r.nextInt(10));
-        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, 10);
+        final NodeId selfId = addressBook.getNodeId(2);
+
+        final List<PeerInfo> peerInfos = Utilities.createPeerInfoList(addressBook, selfId);
+        final NetworkTopology topology = new StaticTopology(peerInfos, selfId);
+
         final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
 
-        final NodeId testNode1 = addressBook.getNodeId(4);
+        final NodeId testNode1 = addressBook.getNodeId(3);
         PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
         final List<PeerInfo> peers = List.of(peer1);
         // keep a reference to the manager for the testPeer. We don't know if it's an inbound or outbound
@@ -149,20 +152,26 @@ class ConnectionManagerFactoryTest {
         assertEquals(updatedManagers1.getFirst(), manager5);
     }
 
+    /**
+     * asserts that when a peerList containing a new peer is passed, the manager for that peer is created
+     */
     @Test
-    void testAddNewPeerUpdated() {
+    void testAddNewPeerUpdatesManagers() {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 RandomAddressBookBuilder.create(r).withSize(12).build();
-        final NodeId selfId = addressBook.getNodeId(r.nextInt(12));
-        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, 12);
+        final NodeId selfId = addressBook.getNodeId(11);
+
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final NetworkTopology topology = new StaticTopology(peers, selfId);
+
         final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
 
-        final NodeId testNode1 = addressBook.getNodeId(4);
+        final NodeId testNode1 = addressBook.getNodeId(9);
         PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
 
         // we add a new peer and ensure that the manager is created for all peers, including peer2
-        final NodeId testPeer2 = addressBook.getNodeId(5);
+        final NodeId testPeer2 = addressBook.getNodeId(10);
         PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
         final List<PeerInfo> peers2 = List.of(peer1, peer2);
         final List<ConnectionManager> updatedManagers2 = factory.updatePeers(peers2);
@@ -170,13 +179,18 @@ class ConnectionManagerFactoryTest {
         assertEquals(2, updatedManagers2.size());
     }
 
+    /**
+     * asserts that when an empty peerList is passed, no manager is created
+     */
     @Test
     void testRemoveNewPeerUpdated() {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 RandomAddressBookBuilder.create(r).withSize(21).build();
-        final NodeId selfId = addressBook.getNodeId(r.nextInt(21));
-        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, 21);
+        final NodeId selfId = addressBook.getNodeId(20);
+
+        final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+        final NetworkTopology topology = new StaticTopology(peers, selfId);
         final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
 
         final NodeId testNode1 = addressBook.getNodeId(4);
