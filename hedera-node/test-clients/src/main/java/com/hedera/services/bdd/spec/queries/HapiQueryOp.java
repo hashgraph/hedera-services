@@ -24,10 +24,10 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.lang.Thread.sleep;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -70,13 +71,11 @@ import org.apache.logging.log4j.Logger;
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiQueryOp.class);
 
-    private String nodePaymentName;
-    private boolean recordsNodePayment = false;
-    private boolean stopAfterCostAnswer = false;
-    private boolean expectStrictCostAnswer = false;
-
     @Nullable
     private QueryMutation queryMutation = null;
+
+    @Nullable
+    private LongConsumer nodePaymentObserver = null;
 
     // The query sent to the network
     protected Query query = null;
@@ -189,10 +188,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
                 payment = fittedPayment(spec);
             }
 
-            if (stopAfterCostAnswer) {
-                return false;
-            }
-
             /* If the COST_ANSWER query was expected to fail, we will not do anything else for this query. */
             if (needsPayment() && !nodePayment.isPresent() && expectedCostAnswerPrecheck() != OK) {
                 return false;
@@ -275,9 +270,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             query = maybeModified(queryFor(spec, payment, ResponseType.COST_ANSWER), spec);
             response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec));
             final var realNodePayment = costFrom(response);
-            if (recordsNodePayment) {
-                spec.registry().saveAmount(nodePaymentName, realNodePayment);
-            }
+            Optional.ofNullable(nodePaymentObserver).ifPresent(observer -> observer.accept(realNodePayment));
             if (expectedCostAnswerPrecheck() != OK) {
                 return null;
             }
@@ -292,21 +285,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
                 final String message = String.format(
                         "%s--> Node payment for %s is %s tinyBars.", spec.logPrefix(), this, realNodePayment);
                 log.info(message);
-            }
-            if (expectStrictCostAnswer) {
-                Transaction insufficientPayment = finalizedTxn(spec, opDef(spec, realNodePayment - 1));
-                submitWith(spec, insufficientPayment);
-                if (INSUFFICIENT_TX_FEE != reflectForPrecheck(response)) {
-                    final String errMsg = String.format(
-                            "Strict cost of answer! suppose to be %s, but get %s",
-                            INSUFFICIENT_TX_FEE, reflectForPrecheck(response));
-                    log.error(errMsg);
-                    throw new HapiQueryPrecheckStateException(errMsg);
-                } else {
-                    log.info(
-                            "Query with node payment of {} tinyBars got INSUFFICIENT_TX_FEE as" + " expected!",
-                            realNodePayment - 1);
-                }
             }
             return finalizedTxn(spec, opDef(spec, realNodePayment));
         }
@@ -358,16 +336,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T nodePayment(long amount) {
         nodePayment = Optional.of(amount);
-        return self();
-    }
-
-    public T stoppingAfterCostAnswer() {
-        stopAfterCostAnswer = true;
-        return self();
-    }
-
-    public T expectStrictCostAnswer() {
-        expectStrictCostAnswer = true;
         return self();
     }
 
@@ -446,12 +414,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return self();
     }
 
-    public T recordNodePaymentAs(String s) {
-        recordsNodePayment = true;
-        nodePaymentName = s;
-        return self();
-    }
-
     public T useEmptyTxnAsCostPayment() {
         useDefaultTxnAsCostAnswerPayment = true;
         return self();
@@ -489,6 +451,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T withQueryMutation(@Nullable final QueryMutation queryMutation) {
         this.queryMutation = queryMutation;
+        return self();
+    }
+
+    public T exposingNodePaymentTo(@NonNull final LongConsumer observer) {
+        nodePaymentObserver = requireNonNull(observer);
         return self();
     }
 }
