@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.fixtures;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.Schema;
@@ -38,6 +39,8 @@ public class TestService implements Service {
     public TestService(@NonNull final String name, @NonNull final List<Schema> schemas) {
         this.name = requireNonNull(name);
         this.schemas = requireNonNull(schemas);
+        // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.hapi
+        requireNonNull(EthTxData.class);
     }
 
     @NonNull

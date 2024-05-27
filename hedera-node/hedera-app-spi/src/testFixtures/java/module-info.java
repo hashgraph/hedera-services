@@ -5,6 +5,7 @@ module com.hedera.node.app.spi.test.fixtures {
     exports com.hedera.node.app.spi.fixtures.util;
 
     requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.platform.core.test.fixtures;
@@ -13,7 +14,6 @@ module com.hedera.node.app.spi.test.fixtures {
     requires transitive org.assertj.core;
     requires transitive org.junit.jupiter.api;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.hapi;
     requires com.swirlds.common;
     requires com.swirlds.platform.core;
     requires org.apache.logging.log4j.core;
