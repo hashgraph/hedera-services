@@ -84,7 +84,7 @@ public class ServicesMain implements SwirldMain {
             delegate = new MonoServicesMain();
         } else {
             logger.info("One or more workflows enabled, using Hedera");
-            delegate = new Hedera(ConstructableRegistry.getInstance());
+            delegate = new Hedera(ConstructableRegistry.getInstance(), null);
         }
     }
 
@@ -157,7 +157,7 @@ public class ServicesMain implements SwirldMain {
         BootstrapUtils.setupConstructableRegistry();
         final var registry = ConstructableRegistry.getInstance();
 
-        final Hedera hedera = new Hedera(registry);
+        final Hedera hedera = new Hedera(registry, null);
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book

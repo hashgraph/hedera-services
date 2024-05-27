@@ -201,8 +201,13 @@ public final class Hedera implements SwirldMain {
      * improve testability and reuse. (For example, the {@link BootstrapConfigProviderImpl}.)
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
+     * @param servicesRegistry the registry to register services with. This is optional and can be null.
+     *                         If null, a new instance of {@link ServicesRegistryImpl} will be created.
+     *                         This is useful for testing.
      */
-    public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
+    public Hedera(
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @Nullable ServicesRegistryImpl servicesRegistry) {
         requireNonNull(constructableRegistry);
 
         // Print welcome message
@@ -240,8 +245,30 @@ public final class Hedera implements SwirldMain {
 
         // Create all the service implementations
         logger.info("Registering services");
-        // FUTURE: Use the service loader framework to load these services!
-        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
+        if (servicesRegistry == null) {
+            this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
+        } else {
+            this.servicesRegistry = servicesRegistry;
+        }
+        registerServices(servicesRegistry);
+
+        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
+        // constructor to make sure it has the config and other info it needs to be created correctly.
+        try {
+            logger.debug("Register MerkleHederaState with ConstructableRegistry");
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
+        } catch (final ConstructableRegistryException e) {
+            logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Register all the services with the {@link ServicesRegistryImpl}.
+     * @param servicesRegistry the registry to register the services with
+     */
+    private void registerServices(@NonNull ServicesRegistryImpl servicesRegistry) {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
@@ -262,17 +289,6 @@ public final class Hedera implements SwirldMain {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl())
                 .forEach(servicesRegistry::register);
-
-        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
-        // constructor to make sure it has the config and other info it needs to be created correctly.
-        try {
-            logger.debug("Register MerkleHederaState with ConstructableRegistry");
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
-        } catch (final ConstructableRegistryException e) {
-            logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
-            throw new RuntimeException(e);
-        }
     }
 
     /**
