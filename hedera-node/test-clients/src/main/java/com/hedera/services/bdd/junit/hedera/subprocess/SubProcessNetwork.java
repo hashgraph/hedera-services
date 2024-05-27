@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 /**
- * A network of Hedera nodes started in subprocesses and accessed via a gRPC. Unlike
+ * A network of Hedera nodes started in subprocesses and accessed via gRPC. Unlike
  * nodes in a remote or embedded network, its nodes support lifecycle operations like
  * stopping and restarting.
  */
