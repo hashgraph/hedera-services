@@ -40,8 +40,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Pre-builds connection managers for the supplied topology, does not allow changes at runtime
  */
-public class ConnectionManagerFactory {
-    private static final Logger logger = LogManager.getLogger(ConnectionManagerFactory.class);
+public class ConnectivityManager {
+    private static final Logger logger = LogManager.getLogger(ConnectivityManager.class);
     private final NetworkTopology topology;
     private final OutboundConnectionCreator connectionCreator;
     private Map<ConnectionMapping, ConnectionManager> connectionManagers;
@@ -53,7 +53,7 @@ public class ConnectionManagerFactory {
      * @param topology          the network topology
      * @param connectionCreator the connection creator
      */
-    public ConnectionManagerFactory(
+    public ConnectivityManager(
             @NonNull final NetworkTopology topology, @NonNull final OutboundConnectionCreator connectionCreator) {
         this.topology = Objects.requireNonNull(topology);
         this.connectionCreator = Objects.requireNonNull(connectionCreator);
@@ -135,6 +135,7 @@ public class ConnectionManagerFactory {
      * creates connection managers for all neighbors in the topology
      * @return a map of connection managers
      */
+    @NonNull
     private Map<ConnectionMapping, ConnectionManager> createConnectionManagers() {
         final Set<NodeId> neighbors = topology.getNeighbors();
         this.connectionManagers = HashMap.newHashMap(neighbors.size());

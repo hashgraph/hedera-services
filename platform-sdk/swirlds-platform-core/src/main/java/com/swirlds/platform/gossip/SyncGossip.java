@@ -68,7 +68,7 @@ import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
 import com.swirlds.platform.network.protocol.SyncProtocolFactory;
-import com.swirlds.platform.network.topology.ConnectionManagerFactory;
+import com.swirlds.platform.network.topology.ConnectivityManager;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
@@ -128,7 +128,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final NetworkTopology topology;
     private final NetworkMetrics networkMetrics;
     private final ReconnectHelper reconnectHelper;
-    protected final ConnectionManagerFactory connectionManagerFactory;
+    protected final ConnectivityManager connectivityManager;
     private final FallenBehindManagerImpl fallenBehindManager;
     private final SyncManagerImpl syncManager;
     private final ReconnectThrottle reconnectThrottle;
@@ -205,13 +205,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator =
                 new OutboundConnectionCreator(platformContext, selfId, this, socketFactory, addressBook);
-        connectionManagerFactory = new ConnectionManagerFactory(topology, connectionCreator);
+        connectivityManager = new ConnectivityManager(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 platformContext,
                 this,
                 peerIdentifier,
                 selfId,
-                connectionManagerFactory::newConnection,
+                connectivityManager::newConnection,
                 platformContext.getTime());
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
@@ -381,7 +381,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     .setThreadName("SyncProtocolWith" + otherId)
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new ProtocolNegotiatorThread(
-                            connectionManagerFactory.getManager(otherId, topology.shouldConnectTo(otherId)),
+                            connectivityManager.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
                             handshakeProtocols,
                             new NegotiationProtocols(List.of(
