@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.context.properties.SemanticVersio
 import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.forHapiAndHedera;
 import static com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
 import static com.hedera.test.utils.AddresBookUtils.createPretendBookFrom;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -81,7 +80,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
-import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -1049,8 +1047,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
         when(platform.getSelfId()).thenReturn(new NodeId(0));
-        when(platformContext.getCryptography())
-                .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
+        when(platformContext.getCryptography()).thenReturn(new CryptoEngine());
         assertNotNull(platformContext.getCryptography());
         return platform;
     }

@@ -214,7 +214,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
         for (final var entry : fileContents.entrySet()) {
             try {
                 baos.write(Longs.toByteArray(entry.getKey().getFileNum()));
-                baos.write(entry.getValue().getHash().getValue());
+                entry.getValue().getHash().getBytes().writeTo(baos);
             } catch (final IOException e) {
                 log.error("Hash concatenation failed", e);
                 throw new UncheckedIOException(e);
@@ -249,9 +249,8 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
     }
 
     private byte[] hashOfKnown(final FileID fid) {
-        return hashCache.computeIfAbsent(fid, missingFid -> CryptographyHolder.get()
-                .digestSync(get(missingFid))
-                .getValue());
+        return hashCache.computeIfAbsent(
+                fid, missingFid -> CryptographyHolder.get().digestBytesSync(get(missingFid)));
     }
 
     private FCQueue<BytesElement> newFcqWith(final byte[] initialContents) {

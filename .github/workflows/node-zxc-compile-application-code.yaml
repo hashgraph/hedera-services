@@ -227,7 +227,7 @@ jobs:
       - name: Unit Testing
         id: gradle-test
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: ${GRADLE_EXEC} :reports:testCodeCoverageReport --continue --scan
+        run: ${GRADLE_EXEC} :reports:testCodeCoverageReport -x :test-clients:test --continue --scan
 
       - name: Publish Unit Test Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -292,7 +292,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestMisc -Dfile.encoding=UTF-8 --scan --no-daemon
+        run: ${GRADLE_EXEC} hapiTestMisc --scan --no-daemon
 
       - name: Publish HAPI Test (Misc) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -326,7 +326,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestCrypto -Dfile.encoding=UTF-8 --scan
+        run: ${GRADLE_EXEC} hapiTestCrypto --scan
 
       - name: Publish HAPI Test (Crypto) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -360,7 +360,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestToken -Dfile.encoding=UTF-8 --scan
+        run: ${GRADLE_EXEC} hapiTestToken --scan
 
       - name: Publish HAPI Test (Token) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -394,7 +394,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestSmartContract -Dfile.encoding=UTF-8 --scan
+        run: ${GRADLE_EXEC} hapiTestSmartContract --scan
 
       - name: Publish HAPI Test (Smart Contract) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -428,7 +428,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestTimeConsuming -Dfile.encoding=UTF-8 --scan
+        run: ${GRADLE_EXEC} hapiTestTimeConsuming --scan
 
       - name: Publish HAPI Test (Time Consuming) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -462,7 +462,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestRestart -Dfile.encoding=UTF-8 --scan
+        run: ${GRADLE_EXEC} hapiTestRestart --scan
 
       - name: Publish HAPI Test (Restart) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
@@ -497,7 +497,7 @@ jobs:
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8
-        run: ${GRADLE_EXEC} hapiTestNDReconnect -Dfile.encoding=UTF-8 --scan
+        run: ${GRADLE_EXEC} hapiTestNDReconnect --scan
 
       - name: Publish HAPI Test (Node Death Reconnect) Report
         uses: EnricoMi/publish-unit-test-result-action@30eadd5010312f995f0d3b3cff7fe2984f69409e # v2.16.1
