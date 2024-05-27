@@ -18,7 +18,6 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
@@ -43,10 +42,6 @@ import java.time.Duration;
  *                                            used to compute selfishness scores.
  * @param eventIntakeThrottle                 when the size of the event intake queue equals or exceeds this value, do
  *                                            not permit the creation of new self events.
- * @param creationQueueSize                   the size of the intake queue for the event creator
- * @param creationQueueBufferSize             the size of the buffer for the event creator
- * @param creationQueueWaitForWorkPeriod      the amount of time the event creator spends waiting for work in its intake
- *                                            queue
  * @param useLegacyBackpressure               whether to use the legacy backpressure (i.e. where we look at the size of
  *                                            the first queue in intake)
  * @param maximumPermissibleUnhealthyDuration the maximum amount of time that the system can be unhealthy before event
@@ -59,8 +54,5 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
-        @ConfigProperty(defaultValue = "1024") int creationQueueSize,
-        @ConfigProperty(defaultValue = "1024") int creationQueueBufferSize,
-        @ConfigProperty(defaultValue = "1 ms") @NonNull Duration creationQueueWaitForWorkPeriod,
         @ConfigProperty(defaultValue = "false") boolean useLegacyBackpressure,
         @ConfigProperty(defaultValue = "5s") Duration maximumPermissibleUnhealthyDuration) {}
