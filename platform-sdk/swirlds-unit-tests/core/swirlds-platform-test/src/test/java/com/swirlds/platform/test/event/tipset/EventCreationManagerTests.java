@@ -39,10 +39,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("EventCreationManager Tests")
 class EventCreationManagerTests {
     private AtomicLong intakeQueueSize;
     private EventCreator creator;
@@ -76,7 +74,6 @@ class EventCreationManagerTests {
     }
 
     @Test
-    @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
         final BaseEventHashedData e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
@@ -99,7 +96,6 @@ class EventCreationManagerTests {
     }
 
     @Test
-    @DisplayName("Status prevents creation")
     void statusPreventsCreation() {
         final BaseEventHashedData e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
@@ -126,7 +122,6 @@ class EventCreationManagerTests {
      */
     @Disabled
     @Test
-    @DisplayName("Backpressure prevents creation")
     void backpressurePreventsCreation() {
         final BaseEventHashedData e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
@@ -149,7 +144,6 @@ class EventCreationManagerTests {
     }
 
     @Test
-    @DisplayName("Rate prevents creation")
     void ratePreventsCreation() {
         final BaseEventHashedData e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
@@ -170,5 +164,27 @@ class EventCreationManagerTests {
         assertSame(eventsToCreate.get(1), e1);
     }
 
-    // TODO add test for new rule
+    @Test
+    void unhealthyNodePreventsCreation() {
+        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        verify(creator, times(1)).maybeCreateEvent();
+        assertNotNull(e0);
+        assertSame(eventsToCreate.get(0), e0);
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.reportUnhealthyDuration(Duration.ofSeconds(10));
+
+        assertNull(manager.maybeCreateEvent());
+        verify(creator, times(1)).maybeCreateEvent();
+
+        time.tick(Duration.ofSeconds(1));
+
+        manager.reportUnhealthyDuration(Duration.ZERO);
+
+        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        assertNotNull(e1);
+        verify(creator, times(2)).maybeCreateEvent();
+        assertSame(eventsToCreate.get(1), e1);
+    }
 }
