@@ -30,8 +30,6 @@ import java.util.function.Supplier;
  */
 public class PlatformHealthRule implements EventCreationRule {
 
-    // TODO unit test
-
     private final Duration maximumPermissibleUnhealthyDuration;
     private final Supplier<Duration> currentUnhealthyDurationSupplier;
 

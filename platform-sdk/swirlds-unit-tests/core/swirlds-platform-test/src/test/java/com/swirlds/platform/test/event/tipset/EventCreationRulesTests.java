@@ -39,6 +39,7 @@ import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -55,7 +56,6 @@ import org.junit.jupiter.api.Test;
 class EventCreationRulesTests {
 
     @Test
-    @DisplayName("Empty Aggregate Test")
     void emptyAggregateTest() {
         final EventCreationRule rule = AggregateEventCreationRules.of(List.of());
         assertTrue(rule.isEventCreationPermitted());
@@ -65,7 +65,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Aggregate Test")
     void aggregateTest() {
         final EventCreationRule rule1 = mock(EventCreationRule.class);
         when(rule1.isEventCreationPermitted()).thenAnswer(invocation -> true);
@@ -131,7 +130,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Blocked by Freeze Test")
     void blockedByFreeze() {
         final Supplier<PlatformStatus> platformStatusSupplier = () -> FREEZING;
 
@@ -155,7 +153,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
 
@@ -187,7 +184,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("No Rate Limit Test")
     void noRateLimitTest() {
         final Time time = new FakeTime();
         final PlatformContext platformContext =
@@ -209,7 +205,6 @@ class EventCreationRulesTests {
     }
 
     @Test
-    @DisplayName("Rate Limit Test")
     void rateLimitTest() {
         final Random random = getRandomPrintSeed();
 
@@ -249,5 +244,28 @@ class EventCreationRulesTests {
                 assertFalse(rule.isEventCreationPermitted());
             }
         }
+    }
+
+    @Test
+    void platformHealthRuleTest() {
+        final AtomicReference<Duration> unhealthyDuration = new AtomicReference<>(Duration.ZERO);
+        final EventCreationRule rule = new PlatformHealthRule(Duration.ofSeconds(5), unhealthyDuration::get);
+
+        assertTrue(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(1));
+        assertTrue(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(5));
+        assertTrue(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(5, 1));
+        assertFalse(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(50000000));
+        assertFalse(rule.isEventCreationPermitted());
+
+        unhealthyDuration.set(Duration.ofSeconds(5));
+        assertTrue(rule.isEventCreationPermitted());
     }
 }
