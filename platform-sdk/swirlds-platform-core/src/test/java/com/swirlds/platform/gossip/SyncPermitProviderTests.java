@@ -1,9 +1,28 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.gossip;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
@@ -16,6 +35,7 @@ import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 class SyncPermitProviderTests {
@@ -41,7 +61,8 @@ class SyncPermitProviderTests {
     void capacityTest() {
         final Randotron randotron = Randotron.create();
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final int permitCount = randotron.nextInt(10, 20);
         final SyncPermitProvider permitProvider = new SyncPermitProvider(platformContext, permitCount);
@@ -60,6 +81,8 @@ class SyncPermitProviderTests {
         }
 
         assertEquals(permitCount, countAvailablePermits(permitProvider));
+
+        assertThrows(IllegalStateException.class, permitProvider::release);
     }
 
     /**
@@ -80,23 +103,13 @@ class SyncPermitProviderTests {
      * </ol>
      *
      * <pre>
-     * |
-     * |
-     * |
-     * |
-     * |
-     * |
-     * |
-     * |
-     * |
-     * |
-     * ----------------------------------------------------
-     * 1
-     *
-     *
-     *
-     *
-     *
+     *  all revoked |                      ******                     ******
+     *              |                     *     *                    *
+     *  min healthy |                    *      *****               *
+     *              |                   *            *             *
+     * none revoked |*******************               ************
+     *              -+--------+--------+--------+--------+--------+--------+
+     *               1        2        3        4        5        6        7
      * </pre>
      */
     @Test
@@ -155,8 +168,8 @@ class SyncPermitProviderTests {
             permitProvider.reportUnhealthyDuration(unhealthyDuration);
 
             final Duration timePastGracePeriod = unhealthyDuration.minus(gracePeriod);
-            final double secondsPastGracePeriod = UNIT_NANOSECONDS.convertTo(timePastGracePeriod.toNanos(),
-                    UNIT_SECONDS);
+            final double secondsPastGracePeriod =
+                    UNIT_NANOSECONDS.convertTo(timePastGracePeriod.toNanos(), UNIT_SECONDS);
             final int expectedRevocations = (int) (secondsPastGracePeriod * permitsLostPerSecond);
 
             final int expectedPermitCount = Math.max(0, permitCount - expectedRevocations);
@@ -176,8 +189,8 @@ class SyncPermitProviderTests {
         int expectedAvailablePermits = 0;
         while (time.now().isBefore(phase4End)) {
             final Duration healthyTime = Duration.between(healthyStartTime1, time.now());
-            final int returnedPermits = (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS)
-                    * permitsReturnedPerSecond);
+            final int returnedPermits =
+                    (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS) * permitsReturnedPerSecond);
 
             expectedAvailablePermits = Math.max(minimumHealthyPermitCount, returnedPermits);
 
@@ -195,8 +208,8 @@ class SyncPermitProviderTests {
 
             // We will continue regaining permits until we exit the grace period.
             final Duration healthyTime = Duration.between(healthyStartTime1, time.now());
-            final int returnedPermits = (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS)
-                    * permitsReturnedPerSecond);
+            final int returnedPermits =
+                    (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS) * permitsReturnedPerSecond);
 
             expectedAvailablePermits = Math.min(permitCount, returnedPermits);
 
@@ -206,8 +219,8 @@ class SyncPermitProviderTests {
 
         // Recompute expected available permits (it's possible the last time step caused another permit to be returned)
         final Duration healthyTime = Duration.between(healthyStartTime1, time.now());
-        final int returnedPermits = (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS)
-                * permitsReturnedPerSecond);
+        final int returnedPermits =
+                (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS) * permitsReturnedPerSecond);
         expectedAvailablePermits = Math.min(permitCount, returnedPermits);
         assertEquals(expectedAvailablePermits, countAvailablePermits(permitProvider));
 
@@ -219,8 +232,8 @@ class SyncPermitProviderTests {
             permitProvider.reportUnhealthyDuration(unhealthyDuration);
 
             final Duration timePastGracePeriod = unhealthyDuration.minus(gracePeriod);
-            final double secondsPastGracePeriod = UNIT_NANOSECONDS.convertTo(timePastGracePeriod.toNanos(),
-                    UNIT_SECONDS);
+            final double secondsPastGracePeriod =
+                    UNIT_NANOSECONDS.convertTo(timePastGracePeriod.toNanos(), UNIT_SECONDS);
             final int expectedRevocations = (int) (secondsPastGracePeriod * permitsLostPerSecond);
 
             final int expectedPermitCount = Math.max(0, expectedAvailablePermits - expectedRevocations);
@@ -237,12 +250,11 @@ class SyncPermitProviderTests {
         final Instant phase7End = healthyStartTime2.plusSeconds(10 + secondsToReturnPermits);
         while (time.now().isBefore(phase7End)) {
             final Duration currentHealthyTime = Duration.between(healthyStartTime2, time.now());
-            final int currentlyReturnedPermits = (int) (
-                    UNIT_NANOSECONDS.convertTo(currentHealthyTime.toNanos(), UNIT_SECONDS)
-                            * permitsReturnedPerSecond);
+            final int currentlyReturnedPermits = (int)
+                    (UNIT_NANOSECONDS.convertTo(currentHealthyTime.toNanos(), UNIT_SECONDS) * permitsReturnedPerSecond);
 
-            expectedAvailablePermits = Math.max(minimumHealthyPermitCount,
-                    Math.min(permitCount, currentlyReturnedPermits));
+            expectedAvailablePermits =
+                    Math.max(minimumHealthyPermitCount, Math.min(permitCount, currentlyReturnedPermits));
 
             assertEquals(expectedAvailablePermits, countAvailablePermits(permitProvider));
             time.tick(timeStep);
@@ -251,5 +263,33 @@ class SyncPermitProviderTests {
         assertEquals(permitCount, countAvailablePermits(permitProvider));
     }
 
+    @Test
+    void waitForAllPermitsToBeReleasedTest() throws InterruptedException {
+        final Randotron randotron = Randotron.create();
 
+        final int permitCount = randotron.nextInt(10, 20);
+        final SyncPermitProvider permitProvider =
+                new SyncPermitProvider(TestPlatformContextBuilder.create().build(), permitCount);
+
+        for (int i = 0; i < permitCount; i++) {
+            permitProvider.acquire();
+        }
+
+        final AtomicBoolean permitsReleased = new AtomicBoolean(false);
+        final Thread thread = new Thread(() -> {
+            permitProvider.waitForAllPermitsToBeReleased();
+            permitsReleased.set(true);
+        });
+        thread.start();
+
+        for (int i = 0; i < permitCount - 1; i++) {
+            permitProvider.release();
+            assertFalse(permitsReleased.get());
+            MILLISECONDS.sleep(10);
+        }
+
+        permitProvider.release();
+        assertEventuallyTrue(permitsReleased::get, Duration.ofSeconds(1), "Permits were not released");
+        thread.join();
+    }
 }
