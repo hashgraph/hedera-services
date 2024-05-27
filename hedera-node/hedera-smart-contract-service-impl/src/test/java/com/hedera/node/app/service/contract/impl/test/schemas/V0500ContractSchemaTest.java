@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.schemas.V050ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -47,8 +47,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @DisplayName("V050 storage links repair")
 @ExtendWith(MockitoExtension.class)
-class V050ContractSchemaTest {
+class V0500ContractSchemaTest {
     private static final int N = 3;
+    private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
     private static final Bytes[] TEST_KEYS = LongStream.range(1, 1 + N)
             .mapToObj(i -> copyToLeftPaddedByteArray(i, new byte[32]))
             .map(Bytes::wrap)
@@ -68,7 +69,7 @@ class V050ContractSchemaTest {
     @Mock
     private MigrationContext ctx;
 
-    private final V050ContractSchema subject = new V050ContractSchema();
+    private final V0500ContractSchema subject = new V0500ContractSchema();
 
     @BeforeEach
     void setUp() {
@@ -200,7 +201,7 @@ class V050ContractSchemaTest {
 
     @SuppressWarnings("unchecked")
     private Map<ContractID, Bytes> firstKeys() {
-        return (Map<ContractID, Bytes>) sharedValues.get("V050_FIRST_STORAGE_KEYS");
+        return (Map<ContractID, Bytes>) sharedValues.get(SHARED_VALUES_KEY);
     }
 
     private void addMapping(@NonNull final Bytes key, @NonNull final Bytes prevKey, @NonNull final Bytes nextKey) {

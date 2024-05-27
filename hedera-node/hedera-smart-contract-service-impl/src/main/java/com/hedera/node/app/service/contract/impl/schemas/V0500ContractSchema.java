@@ -47,16 +47,18 @@ import org.apache.logging.log4j.Logger;
  *     <li>For any contract with broken links, repairs the links by relinking its
  *     storage mappings in sorted key order.</li>
  *     <li>For every contract, publishes its correct first key in the shared
- *     migration context in a {@link SortedMap} at key {@code "V050_FIRST_STORAGE_KEYS"}.</li>
+ *     migration context in a {@link SortedMap} at key {@code "V0500_FIRST_STORAGE_KEYS"}.</li>
  * </ol>
  */
-public class V050ContractSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V050ContractSchema.class);
+public class V0500ContractSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0500ContractSchema.class);
+
+    private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
 
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(50).patch(0).build();
 
-    public V050ContractSchema() {
+    public V0500ContractSchema() {
         super(VERSION);
     }
 
@@ -104,7 +106,7 @@ public class V050ContractSchema extends Schema {
         }
 
         // Expose the first keys of all contracts in the migration context for the token service
-        ctx.sharedValues().put("V050_FIRST_STORAGE_KEYS", firstKeys);
+        ctx.sharedValues().put(SHARED_VALUES_KEY, firstKeys);
     }
 
     private MappingSummary summarizeWithRequiredFixes(@NonNull final List<StorageMapping> mappings) {

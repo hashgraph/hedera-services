@@ -24,7 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
-import com.hedera.node.app.service.contract.impl.schemas.V050ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import org.junit.jupiter.api.Test;
@@ -44,6 +44,6 @@ class ContractServiceImplTest {
         verify(mockRegistry, times(2)).register(captor.capture());
         final var schemas = captor.getAllValues();
         assertInstanceOf(V0490ContractSchema.class, schemas.getFirst());
-        assertInstanceOf(V050ContractSchema.class, schemas.getLast());
+        assertInstanceOf(V0500ContractSchema.class, schemas.getLast());
     }
 }

@@ -42,8 +42,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @DisplayName("V050 first storage keys repair")
 @ExtendWith(MockitoExtension.class)
-class V050TokenSchemaTest {
+class V0500TokenSchemaTest {
     private static final int N = 3;
+    private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
     private static final SortedMap<ContractID, Bytes> FIRST_KEYS = new TreeMap<>(CONTRACT_ID_COMPARATOR) {
         {
             for (long i = 1; i <= N; i++) {
@@ -61,7 +62,7 @@ class V050TokenSchemaTest {
     @Mock
     private MigrationContext ctx;
 
-    private final V050TokenSchema subject = new V050TokenSchema();
+    private final V0500TokenSchema subject = new V0500TokenSchema();
 
     @Test
     @DisplayName("throws without shared values")
@@ -110,7 +111,7 @@ class V050TokenSchemaTest {
     private void givenValidCtx() {
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.sharedValues()).willReturn(sharedValues);
-        sharedValues.put("V050_FIRST_STORAGE_KEYS", FIRST_KEYS);
+        sharedValues.put(SHARED_VALUES_KEY, FIRST_KEYS);
     }
 
     private static ContractID contractIdWith(final long num) {

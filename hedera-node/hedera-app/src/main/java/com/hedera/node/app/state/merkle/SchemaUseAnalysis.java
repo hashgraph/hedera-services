@@ -32,6 +32,8 @@ import java.util.Set;
 
 /**
  * Analyzes the ways in which a {@link Schema} should be used by the {@link MerkleSchemaRegistry}.
+ *
+ * @see SchemaUseType
  */
 public class SchemaUseAnalysis {
     /**

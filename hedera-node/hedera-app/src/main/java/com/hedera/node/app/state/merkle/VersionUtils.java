@@ -19,7 +19,6 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -52,7 +51,11 @@ public class VersionUtils {
      * maybeAfter}.
      */
     public static boolean isSoOrdered(
-            @Nullable final SemanticVersion maybeBefore, @NonNull final SemanticVersion maybeAfter) {
+            @Nullable final SemanticVersion maybeBefore, @Nullable final SemanticVersion maybeAfter) {
+        if (maybeAfter == null) {
+            return false;
+        }
+
         // If they are the same version, then we must fail.
         if (isSameVersion(maybeBefore, maybeAfter)) {
             return false;

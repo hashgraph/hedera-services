@@ -325,6 +325,10 @@ public class RecordCacheImpl implements HederaRecordCache {
 
         // While we still need to gather more records, collect them from the different histories.
         final var records = new ArrayList<TransactionRecord>(maxRemaining);
+        // Because the set of transaction IDs could be concurrently modified by
+        // the handle thread, wrap this in a try-catch block to deal with a CME
+        // and return whatever we are able to gather. (I.e. this is a best-effort
+        // query, and not a critical path; unused in production environments)
         try {
             for (final var transactionID : transactionIDs) {
                 final var history = histories.get(transactionID);

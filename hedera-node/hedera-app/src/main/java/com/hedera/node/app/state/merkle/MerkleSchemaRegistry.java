@@ -19,7 +19,6 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.state.merkle.SchemaUseType.MIGRATION;
 import static com.hedera.node.app.state.merkle.SchemaUseType.RESTART;
 import static com.hedera.node.app.state.merkle.SchemaUseType.STATE_DEFINITIONS;
-import static com.hedera.node.app.state.merkle.VersionUtils.isSameVersion;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
@@ -175,7 +174,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param config The system configuration to use at the time of migration
      * @param networkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
-     * @throws IllegalArgumentException if the {@code currentVersion} is not strictly greater than the
+     * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
      * {@code previousVersion} or if the {@code hederaState} is not an instance of {@link MerkleHederaState}
      */
     // too many parameters, commented out code
@@ -195,8 +194,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         requireNonNull(networkInfo);
         requireNonNull(metrics);
         requireNonNull(sharedValues);
-        if (!isSameVersion(previousVersion, currentVersion) && !isSoOrdered(previousVersion, currentVersion)) {
-            throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
+        if (isSoOrdered(currentVersion, previousVersion)) {
+            throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
         if (!(hederaState instanceof MerkleHederaState state)) {
             throw new IllegalArgumentException("The state must be an instance of MerkleHederaState");

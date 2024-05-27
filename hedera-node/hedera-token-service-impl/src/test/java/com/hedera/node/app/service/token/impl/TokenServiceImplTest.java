@@ -26,7 +26,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.CryptoServiceDefinition;
 import com.hedera.node.app.service.token.TokenServiceDefinition;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.service.token.impl.schemas.V050TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import java.util.Collections;
@@ -129,7 +129,7 @@ class TokenServiceImplTest {
         final var schemas = captor.getAllValues();
         assertThat(schemas).hasSize(2);
         assertThat(schemas.getFirst()).isInstanceOf(V0490TokenSchema.class);
-        assertThat(schemas.getLast()).isInstanceOf(V050TokenSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V0500TokenSchema.class);
     }
 
     @Test

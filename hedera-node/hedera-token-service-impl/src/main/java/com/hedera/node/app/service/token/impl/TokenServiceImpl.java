@@ -22,7 +22,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.service.token.impl.schemas.V050TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -76,6 +76,6 @@ public class TokenServiceImpl implements TokenService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0490TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts));
-        registry.register(new V050TokenSchema());
+        registry.register(new V0500TokenSchema());
     }
 }
