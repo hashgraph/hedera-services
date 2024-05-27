@@ -141,9 +141,7 @@ class ConnectionManagerFactoryTest {
         PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
         final List<PeerInfo> peers = List.of(peer1);
         // keep a reference to the manager for the testPeer. We don't know if it's an inbound or outbound
-        final ConnectionManager manager5 = factory.getManager(testNode1, true) == null
-                ? factory.getManager(testNode1, false)
-                : factory.getManager(testNode1, true);
+        final ConnectionManager manager5 = factory.getManager(testNode1, true);
         final List<ConnectionManager> updatedManagers1 = factory.updatePeers(peers);
 
         assertNotNull(updatedManagers1);
