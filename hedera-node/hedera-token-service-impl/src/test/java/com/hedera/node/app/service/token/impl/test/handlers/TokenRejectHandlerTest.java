@@ -95,7 +95,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
         subject.handle(handleContext);
 
         // Then:
-        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2); // includes fee collector for custom fees
+        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).contains(ownerId, treasuryId);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
 
@@ -115,7 +115,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void handleExceedsMaxTokenTransfers() {
+    void handleExceedsMaxTokenReferences() {
         config = defaultConfig().withValue(LEDGER_TOKEN_REJECTS_MAX_LEN, 1).getOrCreateConfig();
         final var txn = newTokenReject(ACCOUNT_3333, tokenRefFungible, tokenRefNFT);
         final var context = mockContext(txn);

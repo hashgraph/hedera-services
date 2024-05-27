@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -93,7 +92,6 @@ public class TokenRejectSuite {
     private static final String MULTI_KEY = "multiKey";
 
     private static final String TOKEN_REJECT_ENABLED_PROPERTY = "tokens.reject.enabled";
-    private static final String REFERENCES_MAX_SIZE_PROPERTY = "ledger.tokenRejects.maxLen";
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksAndAvoidsCustomFees() {
@@ -489,9 +487,9 @@ public class TokenRejectSuite {
     @HapiTest
     final Stream<DynamicTest> tokenRejectFailsWithInvalidBodyInputsScenarios() {
         return propertyPreservingHapiSpec("tokenRejectFailsWithInvalidBodyInputsScenarios")
-                .preserving(REFERENCES_MAX_SIZE_PROPERTY, TOKEN_REJECT_ENABLED_PROPERTY)
+                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
-                        overridingTwo(REFERENCES_MAX_SIZE_PROPERTY, "3", TOKEN_REJECT_ENABLED_PROPERTY, "true"),
+                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
@@ -540,14 +538,7 @@ public class TokenRejectSuite {
                                 .hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON),
                         // Rejecting with NFT reference with fungible token fails.
                         tokenReject(ACCOUNT, rejectingNFT(FUNGIBLE_TOKEN_B, 1L)).hasKnownStatus(INVALID_NFT_ID),
-                        // Rejecting with more than allowed or 0 references fails.
-                        tokenReject(
-                                        ACCOUNT,
-                                        rejectingNFT(NON_FUNGIBLE_TOKEN_B, 1L),
-                                        rejectingNFT(NON_FUNGIBLE_TOKEN_B, 2L),
-                                        rejectingToken(FUNGIBLE_TOKEN_A),
-                                        rejectingToken(FUNGIBLE_TOKEN_B))
-                                .hasPrecheck(INVALID_TRANSACTION_BODY),
+                        // Rejecting with 0 references fails.
                         tokenReject(ACCOUNT).hasPrecheck(INVALID_TRANSACTION_BODY))))
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN_A, 2L)
