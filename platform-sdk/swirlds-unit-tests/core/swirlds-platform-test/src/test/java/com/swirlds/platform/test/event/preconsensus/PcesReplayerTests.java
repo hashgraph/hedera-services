@@ -47,8 +47,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PcesReplayer Tests")
 class PcesReplayerTests {
 
-    // TODO test health backpressure
-
     @Test
     @DisplayName("Test standard operation")
     void testStandardOperation() {
