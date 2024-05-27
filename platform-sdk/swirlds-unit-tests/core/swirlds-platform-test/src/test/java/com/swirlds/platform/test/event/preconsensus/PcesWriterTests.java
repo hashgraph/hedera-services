@@ -32,20 +32,17 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -133,12 +130,7 @@ class PcesWriterTests {
         }
 
         final PcesFileTracker pcesFiles = PcesFileReader.readFilesFromDisk(
-                platformContext,
-                TestRecycleBin.getInstance(),
-                PcesUtilities.getDatabaseDirectory(platformContext, selfId),
-                0,
-                false,
-                ancientMode);
+                platformContext, PcesUtilities.getDatabaseDirectory(platformContext, selfId), 0, false, ancientMode);
 
         // Verify that the events were written correctly
         final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
@@ -270,6 +262,7 @@ class PcesWriterTests {
     private PlatformContext buildContext(@NonNull final AncientMode ancientMode) {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PcesConfig_.DATABASE_DIRECTORY, testDirectory)
+                .withValue(FileSystemManagerConfig_.ROOT_PATH, testDirectory)
                 .withValue(PcesConfig_.PREFERRED_FILE_SIZE_MEGABYTES, 5)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_BYTES_PER_EVENT, Integer.MAX_VALUE)
                 .withValue(TransactionConfig_.MAX_TRANSACTION_COUNT_PER_EVENT, Integer.MAX_VALUE)
@@ -277,10 +270,10 @@ class PcesWriterTests {
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, ancientMode == BIRTH_ROUND_THRESHOLD)
                 .getOrCreateConfig();
 
-        final Metrics metrics = new NoOpMetrics();
-
-        return new DefaultPlatformContext(
-                configuration, metrics, CryptographyHolder.get(), new FakeTime(Duration.ofMillis(1)));
+        return TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .withTime(new FakeTime(Duration.ofMillis(1)))
+                .build();
     }
 
     /**
@@ -737,12 +730,7 @@ class PcesWriterTests {
 
         // We shouldn't see any files that are incapable of storing events above the minimum
         final PcesFileTracker pcesFiles2 = PcesFileReader.readFilesFromDisk(
-                platformContext,
-                TestRecycleBin.getInstance(),
-                PcesUtilities.getDatabaseDirectory(platformContext, selfId),
-                0,
-                false,
-                ancientMode);
+                platformContext, PcesUtilities.getDatabaseDirectory(platformContext, selfId), 0, false, ancientMode);
 
         pcesFiles2
                 .getFileIterator(NO_LOWER_BOUND, 0)

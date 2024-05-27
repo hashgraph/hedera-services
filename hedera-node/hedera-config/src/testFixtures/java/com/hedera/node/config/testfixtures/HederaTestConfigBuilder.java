@@ -65,6 +65,7 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.SigsConfig;
@@ -84,7 +85,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.io.config.RecycleBinConfig;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -134,8 +135,8 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(StateCommonConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .withConfigDataType(CryptoConfig.class)
-                .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(TemporaryFileConfig.class)
+                .withConfigDataType(FileSystemManagerConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(PrometheusConfig.class)
@@ -189,6 +190,7 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
+                .withConfigDataType(NodesConfig.class)
                 .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
                 .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
                 .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())

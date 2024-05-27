@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.suites.file.DiverseStateCreation.SMALL_FIL
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.STATE_META_JSON_LOC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
@@ -57,8 +56,10 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Client that validates the blobs mentioned in a JSON metadata file created by {@link
@@ -79,7 +80,7 @@ public final class DiverseStateValidation extends HapiSuite {
     private final AtomicReference<Map<String, String>> hexedBytecode = new AtomicReference<>();
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
@@ -91,7 +92,7 @@ public final class DiverseStateValidation extends HapiSuite {
     }
 
     @SuppressWarnings("unchecked")
-    final HapiSpec validateDiverseState() {
+    final Stream<DynamicTest> validateDiverseState() {
         return defaultHapiSpec("ValidateDiverseState")
                 .given(withOpContext((spec, opLog) -> {
                     final var om = new ObjectMapper();

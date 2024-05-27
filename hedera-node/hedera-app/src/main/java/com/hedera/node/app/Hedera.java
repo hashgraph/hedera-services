@@ -50,6 +50,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -91,11 +92,8 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -110,6 +108,7 @@ import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;
@@ -119,6 +118,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -128,6 +128,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.state.HederaState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -245,9 +246,13 @@ public final class Hedera implements SwirldMain {
     =================================================================================================================*/
 
     /**
-     * Create a new Hedera instance.
+     * Creates a Hedera node that will register its own and its services' {@link RuntimeConstructable} factories
+     * with the given {@link ConstructableRegistry}.
      *
-     * @param constructableRegistry The registry to use during the deserialization process
+     * <p>This constructor instantiates several infrastructure components that would be better injected to
+     * improve testability and reuse. (For example, the {@link BootstrapConfigProviderImpl}.)
+     *
+     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      */
     public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
         requireNonNull(constructableRegistry);
@@ -288,6 +293,11 @@ public final class Hedera implements SwirldMain {
         // Create all the service implementations
         logger.info("Registering services");
 
+        // These services are being stored as static fields ONLY to support the mono-to-mod
+        // migration. That is, these Service instances own schemas that need access to mono
+        // state children that aren't available until the platform calls init() on the saved
+        // mono state; so we make these Services instances available to our onStateInitialized()
+        // method by storing them as static fields.
         ENTITY_SERVICE = new EntityIdService();
         CONSENSUS_SERVICE = new ConsensusServiceImpl();
         FILE_SERVICE = new FileServiceImpl(bootstrapConfigProvider);
@@ -319,7 +329,7 @@ public final class Hedera implements SwirldMain {
                         FEE_SERVICE,
                         CONGESTION_THROTTLE_SERVICE,
                         new NetworkServiceImpl())
-                .forEach(service -> servicesRegistry.register(service, version));
+                .forEach(servicesRegistry::register);
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
         // constructor to make sure it has the config and other info it needs to be created correctly.
@@ -331,13 +341,6 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Gets the port the gRPC server is listening on, or {@code -1} if there is no server listening.
-     */
-    public int getGrpcPort() {
-        return daggerApp.grpcServerManager().port();
     }
 
     /**
@@ -389,10 +392,11 @@ public final class Hedera implements SwirldMain {
     /**
      * {@inheritDoc}
      *
-     * <p>Called by the platform <b>ONLY</b> during genesis (that is, if there is no saved state). However, it is also
-     * called indirectly by {@link ConstructableRegistry} due to registration in this class' constructor.
+     * <p>Called by the platform to either build a genesis state, or to deserialize a Merkle node in a saved state
+     * with the stable class id of the Services Merkle tree root during genesis (c.f. our constructor, in which
+     * we register this method as the factory for the {@literal 0x8e300b0dfdafbb1a} class id).
      *
-     * @return A new {@link SwirldState} instance.
+     * @return a Services state object
      */
     @Override
     @NonNull
@@ -726,10 +730,7 @@ public final class Hedera implements SwirldMain {
         final var nextBlockInfo =
                 currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
         blockInfoState.put(nextBlockInfo);
-        logger.info(
-                "Unmarked migration records streamed with block info {} with hash {}",
-                nextBlockInfo,
-                blockInfoState.hashCode());
+        logger.info("Unmarked migration records streamed");
         ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
     }
 
@@ -1097,8 +1098,13 @@ public final class Hedera implements SwirldMain {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        // The Dagger component should be constructed every time we reach this point, even if
+        // it exists. This avoids any problems with mutable singleton state by reconstructing
+        // everything. But we must ensure the gRPC server in the old component is fully stopped.
+        if (daggerApp != null) {
+            shutdownGrpcServer();
+        }
         // Fully qualified so as to not confuse javadoc
-        // DaggerApp should be constructed every time we reach this point, even if exists. This is needed for reconnect
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
                 .configProvider(configProvider)

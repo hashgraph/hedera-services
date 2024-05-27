@@ -27,8 +27,8 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -61,7 +61,6 @@ public final class PcesBirthRoundMigration {
      * been completed.
      *
      * @param platformContext                        the platform context
-     * @param recycleBin                             the recycle bin, used to make emergency backup files
      * @param selfId                                 the ID of this node
      * @param migrationRound                         the round at which the migration is occurring, this will be equal
      *                                               to the round number of the initial state
@@ -69,7 +68,6 @@ public final class PcesBirthRoundMigration {
      */
     public static void migratePcesToBirthRoundMode(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             final long migrationRound,
             final long minimumJudgeGenerationInMigrationRound)
@@ -93,7 +91,7 @@ public final class PcesBirthRoundMigration {
                     EXCEPTION.getMarker(),
                     "PCES birth round migration has already been completed, but there "
                             + "are still legacy formatted PCES files present. Cleaning up.");
-            makeBackupFiles(recycleBin, databaseDirectory);
+            makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
             cleanUpOldFiles(databaseDirectory);
 
             return;
@@ -106,10 +104,10 @@ public final class PcesBirthRoundMigration {
                 migrationRound,
                 minimumJudgeGenerationInMigrationRound);
 
-        makeBackupFiles(recycleBin, databaseDirectory);
+        makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
 
-        final List<GossipEvent> eventsToMigrate = readEventsToBeMigrated(
-                platformContext, recycleBin, selfId, minimumJudgeGenerationInMigrationRound, migrationRound);
+        final List<GossipEvent> eventsToMigrate =
+                readEventsToBeMigrated(platformContext, selfId, minimumJudgeGenerationInMigrationRound, migrationRound);
 
         if (eventsToMigrate.isEmpty()) {
             logger.error(EXCEPTION.getMarker(), "No events to migrate. PCES birth round migration aborted.");
@@ -127,7 +125,7 @@ public final class PcesBirthRoundMigration {
      * Copy PCES files into recycle bin. A measure to reduce the chances of permanent data loss in the event of a
      * migration failure.
      *
-     * @param recycleBin        the recycle bin
+     * @param recycleBin        the fileSystemManager
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
     private static void makeBackupFiles(@NonNull final RecycleBin recycleBin, @NonNull final Path databaseDirectory)
@@ -135,14 +133,14 @@ public final class PcesBirthRoundMigration {
         logger.info(
                 STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
 
-        final Path copyDirectory = TemporaryFileBuilder.buildTemporaryFile("pces-backup");
+        final Path copyDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("pces-backup");
         FileUtils.hardLinkTree(databaseDirectory, copyDirectory);
         recycleBin.recycle(copyDirectory);
     }
 
     /**
      * Find all PCES files beneath a given directory. Unlike the normal process of reading PCES files via
-     * {@link PcesFileReader#readFilesFromDisk(PlatformContext, RecycleBin, Path, long, boolean, AncientMode)}, this
+     * {@link PcesFileReader#readFilesFromDisk(PlatformContext, Path, long, boolean, AncientMode)}, this
      * method ignores discontinuities and returns all files.
      *
      * @param path        the directory tree to search
@@ -168,7 +166,6 @@ public final class PcesBirthRoundMigration {
      * Read all events that will be non-ancient after migration.
      *
      * @param platformContext                        the platform context
-     * @param recycleBin                             the recycle bin
      * @param selfId                                 this node's ID
      * @param minimumJudgeGenerationInMigrationRound the minimum judge generation in the migration round
      * @param migrationRound                         the migration round (i.e. the round number of the state that we are
@@ -178,7 +175,6 @@ public final class PcesBirthRoundMigration {
     @NonNull
     private static List<GossipEvent> readEventsToBeMigrated(
             @NonNull final PlatformContext platformContext,
-            @NonNull final RecycleBin recycleBin,
             @NonNull final NodeId selfId,
             final long minimumJudgeGenerationInMigrationRound,
             final long migrationRound)
@@ -186,7 +182,6 @@ public final class PcesBirthRoundMigration {
 
         final PcesFileTracker originalFiles = PcesFileReader.readFilesFromDisk(
                 platformContext,
-                recycleBin,
                 getDatabaseDirectory(platformContext, selfId),
                 migrationRound,
                 platformContext
@@ -225,7 +220,7 @@ public final class PcesBirthRoundMigration {
             throws IOException {
 
         // First, write the data to a temporary file. If we crash, easier to recover if this operation is atomic.
-        final Path temporaryFile = TemporaryFileBuilder.buildTemporaryFile("new-pces-file");
+        final Path temporaryFile = LegacyTemporaryFileBuilder.buildTemporaryFile("new-pces-file");
         final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
         outputStream.writeInt(PcesMutableFile.FILE_VERSION);

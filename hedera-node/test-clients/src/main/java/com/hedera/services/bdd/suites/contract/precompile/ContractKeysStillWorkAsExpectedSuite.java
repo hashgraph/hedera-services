@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
@@ -66,50 +67,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
-
-    public static void main(String... args) {
-        new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                contractKeysStillHaveSpecificityNoMatterTopLevelSignatures(),
-                canStillTransferByVirtueOfContractIdInEOAThreshold(),
-                approvalFallbacksRequiredWithoutTopLevelSigAccess());
-    }
-
+public class ContractKeysStillWorkAsExpectedSuite {
     @HapiTest
-    final HapiSpec approvalFallbacksRequiredWithoutTopLevelSigAccess() {
+    final Stream<DynamicTest> approvalFallbacksRequiredWithoutTopLevelSigAccess() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -341,7 +313,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canStillTransferByVirtueOfContractIdInEOAThreshold() {
+    final Stream<DynamicTest> canStillTransferByVirtueOfContractIdInEOAThreshold() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
@@ -405,7 +377,7 @@ public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
+    final Stream<DynamicTest> contractKeysStillHaveSpecificityNoMatterTopLevelSignatures() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final var otherContractAsKey = "otherContractAsKey";

@@ -56,8 +56,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -66,6 +64,8 @@ import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -102,7 +102,12 @@ public class InitialModFileGenesisSchema extends Schema {
     private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
     private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
-    /** Create a new instance */
+    /**
+     * Constructs a new {@link InitialModFileGenesisSchema} instance with the given {@link SemanticVersion} and {@link ConfigProvider}.
+     *
+     * @param version the version of the schema
+     * @param configProvider the configuration provider
+     */
     public InitialModFileGenesisSchema(
             @NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
         super(version);
@@ -579,6 +584,12 @@ public class InitialModFileGenesisSchema extends Schema {
                         .build());
     }
 
+    /**
+     * Load the throttle definitions from the bootstrap configuration.
+     *
+     * @param bootstrapConfig the bootstrap configuration
+     * @return the throttle definitions proto as a byte array
+     */
     public static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
         // Get the path to the throttles permissions file
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();

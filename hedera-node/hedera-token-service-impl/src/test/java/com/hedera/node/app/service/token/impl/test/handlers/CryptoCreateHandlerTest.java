@@ -26,12 +26,19 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -70,7 +77,9 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
@@ -91,7 +100,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -102,11 +110,14 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    @Mock(strictness = Strictness.LENIENT)
+    @Mock(strictness = LENIENT)
     private LongSupplier consensusSecondNow;
 
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
+
+    @Mock(strictness = LENIENT)
+    private FeeContext feeContext;
 
     @Mock
     private PropertySource compositeProps;
@@ -174,15 +185,29 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    @DisplayName("test CalculateFees When Free")
+    void testCalculateFeesWhenFree() {
+        var transactionBody = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withMemo("blank")
+                .withKey(A_COMPLEX_KEY)
+                .build();
+        feeCalculator = new FakeFeeCalculator();
+        given(feeContext.body()).willReturn(transactionBody);
+        given(feeContext.feeCalculator(DEFAULT)).willReturn(feeCalculator);
+        final var result = subject.calculateFees(feeContext);
+        assertThat(result).isEqualTo(Fees.FREE);
+    }
+
+    @Test
     @DisplayName("preHandle works when there is a receiverSigRequired")
     void preHandleCryptoCreateVanilla() throws PreCheckException {
         final var context = new FakePreHandleContext(readableStore, txn);
         subject.pureChecks(txn);
         subject.preHandle(context);
-
-        assertEquals(txn, context.body());
+        assertThat(txn).isEqualTo(context.body());
         basicMetaAssertions(context, 1);
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
     }
 
     @Test
@@ -190,7 +215,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void whenInitialBalanceIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withInitialBalance(-1L).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_INITIAL_BALANCE, msg.responseCode());
+        assertThat(INVALID_INITIAL_BALANCE).isEqualTo(msg.responseCode());
     }
 
     @Test
@@ -198,7 +223,22 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void whenNoAutoRenewPeriodSpecified() throws PreCheckException {
         txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_RENEWAL_PERIOD, msg.responseCode());
+        assertThat(INVALID_RENEWAL_PERIOD).isEqualTo(msg.responseCode());
+    }
+
+    @Test
+    @DisplayName("pureChecks succeeds when expected shardId is specified")
+    void validateWhenZeroShardId() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withShardId(0).build();
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
+    }
+
+    @Test
+    @DisplayName("pureChecks fail when invalid maxAutoAssociations is specified")
+    void failsWhenInvalidMaxAutoAssociations() throws PreCheckException {
+        txn = new CryptoCreateBuilder().withMaxAutoAssociations(-5).build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_TRANSACTION_BODY);
     }
 
     @Test
@@ -206,7 +246,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void sendRecordThresholdIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withSendRecordThreshold(-1).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_SEND_RECORD_THRESHOLD, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_SEND_RECORD_THRESHOLD);
     }
 
     @Test
@@ -214,7 +254,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void receiveRecordThresholdIsNegative() throws PreCheckException {
         txn = new CryptoCreateBuilder().withReceiveRecordThreshold(-1).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_RECEIVE_RECORD_THRESHOLD);
     }
 
     @Test
@@ -222,7 +262,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void whenProxyAccountIdIsSpecified() throws PreCheckException {
         txn = new CryptoCreateBuilder().withProxyAccountNum(1).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }
 
     @Test
@@ -232,10 +272,39 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var context = new FakePreHandleContext(readableStore, txn);
         subject.pureChecks(txn);
         subject.preHandle(context);
-
-        assertEquals(txn, context.body());
+        assertThat(txn).isEqualTo(context.body());
         basicMetaAssertions(context, 1);
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
+    }
+
+    @Test
+    @DisplayName("preHandle succeeds when has non zero evm alias")
+    void preHandleWorksWhenHasEvmAlias() throws PreCheckException {
+        final byte[] evmAddress = CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26");
+        txn = new CryptoCreateBuilder()
+                .withAlias(Bytes.wrap(evmAddress))
+                .withStakedAccountId(3)
+                .build();
+        final var context = new FakePreHandleContext(readableStore, txn);
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        basicMetaAssertions(context, 1);
+        assertThat(key).isEqualTo(context.payerKey());
+    }
+
+    @Test
+    @DisplayName("preHandle fails when invalid alias key")
+    void preHandleWorksWhenHasAlias() throws PreCheckException {
+        final Bytes SENDER_ALIAS =
+                Bytes.fromHex("3a21030edcc130e13fb5102e7c883535af8c2b0a5a617231f77fd127ce5f3b9a620591");
+        txn = new CryptoCreateBuilder()
+                .withAlias(SENDER_ALIAS)
+                .withStakedAccountId(3)
+                .build();
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThatThrownBy(() -> subject.preHandle(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ALIAS_KEY));
     }
 
     @Test
@@ -247,12 +316,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         final var context = new FakePreHandleContext(readableStore, noReceiverSigTxn);
         subject.preHandle(context);
-
-        assertEquals(expected.body(), context.body());
+        assertThat(expected.body()).isEqualTo(context.body());
         assertFalse(context.requiredNonPayerKeys().contains(key));
         basicMetaAssertions(context, 0);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
-        assertEquals(key, context.payerKey());
+        assertThat(key).isEqualTo(context.payerKey());
     }
 
     @Test
@@ -717,6 +785,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         private long receiveRecordThreshold = 0;
         private AccountID proxyAccountId = null;
         private long stakedAccountId = 0;
+        private long shardId = 0;
+        private int maxAutoAssociations = -1;
 
         private Key key = otherKey;
 
@@ -753,6 +823,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             }
             if (memo != null) {
                 createTxnBody.memo(memo);
+            }
+            if (maxAutoAssociations != -1) {
+                createTxnBody.maxAutomaticTokenAssociations(maxAutoAssociations);
             }
 
             return TransactionBody.newBuilder()
@@ -819,6 +892,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         public CryptoCreateBuilder withKey(final Key key) {
             this.key = key;
+            return this;
+        }
+
+        public CryptoCreateBuilder withShardId(final long id) {
+            this.shardId = id;
+            return this;
+        }
+
+        public CryptoCreateBuilder withMaxAutoAssociations(final int maxAutoAssociations) {
+            this.maxAutoAssociations = maxAutoAssociations;
             return this;
         }
     }

@@ -58,6 +58,13 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.headlongFromHexed;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
@@ -80,13 +87,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -96,15 +100,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class LazyCreateThroughPrecompileSuite extends HapiSuite {
+public class LazyCreateThroughPrecompileSuite {
 
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -144,34 +149,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final String NOT_ENOUGH_GAS_TXN = "NOT_ENOUGH_GAS_TXN";
     private static final String ECDSA_KEY = "abcdECDSAkey";
 
-    public static void main(String... args) {
-        new LazyCreateThroughPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                erc20TransferLazyCreate(),
-                erc20TransferFromLazyCreate(),
-                erc721TransferFromLazyCreate(),
-                htsTransferFromFungibleTokenLazyCreate(),
-                htsTransferFromForNFTLazyCreate(),
-                resourceLimitExceededRevertsAllRecords(),
-                autoCreationFailsWithMirrorAddress());
-    }
-
     @HapiTest
-    HapiSpec resourceLimitExceededRevertsAllRecords() {
+    final Stream<DynamicTest> resourceLimitExceededRevertsAllRecords() {
         final var n = 4; // preceding child record limit is 3
         final var nft = "nft";
         final var nftKey = NFT_KEY;
@@ -242,7 +221,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec autoCreationFailsWithMirrorAddress() {
+    final Stream<DynamicTest> autoCreationFailsWithMirrorAddress() {
         final var nft = "nft";
         final var nftKey = "nftKeyHere";
         final var creationAttempt = CREATION_ATTEMPT;
@@ -285,7 +264,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc20TransferLazyCreate() {
+    final Stream<DynamicTest> erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -308,7 +287,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> tokenAddr.set(
                                         HapiPropertySource.asHexedSolidityAddress(HapiPropertySource.asToken(id)))),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key. Also, because of gas difference
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
                         cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ERC_20_CONTRACT)))
                 .when(withOpContext((spec, opLog) -> {
@@ -318,6 +299,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                     final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
                     allRunFor(
                             spec,
+                            // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                            // tokenAssociate,
+                            // since we have CONTRACT_ID key. Also, because of gas difference
                             contractCall(
                                             ERC_20_CONTRACT,
                                             TRANSFER_THEN_REVERT,
@@ -325,6 +309,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.valueOf(2))
+                                    .refusingEthConversion()
                                     .via(TRANSFER_THEN_REVERT_TXN)
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -335,6 +320,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.valueOf(2))
+                                    .refusingEthConversion()
                                     .via(TRANSFER_TXN)
                                     .gas(780_000L)
                                     .hasKnownStatus(SUCCESS),
@@ -366,9 +352,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .then();
     }
 
-    // Expected INSUFFICIENT_GAS but was REVERTED_SUCCESS
     @HapiTest
-    final HapiSpec erc20TransferFromLazyCreate() {
+    final Stream<DynamicTest> erc20TransferFromLazyCreate() {
         return defaultHapiSpec(
                         "erc20TransferFromLazyCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -391,7 +376,10 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key. Also, because of gas difference
+
+                        contractCreate(ERC_20_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
@@ -420,6 +408,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getAccountID(OWNER))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.TWO)
+                                    .refusingEthConversion()
                                     .gas(500_000)
                                     .via(NOT_ENOUGH_GAS_TXN)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -433,6 +422,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getAccountID(OWNER))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.TWO)
+                                    .refusingEthConversion()
                                     .gas(4_000_000)
                                     .via(TRANSFER_FROM_ACCOUNT_REVERT_TXN)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -447,6 +437,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getAccountID(OWNER))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.TWO)
+                                    .refusingEthConversion()
                                     .gas(780_000L)
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                     .hasKnownStatus(SUCCESS),
@@ -483,7 +474,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec erc721TransferFromLazyCreate() {
+    final Stream<DynamicTest> erc721TransferFromLazyCreate() {
         return defaultHapiSpec(
                         "erc721TransferFromLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -504,7 +495,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key. Also, because of gas difference
+                        contractCreate(ERC_721_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
@@ -525,6 +518,9 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .signedBy(DEFAULT_PAYER, OWNER)
                                     .fee(ONE_HBAR),
                             getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(ERC_721_CONTRACT),
+                            // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                            // tokenAssociate,
+                            // since we have CONTRACT_ID key. Also, because of gas difference
                             contractCall(
                                             ERC_721_CONTRACT,
                                             TRANSFER_FROM_THEN_REVERT,
@@ -534,6 +530,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getAccountID(OWNER))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.valueOf(1))
+                                    .refusingEthConversion()
                                     .via(TRANSFER_FROM_ACCOUNT_REVERT_TXN)
                                     .gas(GAS_TO_OFFER)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -546,6 +543,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     asAddress(spec.registry().getAccountID(OWNER))),
                                             HapiParserUtil.asHeadlongAddress(addressBytes),
                                             BigInteger.valueOf(1))
+                                    .refusingEthConversion()
                                     .via(TRANSFER_FROM_ACCOUNT_TXN)
                                     .gas(780_000L)
                                     .hasKnownStatus(SUCCESS),
@@ -578,7 +576,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec htsTransferFromFungibleTokenLazyCreate() {
+    final Stream<DynamicTest> htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         return defaultHapiSpec(
@@ -656,7 +654,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec htsTransferFromForNFTLazyCreate() {
+    final Stream<DynamicTest> htsTransferFromForNFTLazyCreate() {
         return defaultHapiSpec(
                         "htsTransferFromForNFTLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -725,7 +723,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
+    final Stream<DynamicTest> revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
         return defaultHapiSpec(
                         "revertedAutoCreationRollsBackEvenIfTopLevelSucceeds",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -740,7 +738,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(AUTO_CREATION_MODES),
-                        contractCreate(AUTO_CREATION_MODES),
+                        // Adding refusingEthConversion() due to fee differences
+                        contractCreate(AUTO_CREATION_MODES).refusingEthConversion(),
                         mintToken(NFT_TOKEN, List.of(META1, META2)),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
@@ -767,6 +766,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                     .gas(GAS_TO_OFFER)
                                     .via(TRANSFER_TXN)
                                     .alsoSigningWithFullPrefix(OWNER)
+                                    .refusingEthConversion()
                                     .hasKnownStatus(SUCCESS));
                 }))
                 .then(

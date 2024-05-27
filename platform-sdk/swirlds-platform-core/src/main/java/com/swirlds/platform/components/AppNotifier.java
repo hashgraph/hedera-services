@@ -18,11 +18,10 @@ package com.swirlds.platform.components;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
-import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -38,14 +37,6 @@ public interface AppNotifier {
     void sendStateWrittenToDiskNotification(@NonNull final StateWriteToDiskCompleteNotification notification);
 
     /**
-     * Send a notification to the app that the state has been loaded from disk.
-     *
-     * @param notification the notification
-     */
-    @InputWireLabel("state loaded notification")
-    void sendStateLoadedFromDiskNotification(@NonNull final StateLoadedFromDiskNotification notification);
-
-    /**
      * Send a notification to the app that a reconnect has completed.
      *
      * @param notification the notification
@@ -56,10 +47,10 @@ public interface AppNotifier {
     /**
      * Send a notification to the app that the platform status has changed.
      *
-     * @param notification the notification
+     * @param newStatus the new status
      */
-    @InputWireLabel("platform status notification")
-    void sendPlatformStatusChangeNotification(@NonNull final PlatformStatusChangeNotification notification);
+    @InputWireLabel("PlatformStatus")
+    void sendPlatformStatusChangeNotification(@NonNull final PlatformStatus newStatus);
 
     /**
      * Send a notification to the app with the latest complete state.
@@ -75,6 +66,6 @@ public interface AppNotifier {
      *
      * @param notification the notification
      */
-    @InputWireLabel("Iss Notification")
+    @InputWireLabel("IssNotification")
     void sendIssNotification(@NonNull final IssNotification notification);
 }

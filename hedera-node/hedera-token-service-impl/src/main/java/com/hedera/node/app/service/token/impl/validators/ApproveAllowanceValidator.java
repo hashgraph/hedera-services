@@ -57,12 +57,22 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ApproveAllowanceValidator extends AllowanceValidator {
-
+    /**
+     * Default constructor for Dagger injection.
+     */
     @Inject
     public ApproveAllowanceValidator() {
         // Dagger
     }
 
+    /**
+     * Validates the {@link CryptoApproveAllowanceTransactionBody} transaction.
+     * It validates the total number of allowances has not exceeded limit, all crypto allowances, fungible token
+     * allowances and nft allowances.
+     * @param context handle context
+     * @param payerAccount payer account for the approveAllowance txn
+     * @param accountStore readable account store
+     */
     public void validate(
             @NonNull final HandleContext context, final Account payerAccount, final ReadableAccountStore accountStore) {
         // create stores and config from context
@@ -118,6 +128,16 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         }
     }
 
+    /**
+     * Validates the FungibleTokenAllowances given in {@link CryptoApproveAllowanceTransactionBody}.
+     * It validates the token exists, owner exists, spender exists, token amount is valid and token is not NFT.
+     * @param tokenAllowances token allowances
+     * @param payer payer account for approveAllowance txn
+     * @param accountStore account store
+     * @param tokenStore token store
+     * @param tokenRelStore token relation store
+     * @param expiryValidator expiry validator
+     */
     private void validateFungibleTokenAllowances(
             final List<TokenAllowance> tokenAllowances,
             @NonNull final Account payer,
@@ -209,6 +229,15 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         }
     }
 
+    /**
+     * Validates the total number of allowances in the transaction. The total number of allowances should not exceed
+     * the configured maximum. The total number of allowances includes the number of crypto allowances, the number of
+     * fungible token allowances and the number of approvedForAll Nft allowances.
+     * @param cryptoAllowances crypto allowances
+     * @param tokenAllowances token allowances
+     * @param nftAllowances nft allowances
+     * @param hederaConfig hedera config
+     */
     private void validateAllowanceCount(
             @NonNull final List<CryptoAllowance> cryptoAllowances,
             @NonNull final List<TokenAllowance> tokenAllowances,
@@ -221,6 +250,13 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         validateTotalAllowancesPerTxn(totalAllowances, hederaConfig);
     }
 
+    /**
+     * Validates some of the token's basic fields like token type and token relation exists.
+     * @param owner owner account
+     * @param spender spender account
+     * @param token token
+     * @param tokenRelStore token relation store
+     */
     private void validateTokenBasics(
             final Account owner,
             final AccountID spender,
@@ -249,12 +285,21 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                 amount == 0 || (spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
+    /**
+     * Validates the NFT serial numbers and the spender account.
+     * @param serialNumbers list of serial numbers
+     * @param spenderAccount spender account
+     */
     private void validateNFTSpender(final List<Long> serialNumbers, final Account spenderAccount) {
         validateTrue(
                 serialNumbers.isEmpty() || (spenderAccount != null && !spenderAccount.deleted()),
                 INVALID_ALLOWANCE_SPENDER_ID);
     }
 
+    /**
+     * Validates the spender account for NFT allowances.
+     * @param spenderAccount spender account
+     */
     private void validateNFTSpender(final Account spenderAccount) {
         validateTrue((spenderAccount != null && !spenderAccount.deleted()), INVALID_ALLOWANCE_SPENDER_ID);
     }

@@ -16,32 +16,21 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
-import com.hedera.node.app.state.merkle.queue.QueueNode;
-import com.hedera.node.app.state.merkle.singleton.SingletonNode;
-import com.hedera.node.app.state.merkle.singleton.StringLeaf;
-import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -52,6 +41,18 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.OnDiskKey;
+import com.swirlds.platform.state.merkle.disk.OnDiskKeySerializer;
+import com.swirlds.platform.state.merkle.disk.OnDiskValue;
+import com.swirlds.platform.state.merkle.disk.OnDiskValueSerializer;
+import com.swirlds.platform.state.merkle.memory.InMemoryValue;
+import com.swirlds.platform.state.merkle.memory.InMemoryWritableKVState;
+import com.swirlds.platform.state.merkle.queue.QueueNode;
+import com.swirlds.platform.state.merkle.singleton.SingletonNode;
+import com.swirlds.platform.state.merkle.singleton.StringLeaf;
+import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -72,7 +73,7 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion, SemanticVersion, Configuration, NetworkInfo, WritableEntityIdStore)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@link com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
@@ -210,9 +211,23 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         logger.info("  Ensuring {} has state {}", serviceName, stateKey);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
-                            hederaState.putServiceStateIfAbsent(md, () -> new SingletonNode<>(md, null));
+                            hederaState.putServiceStateIfAbsent(
+                                    md,
+                                    () -> new SingletonNode<>(
+                                            md.serviceName(),
+                                            md.stateDefinition().stateKey(),
+                                            md.singletonClassId(),
+                                            md.stateDefinition().valueCodec(),
+                                            null));
                         } else if (def.queue()) {
-                            hederaState.putServiceStateIfAbsent(md, () -> new QueueNode<>(md));
+                            hederaState.putServiceStateIfAbsent(
+                                    md,
+                                    () -> new QueueNode<>(
+                                            md.serviceName(),
+                                            md.stateDefinition().stateKey(),
+                                            md.queueNodeClassId(),
+                                            md.singletonClassId(),
+                                            md.stateDefinition().valueCodec()));
                         } else if (!def.onDisk()) {
                             hederaState.putServiceStateIfAbsent(md, () -> {
                                 final var map = new MerkleMap<>();
@@ -220,6 +235,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                 return map;
                             });
                         } else {
+
                             hederaState.putServiceStateIfAbsent(md, () -> {
                                 // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                                 // PREFER_DISK_BASED_INDICES = false
@@ -227,9 +243,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                 (short) 1,
                                                 DigestType.SHA_384,
                                                 (short) 1,
-                                                new OnDiskKeySerializer<>(md),
+                                                new OnDiskKeySerializer<>(
+                                                        md.onDiskKeySerializerClassId(),
+                                                        md.onDiskKeyClassId(),
+                                                        md.stateDefinition().keyCodec()),
                                                 (short) 1,
-                                                new OnDiskValueSerializer<>(md))
+                                                new OnDiskValueSerializer<>(
+                                                        md.onDiskValueSerializerClassId(),
+                                                        md.onDiskValueClassId(),
+                                                        md.stateDefinition().valueCodec()))
                                         .maxNumberOfKeys(def.maxKeysHint());
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
                                 final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
@@ -430,23 +452,53 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // various delegate writers and parsers, and so can parse/write different types of data
         // based on the id.
         try {
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(InMemoryValue.class, () -> new InMemoryValue(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskKey.class, () -> new OnDiskKey<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskValue.class, () -> new OnDiskValue<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(QueueNode.class, () -> new QueueNode<>(md)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    InMemoryValue.class,
+                    () -> new InMemoryValue(
+                            md.inMemoryValueClassId(),
+                            md.stateDefinition().keyCodec(),
+                            md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskKey.class,
+                    () -> new OnDiskKey<>(
+                            md.onDiskKeyClassId(), md.stateDefinition().keyCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskKeySerializer.class,
+                    () -> new OnDiskKeySerializer<>(
+                            md.onDiskKeySerializerClassId(),
+                            md.onDiskKeyClassId(),
+                            md.stateDefinition().keyCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskValue.class,
+                    () -> new OnDiskValue<>(
+                            md.onDiskValueClassId(), md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskValueSerializer.class,
+                    () -> new OnDiskValueSerializer<>(
+                            md.onDiskValueSerializerClassId(),
+                            md.onDiskValueClassId(),
+                            md.stateDefinition().valueCodec())));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    SingletonNode.class,
+                    () -> new SingletonNode<>(
+                            md.serviceName(),
+                            md.stateDefinition().stateKey(),
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec(),
+                            null)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    QueueNode.class,
+                    () -> new QueueNode<>(
+                            md.serviceName(),
+                            md.stateDefinition().stateKey(),
+                            md.queueNodeClassId(),
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(ValueLeaf.class, () -> new ValueLeaf<>(md)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    ValueLeaf.class,
+                    () -> new ValueLeaf<>(
+                            md.singletonClassId(), md.stateDefinition().valueCodec())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new RuntimeException(

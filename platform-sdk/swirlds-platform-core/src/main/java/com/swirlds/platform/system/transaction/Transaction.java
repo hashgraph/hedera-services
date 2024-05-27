@@ -17,7 +17,9 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventPayload;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,23 +30,8 @@ import java.util.concurrent.locks.ReadWriteLock;
  * objects. The list of signatures features controlled mutability with a thread-safe and atomic implementation. The
  * transaction internally uses a {@link ReadWriteLock} to provide atomic reads and writes to the underlying list of
  * signatures.
- * <p>
- * The contents provided by this class via {@link #getContents()} must never be mutated. Providing the direct (mutable)
- * reference improves performance by eliminating the need to create copies.
- * </p>
  */
 public sealed interface Transaction extends SerializableWithKnownLength permits ConsensusTransaction {
-
-    /**
-     * Returns a direct (mutable) reference to the transaction contents/payload. Care must be
-     * taken to never modify the array returned by this accessor. Modifying the array will result in undefined
-     * behaviors.
-     *
-     * @return a direct reference to the transaction content/payload
-     * @deprecated this method will be removed once the migration to protobuf is complete. Use {@link #getPayload()} instead
-     */
-    @Deprecated
-    byte[] getContents();
 
     /**
      * Returns the payload as a PBJ record
@@ -52,6 +39,16 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      */
     @NonNull
     OneOf<EventPayload.PayloadOneOfType> getPayload();
+
+    /**
+     * A convenience method for retrieving the application payload {@link Bytes} object. Before calling this method,
+     * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
+     *
+     * @return the application payload Bytes or null if the payload is a system payload
+     */
+    default @NonNull Bytes getApplicationPayload() {
+        return !isSystem() ? getPayload().as() : Bytes.EMPTY;
+    }
 
     /**
      * Get the size of the transaction
@@ -66,7 +63,9 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
-    boolean isSystem();
+    default boolean isSystem() {
+        return getPayload().kind() != PayloadOneOfType.APPLICATION_PAYLOAD;
+    }
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.

@@ -29,15 +29,15 @@ on:
         type: string
         required: true
         default: "none"
-      # Valid SDK release profiles are as follows:
+      # Valid release profiles are as follows:
       # - none
       # - AdhocCommit
       # - DevelopCommit
       # - DevelopDailySnapshot
       # - DevelopSnapshot
       # - PrereleaseChannel
-      sdk-release-profile:
-        description: "SDK Release Profile:"
+      release-profile:
+        description: "Release Profile:"
         type: string
         required: true
         default: "none"
@@ -687,103 +687,12 @@ jobs:
           name: Production Image Manifests
           path: ${{ env.DOCKER_MANIFEST_PATH }}
 
-  evm-mc-publish:
-    name: Publish EVM to Maven Central
+  publish:
+    name: Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
       - validate
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Install GnuPG Tools
-        if: ${{ inputs.dry-run-enabled != true }}
-        run: |
-          if ! command -v gpg2 >/dev/null 2>&1; then
-            echo "::group::Updating APT Repository Indices"
-              sudo apt update
-            echo "::endgroup::"
-            echo "::group::Installing GnuPG Tools"
-              sudo apt install -y gnupg2
-            echo "::endgroup::"
-          fi
-
-      - name: Import GPG key
-        id: gpg_key
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
-        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
-        with:
-          gpg_private_key: ${{ secrets.svcs-gpg-key-contents }}
-          passphrase: ${{ secrets.svcs-gpg-key-passphrase }}
-          git_config_global: true
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-          git_tag_gpgsign: true
-
-      - name: Setup Java
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
-        with:
-          distribution: ${{ inputs.java-distribution }}
-          java-version: ${{ inputs.java-version }}
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-
-      - name: Restore Build Version
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
-        with:
-          fail-on-cache-miss: true
-          path: version.txt
-          key: node-build-version-${{ needs.validate.outputs.version }}-${{ github.sha }}
-
-      - name: Gradle Update Version (Snapshot)
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSnapshot --scan
-
-      - name: Gradle Assemble
-        id: gradle-build
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
-
-      - name: Gradle Version Summary
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
-
-      - name: Gradle Maven Central Release
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
-        env:
-          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
-          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "releaseEvmMavenCentral --scan -PpublishSigningEnabled=true --no-configuration-cache --no-parallel"
-
-      - name: Gradle Maven Central Snapshot
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy != 'specified' && !cancelled() && !failure() }}
-        env:
-          OSSRH_USERNAME: ${{ secrets.svcs-ossrh-username }}
-          OSSRH_PASSWORD: ${{ secrets.svcs-ossrh-password }}
-        with:
-          gradle-version: ${{ inputs.gradle-version }}
-          arguments: "releaseEvmMavenCentralSnapshot --scan -PpublishSigningEnabled=true --no-configuration-cache --no-parallel"
-
-  sdk-publish:
-    name: Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'GCP Registry' }}
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
-    needs:
-      - validate
-    if: ${{ inputs.sdk-release-profile != 'none' }}
+    if: ${{ inputs.release-profile != 'none' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -924,15 +833,15 @@ jobs:
             gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
           echo "::endgroup::"
 
-      - name: Gradle Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.sdk-release-profile }})
+      - name: Gradle Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
         uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.sdk-release-profile != 'none' && !cancelled() && !failure() }}
+        if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           OSSRH_USERNAME: ${{ secrets.sdk-ossrh-username }}
           OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: "release${{ inputs.sdk-release-profile }} --scan -PpublishSigningEnabled=true --no-configuration-cache --no-parallel"
+          arguments: "release${{ inputs.release-profile }} --scan -PpublishSigningEnabled=true --no-configuration-cache"
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
@@ -949,8 +858,7 @@ jobs:
       - validate
       - local-node-images
       - validate-production-image
-      - evm-mc-publish
-      - sdk-publish
+      - publish
     if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Determine Notification Parameters
@@ -960,7 +868,7 @@ jobs:
           ARTIFACT_LINK_NAME="MC Availability Check"
           ARTIFACT_REGISTRY="Maven Central"
 
-          if [[ "${{ inputs.sdk-release-profile }}" == "PrereleaseChannel" ]]; then
+          if [[ "${{ inputs.release-profile }}" == "PrereleaseChannel" ]]; then
             ARTIFACT_URL="https://console.cloud.google.com/artifacts/maven/swirlds-registry/us/maven-prerelease-channel/com.swirlds:swirlds-platform-core/${{ needs.validate.outputs.version }}?project=swirlds-registry"
             ARTIFACT_LINK_NAME="GCP Registry"
             ARTIFACT_REGISTRY="GCP Artifact Registry"

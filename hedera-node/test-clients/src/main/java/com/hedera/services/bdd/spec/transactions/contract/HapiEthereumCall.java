@@ -107,8 +107,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private HapiEthereumCall() {}
 
     public HapiEthereumCall(String contract) {
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.contract = contract;
         this.payer = Optional.of(RELAYER);
     }
@@ -116,16 +116,16 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public HapiEthereumCall(String account, long amount) {
         this.account = account;
         this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.payer = Optional.of(RELAYER);
     }
 
     public HapiEthereumCall(ByteString account, long amount) {
         this.alias = account;
         this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.payer = Optional.of(RELAYER);
     }
 
@@ -133,26 +133,24 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final var call = new HapiEthereumCall();
         call.explicitTo = to;
         call.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
-        call.abi = FALLBACK_ABI;
-        call.params = new Object[0];
+        call.abi = Optional.of(FALLBACK_ABI);
+        call.params = Optional.of(new Object[0]);
         call.payer = Optional.of(RELAYER);
         return call;
     }
 
     public HapiEthereumCall(final HapiContractCall contractCall) {
-        this.abi = contractCall.getAbi();
-        this.params = contractCall.getParams();
+        this.abi = Optional.of(contractCall.getAbi());
+        this.params = Optional.of(contractCall.getParams());
         this.contract = contractCall.getContract();
         this.txnName = contractCall.getTxnName();
         this.gas = contractCall.getGas();
         this.expectedStatus = Optional.of(contractCall.getExpectedStatus());
-        this.permissibleStatuses = contractCall.getPermissibleStatuses();
         this.payer = contractCall.getPayer();
         this.expectedPrecheck = Optional.of(contractCall.getExpectedPrecheck());
         this.fiddler = contractCall.getFiddler();
         this.memo = contractCall.getMemo();
         this.fee = contractCall.getFee();
-        this.submitDelay = contractCall.getSubmitDelay();
         this.validDurationSecs = contractCall.getValidDurationSeconds();
         this.customTxnId = contractCall.getCustomTxnId();
         this.node = contractCall.getNode();
@@ -180,14 +178,14 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall(String abi, String contract, Object... params) {
-        this.abi = abi;
-        this.params = params;
+        this.abi = Optional.of(abi);
+        this.params = Optional.of(params);
         this.contract = contract;
     }
 
     public HapiEthereumCall(boolean isTokenFlow, String abi, String contract, Object... params) {
-        this.abi = abi;
-        this.params = params;
+        this.abi = Optional.of(abi);
+        this.params = Optional.of(params);
         this.contract = contract;
         this.isTokenFlow = isTokenFlow;
     }
@@ -303,9 +301,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         if (details.isPresent()) {
             ActionableContractCall actionable = spec.registry().getActionableCall(details.get());
             contract = actionable.getContract();
-            abi = actionable.getDetails().getAbi();
-            params = actionable.getDetails().getExampleArgs();
-        } else paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+            abi = Optional.of(actionable.getDetails().getAbi());
+            params = Optional.of(actionable.getDetails().getExampleArgs());
+        } else {
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = Optional.of(hapiApiSpecFunction.apply(spec)));
+        }
 
         byte[] callData = initializeCallData();
 
@@ -388,7 +388,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
         if (resultObserver != null) {
             doObservedLookup(spec, txnSubmitted, rcd -> {
-                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
                 final var result = function.decodeReturn(
                         rcd.getContractCallResult().getContractCallResult().toByteArray());
                 resultObserver.accept(result.toList().toArray());
@@ -438,6 +438,9 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
+        return super.toStringHelper()
+                .add("contract", contract)
+                .add("abi", abi)
+                .add("params", Arrays.toString(params.orElse(null)));
     }
 }

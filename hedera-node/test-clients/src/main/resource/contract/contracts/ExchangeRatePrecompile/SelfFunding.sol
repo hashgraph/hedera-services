@@ -21,6 +21,12 @@ abstract contract SelfFunding {
         tinycents = abi.decode(result, (uint256));
     }
 
+    function callToPrecompileWithValue(uint256 tinybars) internal {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value: msg.value}(
+            abi.encodeWithSelector(IExchangeRate.tinybarsToTinycents.selector, tinybars));
+        require(success);
+    }
+
     modifier costsCents(uint256 cents) {
         uint256 tinycents = cents * TINY_PARTS_PER_WHOLE;
         uint256 requiredTinybars = tinycentsToTinybars(tinycents);

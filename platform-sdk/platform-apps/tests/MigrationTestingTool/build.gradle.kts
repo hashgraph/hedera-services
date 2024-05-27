@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+plugins { id("com.hedera.gradle.application") }
 
 application.mainClass.set("com.swirlds.demo.migration.MigrationTestingToolMain")
+
+testModuleInfo {
+    requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
+}

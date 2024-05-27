@@ -20,6 +20,7 @@ import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -53,6 +54,14 @@ public interface EventCreationManager {
      */
     @InputWireLabel("event window")
     void setEventWindow(@NonNull EventWindow eventWindow);
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    @InputWireLabel("PlatformStatus")
+    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
 
     /**
      * Clear the internal state of the event creation manager.

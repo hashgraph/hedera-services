@@ -25,13 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -202,10 +201,10 @@ public class SyncValidator {
 
             for (final GossipEvent actual : actualList) {
                 final BaseEventHashedData actualHashedData = actual.getHashedData();
-                final BaseEventUnhashedData actualUnhashedData = actual.getUnhashedData();
+                final Bytes actualSignature = actual.getSignature();
 
                 if (expected.getHashedData().equals(actualHashedData)
-                        && expected.getUnhashedData().equals(actualUnhashedData)) {
+                        && expected.getBaseEvent().getSignature().equals(actualSignature)) {
                     foundMatch = true;
                     break;
                 }
@@ -223,7 +222,7 @@ public class SyncValidator {
         if (!expectedAndNotFound.isEmpty()) {
             List<String> missingHashes = expectedAndNotFound.stream()
                     .map(EventImpl::getBaseHash)
-                    .map(h -> CommonUtils.hex(h.getValue(), 4))
+                    .map(h -> h.toHex(4))
                     .collect(Collectors.toList());
             fail(format(
                     "Actual list is missing %s expected event(s) with hash(es) %s",

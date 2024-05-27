@@ -59,6 +59,8 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -85,6 +87,7 @@ public class HevmTransactionFactory {
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
     private final HederaConfig hederaConfig;
+    private final FeatureFlags featureFlags;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
@@ -95,12 +98,14 @@ public class HevmTransactionFactory {
     private final AttributeValidator attributeValidator;
     private final HydratedEthTxData hydratedEthTxData;
     private final EthTxSigsCache ethereumSignatures;
+    private final HederaEvmContext hederaEvmContext;
 
     @Inject
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final HederaConfig hederaConfig,
+            @NonNull final FeatureFlags featureFlags,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
@@ -110,7 +115,9 @@ public class HevmTransactionFactory {
             @NonNull @InitialState final ReadableFileStore fileStore,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull @InitialState final TokenServiceApi tokenServiceApi,
-            @NonNull final EthTxSigsCache ethereumSignatures) {
+            @NonNull final EthTxSigsCache ethereumSignatures,
+            @NonNull final HederaEvmContext hederaEvmContext) {
+        this.featureFlags = featureFlags;
         this.hydratedEthTxData = hydratedEthTxData;
         this.gasCalculator = requireNonNull(gasCalculator);
         this.fileStore = requireNonNull(fileStore);
@@ -123,7 +130,8 @@ public class HevmTransactionFactory {
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
         this.expiryValidator = requireNonNull(expiryValidator);
         this.attributeValidator = requireNonNull(attributeValidator);
-        this.ethereumSignatures = ethereumSignatures;
+        this.ethereumSignatures = requireNonNull(ethereumSignatures);
+        this.hederaEvmContext = requireNonNull(hederaEvmContext);
     }
 
     /**
@@ -198,6 +206,7 @@ public class HevmTransactionFactory {
             @NonNull final AccountID senderId,
             @NonNull final EthTxData ethTxData,
             final long maxGasAllowance) {
+        validateTrue(ethTxData.getAmount() >= 0, CONTRACT_NEGATIVE_VALUE);
         return new HederaEvmTransaction(
                 senderId,
                 relayerId,
@@ -211,7 +220,7 @@ public class HevmTransactionFactory {
                 Bytes.wrap(ethTxData.chainId()),
                 ethTxData.effectiveTinybarValue(),
                 ethTxData.gasLimit(),
-                ethTxData.effectiveOfferedGasPriceInTinybars(),
+                ethTxData.effectiveOfferedGasPriceInTinybars(hederaEvmContext.gasPrice()),
                 maxGasAllowance,
                 null,
                 null);
@@ -231,7 +240,7 @@ public class HevmTransactionFactory {
                 Bytes.wrap(ethTxData.chainId()),
                 ethTxData.effectiveTinybarValue(),
                 ethTxData.gasLimit(),
-                ethTxData.effectiveOfferedGasPriceInTinybars(),
+                ethTxData.effectiveOfferedGasPriceInTinybars(hederaEvmContext.gasPrice()),
                 maxGasAllowance,
                 synthEthTxCreation(ledgerConfig.autoRenewPeriodMinDuration(), ethTxData),
                 null);
@@ -291,8 +300,10 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
 
         final var contract = accountStore.getContractById(body.contractIDOrThrow());
-        if (contract != null && !contractsConfig.evmAllowCallsToNonContractAccounts()) {
-            validateFalse(contract.deleted(), CONTRACT_DELETED);
+        if (contract != null) {
+            final var contractNum = contract.accountIdOrThrow().accountNumOrThrow();
+            final var mayNotExist = featureFlags.isAllowCallsToNonContractAccountsEnabled(contractsConfig, contractNum);
+            validateTrue(mayNotExist || !contract.deleted(), CONTRACT_DELETED);
         }
     }
 

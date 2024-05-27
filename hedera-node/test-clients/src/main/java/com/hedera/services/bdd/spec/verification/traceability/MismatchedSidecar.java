@@ -16,24 +16,8 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
+import com.hedera.services.bdd.spec.assertions.matchers.TransactionSidecarRecordMatcher;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 public record MismatchedSidecar(
-        TransactionSidecarRecord expectedSidecarRecord, TransactionSidecarRecord actualSidecarRecord) {
-
-    /**
-     * Check if the expected or actual sidecar record has actions.
-     * @return {@code true} if either of the records has actions.
-     */
-    public boolean hasActions() {
-        return expectedSidecarRecord.hasActions() || actualSidecarRecord.hasActions();
-    }
-
-    /**
-     * Check if the expected or actual sidecar record has state changes.
-     * @return {@code true} if either of the records has state changes.
-     */
-    public boolean hasStateChanges() {
-        return expectedSidecarRecord.hasStateChanges() || actualSidecarRecord.hasStateChanges();
-    }
-}
+        TransactionSidecarRecordMatcher expectedSidecarRecordMatcher, TransactionSidecarRecord actualSidecarRecord) {}

@@ -21,7 +21,6 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.consensus.EventWindow;
@@ -197,16 +196,14 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
         }
 
         final boolean isSignatureValid = signatureVerifier.verifySignature(
-                event.getHashedData().getHash().getValue(),
-                event.getUnhashedData().getSignature(),
-                publicKey);
+                event.getHashedData().getHash().getBytes(), event.getSignature(), publicKey);
 
         if (!isSignatureValid) {
             rateLimitedLogger.error(
                     EXCEPTION.getMarker(),
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
-                    CommonUtils.hex(event.getUnhashedData().getSignature()),
+                    event.getSignature().toHex(),
                     event.getHashedData().getHash());
         }
 

@@ -165,19 +165,6 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         return Objects.hash(payload);
     }
 
-    /**
-     * This method just returns null. It is a temporary method that will be removed once we switch to StateSignaturePayload.
-     */
-    @Override
-    public byte[] getContents() {
-        return null;
-    }
-
-    @Override
-    public boolean isSystem() {
-        return true;
-    }
-
     @Override
     public @NonNull OneOf<PayloadOneOfType> getPayload() {
         return payload;

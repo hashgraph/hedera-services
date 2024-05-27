@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.infra;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -42,6 +43,7 @@ import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYB
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_DELETED_CONTRACT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
@@ -89,6 +91,8 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
@@ -127,6 +131,9 @@ class HevmTransactionFactoryTest {
     private GasCalculator gasCalculator;
 
     @Mock
+    private FeatureFlags featureFlags;
+
+    @Mock
     private ReadableFileStore fileStore;
 
     @Mock
@@ -138,6 +145,11 @@ class HevmTransactionFactoryTest {
     @Mock
     private AttributeValidator attributeValidator;
 
+    @Mock
+    private HederaEvmContext context;
+
+    private static final long TOP_LEVEL_TINYBAR_GAS_PRICE = 100L;
+
     private HevmTransactionFactory subject;
 
     @BeforeEach
@@ -146,6 +158,7 @@ class HevmTransactionFactoryTest {
                 networkInfo,
                 DEFAULT_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
+                featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
@@ -155,7 +168,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     @Test
@@ -208,6 +222,38 @@ class HevmTransactionFactoryTest {
         assertNull(transaction.chainId());
         assertEquals(0L, transaction.value());
         assertEquals(30_000L, transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiCallThrowsOnDeletedContractIfFeatureFlagNotEnabled() {
+        given(accountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(A_DELETED_CONTRACT);
+        assertCallFailsWith(CONTRACT_DELETED, b -> b.amount(123L)
+                .functionParameters(CALL_DATA)
+                .contractID(CALLED_CONTRACT_ID)
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec()));
+    }
+
+    @Test
+    void fromHapiCallIgnoresDeletedContractIfFeatureFlagEnabled() {
+        given(accountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(A_DELETED_CONTRACT);
+        given(featureFlags.isAllowCallsToNonContractAccountsEnabled(
+                        DEFAULT_CONTRACTS_CONFIG, CALLED_CONTRACT_ID.contractNumOrThrow()))
+                .willReturn(true);
+        final var transaction = getManufacturedCall(b -> b.amount(123L)
+                .functionParameters(CALL_DATA)
+                .contractID(CALLED_CONTRACT_ID)
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec()));
+        assertEquals(SENDER_ID, transaction.senderId());
+        assertEquals(CALLED_CONTRACT_ID, transaction.contractId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(CALL_DATA, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(123L, transaction.value());
+        assertEquals(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec(), transaction.gasLimit());
         assertFalse(transaction.hasOfferedGasPrice());
         assertFalse(transaction.hasMaxGasAllowance());
         assertNull(transaction.hapiCreation());
@@ -522,7 +568,6 @@ class HevmTransactionFactoryTest {
         givenInsteadHydratedEthTxWithRightChainId(ETH_DATA_WITH_TO_ADDRESS);
         final var sig = EthTxSigs.extractSignatures(ETH_DATA_WITH_TO_ADDRESS);
         given(ethereumSignatures.computeIfAbsent(ETH_DATA_WITH_TO_ADDRESS)).willReturn(sig);
-        System.out.println(ETH_DATA_WITH_TO_ADDRESS);
         final var transaction = getManufacturedEthTx(b -> b.maxGasAllowance(MAX_GAS_ALLOWANCE));
         final var expectedSenderId =
                 AccountID.newBuilder().alias(Bytes.wrap(sig.address())).build();
@@ -541,7 +586,7 @@ class HevmTransactionFactoryTest {
         assertEquals(ETH_DATA_WITH_TO_ADDRESS.gasLimit(), transaction.gasLimit());
         assertEquals(
                 ETH_DATA_WITH_TO_ADDRESS
-                        .getMaxGasAsBigInteger()
+                        .getMaxGasAsBigInteger(TOP_LEVEL_TINYBAR_GAS_PRICE)
                         .divide(WEIBARS_TO_TINYBARS)
                         .longValueExact(),
                 transaction.offeredGasPrice());
@@ -568,7 +613,9 @@ class HevmTransactionFactoryTest {
         assertEquals(Bytes.wrap(dataToUse.chainId()), transaction.chainId());
         assertEquals(dataToUse.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), transaction.value());
         assertEquals(dataToUse.gasLimit(), transaction.gasLimit());
-        assertEquals(dataToUse.effectiveOfferedGasPriceInTinybars(), transaction.offeredGasPrice());
+        assertEquals(
+                dataToUse.effectiveOfferedGasPriceInTinybars(TOP_LEVEL_TINYBAR_GAS_PRICE),
+                transaction.offeredGasPrice());
         assertEquals(MAX_GAS_ALLOWANCE, transaction.maxGasAllowance());
 
         final var minAutoRenewPeriod = Duration.newBuilder()
@@ -670,6 +717,7 @@ class HevmTransactionFactoryTest {
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
+                featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
@@ -679,7 +727,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     private void givenInsteadFailedHydrationSubject() {
@@ -687,6 +736,7 @@ class HevmTransactionFactoryTest {
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
+                featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
@@ -696,7 +746,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     private void givenInsteadHydratedEthTxWithWrongChainId(@NonNull final EthTxData ethTxData) {
@@ -704,6 +755,7 @@ class HevmTransactionFactoryTest {
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
+                featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
@@ -713,7 +765,8 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 
     private void givenInsteadHydratedEthTxWithRightChainId(@NonNull final EthTxData ethTxData) {
@@ -721,6 +774,7 @@ class HevmTransactionFactoryTest {
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
+                featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEV_CHAIN_ID_CONTRACTS_CONFIG,
@@ -730,6 +784,7 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi,
-                ethereumSignatures);
+                ethereumSignatures,
+                context);
     }
 }

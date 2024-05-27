@@ -61,6 +61,9 @@ import org.apache.logging.log4j.Logger;
 public class FileAppendHandler implements TransactionHandler {
     private static final Logger logger = LogManager.getLogger(FileAppendHandler.class);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public FileAppendHandler() {
         // Exists for injection

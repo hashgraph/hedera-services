@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.token;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newAliasedAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKycWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -52,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccountWithAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -62,6 +65,16 @@ import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuc
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.CIVILIAN;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -83,29 +96,24 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Granted;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
+import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenManagementSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
+public class TokenManagementSpecs {
     private static final String SUPPLE = "supple";
     private static final String SHOULD_NOT_APPEAR = "should-not-appear";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
@@ -115,34 +123,8 @@ public class TokenManagementSpecs extends HapiSuite {
     private static final String ONE_KYC = "oneKyc";
     private static final String RIGID = "rigid";
 
-    public static void main(String... args) {
-        new TokenManagementSpecs().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                freezeMgmtSuccessCasesWork(),
-                kycMgmtFailureCasesWork(),
-                kycMgmtSuccessCasesWork(),
-                supplyMgmtSuccessCasesWork(),
-                wipeAccountFailureCasesWork(),
-                wipeAccountSuccessCasesWork(),
-                supplyMgmtFailureCasesWork(),
-                burnTokenFailsDueToInsufficientTreasuryBalance(),
-                frozenTreasuryCannotBeMintedOrBurned(),
-                revokedKYCTreasuryCannotBeMintedOrBurned(),
-                fungibleCommonMaxSupplyReachWork(),
-                mintingMaxLongValueWorks(),
-                nftMintProvidesMintedNftsAndNewTotalSupply(),
-                zeroUnitTokenOperationsWorkAsExpected(),
-                aliasFormFailsForAllTokenOps()
-                // aliasFormWorksForAllTokenOps(), // this will be enabled when alias forms are allowed in all token ops
-                );
-    }
-
     @HapiTest
-    private HapiSpec aliasFormFailsForAllTokenOps() {
+    final Stream<DynamicTest> aliasFormFailsForAllTokenOps() {
         final var CIVILIAN = "civilian";
         final var PAUSE_KEY = "pauseKey";
         final var KYC_KEY = "kycKey";
@@ -161,8 +143,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         newKeyNamed(KYC_KEY),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(WIPE_KEY),
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, partyAlias, ONE_HBAR)),
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, counterAlias, ONE_HBAR)))
+                        newAliasedAccount(partyAlias))
                 .when(
                         tokenCreate(PRIMARY)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -196,19 +177,21 @@ public class TokenManagementSpecs extends HapiSuite {
                         tokenUnfreezeWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
 
                         // wipe won't happen if the kyc key exists and kyc not granted
-                        grantTokenKycWithAlias(PRIMARY, partyAlias).hasPrecheck(INVALID_ACCOUNT_ID),
-                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1).hasPrecheck(INVALID_ACCOUNT_ID))
+                        grantTokenKycWithAlias(PRIMARY, partyAlias)
+                                .hasPrecheck(INVALID_ACCOUNT_ID)
+                                .logged(),
+                        tokenAssociate(partyAlias, PRIMARY),
+                        grantTokenKyc(PRIMARY, partyAlias),
+                        cryptoTransfer(moving(1, PRIMARY).between(TOKEN_TREASURY, partyAlias))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
+                        // Only wipe works with alias apart from CryptoTransfer
+                        wipeTokenAccountWithAlias(PRIMARY, partyAlias, 1))
                 .then();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
     }
 
     //    @HapiTest
     // This test should be enabled when aliases are supported in all transaction bodies
-    private HapiSpec aliasFormWorksForAllTokenOps() {
+    final Stream<DynamicTest> aliasFormWorksForAllTokenOps() {
         final var CIVILIAN = "civilian";
         final var PAUSE_KEY = "pauseKey";
         final var KYC_KEY = "kycKey";
@@ -302,7 +285,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getNftInfoIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> getNftInfoIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getNftInfoIdVariantsTreatedAsExpected")
                 .given(newKeyNamed("supplyKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(
@@ -318,7 +301,7 @@ public class TokenManagementSpecs extends HapiSuite {
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
     // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
-    final HapiSpec zeroUnitTokenOperationsWorkAsExpected() {
+    final Stream<DynamicTest> zeroUnitTokenOperationsWorkAsExpected() {
         final var civilian = "civilian";
         final var adminKey = "adminKey";
         final var fungible = "fungible";
@@ -376,7 +359,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
+    final Stream<DynamicTest> frozenTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -397,7 +380,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec revokedKYCTreasuryCannotBeMintedOrBurned() {
+    final Stream<DynamicTest> revokedKYCTreasuryCannotBeMintedOrBurned() {
         return defaultHapiSpec(
                         "RevokedKYCTreasuryCannotBeMintedOrBurned", SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
@@ -419,7 +402,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec burnTokenFailsDueToInsufficientTreasuryBalance() {
+    final Stream<DynamicTest> burnTokenFailsDueToInsufficientTreasuryBalance() {
         final String BURN_TOKEN = "burn";
         final int TOTAL_SUPPLY = 100;
         final int TRANSFER_AMOUNT = 50;
@@ -452,7 +435,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec wipeAccountSuccessCasesWork() {
+    final Stream<DynamicTest> wipeAccountSuccessCasesWork() {
         var wipeableToken = "with";
 
         return defaultHapiSpec("WipeAccountSuccessCasesWork")
@@ -483,7 +466,53 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec wipeAccountFailureCasesWork() {
+    final Stream<DynamicTest> wipeAccountWithAliasesWork() {
+        final var initialTokenSupply = 1000;
+        return defaultHapiSpec("wipeAccountWithAliasesWork")
+                .given(
+                        newKeyNamed(VALID_ALIAS),
+                        newKeyNamed("wipeKey"),
+                        cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
+                                .wipeKey("wipeKey")
+                                .treasury(TOKEN_TREASURY)
+                                .via(TOKEN_A_CREATE),
+                        getTxnRecord(TOKEN_A_CREATE).hasNewTokenAssociation(A_TOKEN, TOKEN_TREASURY),
+                        tokenAssociate(CIVILIAN, A_TOKEN),
+                        cryptoTransfer(moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN)),
+                        getAccountInfo(CIVILIAN)
+                                .hasToken(relationshipWith(A_TOKEN).balance(10)))
+                .when(
+                        cryptoTransfer(
+                                        movingHbar(10L).between(CIVILIAN, VALID_ALIAS),
+                                        moving(5, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
+                                .signedBy(DEFAULT_PAYER, CIVILIAN)
+                                .via(TRANSFER_TXN),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN).balance(5L))
+                                .logged())
+                .then(
+                        wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 4).via(WIPE_TXN),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN).balance(1L))
+                                .logged(),
+                        wipeTokenAccountWithAlias(A_TOKEN, VALID_ALIAS, 0),
+                        getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith().balance(10L))
+                                .hasToken(relationshipWith(A_TOKEN).balance(1L))
+                                .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> wipeAccountFailureCasesWork() {
         var unwipeableToken = "without";
         var wipeableToken = "with";
         var wipeableUniqueToken = "uniqueWith";
@@ -539,7 +568,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec kycMgmtFailureCasesWork() {
+    final Stream<DynamicTest> kycMgmtFailureCasesWork() {
         var withoutKycKey = "withoutKycKey";
         var withKycKey = "withKycKey";
 
@@ -568,7 +597,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec updateIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> updateIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("updateIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("adminKey"),
@@ -582,7 +611,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec wipeIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> wipeIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("wipeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("wipeKey"),
@@ -593,7 +622,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec grantRevokeIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> grantRevokeIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("grantRevokeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("kycKey"),
@@ -608,7 +637,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec pauseUnpauseIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> pauseUnpauseIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("pauseUnpauseIdVariantsTreatedAsExpected")
                 .given(newKeyNamed("pauseKey"), tokenCreate("t").pauseKey("pauseKey"))
                 .when()
@@ -618,7 +647,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec freezeUnfreezeIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> freezeUnfreezeIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("freezeUnfreezeIdVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("freezeKey"),
@@ -632,7 +661,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec mintBurnIdVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> mintBurnIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("mintBurnIdVariantsTreatedAsExpected")
                 .given(newKeyNamed("supplyKey"), tokenCreate("t").supplyKey("supplyKey"))
                 .when()
@@ -642,7 +671,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec freezeMgmtSuccessCasesWork() {
+    final Stream<DynamicTest> freezeMgmtSuccessCasesWork() {
         var withPlusDefaultFalse = "withPlusDefaultFalse";
 
         return defaultHapiSpec("FreezeMgmtSuccessCasesWork")
@@ -668,7 +697,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec kycMgmtSuccessCasesWork() {
+    final Stream<DynamicTest> kycMgmtSuccessCasesWork() {
         var withKycKey = "withKycKey";
         var withoutKycKey = "withoutKycKey";
 
@@ -695,7 +724,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec supplyMgmtSuccessCasesWork() {
+    final Stream<DynamicTest> supplyMgmtSuccessCasesWork() {
         return defaultHapiSpec("SupplyMgmtSuccessCasesWork")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -718,7 +747,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec fungibleCommonMaxSupplyReachWork() {
+    final Stream<DynamicTest> fungibleCommonMaxSupplyReachWork() {
         return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -745,7 +774,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintingMaxLongValueWorks() {
+    final Stream<DynamicTest> mintingMaxLongValueWorks() {
         return defaultHapiSpec("MintingMaxLongValueWorks")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -761,7 +790,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nftMintProvidesMintedNftsAndNewTotalSupply() {
+    final Stream<DynamicTest> nftMintProvidesMintedNftsAndNewTotalSupply() {
         final var multiKey = "multi";
         final var token = "non-fungible";
         final var txn = "mint";
@@ -788,7 +817,7 @@ public class TokenManagementSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec supplyMgmtFailureCasesWork() {
+    final Stream<DynamicTest> supplyMgmtFailureCasesWork() {
         return defaultHapiSpec("SupplyMgmtFailureCasesWork")
                 .given(newKeyNamed(SUPPLY_KEY))
                 .when(
@@ -803,10 +832,5 @@ public class TokenManagementSpecs extends HapiSuite {
                         burnToken(SUPPLE, 2).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
                         burnToken(SUPPLE, 0).hasPrecheck(OK),
                         burnToken(SUPPLE, -1).hasPrecheck(INVALID_TOKEN_BURN_AMOUNT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

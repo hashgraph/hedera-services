@@ -25,10 +25,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -135,9 +135,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder())
                 .transactionID(transactionID)
                 .build();
-        final var context = new FakePreHandleContext(accountStore, txn);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_CONTRACT_ID);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_CONTRACT_ID);
     }
 
     @Test
@@ -202,41 +201,30 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void handleWithInvalidKeyFails() {
-        when(accountStore.getContractById(targetContract)).thenReturn(contract);
-
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
                         .adminKey(Key.newBuilder()))
                 .transactionID(transactionID)
                 .build();
-        when(context.body()).thenReturn(txn);
 
-        assertFailsWith(INVALID_ADMIN_KEY, () -> subject.handle(context));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ADMIN_KEY);
     }
 
     @Test
-    void handleWithInvalidContractIdKeyFails() {
-        when(accountStore.getContractById(targetContract)).thenReturn(contract);
-
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+    void invalidContractIdKeyFails() {
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
                         .adminKey(Key.newBuilder().contractID(ContractID.DEFAULT)))
                 .transactionID(transactionID)
                 .build();
-        when(context.body()).thenReturn(txn);
 
-        assertFailsWith(INVALID_ADMIN_KEY, () -> subject.handle(context));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ADMIN_KEY);
     }
 
     @Test
     void handleWithAValidContractIdKeyFails() {
-        when(accountStore.getContractById(targetContract)).thenReturn(contract);
-
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -244,9 +232,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                                 .contractID(ContractID.newBuilder().contractNum(100))))
                 .transactionID(transactionID)
                 .build();
-        when(context.body()).thenReturn(txn);
 
-        assertFailsWith(INVALID_ADMIN_KEY, () -> subject.handle(context));
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ADMIN_KEY);
     }
 
     @Test

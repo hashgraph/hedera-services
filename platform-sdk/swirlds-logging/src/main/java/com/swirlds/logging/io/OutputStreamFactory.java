@@ -36,17 +36,17 @@ public class OutputStreamFactory {
     private static final String FILE_NAME_PROPERTY = ".file";
     private static final String APPEND_PROPERTY = ".append";
     private static final String SIZE_PROPERTY = ".file-rolling.maxFileSize";
-    private static final String MAX_ROLLOVER = ".file-rolling.maxRollover";
+    private static final String MAX_ROLLOVER = ".file-rolling.maxFiles";
     private static final String DEFAULT_FILE_NAME = "swirlds-log.log";
     private static final int DEFAULT_MAX_ROLLOVER_FILES = 1;
     private static final int BUFFER_CAPACITY = 8192 * 8;
 
-    private static class InstanceHolder {
-        private static final OutputStreamFactory instance = new OutputStreamFactory();
+    private static final class InstanceHolder {
+        private static final OutputStreamFactory INSTANCE = new OutputStreamFactory();
     }
 
     public static OutputStreamFactory getInstance() {
-        return InstanceHolder.instance;
+        return InstanceHolder.INSTANCE;
     }
 
     /**
