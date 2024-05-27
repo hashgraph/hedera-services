@@ -28,8 +28,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 
-// TODO unit test
-
 /**
  * Manages sync permits.
  */
@@ -126,7 +124,7 @@ public class SyncPermitProvider {
         permitsRevokedPerSecond = syncConfig.permitsRevokedPerSecond();
         permitsReturnedPerSecond = syncConfig.permitsReturnedPerSecond();
         unhealthyGracePeriod = syncConfig.unhealthyGracePeriod();
-        minimumUnrevokedPermitCount = Math.max(totalPermits, syncConfig.minimumHealthyUnrevokedPermitCount());
+        minimumUnrevokedPermitCount = Math.min(totalPermits, syncConfig.minimumHealthyUnrevokedPermitCount());
 
         // We are healthy at startup time
         healthy = true;
