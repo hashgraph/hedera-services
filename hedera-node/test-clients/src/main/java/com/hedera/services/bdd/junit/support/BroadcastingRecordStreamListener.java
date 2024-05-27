@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.support;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isRecordFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isSidecarFile;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -35,6 +36,10 @@ import org.apache.logging.log4j.Logger;
  */
 public class BroadcastingRecordStreamListener extends FileAlterationListenerAdaptor {
     private static final Logger log = LogManager.getLogger(BroadcastingRecordStreamListener.class);
+
+    private static final int NUM_RETRIES = 32;
+    private static final long RETRY_BACKOFF_MS = 500L;
+
     private final List<StreamDataListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
@@ -57,7 +62,7 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
     @Override
     public void onFileCreate(final File file) {
         switch (typeOf(file)) {
-            case RECORD_STREAM_FILE -> retryExposingVia(this::exposeItems, "record stream", file);
+            case RECORD_STREAM_FILE -> retryExposingVia(this::exposeItems, "record", file);
             case SIDE_CAR_FILE -> retryExposingVia(this::exposeSidecars, "sidecar", file);
             case OTHER -> {
                 // Nothing to expose
@@ -72,11 +77,16 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
             retryCount++;
             try {
                 exposure.accept(f);
+                log.info(
+                        "Listener@{} gave validators access to {} file {}",
+                        System.identityHashCode(this),
+                        fileType,
+                        f.getAbsolutePath());
                 return;
             } catch (UncheckedIOException e) {
-                if (retryCount < 8) {
+                if (retryCount < NUM_RETRIES) {
                     try {
-                        Thread.sleep(500);
+                        MILLISECONDS.sleep(RETRY_BACKOFF_MS);
                     } catch (InterruptedException ignored) {
                         Thread.currentThread().interrupt();
                         return;
@@ -90,13 +100,11 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
     }
 
     private void exposeSidecars(final File file) {
-        log.info("Providing validators with access to sidecar stream file {}", file.getAbsolutePath());
         final var contents = RecordStreamAccess.ensurePresentSidecarFile(file.getAbsolutePath());
         contents.getSidecarRecordsList().forEach(sidecar -> listeners.forEach(l -> l.onNewSidecar(sidecar)));
     }
 
     private void exposeItems(final File file) {
-        log.info("Providing validators with access to record stream file {}", file.getAbsolutePath());
         final var contents = RecordStreamAccess.ensurePresentRecordFile(file.getAbsolutePath());
         contents.getRecordStreamItemsList().forEach(item -> listeners.forEach(l -> l.onNewItem(item)));
     }

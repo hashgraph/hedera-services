@@ -103,7 +103,6 @@ import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
-import com.swirlds.platform.wiring.components.IssHandlerWiring;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import com.swirlds.platform.wiring.components.PcesReplayerWiring;
 import com.swirlds.platform.wiring.components.RunningEventHashOverrideWiring;
@@ -114,15 +113,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.LongSupplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Encapsulates wiring for {@link com.swirlds.platform.SwirldsPlatform}.
  */
 public class PlatformWiring {
-
-    private static final Logger logger = LogManager.getLogger(PlatformWiring.class);
 
     private final WiringModel model;
 
@@ -152,7 +147,7 @@ public class PlatformWiring {
     private final ComponentWiring<ConsensusEventStream, Void> consensusEventStreamWiring;
     private final RunningEventHashOverrideWiring runningEventHashOverrideWiring;
     private final ComponentWiring<IssDetector, List<IssNotification>> issDetectorWiring;
-    private final IssHandlerWiring issHandlerWiring;
+    private final ComponentWiring<IssHandler, Void> issHandlerWiring;
     private final ComponentWiring<HashLogger, Void> hashLoggerWiring;
     private final ComponentWiring<LatestCompleteStateNotifier, CompleteStateNotificationWithCleanup>
             latestCompleteStateNotifierWiring;
@@ -271,7 +266,7 @@ public class PlatformWiring {
                         .cast());
 
         issDetectorWiring = new ComponentWiring<>(model, IssDetector.class, config.issDetector());
-        issHandlerWiring = IssHandlerWiring.create(schedulers.issHandlerScheduler());
+        issHandlerWiring = new ComponentWiring<>(model, IssHandler.class, config.issHandler());
         hashLoggerWiring = new ComponentWiring<>(model, HashLogger.class, config.hashLogger());
 
         latestCompleteStateNotifierWiring = new ComponentWiring<>(
@@ -484,7 +479,7 @@ public class PlatformWiring {
                 .getConfigData(EventCreationConfig.class)
                 .creationAttemptRate();
         model.buildHeartbeatWire(eventCreationHeartbeatFrequency)
-                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent));
+                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent), OFFER);
         model.buildHeartbeatWire(platformContext
                         .getConfiguration()
                         .getConfigData(PlatformStatusConfig.class)
@@ -678,7 +673,7 @@ public class PlatformWiring {
                         .getConfiguration()
                         .getConfigData(PcesConfig.class)
                         .roundDurabilityBufferHeartbeatPeriod())
-                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds));
+                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds), OFFER);
 
         stateSnapshotManagerWiring
                 .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
@@ -695,7 +690,7 @@ public class PlatformWiring {
                 .solderTo(consensusEventStreamWiring.getInputWire(ConsensusEventStream::legacyHashOverride));
 
         final OutputWire<IssNotification> splitIssDetectorOutput = issDetectorWiring.getSplitOutput();
-        splitIssDetectorOutput.solderTo(issHandlerWiring.issNotificationInput());
+        splitIssDetectorOutput.solderTo(issHandlerWiring.getInputWire(IssHandler::issObserved));
         issDetectorWiring
                 .getSplitAndTransformedOutput(IssDetector::getStatusAction)
                 .solderTo(statusStateMachineWiring.getInputWire(StatusStateMachine::submitStatusAction));
@@ -757,7 +752,6 @@ public class PlatformWiring {
      * @param stateSignatureCollector   the signed state manager to bind
      * @param eventWindowManager        the event window manager to bind
      * @param consensusRoundHandler     the consensus round handler to bind
-     * @param issHandler                the ISS handler to bind
      * @param birthRoundMigrationShim   the birth round migration shim to bind, ignored if birth round migration has not
      *                                  yet happened, must not be null if birth round migration has happened
      * @param completeStateNotifier     the latest complete state notifier to bind
@@ -775,7 +769,6 @@ public class PlatformWiring {
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final EventWindowManager eventWindowManager,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
-            @NonNull final IssHandler issHandler,
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
             @NonNull final LatestCompleteStateNotifier completeStateNotifier,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
@@ -805,7 +798,7 @@ public class PlatformWiring {
         consensusRoundHandlerWiring.bind(consensusRoundHandler);
         consensusEventStreamWiring.bind(builder::buildConsensusEventStream);
         issDetectorWiring.bind(builder::buildIssDetector);
-        issHandlerWiring.bind(issHandler);
+        issHandlerWiring.bind(builder::buildIssHandler);
         hashLoggerWiring.bind(builder::buildHashLogger);
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
@@ -832,13 +825,6 @@ public class PlatformWiring {
      */
     public void startGossip() {
         gossipWiring.getStartInput().inject(NoInput.getInstance());
-    }
-
-    /**
-     * Stop gossiping (permanently).
-     */
-    public void stopGossip() {
-        gossipWiring.getStopInput().inject(NoInput.getInstance());
     }
 
     /**

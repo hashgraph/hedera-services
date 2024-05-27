@@ -207,7 +207,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.fcqueue.FCQueue;
@@ -920,7 +919,7 @@ class MiscUtilsTest {
 
     @Test
     void convertsByteArrayToBinary() {
-        final var hashBytes = new Hash(TxnUtils.randomUtf8Bytes(48)).getValue();
+        final var hashBytes = TxnUtils.randomUtf8Bytes(48);
         assertEquals(
                 Integer.parseUnsignedInt(byteArrayToBinaryString(hashBytes).substring(0, 32), 2),
                 ByteBuffer.wrap(hashBytes, 0, 32).getInt());

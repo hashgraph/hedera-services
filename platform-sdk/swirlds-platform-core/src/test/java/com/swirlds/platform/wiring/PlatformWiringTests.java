@@ -103,6 +103,7 @@ class PlatformWiringTests {
                 .withPcesWriter(mock(PcesWriter.class))
                 .withSignedStateSentinel(mock(SignedStateSentinel.class))
                 .withIssDetector(mock(IssDetector.class))
+                .withIssHandler(mock(IssHandler.class))
                 .withStateHasher(mock(StateHasher.class))
                 .withStaleEventDetector(mock(DefaultStaleEventDetector.class))
                 .withTransactionResubmitter(mock(TransactionResubmitter.class))
@@ -130,7 +131,6 @@ class PlatformWiringTests {
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
                 mock(ConsensusRoundHandler.class),
-                mock(IssHandler.class),
                 mock(BirthRoundMigrationShim.class),
                 mock(LatestCompleteStateNotifier.class),
                 mock(SignedStateNexus.class),
