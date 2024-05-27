@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
-import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.guaranteedExtant;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtant;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static java.nio.charset.StandardCharsets.US_ASCII;

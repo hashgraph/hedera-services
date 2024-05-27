@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.live;
+package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.swirlds.platform.system.status.PlatformStatus.*;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.live;
+package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import java.io.IOException;
 import java.net.MalformedURLException;

@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
-import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;

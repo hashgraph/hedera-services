@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
-import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.DATA_DIR;
-import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.OUTPUT_DIR;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;

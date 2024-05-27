@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
-import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.platform.launcher.LauncherSession;
@@ -40,14 +40,14 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            HederaNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE)
+            SubProcessNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE)
                     .start();
         }
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
             HapiApiClients.tearDown();
-            HederaNetwork.SHARED_NETWORK.get().terminate();
+            SubProcessNetwork.SHARED_NETWORK.get().terminate();
         }
     }
 }
