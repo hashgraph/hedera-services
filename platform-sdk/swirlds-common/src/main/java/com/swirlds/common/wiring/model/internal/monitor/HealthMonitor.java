@@ -87,7 +87,7 @@ public class HealthMonitor {
         for (final TaskScheduler<?> scheduler : schedulers) {
             if (scheduler.getCapacity() != TaskSchedulerBuilder.UNLIMITED_CAPACITY) {
                 this.schedulers.add(Objects.requireNonNull(scheduler));
-                lastHealthyTimes.add(platformContext.getTime().now());
+                lastHealthyTimes.add(null);
             }
         }
 
@@ -109,8 +109,12 @@ public class HealthMonitor {
             final TaskScheduler<?> scheduler = schedulers.get(i);
             final boolean healthy = scheduler.getUnprocessedTaskCount() <= scheduler.getCapacity();
             if (healthy) {
-                lastHealthyTimes.set(i, now);
+                lastHealthyTimes.set(i, null);
             } else {
+                if (lastHealthyTimes.get(i) == null) {
+                    lastHealthyTimes.set(i, now);
+                }
+
                 final Duration unhealthyDuration = Duration.between(lastHealthyTimes.get(i), now);
                 logger.reportUnhealthyScheduler(scheduler, unhealthyDuration);
                 if (isGreaterThan(unhealthyDuration, longestUnhealthyDuration)) {
