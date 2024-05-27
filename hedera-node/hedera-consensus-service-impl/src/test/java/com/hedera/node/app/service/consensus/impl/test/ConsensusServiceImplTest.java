@@ -38,9 +38,6 @@ public class ConsensusServiceImplTest {
     @Test
     void registerSchemasNullArgsThrow() {
         assertThatThrownBy(() -> subject.registerSchemas(null)).isInstanceOf(NullPointerException.class);
-
-        assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class)))
-                .isInstanceOf(NullPointerException.class);
     }
 
     @Test

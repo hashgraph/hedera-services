@@ -55,8 +55,6 @@ import org.mockito.BDDMockito;
 
 class V0490ScheduleSchemaTest {
 
-    private static final SemanticVersion VERSION_123 = new SemanticVersion(1, 2, 3, "pre", "build");
-
     private V0490ScheduleSchema subject;
 
     @BeforeEach
@@ -64,16 +62,12 @@ class V0490ScheduleSchemaTest {
         subject = new V0490ScheduleSchema();
     }
 
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void constructorNullArgThrows() {
-        Assertions.assertThatThrownBy(() -> new V0490ScheduleSchema()).isInstanceOf(NullPointerException.class);
-    }
-
     @Test
     void constructorHappyPath() {
         // Instance created in setup
-        Assertions.assertThat(subject.getVersion()).isEqualTo(VERSION_123);
+        Assertions.assertThat(subject.getVersion())
+                .isEqualTo(
+                        SemanticVersion.newBuilder().major(0).minor(49).patch(0).build());
     }
 
     @Test

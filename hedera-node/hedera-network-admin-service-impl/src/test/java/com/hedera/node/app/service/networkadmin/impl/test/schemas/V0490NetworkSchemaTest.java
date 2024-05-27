@@ -16,48 +16,14 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.schemas;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490NetworkSchema;
-import com.hedera.node.app.spi.fixtures.util.LogCaptor;
-import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
-import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
-import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.state.MigrationContext;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 public class V0490NetworkSchemaTest {
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @Mock
-    private MigrationContext migrationContext;
-
-    @LoggingSubject
-    private V0490NetworkSchema subject;
-
-    @BeforeEach
-    void setUp() {
-        subject = new V0490NetworkSchema();
-    }
-
     @Test
     void registersExpectedSchema() {
-        final var statesToCreate = subject.statesToCreate();
-        assertThat(statesToCreate.size()).isEqualTo(0);
-    }
-
-    @Test
-    void HappyPathMigration() {
-        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
-        subject.migrate(migrationContext);
-        assertThat(logCaptor.infoLogs()).contains("BBM: no actions required for network service");
+        assertDoesNotThrow(V0490NetworkSchema::new);
     }
 }

@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,7 +46,7 @@ final class RecordCacheServiceTest {
         svc.registerSchemas(registry);
         verify(registry).register(captor.capture());
         final var schema = captor.getValue();
-        assertThat(schema.getVersion()).isEqualTo(CURRENT_VERSION);
+        assertThat(schema).isInstanceOf(V0490RecordCacheSchema.class);
         assertThat(schema.statesToCreate()).hasSize(1);
     }
 }
