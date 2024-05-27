@@ -1094,8 +1094,13 @@ public final class Hedera implements SwirldMain {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        // The Dagger component should be constructed every time we reach this point, even if
+        // it exists. This avoids any problems with mutable singleton state by reconstructing
+        // everything. But we must ensure the gRPC server in the old component is fully stopped.
+        if (daggerApp != null) {
+            shutdownGrpcServer();
+        }
         // Fully qualified so as to not confuse javadoc
-        // DaggerApp should be constructed every time we reach this point, even if exists. This is needed for reconnect
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
                 .configProvider(configProvider)
