@@ -470,6 +470,11 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         }
         intakeEventCounter.reset();
         gossipHalted.set(false);
+
+        // Revoke all permits when we begin gossiping again. Presumably we are behind the pack,
+        // and so we want to avoid talking to too many peers at once until we've had a chance
+        // to properly catch up.
+        syncPermitProvider.revokeAll();
     }
 
     /**

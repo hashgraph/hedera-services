@@ -172,6 +172,18 @@ public class SyncPermitProvider {
     }
 
     /**
+     * Immediately revoke all permits.
+     */
+    public synchronized void revokeAll() {
+        returnedPermitDelta = 0;
+        revokedPermitDelta = 0;
+        revokedPermitsAccumulator = totalPermits;
+        revokedPermits = totalPermits;
+        statusStartTime = time.now();
+        updateMetrics();
+    }
+
+    /**
      * Release a permit. Should be called exactly once for each call to {@link #acquire()} that returns true.
      */
     public synchronized void release() {

@@ -292,4 +292,50 @@ class SyncPermitProviderTests {
         assertEventuallyTrue(permitsReleased::get, Duration.ofSeconds(1), "Permits were not released");
         thread.join();
     }
+
+    @Test
+    void revokeAllTest() {
+        final Randotron randotron = Randotron.create();
+
+        final int permitCount = randotron.nextInt(10, 20);
+        final double permitsReturnedPerSecond = 0.1 + randotron.nextDouble(1.0);
+        final int minimumHealthyPermitCount = randotron.nextInt(1, 3);
+
+        final Instant startingTime = randotron.nextInstant();
+        final Duration timeStep = Duration.ofMillis(100);
+
+        final FakeTime time = new FakeTime(startingTime, Duration.ZERO);
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(SyncConfig_.PERMITS_RETURNED_PER_SECOND, permitsReturnedPerSecond)
+                .withValue(SyncConfig_.MINIMUM_HEALTHY_UNREVOKED_PERMIT_COUNT, minimumHealthyPermitCount)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .withTime(time)
+                .build();
+
+        final SyncPermitProvider permitProvider = new SyncPermitProvider(platformContext, permitCount);
+
+        assertEquals(permitCount, countAvailablePermits(permitProvider));
+        permitProvider.revokeAll();
+        assertEquals(minimumHealthyPermitCount, countAvailablePermits(permitProvider));
+
+        // As time goes forward, we should slowly regain permits.
+        final int secondsToRegainPermits = (int) (permitCount / permitsReturnedPerSecond) + 1;
+        final Instant end = startingTime.plus(Duration.ofSeconds(10 + secondsToRegainPermits));
+        while (time.now().isBefore(end)) {
+            final Duration healthyTime = Duration.between(startingTime, time.now());
+            final int returnedPermits =
+                    (int) (UNIT_NANOSECONDS.convertTo(healthyTime.toNanos(), UNIT_SECONDS) * permitsReturnedPerSecond);
+
+            final int expectedAvailablePermits =
+                    Math.max(minimumHealthyPermitCount, Math.min(permitCount, returnedPermits));
+
+            assertEquals(expectedAvailablePermits, countAvailablePermits(permitProvider));
+            time.tick(timeStep);
+        }
+
+        assertEquals(permitCount, countAvailablePermits(permitProvider));
+    }
 }
