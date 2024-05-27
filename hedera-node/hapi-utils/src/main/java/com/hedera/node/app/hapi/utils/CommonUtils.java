@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreeze
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenReject;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
@@ -202,6 +203,7 @@ public final class CommonUtils {
             case SCHEDULESIGN -> ScheduleSign;
             case UTIL_PRNG -> UtilPrng;
             case TOKEN_UPDATE_NFTS -> TokenUpdateNfts;
+            case TOKENREJECT -> TokenReject;
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
     }
