@@ -196,10 +196,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractInfoQuery(spec, payment, false), spec);
-        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
-        ContractInfo contractInfo = response.getContractGetInfo().getContractInfo();
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
+        final var contractInfo = response.getContractGetInfo().getContractInfo();
         if (verboseLoggingOn) {
             LOG.info("Info: {}", contractInfo);
         }

@@ -109,9 +109,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractRecordsQuery(spec, payment, false), spec);
-        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         List<TransactionRecord> records =
                 response.getContractGetRecordsResponse().getRecordsList();
         if (verboseLoggingOn) {
@@ -200,7 +198,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         return prefix.map(d -> d + "/" + spec.getName()).get();
     }
 
-    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records) throws Throwable {
+    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records) {
         String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;

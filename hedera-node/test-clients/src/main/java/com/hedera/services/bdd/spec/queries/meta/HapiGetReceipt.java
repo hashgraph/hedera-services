@@ -133,13 +133,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        TransactionID txnId = explicitTxnId.orElseGet(
-                () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
-        Query query = forgetOp
-                ? Query.newBuilder().build()
-                : maybeModified(txnReceiptQueryFor(txnId, requestDuplicates, getChildReceipts), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTransactionReceipts(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         childReceipts = response.getTransactionGetReceipt().getChildTransactionReceiptsList();
         final var duplicateReceipts = response.getTransactionGetReceipt().getDuplicateTransactionReceiptsList();
         if (verboseLoggingOn) {

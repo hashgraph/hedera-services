@@ -103,9 +103,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = maybeModified(getRecordsQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountRecords(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         List<TransactionRecord> records = response.getCryptoGetAccountRecords().getRecordsList();
         if (verboseLoggingOn) {
             if (customLog.isPresent()) {

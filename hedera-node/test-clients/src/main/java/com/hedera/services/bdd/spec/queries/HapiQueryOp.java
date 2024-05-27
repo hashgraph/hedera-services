@@ -103,9 +103,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected Optional<ResponseCodeEnum> costAnswerPrecheck = Optional.empty();
     protected Optional<HapiCryptoTransfer> explicitPayment = Optional.empty();
 
-    /* WARNING: Must set `response` as a side effect! */
-    protected abstract void submitWith(HapiSpec spec, Transaction payment) throws Throwable;
-
     protected abstract boolean needsPayment();
 
     /**
@@ -119,6 +116,17 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
      */
     protected abstract Query queryFor(
             @NonNull HapiSpec spec, @NonNull Transaction payment, @NonNull ResponseType responseType);
+
+    /**
+     * Called immediately before the {@link ResponseType#ANSWER_ONLY} query is sent.
+     */
+    protected void beforeAnswerOnlyQuery() {}
+
+    /**
+     * Called immediately after the {@link ResponseType#ANSWER_ONLY} response is received
+     * to give the subclass a chance to process the response.
+     */
+    protected abstract void processAnswerOnlyResponse(@NonNull HapiSpec spec);
 
     /**
      * Returns the modified version of the query in the context of the given spec, if a mutation
@@ -189,7 +197,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             }
 
             /* If the COST_ANSWER query was expected to fail, we will not do anything else for this query. */
-            if (needsPayment() && !nodePayment.isPresent() && expectedCostAnswerPrecheck() != OK) {
+            if (needsPayment() && nodePayment.isEmpty() && expectedCostAnswerPrecheck() != OK) {
                 return false;
             }
 
@@ -197,7 +205,10 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
                 String message = String.format("%sPaying for %s with %s", spec.logPrefix(), this, txnToString(payment));
                 log.info(message);
             }
-            submitWith(spec, payment);
+            query = maybeModified(queryFor(spec, payment, ResponseType.ANSWER_ONLY), spec);
+            beforeAnswerOnlyQuery();
+            response = spec.targetNetworkOrThrow().send(query, type(), targetNodeFor(spec));
+            processAnswerOnlyResponse(spec);
 
             actualPrecheck = reflectForPrecheck(response);
             if (answerOnlyRetryPrechecks.isPresent()
@@ -272,7 +283,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             final var realNodePayment = costFrom(response);
             Optional.ofNullable(nodePaymentObserver).ifPresent(observer -> observer.accept(realNodePayment));
             if (expectedCostAnswerPrecheck() != OK) {
-                return null;
+                return Transaction.getDefaultInstance();
             }
             if (spec.setup().costSnapshotMode() != OFF) {
                 spec.recordPayment(

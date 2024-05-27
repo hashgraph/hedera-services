@@ -270,11 +270,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getAccountBalanceQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
-        ResponseCodeEnum status =
-                response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
+        final var status = response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
         if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
             String message = String.format("%s%s was actually deleted!", spec.logPrefix(), repr);
             log.info(message);

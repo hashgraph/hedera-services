@@ -24,6 +24,7 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -173,10 +174,12 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getFileContentQuery(spec, payment, false), spec);
+    protected void beforeAnswerOnlyQuery() {
         preQueryCb.ifPresent(cb -> cb.accept(fileId));
-        response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
+    }
+
+    @Override
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         postQueryCb.ifPresent(cb -> cb.accept(response));
         byte[] bytes =
                 response.getFileGetContents().getFileContents().getContents().toByteArray();
@@ -187,7 +190,12 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                     .size();
             log.info(String.format("%s contained %s bytes", fileName, len));
             if (isConfigListFile(spec)) {
-                var configList = ServicesConfigurationList.parseFrom(bytes);
+                ServicesConfigurationList configList;
+                try {
+                    configList = ServicesConfigurationList.parseFrom(bytes);
+                } catch (InvalidProtocolBufferException e) {
+                    throw new IllegalStateException(e);
+                }
                 var msg = new StringBuilder("As a config list, contents are:");
                 List<String> entries = new ArrayList<>();
                 configList

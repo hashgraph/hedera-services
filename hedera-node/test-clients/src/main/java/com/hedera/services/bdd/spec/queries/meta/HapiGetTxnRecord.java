@@ -883,9 +883,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     @SuppressWarnings("java:S1874")
-    protected void submitWith(final HapiSpec spec, final Transaction payment) throws InvalidProtocolBufferException {
-        final Query query = maybeModified(getRecordQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);

@@ -174,10 +174,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractCallLocal(spec, payment, false), spec);
-        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             LOG.info(
                     "{}{} result = {}",

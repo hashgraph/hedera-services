@@ -601,9 +601,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = maybeModified(getTokenInfoQuery(spec, payment, false), spec);
-        response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             LOG.info("Info for '{}': {}", () -> token, response.getTokenGetInfo()::getTokenInfo);
         }
