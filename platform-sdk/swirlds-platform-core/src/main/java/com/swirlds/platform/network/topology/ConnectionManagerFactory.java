@@ -28,6 +28,7 @@ import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,8 +43,9 @@ import org.apache.logging.log4j.Logger;
 public class ConnectionManagerFactory {
     private static final Logger logger = LogManager.getLogger(ConnectionManagerFactory.class);
     private final NetworkTopology topology;
-    private final Map<ConnectionMapping, ConnectionManager> connectionManagers;
     private final OutboundConnectionCreator connectionCreator;
+    private Map<ConnectionMapping, ConnectionManager> connectionManagers;
+    private final Set<NodeId> nodeIdsOfConnectionManagers = new HashSet<>();
 
     /**
      * Create a new connectivity manager with the given topology and connection creator
@@ -55,11 +57,8 @@ public class ConnectionManagerFactory {
             @NonNull final NetworkTopology topology, @NonNull final OutboundConnectionCreator connectionCreator) {
         this.topology = Objects.requireNonNull(topology);
         this.connectionCreator = Objects.requireNonNull(connectionCreator);
-        // is thread safe because it never changes
-        this.connectionManagers = new HashMap<>();
-        for (final NodeId neighbor : topology.getNeighbors()) {
-            createConnectionManager(neighbor);
-        }
+
+        this.connectionManagers = createConnectionManagers();
     }
 
     /**
@@ -70,28 +69,28 @@ public class ConnectionManagerFactory {
      */
     @NonNull
     public synchronized List<ConnectionManager> updatePeers(@NonNull final List<PeerInfo> peers) {
+        Objects.requireNonNull(peers, "peers cannot be null");
         // Get all nodeIds from the peers list
-        final Set<NodeId> peerNodeIds = peers.stream().map(PeerInfo::nodeId).collect(Collectors.toSet());
+        final Set<NodeId> nodeIds = peers.stream().map(PeerInfo::nodeId).collect(Collectors.toSet());
 
-        // Get all nodeIds from the connectionManagers map
-        final Set<NodeId> managerNodeIds =
-                connectionManagers.keySet().stream().map(ConnectionMapping::id).collect(Collectors.toSet());
+        // create managers for all incoming nodeIds we're not already aware of
+        nodeIds.stream()
+                .filter(nodeId -> !nodeIdsOfConnectionManagers.contains(nodeId))
+                .forEach(this::createConnectionManager);
 
-        // create managers for all nodeIds in peers list not in connectionManagers
-        final List<NodeId> managersToCreate = peerNodeIds.stream()
-                .filter(nodeId -> !managerNodeIds.contains(nodeId))
-                .toList();
-        managersToCreate.forEach(this::createConnectionManager);
-
-        // Remove managers for all nodeIds in connectionManagers not in peers list
-        final List<ConnectionMapping> managersToRemove = connectionManagers.keySet().stream()
-                .filter(connectionMapping -> !peerNodeIds.contains(connectionMapping.id()))
-                .toList();
-        managersToRemove.forEach(connectionManagers::remove);
+        connectionManagers.keySet().removeIf(connectionMapping -> !nodeIds.contains(connectionMapping.id()));
+        nodeIdsOfConnectionManagers.removeIf(nodeId -> !nodeIds.contains(nodeId));
 
         return List.copyOf(connectionManagers.values());
     }
 
+    /**
+     * Get the connection manager for the given node id
+     *
+     * @param id       the node id
+     * @param outbound whether the connection manager is for outbound connections
+     * @return the connection manager for the given node id
+     */
     @NonNull
     public ConnectionManager getManager(@NonNull final NodeId id, final boolean outbound) {
         final ConnectionMapping key = new ConnectionMapping(id, outbound);
@@ -133,6 +132,18 @@ public class ConnectionManagerFactory {
     }
 
     /**
+     * creates connection managers for all neighbors in the topology
+     * @return a map of connection managers
+     */
+    private Map<ConnectionMapping, ConnectionManager> createConnectionManagers() {
+        final List<NodeId> neighbors = topology.getNeighbors();
+        this.connectionManagers = HashMap.newHashMap(neighbors.size());
+        topology.getNeighbors().forEach(this::createConnectionManager);
+
+        return connectionManagers;
+    }
+
+    /**
      * Create a new connection manager for the given neighbor
      *
      * @param neighbor the neighbor to create a connection manager for
@@ -140,12 +151,17 @@ public class ConnectionManagerFactory {
     private void createConnectionManager(@NonNull final NodeId neighbor) {
         if (topology.shouldConnectToMe(neighbor)) {
             connectionManagers.put(new ConnectionMapping(neighbor, false), new InboundConnectionManager(neighbor));
+            nodeIdsOfConnectionManagers.add(neighbor);
         }
         if (topology.shouldConnectTo(neighbor)) {
             connectionManagers.put(
                     new ConnectionMapping(neighbor, true), new OutboundConnectionManager(neighbor, connectionCreator));
+            nodeIdsOfConnectionManagers.add(neighbor);
         }
     }
 
+    /**
+     * A simple record to hold a node id and whether the connection manager is for outbound connections
+     */
     private record ConnectionMapping(NodeId id, boolean outbound) {}
 }

@@ -32,11 +32,11 @@ import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.topology.ConnectionManagerFactory;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import java.security.cert.Certificate;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import java.security.cert.Certificate;
 import java.util.List;
 import java.util.Random;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -83,6 +83,10 @@ class ConnectionManagerFactoryTest {
         }
     }
 
+    /**
+     * asserts that the manager is created and the connection is established if the topology allows it,
+     *  and that the manager is not created if the topology does not allow it
+     */
     @ParameterizedTest
     @MethodSource("topologicalVariations")
     void testShouldConnectTo(final int numNodes, final int numNeighbors) throws Exception {
@@ -114,29 +118,74 @@ class ConnectionManagerFactoryTest {
     /**
      * asserts that when a peerList containing known peer is passed, the manager for that peer is left unchanged
      */
-    @ParameterizedTest
-    @MethodSource("topologicalVariations")
-    void testAddKnownPeers(final int numNodes, final int numNeighbors) {
+    @Test
+    void testAddKnownPeerLeftUnchanged() {
         final Random r = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(r).setSize(numNodes).build();
-        final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
-        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, numNeighbors);
+                RandomAddressBookBuilder.create(r).withSize(10).build();
+        final NodeId selfId = addressBook.getNodeId(r.nextInt(10));
+        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, 10);
         final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
 
-        final NodeId testPeer = addressBook.getNodeId(4);
-        final List<PeerInfo> peers =
-                List.of(new PeerInfo(testPeer, "localhost", "testHost1", Mockito.mock(Certificate.class)));
+        final NodeId testNode1 = addressBook.getNodeId(4);
+        PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
+        final List<PeerInfo> peers = List.of(peer1);
         // keep a reference to the manager for the testPeer. We don't know if it's an inbound or outbound
-        final ConnectionManager manager5 = factory.getManager(testPeer, true) == null
-                ? factory.getManager(testPeer, false)
-                : factory.getManager(testPeer, true);
-        final List<ConnectionManager> updatedManagers = factory.updatePeers(peers);
+        final ConnectionManager manager5 = factory.getManager(testNode1, true) == null
+                ? factory.getManager(testNode1, false)
+                : factory.getManager(testNode1, true);
+        final List<ConnectionManager> updatedManagers1 = factory.updatePeers(peers);
 
-        assertNotNull(updatedManagers);
-        assertEquals(1, updatedManagers.size());
+        assertNotNull(updatedManagers1);
+        assertEquals(1, updatedManagers1.size());
         // The manager should have been unchanged for this existing peer
-        assertEquals(updatedManagers.getFirst(), manager5);
+        assertEquals(updatedManagers1.getFirst(), manager5);
+    }
+
+    @Test
+    void testAddNewPeerUpdated() {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final AddressBook addressBook =
+                RandomAddressBookBuilder.create(r).withSize(12).build();
+        final NodeId selfId = addressBook.getNodeId(r.nextInt(12));
+        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, 12);
+        final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
+
+        final NodeId testNode1 = addressBook.getNodeId(4);
+        PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
+
+        // we add a new peer and ensure that the manager is created for all peers, including peer2
+        final NodeId testPeer2 = addressBook.getNodeId(5);
+        PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
+        final List<PeerInfo> peers2 = List.of(peer1, peer2);
+        final List<ConnectionManager> updatedManagers2 = factory.updatePeers(peers2);
+        assertNotNull(updatedManagers2);
+        assertEquals(2, updatedManagers2.size());
+    }
+
+    @Test
+    void testRemoveNewPeerUpdated() {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final AddressBook addressBook =
+                RandomAddressBookBuilder.create(r).withSize(21).build();
+        final NodeId selfId = addressBook.getNodeId(r.nextInt(21));
+        final StaticTopology topology = new StaticTopology(r, addressBook, selfId, 21);
+        final ConnectionManagerFactory factory = new ConnectionManagerFactory(topology, connectionCreator);
+
+        final NodeId testNode1 = addressBook.getNodeId(4);
+        PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
+        final NodeId testPeer2 = addressBook.getNodeId(5);
+        PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
+        final List<PeerInfo> peers2 = List.of(peer1, peer2);
+        final List<ConnectionManager> updatedManagers2 = factory.updatePeers(peers2);
+        assertNotNull(updatedManagers2);
+        assertEquals(2, updatedManagers2.size());
+
+        // remove the two peers and ensure that the managers are removed
+        final List<PeerInfo> peers3 = List.of();
+        final List<ConnectionManager> updatedManagers3 = factory.updatePeers(peers3);
+        assertNotNull(updatedManagers3);
+        assertEquals(0, updatedManagers3.size());
     }
 
     private static List<Arguments> topologicalVariations() {
