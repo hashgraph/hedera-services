@@ -87,8 +87,8 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     }
 
     public static void serialize(
-            @NonNull  final SerializableDataOutputStream out,
-            @NonNull  final GossipEvent gossipEvent,
+            @NonNull final SerializableDataOutputStream out,
+            @NonNull final GossipEvent gossipEvent,
             final long roundReceived,
             final boolean lastInRoundReceived)
             throws IOException {
