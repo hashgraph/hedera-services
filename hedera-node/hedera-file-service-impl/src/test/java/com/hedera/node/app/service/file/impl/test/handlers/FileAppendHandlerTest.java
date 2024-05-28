@@ -49,6 +49,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -100,13 +101,16 @@ class FileAppendHandlerTest extends FileTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private FeeAccumulator feeAccumulator;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private FileSignatureWaiversImpl waivers;
+
     protected Configuration testConfig;
 
     private FileAppendHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileAppendHandler();
+        subject = new FileAppendHandler(waivers);
         testConfig = HederaTestConfigBuilder.createConfig();
         when(preHandleContext.configuration()).thenReturn(testConfig);
         when(handleContext.configuration()).thenReturn(testConfig);
