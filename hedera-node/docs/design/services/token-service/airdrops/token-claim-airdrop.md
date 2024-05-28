@@ -113,6 +113,7 @@ An update into the `feeSchedule` file would be needed to specify that.
 
 ### Services updates
 
+- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `TokenClaimAirdrop` transaction type 
 - Update `TokenServiceDefinition` class to include the new RPC method definition for claiming airdrops
 - Implement new `TokenClaimAirdropHandler` class which should be invoked when the gRPC server handles `TokenClaimAirdrop` transactions. The class should be responsible for:
     - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
@@ -133,6 +134,11 @@ An update into the `feeSchedule` file would be needed to specify that.
               - We must skip the assessment of custom fees
         - Token transfers and associations should be externalized using the `tokenTransferLists` and `automatic_token_associations` fields in the transaction record
     - Fees calculation
+- Update throttle definitions to include the new `TokenClaimAirdrop` transaction type
+  - Throttle definitions are specified in `throttles.json` files
+  - There are different configurations containing throttle definitions under `hedera-node/configuration/` for the different environments e.g. testnet, previewnet, mainnet
+  - There is also a default throttle definition file in `resources/genesis/throttles.json` that is used during the genesis
+  - Add the new `TokenClaimAirdrop` transaction type to the `ThroughputLimits` bucket
 
 ### Zero-Balance accounts
 
