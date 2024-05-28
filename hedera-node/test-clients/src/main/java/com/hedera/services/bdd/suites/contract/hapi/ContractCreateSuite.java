@@ -448,14 +448,14 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> rejectsInsufficientGas() {
-        return defaultHapiSpec("RejectsInsufficientGas", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("RejectsInsufficientGas")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 // refuse eth conversion because ethereum transaction fails in IngestChecker with precheck status
                 // INSUFFICIENT_GAS
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .gas(0L)
-                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .hasPrecheck(INSUFFICIENT_GAS)
                         .refusingEthConversion());
     }
 

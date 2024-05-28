@@ -16,25 +16,25 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.hedera.live.GrpcPinger;
 import com.hedera.services.bdd.junit.hedera.live.PrometheusClient;
 import com.hedera.services.bdd.junit.hedera.live.SubProcessNode;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -49,20 +49,22 @@ import org.apache.logging.log4j.Logger;
 public class HederaNetwork {
     private static final Logger log = LogManager.getLogger(HederaNetwork.class);
 
-    private static final int FIRST_GRPC_PORT = 50211;
-    private static final int FIRST_GOSSIP_PORT = 60000;
-    private static final int FIRST_GOSSIP_TLS_PORT = 60001;
-    private static final int FIRST_PROMETHEUS_PORT = 10000;
+    private static final SplittableRandom RANDOM = new SplittableRandom();
+    private static final int FIRST_CANDIDATE_PORT = 30000;
+    private static final int LAST_CANDIDATE_PORT = 40000;
+
     private static final long FIRST_NODE_ACCOUNT_NUM = 3;
     private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
     private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
     private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
     private static final PrometheusClient PROMETHEUS_CLIENT = new PrometheusClient();
 
-    private static int nextGrpcPort = FIRST_GRPC_PORT;
-    private static int nextGossipPort = FIRST_GOSSIP_PORT;
-    private static int nextGossipTlsPort = FIRST_GOSSIP_TLS_PORT;
-    private static int nextPrometheusPort = FIRST_PROMETHEUS_PORT;
+    // We initialize these randomly to reduce risk of port binding conflicts in CI runners
+    private static int nextGrpcPort;
+    private static int nextGossipPort;
+    private static int nextGossipTlsPort;
+    private static int nextPrometheusPort;
+    private static boolean nextPortsInitialized = false;
 
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
 
@@ -74,9 +76,7 @@ public class HederaNetwork {
     private final String networkName;
 
     private final List<HederaNode> nodes;
-
-    @Nullable
-    private CompletableFuture<Void> ready;
+    private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
 
     private HederaNetwork(@Nullable final String networkName, @NonNull final List<HederaNode> nodes) {
         this.nodes = requireNonNull(nodes);
@@ -120,17 +120,15 @@ public class HederaNetwork {
      * @return the network
      */
     private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
+        if (!nextPortsInitialized) {
+            initializeNextPortsForNetwork(size);
+        }
         final var network = new HederaNetwork(
                 name,
                 IntStream.range(0, size)
                         .<HederaNode>mapToObj(
                                 nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
                         .toList());
-        // Reserve ports for the next network
-        nextGrpcPort += size * 2;
-        nextGossipPort += size * 2;
-        nextGossipTlsPort += size * 2;
-        nextPrometheusPort += size;
         Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
     }
@@ -165,6 +163,16 @@ public class HederaNetwork {
     }
 
     /**
+     * Returns the node of the network that matches the given selector.
+     *
+     * @param selector the selector
+     * @return the nodes that match the selector
+     */
+    public HederaNode getRequiredNode(@NonNull final NodeSelector selector) {
+        return nodes.stream().filter(selector).findAny().orElseThrow();
+    }
+
+    /**
      * Returns the name of the network.
      *
      * @return the name of the network
@@ -174,34 +182,10 @@ public class HederaNetwork {
     }
 
     /**
-     * Starts all nodes in the network and waits for them to reach the
-     * {@link PlatformStatus#ACTIVE} status, or times out.
-     *
-     * @param timeout the maximum time to wait for all nodes to start
+     * Starts all nodes in the network.
      */
-    public void startWithin(@NonNull final Duration timeout) {
-        final var latch = new CountDownLatch(nodes.size());
-        CompletableFuture.allOf(nodes.stream()
-                        .map(node -> runAsync(() -> {
-                                    node.initWorkingDir(configTxt);
-                                    node.start();
-                                })
-                                .thenCompose(nothing -> node.statusFuture(ACTIVE, timeout)
-                                        .thenRun(() -> {
-                                            log.info("Node '{}' is ready", node.getName());
-                                            latch.countDown();
-                                        })))
-                        .toArray(CompletableFuture[]::new))
-                .orTimeout(timeout.toMillis(), MILLISECONDS);
-        ready = runAsync(() -> {
-                    try {
-                        latch.await();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new IllegalStateException(e);
-                    }
-                })
-                .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
+    public void start() {
+        nodes.forEach(node -> node.initWorkingDir(configTxt).start());
     }
 
     /**
@@ -212,10 +196,20 @@ public class HederaNetwork {
     }
 
     /**
-     * Waits for all nodes in the network to be ready.
+     * Waits for all nodes in the network to be ready within the given timeout.
      */
-    public void waitForReady() {
-        requireNonNull(ready).join();
+    public void awaitReady(@NonNull final Duration timeout) {
+        if (ready.get() == null) {
+            final var future = runAsync(() -> {
+                final var deadline = Instant.now().plus(timeout);
+                nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
+            });
+            if (!ready.compareAndSet(null, future)) {
+                // We only need one thread to wait for readiness
+                future.cancel(true);
+            }
+        }
+        ready.get().join();
     }
 
     private static String configTxtFor(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
@@ -233,9 +227,9 @@ public class HederaNetwork {
                     .append(", ")
                     .append(node.getName())
                     .append(", 1, 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_PORT + (node.getNodeId() * 2))
+                    .append(nextGossipPort + (node.getNodeId() * 2))
                     .append(", 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_TLS_PORT + (node.getNodeId() * 2))
+                    .append(nextGossipTlsPort + (node.getNodeId() * 2))
                     .append(", ")
                     .append("0.0.")
                     .append(node.getAccountId().accountNumOrThrow())
@@ -257,5 +251,18 @@ public class HederaNetwork {
                 nextGossipTlsPort + nodeId * 2,
                 nextPrometheusPort + nodeId,
                 workingDirFor(nodeId, networkName));
+    }
+
+    private static void initializeNextPortsForNetwork(final int size) {
+        // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
+        nextGrpcPort = randomPortAfter(FIRST_CANDIDATE_PORT, size * 5);
+        nextGossipPort = nextGrpcPort + 2 * size;
+        nextGossipTlsPort = nextGossipPort + 1;
+        nextPrometheusPort = nextGossipPort + 2 * size;
+        nextPortsInitialized = true;
+    }
+
+    private static int randomPortAfter(final int firstAvailable, final int numRequired) {
+        return RANDOM.nextInt(firstAvailable, LAST_CANDIDATE_PORT + 1 - numRequired);
     }
 }

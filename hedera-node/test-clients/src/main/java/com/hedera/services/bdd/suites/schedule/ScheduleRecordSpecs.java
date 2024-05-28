@@ -125,7 +125,7 @@ public class ScheduleRecordSpecs {
                                                         "set",
                                                         BigInteger.valueOf(5),
                                                         BigInteger.valueOf(42))
-                                                .gas(10_000L)
+                                                .gas(24_000)
                                                 .memo("")
                                                 .fee(ONE_HBAR))
                                 .payingWith(OTHER_PAYER)

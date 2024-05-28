@@ -196,7 +196,10 @@ public class ContractCallLocalSuite {
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
                         sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect").gas(2_000L).hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
+                        contractCallLocal(CONTRACT, "getIndirect")
+                                .nodePayment(1_234_567)
+                                .gas(2_000L)
+                                .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest
