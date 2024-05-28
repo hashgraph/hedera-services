@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
-import static com.swirlds.platform.hcm.api.tss.TssUtils.computeLagrangeCoefficient;
+import static com.swirlds.platform.hcm.impl.internal.LagrangeInterpolationUtils.computeLagrangeCoefficient;
 
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;

@@ -23,6 +23,7 @@ import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
+import com.swirlds.platform.hcm.impl.internal.ElGamalCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;

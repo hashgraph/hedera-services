@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.hcm.impl.tss.groth21;
+package com.swirlds.platform.hcm.impl.internal;
 
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;

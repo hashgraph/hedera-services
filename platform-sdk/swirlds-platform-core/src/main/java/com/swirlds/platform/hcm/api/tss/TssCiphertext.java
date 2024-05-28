@@ -17,7 +17,7 @@
 package com.swirlds.platform.hcm.api.tss;
 
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
-import com.swirlds.platform.hcm.impl.tss.groth21.ElGamalCache;
+import com.swirlds.platform.hcm.impl.internal.ElGamalCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
