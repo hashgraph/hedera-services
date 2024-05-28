@@ -170,6 +170,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
     private static final String ERC20_ABI = "ERC20ABI";
+    private static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -500,8 +501,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final AtomicBoolean hasNodeStakeUpdate = new AtomicBoolean(false);
 
         return propertyPreservingHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
-                .preserving("entities.unlimitedAutoAssociations", FALSE)
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
@@ -550,8 +552,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var multiTokenXfer = "multiTokenXfer";
 
         return propertyPreservingHapiSpec("multipleTokenTransfersSucceed")
-                .preserving("entities.unlimitedAutoAssociations", FALSE)
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -693,9 +696,9 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final long approxTransferFee = 1163019L;
 
         return propertyPreservingHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
