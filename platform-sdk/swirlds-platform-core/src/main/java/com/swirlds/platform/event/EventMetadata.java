@@ -211,7 +211,7 @@ public class EventMetadata implements Clearable {
 
     /**
      * @return a field used to store consensus time while it is still not finalized. depending on the
-     *     phase of consensus calculation, this filed may or may not store the final consensus time.
+     *     phase of consensus calculation, this field may or may not store the final consensus time.
      */
     public @Nullable Instant getPreliminaryConsensusTimestamp() {
         return preliminaryConsensusTimestamp;
