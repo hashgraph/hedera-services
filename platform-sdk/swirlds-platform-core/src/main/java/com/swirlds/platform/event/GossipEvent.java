@@ -377,15 +377,20 @@ public class GossipEvent implements Event, SelfSerializable {
      */
     @Override
     public boolean equals(final Object o) {
+        // FUTURE WORK:
+        // this method seems to be exclusively used for testing purposes. if that is the case, it would be better to
+        // have a separate method for testing equality that is only used in the unit tests.
         if (this == o) {
             return true;
         }
 
-        if (!(o instanceof final GossipEvent that)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
-        return Objects.equals(getHashedData().getHash(), that.getHashedData().getHash());
+        final GossipEvent that = (GossipEvent) o;
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(consensusData, that.consensusData);
     }
 
     /**
