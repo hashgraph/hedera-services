@@ -27,6 +27,7 @@ import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class BucketMutationTest {
@@ -49,7 +50,7 @@ class BucketMutationTest {
         final AtomicLong index = new AtomicLong(1);
         root.forEachKeyValue((k, ov, v) -> {
             final long i = index.getAndIncrement();
-            assertEquals(new ExampleLongKeyFixedSize(i), k, "Unexpected key " + k + " for iteration " + i);
+            Assertions.assertEquals(new ExampleLongKeyFixedSize(i), k, "Unexpected key " + k + " for iteration " + i);
             assertEquals(i * 10, v, "Unexpected value " + v + " for iteration " + i);
         });
     }

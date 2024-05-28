@@ -30,6 +30,7 @@ import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -228,7 +229,7 @@ class HalfDiskHashMapTest {
 
         @Override
         public void deserialize(final SerializableDataInputStream in, final int dataVersion) throws IOException {
-            assertEquals(getVersion(), dataVersion);
+            Assertions.assertEquals(getVersion(), dataVersion);
             super.deserialize(in, dataVersion);
         }
     }

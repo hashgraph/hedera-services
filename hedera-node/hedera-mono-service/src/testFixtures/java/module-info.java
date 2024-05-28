@@ -14,7 +14,6 @@ module com.hedera.node.app.service.mono.test.fixtures {
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.merkle;
-    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;

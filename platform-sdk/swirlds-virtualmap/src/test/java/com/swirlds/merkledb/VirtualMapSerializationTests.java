@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,7 +112,7 @@ class VirtualMapSerializationTests {
                 final ExampleLongKeyFixedSize key = leaf.getKey();
                 final ExampleFixedSizeVirtualValue value = leaf.getValue();
 
-                assertEquals(value, deserializedMap.get(key), "expected values to match");
+                Assertions.assertEquals(value, deserializedMap.get(key), "expected values to match");
             }
 
             if (node instanceof VirtualLeafNode || node instanceof VirtualInternalNode) {

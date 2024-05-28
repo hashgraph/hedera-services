@@ -108,8 +108,6 @@ include(":swirlds-fcqueue", "platform-sdk/swirlds-fcqueue")
 
 include(":swirlds-merkle", "platform-sdk/swirlds-merkle")
 
-include(":swirlds-merkledb", "platform-sdk/swirlds-jasperdb")
-
 include(":swirlds-virtualmap", "platform-sdk/swirlds-virtualmap")
 
 include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")

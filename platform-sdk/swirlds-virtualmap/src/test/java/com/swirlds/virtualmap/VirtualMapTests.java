@@ -23,6 +23,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTr
 import static com.swirlds.common.test.fixtures.io.ResourceLoader.loadLog4jContext;
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
+import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMerkleDbBuilder;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -998,8 +999,8 @@ class VirtualMapTests extends VirtualTestBase {
     @Tag(TIMING_SENSITIVE)
     @DisplayName("A copied map is serializable and then deserializable")
     void testExternalSerializationAndDeserialization() throws IOException {
-        final VirtualMap<TestKey, TestValue> map0 = createMap();
-        map0.getState().setLabel("serializationTest");
+        // All serialization tests should use MerkleDb, not in-memory data source
+        final VirtualMap<TestKey, TestValue> map0 = createMap("serializationTest", createMerkleDbBuilder());
         assertEquals("serializationTest", map0.getLabel());
         map0.put(A_KEY, APPLE);
         map0.put(B_KEY, BANANA);

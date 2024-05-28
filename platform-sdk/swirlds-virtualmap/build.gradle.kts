@@ -39,6 +39,8 @@ testModuleInfo {
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.virtualmap.test.fixtures")
+    requires("org.apache.commons.lang3")
+    requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
@@ -47,9 +49,13 @@ testModuleInfo {
 hammerModuleInfo {
     requires("com.swirlds.common")
     requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.metrics.api")
     requires("com.swirlds.virtualmap")
     requires("com.swirlds.virtualmap.test.fixtures")
+    requires("org.apache.logging.log4j")
+    requires("org.apache.logging.log4j.core")
     requires("org.junit.jupiter.api")
+    requires("org.junit.jupiter.params")
     runtimeOnly("com.swirlds.config.impl")
 }
 

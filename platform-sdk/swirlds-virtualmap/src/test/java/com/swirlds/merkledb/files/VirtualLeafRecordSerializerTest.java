@@ -34,6 +34,7 @@ import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -115,7 +116,7 @@ class VirtualLeafRecordSerializerTest {
         VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> serializer =
                 createSerializer(testType);
         if (testType.fixedSize) {
-            assertEquals(
+            Assertions.assertEquals(
                     Long.BYTES
                             + testType.dataType().getKeySerializer().getSerializedSize()
                             + testType.dataType().getValueSerializer().getSerializedSize(),
@@ -132,7 +133,7 @@ class VirtualLeafRecordSerializerTest {
         VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> serializer =
                 createSerializer(testType);
         if (testType.fixedSize) {
-            assertEquals(
+            Assertions.assertEquals(
                     Long.BYTES
                             + testType.dataType().getKeySerializer().getSerializedSize()
                             + testType.dataType().getValueSerializer().getSerializedSize()

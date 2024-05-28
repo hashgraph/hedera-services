@@ -20,7 +20,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import java.nio.file.Path;
-import java.util.ServiceLoader;
 
 /**
  * Manages {@link VirtualDataSource} instances. An instance of a data source builder is provided
@@ -37,20 +36,6 @@ import java.util.ServiceLoader;
  * 		The value
  */
 public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends VirtualValue> extends SelfSerializable {
-
-    /**
-     * Creates a new data source builder to use, when a virtual root node is deserialized. Such builder
-     * can't be used to create new data sources, since it lacks virtual map configuration and types,
-     * but it can copy and restore existing data sources.
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    static <K extends VirtualKey, V extends VirtualValue> VirtualDataSourceBuilder<K, V> newDeserializedBuilder() {
-        final ServiceLoader<VirtualDataSourceBuilder> services = ServiceLoader.load(VirtualDataSourceBuilder.class);
-        for (final VirtualDataSourceBuilder builder : services) {
-            return (VirtualDataSourceBuilder<K, V>) builder;
-        }
-        return null;
-    }
 
     /**
      * Builds a new {@link VirtualDataSource} using the configuration of this builder and

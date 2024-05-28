@@ -56,7 +56,6 @@ jmhModuleInfo {
     requires("com.swirlds.common")
     requires("com.swirlds.fcqueue")
     requires("com.swirlds.merkle")
-    requires("com.swirlds.merkledb")
     requires("com.swirlds.virtualmap")
     requires("dagger")
     requires("javax.inject")

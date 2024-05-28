@@ -39,7 +39,6 @@ module com.hedera.node.app {
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
-    requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires grpc.netty;
     requires io.grpc;

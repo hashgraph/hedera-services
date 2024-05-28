@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.benchmark;
+package com.swirlds.merkledb;
 
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListHeap;

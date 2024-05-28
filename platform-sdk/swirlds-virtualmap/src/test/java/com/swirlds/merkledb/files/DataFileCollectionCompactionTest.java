@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -140,12 +141,12 @@ class DataFileCollectionCompactionTest {
             prevKey = key;
         }
 
-        assertEquals(BANANA, coll.readDataItem(index.get(5L))[1], "Not a BANANA");
-        assertEquals(DATE, coll.readDataItem(index.get(6L))[1], "Not a DATE");
-        assertEquals(APPLE, coll.readDataItem(index.get(7L))[1], "Not a APPLE");
-        assertEquals(EGGPLANT, coll.readDataItem(index.get(8L))[1], "Not a EGGPLANT");
-        assertEquals(CUTTLEFISH, coll.readDataItem(index.get(9L))[1], "Not a CUTTLEFISH");
-        assertEquals(FIG, coll.readDataItem(index.get(10L))[1], "Not a FIG");
+        Assertions.assertEquals(BANANA, coll.readDataItem(index.get(5L))[1], "Not a BANANA");
+        Assertions.assertEquals(DATE, coll.readDataItem(index.get(6L))[1], "Not a DATE");
+        Assertions.assertEquals(APPLE, coll.readDataItem(index.get(7L))[1], "Not a APPLE");
+        Assertions.assertEquals(EGGPLANT, coll.readDataItem(index.get(8L))[1], "Not a EGGPLANT");
+        Assertions.assertEquals(CUTTLEFISH, coll.readDataItem(index.get(9L))[1], "Not a CUTTLEFISH");
+        Assertions.assertEquals(FIG, coll.readDataItem(index.get(10L))[1], "Not a FIG");
 
         assertEquals(1, coll.getAllCompletedFiles().size(), "Too many files left over");
 

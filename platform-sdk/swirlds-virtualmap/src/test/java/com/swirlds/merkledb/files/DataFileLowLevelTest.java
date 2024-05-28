@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.IntStream;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -303,7 +304,7 @@ class DataFileLowLevelTest {
                 new DataFileIterator<>(dbConfig, dataFile, dataFileMetadata, testType.dataItemSerializer);
         int i = 0;
         while (fileIterator.next()) {
-            assertEquals(
+            Assertions.assertEquals(
                     listOfDataItemLocations.get(i),
                     fileIterator.getDataItemDataLocation(),
                     "unexpected data items data location");

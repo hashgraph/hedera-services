@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTr
 import static com.swirlds.merkledb.MerkleDbDataSourceTest.assertLeaf;
 import static com.swirlds.merkledb.files.DataFileCommon.deleteDirectoryAndContents;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.createMetrics;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getMetric;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.hash;
@@ -34,7 +35,6 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
-import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
@@ -208,7 +208,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
             checkData(COUNT2, testType, dataSource);
 
             // check the database statistics - starting with the five speedometers
-            final Metrics metrics = MerkleDbTestUtils.createMetrics();
+            final Metrics metrics = createMetrics();
             Metric speedometerEntry = getMetric(metrics, dataSource, "internalNodeWrites/s_");
             double meanValue = (double) speedometerEntry.get(VALUE);
             assertNotEquals(0.0, meanValue, "got mean value of 0.0 for internalNodeWrites/s_");

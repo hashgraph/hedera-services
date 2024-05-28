@@ -57,6 +57,7 @@ import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1224,10 +1225,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             // Skip data source builder
             dataSourceBuilder = in.readSerializable();
         } else {
-            dataSourceBuilder = VirtualDataSourceBuilder.newDeserializedBuilder();
-            if (dataSourceBuilder == null) {
-                throw new UnsupportedOperationException("Cannot create a data source builder");
-            }
+            dataSourceBuilder = new MerkleDbDataSourceBuilder<>();
         }
         dataSource = dataSourceBuilder.restore(label, inputDirectory);
         cache = in.readSerializable();
