@@ -21,6 +21,7 @@ import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DI
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.MultiObjectCounter;
@@ -68,7 +69,7 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     protected boolean unhandledTaskMetricEnabled = false;
     protected boolean busyFractionMetricEnabled = false;
 
-    protected Duration sleepDuration = Duration.ofNanos(100);
+    protected Duration sleepDuration;
 
     protected final PlatformContext platformContext;
 
@@ -101,6 +102,10 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
         }
         this.name = name;
         this.pool = Objects.requireNonNull(defaultPool);
+        sleepDuration = platformContext
+                .getConfiguration()
+                .getConfigData(BasicCommonConfig.class)
+                .backPressureSleepInterval();
     }
 
     /**

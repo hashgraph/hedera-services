@@ -18,6 +18,7 @@ package com.swirlds.common.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
@@ -36,4 +37,5 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData
 public record BasicCommonConfig(
         @ConfigProperty(defaultValue = "true") boolean showInternalStats,
-        @ConfigProperty(defaultValue = "false") boolean verboseStatistics) {}
+        @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
+        @ConfigProperty(defaultValue = "1ms") Duration backPressureSleepInterval) {}

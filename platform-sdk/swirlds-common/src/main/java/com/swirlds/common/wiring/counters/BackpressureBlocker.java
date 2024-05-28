@@ -90,15 +90,15 @@ class BackpressureBlocker implements ManagedBlocker {
      */
     @Override
     public boolean isReleasable() {
-        final long resultingCount = count.incrementAndGet();
-        if (resultingCount <= capacity) {
-            // We didn't violate capacity by incrementing the count, so we're done.
-            return true;
-        } else {
-            // We may have violated capacity restrictions by incrementing the count.
-            // Decrement count and take the slow pathway.
-            count.decrementAndGet();
-            return false;
+        for (; ; ) {
+            final long resultingCount = count.get();
+            if (resultingCount < capacity) {
+                if (count.compareAndSet(resultingCount, resultingCount + 1)) {
+                    return true;
+                }
+            } else {
+                return false;
+            }
         }
     }
 }
