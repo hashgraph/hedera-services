@@ -42,7 +42,7 @@ public class EventStreamTimestampLowerBound implements EventStreamLowerBound {
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(DetailedConsensusEvent consensusEvent) {
+    public int compareTo(@NonNull final DetailedConsensusEvent consensusEvent) {
         return consensusEvent.getGossipEvent().getConsensusTimestamp().compareTo(timestamp);
     }
 }
