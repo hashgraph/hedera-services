@@ -773,6 +773,7 @@ public final class PbjConverter {
             case TOKEN_HAS_NO_METADATA_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
             case MISSING_SERIAL_NUMBERS -> ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case TOKEN_HAS_NO_ADMIN_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
+            case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1309,6 +1310,8 @@ public final class PbjConverter {
             case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
             case MISSING_SERIAL_NUMBERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case TOKEN_HAS_NO_ADMIN_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
+            case INVALID_MAX_AUTO_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_MAX_AUTO_ASSOCIATIONS;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
