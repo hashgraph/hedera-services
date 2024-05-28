@@ -51,6 +51,7 @@ public class BaseLogger extends AbstractLogger {
      * The log event consumer to consume log events by the base logging.
      */
     private final LogEventConsumer logEventConsumer;
+
     /**
      * The log event factory to create log events for the base logging.
      */
