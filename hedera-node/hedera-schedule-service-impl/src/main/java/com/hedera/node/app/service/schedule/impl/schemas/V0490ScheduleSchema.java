@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl.schemas;
 
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
-
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -45,20 +41,31 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 
 /**
- * General schema for the schedule service
- * (FUTURE) When mod-service release is finalized, rename this class to e.g.
- * {@code Release47ScheduleSchema} as it will no longer be appropriate to assume
- * this schema is always correct for the current version of the software.
+ * General schema for the schedule service.
  */
-public final class InitialModServiceScheduleSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(InitialModServiceScheduleSchema.class);
+public final class V0490ScheduleSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0490ScheduleSchema.class);
+
     private static final long MAX_SCHEDULES_BY_ID_KEY = 50_000_000L;
     private static final long MAX_SCHEDULES_BY_EXPIRY_SEC_KEY = 50_000_000L;
     private static final long MAX_SCHEDULES_BY_EQUALITY = 50_000_000L;
-    private MerkleScheduledTransactions fs;
+    /**
+     * The version of the schema.
+     */
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
-    public InitialModServiceScheduleSchema(@NonNull final SemanticVersion version) {
-        super(version);
+    public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
+    public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
+    public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
+
+    /**
+     * Stores data during mono-service migration only.
+     */
+    private static MerkleScheduledTransactions fs;
+
+    public V0490ScheduleSchema() {
+        super(VERSION);
     }
 
     @SuppressWarnings("rawtypes")
@@ -66,10 +73,6 @@ public final class InitialModServiceScheduleSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(schedulesByIdDef(), schedulesByExpirySec(), schedulesByEquality());
-    }
-
-    public void setFs(@Nullable final MerkleScheduledTransactions fs) {
-        this.fs = fs;
     }
 
     @Override
@@ -176,5 +179,9 @@ public final class InitialModServiceScheduleSchema extends Schema {
     private static StateDefinition<ProtoBytes, ScheduleList> schedulesByEquality() {
         return StateDefinition.onDisk(
                 SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF, MAX_SCHEDULES_BY_EQUALITY);
+    }
+
+    public static void setFs(@Nullable final MerkleScheduledTransactions fs) {
+        V0490ScheduleSchema.fs = fs;
     }
 }

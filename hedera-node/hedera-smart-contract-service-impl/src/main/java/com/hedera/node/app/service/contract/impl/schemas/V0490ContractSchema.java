@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.state;
+package com.hedera.node.app.service.contract.impl.schemas;
 
 import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
 
@@ -45,43 +45,42 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Defines the schema for the contract service's state.
- * (FUTURE) When mod-service release is finalized, rename this class to e.g.
- * {@code Release47ContractSchema} as it will no longer be appropriate to assume
- * this schema is always correct for the current version of the software.
+ * The schema for the {@code v0.49.0} version of the contract service. Since {@code v0.49.7} was
+ * the first release of the modularized contract service, this schema defines states to create
+ * for both the contract storage and bytecode.
  */
-public class InitialModServiceContractSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(InitialModServiceContractSchema.class);
-    public static final String STORAGE_KEY = "STORAGE";
-    public static final String BYTECODE_KEY = "BYTECODE";
+public class V0490ContractSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V0490ContractSchema.class);
+
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 1_000_000_000;
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
-    private VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
-    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;
+    public static final String STORAGE_KEY = "STORAGE";
+    public static final String BYTECODE_KEY = "BYTECODE";
 
-    public InitialModServiceContractSchema(@NonNull final SemanticVersion version) {
-        super(version);
+    /**
+     * Fields used to hold data during a mono-service migration.
+     */
+    private static VirtualMapLike<ContractKey, IterableContractValue> storageFromState;
+
+    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> contractBytecodeFromState;
+
+    public V0490ContractSchema() {
+        super(VERSION);
     }
 
-    public void setStorageFromState(
-            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
-        this.storageFromState = storageFromState;
-    }
-
-    public void setBytecodeFromState(
-            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
-        this.contractBytecodeFromState = bytecodeFromState;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         if (storageFromState != null) {
             log.info("BBM: migrating contract service");
 
             log.info("BBM: migrating contract k/v storage...");
-            final var toState = new AtomicReference<>(
-                    ctx.newStates().<SlotKey, SlotValue>get(InitialModServiceContractSchema.STORAGE_KEY));
+            final var toState = new AtomicReference<>(ctx.newStates().<SlotKey, SlotValue>get(STORAGE_KEY));
             final var numSlotInsertions = new AtomicLong();
             try {
                 storageFromState.extractVirtualMapData(
@@ -179,10 +178,9 @@ public class InitialModServiceContractSchema extends Schema {
         contractBytecodeFromState = null;
     }
 
-    @NonNull
     @Override
     @SuppressWarnings("rawtypes")
-    public Set<StateDefinition> statesToCreate() {
+    public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(storageDef(), bytecodeDef());
     }
 
@@ -192,5 +190,15 @@ public class InitialModServiceContractSchema extends Schema {
 
     private @NonNull StateDefinition<ContractID, Bytecode> bytecodeDef() {
         return StateDefinition.onDisk(BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
+    }
+
+    public static void setStorageFromState(
+            @Nullable final VirtualMapLike<ContractKey, IterableContractValue> storageFromState) {
+        V0490ContractSchema.storageFromState = storageFromState;
+    }
+
+    public static void setBytecodeFromState(
+            @Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecodeFromState) {
+        V0490ContractSchema.contractBytecodeFromState = bytecodeFromState;
     }
 }

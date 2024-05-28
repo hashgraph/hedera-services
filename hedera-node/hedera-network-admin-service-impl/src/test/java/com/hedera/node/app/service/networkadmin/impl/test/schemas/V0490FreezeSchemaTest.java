@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.schemas;
 
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceAdminSchema;
+import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -36,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class InitialModServiceAdminSchemaTest {
+public class V0490FreezeSchemaTest {
 
     @Mock
     private MigrationContext migrationContext;
@@ -50,11 +49,11 @@ public class InitialModServiceAdminSchemaTest {
     @Mock
     private WritableSingletonState freezeTimeKeyState;
 
-    private InitialModServiceAdminSchema subject;
+    private V0490FreezeSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new InitialModServiceAdminSchema(CURRENT_VERSION);
+        subject = new V0490FreezeSchema();
     }
 
     @Test
@@ -69,7 +68,7 @@ public class InitialModServiceAdminSchemaTest {
 
     @Test
     void setFSasExpectedAndHappyPathMigration() {
-        InitialModServiceAdminSchema.setFs(true);
+        V0490FreezeSchema.setFs(true);
         given(migrationContext.previousVersion()).willReturn(null);
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.getSingleton(UPGRADE_FILE_HASH_KEY)).willReturn(upgradeFileHashKeyState);
