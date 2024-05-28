@@ -120,6 +120,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
         final var fullPrefixSet = new HashSet<ByteString>();
         for (final var key : fullPrefixKeys) {
             final var explicitKey = registry.getKey(key);
+
             accumulateFullPrefixes(explicitKey, fullPrefixSet);
         }
         return fullPrefixSet;

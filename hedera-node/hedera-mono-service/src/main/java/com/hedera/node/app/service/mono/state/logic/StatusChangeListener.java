@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.state.logic;
 
-package com.hedera.node.app.service.mono.state.logic;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
-
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.stream.RecordStreamManager;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.listeners.PlatformStatusChangeListener;
-import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
+import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.stream.RecordStreamManager;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
+import com.swirlds.common.system.NodeId;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Listener that will be notified with {@link
- * PlatformStatusChangeListener} when platform status
+ * com.swirlds.common.notification.listeners.PlatformStatusChangeListener} when platform status
  * changes. This will set {@link RecordStreamManager}'s {@code inFreeze} status
  */
 @Singleton
@@ -53,7 +52,9 @@ public class StatusChangeListener implements PlatformStatusChangeListener {
 
     @Override
     public void notify(PlatformStatusChangeNotification notification) {
-        log.info("Notification Received: Current Platform status changed to {}", notification.getNewStatus());
+        log.info(
+                "Notification Received: Current Platform status changed to {}",
+                notification.getNewStatus());
 
         final var status = notification.getNewStatus();
         currentPlatformStatus.set(status);

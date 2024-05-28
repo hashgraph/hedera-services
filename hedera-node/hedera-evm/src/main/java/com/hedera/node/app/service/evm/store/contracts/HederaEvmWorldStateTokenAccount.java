@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.node.app.service.evm.store.contracts;
+package com.hedera.services.evm.store.contracts;
 
 import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes;
@@ -46,7 +45,7 @@ public class HederaEvmWorldStateTokenAccount implements Account {
 
     @Override
     public Bytes getCode() {
-        return interpolatedCode().getBytes();
+        return interpolatedCode().getContainerBytes();
     }
 
     @Override
@@ -102,13 +101,16 @@ public class HederaEvmWorldStateTokenAccount implements Account {
     private Code interpolatedCode() {
         if (interpolatedCode == null) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
-            interpolatedCode = CodeFactory.createCode(interpolatedBytecode, 0, false);
+            interpolatedCode =
+                    CodeFactory.createCode(
+                            interpolatedBytecode, Hash.hash(interpolatedBytecode), 0, false);
         }
         return interpolatedCode;
     }
 
     public static Bytes proxyBytecodeFor(final Address address) {
         return Bytes.fromHexString(
-                TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
+                TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(
+                        TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 }

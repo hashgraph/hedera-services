@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.ledger.accounts.staking;
 
-package com.hedera.node.app.service.mono.ledger.accounts.staking;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
-
-import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.platform.system.address.AddressBook;
-import java.time.LocalDate;
+import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,19 +42,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A helper class to recompute staking metadata at startup. Its main work is to update the staking info map to reflect
- * any changes to the address book since the last restart.
+ * A helper class to recompute staking metadata at startup. Its main work is to update the staking
+ * info map to reflect any changes to the address book since the last restart.
  *
  * <p>However, if a bug has corrupted a piece of staking metadata (e.g., the pending rewards), this
- * class can also be used to recompute that metadata based on the value of the {@code staking.startupHelper.recompute}
- * property.
+ * class can also be used to recompute that metadata based on the value of the {@code
+ * staking.startupHelper.recompute} property.
  *
  * <p>Such re-computations are done <b>only</b> after an upgrade, since it is never safe to "undo"
- * the effects of a bug on state during reconnect. (Nodes that never fell out of sync will not get this opportunity!)
+ * the effects of a bug on state during reconnect. (Nodes that never fell out of sync will not get
+ * this opportunity!)
  */
 @Singleton
 public class StakeStartupHelper {
-
     private static final Logger log = LogManager.getLogger(StakeStartupHelper.class);
 
     public enum RecomputeType {
@@ -68,25 +65,24 @@ public class StakeStartupHelper {
     private final PropertySource properties;
     private final StakeInfoManager stakeInfoManager;
     private final RewardCalculator rewardCalculator;
-    private final StakePeriodManager stakePeriodManager;
 
     @Inject
     public StakeStartupHelper(
             final StakeInfoManager stakeInfoManager,
             final @CompositeProps PropertySource properties,
-            final RewardCalculator rewardCalculator,
-            final StakePeriodManager stakePeriodManager) {
+            final RewardCalculator rewardCalculator) {
         this.properties = properties;
         this.stakeInfoManager = stakeInfoManager;
         this.rewardCalculator = rewardCalculator;
-        this.stakePeriodManager = stakePeriodManager;
     }
 
     /**
-     * Given the genesis address book, prepares the network's staking infrastructure to work with this address book.
+     * Given the genesis address book, prepares the network's staking infrastructure to work with
+     * this address book.
      *
      * <p><b>FUTURE WORK:</b> Update this method to also accept the genesis staking infos map and do
-     * the {@code createGenesisChildren()} work currently still done by {@link com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder}.
+     * the {@code createGenesisChildren()} work currently still done by {@code
+     * StakingInfoMapBuilder}.
      *
      * @param addressBook the genesis address book
      */
@@ -99,14 +95,16 @@ public class StakeStartupHelper {
     }
 
     /**
-     * Given the current address book and a mutable staking info map, updates the map to have exactly one entry for each
-     * node id in the address book. This could both remove and add entries to the map.
+     * Given the current address book and a mutable staking info map, updates the map to have
+     * exactly one entry for each node id in the address book. This could both remove and add
+     * entries to the map.
      *
-     * @param addressBook  the current address book
+     * @param addressBook the current address book
      * @param stakingInfos the mutable staking info map
      */
     public void doRestartHousekeeping(
-            final AddressBook addressBook, final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final AddressBook addressBook,
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
         // List the node ids in the staking info map from BEFORE the restart
         final List<Long> preRestartNodeIds =
                 stakingInfos.keySet().stream().map(EntityNum::longValue).toList();
@@ -120,34 +118,31 @@ public class StakeStartupHelper {
     }
 
     /**
-     * Given a mutable accounts map, staking info map, and network context, re-computes any requested staking metadata
-     * based on the value of the {@code staking.startupHelper.recompute} property.
+     * Given a mutable accounts map, staking info map, and network context, re-computes any
+     * requested staking metadata based on the value of the {@code staking.startupHelper.recompute}
+     * property.
      *
      * @param networkContext the mutable network context
-     * @param accounts       the mutable accounts map
-     * @param stakingInfos   the mutable staking info map
+     * @param accounts the mutable accounts map
+     * @param stakingInfos the mutable staking info map
      */
     public void doUpgradeHousekeeping(
             final MerkleNetworkContext networkContext,
             final AccountStorageAdapter accounts,
-            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         // Recompute anything requested by the staking.startupHelper.recompute property
-        final var recomputeTypes = properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE);
+        final var recomputeTypes =
+                properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE);
         if (!recomputeTypes.isEmpty()) {
-            // While doing upgrade housekeeping, the current stake period is calculated from the last consensus time
-            // that is recorded in state. This is needed because when we calculate effectivePeriod in rewardCalculator
-            // we need to know the current stake period.
-            final var curStakePeriod = LocalDate.ofInstant(networkContext.consensusTimeOfLastHandledTxn(), ZONE_UTC)
-                    .toEpochDay();
-            stakePeriodManager.setCurrentStakePeriod(curStakePeriod);
             withLoggedDuration(
-                    () -> recomputeQuantities(
-                            recomputeTypes.contains(RecomputeType.NODE_STAKES),
-                            recomputeTypes.contains(RecomputeType.PENDING_REWARDS),
-                            networkContext,
-                            accounts,
-                            stakingInfos),
+                    () ->
+                            recomputeQuantities(
+                                    recomputeTypes.contains(RecomputeType.NODE_STAKES),
+                                    recomputeTypes.contains(RecomputeType.PENDING_REWARDS),
+                                    networkContext,
+                                    accounts,
+                                    stakingInfos),
                     log,
                     "Recomputing " + recomputeTypes);
         }
@@ -156,14 +151,18 @@ public class StakeStartupHelper {
     private void updateInfosForAddedOrRemovedNodes(
             final List<Long> preUpgradeNodeIds,
             final List<Long> postUpgradeNodeIds,
-            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
         // Add staking info for nodes that are new in the address book
         final List<Long> addedNodeIds = orderedSetMinus(postUpgradeNodeIds, preUpgradeNodeIds);
         if (!addedNodeIds.isEmpty()) {
-            final var numRewardablePeriods = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+            final var numRewardablePeriods =
+                    properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
             log.info("Adding staking info for new node ids: {}", addedNodeIds);
             addedNodeIds.forEach(
-                    id -> stakingInfos.put(EntityNum.fromLong(id), new MerkleStakingInfo(numRewardablePeriods)));
+                    id ->
+                            stakingInfos.put(
+                                    EntityNum.fromLong(id),
+                                    new MerkleStakingInfo(numRewardablePeriods)));
         }
 
         // Remove any staking info for nodes that are no longer in the address book
@@ -179,24 +178,29 @@ public class StakeStartupHelper {
             final boolean doPendingRewards,
             final MerkleNetworkContext networkContext,
             final AccountStorageAdapter accounts,
-            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         final AtomicLong newPendingRewards = new AtomicLong();
         final Map<EntityNum, Long> newStakesToReward = new HashMap<>();
         final Map<EntityNum, Long> newStakesToNotReward = new HashMap<>();
 
-        accounts.forEach((num, account) -> {
-            if (!account.isDeleted() && account.getStakedId() < 0) {
-                if (doPendingRewards) {
-                    final var truePending = rewardCalculator.estimatePendingRewards(
-                            account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId())));
-                    newPendingRewards.addAndGet(truePending);
-                }
-                if (doNodeStakes) {
-                    updateForNodeStaked(account, newStakesToReward, newStakesToNotReward);
-                }
-            }
-        });
+        accounts.forEach(
+                (num, account) -> {
+                    if (!account.isDeleted() && account.getStakedId() < 0) {
+                        if (doPendingRewards) {
+                            final var truePending =
+                                    rewardCalculator.estimatePendingRewards(
+                                            account,
+                                            stakingInfos.get(
+                                                    EntityNum.fromLong(
+                                                            account.getStakedNodeAddressBookId())));
+                            newPendingRewards.addAndGet(truePending);
+                        }
+                        if (doNodeStakes) {
+                            updateForNodeStaked(account, newStakesToReward, newStakesToNotReward);
+                        }
+                    }
+                });
 
         if (doPendingRewards) {
             final var recomputedPending = newPendingRewards.get();
@@ -210,11 +214,14 @@ public class StakeStartupHelper {
         }
 
         if (doNodeStakes) {
-            forEach(stakingInfos, (num, info) -> {
-                final var mutableInfo = stakingInfos.getForModify(num);
-                mutableInfo.syncRecomputedStakeValues(
-                        newStakesToReward.getOrDefault(num, 0L), newStakesToNotReward.getOrDefault(num, 0L));
-            });
+            forEach(
+                    stakingInfos,
+                    (num, info) -> {
+                        final var mutableInfo = stakingInfos.getForModify(num);
+                        mutableInfo.syncRecomputedStakeValues(
+                                newStakesToReward.getOrDefault(num, 0L),
+                                newStakesToNotReward.getOrDefault(num, 0L));
+                    });
         }
     }
 
@@ -240,7 +247,7 @@ public class StakeStartupHelper {
     private List<Long> idsFromAddressBook(final AddressBook addressBook) {
         final List<Long> nodeIds = new ArrayList<>();
         for (int i = 0, n = addressBook.getSize(); i < n; i++) {
-            final long id = addressBook.getNodeId(i).id();
+            final long id = addressBook.getId(i);
             nodeIds.add(id);
         }
         return nodeIds;

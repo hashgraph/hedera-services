@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.store.contracts.precompile.utils;
 
-package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
-
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
-import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.evm.store.contracts.WorldStateAccount;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,20 +34,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class KeyActivationUtilsTest {
-    @Mock
-    private MessageFrame grandparent;
-
-    @Mock
-    private MessageFrame parent;
-
-    @Mock
-    private MessageFrame messageFrame;
-
-    @Mock
-    private WorldStateAccount worldStateAccount;
-
-    @Mock
-    private HederaStackedWorldStateUpdater worldUpdater;
+    @Mock private MessageFrame grandparent;
+    @Mock private MessageFrame parent;
+    @Mock private MessageFrame messageFrame;
+    @Mock private WorldStateAccount worldStateAccount;
+    @Mock private HederaStackedWorldStateUpdater worldUpdater;
 
     @Test
     void testsAccountIsToken() {

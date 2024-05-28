@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.test.utils;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
 
 public class CryptoConfigUtils {
-    public static CryptoConfig MINIMAL_CRYPTO_CONFIG = new CryptoConfig(1, 1, "keystorePass", false);
+    public static CryptoConfig MINIMAL_CRYPTO_CONFIG =
+            new CryptoConfig(1, 1, 5, 5, false, "keystorePass");
 
     private CryptoConfigUtils() {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.hashgraph.conventions")
 }
 
 description = "Hedera Application - SPI"
 
-testModuleInfo {
-    requires("com.hedera.node.app.spi")
-    requires("com.swirlds.platform.core.test.fixtures")
-    requires("org.apache.commons.lang3")
-    requires("org.assertj.core")
-    requires("org.junit.jupiter.api")
-    requires("org.junit.jupiter.params")
-    requires("org.mockito")
-    requires("org.mockito.junit.jupiter")
-    requiresStatic("com.github.spotbugs.annotations")
+dependencies {
+    api(libs.hapi)
+    implementation(libs.jsr305.annotation)
+    compileOnly(libs.spotbugs.annotations)
+    testImplementation(testLibs.bundles.mockito)
+}
+
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
 }

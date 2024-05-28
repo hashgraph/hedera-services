@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.node.app.service.token.impl;
 
-package com.hedera.node.app.service.mono.fees.congestion;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
+import com.hedera.node.app.spi.PreHandleContext;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,21 +26,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DelegatingMultiplierSourceTest {
-    @Mock
-    private ThrottleMultiplierSource delegate;
+class CryptoPreTransactionHandlerNotImplTest {
+    @Mock private AccountStore store;
+    @Mock private PreHandleContext context;
 
-    private DelegatingMultiplierSource subject;
+    private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new DelegatingMultiplierSource(delegate);
+        subject = new CryptoPreTransactionHandlerImpl(store, context);
     }
 
     @Test
-    void delegatesToString() {
-        final var useful = "Lorem ipsum dolor sit amet";
-        given(delegate.toString()).willReturn(useful);
-        assertEquals(useful, subject.toString());
+    void notImplementedStuffIsntImplemented() {
+        assertThrows(NotImplementedException.class, () -> subject.preHandleCryptoTransfer(null));
+        assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null));
+        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null));
     }
 }

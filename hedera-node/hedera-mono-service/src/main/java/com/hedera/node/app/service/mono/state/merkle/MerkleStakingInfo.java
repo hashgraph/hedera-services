@@ -151,6 +151,37 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         this.stakeToNotReward = stakeToNotReward;
     }
 
+    /**
+     * Given up-to-date values for this node's stake to reward both at the start of this period, and
+     * now; and its stake to not reward now, updates this staking info to reflect the new values.
+     *
+     * <p>Ideally, we would be able to recompute and fix {@code stakeRewardStart} here. But we
+     * cannot since an account might have changed its staking metadata since the beginning of the
+     * period, meaning the state has "forgotten" everything about its metadata at the start of the
+     * period.
+     *
+     * @param stakeToReward the node's current stake to reward
+     * @param stakeToNotReward the node's current stake to not reward
+     */
+    public void syncRecomputedStakeValues(final long stakeToReward, final long stakeToNotReward) {
+        if (stakeToReward != this.stakeToReward) {
+            log.warn(
+                    "Stake to reward for node {} was recomputed from {} to {}",
+                    number,
+                    this.stakeToReward,
+                    stakeToReward);
+        }
+        if (stakeToNotReward != this.stakeToNotReward) {
+            log.warn(
+                    "Stake to not reward for node {} was recomputed from {} to {}",
+                    number,
+                    this.stakeToNotReward,
+                    stakeToNotReward);
+        }
+        this.stakeToReward = stakeToReward;
+        this.stakeToNotReward = stakeToNotReward;
+    }
+
     public void removeRewardStake(final long amount, final boolean declinedReward) {
         if (declinedReward) {
             this.stakeToNotReward -= amount;
@@ -174,14 +205,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
      * @return the clamped stake value
      */
     public long reviewElectionsAndRecomputeStakes() {
-        final var totalStake = stakeToReward + stakeToNotReward;
-        if (totalStake > maxStake) {
-            setStake(maxStake);
-        } else if (totalStake < minStake) {
-            setStake(0);
-        } else {
-            setStake(totalStake);
-        }
+        clampConsensusStakeInMinMaxRange();
         stakeRewardStart = stakeToReward;
         return stakeRewardStart;
     }
@@ -485,6 +509,17 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private void ensureHistoryHashIsKnown() {
         if (historyHash == null) {
             historyHash = getHashBytes(rewardSumHistory);
+        }
+    }
+
+    private void clampConsensusStakeInMinMaxRange() {
+        final var totalStake = stakeToReward + stakeToNotReward;
+        if (totalStake > maxStake) {
+            setStake(maxStake);
+        } else if (totalStake < minStake) {
+            setStake(0);
+        } else {
+            setStake(totalStake);
         }
     }
 

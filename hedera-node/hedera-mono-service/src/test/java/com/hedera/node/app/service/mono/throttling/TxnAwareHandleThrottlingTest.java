@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.node.app.service.mono.throttling;
+package com.hedera.services.throttling;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -25,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -45,14 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TxnAwareHandleThrottlingTest {
     private Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 123);
 
-    @Mock
-    private TimedFunctionalityThrottling delegate;
-
-    @Mock
-    private TransactionContext txnCtx;
-
-    @Mock
-    private Query query;
+    @Mock private TimedFunctionalityThrottling delegate;
+    @Mock private TransactionContext txnCtx;
+    @Mock private Query query;
 
     private TxnAwareHandleThrottling subject;
 
@@ -62,26 +56,19 @@ class TxnAwareHandleThrottlingTest {
     }
 
     @Test
+    void delegatesShouldThrottleNOfUnscaled() {
+        given(txnCtx.consensusTime()).willReturn(consensusTime);
+        given(delegate.shouldThrottleNOfUnscaled(23, CryptoCreate, consensusTime)).willReturn(true);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(23, CryptoCreate));
+    }
+
+    @Test
     void txnHandlingDoesntSupportQueries() {
         // expect:
         assertThrows(
-                UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
-    }
-
-    @Test
-    void delegatesCapacityLeak() {
-        subject.leakCapacityForNOfUnscaled(2, CryptoCreate);
-        verify(delegate).leakCapacityForNOfUnscaled(2, CryptoCreate);
-    }
-
-    @Test
-    void delegatesSnapshotActions() {
-        final List<DeterministicThrottle.UsageSnapshot> pretend = List.of();
-        given(delegate.getUsageSnapshots()).willReturn(pretend);
-        assertSame(pretend, subject.getUsageSnapshots());
-
-        subject.resetUsageThrottlesTo(pretend);
-        verify(delegate).resetUsageThrottlesTo(pretend);
+                UnsupportedOperationException.class,
+                () -> subject.shouldThrottleQuery(CryptoGetAccountBalance, query));
     }
 
     @Test
@@ -89,15 +76,6 @@ class TxnAwareHandleThrottlingTest {
         given(delegate.wasLastTxnGasThrottled()).willReturn(true);
 
         assertTrue(subject.wasLastTxnGasThrottled());
-    }
-
-    @Test
-    void delegatesShouldThrottleNOfUnscaled() {
-        given(txnCtx.consensusTime()).willReturn(consensusTime);
-        given(delegate.shouldThrottleNOfUnscaled(23, CryptoCreate, consensusTime))
-                .willReturn(true);
-
-        assertTrue(subject.shouldThrottleNOfUnscaled(23, CryptoCreate));
     }
 
     @Test
@@ -162,7 +140,8 @@ class TxnAwareHandleThrottlingTest {
 
     @Test
     void gasLimitThrottleWorks() {
-        GasLimitDeterministicThrottle gasLimitDeterministicThrottle = new GasLimitDeterministicThrottle(1234);
+        GasLimitDeterministicThrottle gasLimitDeterministicThrottle =
+                new GasLimitDeterministicThrottle(1234);
         given(delegate.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
         GasLimitDeterministicThrottle gasLimitDeterministicThrottle1 = subject.gasLimitThrottle();
         assertEquals(gasLimitDeterministicThrottle, gasLimitDeterministicThrottle1);

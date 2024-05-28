@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.ledger.accounts.staking;
 
-package com.hedera.node.app.service.mono.ledger.accounts.staking;
-
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
-import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_SECONDS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
+import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
+import static com.hedera.services.utils.Units.MINUTES_TO_SECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -37,7 +37,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class StakePeriodManager {
-
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
     public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
@@ -56,7 +55,8 @@ public class StakePeriodManager {
             final @CompositeProps PropertySource properties) {
         this.txnCtx = txnCtx;
         this.networkCtx = networkCtx;
-        this.numStoredPeriods = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+        this.numStoredPeriods =
+                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
         this.stakingPeriodMins = properties.getLongProperty(STAKING_PERIOD_MINS);
     }
 
@@ -104,7 +104,9 @@ public class StakePeriodManager {
     }
 
     public long estimatedFirstNonRewardableStakePeriod() {
-        return networkCtx.get().areRewardsActivated() ? estimatedCurrentStakePeriod() - 1 : Long.MIN_VALUE;
+        return networkCtx.get().areRewardsActivated()
+                ? estimatedCurrentStakePeriod() - 1
+                : Long.MIN_VALUE;
     }
 
     public boolean isEstimatedRewardable(final long stakePeriodStart) {
@@ -134,7 +136,10 @@ public class StakePeriodManager {
      * @return either NA for no new stakePeriodStart, or the new value
      */
     public long startUpdateFor(
-            final long curStakedId, final long newStakedId, final boolean rewarded, final boolean stakeMetaChanged) {
+            final long curStakedId,
+            final long newStakedId,
+            final boolean rewarded,
+            final boolean stakeMetaChanged) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (newStakedId < 0) {
             if (curStakedId >= 0 || stakeMetaChanged) {
@@ -145,24 +150,11 @@ public class StakePeriodManager {
                 return currentStakePeriod() - 1;
             }
         }
-        return StakingUtils.NA;
-    }
-
-    /**
-     * Sets the stakePeriod to the given value. This is only called during upgrade housekeeping.
-     * @param currentStakePeriod the value to set the currentStakePeriod to
-     */
-    public void setCurrentStakePeriod(final long currentStakePeriod) {
-        this.currentStakePeriod = currentStakePeriod;
+        return NA;
     }
 
     @VisibleForTesting
     long getPrevConsensusSecs() {
         return prevConsensusSecs;
-    }
-
-    @VisibleForTesting
-    public long getCurrentStakePeriod() {
-        return currentStakePeriod;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.node.app.service.mono.queries.contract;
+package com.hedera.services.queries.contract;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
@@ -32,32 +31,29 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
-import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.store.AccountStore;
-import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
-import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.evm.contracts.execution.BlockMetaSource;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.EntityAccess;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
@@ -92,56 +88,34 @@ class ContractCallLocalAnswerTest {
     private long gas = 123;
     private Transaction paymentTxn;
 
-    @Mock
-    private StateView view;
-
-    @Mock
-    private AccountStore accountStore;
-
-    @Mock
-    private EntityIdSource ids;
-
-    @Mock
-    private OptionValidator validator;
-
-    @Mock
-    private EntityAccess entityAccess;
-
-    @Mock
-    private GlobalDynamicProperties dynamicProperties;
-
-    @Mock
-    private CallLocalEvmTxProcessor evmTxProcessor;
-
-    @Mock
-    private MerkleMap<EntityNum, MerkleAccount> contracts;
-
-    @Mock
-    private NodeLocalProperties nodeLocalProperties;
-
-    @Mock
-    private AliasManager aliasManager;
-
-    @Mock
-    private StaticBlockMetaProvider blockMetaProvider;
-
-    @Mock
-    private BlockMetaSource blockMetaSource;
+    @Mock private StateView view;
+    @Mock private AccountStore accountStore;
+    @Mock private EntityIdSource ids;
+    @Mock private OptionValidator validator;
+    @Mock private EntityAccess entityAccess;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private CallLocalEvmTxProcessor evmTxProcessor;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
+    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock private AliasManager aliasManager;
+    @Mock private StaticBlockMetaProvider blockMetaProvider;
+    @Mock private BlockMetaSource blockMetaSource;
 
     private ContractCallLocalAnswer subject;
 
     @BeforeEach
     void setup() {
-        subject = new ContractCallLocalAnswer(
-                ids,
-                aliasManager,
-                accountStore,
-                validator,
-                entityAccess,
-                dynamicProperties,
-                nodeLocalProperties,
-                () -> evmTxProcessor,
-                blockMetaProvider);
+        subject =
+                new ContractCallLocalAnswer(
+                        ids,
+                        aliasManager,
+                        accountStore,
+                        validator,
+                        entityAccess,
+                        dynamicProperties,
+                        nodeLocalProperties,
+                        () -> evmTxProcessor,
+                        blockMetaProvider);
     }
 
     @Test
@@ -149,7 +123,7 @@ class ContractCallLocalAnswerTest {
         given(entityAccess.isTokenAccount(any())).willReturn(true);
 
         // given:
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
         given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
         // expect:
@@ -158,10 +132,10 @@ class ContractCallLocalAnswerTest {
 
     @Test
     void rejectsInvalidCid() throws Throwable {
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
 
         // given:
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
         given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
         // and:
@@ -177,7 +151,7 @@ class ContractCallLocalAnswerTest {
         gas = -1;
 
         // given:
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
 
         // expect:
         assertEquals(CONTRACT_NEGATIVE_GAS, subject.checkValidity(query, view));
@@ -188,7 +162,7 @@ class ContractCallLocalAnswerTest {
 
         // given:
         given(dynamicProperties.maxGasPerSec()).willReturn(gas - 1);
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
 
         // expect:
         assertEquals(MAX_GAS_LIMIT_EXCEEDED, subject.checkValidity(query, view));
@@ -197,10 +171,10 @@ class ContractCallLocalAnswerTest {
     @Test
     void noCopyPasteErrors() throws Throwable {
         // given:
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
 
         // when:
-        final Response response = subject.responseGiven(query, view, INSUFFICIENT_TX_FEE, fee);
+        Response response = subject.responseGiven(query, view, INSUFFICIENT_TX_FEE, fee);
 
         // then:
         assertEquals(HederaFunctionality.ContractCallLocal, subject.canonicalFunction());
@@ -213,14 +187,16 @@ class ContractCallLocalAnswerTest {
     @Test
     void getsInvalidResponse() throws Throwable {
         // setup:
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
 
         // when:
-        final Response response = subject.responseGiven(query, view, FAIL_INVALID, fee);
+        Response response = subject.responseGiven(query, view, FAIL_INVALID, fee);
 
         // then:
         assertTrue(response.hasContractCallLocal());
-        assertEquals(FAIL_INVALID, response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(
+                FAIL_INVALID,
+                response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getContractCallLocal().getHeader().getResponseType());
         assertEquals(fee, response.getContractCallLocal().getHeader().getCost());
     }
@@ -228,14 +204,14 @@ class ContractCallLocalAnswerTest {
     @Test
     void getsCostAnswerResponse() throws Throwable {
         // setup:
-        final Query query = validQuery(COST_ANSWER, fee);
+        Query query = validQuery(COST_ANSWER, fee);
 
         // when:
-        final Response response = subject.responseGiven(query, view, OK, fee);
+        Response response = subject.responseGiven(query, view, OK, fee);
 
         // then:
         assertTrue(response.hasContractCallLocal());
-        final ContractCallLocalResponse opResponse = response.getContractCallLocal();
+        ContractCallLocalResponse opResponse = response.getContractCallLocal();
         assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, opResponse.getHeader().getResponseType());
         assertEquals(fee, opResponse.getHeader().getCost());
@@ -244,12 +220,12 @@ class ContractCallLocalAnswerTest {
     @Test
     void failsOnAvailCtxWithNoCachedResponse() throws Throwable {
         // setup:
-        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-        final Map<String, Object> queryCtx = new HashMap<>();
+        Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+        Map<String, Object> queryCtx = new HashMap<>();
 
-        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
+        Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
 
-        final var opResponse = response.getContractCallLocal();
+        var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
         assertEquals(FAIL_INVALID, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
@@ -257,18 +233,20 @@ class ContractCallLocalAnswerTest {
     @Test
     void usesCtxWhenAvail() throws Throwable {
         // setup:
-        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-        final Map<String, Object> queryCtx = new HashMap<>();
-        final var cachedResponse = response(CONTRACT_EXECUTION_EXCEPTION);
+        Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+        Map<String, Object> queryCtx = new HashMap<>();
+        var cachedResponse = response(CONTRACT_EXECUTION_EXCEPTION);
         queryCtx.put(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY, cachedResponse);
 
         // when:
-        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
+        Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, queryCtx);
 
         // then:
-        final var opResponse = response.getContractCallLocal();
+        var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
-        assertEquals(CONTRACT_EXECUTION_EXCEPTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(
+                CONTRACT_EXECUTION_EXCEPTION,
+                opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertEquals(result, opResponse.getFunctionResult().getContractCallResult());
         assertEquals(target, opResponse.getFunctionResult().getContractID());
         verify(accountStore, never()).loadAccount(any());
@@ -277,15 +255,22 @@ class ContractCallLocalAnswerTest {
     @Test
     void getsCallResponseWhenNoBlockMetaAvailable() throws Throwable {
         // setup:
-        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+        Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
-        final var transactionProcessingResult = TransactionProcessingResult.failed(
-                0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.empty(),
+                        Optional.empty(),
+                        new TreeMap<>(),
+                        new ArrayList<>());
 
-        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+        Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
         // then:
-        final var opResponse = response.getContractCallLocal();
+        var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header");
         assertEquals(BUSY, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
@@ -293,37 +278,47 @@ class ContractCallLocalAnswerTest {
     @Test
     void getsCallResponseWhenNoCtx() throws Throwable {
         // setup:
-        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+        Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
-        final var transactionProcessingResult = TransactionProcessingResult.failed(
-                0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
+        final var transactionProcessingResult =
+                TransactionProcessingResult.failed(
+                        0,
+                        0,
+                        1,
+                        Optional.empty(),
+                        Optional.empty(),
+                        new TreeMap<>(),
+                        new ArrayList<>());
 
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
-        given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+        given(accountStore.loadContract(any()))
+                .willReturn(new Account(Id.fromGrpcContract(target)));
         given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
                 .willReturn(transactionProcessingResult);
         given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
-        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+        Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
         // then:
-        final var opResponse = response.getContractCallLocal();
+        var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
-        assertEquals(CONTRACT_EXECUTION_EXCEPTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(
+                CONTRACT_EXECUTION_EXCEPTION,
+                opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertEquals(target, opResponse.getFunctionResult().getContractID());
     }
 
     @Test
     void translatesFailWhenNoCtx() throws Throwable {
         // setup:
-        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+        Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
         given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
         // when:
-        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+        Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
         // then:
-        final var opResponse = response.getContractCallLocal();
+        var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
         assertEquals(FAIL_INVALID, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
@@ -331,34 +326,36 @@ class ContractCallLocalAnswerTest {
     @Test
     void respectsMetaValidity() throws Throwable {
         // given:
-        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
+        Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
         // when:
-        final Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
+        Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
 
         // then:
-        final var opResponse = response.getContractCallLocal();
+        var opResponse = response.getContractCallLocal();
         assertEquals(INVALID_TRANSACTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
 
-    private Query validQuery(final ResponseType type, final long payment) throws Throwable {
+    private Query validQuery(ResponseType type, long payment) throws Throwable {
         final var node = "0.0.3";
         final var payer = "0.0.12345";
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 
-        final QueryHeader.Builder header =
+        QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
-        final ContractCallLocalQuery.Builder op = ContractCallLocalQuery.newBuilder()
-                .setHeader(header)
-                .setContractID(target)
-                .setGas(gas);
+        ContractCallLocalQuery.Builder op =
+                ContractCallLocalQuery.newBuilder()
+                        .setHeader(header)
+                        .setContractID(target)
+                        .setGas(gas);
         return Query.newBuilder().setContractCallLocal(op).build();
     }
 
     private ContractCallLocalResponse response(final ResponseCodeEnum status) {
         return ContractCallLocalResponse.newBuilder()
                 .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
-                .setFunctionResult(ContractFunctionResult.newBuilder().setContractCallResult(result))
+                .setFunctionResult(
+                        ContractFunctionResult.newBuilder().setContractCallResult(result))
                 .build();
     }
 }

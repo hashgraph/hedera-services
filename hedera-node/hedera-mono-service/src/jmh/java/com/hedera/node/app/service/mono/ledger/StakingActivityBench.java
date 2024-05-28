@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,37 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.ledger;
 
-package com.hedera.node.app.service.mono.ledger;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.services.setup.Constructables.FIRST_NODE_I;
+import static com.hedera.services.setup.Constructables.FIRST_USER_I;
+import static com.hedera.services.setup.Constructables.FUNDING_ID;
+import static com.hedera.services.setup.Constructables.PRETEND_AMOUNT;
+import static com.hedera.services.setup.Constructables.PRETEND_FEE;
+import static com.hedera.services.setup.Constructables.SECS_PER_DAY;
+import static com.hedera.services.setup.Constructables.SOME_TIME;
+import static com.hedera.services.setup.InfrastructureInitializer.initializeStakeableAccounts;
+import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
+import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
+import static com.hedera.services.setup.InfrastructureType.STAKING_INFOS_MM;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
-import static com.hedera.node.app.service.mono.setup.Constructables.ADDEND;
-import static com.hedera.node.app.service.mono.setup.Constructables.FIRST_NODE_I;
-import static com.hedera.node.app.service.mono.setup.Constructables.FIRST_USER_I;
-import static com.hedera.node.app.service.mono.setup.Constructables.FUNDING_ID;
-import static com.hedera.node.app.service.mono.setup.Constructables.MULTIPLIER;
-import static com.hedera.node.app.service.mono.setup.Constructables.PRETEND_AMOUNT;
-import static com.hedera.node.app.service.mono.setup.Constructables.PRETEND_FEE;
-import static com.hedera.node.app.service.mono.setup.Constructables.SECS_PER_DAY;
-import static com.hedera.node.app.service.mono.setup.Constructables.SEED;
-import static com.hedera.node.app.service.mono.setup.Constructables.SOME_TIME;
-import static com.hedera.node.app.service.mono.setup.Constructables.registerForAccounts;
-import static com.hedera.node.app.service.mono.setup.Constructables.registerForMerkleMap;
-import static com.hedera.node.app.service.mono.setup.Constructables.registerForStakingInfo;
-import static com.hedera.node.app.service.mono.setup.InfrastructureInitializer.initializeStakeableAccounts;
-import static com.hedera.node.app.service.mono.setup.InfrastructureManager.loadOrCreateBundle;
-import static com.hedera.node.app.service.mono.setup.InfrastructureType.ACCOUNTS_MM;
-import static com.hedera.node.app.service.mono.setup.InfrastructureType.STAKING_INFOS_MM;
-
-import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.setup.InfrastructureBundle;
-import com.hedera.node.app.service.mono.setup.InfrastructureType;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.accounts.staking.RewardCalculator;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.setup.Constructables;
+import com.hedera.services.setup.InfrastructureBundle;
+import com.hedera.services.setup.InfrastructureType;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
 import java.util.List;
@@ -101,9 +95,9 @@ public class StakingActivityBench {
 
     @Setup(Level.Trial)
     public void setupInfrastructure() {
-        registerForMerkleMap();
-        registerForAccounts();
-        registerForStakingInfo();
+        Constructables.registerForMerkleMap();
+        Constructables.registerForAccounts();
+        Constructables.registerForStakingInfo();
 
         bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
         app = DaggerStakingActivityApp.builder().bundle(bundle).build();
@@ -119,7 +113,7 @@ public class StakingActivityBench {
         n = 0;
 
         initializeStakeableAccounts(
-                new SplittableRandom(SEED),
+                new SplittableRandom(Constructables.SEED),
                 activeConfig(),
                 app.backingAccounts(),
                 app.stakingInfos().get(),
@@ -132,9 +126,12 @@ public class StakingActivityBench {
 
         final var actionsPerDay = (long) actionsPerRound * roundsPerPeriod;
         final var avgDailyActionsPerAccount = actionsPerDay / stakeableAccounts;
-        callsBetweenStakingChange = (int) (meanDaysBeforeNewStakePeriodStart * avgDailyActionsPerAccount);
+        callsBetweenStakingChange =
+                (int) (meanDaysBeforeNewStakePeriodStart * avgDailyActionsPerAccount);
         System.out.println(
-                "A staking change will occur every ~" + callsBetweenStakingChange + " benchmark invocations");
+                "A staking change will occur every ~"
+                        + callsBetweenStakingChange
+                        + " benchmark invocations");
     }
 
     @Setup(Level.Invocation)
@@ -144,14 +141,17 @@ public class StakingActivityBench {
             round++;
             if (round % roundsPerPeriod == 0) {
                 final var finishedPeriodOffset = (round / roundsPerPeriod) - 1;
-                final var finishedTimeRepresentative = SOME_TIME.plusSeconds(finishedPeriodOffset * SECS_PER_DAY);
-                System.out.println("\n--- END OF PERIOD @ "
-                        + finishedTimeRepresentative
-                        + " -> "
-                        + app.periodManager().currentStakePeriod()
-                        + " ---");
+                final var finishedTimeRepresentative =
+                        SOME_TIME.plusSeconds(finishedPeriodOffset * SECS_PER_DAY);
+                System.out.println(
+                        "\n--- END OF PERIOD @ "
+                                + finishedTimeRepresentative
+                                + " -> "
+                                + app.periodManager().currentStakePeriod()
+                                + " ---");
                 app.endOfPeriodCalcs().updateNodes(finishedTimeRepresentative);
-                final var currentPeriodTimeRepresentative = finishedTimeRepresentative.plusSeconds(SECS_PER_DAY);
+                final var currentPeriodTimeRepresentative =
+                        finishedTimeRepresentative.plusSeconds(SECS_PER_DAY);
                 app.txnCtx().resetFor(null, currentPeriodTimeRepresentative, 0L);
                 System.out.println(
                         "- Current period is now   :: " + app.periodManager().currentStakePeriod());
@@ -175,8 +175,9 @@ public class StakingActivityBench {
             ledger.set(FUNDING_ID, BALANCE, (long) ledger.get(FUNDING_ID, BALANCE) + 1);
             ledger.commit();
         }
-        System.out.println("Pending rewards after forcing all reward payments: "
-                + app.networkCtx().get().pendingRewards());
+        System.out.println(
+                "Pending rewards after forcing all reward payments: "
+                        + app.networkCtx().get().pendingRewards());
         compareStakeToReward();
     }
 
@@ -188,33 +189,51 @@ public class StakingActivityBench {
             final var account = curAccounts.get(num);
             if (account.getStakedId() < 0) {
                 final var nodeId = account.getStakedNodeAddressBookId();
-                summedStakesToReward.merge(EntityNum.fromLong(nodeId), roundedToHbar(account.totalStake()), Long::sum);
+                summedStakesToReward.merge(
+                        EntityNum.fromLong(nodeId), roundedToHbar(account.totalStake()), Long::sum);
             }
         }
-        summedStakesToReward.forEach((num, amount) -> {
-            final var info = app.stakingInfos().get().get(num);
-            System.out.println("- node"
-                    + num.longValue()
-                    + " has Merkle stakeToReward "
-                    + info.getStakeToReward()
-                    + " vs "
-                    + amount
-                    + " summed stakeToReward");
-        });
+        summedStakesToReward.forEach(
+                (num, amount) -> {
+                    final var info = app.stakingInfos().get().get(num);
+                    System.out.println(
+                            "- node"
+                                    + num.longValue()
+                                    + " has Merkle stakeToReward "
+                                    + info.getStakeToReward()
+                                    + " vs "
+                                    + amount
+                                    + " summed stakeToReward");
+                });
     }
 
     private long sumDetailRewards() {
-        final var detailPendingRewards = new AtomicLong();
+        var detailPendingRewards = new AtomicLong();
         final var stakePeriodManager = app.periodManager();
         final var curPeriod = stakePeriodManager.currentStakePeriod();
-        app.accounts().get().forEach((num, account) -> {
-            if (account.mayHavePendingReward()) {
-                final var info = app.stakingInfos().get().get(EntityNum.fromLong(account.getStakedNodeAddressBookId()));
-                final var detailReward = rewardCalculator.computeRewardFromDetails(
-                        account, info, curPeriod, stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
-                detailPendingRewards.getAndAdd(detailReward);
-            }
-        });
+        app.accounts()
+                .get()
+                .forEach(
+                        (num, account) -> {
+                            if (account.mayHavePendingReward()) {
+                                final var info =
+                                        app.stakingInfos()
+                                                .get()
+                                                .get(
+                                                        EntityNum.fromLong(
+                                                                account
+                                                                        .getStakedNodeAddressBookId()));
+                                final var effectiveStart =
+                                        stakePeriodManager.effectivePeriod(
+                                                account.getStakePeriodStart());
+                                final var detailReward =
+                                        stakePeriodManager.isRewardable(effectiveStart)
+                                                ? rewardCalculator.computeRewardFromDetails(
+                                                        account, info, curPeriod, effectiveStart)
+                                                : 0;
+                                detailPendingRewards.getAndAdd(detailReward);
+                            }
+                        });
         return detailPendingRewards.get();
     }
 
@@ -251,8 +270,14 @@ public class StakingActivityBench {
                 ledger.set(payerId, BALANCE, (long) ledger.get(payerId, BALANCE) - PRETEND_FEE);
             } else {
                 // Just do a simple transfer
-                ledger.set(payerId, BALANCE, (long) ledger.get(payerId, BALANCE) - PRETEND_FEE - PRETEND_AMOUNT);
-                ledger.set(countpartyId, BALANCE, (long) ledger.get(countpartyId, BALANCE) + PRETEND_AMOUNT);
+                ledger.set(
+                        payerId,
+                        BALANCE,
+                        (long) ledger.get(payerId, BALANCE) - PRETEND_FEE - PRETEND_AMOUNT);
+                ledger.set(
+                        countpartyId,
+                        BALANCE,
+                        (long) ledger.get(countpartyId, BALANCE) + PRETEND_AMOUNT);
             }
         }
         ledger.commit();
@@ -265,7 +290,7 @@ public class StakingActivityBench {
     }
 
     private void advanceI() {
-        i = i * MULTIPLIER + ADDEND;
+        i = i * Constructables.MULTIPLIER + Constructables.ADDEND;
     }
 
     // --- Helpers ---

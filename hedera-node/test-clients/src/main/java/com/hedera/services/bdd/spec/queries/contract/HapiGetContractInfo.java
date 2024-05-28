@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,38 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.bdd.spec.queries.contract;
 
-import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
+import static com.hedera.services.bdd.spec.HapiApiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertExpectedRels;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertNoUnexpectedRels;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +50,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-/**
- * Get the info of a contract.
- * NOTE: Since we don't return token relationships from getContractInfo query, we are using getAccountDetails query
- * if there are any assertions about token relationships for internal testing.
- */
 public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private static final Logger LOG = LogManager.getLogger(HapiGetContractInfo.class);
 
@@ -67,14 +58,10 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private Optional<String> contractInfoPath = Optional.empty();
     private Optional<String> validateDirPath = Optional.empty();
     private Optional<String> registryEntry = Optional.empty();
-    private Optional<String> saveEVMAddressToRegistry = Optional.empty();
     private List<String> absentRelationships = new ArrayList<>();
     private List<ExpectedTokenRel> relationships = new ArrayList<>();
     private Optional<ContractInfoAsserts> expectations = Optional.empty();
     private Optional<Consumer<String>> exposingEvmAddress = Optional.empty();
-
-    @Nullable
-    private Consumer<ContractID> exposingContractId = null;
 
     public HapiGetContractInfo(String contract) {
         this.contract = contract;
@@ -105,11 +92,6 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         return this;
     }
 
-    public HapiGetContractInfo saveEVMAddressToRegistry(String registryEntry) {
-        this.saveEVMAddressToRegistry = Optional.of(registryEntry);
-        return this;
-    }
-
     public HapiGetContractInfo checkingAgainst(String dirPath) {
         validateDirPath = Optional.of(dirPath);
         return this;
@@ -130,11 +112,6 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         return this;
     }
 
-    public HapiGetContractInfo exposingContractId(Consumer<ContractID> obs) {
-        exposingContractId = obs;
-        return this;
-    }
-
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.ContractGetInfo;
@@ -147,56 +124,23 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
         ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
-        // Since we don't return token relationships from getContractInfo query, for internal testing
-        // we are using getAccountDetails query to get token relationships.
-        if (!relationships.isEmpty()
-                || !absentRelationships.isEmpty()
-                || expectations.isPresent()
-                || registryEntry.isPresent()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(
-                            "0.0." + actualInfo.getContractID().getContractNum())
-                    .payingWith(GENESIS);
-            CustomSpecAssert.allRunFor(spec, detailsLookup);
-            final var response = detailsLookup.getResponse();
-            var actualTokenRels =
-                    response.getAccountDetails().getAccountDetails().getTokenRelationshipsList();
-            assertExpectedRels(contract, relationships, actualTokenRels, spec);
-            assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
-            actualInfo = actualInfo.toBuilder()
-                    .clearTokenRelationships()
-                    .addAllTokenRelationships(actualTokenRels)
-                    .build();
-        }
         if (expectations.isPresent()) {
             ErroringAsserts<ContractInfo> asserts = expectations.get().assertsFor(spec);
             List<Throwable> errors = asserts.errorsIn(actualInfo);
             rethrowSummaryError(LOG, "Bad contract info!", errors);
         }
-        if (expectedLedgerId.isPresent()) {
-            assertEquals(expectedLedgerId.get(), actualInfo.getLedgerId());
-        }
-        if (registryEntry.isPresent()) {
-            spec.registry().saveContractInfo(registryEntry.get(), actualInfo);
-        }
+        var actualTokenRels = actualInfo.getTokenRelationshipsList();
+        assertExpectedRels(contract, relationships, actualTokenRels, spec);
+        assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
+        expectedLedgerId.ifPresent(
+                id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
     }
 
     @Override
-    protected void updateStateOf(HapiSpec spec) throws Throwable {
-        ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
-
-        if (saveEVMAddressToRegistry.isPresent()) {
-            spec.registry()
-                    .saveEVMAddress(
-                            String.valueOf(actualInfo.getContractID().getContractNum()),
-                            actualInfo.getContractAccountID());
-        }
-    }
-
-    @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractInfoQuery(spec, payment, false), spec);
+    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+        Query query = getContractInfoQuery(spec, payment, false);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         ContractInfo contractInfo = response.getContractGetInfo().getContractInfo();
         if (verboseLoggingOn) {
@@ -208,25 +152,26 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (validateDirPath.isPresent()) {
             validateAgainst(spec, contractInfo);
         }
-        exposingEvmAddress.ifPresent(stringConsumer -> stringConsumer.accept(contractInfo.getContractAccountID()));
-        if (exposingContractId != null) {
-            exposingContractId.accept(contractInfo.getContractID());
+        if (registryEntry.isPresent()) {
+            spec.registry().saveContractInfo(registryEntry.get(), contractInfo);
         }
+        exposingEvmAddress.ifPresent(
+                stringConsumer -> stringConsumer.accept(contractInfo.getContractAccountID()));
     }
 
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractInfoQuery(spec, payment, true), spec);
+    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+        Query query = getContractInfoQuery(spec, payment, true);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         return costFrom(response);
     }
 
-    private String specScopedDir(HapiSpec spec, Optional<String> prefix) {
+    private String specScopedDir(HapiApiSpec spec, Optional<String> prefix) {
         return prefix.map(d -> d + "/" + spec.getName()).orElseThrow();
     }
 
-    private void saveContractInfo(HapiSpec spec, ContractInfo contractInfo) {
+    private void saveContractInfo(HapiApiSpec spec, ContractInfo contractInfo) {
         String specSnapshotDir = specScopedDir(spec, contractInfoPath);
         ensureDir(specSnapshotDir);
         String snapshotDir = specSnapshotDir + "/" + contract;
@@ -242,14 +187,17 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             byteSinkInfo.write(contractInfo.toByteArray());
 
             if (verboseLoggingOn) {
-                LOG.info("Saved contractInfo of {} to {}", contractInfo.getContractID(), snapshotDir);
+                LOG.info(
+                        "Saved contractInfo of {} to {}",
+                        contractInfo.getContractID(),
+                        snapshotDir);
             }
         } catch (Exception e) {
             LOG.error("Couldn't save contractInfo of {}", contractInfo.getContractID(), e);
         }
     }
 
-    private void validateAgainst(HapiSpec spec, ContractInfo contractInfo) {
+    private void validateAgainst(HapiApiSpec spec, ContractInfo contractInfo) {
         String specExpectationsDir = specScopedDir(spec, validateDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;
@@ -271,7 +219,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         }
     }
 
-    private ContractID readContractID(HapiSpec spec) {
+    private ContractID readContractID(HapiApiSpec spec) {
         String specExpectationsDir = specScopedDir(spec, validateDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;
@@ -284,23 +232,35 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         }
     }
 
-    private Query getContractInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getContractInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
         ContractGetInfoQuery contractGetInfo;
         if (getPredefinedId) {
             var contractID = readContractID(spec);
             if (contractID != null) {
-                contractGetInfo = ContractGetInfoQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setContractID(contractID)
-                        .build();
+                contractGetInfo =
+                        ContractGetInfoQuery.newBuilder()
+                                .setHeader(
+                                        costOnly
+                                                ? answerCostHeader(payment)
+                                                : answerHeader(payment))
+                                .setContractID(contractID)
+                                .build();
             } else {
                 LOG.error("Couldn't read contractID from saved file");
                 return null;
             }
         } else {
-            final var builder = ContractGetInfoQuery.newBuilder()
-                    .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
-            builder.setContractID(asContractId(contract, spec));
+            final var builder =
+                    ContractGetInfoQuery.newBuilder()
+                            .setHeader(
+                                    costOnly ? answerCostHeader(payment) : answerHeader(payment));
+            if (contract.length() == 40) {
+                builder.setContractID(
+                        ContractID.newBuilder()
+                                .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+            } else {
+                builder.setContractID(asContractId(contract, spec));
+            }
             contractGetInfo = builder.build();
         }
         return Query.newBuilder().setContractGetInfo(contractGetInfo).build();

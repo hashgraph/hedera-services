@@ -320,6 +320,20 @@ public interface HapiPropertySource {
                 asSolidityAddress((int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum()));
     }
 
+    static Address idAsHeadlongAddress(final AccountID accountId) {
+        return asHeadlongAddress(
+                asSolidityAddress(
+                        (int) accountId.getShardNum(),
+                        accountId.getRealmNum(),
+                        accountId.getAccountNum()));
+    }
+
+    static Address idAsHeadlongAddress(final TokenID tokenId) {
+        return asHeadlongAddress(
+                asSolidityAddress(
+                        (int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum()));
+    }
+
     static String asHexedSolidityAddress(final AccountID accountId) {
         return CommonUtils.hex(asSolidityAddress(accountId));
     }

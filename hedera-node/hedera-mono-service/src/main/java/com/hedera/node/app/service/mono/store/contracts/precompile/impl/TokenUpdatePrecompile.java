@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,39 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.store.contracts.precompile.impl;
 
-package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
-
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V2;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V3;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_INFO;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V2;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V3;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
+import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_INFO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
+import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -56,15 +55,19 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     private static final String UPDATE_TOKEN_INFO_STRING = "updateTokenInfo(address,";
     private static final Function TOKEN_UPDATE_INFO_FUNCTION =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")");
-    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR = Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
+    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR =
+            Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
-            TypeFactory.create("(" + removeBrackets(BYTES32) + "," + HEDERA_TOKEN_STRUCT_DECODER + ")");
+            TypeFactory.create(
+                    "(" + removeBrackets(BYTES32) + "," + HEDERA_TOKEN_STRUCT_DECODER + ")");
     private static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V2 + ")");
-    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V2 = Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V2.selector());
+    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V2 =
+            Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V2.selector());
     private static final Function TOKEN_UPDATE_INFO_FUNCTION_V3 =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")");
-    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V3 = Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
+    private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V3 =
+            Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
     private TokenUpdateWrapper updateOp;
     private final int functionId;
 
@@ -93,11 +96,16 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
 
     @Override
     public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-        updateOp = switch (functionId) {
-            case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> decodeUpdateTokenInfo(input, aliasResolver);
-            case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2 -> decodeUpdateTokenInfoV2(input, aliasResolver);
-            case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V3 -> decodeUpdateTokenInfoV3(input, aliasResolver);
-            default -> null;};
+        updateOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO -> decodeUpdateTokenInfo(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2 -> decodeUpdateTokenInfoV2(
+                            input, aliasResolver);
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V3 -> decodeUpdateTokenInfoV3(
+                            input, aliasResolver);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
         return transactionBody;
     }
@@ -122,7 +130,8 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
      * @param aliasResolver function used to resolve aliases
      * @return TokenUpdateWrapper codec
      */
-    public static TokenUpdateWrapper decodeUpdateTokenInfo(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public static TokenUpdateWrapper decodeUpdateTokenInfo(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
         return getTokenUpdateWrapper(input, aliasResolver, TOKEN_UPDATE_INFO_SELECTOR);
     }
 
@@ -137,7 +146,8 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
      * @param aliasResolver function used to resolve aliases
      * @return TokenUpdateWrapper codec
      */
-    public static TokenUpdateWrapper decodeUpdateTokenInfoV2(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public static TokenUpdateWrapper decodeUpdateTokenInfoV2(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
         return getTokenUpdateWrapper(input, aliasResolver, TOKEN_UPDATE_INFO_SELECTOR_V2);
     }
 
@@ -152,29 +162,26 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
      * @param aliasResolver function used to resolve aliases
      * @return TokenUpdateWrapper codec
      */
-    public static TokenUpdateWrapper decodeUpdateTokenInfoV3(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public static TokenUpdateWrapper decodeUpdateTokenInfoV3(
+            Bytes input, UnaryOperator<byte[]> aliasResolver) {
         return getTokenUpdateWrapper(input, aliasResolver, TOKEN_UPDATE_INFO_SELECTOR_V3);
     }
 
     private static TokenUpdateWrapper getTokenUpdateWrapper(
             Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateInfoSelector) {
-        final Tuple decodedArguments = decodeFunctionCall(input, tokenUpdateInfoSelector, TOKEN_UPDATE_INFO_DECODER);
+        final Tuple decodedArguments =
+                decodeFunctionCall(input, tokenUpdateInfoSelector, TOKEN_UPDATE_INFO_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final Tuple hederaTokenStruct = decodedArguments.get(1);
         final var tokenName = (String) hederaTokenStruct.get(0);
         final var tokenSymbol = (String) hederaTokenStruct.get(1);
-        final var tokenTreasury = convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+        final var tokenTreasury =
+                convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
         final var tokenMemo = (String) hederaTokenStruct.get(3);
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
-                tokenID,
-                tokenName,
-                tokenSymbol,
-                tokenTreasury.getAccountNum() == 0 ? null : tokenTreasury,
-                tokenMemo,
-                tokenKeys,
-                tokenExpiry);
+                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
     }
 }

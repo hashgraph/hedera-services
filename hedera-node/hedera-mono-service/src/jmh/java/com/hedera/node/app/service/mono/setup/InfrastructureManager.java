@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.setup;
 
-package com.hedera.node.app.service.mono.setup;
+import static com.hedera.services.setup.InfrastructureBundle.allImplied;
+import static com.hedera.services.setup.InfrastructureInitializer.initializeBundle;
 
-import static com.hedera.node.app.service.mono.setup.InfrastructureBundle.allImplied;
-import static com.hedera.node.app.service.mono.setup.InfrastructureInitializer.initializeBundle;
-
-import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
+import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
+import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualValue;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -57,7 +60,7 @@ public class InfrastructureManager {
         final var dir = bundleDirFor(config, types);
         try {
             FileUtils.cleanDirectory(new File(dir));
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         final var bundle = new InfrastructureBundle(types);
@@ -71,7 +74,8 @@ public class InfrastructureManager {
     private static InfrastructureBundle loadBundle(
             final Map<String, Object> config, final Collection<InfrastructureType> types) {
         if (!bundleExistsWith(config, types)) {
-            throw new IllegalArgumentException("Bundle " + bundleDirFor(config, types) + " was not found");
+            throw new IllegalArgumentException(
+                    "Bundle " + bundleDirFor(config, types) + " was not found");
         }
         final var dir = bundleDirFor(config, types);
         final var bundle = new InfrastructureBundle(types);
@@ -91,10 +95,20 @@ public class InfrastructureManager {
     }
 
     public static VirtualMapFactory newVmFactory(final String storageLoc) {
-        return new VirtualMapFactory(Paths.get(storageLoc));
+        final var jdbBuilderFactory =
+                new JasperDbBuilderFactory() {
+                    @Override
+                    @SuppressWarnings({"rawtypes", "unchecked"})
+                    public <K extends VirtualKey<? super K>, V extends VirtualValue>
+                            JasperDbBuilder<K, V> newJdbBuilder() {
+                        return new JasperDbBuilder().storageDir(Paths.get(storageLoc));
+                    }
+                };
+        return new VirtualMapFactory(jdbBuilderFactory);
     }
 
-    private static String bundleDirFor(final Map<String, Object> config, final Collection<InfrastructureType> types) {
+    private static String bundleDirFor(
+            final Map<String, Object> config, final Collection<InfrastructureType> types) {
         final var sb = new StringBuilder("bundle").append(InfrastructureBundle.codeFor(types));
         config.keySet().stream()
                 .sorted()
@@ -106,7 +120,8 @@ public class InfrastructureManager {
         final var f = new File(loc);
         if (!f.exists()) {
             if (!f.mkdirs()) {
-                throw new IllegalStateException("Failed to create directory " + f.getAbsolutePath());
+                throw new IllegalStateException(
+                        "Failed to create directory " + f.getAbsolutePath());
             }
         } else if (!f.isDirectory()) {
             throw new IllegalStateException(f.getAbsolutePath() + " is not a directory");

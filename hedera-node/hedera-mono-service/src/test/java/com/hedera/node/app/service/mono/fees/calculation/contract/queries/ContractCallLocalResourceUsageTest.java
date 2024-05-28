@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
+package com.hedera.services.fees.calculation.contract.queries;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -32,22 +31,21 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
-import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
-import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer;
-import com.hedera.node.app.service.mono.store.AccountStore;
-import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.evm.contracts.execution.BlockMetaSource;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -62,6 +60,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,54 +85,34 @@ class ContractCallLocalResourceUsageTest {
     private static final Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
     private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
 
-    @Mock
-    private AccountStore accountStore;
+    @Mock private AccountStore accountStore;
+    @Mock private StateView view;
+    @Mock private SmartContractFeeBuilder usageEstimator;
+    @Mock private CallLocalEvmTxProcessor evmTxProcessor;
+    @Mock private EntityIdSource ids;
+    @Mock private OptionValidator validator;
+    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock private AliasManager aliasManager;
+    @Mock private BlockMetaSource blockMetaSource;
+    @Mock private StaticBlockMetaProvider blockMetaProvider;
 
-    @Mock
-    private StateView view;
+    @LoggingTarget private LogCaptor logCaptor;
 
-    @Mock
-    private SmartContractFeeBuilder usageEstimator;
-
-    @Mock
-    private CallLocalEvmTxProcessor evmTxProcessor;
-
-    @Mock
-    private EntityIdSource ids;
-
-    @Mock
-    private OptionValidator validator;
-
-    @Mock
-    private NodeLocalProperties nodeLocalProperties;
-
-    @Mock
-    private AliasManager aliasManager;
-
-    @Mock
-    private BlockMetaSource blockMetaSource;
-
-    @Mock
-    private StaticBlockMetaProvider blockMetaProvider;
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private ContractCallLocalResourceUsage subject;
+    @LoggingSubject private ContractCallLocalResourceUsage subject;
 
     @BeforeEach
     void setup() {
-        subject = new ContractCallLocalResourceUsage(
-                usageEstimator,
-                properties,
-                nodeLocalProperties,
-                accountStore,
-                () -> evmTxProcessor,
-                ids,
-                validator,
-                aliasManager,
-                blockMetaProvider);
+        subject =
+                new ContractCallLocalResourceUsage(
+                        usageEstimator,
+                        properties,
+                        nodeLocalProperties,
+                        accountStore,
+                        () -> evmTxProcessor,
+                        ids,
+                        validator,
+                        aliasManager,
+                        blockMetaProvider);
     }
 
     @Test
@@ -148,27 +127,32 @@ class ContractCallLocalResourceUsageTest {
     @Test
     void setsResultInQueryCxtIfPresent() {
         final var queryCtx = new HashMap<String, Object>();
-        final var transactionProcessingResult = TransactionProcessingResult.successful(
-                new ArrayList<>(),
-                0,
-                0,
-                1,
-                Bytes.EMPTY,
-                callerID.asEvmAddress(),
-                Collections.emptyMap(),
-                Collections.emptyList());
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
         final var response = okResponse(transactionProcessingResult);
         final var estimateResponse = subject.dummyResponse(target);
         final var expected = expectedUsage();
 
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
-        given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+        given(accountStore.loadContract(any()))
+                .willReturn(new Account(Id.fromGrpcContract(target)));
         given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
                 .willReturn(transactionProcessingResult);
-        given(usageEstimator.getContractCallLocalFeeMatrices(params.size(), response.getFunctionResult(), ANSWER_ONLY))
+        given(
+                        usageEstimator.getContractCallLocalFeeMatrices(
+                                params.size(), response.getFunctionResult(), ANSWER_ONLY))
                 .willReturn(nonGasUsage);
-        given(usageEstimator.getContractCallLocalFeeMatrices(
-                        params.size(), estimateResponse.getFunctionResult(), ANSWER_ONLY))
+        given(
+                        usageEstimator.getContractCallLocalFeeMatrices(
+                                params.size(), estimateResponse.getFunctionResult(), ANSWER_ONLY))
                 .willReturn(nonGasUsage);
         given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
@@ -186,7 +170,9 @@ class ContractCallLocalResourceUsageTest {
     void treatsAnswerOnlyEstimateAsExpected() {
         final var response = subject.dummyResponse(target);
         final var expected = expectedUsage();
-        given(usageEstimator.getContractCallLocalFeeMatrices(params.size(), response.getFunctionResult(), ANSWER_ONLY))
+        given(
+                        usageEstimator.getContractCallLocalFeeMatrices(
+                                params.size(), response.getFunctionResult(), ANSWER_ONLY))
                 .willReturn(nonGasUsage);
 
         final var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
@@ -199,9 +185,13 @@ class ContractCallLocalResourceUsageTest {
     void translatesExecutionException() {
         final var queryCtx = new HashMap<String, Object>();
 
-        assertThrows(IllegalStateException.class, () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
         assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
-        assertThat(logCaptor.warnLogs(), contains(startsWith("Usage estimation unexpectedly failed for")));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(startsWith("Usage estimation unexpectedly failed for")));
     }
 
     @Test
@@ -216,44 +206,48 @@ class ContractCallLocalResourceUsageTest {
     }
 
     private static Query localCallQuery(final ContractID id, final ResponseType type) {
-        final var op = ContractCallLocalQuery.newBuilder()
-                .setContractID(id)
-                .setGas(gas)
-                .setFunctionParameters(params)
-                .setHeader(QueryHeader.newBuilder().setResponseType(type).build());
+        final var op =
+                ContractCallLocalQuery.newBuilder()
+                        .setContractID(id)
+                        .setGas(gas)
+                        .setFunctionParameters(params)
+                        .setHeader(QueryHeader.newBuilder().setResponseType(type).build());
         return Query.newBuilder().setContractCallLocal(op).build();
     }
 
-    private ContractCallLocalResponse okResponse(final TransactionProcessingResult result) {
+    private ContractCallLocalResponse okResponse(TransactionProcessingResult result) {
         return response(result);
     }
 
     private ContractCallLocalResponse response(final TransactionProcessingResult result) {
         return ContractCallLocalResponse.newBuilder()
-                .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
+                .setHeader(
+                        ResponseHeader.newBuilder()
+                                .setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
                 .setFunctionResult(result.toGrpc())
                 .build();
     }
 
-    private static final FeeData nonGasUsage = FeeData.newBuilder()
-            .setNodedata(FeeComponents.newBuilder()
-                    .setMin(1)
-                    .setMax(1_000_000)
-                    .setConstant(1)
-                    .setBpt(1)
-                    .setVpt(1)
-                    .setRbh(1)
-                    .setSbh(1)
-                    .setGas(0)
-                    .setTv(1)
-                    .setBpr(1)
-                    .setSbpr(1))
-            .build();
+    private static final FeeData nonGasUsage =
+            FeeData.newBuilder()
+                    .setNodedata(
+                            FeeComponents.newBuilder()
+                                    .setMin(1)
+                                    .setMax(1_000_000)
+                                    .setConstant(1)
+                                    .setBpt(1)
+                                    .setVpt(1)
+                                    .setRbh(1)
+                                    .setSbh(1)
+                                    .setGas(0)
+                                    .setTv(1)
+                                    .setBpr(1)
+                                    .setSbpr(1))
+                    .build();
 
     private static final FeeData expectedUsage() {
         return nonGasUsage.toBuilder()
-                .setNodedata(
-                        nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
+                .setNodedata(nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
                 .build();
     }
 }

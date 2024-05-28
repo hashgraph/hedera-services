@@ -7,8 +7,8 @@ a Hedera Services network. These are,
 to create the initial system accounts and files. _Example_: the
 `bootstrap.hapiPermissions.path`, which points to the initial 
 contents of the HAPI permissions system file.
-2. **Static properties**, used throughout the network's lifetime; 
-but change rarely or never, requiring a network restart to do so. 
+2. **Static properties**, used throughout the network's lifetime. These 
+change rarely or never, requiring a network restart to do so. 
 _Example_: `accounts.systemAdmin`, the number of an account granted 
 [various privileges](./privileged-transactions.md).
 3. **Dynamic properties**, also used for consensus processing, and

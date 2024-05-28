@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.contracts.execution;
 
-package com.hedera.node.app.service.mono.contracts.execution;
-
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.store.contracts.CodeCache;
-import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+/**
+ * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
+ * com.hederahashgraph.api.proto.java.ContractCallLocal} queries
+ */
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
@@ -83,28 +83,23 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 
     @Override
     protected MessageFrame buildInitialFrame(
-            final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, final long value) {
-        var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
-
-        // disable calls to non-existing addresses for
-        // older evm versions or disabled FF or grandfather contract
-        if (!dynamicProperties.allowCallsToNonContractAccounts()
-                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
-                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
-                || dynamicProperties.grandfatherContracts().contains(to)) {
-            /* It's possible we are racing the handleTransaction() thread, and the target contract's
-             * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
-             * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
-             * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
-            validateTrue(code != null, INVALID_CONTRACT_ID);
-        }
+            final MessageFrame.Builder baseInitialFrame,
+            final Address to,
+            final Bytes payload,
+            final long value) {
+        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        /* It's possible we are racing the handleTransaction() thread, and the target contract's
+         * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,
+         * it doesn't mean a system invariant has been violated (FAIL_INVALID); instead it means
+         * the target contract is not yet in a valid state to be queried (INVALID_CONTRACT_ID). */
+        validateTrue(code != null, INVALID_CONTRACT_ID);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
                 .contract(to)
                 .inputData(payload)
-                .code(code == null ? CodeV0.EMPTY_CODE : code)
+                .code(code)
                 .build();
     }
 }

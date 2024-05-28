@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.sigs;
 
-package com.hedera.node.app.service.mono.sigs;
-
-import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
@@ -36,26 +35,25 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
-import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.node.app.service.mono.sigs.order.PolicyBasedSigWaivers;
-import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
-import com.hedera.node.app.service.mono.sigs.order.SignatureWaivers;
-import com.hedera.node.app.service.mono.sigs.utils.PrecheckUtils;
-import com.hedera.node.app.service.mono.sigs.verification.PrecheckKeyReqs;
-import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
-import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.config.EntityNumbers;
+import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.services.context.NodeInfo;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.services.sigs.order.PolicyBasedSigWaivers;
+import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.services.sigs.order.SignatureWaivers;
+import com.hedera.services.sigs.utils.PrecheckUtils;
+import com.hedera.services.sigs.verification.PrecheckKeyReqs;
+import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.CryptoConfigUtils;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -76,14 +74,16 @@ class SigVerifierRegressionTest {
 
     private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
     private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-    private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
+    private SignatureWaivers mockSignatureWaivers =
+            new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
     @Test
     void rejectsInvalidTxn() throws Throwable {
         // given:
-        Transaction invalidSignedTxn = Transaction.newBuilder()
-                .setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
-                .build();
+        Transaction invalidSignedTxn =
+                Transaction.newBuilder()
+                        .setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
+                        .build();
 
         // expect:
         assertFalse(sigVerifies(invalidSignedTxn));
@@ -143,7 +143,9 @@ class SigVerifierRegressionTest {
         setupFor(QUERY_PAYMENT_INVALID_SENDER_SCENARIO);
 
         // expect:
-        assertThrows(InvalidAccountIDException.class, () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
+        assertThrows(
+                InvalidAccountIDException.class,
+                () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
     }
 
     @Test
@@ -152,7 +154,9 @@ class SigVerifierRegressionTest {
         setupFor(AMBIGUOUS_SIG_MAP_SCENARIO);
 
         // expect:
-        assertThrows(KeyPrefixMismatchException.class, () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
+        assertThrows(
+                KeyPrefixMismatchException.class,
+                () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
     }
 
     @Test
@@ -176,20 +180,22 @@ class SigVerifierRegressionTest {
         accounts = scenario.accounts();
         platformTxn = scenario.platformTxn();
         aliasManager = mock(AliasManager.class);
-        keyOrder = new SigRequirements(
-                defaultLookupsFor(
-                        aliasManager,
-                        null,
-                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
-                        () -> null,
-                        ref -> null,
-                        ref -> null),
-                mockSignatureWaivers);
+        keyOrder =
+                new SigRequirements(
+                        defaultLookupsFor(
+                                aliasManager,
+                                null,
+                                () -> AccountStorageAdapter.fromInMemory(accounts),
+                                () -> null,
+                                ref -> null,
+                                ref -> null),
+                        mockSignatureWaivers);
         final var nodeInfo = mock(NodeInfo.class);
         given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
         isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
         SyncVerifier syncVerifier =
-                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)::verifySync;
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                        ::verifySync;
         precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
         precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
     }

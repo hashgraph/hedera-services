@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.config;
 
-package com.hedera.node.app.service.mono.config;
+import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
-import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
-
-import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,7 +41,7 @@ public class FileNumbers implements HederaFileNumbers {
     private long throttleDefinitions = UNKNOWN_NUMBER;
 
     @Inject
-    public FileNumbers(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
+    public FileNumbers(HederaNumbers hederaNums, @CompositeProps PropertySource properties) {
         this.hederaNums = hederaNums;
         this.properties = properties;
     }
@@ -98,8 +97,7 @@ public class FileNumbers implements HederaFileNumbers {
     @Override
     public long firstSoftwareUpdateFile() {
         if (firstUpdateFile == UNKNOWN_NUMBER) {
-            firstUpdateFile =
-                    properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
+            firstUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
         }
         return firstUpdateFile;
     }
@@ -107,8 +105,7 @@ public class FileNumbers implements HederaFileNumbers {
     @Override
     public long lastSoftwareUpdateFile() {
         if (lastUpdateFile == UNKNOWN_NUMBER) {
-            lastUpdateFile =
-                    properties.getEntityNumRange("files.softwareUpdateRange").getRight();
+            lastUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getRight();
         }
         return lastUpdateFile;
     }
@@ -126,7 +123,7 @@ public class FileNumbers implements HederaFileNumbers {
         return throttleDefinitions;
     }
 
-    public FileID toFid(final long num) {
+    public FileID toFid(long num) {
         return FileID.newBuilder()
                 .setShardNum(hederaNums.shard())
                 .setRealmNum(hederaNums.realm())

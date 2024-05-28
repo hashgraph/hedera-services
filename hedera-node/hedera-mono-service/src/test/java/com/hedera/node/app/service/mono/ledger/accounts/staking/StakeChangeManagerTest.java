@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.ledger.accounts.staking;
 
-package com.hedera.node.app.service.mono.ledger.accounts.staking;
-
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
-import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
+import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.services.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
+import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.system.address.AddressBook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,18 +42,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakeChangeManagerTest {
-
-    @Mock
-    private AddressBook addressBook;
-
-    @Mock
-    private StakeInfoManager stakeInfoManager;
-
-    @Mock
-    private MerkleMap<EntityNum, MerkleAccount> accounts;
-
-    @Mock
-    private BootstrapProperties bootstrapProperties;
+    @Mock private AddressBook addressBook;
+    @Mock private Address address1 = mock(Address.class);
+    @Mock private Address address2 = mock(Address.class);
+    @Mock private StakeInfoManager stakeInfoManager;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private BootstrapProperties bootstrapProperties;
 
     private StakeChangeManager subject;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
@@ -64,8 +57,9 @@ class StakeChangeManagerTest {
     @BeforeEach
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
-        subject = new StakeChangeManager(
-                stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        subject =
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts));
     }
 
     @Test
@@ -140,8 +134,9 @@ class StakeChangeManagerTest {
                 -1, accountsMap.get(EntityNum.fromAccountId(counterpartyId)).getStakePeriodStart());
         assertEquals(-1, accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
 
-        subject = new StakeChangeManager(
-                stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsMap)));
+        subject =
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accountsMap));
         subject.initializeAllStakingStartsTo(todayNum);
 
         assertEquals(todayNum, counterparty.getStakePeriodStart());
@@ -153,19 +148,23 @@ class StakeChangeManagerTest {
     }
 
     public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
-        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(2_000_000_000L);
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
+                .willReturn(2_000_000_000L);
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         given(addressBook.getSize()).willReturn(2);
-        given(addressBook.getNodeId(0)).willReturn(new NodeId(0));
-        given(addressBook.getNodeId(1)).willReturn(new NodeId(1));
+        given(addressBook.getAddress(0)).willReturn(address1);
+        given(address1.getId()).willReturn(0L);
+        given(addressBook.getAddress(1)).willReturn(address2);
+        given(address2.getId()).willReturn(1L);
 
         final var info = buildStakingInfoMap(addressBook, bootstrapProperties);
-        info.forEach((a, b) -> {
-            b.setStakeToReward(300L);
-            b.setStake(1000L);
-            b.setStakeToNotReward(400L);
-        });
+        info.forEach(
+                (a, b) -> {
+                    b.setStakeToReward(300L);
+                    b.setStake(1000L);
+                    b.setStakeToNotReward(400L);
+                });
         return info;
     }
 
@@ -174,13 +173,15 @@ class StakeChangeManagerTest {
     private final AccountID partyId = AccountID.newBuilder().setAccountNum(123).build();
     private static final AccountID counterpartyId =
             AccountID.newBuilder().setAccountNum(321).build();
-    private final MerkleAccount party = MerkleAccountFactory.newAccount()
-            .number(EntityNum.fromAccountId(partyId))
-            .balance(partyBalance)
-            .get();
-    private static final MerkleAccount counterparty = MerkleAccountFactory.newAccount()
-            .stakedId(-1)
-            .number(EntityNum.fromAccountId(counterpartyId))
-            .balance(counterpartyBalance)
-            .get();
+    private final MerkleAccount party =
+            MerkleAccountFactory.newAccount()
+                    .number(EntityNum.fromAccountId(partyId))
+                    .balance(partyBalance)
+                    .get();
+    private static final MerkleAccount counterparty =
+            MerkleAccountFactory.newAccount()
+                    .stakedId(-1)
+                    .number(EntityNum.fromAccountId(counterpartyId))
+                    .balance(counterpartyBalance)
+                    .get();
 }

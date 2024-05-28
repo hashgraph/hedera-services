@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.store.contracts.precompile.impl;
 
-package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,24 +24,24 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.TokenUpdateLogic;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.KeyValidator;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.LegacyKeyValidator;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationTest;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTest;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyKeyActivationTest;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
+import com.hedera.services.store.contracts.precompile.impl.sigs.KeyValidator;
+import com.hedera.services.store.contracts.precompile.impl.sigs.LegacyKeyValidator;
+import com.hedera.services.store.contracts.precompile.utils.KeyActivationTest;
+import com.hedera.services.store.contracts.precompile.utils.LegacyActivationTest;
+import com.hedera.services.store.contracts.precompile.utils.LegacyKeyActivationTest;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -63,65 +60,37 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractTokenUpdatePrecompileTest {
-    @Mock
-    private MessageFrame frame;
-
-    @Mock
-    private WorldLedgers ledgers;
-
-    @Mock
-    private ContractAliases aliases;
-
-    @Mock
-    private EvmSigsVerifier sigsVerifier;
-
-    @Mock
-    private SideEffectsTracker sideEffectsTracker;
-
-    @Mock
-    private SyntheticTxnFactory syntheticTxnFactory;
-
-    @Mock
-    private InfrastructureFactory infrastructureFactory;
-
-    @Mock
-    private PrecompilePricingUtils pricingUtils;
-
-    @Mock
-    private KeyValidator keyValidator;
-
-    @Mock
-    private HederaTokenStore tokenStore;
-
-    @Mock
-    private TokenUpdateLogic updateLogic;
-
-    @Mock
-    private BlockValues blockValues;
-
-    @Mock
-    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-
-    @Mock
-    private LegacyKeyValidator legacyKeyValidator;
-
-    @Mock
-    private LegacyActivationTest legacyActivationTest;
+    @Mock private MessageFrame frame;
+    @Mock private WorldLedgers ledgers;
+    @Mock private ContractAliases aliases;
+    @Mock private EvmSigsVerifier sigsVerifier;
+    @Mock private SideEffectsTracker sideEffectsTracker;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private InfrastructureFactory infrastructureFactory;
+    @Mock private PrecompilePricingUtils pricingUtils;
+    @Mock private KeyValidator keyValidator;
+    @Mock private HederaTokenStore tokenStore;
+    @Mock private TokenUpdateLogic updateLogic;
+    @Mock private BlockValues blockValues;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+    @Mock private LegacyKeyValidator legacyKeyValidator;
+    @Mock private LegacyActivationTest legacyActivationTest;
 
     private SigTestingTokenUpdatePrecompile subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SigTestingTokenUpdatePrecompile(
-                keyValidator,
-                legacyKeyValidator,
-                ledgers,
-                aliases,
-                sigsVerifier,
-                sideEffectsTracker,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        subject =
+                new SigTestingTokenUpdatePrecompile(
+                        keyValidator,
+                        legacyKeyValidator,
+                        ledgers,
+                        aliases,
+                        sigsVerifier,
+                        sideEffectsTracker,
+                        syntheticTxnFactory,
+                        infrastructureFactory,
+                        pricingUtils);
     }
 
     @Test
@@ -135,10 +104,8 @@ class AbstractTokenUpdatePrecompileTest {
         given(infrastructureFactory.newTokenUpdateLogic(tokenStore, ledgers, sideEffectsTracker))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(OK);
-        given(keyValidator.validateKey(any(), any(), any(), any(), any(), any()))
-                .willReturn(true);
-        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any(), any()))
-                .willReturn(true);
+        given(keyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(newTreasury)).willReturn(true);
 
@@ -147,22 +114,25 @@ class AbstractTokenUpdatePrecompileTest {
 
         verify(keyValidator)
                 .validateKey(
-                        eq(frame), eq(tokenMirrorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenUpdate));
+                        eq(frame),
+                        eq(tokenMirrorAddress),
+                        captor.capture(),
+                        eq(ledgers),
+                        eq(aliases));
         verify(legacyKeyValidator)
                 .validateKey(
                         eq(frame),
                         eq(newTreasuryMirrorAddress),
                         legacyCaptor.capture(),
                         eq(ledgers),
-                        eq(aliases),
-                        eq(TokenUpdate));
-        verify(updateLogic).updateToken(any(), anyLong(), eq(true));
+                        eq(aliases));
+        verify(updateLogic).updateToken(any(), anyLong());
         // and when:
         final var tests = captor.getAllValues();
         final var legacyTests = legacyCaptor.getAllValues();
-        tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
+        tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers);
         verify(sigsVerifier)
-                .hasActiveAdminKey(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
+                .hasActiveAdminKey(false, tokenMirrorAddress, pretendActiveContract, ledgers);
         legacyTests
                 .get(0)
                 .apply(
@@ -170,16 +140,14 @@ class AbstractTokenUpdatePrecompileTest {
                         newTreasuryMirrorAddress,
                         pretendActiveContract,
                         ledgers,
-                        legacyActivationTest,
-                        TokenUpdate);
+                        legacyActivationTest);
         verify(sigsVerifier)
                 .hasLegacyActiveKey(
                         false,
                         newTreasuryMirrorAddress,
                         pretendActiveContract,
                         ledgers,
-                        legacyActivationTest,
-                        TokenUpdate);
+                        legacyActivationTest);
     }
 
     @Test
@@ -192,10 +160,8 @@ class AbstractTokenUpdatePrecompileTest {
         given(infrastructureFactory.newTokenUpdateLogic(tokenStore, ledgers, sideEffectsTracker))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(OK);
-        given(keyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenUpdate)))
-                .willReturn(true);
-        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenUpdate)))
-                .willReturn(true);
+        given(keyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
+        given(legacyKeyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(newAutoRenew)).willReturn(true);
 
@@ -204,22 +170,25 @@ class AbstractTokenUpdatePrecompileTest {
 
         verify(keyValidator)
                 .validateKey(
-                        eq(frame), eq(tokenMirrorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenUpdate));
+                        eq(frame),
+                        eq(tokenMirrorAddress),
+                        captor.capture(),
+                        eq(ledgers),
+                        eq(aliases));
         verify(legacyKeyValidator)
                 .validateKey(
                         eq(frame),
                         eq(newAutoRenewMirrorAddress),
                         legacyCaptor.capture(),
                         eq(ledgers),
-                        eq(aliases),
-                        eq(TokenUpdate));
+                        eq(aliases));
         verify(updateLogic).updateTokenExpiryInfo(any());
         // and when:
         final var tests = captor.getAllValues();
         final var legacyTests = legacyCaptor.getAllValues();
-        tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
+        tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers);
         verify(sigsVerifier)
-                .hasActiveAdminKey(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
+                .hasActiveAdminKey(false, tokenMirrorAddress, pretendActiveContract, ledgers);
         legacyTests
                 .get(0)
                 .apply(
@@ -227,16 +196,14 @@ class AbstractTokenUpdatePrecompileTest {
                         newAutoRenewMirrorAddress,
                         pretendActiveContract,
                         ledgers,
-                        legacyActivationTest,
-                        TokenUpdate);
+                        legacyActivationTest);
         verify(sigsVerifier)
                 .hasLegacyActiveKey(
                         false,
                         newAutoRenewMirrorAddress,
                         pretendActiveContract,
                         ledgers,
-                        legacyActivationTest,
-                        TokenUpdate);
+                        legacyActivationTest);
     }
 
     @Test
@@ -249,8 +216,7 @@ class AbstractTokenUpdatePrecompileTest {
         given(infrastructureFactory.newTokenUpdateLogic(tokenStore, ledgers, sideEffectsTracker))
                 .willReturn(updateLogic);
         given(updateLogic.validate(any())).willReturn(OK);
-        given(keyValidator.validateKey(any(), any(), any(), any(), any(), eq(TokenUpdate)))
-                .willReturn(true);
+        given(keyValidator.validateKey(any(), any(), any(), any(), any())).willReturn(true);
         given(ledgers.accounts()).willReturn(accounts);
 
         subject.useBodyWithNoOtherSigReqs();
@@ -258,14 +224,18 @@ class AbstractTokenUpdatePrecompileTest {
 
         verify(keyValidator)
                 .validateKey(
-                        eq(frame), eq(tokenMirrorAddress), captor.capture(), eq(ledgers), eq(aliases), eq(TokenUpdate));
+                        eq(frame),
+                        eq(tokenMirrorAddress),
+                        captor.capture(),
+                        eq(ledgers),
+                        eq(aliases));
         verifyNoMoreInteractions(keyValidator);
-        verify(updateLogic).updateToken(any(), anyLong(), eq(true));
+        verify(updateLogic).updateToken(any(), anyLong());
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
+        tests.get(0).apply(false, tokenMirrorAddress, pretendActiveContract, ledgers);
         verify(sigsVerifier)
-                .hasActiveAdminKey(false, tokenMirrorAddress, pretendActiveContract, ledgers, CryptoTransfer);
+                .hasActiveAdminKey(false, tokenMirrorAddress, pretendActiveContract, ledgers);
         verifyNoMoreInteractions(sigsVerifier);
     }
 
@@ -323,11 +293,9 @@ class AbstractTokenUpdatePrecompileTest {
         }
     }
 
-    private static final TokenID targetId =
-            TokenID.newBuilder().setTokenNum(666).build();
+    private static final TokenID targetId = TokenID.newBuilder().setTokenNum(666).build();
     private static final Id tokenId = Id.fromGrpcToken(targetId);
-    private static final AccountID newTreasury =
-            AccountID.newBuilder().setAccountNum(2345).build();
+    private static final AccountID newTreasury = AccountID.newBuilder().setAccountNum(2345).build();
     private static final AccountID newAutoRenew =
             AccountID.newBuilder().setAccountNum(7777).build();
     private static final Address tokenMirrorAddress = tokenId.asEvmAddress();

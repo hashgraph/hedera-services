@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.state.forensics;
 
-package com.hedera.node.app.service.mono.state.forensics;
-
-import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
-import com.swirlds.common.platform.NodeId;
+import com.hedera.services.ServicesState;
+import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.state.notifications.IssListener;
-import com.swirlds.platform.system.state.notifications.IssNotification;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -55,20 +52,20 @@ public class ServicesIssListener implements IssListener {
         }
 
         final long round = notice.getRound();
-        final long otherNodeId =
-                Optional.ofNullable(notice.getOtherNodeId()).map(NodeId::id).orElse(-1L);
-        final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
+        final long otherNodeId = notice.getOtherNodeId();
         try (final AutoCloseableWrapper<ServicesState> wrapper =
-                platform.getLatestImmutableState(this.getClass().getName() + " " + msg)) {
+                platform.getLatestImmutableState()) {
             final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
                 issEventInfo.decrementRoundsToLog();
+                final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
                 log.error(msg);
                 issState.logSummary();
             }
         } catch (final Exception any) {
-            final String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
+            final String fallbackMsg =
+                    String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
             log.warn(fallbackMsg, any);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.state.logic;
 
-package com.hedera.node.app.service.mono.state.logic;
-
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -32,23 +31,23 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 
-import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
-import com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.node.app.service.mono.ledger.accounts.staking.EndOfStakingPeriodCalculator;
-import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
-import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
-import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.context.domain.trackers.IssEventStatus;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.congestion.MultiplierSources;
+import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
+import com.hedera.services.state.initialization.SystemFilesManager;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -60,7 +59,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkCtxManagerTest {
-
     private final int issResetPeriod = 5;
     private final long someGasUsage = 8910L;
     private final Instant sometime = Instant.ofEpochSecond(1_234_567L);
@@ -68,50 +66,21 @@ class NetworkCtxManagerTest {
     private final Instant sometimeNextDay = sometime.plusSeconds(86_400L);
     private final MockGlobalDynamicProps mockDynamicProps = new MockGlobalDynamicProps();
 
-    @Mock
-    private IssEventInfo issInfo;
-
-    @Mock
-    private NodeLocalProperties nodeLocalProperties;
-
-    @Mock
-    private HapiOpCounters opCounters;
-
-    @Mock
-    private HbarCentExchange exchange;
-
-    @Mock
-    private MultiplierSources multiplierSources;
-
-    @Mock
-    private SystemFilesManager systemFilesManager;
-
-    @Mock
-    private MerkleNetworkContext networkCtx;
-
-    @Mock
-    private FunctionalityThrottling handleThrottling;
-
-    @Mock
-    private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
-
-    @Mock
-    private TransactionContext txnCtx;
-
-    @Mock
-    private SignedTxnAccessor txnAccessor;
-
-    @Mock
-    private MiscRunningAvgs runningAvgs;
-
-    @Mock
-    private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
-
-    @Mock
-    private PropertySource propertySource;
-
-    @Mock
-    private ExpiryThrottle expiryThrottle;
+    @Mock private IssEventInfo issInfo;
+    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock private HapiOpCounters opCounters;
+    @Mock private HbarCentExchange exchange;
+    @Mock private MultiplierSources multiplierSources;
+    @Mock private SystemFilesManager systemFilesManager;
+    @Mock private MerkleNetworkContext networkCtx;
+    @Mock private FunctionalityThrottling handleThrottling;
+    @Mock private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
+    @Mock private TransactionContext txnCtx;
+    @Mock private SignedTxnAccessor txnAccessor;
+    @Mock private MiscRunningAvgs runningAvgs;
+    @Mock private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
+    @Mock private PropertySource propertySource;
+    @Mock private ExpiryThrottle expiryThrottle;
 
     private NetworkCtxManager subject;
 
@@ -120,21 +89,22 @@ class NetworkCtxManagerTest {
         given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
-        subject = new NetworkCtxManager(
-                issInfo,
-                expiryThrottle,
-                nodeLocalProperties,
-                opCounters,
-                exchange,
-                systemFilesManager,
-                multiplierSources,
-                mockDynamicProps,
-                handleThrottling,
-                () -> networkCtx,
-                txnCtx,
-                runningAvgs,
-                endOfStakingPeriodCalculator,
-                propertySource);
+        subject =
+                new NetworkCtxManager(
+                        issInfo,
+                        expiryThrottle,
+                        nodeLocalProperties,
+                        opCounters,
+                        exchange,
+                        systemFilesManager,
+                        multiplierSources,
+                        mockDynamicProps,
+                        handleThrottling,
+                        () -> networkCtx,
+                        txnCtx,
+                        runningAvgs,
+                        endOfStakingPeriodCalculator,
+                        propertySource);
     }
 
     @Test
@@ -168,7 +138,8 @@ class NetworkCtxManagerTest {
         // then:
         verify(systemFilesManager, never()).loadObservableSystemFiles();
         verify(networkCtx, never()).resetThrottlingFromSavedSnapshots(handleThrottling);
-        verify(networkCtx, never()).resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
+        verify(networkCtx, never())
+                .resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
         verify(multiplierSources, never()).resetExpectations();
     }
 
@@ -315,8 +286,8 @@ class NetworkCtxManagerTest {
 
     @Test
     void relaxesIssInfoIfConsensusTimeOfRecentAlertIsEmpty() {
-        final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
-        final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
 
         given(exchange.activeRates()).willReturn(curRates.toGrpc());
         given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
@@ -333,8 +304,8 @@ class NetworkCtxManagerTest {
     @Test
     void doesNothingWithIssInfoIfNotOngoing() {
         // setup:
-        final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
-        final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
 
         given(exchange.activeRates()).willReturn(curRates.toGrpc());
         given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
@@ -350,8 +321,8 @@ class NetworkCtxManagerTest {
 
     @Test
     void advancesClockAsExpectedWhenFirstTxn() { // setup:
-        final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
-        final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(null);
 
         given(exchange.activeRates()).willReturn(curRates.toGrpc());
@@ -366,10 +337,11 @@ class NetworkCtxManagerTest {
     }
 
     @Test
-    void advancesClockAsExpectedWhenPassingMidnightAfterBoundaryCheckIntervalElapsedFromLastCheck() {
+    void
+            advancesClockAsExpectedWhenPassingMidnightAfterBoundaryCheckIntervalElapsedFromLastCheck() {
         // setup:
-        final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
-        final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
         // and:
         subject.setIsNextDay(shouldUpdateMidnightRates);
 
@@ -389,8 +361,8 @@ class NetworkCtxManagerTest {
     @Test
     void updateNodesFailureIsNotPropagated() {
         // setup:
-        final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
-        final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
         // and:
         subject.setIsNextDay(shouldUpdateMidnightRates);
 
@@ -452,8 +424,8 @@ class NetworkCtxManagerTest {
     @Test
     void recognizesFirstTxnMustBeFirstInSecond() {
         // setup:
-        final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
-        final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
 
         given(exchange.activeRates()).willReturn(curRates.toGrpc());
         given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
@@ -510,21 +482,22 @@ class NetworkCtxManagerTest {
         given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
-        subject = new NetworkCtxManager(
-                issInfo,
-                expiryThrottle,
-                nodeLocalProperties,
-                opCounters,
-                exchange,
-                systemFilesManager,
-                multiplierSources,
-                mockDynamicProps,
-                handleThrottling,
-                () -> networkCtx,
-                txnCtx,
-                runningAvgs,
-                endOfStakingPeriodCalculator,
-                propertySource);
+        subject =
+                new NetworkCtxManager(
+                        issInfo,
+                        expiryThrottle,
+                        nodeLocalProperties,
+                        opCounters,
+                        exchange,
+                        systemFilesManager,
+                        multiplierSources,
+                        mockDynamicProps,
+                        handleThrottling,
+                        () -> networkCtx,
+                        txnCtx,
+                        runningAvgs,
+                        endOfStakingPeriodCalculator,
+                        propertySource);
 
         final BiPredicate<Instant, Instant> updateTest = subject::isNextPeriod;
 
@@ -534,11 +507,11 @@ class NetworkCtxManagerTest {
 
     @Test
     void isSameDayUTCTest() {
-        final Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
-        final Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
-        final Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");
-        final Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
-        final Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
+        Instant instant1_1 = Instant.parse("2019-08-14T23:59:59.0Z");
+        Instant instant1_2 = Instant.parse("2019-08-14T23:59:59.99999Z");
+        Instant instant2_1 = Instant.parse("2019-08-14T24:00:00.0Z");
+        Instant instant2_2 = Instant.parse("2019-08-15T00:00:00.0Z");
+        Instant instant2_3 = Instant.parse("2019-08-15T00:00:00.00001Z");
 
         assertTrue(NetworkCtxManager.inSameUtcDay(instant1_1, instant1_2));
 

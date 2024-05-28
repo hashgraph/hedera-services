@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.fees.calculation.contract.queries;
 
-package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
-
-import static com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
+import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.CallLocalExecutor;
-import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
-import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.store.AccountStore;
-import com.hedera.node.app.service.mono.store.contracts.CodeCache;
-import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
-import com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
+import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.StaticEntityAccess;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,9 +40,10 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -92,13 +91,16 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
     }
 
     @Override
-    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
+    public FeeData usageGivenType(
+            final Query query, final StateView view, final ResponseType type) {
         return usageFor(query, type, view, null);
     }
 
     @Override
-    public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
-        return usageFor(query, query.getContractCallLocal().getHeader().getResponseType(), view, queryCtx);
+    public FeeData usageGiven(
+            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+        return usageFor(
+                query, query.getContractCallLocal().getHeader().getResponseType(), view, queryCtx);
     }
 
     private FeeData usageFor(
@@ -109,7 +111,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
         try {
             final var op = query.getContractCallLocal();
 
-            final ContractCallLocalResponse response;
+            ContractCallLocalResponse response;
             if (null == queryCtx) {
                 response = dummyResponse(op.getContractID());
             } else {
@@ -119,16 +121,20 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
                 } else {
                     final var entityAccess = new StaticEntityAccess(view, aliasManager, validator);
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
-                    final var worldState = new HederaWorldState(ids, entityAccess, codeCache, properties);
+                    final var worldState =
+                            new HederaWorldState(ids, entityAccess, codeCache, properties);
                     final var evmTxProcessor = evmTxProcessorProvider.get();
                     evmTxProcessor.setWorldState(worldState);
                     evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
-                    response = CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
+                    response =
+                            CallLocalExecutor.execute(
+                                    accountStore, evmTxProcessor, op, aliasManager, entityAccess);
                     queryCtx.put(CONTRACT_CALL_LOCAL_CTX_KEY, response);
                 }
             }
-            final var nonGasUsage = usageEstimator.getContractCallLocalFeeMatrices(
-                    op.getFunctionParameters().size(), response.getFunctionResult(), type);
+            final var nonGasUsage =
+                    usageEstimator.getContractCallLocalFeeMatrices(
+                            op.getFunctionParameters().size(), response.getFunctionResult(), type);
             return nonGasUsage.toBuilder()
                     .setNodedata(nonGasUsage.getNodedata().toBuilder().setGas(op.getGas()))
                     .build();
@@ -140,9 +146,12 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
 
     ContractCallLocalResponse dummyResponse(final ContractID target) {
         return ContractCallLocalResponse.newBuilder()
-                .setFunctionResult(ContractFunctionResult.newBuilder()
-                        .setContractCallResult(ByteString.copyFrom(new byte[properties.localCallEstRetBytes()]))
-                        .setContractID(target))
+                .setFunctionResult(
+                        ContractFunctionResult.newBuilder()
+                                .setContractCallResult(
+                                        ByteString.copyFrom(
+                                                new byte[properties.localCallEstRetBytes()]))
+                                .setContractID(target))
                 .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK))
                 .build();
     }

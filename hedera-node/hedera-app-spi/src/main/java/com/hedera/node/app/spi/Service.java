@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.node.app.spi;
 
-import static java.util.Collections.emptySet;
-
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.pbj.runtime.RpcServiceDefinition;
+import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * A definition of an interface that will be implemented by each conceptual "service" like
@@ -30,32 +24,29 @@ import java.util.Set;
  */
 public interface Service {
     /**
-     * Returns the name of the service. This name must be unique for each service deployed on the
-     * application.
+     * Creates and returns a new {@link PreTransactionHandler}
      *
-     * @return the name
+     * @return A new {@link PreTransactionHandler}
      */
     @NonNull
-    String getServiceName();
+    PreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
-     * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
-     * Otherwise, it returns an empty set.
+     * Creates and returns a new {@link TransactionHandler}
      *
-     * @return The RPC service definitions if this service is exposed via RPC.
+     * @return A new {@link TransactionHandler}
      */
-    @NonNull
-    default Set<RpcServiceDefinition> rpcDefinitions() {
-        return emptySet();
+    default @NonNull TransactionHandler createTransactionHandler(@NonNull States states) {
+        throw new UnsupportedOperationException();
     }
 
     /**
-     * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
+     * Creates and returns a new {@link QueryHandler}
      *
-     * @param registry the registry to register the schemas with
-     * @param version the current services version
+     * @return A new {@link QueryHandler}
      */
-    default void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        // No-op
+    default @NonNull QueryHandler createQueryHandler(@NonNull States states) {
+        throw new UnsupportedOperationException();
     }
 }

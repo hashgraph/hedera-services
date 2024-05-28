@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.evm.contracts.execution;
 
-package com.hedera.node.app.service.evm.contracts.execution;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
-import java.util.Optional;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
@@ -51,7 +49,7 @@ public abstract class HederaEvmTxProcessor {
     protected BlockMetaSource blockMetaSource;
     protected HederaEvmMutableWorldState worldState;
 
-    protected GasCalculator gasCalculator;
+    protected final GasCalculator gasCalculator;
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
@@ -95,8 +93,7 @@ public abstract class HederaEvmTxProcessor {
         this.mcps = mcps;
         this.ccps = ccps;
         this.messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
-        this.contractCreationProcessor =
-                ccps.get(dynamicProperties.evmVersion()).get();
+        this.contractCreationProcessor = ccps.get(dynamicProperties.evmVersion()).get();
         this.blockMetaSource = blockMetaSource;
     }
 
@@ -104,7 +101,7 @@ public abstract class HederaEvmTxProcessor {
      * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a
      * field.
      *
-     * @param sender The origin {@link MutableAccount} that initiates the transaction
+     * @param sender The origin {@link EvmAccount} that initiates the transaction
      * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
      *     present); or the newly created address
      * @param gasPrice GasPrice to use for gas calculations
@@ -128,35 +125,37 @@ public abstract class HederaEvmTxProcessor {
 
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
+        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
         final var valueAsWei = Wei.of(value);
         final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
-        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
-                .maxStackSize(MAX_STACK_SIZE)
-                .worldUpdater(stackedUpdater)
-                .initialGas(gasAvailable)
-                .originator(senderEvmAddress)
-                .gasPrice(Wei.of(gasPrice))
-                .blobGasPrice((Wei.ONE))
-                .sender(senderEvmAddress)
-                .value(valueAsWei)
-                .apparentValue(valueAsWei)
-                .blockValues(blockValues)
-                .completer(unused -> {})
-                .isStatic(isStatic)
-                .miningBeneficiary(coinbase)
-                .blockHashLookup(blockMetaSource::getBlockHash)
-                .versionedHashes(Optional.of(List.of()))
-                .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
+        final MessageFrame.Builder commonInitialFrame =
+                MessageFrame.builder()
+                        .messageFrameStack(messageFrameStack)
+                        .maxStackSize(MAX_STACK_SIZE)
+                        .worldUpdater(stackedUpdater)
+                        .initialGas(gasAvailable)
+                        .originator(senderEvmAddress)
+                        .gasPrice(Wei.of(gasPrice))
+                        .sender(senderEvmAddress)
+                        .value(valueAsWei)
+                        .apparentValue(valueAsWei)
+                        .blockValues(blockValues)
+                        .depth(0)
+                        .completer(unused -> {})
+                        .isStatic(isStatic)
+                        .miningBeneficiary(coinbase)
+                        .blockHashLookup(blockMetaSource::getBlockHash)
+                        .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
         this.initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
-        final var messageFrameStack = initialFrame.getMessageFrameStack();
+        messageFrameStack.addFirst(initialFrame);
 
         tracer.init(initialFrame);
 
         if (dynamicProperties.dynamicEvmVersion()) {
-            final String evmVersion = dynamicProperties.evmVersion();
+            String evmVersion = dynamicProperties.evmVersion();
             messageCallProcessor = mcps.get(evmVersion).get();
             contractCreationProcessor = ccps.get(evmVersion).get();
         }
@@ -168,12 +167,15 @@ public abstract class HederaEvmTxProcessor {
         this.gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);
         this.sbhRefund = updater.getSbhRefund();
 
-        tracer.finalizeOperation(initialFrame);
-
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return HederaEvmTransactionProcessingResult.successful(
-                    initialFrame.getLogs(), gasUsed, sbhRefund, gasPrice, initialFrame.getOutputData(), mirrorReceiver);
+                    initialFrame.getLogs(),
+                    gasUsed,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getOutputData(),
+                    mirrorReceiver);
         } else {
             return HederaEvmTransactionProcessingResult.failed(
                     gasUsed,
@@ -184,8 +186,9 @@ public abstract class HederaEvmTxProcessor {
         }
     }
 
-    public void setupFields(final Bytes payload, final boolean contractCreation) {
-        this.intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
+    public void setupFields(final boolean contractCreation) {
+        this.intrinsicGas =
+                gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
         this.updater = worldState.updater();
         this.coinbase = dynamicProperties.fundingAccountAddress();
     }
@@ -193,22 +196,26 @@ public abstract class HederaEvmTxProcessor {
     protected long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
         long gasUsedByTransaction = txGasLimit - initialFrame.getRemainingGas();
         /* Return leftover gas */
-        final long selfDestructRefund = gasCalculator.getSelfDestructRefundAmount()
-                * Math.min(
-                        initialFrame.getSelfDestructs().size(),
-                        gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
+        final long selfDestructRefund =
+                gasCalculator.getSelfDestructRefundAmount()
+                        * Math.min(
+                                initialFrame.getSelfDestructs().size(),
+                                gasUsedByTransaction / (gasCalculator.getMaxRefundQuotient()));
 
-        gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
+        gasUsedByTransaction =
+                gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
         final var maxRefundPercent = dynamicProperties.maxGasRefundPercentage();
-        gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
+        gasUsedByTransaction =
+                Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
         return gasUsedByTransaction;
     }
 
-    protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
+    protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
         return livePricesSource.currentGasPrice(
-                consensusTime, isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
+                consensusTime,
+                isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
     }
 
     protected abstract HederaFunctionality getFunctionType();
@@ -222,15 +229,10 @@ public abstract class HederaEvmTxProcessor {
         executor.process(frame, operationTracer);
     }
 
-    protected AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
+    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
         return switch (type) {
             case MESSAGE_CALL -> messageCallProcessor;
             case CONTRACT_CREATION -> contractCreationProcessor;
         };
-    }
-
-    @VisibleForTesting
-    public void setGasCalculator(GasCalculator gasCalculator) {
-        this.gasCalculator = gasCalculator;
     }
 }

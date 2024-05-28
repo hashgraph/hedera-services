@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.state.merkle;
 
-package com.hedera.node.app.service.mono.state.merkle;
-
-import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Longs;
-import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
+import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -73,7 +72,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
         this.fileContents = new LinkedHashMap<>();
     }
 
-    public MerkleSpecialFiles(final MerkleSpecialFiles that) {
+    public MerkleSpecialFiles(MerkleSpecialFiles that) {
         hashCache = new HashMap<>(that.hashCache);
         fileContents = new LinkedHashMap<>();
         for (final var entry : that.getFileContents().entrySet()) {
@@ -113,7 +112,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
      * @param fid the id of the file to get
      * @return the file's contents
      */
-    public synchronized byte[] get(final FileID fid) {
+    public synchronized byte[] get(FileID fid) {
         final var fileByParts = fileContents.get(fid);
         if (fileByParts == null) {
             return NO_CONTENTS;
@@ -122,7 +121,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
         for (final BytesElement part : fileByParts) {
             try {
                 baos.write(part.getData());
-            } catch (final IOException e) {
+            } catch (IOException e) {
                 log.error("Special file concatenation failed for {}", readableId(fid), e);
                 throw new UncheckedIOException(e);
             }
@@ -136,7 +135,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
      * @param fid the id of a file to check existence of
      * @return if the file exixts
      */
-    public synchronized boolean contains(final FileID fid) {
+    public synchronized boolean contains(FileID fid) {
         return fileContents.containsKey(fid);
     }
 
@@ -147,7 +146,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
      * @param fid the id of the file to append to
      * @param extraContents the contents to append
      */
-    public synchronized void append(final FileID fid, final byte[] extraContents) {
+    public synchronized void append(FileID fid, byte[] extraContents) {
         throwIfImmutable();
         final var fileByParts = fileContents.get(fid);
         if (fileByParts == null) {
@@ -164,7 +163,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
      * @param fid the id of the file to set contents of
      * @param newContents the new contents
      */
-    public synchronized void update(final FileID fid, final byte[] newContents) {
+    public synchronized void update(FileID fid, byte[] newContents) {
         throwIfImmutable();
         fileContents.put(fid, newFcqWith(newContents));
         hashCache.remove(fid);
@@ -172,7 +171,8 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
 
     /** {@inheritDoc} */
     @Override
-    public synchronized void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public synchronized void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         var numFiles = in.readInt();
         while (numFiles-- > 0) {
             final var fidNum = in.readLong();
@@ -215,7 +215,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
             try {
                 baos.write(Longs.toByteArray(entry.getKey().getFileNum()));
                 baos.write(entry.getValue().getHash().getValue());
-            } catch (final IOException e) {
+            } catch (IOException e) {
                 log.error("Hash concatenation failed", e);
                 throw new UncheckedIOException(e);
             }
@@ -232,7 +232,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
             return false;
         }
 
-        final var that = (MerkleSpecialFiles) obj;
+        var that = (MerkleSpecialFiles) obj;
         return Objects.equals(this.fileContents, that.fileContents);
     }
 
@@ -248,13 +248,12 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
         return Objects.hash(this.fileContents);
     }
 
-    private byte[] hashOfKnown(final FileID fid) {
-        return hashCache.computeIfAbsent(fid, missingFid -> CryptographyHolder.get()
-                .digestSync(get(missingFid))
-                .getValue());
+    private byte[] hashOfKnown(FileID fid) {
+        return hashCache.computeIfAbsent(
+                fid, missingFid -> CryptographyHolder.get().digestSync(get(missingFid)).getValue());
     }
 
-    private FCQueue<BytesElement> newFcqWith(final byte[] initialContents) {
+    private FCQueue<BytesElement> newFcqWith(byte[] initialContents) {
         final var fileByParts = new FCQueue<BytesElement>();
         fileByParts.add(new BytesElement(initialContents));
         return fileByParts;
@@ -269,7 +268,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
         return hashCache;
     }
 
-    static void setBaosSupplier(final Supplier<ByteArrayOutputStream> baosSupplier) {
+    static void setBaosSupplier(Supplier<ByteArrayOutputStream> baosSupplier) {
         MerkleSpecialFiles.baosSupplier = baosSupplier;
     }
 }

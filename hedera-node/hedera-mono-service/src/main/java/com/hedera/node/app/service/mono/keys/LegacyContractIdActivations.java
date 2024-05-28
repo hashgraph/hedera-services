@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.keys;
 
-package com.hedera.node.app.service.mono.keys;
-
-import static com.hedera.node.app.hapi.utils.sysfiles.ParsingUtils.fromTwoPartDelimited;
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.sysfiles.ParsingUtils.fromTwoPartDelimited;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.Pair;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -46,16 +45,19 @@ public record LegacyContractIdActivations(Map<Address, Set<Address>> privilegedC
      * @return the representative instance
      */
     public static LegacyContractIdActivations from(final String spec) {
-        final var privilegedContracts = Arrays.stream(spec.split(","))
-                .filter(s -> !s.isBlank())
-                .map(literal -> fromTwoPartDelimited(
-                        literal,
-                        "by",
-                        (account, contracts) -> {},
-                        LegacyContractIdActivations::parsedMirrorAddressOf,
-                        LegacyContractIdActivations::contracts,
-                        Pair::of))
-                .collect(toMap(Pair::getKey, Pair::getValue));
+        final var privilegedContracts =
+                Arrays.stream(spec.split(","))
+                        .filter(s -> !s.isBlank())
+                        .map(
+                                literal ->
+                                        fromTwoPartDelimited(
+                                                literal,
+                                                "by",
+                                                (account, contracts) -> {},
+                                                LegacyContractIdActivations::parsedMirrorAddressOf,
+                                                LegacyContractIdActivations::contracts,
+                                                Pair::of))
+                        .collect(toMap(Pair::getKey, Pair::getValue));
         return new LegacyContractIdActivations(privilegedContracts);
     }
 
@@ -83,7 +85,7 @@ public record LegacyContractIdActivations(Map<Address, Set<Address>> privilegedC
                 .collect(toSet());
     }
 
-    public static Address parsedMirrorAddressOf(final String s) {
+    private static Address parsedMirrorAddressOf(final String s) {
         return mirrorAddressOf(Long.parseLong(s));
     }
 

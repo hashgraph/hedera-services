@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,44 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.ledger.accounts.staking;
 
-package com.hedera.node.app.service.mono.ledger.accounts.staking;
-
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.NODE_STAKES;
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.PENDING_REWARDS;
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
+import static com.hedera.services.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.services.ledger.accounts.staking.StakeStartupHelper.RecomputeType.NODE_STAKES;
+import static com.hedera.services.ledger.accounts.staking.StakeStartupHelper.RecomputeType.PENDING_REWARDS;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.utility.MerkleLong;
-import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
-import com.swirlds.platform.system.address.AddressBook;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +50,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -66,7 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakeStartupHelperTest {
-
     private static final long removedNodeId = 2L;
     private static final long addedNodeId = 4L;
     private static final EntityNum removedNum = EntityNum.fromLong(removedNodeId);
@@ -77,37 +67,17 @@ class StakeStartupHelperTest {
     private static final SplittableRandom r = new SplittableRandom(1_234_567L);
     private static final int numStakingAccounts = 50;
     private static final long currentStakingPeriod = 1_234_567L;
-    private static final Instant consTime = Instant.ofEpochSecond(currentStakingPeriod);
 
-    @Mock
-    private StakeInfoManager stakeInfoManager;
-
-    @Mock
-    private PropertySource properties;
-
-    @Mock
-    private MerkleNetworkContext networkContext;
-
-    @Mock
-    private AddressBook addressBook;
-
-    @Mock
-    private RewardCalculator rewardCalculator;
-
-    @Mock
-    private TransactionContext txnCtx;
+    @Mock private StakeInfoManager stakeInfoManager;
+    @Mock private PropertySource properties;
+    @Mock private MerkleNetworkContext networkContext;
+    @Mock private AddressBook addressBook;
+    @Mock private RewardCalculator rewardCalculator;
 
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
-    private StakePeriodManager stakePeriodManager;
 
     private StakeStartupHelper subject;
-
-    @BeforeEach
-    public void setUp() {
-        lenient().when(networkContext.consensusTimeOfLastHandledTxn()).thenReturn(consTime);
-        stakePeriodManager = new StakePeriodManager(txnCtx, () -> networkContext, properties);
-    }
 
     @Test
     void alwaysPrepsStakeInfoManagerForNewAddressBookAndUpdatesMap() {
@@ -116,7 +86,7 @@ class StakeStartupHelperTest {
         Assertions.assertTrue(stakingInfos.containsKey(removedNum));
         Assertions.assertFalse(stakingInfos.containsKey(addedNum));
 
-        subject.doRestartHousekeeping(addressBook, MerkleMapLike.from(stakingInfos));
+        subject.doRestartHousekeeping(addressBook, stakingInfos);
 
         verify(stakeInfoManager).prepForManaging(postUpgradeNodeIds);
         assertNull(stakingInfos.get(EntityNum.fromLong(removedNodeId)));
@@ -139,10 +109,12 @@ class StakeStartupHelperTest {
     void okToRequestNothingPostUpgrade() {
         givenPostUpgradeSubjectDoing();
 
-        assertDoesNotThrow(() -> subject.doUpgradeHousekeeping(
-                networkContext,
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
-                MerkleMapLike.from(stakingInfos)));
+        assertDoesNotThrow(
+                () ->
+                        subject.doUpgradeHousekeeping(
+                                networkContext,
+                                AccountStorageAdapter.fromInMemory(accounts),
+                                stakingInfos));
     }
 
     @Test
@@ -152,32 +124,38 @@ class StakeStartupHelperTest {
         givenPostUpgradeSubjectDoing(NODE_STAKES, PENDING_REWARDS);
 
         subject.doUpgradeHousekeeping(
-                networkContext,
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
-                MerkleMapLike.from(stakingInfos));
+                networkContext, AccountStorageAdapter.fromInMemory(accounts), stakingInfos);
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
-        assertEquals(LocalDate.ofInstant(consTime, ZONE_UTC).toEpochDay(), stakePeriodManager.getCurrentStakePeriod());
 
         for (final var postUpgradeInfo : stakingInfos.values()) {
             final var num = postUpgradeInfo.getKey();
 
             final var actualStakeToReward = stakingInfos.get(num).getStakeToReward();
-            final var expectedStakeToReward = Optional.ofNullable(
-                            expectedQuantities.nodeStakesToReward.get(num.longValue()))
-                    .orElse(0L);
-            assertEquals(expectedStakeToReward, actualStakeToReward, "Wrong stake to reward for node " + num);
+            final var expectedStakeToReward =
+                    Optional.ofNullable(expectedQuantities.nodeStakesToReward.get(num.longValue()))
+                            .orElse(0L);
+            assertEquals(
+                    expectedStakeToReward,
+                    actualStakeToReward,
+                    "Wrong stake to reward for node " + num);
 
             final var actualStakeToNotReward = stakingInfos.get(num).getStakeToNotReward();
-            final var expectedStakeToNotReward = Optional.ofNullable(
-                            expectedQuantities.nodeStakesToNotReward.get(num.longValue()))
-                    .orElse(0L);
-            assertEquals(expectedStakeToNotReward, actualStakeToNotReward, "Wrong stake to not reward for node " + num);
+            final var expectedStakeToNotReward =
+                    Optional.ofNullable(
+                                    expectedQuantities.nodeStakesToNotReward.get(num.longValue()))
+                            .orElse(0L);
+            assertEquals(
+                    expectedStakeToNotReward,
+                    actualStakeToNotReward,
+                    "Wrong stake to not reward for node " + num);
         }
     }
 
     private record ExpectedQuantities(
-            long pendingRewards, Map<Long, Long> nodeStakesToReward, Map<Long, Long> nodeStakesToNotReward) {}
+            long pendingRewards,
+            Map<Long, Long> nodeStakesToReward,
+            Map<Long, Long> nodeStakesToNotReward) {}
 
     private ExpectedQuantities givenStakingAccountsWithExpectedQuantities() {
         givenPostUpgradeNodeInfos();
@@ -207,8 +185,12 @@ class StakeStartupHelperTest {
                     continue;
                 }
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
-                given(rewardCalculator.estimatePendingRewards(
-                                account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()))))
+                given(
+                                rewardCalculator.estimatePendingRewards(
+                                        account,
+                                        stakingInfos.get(
+                                                EntityNum.fromLong(
+                                                        account.getStakedNodeAddressBookId()))))
                         .willReturn(pretendReward);
                 pendingRewards += pretendReward;
                 // Should this account decline rewards?
@@ -227,30 +209,30 @@ class StakeStartupHelperTest {
 
     private void givenGenesisSubject() {
         givenGenesisAddressBook();
-        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator, stakePeriodManager);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
     }
 
     private void givenPostRestartSubject() {
         givenWellKnownAddressBookAndInfosMap();
         given(properties.getIntProperty(PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(365);
-        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator, stakePeriodManager);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
     }
 
-    private void givenPostUpgradeSubjectDoing(final StakeStartupHelper.RecomputeType... types) {
+    private void givenPostUpgradeSubjectDoing(StakeStartupHelper.RecomputeType... types) {
         given(properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE))
                 .willReturn(Set.of(types));
 
-        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator, stakePeriodManager);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
     }
 
     void givenGenesisAddressBook() {
         given(addressBook.getSize()).willReturn(preUpgradeNodeIds.length + 1);
         int nextIndex = 0;
         for (final long preUpgradeNodeId : preUpgradeNodeIds) {
-            given(addressBook.getNodeId(nextIndex++)).willReturn(new NodeId(preUpgradeNodeId));
+            given(addressBook.getId(nextIndex++)).willReturn(preUpgradeNodeId);
         }
-        given(addressBook.getNodeId(nextIndex)).willReturn(new NodeId(addedNodeId));
+        given(addressBook.getId(nextIndex)).willReturn(addedNodeId);
     }
 
     void givenWellKnownAddressBookAndInfosMap() {
@@ -278,33 +260,41 @@ class StakeStartupHelperTest {
         stakingInfos.put(EntityNum.fromLong(addedNodeId), new MerkleStakingInfo());
     }
 
-    private void addPreUpgrade(final int index, final long nodeId) {
-        given(addressBook.getNodeId(index)).willReturn(new NodeId(nodeId));
+    private void addPreUpgrade(int index, long nodeId) {
+        given(addressBook.getId(index)).willReturn(nodeId);
         stakingInfos.put(EntityNum.fromLong(nodeId), new MerkleStakingInfo());
     }
 
-    private void addPostUpgrade(final int index, final long nodeId) {
-        given(addressBook.getNodeId(index)).willReturn(new NodeId(nodeId));
+    private void addPostUpgrade(int index, long nodeId) {
+        given(addressBook.getId(index)).willReturn(nodeId);
     }
 
     private static void registerConstructables() {
         try {
             ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(
-                            new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+                            new ClassConstructorPair(
+                                    MerkleBinaryTree.class, MerkleBinaryTree::new));
             ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
             ConstructableRegistry.getInstance()
-                    .registerConstructable(new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleAccountState.class, MerkleAccountState::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
-        } catch (final ConstructableRegistryException e) {
+        } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
     }

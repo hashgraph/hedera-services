@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.node.app.service.mono.ledger.accounts.staking;
+package com.hedera.services.ledger.accounts.staking;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.merkle.map.MerkleMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
@@ -29,18 +27,19 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Singleton
 public class StakeInfoManager {
     private static final Logger log = LogManager.getLogger(StakeInfoManager.class);
-    private final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
 
     // Used to improve performance when node ids are sequential whole numbers (0, 1, 2, ...)
     private MerkleStakingInfo[] cache;
-    private MerkleMapLike<EntityNum, MerkleStakingInfo> prevStakingInfos;
+    private MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfos;
 
     @Inject
-    public StakeInfoManager(final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo) {
+    public StakeInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
         this.stakingInfos = stakingInfo;
     }
 
@@ -71,18 +70,13 @@ public class StakeInfoManager {
                 return null;
             }
             if (nodeId >= cache.length) {
-                log.warn("Stake info requested for node id {} beyond cache size {}", nodeId, cache.length);
+                log.warn(
+                        "Stake info requested for node id {} beyond cache size {}",
+                        nodeId,
+                        cache.length);
                 return null;
             }
             return getFromCache(nodeId);
-        }
-    }
-
-    public void clearAllRewardHistory() {
-        final var mutableStakingInfo = stakingInfos.get();
-        for (var key : mutableStakingInfo.keySet()) {
-            final var info = mutableStakingInfo.getForModify(key);
-            info.clearRewardSumHistory();
         }
     }
 
@@ -99,6 +93,14 @@ public class StakeInfoManager {
         return cache[i];
     }
 
+    public void clearAllRewardHistory() {
+        final var mutableStakingInfo = stakingInfos.get();
+        for (var key : mutableStakingInfo.keySet()) {
+            final var info = mutableStakingInfo.getForModify(key);
+            info.clearRewardSumHistory();
+        }
+    }
+
     private void clearCache() {
         Arrays.fill(cache, null);
     }
@@ -109,7 +111,7 @@ public class StakeInfoManager {
     }
 
     @VisibleForTesting
-    void setPrevStakingInfos(final MerkleMapLike<EntityNum, MerkleStakingInfo> prevStakingInfos) {
+    void setPrevStakingInfos(final MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfos) {
         this.prevStakingInfos = prevStakingInfos;
     }
 

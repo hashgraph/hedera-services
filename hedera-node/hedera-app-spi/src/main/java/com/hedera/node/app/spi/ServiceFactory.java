@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.node.app.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,11 +46,13 @@ public final class ServiceFactory {
         Objects.requireNonNull(serviceLoader, "serviceLoader must not be null");
         final Iterator<S> iterator = serviceLoader.iterator();
         if (!iterator.hasNext()) {
-            throw new IllegalStateException("No service implementation found for service type '" + type + "'");
+            throw new IllegalStateException(
+                    "No service implementation found for service type '" + type + "'");
         }
         final S serviceInstance = iterator.next();
         if (iterator.hasNext()) {
-            throw new IllegalStateException("Multiple service implementations found for service type '" + type + "'");
+            throw new IllegalStateException(
+                    "Multiple service implementations found for service type '" + type + "'");
         }
         return serviceInstance;
     }

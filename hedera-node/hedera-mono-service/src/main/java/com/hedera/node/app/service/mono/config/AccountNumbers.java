@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.config;
 
-package com.hedera.node.app.service.mono.config;
+import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_TREASURY;
 
-import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_TREASURY;
-
-import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.PropertySource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class AccountNumbers implements HederaAccountNumbers {
-
     private final PropertySource properties;
 
     private long treasury = UNKNOWN_NUMBER;
@@ -52,7 +50,7 @@ public class AccountNumbers implements HederaAccountNumbers {
     private long nodeRewardAccount = UNKNOWN_NUMBER;
 
     @Inject
-    public AccountNumbers(@CompositeProps final PropertySource properties) {
+    public AccountNumbers(@CompositeProps PropertySource properties) {
         this.properties = properties;
     }
 
@@ -137,7 +135,7 @@ public class AccountNumbers implements HederaAccountNumbers {
     }
 
     @Override
-    public boolean isSuperuser(final long num) {
+    public boolean isSuperuser(long num) {
         return num == treasury() || num == systemAdmin();
     }
 }

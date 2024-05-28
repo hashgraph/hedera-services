@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.hedera.services.ledger.accounts.staking;
 
-package com.hedera.node.app.service.mono.ledger.accounts.staking;
-
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.HederaAccount;
 import java.util.Map;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class RewardCalculator {
@@ -38,7 +37,8 @@ public class RewardCalculator {
     private long rewardsPaid;
 
     @Inject
-    public RewardCalculator(final StakePeriodManager stakePeriodManager, final StakeInfoManager stakeInfoManager) {
+    public RewardCalculator(
+            final StakePeriodManager stakePeriodManager, final StakeInfoManager stakeInfoManager) {
         this.stakePeriodManager = stakePeriodManager;
         this.stakeInfoManager = stakeInfoManager;
     }
@@ -48,26 +48,29 @@ public class RewardCalculator {
     }
 
     public long computePendingReward(final HederaAccount account) {
-        final var effectiveStart = stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+        final var effectiveStart =
+                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
         if (!stakePeriodManager.isRewardable(effectiveStart)) {
             return 0;
         }
-        final var rewardOffered = computeRewardFromDetails(
-                account,
-                stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
-                stakePeriodManager.currentStakePeriod(),
-                effectiveStart);
+        final var rewardOffered =
+                computeRewardFromDetails(
+                        account,
+                        stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
+                        stakePeriodManager.currentStakePeriod(),
+                        effectiveStart);
         return account.isDeclinedReward() ? 0 : rewardOffered;
     }
 
     public boolean applyReward(
             final long reward,
             @Nullable final HederaAccount account,
-            @NonNull final Map<AccountProperty, Object> changes) {
+            @NotNull final Map<AccountProperty, Object> changes) {
         if (reward > 0) {
-            final var isDeclined = (account != null)
-                    ? account.isDeclinedReward()
-                    : (boolean) changes.getOrDefault(AccountProperty.DECLINE_REWARD, false);
+            final var isDeclined =
+                    (account != null)
+                            ? account.isDeclinedReward()
+                            : (boolean) changes.getOrDefault(AccountProperty.DECLINE_REWARD, false);
             if (isDeclined) {
                 return false;
             }
@@ -82,13 +85,19 @@ public class RewardCalculator {
         return rewardsPaid;
     }
 
-    public long estimatePendingRewards(final HederaAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
-        final var effectiveStart = stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+    public long estimatePendingRewards(
+            final HederaAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
+        final var effectiveStart =
+                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
         if (!stakePeriodManager.isEstimatedRewardable(effectiveStart)) {
             return 0;
         }
-        final var rewardOffered = computeRewardFromDetails(
-                account, nodeStakingInfo, stakePeriodManager.estimatedCurrentStakePeriod(), effectiveStart);
+        final var rewardOffered =
+                computeRewardFromDetails(
+                        account,
+                        nodeStakingInfo,
+                        stakePeriodManager.estimatedCurrentStakePeriod(),
+                        effectiveStart);
         return account.isDeclinedReward() ? 0 : rewardOffered;
     }
 
@@ -129,12 +138,14 @@ public class RewardCalculator {
                             / HBARS_TO_TINYBARS
                             * (rewardSumHistory[0] - rewardSumHistory[rewardFrom - 1]);
         } else {
-            return account.totalStake() / HBARS_TO_TINYBARS * (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
+            return account.totalStake()
+                    / HBARS_TO_TINYBARS
+                    * (rewardSumHistory[0] - rewardSumHistory[rewardFrom]);
         }
     }
 
     @VisibleForTesting
-    public void setRewardsPaidInThisTxn(final long rewards) {
+    public void setRewardsPaidInThisTxn(long rewards) {
         rewardsPaid = rewards;
     }
 }

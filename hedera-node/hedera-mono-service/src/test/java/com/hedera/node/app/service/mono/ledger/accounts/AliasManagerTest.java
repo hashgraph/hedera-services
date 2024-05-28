@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hedera.node.app.service.mono.ledger.accounts;
+package com.hedera.services.ledger.accounts;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,49 +31,51 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
-import java.security.InvalidKeyException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 class AliasManagerTest {
     private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
     private static final EntityNum num = EntityNum.fromLong(1234L);
-    private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final byte[] rawNonMirrorAddress =
+            unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
     private static final Address mirrorAddress = num.toEvmAddress();
     private static final byte[] ECDSA_PUBLIC_KEY =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
-    private static final byte[] ECDSA_PUBLIC_KEY_ADDRESS = Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
-    private static final byte[] notQuiteEcdsaPublicKey = Key.newBuilder()
-            .setECDSASecp256K1(ByteStringUtils.wrapUnsafely(
-                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
-            .build()
-            .toByteArray();
+    private static final byte[] ECDSA_PUBLIC_KEY_ADDRESS =
+            Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+    private static final byte[] notQuiteEcdsaPublicKey =
+            Key.newBuilder()
+                    .setECDSASecp256K1(
+                            ByteStringUtils.wrapUnsafely(
+                                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                                            .getBytes()))
+                    .build()
+                    .toByteArray();
 
-    private final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+    private FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 
-    private final AliasManager subject = new AliasManager(() -> aliases);
+    private AliasManager subject = new AliasManager(() -> aliases);
 
     @Test
     void resolvesLinkedNonMirrorAsExpected() {
@@ -106,63 +109,56 @@ class AliasManagerTest {
     @Test
     void canLinkAndUnlinkAddresses() {
         subject.link(nonMirrorAddress, mirrorAddress);
-        assertEquals(Map.of(ByteString.copyFrom(nonMirrorAddress.toArrayUnsafe()), num), subject.getAliases());
+        assertEquals(
+                Map.of(ByteString.copyFrom(nonMirrorAddress.toArrayUnsafe()), num),
+                subject.getAliases());
 
         subject.unlink(nonMirrorAddress);
         assertEquals(Collections.emptyMap(), subject.getAliases());
     }
 
     @Test
-    void canLinkAndUnlinkEthereumAddresses() throws InvalidProtocolBufferException, InvalidKeyException {
-        final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
-        final JKey jKey = JKey.mapKey(key);
-        final boolean added = subject.maybeLinkEvmAddress(jKey, num);
+    void canLinkAndUnlinkEthereumAddresses()
+            throws InvalidProtocolBufferException, DecoderException {
+        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        JKey jKey = JKey.mapKey(key);
+        boolean added = subject.maybeLinkEvmAddress(jKey, num);
         assertTrue(added);
-        assertEquals(Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num), subject.getAliases());
+        assertEquals(
+                Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num), subject.getAliases());
 
         subject.forgetEvmAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
         assertEquals(Collections.emptyMap(), subject.getAliases());
     }
 
     @Test
-    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, InvalidKeyException {
+    void noopOnTryingToForgetMalformattedSecp256k1Key() {
+        assertDoesNotThrow(
+                () ->
+                        subject.forgetEvmAddress(
+                                ByteStringUtils.wrapUnsafely(notQuiteEcdsaPublicKey)));
+    }
+
+    @Test
+    void skipsUnrecoverableEthereumAddresses()
+            throws InvalidProtocolBufferException, DecoderException {
         Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         JKey jKey = JKey.mapKey(key);
-        subject.maybeLinkEvmAddress(jKey, num);
-
-        try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
-            utilities
-                    .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
-                    .thenReturn(new byte[0]);
-            subject.forgetEvmAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
-            assertEquals(Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num), subject.getAliases());
-        }
-    }
-
-    @Test
-    void noopOnTryingToForgetMalformattedSecp256k1Key() {
-        assertDoesNotThrow(() -> subject.forgetEvmAddress(ByteStringUtils.wrapUnsafely(notQuiteEcdsaPublicKey)));
-    }
-
-    @Test
-    void skipsUnrecoverableEthereumAddresses() throws InvalidProtocolBufferException, InvalidKeyException {
-        final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
-        final JKey jKey = JKey.mapKey(key);
-        final boolean added = subject.maybeLinkEvmAddress(jKey, num, any -> null);
+        boolean added = subject.maybeLinkEvmAddress(jKey, num, any -> null);
         assertFalse(added);
     }
 
     @Test
     void ignoresNullKeys() {
-        assertFalse(subject.maybeLinkEvmAddress(null, num, EthSigsUtils::recoverAddressFromPubKey));
+        assertFalse(subject.maybeLinkEvmAddress(null, num, EthTxSigs::recoverAddressFromPubKey));
     }
 
     @Test
-    void wontLinkOrUnlinked25519Key() throws InvalidKeyException {
-        final var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-        final Key key = Key.newBuilder().setEd25519(keyData).build();
-        final JKey jKey = JKey.mapKey(key);
-        final boolean added = subject.maybeLinkEvmAddress(jKey, num, EthSigsUtils::recoverAddressFromPubKey);
+    void wontLinkOrUnlinked25519Key() throws DecoderException {
+        var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+        Key key = Key.newBuilder().setEd25519(keyData).build();
+        JKey jKey = JKey.mapKey(key);
+        boolean added = subject.maybeLinkEvmAddress(jKey, num, EthTxSigs::recoverAddressFromPubKey);
         assertFalse(added);
         assertEquals(Map.of(), subject.getAliases());
 
@@ -204,17 +200,23 @@ class AliasManagerTest {
     }
 
     @Test
-    void lookupIdByECDSAKeyAliasShouldReturnNumFromEVMAddressAliasMap()
-            throws InvalidProtocolBufferException, InvalidKeyException {
-        subject.link(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num);
-        assertEquals(num, subject.lookupIdBy(ByteString.copyFrom(ECDSA_PUBLIC_KEY)));
+    void retrievesExpectedEvmAddressForEcdsaKey() {
+        final var key = subject.keyAliasToEVMAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
+        assertArrayEquals(ECDSA_PUBLIC_KEY_ADDRESS, key);
+    }
+
+    @Test
+    void retrievesNullFromInvalidKeyAliases() {
+        assertNull(subject.keyAliasToEVMAddress(ByteString.copyFrom(rawNonMirrorAddress)));
+        assertNull(subject.keyAliasToEVMAddress(ByteString.copyFrom(notQuiteEcdsaPublicKey)));
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void rebuildsFromMap() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+                .registerConstructable(
+                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
         final var withNum = EntityNum.fromLong(1L);
         final var withoutNum = EntityNum.fromLong(2L);
@@ -254,7 +256,7 @@ class AliasManagerTest {
 
         subject.getAliases().put(expiredAlias, withoutNum);
         subject.rebuildAliasesMap(
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(liveAccounts)),
+                AccountStorageAdapter.fromInMemory(liveAccounts),
                 (BiConsumer<EntityNum, HederaAccount>) mockObserver);
 
         final var finalMap = subject.getAliases();
