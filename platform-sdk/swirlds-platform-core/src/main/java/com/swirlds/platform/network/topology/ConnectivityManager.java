@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,6 +44,8 @@ public class ConnectivityManager {
     private final NetworkTopology topology;
     private final OutboundConnectionCreator connectionCreator;
     private Map<ConnectionMapping, ConnectionManager> connectionManagers;
+
+    /** holds the nodeIds of connection managers for fast lookup*/
     private final Set<NodeId> nodeIdsOfConnectionManagers = new HashSet<>();
 
     /**
@@ -70,14 +71,18 @@ public class ConnectivityManager {
     @NonNull
     public synchronized List<ConnectionManager> updatePeers(@NonNull final List<PeerInfo> peers) {
         Objects.requireNonNull(peers, "peers cannot be null");
+
+        final Set<NodeId> nodeIds = new HashSet<>();
         // Get all nodeIds from the peers list
-        final Set<NodeId> nodeIds = peers.stream().map(PeerInfo::nodeId).collect(Collectors.toSet());
+        peers.forEach(peer -> {
+            // create managers for all incoming nodeIds we're not already aware of
+            if (!nodeIdsOfConnectionManagers.contains(peer.nodeId())) {
+                createConnectionMapping(peer.nodeId());
+            }
+            nodeIds.add(peer.nodeId());
+        });
 
-        // create managers for all incoming nodeIds we're not already aware of
-        nodeIds.stream()
-                .filter(nodeId -> !nodeIdsOfConnectionManagers.contains(nodeId))
-                .forEach(this::createConnectionManager);
-
+        // Remove any connection managers that are no longer needed
         connectionManagers.keySet().removeIf(connectionMapping -> !nodeIds.contains(connectionMapping.id()));
         nodeIdsOfConnectionManagers.removeIf(nodeId -> !nodeIds.contains(nodeId));
 
@@ -139,7 +144,7 @@ public class ConnectivityManager {
     private Map<ConnectionMapping, ConnectionManager> createConnectionManagers() {
         final Set<NodeId> neighbors = topology.getNeighbors();
         this.connectionManagers = HashMap.newHashMap(neighbors.size());
-        neighbors.forEach(this::createConnectionManager);
+        neighbors.forEach(this::createConnectionMapping);
 
         return connectionManagers;
     }
@@ -149,7 +154,7 @@ public class ConnectivityManager {
      *
      * @param neighbor the neighbor to create a connection manager for
      */
-    private void createConnectionManager(@NonNull final NodeId neighbor) {
+    private void createConnectionMapping(@NonNull final NodeId neighbor) {
         if (topology.shouldConnectToMe(neighbor)) {
             connectionManagers.put(new ConnectionMapping(neighbor, false), new InboundConnectionManager(neighbor));
             nodeIdsOfConnectionManagers.add(neighbor);
