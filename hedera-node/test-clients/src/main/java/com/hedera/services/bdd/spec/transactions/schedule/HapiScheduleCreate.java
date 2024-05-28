@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -239,11 +238,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
                 .setSeconds(expiry.getEpochSecond())
                 .setNanos(expiry.getNano())
                 .build();
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::createSchedule;
     }
 
     @Override

@@ -51,7 +51,6 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -322,11 +321,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::createAccount;
     }
 
     @Override

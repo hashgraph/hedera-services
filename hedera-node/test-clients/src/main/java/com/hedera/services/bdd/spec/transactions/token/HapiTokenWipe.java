@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -147,11 +146,6 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
                 .getWipeKey(token));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::wipeTokenAccount;
     }
 
     @Override

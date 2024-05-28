@@ -20,9 +20,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.utils.GrpcUtils;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -57,6 +60,27 @@ public abstract class AbstractGrpcNetwork extends AbstractNetwork implements Hed
             @NonNull final HederaFunctionality functionality,
             @NonNull final com.hederahashgraph.api.proto.java.AccountID nodeAccountId) {
         requireNonNull(clients, "clients are not ready");
+        requireNonNull(query);
+        requireNonNull(functionality);
+        requireNonNull(nodeAccountId);
         return GrpcUtils.send(query, clients, functionality, nodeAccountId);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws NullPointerException if the clients are not ready
+     */
+    @Override
+    public TransactionResponse submit(
+            @NonNull final Transaction transaction,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final SystemFunctionalityTarget target,
+            @NonNull final AccountID nodeAccountId) {
+        requireNonNull(clients, "clients are not ready");
+        requireNonNull(transaction);
+        requireNonNull(functionality);
+        requireNonNull(nodeAccountId);
+        return GrpcUtils.submit(transaction, clients, functionality, target, nodeAccountId);
     }
 }

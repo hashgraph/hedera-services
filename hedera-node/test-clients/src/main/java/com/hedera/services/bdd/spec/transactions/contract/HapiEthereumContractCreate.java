@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
@@ -51,7 +50,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -352,11 +350,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                         scFees::getEthereumTransactionFeeMatrices,
                         txn,
                         numPayerSigs);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 
     private EthereumTransactionBody explicitEthereumTransaction(HapiSpec spec)

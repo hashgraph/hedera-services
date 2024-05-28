@@ -32,12 +32,10 @@ import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
     private boolean useRejectedStartHr = false;
@@ -153,11 +151,6 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
                     }
                 });
         return b -> b.setFreeze(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getFreezeSvcStub(targetNodeFor(spec), useTls)::freeze;
     }
 
     @Override

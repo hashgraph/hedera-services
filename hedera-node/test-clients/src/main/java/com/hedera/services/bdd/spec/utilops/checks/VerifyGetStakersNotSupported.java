@@ -17,13 +17,13 @@
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.CryptoGetStakersQuery;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
 import org.junit.jupiter.api.Assertions;
 
 public class VerifyGetStakersNotSupported extends UtilOp {
@@ -31,8 +31,7 @@ public class VerifyGetStakersNotSupported extends UtilOp {
     protected boolean submitOp(HapiSpec spec) throws Throwable {
         CryptoGetStakersQuery.Builder op = CryptoGetStakersQuery.newBuilder().setAccountID(asAccount("0.0.2"));
         Query query = Query.newBuilder().setCryptoGetProxyStakers(op).build();
-        Response response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getStakersByAccountID(query);
+        final var response = spec.targetNetworkOrThrow().send(query, CryptoGetStakers, targetNodeFor(spec));
         Assertions.assertEquals(
                 NOT_SUPPORTED, response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
         return false;

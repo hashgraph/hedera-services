@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -78,11 +77,6 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
             return asTopicId(topic.get(), spec);
         }
         return TopicID.getDefaultInstance();
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::deleteTopic;
     }
 
     @Override

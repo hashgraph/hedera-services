@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -109,11 +108,6 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
                 .getKycKey(token));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::revokeKycFromTokenAccount;
     }
 
     @Override

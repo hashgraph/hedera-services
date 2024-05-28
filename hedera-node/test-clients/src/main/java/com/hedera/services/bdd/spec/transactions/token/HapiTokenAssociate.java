@@ -41,7 +41,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -183,11 +182,6 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
                 .getKey(account));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::associateTokens;
     }
 
     @Override

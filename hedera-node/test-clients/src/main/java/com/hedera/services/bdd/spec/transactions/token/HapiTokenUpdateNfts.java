@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -98,11 +97,6 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
                             b.addAllSerialNumbers(serialNumbers.orElse(Collections.emptyList()));
                         });
         return b -> b.setTokenUpdateNfts(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateNfts;
     }
 
     @Override

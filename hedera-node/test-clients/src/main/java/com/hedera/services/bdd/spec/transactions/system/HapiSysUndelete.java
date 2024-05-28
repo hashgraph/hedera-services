@@ -21,16 +21,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asFileId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
@@ -58,6 +57,11 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
     }
 
     @Override
+    protected SystemFunctionalityTarget systemFunctionalityTarget() {
+        return file.isPresent() ? SystemFunctionalityTarget.FILE : SystemFunctionalityTarget.CONTRACT;
+    }
+
+    @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (file.isPresent() && contract.isPresent()) {
             Assertions.fail("Ambiguous SystemUndelete---both file and contract present!");
@@ -69,15 +73,6 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
                             contract.ifPresent(n -> b.setContractID(asContractId(n, spec)));
                         });
         return b -> b.setSystemUndelete(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        if (file.isPresent()) {
-            return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::systemUndelete;
-        } else {
-            return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::systemUndelete;
-        }
     }
 
     @Override

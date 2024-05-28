@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -179,11 +178,6 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
             }
         });
         return signers;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
     }
 
     @Override

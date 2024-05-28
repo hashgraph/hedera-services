@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
@@ -38,6 +39,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -130,7 +132,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected abstract Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable;
 
-    protected abstract Function<Transaction, TransactionResponse> callToUse(HapiSpec spec);
+    /**
+     * The type of entity to target if this transaction is a system functionality.
+     *
+     * @return the target type
+     */
+    protected SystemFunctionalityTarget systemFunctionalityTarget() {
+        return SystemFunctionalityTarget.NA;
+    }
 
     public byte[] serializeSignedTxnFor(HapiSpec spec) throws Throwable {
         return finalizedTxn(spec, opBodyDef(spec)).toByteArray();
@@ -158,7 +167,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 if (fiddler.isPresent()) {
                     txn = fiddler.get().apply(txn);
                 }
-                response = callToUse(spec).apply(txn);
+                response = spec.targetNetworkOrThrow()
+                        .submit(txn, type(), systemFunctionalityTarget(), targetNodeFor(spec));
             } catch (StatusRuntimeException e) {
                 if (respondToSRE(e, "submitting transaction")) {
                     continue;
@@ -435,12 +445,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         int allowedUnrecognizedExceptions = 10;
         while (response == null) {
             try {
-                var cryptoSvcStub = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls);
-                if (cryptoSvcStub == null) {
-                    response = UNKNOWN_RESPONSE;
-                } else {
-                    response = cryptoSvcStub.getTransactionReceipts(receiptQuery);
-                }
+                response = spec.targetNetworkOrThrow().send(receiptQuery, TransactionGetReceipt, targetNodeFor(spec));
             } catch (StatusRuntimeException e) {
                 if (!respondToSRE(e, "resolving status")) {
                     log.warn(

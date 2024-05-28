@@ -23,6 +23,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
@@ -45,6 +47,25 @@ public interface HederaNetwork {
      */
     @NonNull
     Response send(@NonNull Query query, @NonNull HederaFunctionality functionality, @NonNull AccountID nodeAccountId);
+
+    /**
+     * Submits the given transaction to the network node with the given account id as if it
+     * was the given functionality. Blocks until the response is available.
+     *
+     * <p>For valid transactions, the functionality can be inferred; but for invalid transactions,
+     * the functionality must be provided.
+     *
+     * @param transaction the transaction
+     * @param functionality the functionality to use
+     * @param target the target to use, given a system functionality
+     * @param nodeAccountId the account id of the node to submit the transaction to
+     * @return the network's response
+     */
+    TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull HederaFunctionality functionality,
+            @NonNull SystemFunctionalityTarget target,
+            @NonNull AccountID nodeAccountId);
 
     /**
      * Returns the network type; for now this is always

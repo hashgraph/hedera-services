@@ -945,10 +945,6 @@ public class HapiSpec implements Runnable, Executable {
         return hapiSetup;
     }
 
-    public HapiClients clients() {
-        return hapiClients;
-    }
-
     public FeesAndRatesProvider ratesProvider() {
         return ratesProvider;
     }
@@ -962,10 +958,6 @@ public class HapiSpec implements Runnable, Executable {
     private static String defaultNodeAccount;
     private static Map<String, String> otherOverrides;
     private static boolean runningInCi = false;
-
-    public static boolean isRunningInCi() {
-        return runningInCi;
-    }
 
     public static void runInCiMode(
             String nodes,

@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.time.Instant;
@@ -347,11 +346,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     private List<Function<HapiSpec, Key>> oldDefaults() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
                 .getKey(file));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::updateFile;
     }
 
     @Override

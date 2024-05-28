@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -259,11 +258,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     public boolean getDeferStatusResolution() {
         return deferStatusResolution;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;
     }
 
     @Override

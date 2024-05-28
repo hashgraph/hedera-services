@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -372,11 +371,6 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.ContractCreate, scFees::getContractCreateTxFeeMatrices, txn, numPayerSigs);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 
     @Override

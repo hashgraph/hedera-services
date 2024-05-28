@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -67,11 +66,6 @@ public class HapiTokenPause extends HapiTxnOp<HapiTokenPause> {
                 .<TokenPauseTransactionBody, TokenPauseTransactionBody.Builder>body(
                         TokenPauseTransactionBody.class, b -> b.setToken(tId));
         return b -> b.setTokenPause(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::pauseToken;
     }
 
     @Override

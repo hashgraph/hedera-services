@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -148,11 +147,6 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
         deleteSigners.add(spec ->
                 spec.registry().getKey(transferAccount.orElse(spec.setup().defaultTransferName())));
         return deleteSigners;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoDelete;
     }
 
     @Override
