@@ -138,9 +138,7 @@ All of the expected behaviour described below should be present only if the new 
 
 - Given existing pending airdrop in state when valid `TokenCancelAirdrop` transaction containing entry for the same pending airdrop is performed then the `TokenCancelAirdrop` should succeed and the pending airdrop should be removed from state
 - Given successful  `TokenCancelAirdrop` when `TokenClaimAirdrop` for the same airdrop is performed then the `TokenClaimAirdrop` should fail
-- Given successful  `TokenCancelAirdrop` then any future rents for the canceled pending airdrop should not be charged from the sender
 - Given account with pending airdrops in state that cannot be deleted when successful `TokenCancelAirdrop` is performed for all of the account's pending airdrops then the account can be successfully deleted
-- Given account that expires and cannot be renewed when that account is used as sender in pending airdrops then all those pending airdrops should be canceled
 - `TokenCancelAirdrop` transaction containing pending airdrops entries which do not exist in state should fail
 - `TokenCancelAirdrop` transaction with no pending airdrops entries should fail
 - `TokenCancelAirdrop` transaction with more than 10 airdrops entries should fail
