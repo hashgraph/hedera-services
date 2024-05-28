@@ -103,6 +103,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -201,13 +202,11 @@ public final class Hedera implements SwirldMain {
      * improve testability and reuse. (For example, the {@link BootstrapConfigProviderImpl}.)
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param servicesRegistry the registry to register services with. This is optional and can be null.
+     * @param registry the registry to register services with. This is optional and can be null.
      *                         If null, a new instance of {@link ServicesRegistryImpl} will be created.
      *                         This is useful for testing.
      */
-    public Hedera(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @Nullable ServicesRegistryImpl servicesRegistry) {
+    public Hedera(@NonNull final ConstructableRegistry constructableRegistry, @Nullable ServicesRegistryImpl registry) {
         requireNonNull(constructableRegistry);
 
         // Print welcome message
@@ -245,11 +244,9 @@ public final class Hedera implements SwirldMain {
 
         // Create all the service implementations
         logger.info("Registering services");
-        if (servicesRegistry == null) {
-            this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
-        } else {
-            this.servicesRegistry = servicesRegistry;
-        }
+
+        this.servicesRegistry = Objects.requireNonNullElseGet(
+                registry, () -> new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder));
         registerServices(servicesRegistry);
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
