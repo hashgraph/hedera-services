@@ -239,10 +239,13 @@ class HandleWorkflowTest extends AppTestBase {
     private StoreMetricsService storeMetricsService;
 
     @Mock
+    private TransactionChecker transactionChecker;
+
+    @Mock
     private InitTrigger initTrigger;
 
     @Mock
-    private SoftwareVersion version;
+    private SoftwareVersion softwareVersion;
 
     private HandleWorkflow workflow;
 
@@ -329,6 +332,7 @@ class HandleWorkflowTest extends AppTestBase {
                 handleWorkflowMetrics,
                 throttleServiceManager,
                 storeMetricsService,
+                transactionChecker,
                 initTrigger,
                 hederaVersion);
     }
@@ -362,8 +366,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -391,8 +396,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -420,8 +426,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -449,8 +456,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -478,8 +486,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -507,8 +516,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -536,8 +546,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -565,8 +576,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -594,8 +606,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -623,8 +636,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -652,8 +666,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -681,8 +696,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -710,8 +726,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -739,8 +756,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -768,8 +786,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -797,8 +816,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -826,8 +846,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -855,8 +876,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -884,8 +906,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -913,8 +936,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -942,8 +966,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -971,8 +996,9 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -1000,8 +1026,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         null,
                         storeMetricsService,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -1029,8 +1056,9 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         null,
+                        transactionChecker,
                         initTrigger,
-                        version))
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -1059,7 +1087,8 @@ class HandleWorkflowTest extends AppTestBase {
                         throttleServiceManager,
                         storeMetricsService,
                         null,
-                        version))
+                        initTrigger,
+                        softwareVersion))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -1087,6 +1116,37 @@ class HandleWorkflowTest extends AppTestBase {
                         handleWorkflowMetrics,
                         throttleServiceManager,
                         storeMetricsService,
+                        transactionChecker,
+                        null,
+                        softwareVersion))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        recordCache,
+                        genesisRecordsTimeHook,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        childRecordFinalizer,
+                        finalizer,
+                        systemFileUpdateFacility,
+                        platformStateUpdateFacility,
+                        solvencyPreCheck,
+                        authorizer,
+                        networkUtilizationManager,
+                        synchronizedThrottleAccumulator,
+                        scheduleExpirationHook,
+                        cacheWarmer,
+                        handleWorkflowMetrics,
+                        throttleServiceManager,
+                        storeMetricsService,
+                        transactionChecker,
                         initTrigger,
                         null))
                 .isInstanceOf(NullPointerException.class);
@@ -1626,13 +1686,11 @@ class HandleWorkflowTest extends AppTestBase {
 
         @Test
         @DisplayName("Reject transaction as BUSY, if the txn version is older than the software")
-        void testOldVersionTxnFails() {
+        void testOldVersionTxnFails() throws PreCheckException {
             // given
-            given(preHandleWorkflow.preHandleTransaction(any(), any(), any(), any(), any()))
-                    .willAnswer(invocation -> invocation.getArgument(4));
+            // Construct a version intentionally lower than the version given to the workflow
             final var hederaVersion = new HederaSoftwareVersion(
                     selfNodeInfo.hapiVersion(),
-                    // Cgonstruct a version intentionally lower than the version given to the workflow
                     selfNodeInfo
                             .appVersion()
                             .copyBuilder()
@@ -1640,20 +1698,12 @@ class HandleWorkflowTest extends AppTestBase {
                             .build(),
                     (int) CONFIG_VERSION);
             when(event.getSoftwareVersion()).thenReturn(hederaVersion);
+            given(transactionChecker.parseAndCheck(any())).willReturn(OK_RESULT.txInfo());
 
             // when
             workflow.handleRound(state, platformState, round);
 
             // then
-            verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
-            verify(blockRecordManager).startUserTransaction(any(), any(), any());
-
-            // Verify the txn was ended, but no record was added to the record stream
-            final var streamCaptor = ArgumentCaptor.forClass(Stream.class);
-            verify(blockRecordManager).endUserTransaction(streamCaptor.capture(), notNull());
-            final var capturedStream = streamCaptor.getValue();
-            assertThat(capturedStream).isEmpty();
-
             // Verify a BUSY record was added to the cache
             final var recordsCaptor = ArgumentCaptor.forClass(List.class);
             verify(recordCache).add(anyLong(), notNull(), recordsCaptor.capture());
@@ -1663,7 +1713,9 @@ class HandleWorkflowTest extends AppTestBase {
             assertThat(record.transactionRecord().receipt().status()).isEqualTo(BUSY);
 
             // Verify handling of the old transaction didn't proceed
-            verify(dispatcher, never()).dispatchComputeFees(any());
+            verify(blockRecordManager, never()).advanceConsensusClock(any(), any());
+            verify(blockRecordManager, never()).startUserTransaction(any(), any(), any());
+            verify(blockRecordManager, never()).endUserTransaction(any(), any());
         }
 
         @Test

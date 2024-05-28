@@ -137,7 +137,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -177,6 +176,7 @@ public class HandleWorkflow {
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final StoreMetricsService storeMetricsService;
+    private final TransactionChecker transactionChecker;
     private final InitTrigger initTrigger;
     private final SoftwareVersion softwareVersion;
 
@@ -207,6 +207,7 @@ public class HandleWorkflow {
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final InitTrigger initTrigger,
             @NonNull final SoftwareVersion softwareVersion) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -238,6 +239,7 @@ public class HandleWorkflow {
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
         this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
+        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
         this.initTrigger = requireNonNull(initTrigger, "initTrigger must not be null");
         this.softwareVersion = requireNonNull(softwareVersion, "softwareVersion must not be null");
     }
@@ -327,15 +329,50 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
+
+        // First, check if the transaction is submitted with a version prior to the deployed version. If so, set the
+        // status on the receipt to BUSY and return
+        if (this.initTrigger != EVENT_STREAM_RECOVERY
+                && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
+            // Reparse the transaction (so we don't need to get the prehandle result)
+            final TransactionInfo transactionInfo;
+            try {
+                transactionInfo = transactionChecker.parseAndCheck(platformTxn.getApplicationPayload());
+            } catch (PreCheckException e) {
+                logger.error(
+                        "Bad old transaction (version {}) from creator {}",
+                        platformEvent.getSoftwareVersion(),
+                        creator,
+                        e);
+                // We don't care since we're checking a transaction with an older software version. We were going to
+                // skip the transaction handling anyway
+                return;
+            }
+
+            // Initialize record builder list
+            recordBuilder
+                    .transaction(transactionInfo.transaction())
+                    .transactionBytes(transactionInfo.signedBytes())
+                    .transactionID(transactionInfo.transactionID())
+                    .exchangeRate(exchangeRateManager.exchangeRates())
+                    .memo(transactionInfo.txBody().memo());
+
+            // Place a BUSY record in the cache
+            final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
+            recordCache.add(creator.nodeId(), transactionInfo.payerID(), List.of(record));
+
+            return;
+        }
+
         // (FUTURE) We actually want to consider exporting synthetic transactions on every
         // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
-        // Setup record builder list
+        // Start the user transaction
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordListBuilder = new RecordListBuilder(consensusNow);
-        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
@@ -417,24 +454,6 @@ public class HandleWorkflow {
                     .transactionID(transactionInfo.transactionID())
                     .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
-
-            // Now that we have a payer, a transaction, and a record builder, check if the transaction is submitted with
-            // a version prior to the deployed version. If so, set the status on the receipt to BUSY and return
-            if (this.initTrigger != EVENT_STREAM_RECOVERY
-                    && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
-                final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
-                recordCache.add(creator.nodeId(), payer, List.of(record));
-
-                // End the transaction, but don't pass any records to the block record manager. Giving a record to the
-                // block manager here would publish a record for a txn that was submitted before a previous upgrade
-                // boundary, which we definitely don't want
-                blockRecordManager.endUserTransaction(Stream.empty(), state);
-
-                // We won't worry about updating the updateTransactionDuration metric here since the transaction was not
-                // really handled
-
-                return;
-            }
 
             // Log start of user transaction to transaction state log
             logStartUserTransaction(platformTxn, txBody, payer);
