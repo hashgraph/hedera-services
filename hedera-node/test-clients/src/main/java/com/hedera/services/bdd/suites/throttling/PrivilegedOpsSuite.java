@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -30,26 +31,33 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SOFTWARE_UPDATE_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
+import static com.hedera.services.bdd.suites.HapiSuite.UPDATE_ZIP_FILE;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class PrivilegedOpsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(PrivilegedOpsSuite.class);
-
+public class PrivilegedOpsSuite {
     private static final byte[] totalLimits =
             protoDefsFromResource("testSystemFiles/only-mint-allowed.json").toByteArray();
     private static final byte[] defaultThrottles =
@@ -59,22 +67,6 @@ public class PrivilegedOpsSuite extends HapiSuite {
     private static final String CIVILIAN = "civilian";
     private static final String NEW_88 = "new88";
     private static final int BURST_SIZE = 10;
-
-    public static void main(String... args) {
-        new PrivilegedOpsSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                superusersAreNeverThrottledOnTransfers(),
-                superusersAreNeverThrottledOnMiscTxns(),
-                superusersAreNeverThrottledOnHcsTxns(),
-                superusersAreNeverThrottledOnMiscQueries(),
-                superusersAreNeverThrottledOnHcsQueries(),
-                systemAccountUpdatePrivilegesAsExpected(),
-                freezeAdminPrivilegesAsExpected());
-    }
 
     Function<String, HapiSpecOperation[]> transferBurstFn = payer -> IntStream.range(0, BURST_SIZE)
             .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
@@ -100,7 +92,7 @@ public class PrivilegedOpsSuite extends HapiSuite {
             .toArray(HapiSpecOperation[]::new);
 
     @HapiTest
-    final HapiSpec freezeAdminPrivilegesAsExpected() {
+    final Stream<DynamicTest> freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("freezeAdminPrivilegesAsExpected")
                 .given(
                         cryptoCreate(CIVILIAN),
@@ -146,8 +138,9 @@ public class PrivilegedOpsSuite extends HapiSuite {
                         fileAppend(UPDATE_ZIP_FILE).fee(0L).payingWith(GENESIS).content(new byte[0]));
     }
 
-    @HapiTest
-    final HapiSpec systemAccountUpdatePrivilegesAsExpected() {
+    // Temporarily changes system account keys
+    @LeakyHapiTest
+    final Stream<DynamicTest> systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("systemAccountUpdatePrivilegesAsExpected")
                 .given(newKeyNamed(tmpTreasury), newKeyNamed(NEW_88), cryptoCreate(CIVILIAN))
@@ -200,105 +193,29 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .signedBy(SYSTEM_ADMIN, GENESIS));
     }
 
-    @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnTransfers() {
-        return defaultHapiSpec("superusersAreNeverThrottledOnTransfers")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
-                                .fee(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
-                                .fee(ONE_HUNDRED_HBARS))
-                .when(fileUpdate(THROTTLE_DEFS)
+    @LeakyHapiTest
+    final Stream<DynamicTest> systemAccountsAreNeverThrottled() {
+        return hapiTest(flattened(
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
+                        .fee(ONE_HUNDRED_HBARS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
+                        .fee(ONE_HUNDRED_HBARS),
+                fileUpdate(THROTTLE_DEFS)
                         .payingWith(EXCHANGE_RATE_CONTROL)
                         .contents(totalLimits)
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(flattened(
-                        transferBurstFn.apply(SYSTEM_ADMIN),
-                        transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
-                        sleepFor(5_000L),
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles)));
-    }
-
-    @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnMiscTxns() {
-        return defaultHapiSpec("superusersAreNeverThrottledOnMiscTxns")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
-                                .fee(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
-                                .fee(ONE_HUNDRED_HBARS))
-                .when(fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(totalLimits)
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(flattened(
-                        miscTxnBurstFn.apply(SYSTEM_ADMIN),
-                        miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
-                        sleepFor(5_000L),
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles)));
-    }
-
-    @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnHcsTxns() {
-        return defaultHapiSpec("superusersAreNeverThrottledOnHcsTxns")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(totalLimits)
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(flattened(
-                        hcsTxnBurstFn.apply(SYSTEM_ADMIN),
-                        hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles)));
-    }
-
-    @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnMiscQueries() {
-        return defaultHapiSpec("superusersAreNeverThrottledOnMiscQueries")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(totalLimits)
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(flattened(
-                        inParallel(miscQueryBurstFn.apply(SYSTEM_ADMIN)),
-                        inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles)));
-    }
-
-    @HapiTest
-    final HapiSpec superusersAreNeverThrottledOnHcsQueries() {
-        return defaultHapiSpec("superusersAreNeverThrottledOnHcsQueries")
-                .given(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)),
-                        createTopic("misc"))
-                .when(fileUpdate(THROTTLE_DEFS)
-                        .payingWith(EXCHANGE_RATE_CONTROL)
-                        .contents(totalLimits)
-                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(flattened(
-                        inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
-                        inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION),
+                transferBurstFn.apply(SYSTEM_ADMIN),
+                transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
+                miscTxnBurstFn.apply(SYSTEM_ADMIN),
+                miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
+                hcsTxnBurstFn.apply(SYSTEM_ADMIN),
+                hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
+                inParallel(miscQueryBurstFn.apply(SYSTEM_ADMIN)),
+                inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
+                createTopic("misc"),
+                inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
+                inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
+                sleepFor(5_000L),
+                fileUpdate(THROTTLE_DEFS).payingWith(EXCHANGE_RATE_CONTROL).contents(defaultThrottles)));
     }
 }

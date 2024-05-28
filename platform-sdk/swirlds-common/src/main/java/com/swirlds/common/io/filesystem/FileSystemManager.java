@@ -16,17 +16,33 @@
 
 package com.swirlds.common.io.filesystem;
 
-import com.swirlds.base.state.Startable;
-import com.swirlds.base.state.Stoppable;
+import com.swirlds.common.io.config.FileSystemManagerConfig;
+import com.swirlds.common.io.filesystem.internal.FileSystemManagerImpl;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 /**
  * Responsible for organizing and managing access to the file system.
  */
-public interface FileSystemManager extends Startable, Stoppable {
+public interface FileSystemManager {
+
+    /**
+     * Creates a {@link FileSystemManager} by searching {@code root}
+     * path in the {@link Configuration} class using
+     * {@code FileSystemManagerConfig} record
+     *
+     * @param configuration the configuration instance to retrieve properties from
+     * @return a new instance of {@link FileSystemManager}
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
+     */
+    @NonNull
+    static FileSystemManager create(@NonNull final Configuration configuration) {
+        final FileSystemManagerConfig fsmConfig = configuration.getConfigData(FileSystemManagerConfig.class);
+        return new FileSystemManagerImpl(fsmConfig.rootPath(), fsmConfig.userDataDir(), fsmConfig.tmpDir());
+    }
 
     /**
      * Resolve a path relative to the root directory of the file system manager.
@@ -50,14 +66,4 @@ public interface FileSystemManager extends Startable, Stoppable {
      */
     @NonNull
     Path resolveNewTemp(@Nullable String tag);
-
-    /**
-     * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
-     * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
-     * time the file or directory tree will persist is provided.
-     * Implementations can choose to validate if the provided absolute path is above the root of this file-system-manager.
-     *
-     *  @param path the absolute path to recycle.
-     */
-    void recycle(@NonNull Path path) throws IOException;
 }

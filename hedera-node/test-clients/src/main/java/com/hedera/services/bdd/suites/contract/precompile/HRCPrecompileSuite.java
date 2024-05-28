@@ -41,6 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -53,24 +55,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class HRCPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(HRCPrecompileSuite.class);
+public class HRCPrecompileSuite {
     private static final String MULTI_KEY = "multikey";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String FUNGIBLE_TOKEN_2 = "fungibleToken2";
@@ -90,29 +86,8 @@ public class HRCPrecompileSuite extends HapiSuite {
     private static final String ASSOCIATE = "associate";
     private static final String DISSOCIATE = "dissociate";
 
-    public static void main(String... args) {
-        new HRCPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                hrcNftAndFungibleTokenAssociateFromEOA(),
-                hrcNFTAndFungibleTokenAssociateFromContract(),
-                hrcTokenAssociateFromSameEOATwiceShouldFail(),
-                hrcTokenDissociateWhenNotAssociatedShouldFail(),
-                hrcTokenDissociateWhenBalanceNotZeroShouldFail(),
-                hrcTooManyTokenAssociateShouldFail(),
-                hrcCanDissociateFromDeletedToken());
-    }
-
     @HapiTest
-    final HapiSpec hrcCanDissociateFromDeletedToken() {
+    final Stream<DynamicTest> hrcCanDissociateFromDeletedToken() {
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcCanDissociateFromDeletedToken", NONDETERMINISTIC_FUNCTION_PARAMETERS)
@@ -177,7 +152,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
+    final Stream<DynamicTest> hrcNftAndFungibleTokenAssociateFromEOA() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
@@ -289,7 +264,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
+    final Stream<DynamicTest> hrcNFTAndFungibleTokenAssociateFromContract() {
         return defaultHapiSpec(
                         "hrcNFTAndFungibleTokenAssociateFromContract",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -400,7 +375,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
+    final Stream<DynamicTest> hrcTokenAssociateFromSameEOATwiceShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -469,7 +444,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
+    final Stream<DynamicTest> hrcTokenDissociateWhenNotAssociatedShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -517,7 +492,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
+    final Stream<DynamicTest> hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -588,7 +563,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTooManyTokenAssociateShouldFail() {
+    final Stream<DynamicTest> hrcTooManyTokenAssociateShouldFail() {
         final AtomicReference<String> fungibleTokenNum1 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum3 = new AtomicReference<>();
@@ -697,10 +672,5 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                 .contractCallResult(resultWith()
                                                         .contractCallResult(htsPrecompileResult()
                                                                 .withStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)))))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

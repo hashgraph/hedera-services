@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 
 import com.hedera.hapi.streams.SidecarType;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -70,12 +71,12 @@ public interface FeatureFlags {
     /**
      * If true calls to non-existing contract addresses will result in a successful NOOP.  If false,
      * calls such calls will result in a revert with status {@code INVALID_SOLIDITY_ADDRESS}.
-     * @param config the {@link Configuration}
+     * @param config the contract configuration for the transaction
      * @param possiblyGrandFatheredEntityNum the account number to check for grandfathering
      * @return true if calls to non-existing contract addresses will result in a successful NOOP.
      */
     default boolean isAllowCallsToNonContractAccountsEnabled(
-            @NonNull Configuration config, @Nullable Long possiblyGrandFatheredEntityNum) {
+            @NonNull final ContractsConfig config, @Nullable Long possiblyGrandFatheredEntityNum) {
         return false;
     }
 

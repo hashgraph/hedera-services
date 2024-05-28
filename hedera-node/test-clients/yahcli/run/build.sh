@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-TAG=${1:-'0.4.1'}
+TAG=${1:-'0.4.3'}
 SCRIPT_SOURCE="${BASH_SOURCE[0]}"
 
 READLINK_OPTS=""
@@ -25,5 +25,5 @@ cd "${SCRIPT_PATH}/.."
 rm -f assets/yahcli.jar >/dev/null 2>&1 || true
 cp -f yahcli.jar assets/
 
-docker build -t yahcli:$TAG .
+docker build -t gcr.io/hedera-registry/yahcli:$TAG .
 cd "${OLD_CWD}"

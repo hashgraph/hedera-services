@@ -37,6 +37,9 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
     exports com.swirlds.platform.recovery;
+    exports com.swirlds.platform.sequence;
+    exports com.swirlds.platform.sequence.map;
+    exports com.swirlds.platform.sequence.set;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;
     exports com.swirlds.platform.stats.atomic;
@@ -46,6 +49,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.signed;
     exports com.swirlds.platform.state.address;
     exports com.swirlds.platform.gossip.sync;
+    exports com.swirlds.platform.scratchpad;
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.system.address;
     exports com.swirlds.platform.system.events;

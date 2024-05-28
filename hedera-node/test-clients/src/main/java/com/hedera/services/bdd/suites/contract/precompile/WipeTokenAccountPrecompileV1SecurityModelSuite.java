@@ -55,15 +55,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -93,11 +94,11 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios());
     }
 
-    final HapiSpec wipeFungibleTokenScenarios() {
+    final Stream<DynamicTest> wipeFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -221,7 +222,7 @@ public class WipeTokenAccountPrecompileV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
 
-    final HapiSpec wipeNonFungibleTokenScenarios() {
+    final Stream<DynamicTest> wipeNonFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

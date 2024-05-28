@@ -39,42 +39,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ExtCodeHashOperationSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ExtCodeHashOperationSuite.class);
-
-    public static void main(String[] args) {
-        new ExtCodeHashOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence(), testExtCodeHashWithSystemAccounts());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class ExtCodeHashOperationSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var expectedAccountHash =
@@ -131,7 +109,7 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec testExtCodeHashWithSystemAccounts() {
+    final Stream<DynamicTest> testExtCodeHashWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var hashOf = "hashOf";
         final String account = "account";
@@ -155,10 +133,5 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
                 .when()
                 .then(opsArray);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

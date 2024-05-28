@@ -20,10 +20,8 @@ import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.RecycleBin;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,12 +33,9 @@ public class TestFileSystemManager implements FileSystemManager {
 
     private static final String TMP = "tmp";
     private static final String USER = "usr";
-    private static final String BIN = "recycle-bin";
     private final Path rootPath;
     private final Path tempPath;
     private final Path userPath;
-    private final Path recycleBinPath;
-    private RecycleBin bin;
     private static final AtomicLong TMP_FIELD_INDEX = new AtomicLong(0);
 
     public TestFileSystemManager(@NonNull final Path rootLocation) {
@@ -50,7 +45,6 @@ public class TestFileSystemManager implements FileSystemManager {
         }
         this.tempPath = rootPath.resolve(TMP);
         this.userPath = rootPath.resolve(USER);
-        this.recycleBinPath = rootPath.resolve(BIN);
 
         if (Files.notExists(userPath)) {
             rethrowIO(() -> Files.createDirectory(userPath));
@@ -60,9 +54,6 @@ public class TestFileSystemManager implements FileSystemManager {
             rethrowIO(() -> Files.createDirectory(tempPath));
         }
 
-        if (Files.notExists(recycleBinPath)) {
-            rethrowIO(() -> Files.createDirectory(recycleBinPath));
-        }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> rethrowIO(() -> FileUtils.deleteDirectory(rootPath))));
     }
 
@@ -98,34 +89,5 @@ public class TestFileSystemManager implements FileSystemManager {
             nameBuilder.append(tag);
         }
         return tempPath.resolve(nameBuilder.toString());
-    }
-
-    /**
-     * Remove the file or directory tree at the specified path. A best effort attempt is made to relocate the file or
-     * directory tree to a temporary location where it may persist for an amount of time. No guarantee on the amount of
-     * time the file or directory tree will persist is provided.
-     *
-     * @param path the relative path to recycle. Can be relative to the root dir or absolute
-     * @throws IllegalArgumentException if the path cannot be relative to or scape the root directory
-     */
-    @Override
-    public void recycle(@NonNull final Path path) throws IOException {
-        bin.recycle(path);
-    }
-
-    /**
-     * Start this object.
-     */
-    @Override
-    public void start() {}
-
-    /**
-     * Stop this object.
-     */
-    @Override
-    public void stop() {}
-
-    public void setBin(final RecycleBin bin) {
-        this.bin = bin;
     }
 }

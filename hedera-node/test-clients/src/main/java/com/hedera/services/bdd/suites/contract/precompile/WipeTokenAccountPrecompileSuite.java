@@ -17,10 +17,8 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
@@ -29,7 +27,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -41,17 +38,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
@@ -63,25 +59,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class WipeTokenAccountPrecompileSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(WipeTokenAccountPrecompileSuite.class);
+public class WipeTokenAccountPrecompileSuite {
     public static final String WIPE_CONTRACT = "WipeTokenAccount";
     public static final String ADMIN_ACCOUNT = "admin";
     private static final String ACCOUNT = "anybody";
@@ -95,31 +85,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     public static final String THRESHOLD_KEY = "ThreshKey";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
-    public static void main(String... args) {
-        new WipeTokenAccountPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                wipeFungibleTokenScenarios(),
-                wipeNonFungibleTokenScenarios(),
-                createFungibleTokenWipeKeyFromHollowAccountAlias(),
-                createNFTTokenWipeKeyFromHollowAccountAlias());
-    }
-
     @HapiTest
-    final HapiSpec wipeFungibleTokenScenarios() {
+    final Stream<DynamicTest> wipeFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -239,7 +206,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec wipeNonFungibleTokenScenarios() {
+    final Stream<DynamicTest> wipeNonFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -371,110 +338,5 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                                                 .gasUsed(14085L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
-    }
-
-    @HapiTest
-    public HapiSpec createFungibleTokenWipeKeyFromHollowAccountAlias() {
-        return defaultHapiSpec("CreateFungibleTokenWipeKeyFromHollowAccountAlias")
-                .given(
-                        // Create an ECDSA key
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    spec.registry()
-                            .saveAccountAlias(
-                                    SECP_256K1_SOURCE_KEY,
-                                    AccountID.newBuilder().setAlias(evmAddress).build());
-
-                    allRunFor(
-                            spec,
-                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(
-                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
-                            // Verify that the account is created and is hollow
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey()),
-                            // Create a token with the ECDSA alias key as WIPE key
-                            tokenCreate(VANILLA_TOKEN)
-                                    .tokenType(FUNGIBLE_COMMON)
-                                    .wipeKey(SECP_256K1_SOURCE_KEY)
-                                    .initialSupply(100L)
-                                    .treasury(TOKEN_TREASURY),
-                            // Associate token to the completed account
-                            tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                            // Transfer 1 token to the completed account
-                            cryptoTransfer(moving(1L, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)));
-                }))
-                .then(withOpContext((spec, opLog) -> {
-                    allRunFor(
-                            spec,
-                            getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 1),
-                            // Wipe 1 token from the completed account
-                            wipeTokenAccount(VANILLA_TOKEN, ACCOUNT, 1)
-                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT),
-                            getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
-                }));
-    }
-
-    @HapiTest
-    public HapiSpec createNFTTokenWipeKeyFromHollowAccountAlias() {
-        return defaultHapiSpec("CreateNFTTokenWipeKeyFromHollowAccountAlias")
-                .given(
-                        // Create an ECDSA key
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry()
-                            .getKey(SECP_256K1_SOURCE_KEY)
-                            .getECDSASecp256K1()
-                            .toByteArray();
-                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                    spec.registry()
-                            .saveAccountAlias(
-                                    SECP_256K1_SOURCE_KEY,
-                                    AccountID.newBuilder().setAlias(evmAddress).build());
-
-                    allRunFor(
-                            spec,
-                            // Transfer money to the alias --> creates HOLLOW ACCOUNT
-                            cryptoTransfer(
-                                    movingHbar(ONE_HUNDRED_HBARS).distributing(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
-                            // Verify that the account is created and is hollow
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                    .has(accountWith().hasEmptyKey()),
-                            // Create a token with the ECDSA alias key as WIPE key
-                            tokenCreate(NON_FUNGIBLE_TOKEN)
-                                    .tokenType(NON_FUNGIBLE_UNIQUE)
-                                    .wipeKey(SECP_256K1_SOURCE_KEY)
-                                    .supplyKey(SECP_256K1_SOURCE_KEY)
-                                    .initialSupply(0L)
-                                    .treasury(TOKEN_TREASURY),
-                            // Mint the NFT
-                            mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1")))
-                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT),
-                            // Associate token to the completed account
-                            tokenAssociate(ACCOUNT, NON_FUNGIBLE_TOKEN),
-                            // Transfer 1 token to the completed account
-                            cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)));
-                }))
-                .then(withOpContext((spec, opLog) -> {
-                    allRunFor(
-                            spec,
-                            getAccountBalance(ACCOUNT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
-                            // Wipe 1 token from the completed account
-                            wipeTokenAccount(NON_FUNGIBLE_TOKEN, ACCOUNT, List.of(1L))
-                                    .signedBy(ACCOUNT, SECP_256K1_SOURCE_KEY)
-                                    .payingWith(ACCOUNT),
-                            getAccountBalance(ACCOUNT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
-                }));
     }
 }
