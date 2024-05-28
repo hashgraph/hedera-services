@@ -17,11 +17,15 @@
 package com.hedera.node.app.service.token.impl.test.schemas;
 
 import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
+import static com.hedera.node.app.service.mono.state.migration.TokenStateTranslator.merkleTokenFromToken;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.NODE_NUM_1;
@@ -46,43 +50,79 @@ import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccou
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.configBuilder;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryDirectory;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.OnDiskTokenRelValueSerializer;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValueSerializer;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.fixtures.util.LogCaptor;
+import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
+import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
+import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState.Builder;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
-import org.assertj.core.api.Assertions;
 import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,7 +134,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 final class InitialModServiceTokenSchemaTest {
 
     private static final long BEGINNING_ENTITY_ID = 3000;
@@ -110,7 +150,7 @@ final class InitialModServiceTokenSchemaTest {
 
     static {
         // Precondition check
-        Assertions.assertThat(NON_CONTRACT_RESERVED_NUMS).hasSize(501);
+        assertThat(NON_CONTRACT_RESERVED_NUMS).hasSize(501);
     }
 
     @Mock
@@ -125,10 +165,24 @@ final class InitialModServiceTokenSchemaTest {
     private NetworkInfo networkInfo;
     private WritableEntityIdStore entityIdStore;
 
+    final long minStake = 100L;
+    final long maxStake = 800L;
+    final long stakeToReward1 = 700L;
+    final long stakeToNotReward1 = 300L;
+    final long stakedRewardStart1 = 1_000L;
+    final long unclaimedStakedRewardStart1 = stakedRewardStart1 / 10;
+    final long stake1 = 2_000L;
+    final long[] rewardSumHistory1 = new long[] {8, 7, 2};
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    InitialModServiceTokenSchema initialModServiceTokenSchema;
+
     @BeforeEach
     void setUp() {
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
-                .build();
+        accounts = MapWritableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
 
         newStates = newStatesInstance(
                 accounts,
@@ -165,7 +219,7 @@ final class InitialModServiceTokenSchemaTest {
     @Test
     void nonGenesisDoesntCreate() {
         // To simulate a non-genesis case, we'll add a single account object to the `previousStates` param
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
+        accounts = MapWritableKVState.<AccountID, Account>builder(ACCOUNTS_KEY)
                 .value(ACCT_IDS[1], Account.DEFAULT)
                 .build();
         final var nonEmptyPrevStates = newStatesInstance(
@@ -213,6 +267,139 @@ final class InitialModServiceTokenSchemaTest {
     }
 
     @Test
+    void verifyStatesToCreate() {
+
+        var schema = new InitialModServiceTokenSchema(
+                this::allDefaultSysAccts,
+                this::allStakingAccts,
+                this::allMiscAccts,
+                this::allTreasuryClones,
+                this::allBlocklistAccts,
+                CURRENT_VERSION);
+
+        var sortedResult = schema.statesToCreate().stream()
+                .sorted(Comparator.comparing(StateDefinition::stateKey))
+                .toList();
+
+        final var firstStateDef = sortedResult.getFirst();
+        final var secondStateDef = sortedResult.get(1);
+        final var thirdStateDef = sortedResult.get(2);
+        assertThat(firstStateDef.stateKey()).isEqualTo("ACCOUNTS");
+        assertThat(firstStateDef.keyCodec()).isEqualTo(AccountID.PROTOBUF);
+        assertThat(firstStateDef.valueCodec()).isEqualTo(Account.PROTOBUF);
+        assertThat(secondStateDef.stateKey()).isEqualTo("ALIASES");
+        assertThat(secondStateDef.keyCodec()).isEqualTo(ProtoBytes.PROTOBUF);
+        assertThat(secondStateDef.valueCodec()).isEqualTo(AccountID.PROTOBUF);
+        assertThat(thirdStateDef.stateKey()).isEqualTo("NFTS");
+        assertThat(thirdStateDef.keyCodec()).isEqualTo(NftID.PROTOBUF);
+        assertThat(thirdStateDef.valueCodec()).isEqualTo(Nft.PROTOBUF);
+    }
+
+    @Test
+    void testMigrateForNonNullAcctsFs() throws NoSuchFieldException, IllegalAccessException, IOException {
+
+        var newStatesForMigration = newStatesInstance(
+                accounts,
+                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
+                MapWritableKVState.<NftID, Nft>builder(NFTS_KEY).build(),
+                MapWritableKVState.<EntityIDPair, TokenRelation>builder(TOKEN_RELS_KEY)
+                        .build(),
+                MapWritableKVState.<TokenID, Token>builder(TOKENS_KEY).build(),
+                MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                        .build(),
+                newWritableEntityIdState());
+
+        final var migrationContext = new MigrationContextImpl(
+                EmptyReadableStates.INSTANCE,
+                newStatesForMigration,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                null);
+
+        initialModServiceTokenSchema = new InitialModServiceTokenSchema(
+                this::allDefaultSysAccts,
+                this::allStakingAccts,
+                this::allMiscAccts,
+                this::allTreasuryClones,
+                this::allBlocklistAccts,
+                CURRENT_VERSION);
+
+        Field acctFsField = initialModServiceTokenSchema.getClass().getDeclaredField("acctsFs");
+        acctFsField.setAccessible(true);
+        accounts = MapWritableKVState.<AccountID, Account>builder(ACCOUNTS_KEY)
+                .value(ACCT_IDS[1], Account.DEFAULT)
+                .build();
+
+        // --- NFTS
+        final var merkleDbTableConfigNfts = new MerkleDbTableConfig<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        new UniqueTokenKeySerializer(),
+                        (short) 1,
+                        new UniqueTokenValueSerializer())
+                .maxNumberOfKeys(1_024);
+
+        VirtualMap<UniqueTokenKey, UniqueTokenValue> nftVirtualMap = new VirtualMap<>(
+                "NFTVMap",
+                new MerkleDbDataSourceBuilder<>(buildTemporaryDirectory("merkleDbNfts"), merkleDbTableConfigNfts));
+        acctFsField.set(initialModServiceTokenSchema, nftVirtualMap);
+        initialModServiceTokenSchema.setNftsFromState(nftVirtualMap);
+
+        // ---- Token Relations
+        final var merkleDbTableConfigTokenRels = new MerkleDbTableConfig<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        new EntityNumVirtualKeySerializer(),
+                        (short) 1,
+                        new OnDiskTokenRelValueSerializer())
+                .maxNumberOfKeys(1_024);
+
+        VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsVirtualMap = new VirtualMap<>(
+                "TokenRelsVMap",
+                new MerkleDbDataSourceBuilder<>(
+                        buildTemporaryDirectory("merkleDbTokenRels"), merkleDbTableConfigTokenRels));
+        initialModServiceTokenSchema.setTokenRelsFromState(tokenRelsVirtualMap);
+
+        // -- Staking Info
+        final MerkleStakingInfo stakingInfo1 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward1,
+                stakeToNotReward1,
+                stakedRewardStart1,
+                unclaimedStakedRewardStart1,
+                stake1,
+                rewardSumHistory1,
+                0);
+
+        MerkleMap<EntityNum, MerkleStakingInfo> merkleMapStakingInfo = new MerkleMap<>(1);
+        merkleMapStakingInfo.put(new EntityNum(1), stakingInfo1);
+        MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext();
+        merkleNetworkContext.setConsensusTimeOfLastHandledTxn(Instant.now());
+        initialModServiceTokenSchema.setStakingFs(merkleMapStakingInfo, merkleNetworkContext);
+
+        // --- Tokens
+        MerkleMap<EntityNum, MerkleToken> merkleMapTokens = new MerkleMap<>(1);
+        final TokenID TOKEN_123 = new TokenID(1L, 2L, 3L);
+        final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
+        final var totalFungibleSupply = 2;
+        var token = Token.newBuilder()
+                .tokenId(TOKEN_123)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .treasuryAccountId(ACCOUNT_1339)
+                .supplyKey((Key) null)
+                .totalSupply(totalFungibleSupply)
+                .build();
+        merkleMapTokens.put(new EntityNum(1), merkleTokenFromToken(token));
+        initialModServiceTokenSchema.setTokensFromState(merkleMapTokens);
+        assertThatNoException().isThrownBy(() -> initialModServiceTokenSchema.migrate(migrationContext));
+    }
+
+    @Test
     void createsAllAccountsOnGenesisStart() {
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
@@ -227,7 +414,7 @@ final class InitialModServiceTokenSchemaTest {
         schema.migrate(migrationContext);
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
-        Assertions.assertThat(acctsStateResult).isNotNull();
+        assertThat(acctsStateResult).isNotNull();
 
         // Verify created system accounts
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -256,9 +443,9 @@ final class InitialModServiceTokenSchemaTest {
         // Verify overwritten blocklist account RECORDS
         verify(genesisRecordsBuilder).blocklistAccounts(blocklistMapCaptor.capture());
         final var blocklistAcctsResult = blocklistMapCaptor.getValue();
-        Assertions.assertThat(blocklistAcctsResult).isNotNull().hasSize(6).allSatisfy(account -> {
-            Assertions.assertThat(account).isNotNull();
-            Assertions.assertThat(account.accountId().accountNum())
+        assertThat(blocklistAcctsResult).isNotNull().hasSize(6).allSatisfy(account -> {
+            assertThat(account).isNotNull();
+            assertThat(account.accountId().accountNum())
                     .isBetween(BEGINNING_ENTITY_ID, BEGINNING_ENTITY_ID + EVM_ADDRESSES.length);
         });
 
@@ -699,10 +886,9 @@ final class InitialModServiceTokenSchemaTest {
 
     @Test
     void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
-        accounts = MapWritableKVState.<AccountID, Account>builder(TokenServiceImpl.ACCOUNTS_KEY)
-                .build();
+        accounts = MapWritableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         // State has nodeIds 1, 2, 3
-        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+        final var stakingInfosState = new Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
                 .value(NODE_NUM_1, STAKING_INFO_1)
                 .value(NODE_NUM_2, STAKING_INFO_2)
                 .value(NODE_NUM_3, STAKING_INFO_3)
@@ -767,13 +953,33 @@ final class InitialModServiceTokenSchemaTest {
     private MapWritableStates newStatesInstance(
             final MapWritableKVState<AccountID, Account> accts,
             final MapWritableKVState<Bytes, AccountID> aliases,
+            final MapWritableKVState<NftID, Nft> nfts,
+            final MapWritableKVState<EntityIDPair, TokenRelation> tokenRels,
+            final MapWritableKVState<TokenID, Token> tokens,
+            final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingNodeInfo,
             final WritableSingletonState<EntityNumber> entityIdState) {
         //noinspection ReturnOfNull
         return MapWritableStates.builder()
                 .state(accts)
                 .state(aliases)
-                .state(MapWritableKVState.builder(TokenServiceImpl.STAKING_INFO_KEY)
-                        .build())
+                .state(nfts)
+                .state(tokenRels)
+                .state(tokens)
+                .state(stakingNodeInfo)
+                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .state(entityIdState)
+                .build();
+    }
+
+    private MapWritableStates newStatesInstance(
+            final MapWritableKVState<AccountID, Account> accts,
+            final MapWritableKVState<Bytes, AccountID> aliases,
+            final WritableSingletonState<EntityNumber> entityIdState) {
+        //noinspection ReturnOfNull
+        return MapWritableStates.builder()
+                .state(accts)
+                .state(aliases)
+                .state(MapWritableKVState.builder(STAKING_INFO_KEY).build())
                 .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
                 .state(entityIdState)
                 .build();
