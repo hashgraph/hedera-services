@@ -291,7 +291,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
         } else {
             response = DEFAULT_UNSUPPORTED_RESPONSE;
-            logger.warn("Received a query for an unknown functionality");
         }
 
         try {
