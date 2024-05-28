@@ -17,7 +17,6 @@
 package com.swirlds.demo.merkle.map;
 
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.deserialize;
-import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serializeThrowing;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -114,11 +113,17 @@ public class SaveExpectedMapHandlerTest {
 
         deserializedMap = deserialize(new File(".", expectedMapZip));
 
-        assertEquals(expectedMap.size(), deserializedMap.size(),
-                "Size of the maps should be equal, expected: %d, actual: %d".formatted(expectedMap.size(), deserializedMap.size()));
-        expectedMap.entrySet().stream().forEach(e -> assertEquals(e.getValue(), deserializedMap.get(e.getKey()),
-                "Expected value should be equal to deserialized value. Expected: %s, Actual: %s".formatted(e.getValue(), deserializedMap.get(e.getKey())))
-        );
+        assertEquals(
+                expectedMap.size(),
+                deserializedMap.size(),
+                "Size of the maps should be equal, expected: %d, actual: %d"
+                        .formatted(expectedMap.size(), deserializedMap.size()));
+        expectedMap.entrySet().stream()
+                .forEach(e -> assertEquals(
+                        e.getValue(),
+                        deserializedMap.get(e.getKey()),
+                        "Expected value should be equal to deserialized value. Expected: %s, Actual: %s"
+                                .formatted(e.getValue(), deserializedMap.get(e.getKey()))));
     }
 
     // serializes and deserializes expectedMap with null EntityType ExpectedValues.

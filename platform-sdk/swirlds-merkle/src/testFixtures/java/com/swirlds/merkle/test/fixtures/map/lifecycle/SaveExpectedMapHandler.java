@@ -18,8 +18,6 @@ package com.swirlds.merkle.test.fixtures.map.lifecycle;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -72,9 +70,7 @@ public class SaveExpectedMapHandler {
         final SimpleModule hashModule = new SimpleModule();
         hashModule.addSerializer(Hash.class, new HashSerializer());
         hashModule.addDeserializer(Hash.class, new HashDeserializer());
-        objectMapper = new ObjectMapper()
-                .registerModule(hashModule)
-                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectMapper = new ObjectMapper().registerModule(hashModule).disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectWriter = objectMapper.writer(new DefaultPrettyPrinter());
     }
 
@@ -99,19 +95,14 @@ public class SaveExpectedMapHandler {
         try {
             return serializeThrowing(map, directory, fileName, returnJsonString);
         } catch (IOException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                   "Error occurred while serializing ExpectedMap",
-                    e);
+            logger.error(EXCEPTION.getMarker(), "Error occurred while serializing ExpectedMap", e);
         }
         return "";
     }
 
     public static String serializeThrowing(
-            final Map<MapKey, ExpectedValue> map,
-            final File directory,
-            final String fileName,
-            boolean returnJsonString) throws IOException {
+            final Map<MapKey, ExpectedValue> map, final File directory, final String fileName, boolean returnJsonString)
+            throws IOException {
         String jsonValue = "";
 
         if (!directory.exists()) {
@@ -229,19 +220,18 @@ public class SaveExpectedMapHandler {
                 throws IOException {
             gen.writeStartObject();
             gen.writeStringField("digestType", value.getDigestType().toString());
-            gen.writeStringField("bytes",value.getBytes().toHex());
+            gen.writeStringField("bytes", value.getBytes().toHex());
             gen.writeEndObject();
         }
     }
 
-    public static class HashDeserializer extends StdDeserializer<Hash>{
+    public static class HashDeserializer extends StdDeserializer<Hash> {
         public HashDeserializer() {
             super(Hash.class);
         }
 
         @Override
-        public Hash deserialize(final JsonParser p, final DeserializationContext ctxt)
-                throws IOException {
+        public Hash deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
             final JsonNode node = p.getCodec().readTree(p);
             final String digestString = node.get("digestType").asText();
             final DigestType digestType = DigestType.valueOf(digestString);
