@@ -26,6 +26,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -70,7 +71,8 @@ public class SimulatedGossip implements Gossip {
             @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput) {
 
         this.eventOutput = Objects.requireNonNull(eventOutput);
         eventInput.bindConsumer(event -> network.submitEvent(selfId, event));
@@ -79,6 +81,7 @@ public class SimulatedGossip implements Gossip {
         startInput.bindConsumer(ignored -> {});
         stopInput.bindConsumer(ignored -> {});
         clearInput.bindConsumer(ignored -> {});
+        systemHealthInput.bindConsumer(ignored -> {});
     }
 
     /**
