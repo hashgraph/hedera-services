@@ -21,7 +21,6 @@ import com.swirlds.demo.platform.PAYLOAD_CATEGORY;
 import com.swirlds.demo.platform.PAYLOAD_TYPE;
 import com.swirlds.demo.platform.PayloadConfig;
 import com.swirlds.demo.platform.PlatformTestingToolState;
-import com.swirlds.demo.platform.SuperConfig;
 import com.swirlds.demo.platform.Triple;
 import com.swirlds.demo.platform.UnsafeMutablePTTStateAccessor;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.ExpectedValue;
@@ -30,7 +29,6 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.system.Platform;
-import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -43,22 +41,6 @@ public class ExpectedMapUtils {
 
     private static final Logger logger = LogManager.getLogger(ExpectedMapUtils.class);
     private static final Marker ERROR = MarkerManager.getMarker("EXCEPTION");
-
-    /**
-     * Rebuild ExpectedMap if necessary when stateLoadFromDisk notification is received from platform
-     */
-    public static void buildExpectedMapAfterStateLoad(final Platform platform, final SuperConfig currentConfig) {
-        if (currentConfig != null && currentConfig.getFcmConfig().isDisableExpectedMap()) {
-            return;
-        }
-
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
-            final PlatformTestingToolState state = wrapper.get();
-            // rebuild ExpectedMap
-            state.rebuildExpectedMapFromState(Instant.EPOCH, true);
-        }
-    }
 
     /**
      * Build expectedMap if necessary after reconnect Complete notification is received

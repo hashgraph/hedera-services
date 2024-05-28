@@ -26,7 +26,6 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +39,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
- * @param issHandlerScheduler                       the scheduler for the iss handler
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
@@ -48,7 +46,6 @@ public record PlatformSchedulers(
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
-        @NonNull TaskScheduler<Void> issHandlerScheduler,
         @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler) {
 
     /**
@@ -89,11 +86,6 @@ public record PlatformSchedulers(
                         .cast(),
                 model.schedulerBuilder("RunningEventHashOverride")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast(),
-                model.schedulerBuilder("issHandler")
-                        .withType(TaskSchedulerType.DIRECT)
-                        .withHyperlink(platformCoreHyperlink(IssHandler.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("latestCompleteStateNotifier")

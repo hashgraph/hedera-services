@@ -50,6 +50,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -91,7 +92,6 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -1098,8 +1098,13 @@ public final class Hedera implements SwirldMain {
         logger.debug("Initializing dagger");
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        // The Dagger component should be constructed every time we reach this point, even if
+        // it exists. This avoids any problems with mutable singleton state by reconstructing
+        // everything. But we must ensure the gRPC server in the old component is fully stopped.
+        if (daggerApp != null) {
+            shutdownGrpcServer();
+        }
         // Fully qualified so as to not confuse javadoc
-        // DaggerApp should be constructed every time we reach this point, even if exists. This is needed for reconnect
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
                 .configProvider(configProvider)

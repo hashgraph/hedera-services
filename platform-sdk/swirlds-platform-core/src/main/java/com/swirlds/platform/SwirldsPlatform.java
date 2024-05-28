@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
@@ -29,7 +28,6 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -73,7 +71,6 @@ import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
-import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LockFreeStateNexus;
@@ -90,7 +87,6 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
@@ -232,7 +228,7 @@ public class SwirldsPlatform implements Platform {
 
         currentAddressBook = initialState.getAddressBook();
 
-        platformWiring = new PlatformWiring(platformContext, blocks.applicationCallbacks());
+        platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
 
         registerAddressBookMetrics(platformContext.getMetrics(), currentAddressBook, selfId);
 
@@ -297,9 +293,6 @@ public class SwirldsPlatform implements Platform {
         blocks.intakeQueueSizeSupplierSupplier().set(intakeQueueSizeSupplier);
         blocks.isInFreezePeriodReference().set(swirldStateManager::isInFreezePeriod);
 
-        final IssHandler issHandler = new IssHandler(
-                platformContext, this::haltRequested, SystemExitUtils::handleFatalError, blocks.issScratchpad());
-
         final BirthRoundMigrationShim birthRoundMigrationShim = buildBirthRoundMigrationShim(initialState, ancientMode);
 
         final AppNotifier appNotifier = new DefaultAppNotifier(blocks.notificationEngine());
@@ -313,7 +306,6 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 eventWindowManager,
                 consensusRoundHandler,
-                issHandler,
                 birthRoundMigrationShim,
                 latestCompleteStateNotifier,
                 latestImmutableStateNexus,
@@ -323,15 +315,12 @@ public class SwirldsPlatform implements Platform {
                 publisher,
                 statusNexus);
 
-        final Hash runningEventHash = initialState.getState().getPlatformState().getRunningEventHash() == null
-                ? platformContext.getCryptography().getNullHash()
-                : initialState.getState().getPlatformState().getRunningEventHash();
         final Hash legacyRunningEventHash =
                 initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
                         ? platformContext.getCryptography().getNullHash()
                         : initialState.getState().getPlatformState().getLegacyRunningEventHash();
         final RunningEventHashOverride runningEventHashOverride =
-                new RunningEventHashOverride(legacyRunningEventHash, runningEventHash, false);
+                new RunningEventHashOverride(legacyRunningEventHash, false);
         platformWiring.updateRunningHash(runningEventHashOverride);
 
         // Load the minimum generation into the pre-consensus event writer
@@ -555,9 +544,7 @@ public class SwirldsPlatform implements Platform {
                     ancientMode));
 
             final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
-                    signedState.getState().getPlatformState().getLegacyRunningEventHash(),
-                    signedState.getState().getPlatformState().getRunningEventHash(),
-                    true);
+                    signedState.getState().getPlatformState().getLegacyRunningEventHash(), true);
             platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 
@@ -579,16 +566,6 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
-     * This observer is called when a system freeze is requested. Permanently stops event creation and gossip.
-     *
-     * @param reason the reason why the system is being frozen.
-     */
-    private void haltRequested(final String reason) {
-        logger.error(EXCEPTION.getMarker(), "System halt requested. Reason: {}", reason);
-        platformWiring.stopGossip();
-    }
-
-    /**
      * Start this platform.
      */
     @Override
@@ -596,7 +573,7 @@ public class SwirldsPlatform implements Platform {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
         platformWiring.getModel().preventJvmExit();
 
-        platformContext.getFileSystemManager().start();
+        platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
         platformWiring.start();
 
@@ -614,7 +591,7 @@ public class SwirldsPlatform implements Platform {
      * </ul>
      */
     public void performPcesRecovery() {
-        platformContext.getFileSystemManager().start();
+        platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
         platformWiring.start();
 
@@ -681,7 +658,7 @@ public class SwirldsPlatform implements Platform {
         platformWiring
                 .getStatusActionSubmitter()
                 .submitStatusAction(
-                        new DoneReplayingEventsAction(Time.getCurrent().now()));
+                        new DoneReplayingEventsAction(platformContext.getTime().now()));
     }
 
     /**

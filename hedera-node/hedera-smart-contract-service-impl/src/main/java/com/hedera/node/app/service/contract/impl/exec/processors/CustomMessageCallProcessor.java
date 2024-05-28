@@ -283,10 +283,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         doHalt(frame, reason, tracer, ForLazyCreation.NO);
     }
 
-    private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
-        doHalt(frame, reason, null, ForLazyCreation.NO);
-    }
-
     private void doHalt(
             @NonNull final MessageFrame frame,
             @NonNull final ExceptionalHaltReason reason,

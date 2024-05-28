@@ -11,7 +11,6 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 pcli diagram \
     -l 'TransactionPrehandler:futures:consensusRoundHandler' \
     -l 'EventCreationManager:get transactions:TransactionPool' \
-    -l 'RunningEventHasher:future hash:consensusRoundHandler' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'heartbeat:heartbeat:❤️' \
@@ -44,7 +43,7 @@ pcli diagram \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
     -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner' \
-    -g 'ISS Detector:IssDetector,IssDetectorSplitter,issHandler,getStatusAction' \
+    -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
     -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.comparator;
 
-import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.NftTransfer;

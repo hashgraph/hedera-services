@@ -47,8 +47,6 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
-import com.swirlds.platform.event.runninghash.DefaultRunningEventHasher;
-import com.swirlds.platform.event.runninghash.RunningEventHasher;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
@@ -73,7 +71,9 @@ import com.swirlds.platform.state.hashlogger.DefaultHashLogger;
 import com.swirlds.platform.state.hashlogger.HashLogger;
 import com.swirlds.platform.state.iss.DefaultIssDetector;
 import com.swirlds.platform.state.iss.IssDetector;
+import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
 import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -82,6 +82,7 @@ import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
@@ -121,7 +122,6 @@ public class PlatformComponentBuilder {
     private SelfEventSigner selfEventSigner;
     private StateGarbageCollector stateGarbageCollector;
     private OrphanBuffer orphanBuffer;
-    private RunningEventHasher runningEventHasher;
     private EventCreationManager eventCreationManager;
     private ConsensusEngine consensusEngine;
     private ConsensusEventStream consensusEventStream;
@@ -132,6 +132,7 @@ public class PlatformComponentBuilder {
     private TransactionPrehandler transactionPrehandler;
     private PcesWriter pcesWriter;
     private IssDetector issDetector;
+    private IssHandler issHandler;
     private Gossip gossip;
     private StaleEventDetector staleEventDetector;
     private TransactionResubmitter transactionResubmitter;
@@ -139,6 +140,8 @@ public class PlatformComponentBuilder {
     private StateHasher stateHasher;
     private StateSnapshotManager stateSnapshotManager;
     private HashLogger hashLogger;
+
+    private boolean metricsDocumentationEnabled = true;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -187,16 +190,30 @@ public class PlatformComponentBuilder {
         try (final ReservedSignedState initialState = blocks.initialState()) {
             return new SwirldsPlatform(this);
         } finally {
-
-            // Future work: eliminate the static variables that require this code to exist
-            if (blocks.firstPlatform()) {
-                MetricsDocUtils.writeMetricsDocumentToFile(
-                        getGlobalMetrics(),
-                        getPlatforms(),
-                        blocks.platformContext().getConfiguration());
-                getMetricsProvider().start();
+            if (metricsDocumentationEnabled) {
+                // Future work: eliminate the static variables that require this code to exist
+                if (blocks.firstPlatform()) {
+                    MetricsDocUtils.writeMetricsDocumentToFile(
+                            getGlobalMetrics(),
+                            getPlatforms(),
+                            blocks.platformContext().getConfiguration());
+                    getMetricsProvider().start();
+                }
             }
         }
+    }
+
+    /**
+     * If enabled, building this object will cause a metrics document to be generated. Default is true.
+     *
+     * @param metricsDocumentationEnabled whether to generate a metrics document
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withMetricsDocumentationEnabled(final boolean metricsDocumentationEnabled) {
+        throwIfAlreadyUsed();
+        this.metricsDocumentationEnabled = metricsDocumentationEnabled;
+        return this;
     }
 
     /**
@@ -430,38 +447,6 @@ public class PlatformComponentBuilder {
         this.orphanBuffer = Objects.requireNonNull(orphanBuffer);
 
         return this;
-    }
-
-    /**
-     * Provide a running event hasher in place of the platform's default running event hasher.
-     *
-     * @param runningEventHasher the running event hasher to use
-     * @return this builder
-     */
-    @NonNull
-    public PlatformComponentBuilder withRunningEventHasher(@NonNull final RunningEventHasher runningEventHasher) {
-        throwIfAlreadyUsed();
-        if (this.runningEventHasher != null) {
-            throw new IllegalStateException("Running event hasher has already been set");
-        }
-        this.runningEventHasher = Objects.requireNonNull(runningEventHasher);
-        return this;
-    }
-
-    /**
-     * Build the running event hasher if it has not yet been built. If one has been provided via
-     * {@link #withRunningEventHasher(RunningEventHasher)}, that hasher will be used. If this method is called more than
-     * once, only the first call will build the running event hasher. Otherwise, the default hasher will be created and
-     * returned.
-     *
-     * @return the running event hasher
-     */
-    @NonNull
-    public RunningEventHasher buildRunningEventHasher() {
-        if (runningEventHasher == null) {
-            runningEventHasher = new DefaultRunningEventHasher();
-        }
-        return runningEventHasher;
     }
 
     /**
@@ -863,6 +848,45 @@ public class PlatformComponentBuilder {
                     roundToIgnore);
         }
         return issDetector;
+    }
+
+    /**
+     * Provide an ISS handler in place of the platform's default ISS handler.
+     *
+     * @param issHandler the ISS handler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withIssHandler(@NonNull final IssHandler issHandler) {
+        throwIfAlreadyUsed();
+        if (this.issHandler != null) {
+            throw new IllegalStateException("ISS handler has already been set");
+        }
+        this.issHandler = Objects.requireNonNull(issHandler);
+        return this;
+    }
+
+    /**
+     * Build the ISS handler if it has not yet been built. If one has been provided via
+     * {@link #withIssHandler(IssHandler)}, that handler will be used. If this method is called more than once, only the
+     * first call will build the ISS handler. Otherwise, the default handler will be created and returned.
+     *
+     * @return the ISS handler
+     */
+    @NonNull
+    public IssHandler buildIssHandler() {
+        if (issHandler == null) {
+            issHandler = new DefaultIssHandler(
+                    blocks.platformContext(),
+                    ignored -> {
+                        // FUTURE WORK: Previously this lambda was needed in order to stop gossip.
+                        // Now that gossip pays attention to the platform status, it will naturally
+                        // halt without needing to be stopped here. This should eventually be cleaned up.
+                    },
+                    SystemExitUtils::handleFatalError,
+                    blocks.issScratchpad());
+        }
+        return issHandler;
     }
 
     /**

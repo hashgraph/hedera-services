@@ -80,7 +80,9 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      */
     @Override
     public void flush() {
-        throw new UnsupportedOperationException("Flush is not supported on deterministic task schedulers");
+        // Future work: flushing is incompatible with deterministic task schedulers.
+        // This is because flushing currently requires us to block thread A while
+        // thread B does work, but with turtle there is only a single thread.
     }
 
     /**
