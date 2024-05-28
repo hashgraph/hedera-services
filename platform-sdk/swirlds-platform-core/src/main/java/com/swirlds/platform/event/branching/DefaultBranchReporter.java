@@ -139,7 +139,7 @@ public class DefaultBranchReporter implements BranchReporter {
         metrics.reportBranchingWeightFraction(fraction);
 
         if (Threshold.STRONG_MINORITY.isSatisfiedBy(branchingWeight, currentRoster.getTotalWeight())) {
-            // Uh oh.
+            // Uh oh. We've violated our assumption that >2/3 nodes in the network are honest.
 
             final List<NodeId> branchingNodes = new ArrayList<>();
             for (final NodeId nodeId : nodes) {
