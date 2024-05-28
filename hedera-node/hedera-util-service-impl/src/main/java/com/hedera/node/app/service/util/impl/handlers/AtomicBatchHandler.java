@@ -18,7 +18,6 @@ package com.hedera.node.app.service.util.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -38,10 +37,10 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AtomicBatchConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,7 +51,6 @@ import javax.inject.Singleton;
 @Singleton
 public class AtomicBatchHandler implements TransactionHandler {
     private final Function<Transaction, TransactionBody> bodyParser;
-
 
     private static final AccountID ATOMIC_BATCH_NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).shardNum(0).realmNum(0).build();
