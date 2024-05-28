@@ -17,6 +17,7 @@
 package com.swirlds.platform.recovery.internal;
 
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A round based lower bound on an event stream.
