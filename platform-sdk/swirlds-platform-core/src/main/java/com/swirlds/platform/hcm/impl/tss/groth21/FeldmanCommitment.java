@@ -35,7 +35,7 @@ public record FeldmanCommitment(@NonNull List<GroupElement> coefficientCommitmen
      * {@inheritDoc}
      */
     @NonNull
-    public GroupElement extractPublicKey(@NonNull final TssShareId shareId) {
+    public GroupElement extractShareKeyMaterial(@NonNull final TssShareId shareId) {
         if (coefficientCommitments.size() < 2) {
             throw new IllegalArgumentException("Coefficient commitments must have at least 2 elements");
         }

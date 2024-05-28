@@ -104,7 +104,7 @@ public final class TssUtils {
             partialShares.add(new TssPublicShare(
                     tssMessage.shareId(),
                     new PairingPublicKey(
-                            tss.getSignatureSchema(), tssMessage.commitment().extractPublicKey(shareId))));
+                            tss.getSignatureSchema(), tssMessage.commitment().extractShareKeyMaterial(shareId))));
         }
 
         return new TssPublicShare(shareId, aggregatePublicShares(partialShares));

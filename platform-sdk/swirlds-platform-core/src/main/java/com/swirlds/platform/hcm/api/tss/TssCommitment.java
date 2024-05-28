@@ -26,21 +26,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface TssCommitment {
     /**
-     * Extract the public key from this commitment for a given share.
+     * Extract the public key material for the given share ID.
      * <p>
-     * The public key returned by this method will be aggregated with the public keys from all other commitments for
+     * The key material returned by this method will be aggregated with the public keys from all other commitments for
      * the same share, and the result will be the final public key for that share.
-     * <p>
-     * TODO: rename this method
      *
      * @param shareId the share ID of the public key to extract
      * @return the public key extracted from this commitment
      */
     @NonNull
-    GroupElement extractPublicKey(@NonNull final TssShareId shareId);
+    GroupElement extractShareKeyMaterial(@NonNull final TssShareId shareId);
 
     /**
      * Get the term at the given index.
+     * <p>
+     * TODO: do we need this for anything other than getting the 0th term?
      *
      * @param index the index of the term to get
      * @return the term at the given index
