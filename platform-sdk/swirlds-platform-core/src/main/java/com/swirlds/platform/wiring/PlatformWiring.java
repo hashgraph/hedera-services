@@ -24,6 +24,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
+import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
@@ -109,7 +110,6 @@ import com.swirlds.platform.wiring.components.StateHasherWiring;
 import com.swirlds.platform.wiring.components.StateSignatureCollectorWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
@@ -212,7 +212,10 @@ public class PlatformWiring implements Startable, Stoppable, Clearable {
                         .getConfiguration()
                         .getConfigData(PlatformSchedulersConfig.class)
                         .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
+                platformContext
+                        .getConfiguration()
+                        .getConfigData(BasicCommonConfig.class)
+                        .backPressureSleepInterval());
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model, hashingObjectCounter);
 
