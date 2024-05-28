@@ -21,5 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * The ID of a TSS share.
+ *
+ * @param idElement the field element that represents the share ID
  */
-public record TssShareId(@NonNull FieldElement id) {}
+public record TssShareId(@NonNull FieldElement idElement) {}

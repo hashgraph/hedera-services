@@ -45,7 +45,7 @@ public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitmen
         GroupElement publicKey = group.oneElement();
         for (int i = 0; i < coefficientCommitments.size(); i++) {
             final GroupElement term = coefficientCommitments.get(i);
-            final FieldElement exponentiatedShareId = shareId.id().power(BigInteger.valueOf(i));
+            final FieldElement exponentiatedShareId = shareId.idElement().power(BigInteger.valueOf(i));
 
             publicKey = publicKey.multiply(term.power(exponentiatedShareId));
         }

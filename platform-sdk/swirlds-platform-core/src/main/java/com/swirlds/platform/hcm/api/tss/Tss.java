@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
-import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
-import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -33,48 +30,6 @@ import java.util.List;
  * </ul>
  */
 public interface Tss {
-    /**
-     * Aggregate a threshold number of {@link TssShareSignature}s.
-     * <p>
-     * It is the responsibility of the caller to ensure that the list of partial signatures meets the required
-     * threshold. If the threshold is not met, the signature returned by this method will be invalid.
-     *
-     * @param partialSignatures the list of signatures to aggregate
-     * @return the interpolated signature
-     */
-    @NonNull
-    PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures);
-
-    /**
-     * Aggregate a threshold number of {@link TssPublicShare}s.
-     * <p>
-     * It is the responsibility of the caller to ensure that the list of public shares meets the required threshold.
-     * If the threshold is not met, the public key returned by this method will be invalid.
-     * <p>
-     * This method is used for two distinct purposes:
-     * <ul>
-     *     <li>Aggregating public shares to produce the Ledger ID</li>
-     *     <li>Aggregating public shares derived from all commitments, to produce the public key for a given share</li>
-     * </ul>
-     *
-     * @param publicShares the public shares to aggregate
-     * @return the interpolated public key
-     */
-    @NonNull
-    PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
-
-    /**
-     * Aggregate a threshold number of {@link TssPrivateShare}s.
-     * <p>
-     * It is the responsibility of the caller to ensure that the list of private shares meets the required threshold.
-     * If the threshold is not met, the private key returned by this method will be invalid.
-     *
-     * @param privateShares the private shares to aggregate
-     * @return the aggregate private key
-     */
-    @NonNull
-    PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
-
     /**
      * Generate a TSS message for a set of share claims, from a private share.
      *
