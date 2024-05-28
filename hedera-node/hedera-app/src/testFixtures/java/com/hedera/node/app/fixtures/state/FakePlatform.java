@@ -52,6 +52,9 @@ public final class FakePlatform implements Platform {
     private final NotificationEngine notificationEngine;
     private final Random random = new Random(12345L);
 
+    /**
+     * Constructor for Embedded Hedera that uses a single node network
+     */
     public FakePlatform() {
         this.selfNodeId = new NodeId(0L);
         final var addressBuilder = RandomAddressBuilder.create(random);
@@ -63,6 +66,11 @@ public final class FakePlatform implements Platform {
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
 
+    /**
+     * Constructor for an app test that uses multiple nodes in the network
+     * @param nodeId the node id
+     * @param addresses the address book
+     */
     public FakePlatform(final long nodeId, final AddressBook addresses) {
         this.selfNodeId = new NodeId(nodeId);
         this.addressBook = addresses;
@@ -70,6 +78,10 @@ public final class FakePlatform implements Platform {
         this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
 
+    /**
+     * Create a platform context
+     * @return the platform context
+     */
     private PlatformContext createPlatformContext() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
