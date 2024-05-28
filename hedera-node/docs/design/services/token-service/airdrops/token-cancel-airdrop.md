@@ -109,6 +109,7 @@ An update into the `feeSchedule` file would be needed to specify that.
 
 ### Services updates
 
+- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `TokenCancelAirdrop` transaction type
 - Update `TokenServiceDefinition` class to include the new RPC method definition for cancelling airdrops
 - Implement new `TokenCancelAirdropHandler` class which should be invoked when the gRPC server handles `TokenCancelAirdrop` transactions. The class should be responsible for:
     - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
@@ -122,6 +123,11 @@ An update into the `feeSchedule` file would be needed to specify that.
         - The business logic for cancelling pending airdrops
             - Should boil down to clearing up the pending airdrops entries from the pending airdrops state
     - Fees calculation
+- Update throttle definitions to include the new `TokenCancelAirdrop` transaction type
+  - Throttle definitions are specified in `throttles.json` files
+  - There are different configurations containing throttle definitions under `hedera-node/configuration/` for the different environments e.g. testnet, previewnet, mainnet
+  - There is also a default throttle definition file in `resources/genesis/throttles.json` that is used during the genesis
+  - Add the new `TokenCancelAirdrop` transaction type to the `ThroughputLimits` bucket
 - Additional considerations:
     - All pending transfers sent by an account must be canceled before the account can be deleted
     - If the sender’s account expires and cannot be renewed, then all pending transfers for that sender are canceled
