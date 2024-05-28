@@ -92,7 +92,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     // For many of our tests we need to have metrics available, and an easy way to test the metrics
     // are being set appropriately.
     /** Used as a dependency to the {@link Metrics} system. */
-    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";

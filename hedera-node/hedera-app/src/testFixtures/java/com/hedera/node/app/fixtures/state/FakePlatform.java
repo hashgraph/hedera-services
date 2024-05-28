@@ -16,15 +16,30 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static com.hedera.node.app.fixtures.AppTestBase.METRIC_EXECUTOR;
+
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.Random;
 
 /**
  * A fake implementation of the {@link Platform} interface.
@@ -32,15 +47,46 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class FakePlatform implements Platform {
     private final NodeId selfNodeId;
     private final AddressBook addressBook;
+    private final PlatformContext context;
+    private final Random random = new Random(12345L);
 
-    public FakePlatform(long selfNodeId, AddressBook addressBook) {
-        this.selfNodeId = new NodeId(selfNodeId);
-        this.addressBook = addressBook;
+    public FakePlatform() {
+        this.selfNodeId = new NodeId(0L);
+        final var addressBuilder = RandomAddressBuilder.create(random);
+        final var address =
+                addressBuilder.withNodeId(selfNodeId).withWeight(500L).build();
+
+        this.addressBook = new AddressBook(List.of(address));
+        this.context = createPlatformContext();
+    }
+
+    public FakePlatform(final long nodeId, final AddressBook addresses) {
+        this.selfNodeId = new NodeId(nodeId);
+        this.addressBook = addresses;
+        this.context = createPlatformContext();
+    }
+
+    private PlatformContext createPlatformContext() {
+        final Configuration configuration = HederaTestConfigBuilder.createConfig();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final var metrics = new DefaultMetrics(
+                selfNodeId,
+                new MetricKeyRegistry(),
+                METRIC_EXECUTOR,
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
+        return PlatformContext.create(
+                configuration,
+                Time.getCurrent(),
+                metrics,
+                CryptographyHolder.get(),
+                FileSystemManager.create(configuration),
+                new NoOpRecycleBin());
     }
 
     @Override
     public PlatformContext getContext() {
-        return null;
+        return context;
     }
 
     @Override
