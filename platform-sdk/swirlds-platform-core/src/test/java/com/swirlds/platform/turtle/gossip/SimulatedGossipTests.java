@@ -130,6 +130,7 @@ class SimulatedGossipTests {
                             eventOutputWire,
                             mock(BindableInputWire.class),
                             mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
                             mock(BindableInputWire.class));
         }
 
