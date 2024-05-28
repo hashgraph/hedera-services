@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;

@@ -37,8 +37,8 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.metrics.api.snapshot.Snapshot;
 import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -55,7 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
-class SnapshotServiceTest {
+class SnapshotServiceImplTest {
 
     private static final NodeId NODE_ID_1 = new NodeId(1L);
     private static final NodeId NODE_ID_2 = new NodeId(2L);

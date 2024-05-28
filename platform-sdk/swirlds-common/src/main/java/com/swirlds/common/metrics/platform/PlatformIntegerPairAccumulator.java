@@ -23,7 +23,7 @@ import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.threading.atomic.AtomicIntPair;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.impl.AbstractMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

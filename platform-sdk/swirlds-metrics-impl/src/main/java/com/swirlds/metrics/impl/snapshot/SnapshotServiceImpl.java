@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.metrics.api.snapshot;
+package com.swirlds.metrics.impl.snapshot;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.metrics.api.snapshot.Label;
+import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
+import com.swirlds.metrics.api.snapshot.Subscription;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;
@@ -42,7 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class SnapshotService implements Startable, Stoppable {
+public class SnapshotServiceImpl implements Startable, Stoppable {
 
     private final Metrics metrics;
 
@@ -58,7 +61,7 @@ public class SnapshotService implements Startable, Stoppable {
 
     private final long delayNanos;
 
-    public SnapshotService(
+    public SnapshotServiceImpl(
             @NonNull final Metrics metrics,
             @NonNull final ScheduledExecutorService executor,
             @NonNull final Duration interval) {

@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.metrics.api.snapshot;
+package com.swirlds.metrics.impl.snapshot;
 
-import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.Collection;
+import java.util.Objects;
 
-public interface SnapshotSupport {
+/**
+ * A collection of multiple snapshots
+ *
+ * @param snapshots multiple snapshots
+ */
+public record SnapshotEvent(@NonNull Collection<Snapshot> snapshots) {
 
     /**
-     * Take entries of the current values and return them. If the functionality of this {@code PlatformMetric} requires
-     * it to be reset in regular intervals, it is done automatically after the snapshot was generated. The list of
-     * {@code ValueTypes} will always be in the same order.
-     *
-     * @return the list of {@code ValueTypes} with their current values
+     * @throws NullPointerException in case {@code snapshots} parameter is {@code null}
      */
-    @NonNull
-    List<SnapshotEntry> takeSnapshot();
+    public SnapshotEvent {
+        Objects.requireNonNull(snapshots, "snapshots must not be null");
+    }
 }

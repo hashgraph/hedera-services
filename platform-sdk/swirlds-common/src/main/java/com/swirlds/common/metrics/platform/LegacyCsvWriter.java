@@ -34,7 +34,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -305,13 +306,13 @@ public class LegacyCsvWriter {
             snapshot.entries().forEach(entry -> builder.addCell(format(snapshot.metric(), entry.value())));
         } else {
             // add only main value
-            final List<Snapshot.SnapshotEntry> entries = snapshot.entries();
+            final List<SnapshotEntry> entries = snapshot.entries();
             final Object value = entries.size() == 1
                     ? entries.get(0).value()
                     : entries.stream()
                             .filter(entry -> entry.valueType() == ValueType.VALUE)
                             .findAny()
-                            .map(Snapshot.SnapshotEntry::value)
+                            .map(SnapshotEntry::value)
                             .orElse(null);
 
             builder.addCell(format(snapshot.metric(), value));

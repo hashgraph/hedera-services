@@ -20,7 +20,7 @@ import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.PlatformMetric;
-import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.impl.AbstractMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -46,8 +46,8 @@ public class PlatformDurationGauge extends AbstractMetric implements PlatformMet
      */
     @NonNull
     @Override
-    public List<Snapshot.SnapshotEntry> takeSnapshot() {
-        return List.of(new Snapshot.SnapshotEntry(VALUE, get()));
+    public List<SnapshotEntry> takeSnapshot() {
+        return List.of(new SnapshotEntry(VALUE, get()));
     }
 
     private double getAsDouble() {

@@ -17,6 +17,6 @@
 package com.swirlds.metrics.api.snapshot;
 
 /**
- * A label is a key-value pair that can be attached to a {@link Snapshot}.
+ * A label is a key-value pair that can be attached to a {@link com.swirlds.metrics.api.Metric}.
  */
 public record Label(String name, String value) {}

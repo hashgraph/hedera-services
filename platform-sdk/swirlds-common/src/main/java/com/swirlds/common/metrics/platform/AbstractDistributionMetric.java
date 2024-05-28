@@ -19,7 +19,7 @@ package com.swirlds.common.metrics.platform;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.impl.AbstractMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

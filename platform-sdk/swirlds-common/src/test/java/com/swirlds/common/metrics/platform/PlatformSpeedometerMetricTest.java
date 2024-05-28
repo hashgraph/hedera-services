@@ -33,7 +33,7 @@ import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.IntegerGauge;
-import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.impl.DefaultIntegerGauge;
 import java.time.Duration;
 import java.util.List;

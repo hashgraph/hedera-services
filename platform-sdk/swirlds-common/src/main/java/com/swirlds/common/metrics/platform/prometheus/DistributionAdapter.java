@@ -24,7 +24,8 @@ import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
@@ -75,7 +76,7 @@ public class DistributionAdapter extends AbstractMetricAdapter {
         if (adapterType != GLOBAL) {
             Objects.requireNonNull(nodeId, "nodeId must not be null");
         }
-        for (final Snapshot.SnapshotEntry entry : snapshot.entries()) {
+        for (final SnapshotEntry entry : snapshot.entries()) {
             final String valueType =
                     switch (entry.valueType()) {
                         case MIN -> "min";

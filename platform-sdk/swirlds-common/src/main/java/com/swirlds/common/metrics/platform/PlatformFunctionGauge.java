@@ -22,7 +22,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.api.MetricConfig;
-import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.impl.AbstractMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

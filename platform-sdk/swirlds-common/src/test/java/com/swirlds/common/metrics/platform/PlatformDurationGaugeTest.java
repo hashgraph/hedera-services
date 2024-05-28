@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.metrics.api.FloatFormats;
 import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
@@ -132,11 +132,11 @@ class PlatformDurationGaugeTest {
         testDurationUpdate(gauge, Duration.ofMillis(3500), SECONDS);
 
         // when
-        final List<Snapshot.SnapshotEntry> snapshot = gauge.takeSnapshot();
+        final List<SnapshotEntry> snapshot = gauge.takeSnapshot();
 
         // then
         final double expectedValue = assertValue(gauge, Duration.ofMillis(3500), SECONDS);
-        assertEquals(List.of(new Snapshot.SnapshotEntry(VALUE, expectedValue)), snapshot, "Snapshot is not correct");
+        assertEquals(List.of(new SnapshotEntry(VALUE, expectedValue)), snapshot, "Snapshot is not correct");
     }
 
     @Test

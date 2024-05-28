@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,12 @@
 
 package com.swirlds.metrics.api.snapshot;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collection;
-import java.util.Objects;
+import com.swirlds.metrics.api.Metric.ValueType;
 
 /**
- * A collection of multiple snapshots
+ * As single entry within a {@code Snapshot}
  *
- * @param snapshots multiple snapshots
+ * @param valueType the {@link ValueType} of this entry
+ * @param value     the actual value
  */
-public record SnapshotEvent(@NonNull Collection<Snapshot> snapshots) {
-
-    /**
-     * @throws NullPointerException in case {@code snapshots} parameter is {@code null}
-     */
-    public SnapshotEvent {
-        Objects.requireNonNull(snapshots, "snapshots must not be null");
-    }
-}
+public record SnapshotEntry(ValueType valueType, Object value) {}

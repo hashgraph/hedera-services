@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.metrics.api.snapshot;
+package com.swirlds.metrics.impl.snapshot;
 
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.snapshot.Label;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
+import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
@@ -50,18 +53,10 @@ public record Snapshot(
      */
     public Object getValue() {
         for (final SnapshotEntry entry : entries) {
-            if (entry.valueType == ValueType.VALUE) {
-                return entry.value;
+            if (entry.valueType() == ValueType.VALUE) {
+                return entry.value();
             }
         }
         throw new IllegalStateException("Snapshot does not contain a value: " + this);
     }
-
-    /**
-     * As single entry within a {@code Snapshot}
-     *
-     * @param valueType the {@link ValueType} of this entry
-     * @param value     the actual value
-     */
-    public record SnapshotEntry(ValueType valueType, Object value) {}
 }

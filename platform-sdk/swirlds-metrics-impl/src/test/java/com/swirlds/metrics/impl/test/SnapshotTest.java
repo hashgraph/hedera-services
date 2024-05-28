@@ -21,8 +21,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.metrics.api.Metric;
-import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
+import com.swirlds.metrics.impl.snapshot.Snapshot;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +33,7 @@ class SnapshotTest {
     void testToString() {
         // given
         final SnapshotableMetric metric = mock(SnapshotableMetric.class);
-        when(metric.takeSnapshot()).thenReturn(List.of(new Snapshot.SnapshotEntry(Metric.ValueType.VALUE, 42L)));
+        when(metric.takeSnapshot()).thenReturn(List.of(new SnapshotEntry(Metric.ValueType.VALUE, 42L)));
         final Snapshot snapshot = Snapshot.of(metric);
 
         // when
