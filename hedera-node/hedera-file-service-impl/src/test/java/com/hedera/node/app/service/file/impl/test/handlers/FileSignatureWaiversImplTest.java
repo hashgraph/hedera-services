@@ -54,8 +54,8 @@ public class FileSignatureWaiversImplTest {
     }
 
     @Test
-    @DisplayName("Signatures are waived when payer has privileged authorization")
-    public void signaturesAreWaivedWhenPayerHasPrivilegedAuthorization() {
+    @DisplayName("Signatures are waived when payer has privileged authorization for file update")
+    public void signaturesAreWaivedWhenPayerHasPrivilegedAuthorizationForFileUpdate() {
         when(authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_UPDATE, fileUpdateTxn))
                 .thenReturn(SystemPrivilege.AUTHORIZED);
 
@@ -64,12 +64,32 @@ public class FileSignatureWaiversImplTest {
     }
 
     @Test
-    @DisplayName("Signatures are not waived when payer does not have privileged authorization")
-    public void signaturesAreNotWaivedWhenPayerDoesNotHavePrivilegedAuthorization() {
+    @DisplayName("Signatures are not waived when payer does not have privileged authorization for file update")
+    public void signaturesAreNotWaivedWhenPayerDoesNotHavePrivilegedAuthorizationForFileUpdate() {
         when(authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_UPDATE, fileUpdateTxn))
                 .thenReturn(SystemPrivilege.UNAUTHORIZED);
 
         assertThat(fileSignatureWaivers.areFileUpdateSignaturesWaived(fileUpdateTxn, payer))
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("Signatures are waived when payer has privileged authorization")
+    public void signaturesAreWaivedWhenPayerHasPrivilegedAuthorizationForFileAppend() {
+        when(authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_APPEND, fileUpdateTxn))
+                .thenReturn(SystemPrivilege.AUTHORIZED);
+
+        assertThat(fileSignatureWaivers.areFileAppendSignaturesWaived(fileUpdateTxn, payer))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("Signatures are not waived when payer does not have privileged authorization")
+    public void signaturesAreNotWaivedWhenPayerDoesNotHavePrivilegedAuthorizationForFileAppend() {
+        when(authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_APPEND, fileUpdateTxn))
+                .thenReturn(SystemPrivilege.UNAUTHORIZED);
+
+        assertThat(fileSignatureWaivers.areFileAppendSignaturesWaived(fileUpdateTxn, payer))
                 .isFalse();
     }
 }

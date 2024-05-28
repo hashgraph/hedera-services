@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.live;
 
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.DATA_DIR;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -36,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -141,11 +143,26 @@ public class ProcessUtils {
      * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(@NonNull final BooleanSupplier condition) {
+        return conditionFuture(condition, () -> WAIT_SLEEP_MILLIS);
+    }
+
+    /**
+     * Returns a future that resolves when the given condition is true, backing off checking
+     * the condition by the number of milliseconds returned by the given supplier.
+     *
+     * @param condition the condition to wait for
+     * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
+     * @return a future that resolves when the condition is true or the timeout is reached
+     */
+    public static CompletableFuture<Void> conditionFuture(
+            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+        requireNonNull(condition);
+        requireNonNull(checkBackoffMs);
         return CompletableFuture.runAsync(
                 () -> {
                     while (!condition.getAsBoolean()) {
                         try {
-                            MILLISECONDS.sleep(WAIT_SLEEP_MILLIS);
+                            MILLISECONDS.sleep(checkBackoffMs.getAsLong());
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             throw new IllegalStateException("Interrupted while waiting for condition", e);

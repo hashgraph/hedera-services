@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
+
 import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
@@ -63,6 +65,12 @@ public class NoOpTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     public long getUnprocessedTaskCount() {
         return 0;
+    }
+
+    @Override
+    public long getCapacity() {
+        // No op schedulers have no concept of capacity
+        return UNLIMITED_CAPACITY;
     }
 
     /**
