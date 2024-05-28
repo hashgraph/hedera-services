@@ -101,7 +101,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var transactionFileId = requireNonNull(op.fileID());
         preValidate(transactionFileId, fileStore, context);
-        final var areSignaturesWaived = fileSignatureWaivers.areFileUpdateSignaturesWaived(body, context.payer());
+        final var areSignaturesWaived = fileSignatureWaivers.areFileAppendSignaturesWaived(body, context.payer());
         if (areSignaturesWaived) {
             return;
         }
