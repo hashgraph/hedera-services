@@ -479,7 +479,7 @@ public class PlatformWiring {
                 .getConfigData(EventCreationConfig.class)
                 .creationAttemptRate();
         model.buildHeartbeatWire(eventCreationHeartbeatFrequency)
-                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent));
+                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent), OFFER);
         model.buildHeartbeatWire(platformContext
                         .getConfiguration()
                         .getConfigData(PlatformStatusConfig.class)
@@ -673,7 +673,7 @@ public class PlatformWiring {
                         .getConfiguration()
                         .getConfigData(PcesConfig.class)
                         .roundDurabilityBufferHeartbeatPeriod())
-                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds));
+                .solderTo(roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::checkForStaleRounds), OFFER);
 
         stateSnapshotManagerWiring
                 .getTransformedOutput(StateSnapshotManager::extractOldestMinimumGenerationOnDisk)
