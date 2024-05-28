@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
-import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -25,15 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param shareId    the share ID
  * @param privateKey the private key
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull TssPrivateKey privateKey) {
-    /**
-     * Sign a message using the private key.
-     *
-     * @param message the message to sign
-     * @return the signature
-     */
-    @NonNull
-    PairingSignature sign(@NonNull final byte[] message) {
-        return privateKey.sign(shareId, message);
-    }
-}
+public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {}

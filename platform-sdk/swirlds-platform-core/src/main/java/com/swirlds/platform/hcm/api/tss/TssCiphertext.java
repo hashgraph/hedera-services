@@ -35,7 +35,7 @@ public interface TssCiphertext {
      * @return the private key decrypted from this ciphertext
      */
     @NonNull
-    TssPrivateKey decryptPrivateKey(
+    TssPrivateShare decryptPrivateShare(
             @NonNull final PairingPrivateKey elGamalPrivateKey,
             @NonNull TssShareId shareId,
             @NonNull final ElGamalCache elGamalCache);

@@ -21,7 +21,7 @@ import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssCiphertext;
-import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
+import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -43,7 +43,7 @@ public record Groth21Ciphertext(
      */
     @NonNull
     @Override
-    public TssPrivateKey decryptPrivateKey(
+    public TssPrivateShare decryptPrivateShare(
             @NonNull final PairingPrivateKey elGamalPrivateKey,
             @NonNull final TssShareId shareId,
             @NonNull final ElGamalCache elGamalCache) {
@@ -71,7 +71,7 @@ public record Groth21Ciphertext(
                     .multiply(decryptedCommitment));
         }
 
-        return new TssPrivateKey(new PairingPrivateKey(elGamalPrivateKey.signatureSchema(), output));
+        return new TssPrivateShare(shareId, new PairingPrivateKey(elGamalPrivateKey.signatureSchema(), output));
     }
 
     /**

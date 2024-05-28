@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
+import static com.swirlds.platform.hcm.api.tss.TssUtils.computeLagrangeCoefficient;
+
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
@@ -26,18 +28,14 @@ import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import com.swirlds.platform.hcm.api.tss.Tss;
 import com.swirlds.platform.hcm.api.tss.TssMessage;
-import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssPublicShare;
 import com.swirlds.platform.hcm.api.tss.TssShareClaim;
 import com.swirlds.platform.hcm.api.tss.TssShareSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import static com.swirlds.platform.hcm.api.tss.TssUtils.computeLagrangeCoefficient;
 
 /**
  * A Groth21 implementation of a Threshold Signature Scheme.
@@ -91,7 +89,7 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
      */
     @NonNull
     @Override
-    public TssPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
+    public PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
         if (privateShares.isEmpty()) {
             throw new IllegalArgumentException("At least one private share is required to recover a secret");
         }
@@ -100,7 +98,7 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
         final List<FieldElement> privateKeys = new ArrayList<>();
         privateShares.forEach(share -> {
             shareIds.add(share.shareId().id());
-            privateKeys.add(share.privateKey().privateKey().secretElement());
+            privateKeys.add(share.privateKey().secretElement());
         });
 
         if (shareIds.size() != Set.of(shareIds).size()) {
@@ -118,7 +116,7 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
             sum = sum.add(lagrangeCoefficients.get(i).multiply(privateKeys.get(i)));
         }
 
-        return new TssPrivateKey(new PairingPrivateKey(signatureSchema, sum));
+        return new PairingPrivateKey(signatureSchema, sum);
     }
 
     /**

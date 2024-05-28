@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.hcm.api.tss;
 
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 
 /**
@@ -73,7 +73,7 @@ public interface Tss {
      * @return the aggregate private key
      */
     @NonNull
-    TssPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
+    PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
 
     /**
      * Generate a TSS message for a set of share claims, from a private share.
