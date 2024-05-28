@@ -292,15 +292,10 @@ public class NonceSuite extends HapiSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(21_000L)
-                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .hasPrecheck(INSUFFICIENT_GAS)
                         .via(TX))
-                .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(0L)),
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .status(INSUFFICIENT_GAS)
-                                        .contractCallResult(resultWith().signerNonce(0L))));
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
     }
 
     @HapiTest
@@ -788,15 +783,10 @@ public class NonceSuite extends HapiSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(21_000L)
-                        .hasKnownStatus(INSUFFICIENT_GAS)
+                        .hasPrecheck(INSUFFICIENT_GAS)
                         .via(TX))
-                .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(0L)),
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .status(INSUFFICIENT_GAS)
-                                        .contractCallResult(resultWith().signerNonce(0L))));
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
     }
 
     @HapiTest

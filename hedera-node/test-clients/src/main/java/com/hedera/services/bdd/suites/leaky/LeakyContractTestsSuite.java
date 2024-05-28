@@ -97,7 +97,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
@@ -109,8 +108,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -355,7 +352,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                 gasLimitOverMaxGasLimitFailsPrecheck(),
                 nonFungibleTokenCreateWithFeesHappyPath(),
                 createMinChargeIsTXGasUsedByContractCreate(),
-                createGasLimitOverMaxGasLimitFailsPrecheck(),
                 contractCreationStoragePriceMatchesFinalExpiry(),
                 createTokenWithInvalidFixedFeeWithERC721Denomination(),
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
@@ -384,8 +380,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                 getErc20TokenNameExceedingLimits(),
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 canMergeCreate2ChildWithHollowAccountAndSelfDestructInConstructor(),
-                invalidContract(),
-                htsTransferFromForNFTViaContractCreateLazyCreate());
+                invalidContract());
     }
 
     @SuppressWarnings("java:S5960")
@@ -1575,18 +1570,16 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                 .gas(300_000L)
                                 .via(CALL_TX))
-                .then(
-                        withOpContext((spec, ignore) -> {
-                            final var subop01 = getTxnRecord(CALL_TX).saveTxnRecordToRegistry(CALL_TX_REC);
-                            allRunFor(spec, subop01);
+                .then(withOpContext((spec, ignore) -> {
+                    final var subop01 = getTxnRecord(CALL_TX).saveTxnRecordToRegistry(CALL_TX_REC);
+                    allRunFor(spec, subop01);
 
-                            final var gasUsed = spec.registry()
-                                    .getTransactionRecord(CALL_TX_REC)
-                                    .getContractCallResult()
-                                    .getGasUsed();
-                            assertEquals(285000, gasUsed);
-                        }),
-                        resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                    final var gasUsed = spec.registry()
+                            .getTransactionRecord(CALL_TX_REC)
+                            .getContractCallResult()
+                            .getGasUsed();
+                    assertEquals(285000, gasUsed);
+                }));
     }
 
     @HapiTest
@@ -1640,34 +1633,24 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(10)
     final HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "GasLimitOverMaxGasLimitFailsPrecheck",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving(CONTRACTS_MAX_GAS_PER_SEC)
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
+                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
                         overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
                 .when()
                 .then(
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(21_000L)
+                                .gas(23_000L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-                        resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
-    }
-
-    @HapiTest
-    @Order(12)
-    final HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec(
-                        "CreateGasLimitOverMaxGasLimitFailsPrecheck",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-                        UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .gas(1_000_000L)
+                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED));
     }
 
     @HapiTest
@@ -1731,7 +1714,9 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
             txnLog.info("  Literally :: {}", result);
         };
 
-        return defaultHapiSpec("ResultSizeAffectsFees", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+        return propertyPreservingHapiSpec(
+                        "ResultSizeAffectsFees", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(contract),
@@ -1743,29 +1728,23 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 5L, "So we out-danced thought...")
                                 .via("loggedCallTxn")
                                 .sending(TRANSFER_AMOUNT))
-                .then(
-                        assertionsHold((spec, assertLog) -> {
-                            HapiGetTxnRecord noLogsLookup =
-                                    QueryVerbs.getTxnRecord("noLogsCallTxn").loggedWith(resultSizeFormatter);
-                            HapiGetTxnRecord logsLookup =
-                                    QueryVerbs.getTxnRecord("loggedCallTxn").loggedWith(resultSizeFormatter);
-                            allRunFor(spec, noLogsLookup, logsLookup);
-                            final var unloggedRecord = noLogsLookup
-                                    .getResponse()
-                                    .getTransactionGetRecord()
-                                    .getTransactionRecord();
-                            final var loggedRecord = logsLookup
-                                    .getResponse()
-                                    .getTransactionGetRecord()
-                                    .getTransactionRecord();
-                            assertLog.info("Fee for logged record   = {}", loggedRecord::getTransactionFee);
-                            assertLog.info("Fee for unlogged record = {}", unloggedRecord::getTransactionFee);
-                            Assertions.assertNotEquals(
-                                    unloggedRecord.getTransactionFee(),
-                                    loggedRecord.getTransactionFee(),
-                                    "Result size should change the txn fee!");
-                        }),
-                        resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                .then(assertionsHold((spec, assertLog) -> {
+                    HapiGetTxnRecord noLogsLookup =
+                            QueryVerbs.getTxnRecord("noLogsCallTxn").loggedWith(resultSizeFormatter);
+                    HapiGetTxnRecord logsLookup =
+                            QueryVerbs.getTxnRecord("loggedCallTxn").loggedWith(resultSizeFormatter);
+                    allRunFor(spec, noLogsLookup, logsLookup);
+                    final var unloggedRecord =
+                            noLogsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
+                    final var loggedRecord =
+                            logsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
+                    assertLog.info("Fee for logged record   = {}", loggedRecord::getTransactionFee);
+                    assertLog.info("Fee for unlogged record = {}", unloggedRecord::getTransactionFee);
+                    Assertions.assertNotEquals(
+                            unloggedRecord.getTransactionFee(),
+                            loggedRecord.getTransactionFee(),
+                            "Result size should change the txn fee!");
+                }));
     }
 
     @HapiTest
@@ -1790,51 +1769,49 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(16)
     final HapiSpec createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "5"),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
-                .then(
-                        withOpContext((spec, ignore) -> {
-                            final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
-                            allRunFor(spec, subop01);
+                .then(withOpContext((spec, ignore) -> {
+                    final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
+                    allRunFor(spec, subop01);
 
-                            final var gasUsed = spec.registry()
-                                    .getTransactionRecord(CREATE_TX_REC)
-                                    .getContractCreateResult()
-                                    .getGasUsed();
-                            assertEquals(285_000L, gasUsed);
-                        }),
-                        resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
+                    final var gasUsed = spec.registry()
+                            .getTransactionRecord(CREATE_TX_REC)
+                            .getContractCreateResult()
+                            .getGasUsed();
+                    assertEquals(285_000L, gasUsed);
+                }));
     }
 
     @HapiTest
     @Order(11)
     final HapiSpec createMinChargeIsTXGasUsedByContractCreate() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "CreateMinChargeIsTXGasUsedByContractCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
-                .then(
-                        withOpContext((spec, ignore) -> {
-                            final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
-                            allRunFor(spec, subop01);
+                .then(withOpContext((spec, ignore) -> {
+                    final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
+                    allRunFor(spec, subop01);
 
-                            final var gasUsed = spec.registry()
-                                    .getTransactionRecord(CREATE_TX_REC)
-                                    .getContractCreateResult()
-                                    .getGasUsed();
-                            assertTrue(gasUsed > 0L);
-                        }),
-                        resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
+                    final var gasUsed = spec.registry()
+                            .getTransactionRecord(CREATE_TX_REC)
+                            .getContractCreateResult()
+                            .getGasUsed();
+                    assertTrue(gasUsed > 0L);
+                }));
     }
 
     @HapiTest
@@ -1924,7 +1901,9 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     @Order(4)
     HapiSpec temporarySStoreRefundTest() {
         final var contract = "TemporarySStoreRefund";
-        return defaultHapiSpec("TemporarySStoreRefundTest", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+        return propertyPreservingHapiSpec(
+                        "TemporarySStoreRefundTest", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
+                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(contract),
@@ -1934,30 +1913,28 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                 .via("tempHoldTx"),
                         contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
                                 .via("permHoldTx"))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            final var subop01 = getTxnRecord("tempHoldTx")
-                                    .saveTxnRecordToRegistry("tempHoldTxRec")
-                                    .logged();
-                            final var subop02 = getTxnRecord("permHoldTx")
-                                    .saveTxnRecordToRegistry("permHoldTxRec")
-                                    .logged();
+                .then(withOpContext((spec, opLog) -> {
+                    final var subop01 = getTxnRecord("tempHoldTx")
+                            .saveTxnRecordToRegistry("tempHoldTxRec")
+                            .logged();
+                    final var subop02 = getTxnRecord("permHoldTx")
+                            .saveTxnRecordToRegistry("permHoldTxRec")
+                            .logged();
 
-                            CustomSpecAssert.allRunFor(spec, subop01, subop02);
+                    CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
-                            final var gasUsedForTemporaryHoldTx = spec.registry()
-                                    .getTransactionRecord("tempHoldTxRec")
-                                    .getContractCallResult()
-                                    .getGasUsed();
-                            final var gasUsedForPermanentHoldTx = spec.registry()
-                                    .getTransactionRecord("permHoldTxRec")
-                                    .getContractCallResult()
-                                    .getGasUsed();
+                    final var gasUsedForTemporaryHoldTx = spec.registry()
+                            .getTransactionRecord("tempHoldTxRec")
+                            .getContractCallResult()
+                            .getGasUsed();
+                    final var gasUsedForPermanentHoldTx = spec.registry()
+                            .getTransactionRecord("permHoldTxRec")
+                            .getContractCallResult()
+                            .getGasUsed();
 
-                            Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23739L);
-                            Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-                        }),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
+                    Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23739L);
+                    Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
+                }));
     }
 
     @HapiTest
@@ -2378,9 +2355,7 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                                     .logged()
                                     .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
                 }))
-                .then(
-                        emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED),
-                        resetToDefault(lazyCreationProperty, contractsEvmVersionProperty, maxPrecedingRecords));
+                .then(emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED));
     }
 
     @HapiTest
@@ -2407,11 +2382,12 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
     @HapiTest
     @Order(20)
     final HapiSpec erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "erc20TransferFromDoesNotWorkIfFlagIsDisabled",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
+                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
                 .given(
                         overriding(HEDERA_ALLOWANCES_IS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
@@ -3180,38 +3156,6 @@ public class LeakyContractTestsSuite extends SidecarAwareHapiSuite {
                         ifNotHapiTest(
                                 contractCallWithFunctionAbi("invalid", function).hasPrecheck(INVALID_CONTRACT_ID)))))
                 .then();
-    }
-
-    @Order(39)
-    @HapiTest
-    final HapiSpec htsTransferFromForNFTViaContractCreateLazyCreate() {
-        final var depositAmount = 1000;
-
-        return defaultHapiSpec(
-                        "htsTransferFromForNFTViaContractCreateLazyCreate",
-                        NONDETERMINISTIC_NONCE,
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                        HIGHLY_NON_DETERMINISTIC_FEES)
-                .given(
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(NESTED_LAZY_CREATE_VIA_CONSTRUCTOR))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    allRunFor(
-                            spec,
-                            contractCreate(
-                                            NESTED_LAZY_CREATE_VIA_CONSTRUCTOR,
-                                            HapiParserUtil.asHeadlongAddress(addressBytes))
-                                    .balance(depositAmount)
-                                    .gas(GAS_TO_OFFER)
-                                    .via(TRANSFER_TXN)
-                                    .hasKnownStatus(SUCCESS),
-                            getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
-                }))
-                .then(childRecordsCheck(
-                        TRANSFER_TXN, SUCCESS, recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
     private HapiContractCallLocal setExpectedCreate2Address(

@@ -451,10 +451,10 @@ public class ContractCreateSuite extends HapiSuite {
 
     @HapiTest
     final HapiSpec rejectsInsufficientGas() {
-        return defaultHapiSpec("RejectsInsufficientGas", NONDETERMINISTIC_TRANSACTION_FEES)
+        return defaultHapiSpec("RejectsInsufficientGas")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(0L).hasKnownStatus(INSUFFICIENT_GAS));
+                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(0L).hasPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest
