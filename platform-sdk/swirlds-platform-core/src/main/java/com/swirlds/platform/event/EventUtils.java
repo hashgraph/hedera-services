@@ -60,6 +60,7 @@ public final class EventUtils {
     /**
      * Returns the timestamp of the transaction with given index in this event
      *
+     * @param event            the event to get the transaction time from
      * @param transactionIndex index of the transaction in this event
      * @return timestamp of the given index transaction
      */
@@ -68,7 +69,7 @@ public final class EventUtils {
             throw new IllegalArgumentException("Event is not a consensus event");
         }
         if (transactionIndex >= event.getPayloadCount()) {
-            throw new IllegalArgumentException("Event does not have a transaction with index:" + transactionIndex);
+            throw new IllegalArgumentException("Event does not have a transaction with index: " + transactionIndex);
         }
         return event.getConsensusTimestamp().plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
     }
@@ -77,6 +78,7 @@ public final class EventUtils {
      * Returns the timestamp of the last transaction in this event. If this event has no transaction, then the timestamp
      * of the event will be returned
      *
+     * @param event the event to get the transaction time from
      * @return timestamp of the last transaction
      */
     public static @NonNull Instant getLastTransTime(@NonNull final GossipEvent event) {

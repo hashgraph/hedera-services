@@ -49,7 +49,7 @@ public class EventMetadata implements Clearable {
     private boolean isConsensus;
     /**
      * a field used to store consensus time while it is still not finalized. depending on the phase of consensus
-     * calculation, this filed may or may not store the final consensus time.
+     * calculation, this field may or may not store the final consensus time.
      */
     private Instant preliminaryConsensusTimestamp;
     /** the local time (not consensus time) at which the event reached consensus */

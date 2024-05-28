@@ -28,6 +28,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -63,6 +64,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      * @param event the event to copy the data from
      */
     public DetailedConsensusEvent(@NonNull final EventImpl event) {
+        Objects.requireNonNull(event);
         this.gossipEvent = event.getBaseEvent();
         this.roundReceived = event.getRoundReceived();
         this.lastInRoundReceived = event.isLastInRoundReceived();
@@ -77,19 +79,26 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      *                            round
      */
     public DetailedConsensusEvent(
-            final GossipEvent gossipEvent, final long roundReceived, final boolean lastInRoundReceived) {
+            @NonNull final GossipEvent gossipEvent, final long roundReceived, final boolean lastInRoundReceived) {
+        Objects.requireNonNull(gossipEvent);
         this.gossipEvent = gossipEvent;
         this.roundReceived = roundReceived;
         this.lastInRoundReceived = lastInRoundReceived;
     }
 
     public static void serialize(
-            final SerializableDataOutputStream out,
-            final GossipEvent gossipEvent,
+            @NonNull  final SerializableDataOutputStream out,
+            @NonNull  final GossipEvent gossipEvent,
             final long roundReceived,
             final boolean lastInRoundReceived)
             throws IOException {
+        Objects.requireNonNull(out);
+        Objects.requireNonNull(gossipEvent);
+
         gossipEvent.serialize(out);
+
+        // some fields used to be part of the stream but are no longer used
+        // in order to maintain compatibility with older versions of the stream, we write a constant in their place
 
         out.writeInt(ConsensusData.CLASS_VERSION);
         out.writeLong(UNDEFINED); // ConsensusData.generation
@@ -101,19 +110,13 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
         out.writeLong(gossipEvent.getConsensusOrder());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         serialize(out, gossipEvent, roundReceived, lastInRoundReceived);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         this.gossipEvent = new GossipEvent();
         this.gossipEvent.deserialize(in, gossipEvent.getVersion());
 

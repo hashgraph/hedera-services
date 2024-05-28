@@ -785,7 +785,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *     first saw it
      * @param receivedRound the round in which event was received
      */
-    private void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
+    private static void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 

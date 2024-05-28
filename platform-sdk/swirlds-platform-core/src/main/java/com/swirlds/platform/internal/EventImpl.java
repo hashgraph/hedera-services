@@ -100,7 +100,8 @@ public class EventImpl extends EventMetadata
      * Create an instance based on the given {@link DetailedConsensusEvent}
      * @param detailedConsensusEvent the detailed consensus event to build from
      */
-    public EventImpl(final DetailedConsensusEvent detailedConsensusEvent) {
+    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) {
+        Objects.requireNonNull(detailedConsensusEvent);
         buildFromConsensusEvent(detailedConsensusEvent);
     }
 

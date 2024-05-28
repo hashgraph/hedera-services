@@ -381,13 +381,11 @@ public class GossipEvent implements Event, SelfSerializable {
             return true;
         }
 
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof final GossipEvent that)) {
             return false;
         }
 
-        final GossipEvent that = (GossipEvent) o;
-        return Objects.equals(getHashedData(), that.getHashedData())
-                && Objects.equals(consensusData, that.consensusData);
+        return Objects.equals(getHashedData().getHash(), that.getHashedData().getHash());
     }
 
     /**
