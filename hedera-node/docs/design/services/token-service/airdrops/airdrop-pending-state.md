@@ -35,6 +35,36 @@ We should define the structure of pending changes that would be kept in the `Ini
 
 We can have a case, where we have multiple airdrops for the same fungible token. In this case the  `PendingAirdropValue` would be updated with the new aggregated value.
 
+### Models
+
+In order to be able to iterate over all pending airdrops for a specific sender account, we should enrich the account protobug with 2 new fields:
+
+```proto
+message Account {
+    ...
+    PendingAirdropId head_pendingAirdropId;
+    ...
+}
+```
+
+In addition, we should define a new protobuf type that will be used for the construction of a linked list holding the sender's pending airdrops:
+
+```proto
+message account_airdrop {
+    /**
+     * The previous airdrop id of account's airdrops linked list
+     */
+    PendingAirdropId previous_airdrop;
+    
+    /**
+     * The next airdrop id of account's airdrops linked list
+     */
+    PendingAirdropId next_airdrop;
+}
+```
+
+The traversing of all relevant airdrops for an account will be needed when for an example a sender account is expired or deleted and we need to cancel all of their pending airdrops beforehand.
+
 ### Stores
 
 We need to define a special `WritableStore` for the airdrops, so that we can manipulate the content in them. This would be the `WritableAirdropStore`.
@@ -52,12 +82,20 @@ public interface ReadableAirdropStore {
     */
    @Nullable
    PendingAirdropValue get(@NonNull final PendingAirdropId tokenAirdropId);
+
+   /**
+    * Returns whether a given PendingAirdropId exists in state.
+    *
+    * @param tokenAirdropId - the id of the airdrop
+    * @return true if the airdrop exists, false otherwise
+    */
+   boolean exists(@NonNull final PendingAirdropId tokenAirdropId);
    
    /**
     * Returns the number of airdrops in the state.
     * @return the number of airdrops in the state.
     */
-	long sizeOfState();
+   long sizeOfState();
 
    /**
     * Warms the system by preloading an airdrop into memory
@@ -66,7 +104,7 @@ public interface ReadableAirdropStore {
     *
     * @param {@link PendingAirdropId} the airdrop id
     */
-	void warm(@NonNull final PendingAirdropId airdropId);
+   void warm(@NonNull final PendingAirdropId airdropId);
 }
 ```
 
@@ -83,14 +121,14 @@ public class WritableAirdropStore {
     * @param airdropId - the airdropId to be persisted
     * @param airdropValue - the airdropValue to be persisted
     */
-    void put(@NonNull final PendingAirdropId airdropId, @NonNull final PendingAirdropValue airdropValue) {}
+   void put(@NonNull final PendingAirdropId airdropId, @NonNull final PendingAirdropValue airdropValue) {}
 
    /**
     * Removes a {@link PendingAirdropId} from the state
     *
     * @param airdropId the {@code PendingAirdropId} to be removed
     */
-    void remove(@NonNull PendingAirdropId airdropId) {}
+   void remove(@NonNull PendingAirdropId airdropId) {}
 
    /**
     * Returns the {@link PendingAirdropValue} with the given airdrop id.
@@ -100,30 +138,11 @@ public class WritableAirdropStore {
     * @return the fungible airdrop value, or {@code Optional.empty()} if no such
     * airdrop exists
     */
-    PendingAirdropValue getForModify(@NonNull final PendingAirdropId airdropId) {}
-
-   /**
-    * Gets the original value associated with the given airdrop before any modifications were made to
-    * it. The returned value will be {@code null} if the airdrop does not exist.
-    *
-    * @param pendingAirdropId The pendingAirdropId of the airdrop.
-    * @return The original value, or null if there is no such airdrop in the state
-    */
-   @Nullable
-   public PendingAirdropValue getOriginalValue(@NonNull final PendingAirdropId pendingAirdropId) {}
-   
-   /**
-    * @return the set of airdrops modified in existing state
-    */
-    Set<PendingAirdropId> modifiedAirdrops() {}
+   PendingAirdropValue getForModify(@NonNull final PendingAirdropId airdropId) {}
 }
 ```
 
 The `WritableAirdropStoreImpl` would keep an instance of `WritableKVState<PendingAirdropId, PendingAirdropValue> airdropState`.
-
-An additional method `modifiedAirdrops` would be added to the `WritableAirdropStore` to get all `PendingAirdropIds`.
-
-This would be useful for traversing airdrops when their sender or the token related to them, expires or gets deleted. Then we should iterate over all of the related pending airdrops and cancel them.
 
 ### Operations
 
