@@ -87,18 +87,17 @@ public final class TssUtils {
     }
 
     /**
-     * Compute public shares from a list of TSS messages.
+     * Compute the public share for a specific share ID.
      *
      * @param tss         the TSS instance
-     * @param shareIds    the share IDs to compute the public shares for
-     * @param tssMessages the TSS messages
-     * @param threshold   the threshold number of commitments required to compute the public shares
-     * @return the public shares, or null if there aren't enough shares to meet the threshold
+     * @param shareId     the share ID to compute the public share for
+     * @param tssMessages the TSS messages to extract the public shares from
+     * @param threshold   the threshold number of messages required to compute the public share
+     * @return the public share, or null if there aren't enough messages to meet the threshold
      */
-    @Nullable
-    public static Map<TssShareId, PairingPublicKey> computePublicShares(
+    public static TssPublicShare computePublicShare(
             @NonNull final Tss tss,
-            @NonNull final List<TssShareId> shareIds,
+            @NonNull final TssShareId shareId,
             @NonNull final List<TssMessage> tssMessages,
             final int threshold) {
 
@@ -107,23 +106,19 @@ public final class TssUtils {
             return null;
         }
 
-        final Map<TssShareId, PairingPublicKey> outputShares = new HashMap<>();
+        // each share in this partialShares list represents a public key obtained from a commitment
+        // the share ID in each of these partial shares corresponds to the share ID that *CREATED* the commitment,
+        // NOT to the share ID that the public key is for
+        final List<TssPublicShare> partialShares = new ArrayList<>();
 
-        // go through each specified share ID and compute the corresponding public key
-        for (final TssShareId shareId : shareIds) {
-            // each share in this partialShares list represents a public key obtained from a commitment
-            // the share ID in each of these partial shares corresponds to the share ID that *CREATED* the commitment,
-            // NOT to the share ID that the public key is for
-            final List<TssPublicShare> partialShares = new ArrayList<>();
-
-            for (final TssMessage tssMessage : tssMessages) {
-                partialShares.add(new TssPublicShare(
-                        tssMessage.shareId(), tssMessage.commitment().extractPublicKey(shareId)));
-            }
-            outputShares.put(shareId, tss.aggregatePublicShares(partialShares));
+        for (final TssMessage tssMessage : tssMessages) {
+            partialShares.add(new TssPublicShare(
+                    tssMessage.shareId(),
+                    new PairingPublicKey(
+                            tss.getSignatureSchema(), tssMessage.commitment().extractPublicKey(shareId))));
         }
 
-        return outputShares;
+        return new TssPublicShare(shareId, tss.aggregatePublicShares(partialShares));
     }
 
     /**

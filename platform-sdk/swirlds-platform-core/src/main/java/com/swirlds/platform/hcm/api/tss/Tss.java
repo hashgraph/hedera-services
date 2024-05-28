@@ -18,6 +18,7 @@ package com.swirlds.platform.hcm.api.tss;
 
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
+import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -51,9 +52,9 @@ public interface Tss {
      * </ul>
      *
      * @param publicShares the public shares to aggregate
-     * @return the interpolated public key if the threshold is met, otherwise null.
+     * @return the interpolated public key
      */
-    @Nullable
+    @NonNull
     PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
 
     /**
@@ -78,4 +79,12 @@ public interface Tss {
             @NonNull final List<TssShareClaim> pendingShareClaims,
             @NonNull final TssPrivateShare privateShare,
             final int threshold);
+
+    /**
+     * Get the signature schema used by this TSS instance
+     *
+     * @return the signature schema
+     */
+    @NonNull
+    SignatureSchema getSignatureSchema();
 }
