@@ -119,7 +119,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
                         sttTransactionPool.expandSignatures(transaction.getApplicationPayload());
                 if (transactionSignature != null) {
                     transaction.setMetadata(transactionSignature);
-                    CryptographyHolder.get().verifyAsync(List.of(transactionSignature));
+                    CryptographyHolder.get().verifySync(List.of(transactionSignature));
                 }
             });
         }

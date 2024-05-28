@@ -33,6 +33,8 @@ include(":app-hapi-utils", "hedera-node/hapi-utils")
 
 include(":app-service-addressbook", "hedera-node/hedera-addressbook-service")
 
+include(":app-service-addressbook-impl", "hedera-node/hedera-addressbook-service-impl")
+
 include(":app-service-consensus", "hedera-node/hedera-consensus-service")
 
 include(":app-service-consensus-impl", "hedera-node/hedera-consensus-service-impl")
