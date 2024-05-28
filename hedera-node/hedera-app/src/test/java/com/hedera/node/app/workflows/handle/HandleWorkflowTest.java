@@ -25,6 +25,7 @@ import static java.lang.Boolean.FALSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -107,7 +108,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -1646,12 +1646,23 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             verify(blockRecordManager).advanceConsensusClock(notNull(), notNull());
-            final var block = getRecordFromStream();
-            assertThat(block).has(SingleTransactionRecordConditions.status(BUSY));
             verify(blockRecordManager).startUserTransaction(any(), any(), any());
-            verify(blockRecordManager).endUserTransaction(notNull(), notNull());
-            verify(recordCache)
-                    .add(eq(selfNodeInfo.nodeId()), notNull(), ArgumentMatchers.argThat(list -> list.size() == 1));
+
+            // Verify the txn was ended, but no record was added to the record stream
+            final var streamCaptor = ArgumentCaptor.forClass(Stream.class);
+            verify(blockRecordManager).endUserTransaction(streamCaptor.capture(), notNull());
+            final var capturedStream = streamCaptor.getValue();
+            assertThat(capturedStream).isEmpty();
+
+            // Verify a BUSY record was added to the cache
+            final var recordsCaptor = ArgumentCaptor.forClass(List.class);
+            verify(recordCache).add(anyLong(), notNull(), recordsCaptor.capture());
+            final var capturedRecords = recordsCaptor.getValue();
+            assertThat(capturedRecords).hasSize(1);
+            final var record = (SingleTransactionRecord) capturedRecords.getFirst();
+            assertThat(record.transactionRecord().receipt().status()).isEqualTo(BUSY);
+
+            // Verify handling of the old transaction didn't proceed
             verify(dispatcher, never()).dispatchComputeFees(any());
         }
 

@@ -410,11 +410,6 @@ public class HandleWorkflow {
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
-            // Log start of user transaction to transaction state log
-            logStartUserTransaction(platformTxn, txBody, payer);
-            logStartUserTransactionPreHandleResultP2(preHandleResult);
-            logStartUserTransactionPreHandleResultP3(preHandleResult);
-
             // Initialize record builder list
             recordBuilder
                     .transaction(transactionInfo.transaction())
@@ -423,21 +418,28 @@ public class HandleWorkflow {
                     .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
 
-            // now we have payer and record builder, check:
-            // Check if the transaction is submitted by a version before the deployed version.
-            // If so, set the status on the receipt to BUSY and return
+            // Now that we have a payer, a transaction, and a record builder, check if the transaction is submitted with
+            // a version prior to the deployed version. If so, set the status on the receipt to BUSY and return
             if (this.initTrigger != EVENT_STREAM_RECOVERY
                     && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
                 final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
-
-                blockRecordManager.endUserTransaction(Stream.of(record), state);
                 recordCache.add(creator.nodeId(), payer, List.of(record));
+
+                // End the transaction, but don't pass any records to the block record manager. Giving a record to the
+                // block manager here would publish a record for a txn that was submitted before a previous upgrade
+                // boundary, which we definitely don't want
+                blockRecordManager.endUserTransaction(Stream.empty(), state);
 
                 // We won't worry about updating the updateTransactionDuration metric here since the transaction was not
                 // really handled
 
                 return;
             }
+
+            // Log start of user transaction to transaction state log
+            logStartUserTransaction(platformTxn, txBody, payer);
+            logStartUserTransactionPreHandleResultP2(preHandleResult);
+            logStartUserTransactionPreHandleResultP3(preHandleResult);
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
