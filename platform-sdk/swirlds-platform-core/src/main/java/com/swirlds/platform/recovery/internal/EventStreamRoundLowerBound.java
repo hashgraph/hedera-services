@@ -43,7 +43,7 @@ public class EventStreamRoundLowerBound implements EventStreamLowerBound {
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(DetailedConsensusEvent consensusEvent) {
+    public int compareTo(@NonNull final DetailedConsensusEvent consensusEvent) {
         return Long.compare(consensusEvent.getRoundReceived(), round);
     }
 
