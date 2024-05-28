@@ -15,10 +15,10 @@
  */
 
 plugins {
-    id("com.hedera.gradle.protobuf")
-    id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.java-test-fixtures")
-    alias(libs.plugins.pbj)
+    id("com.hedera.hashgraph.hapi")
+    id("com.hedera.hashgraph.evm-maven-publish")
+    @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
+    id("com.hedera.hashgraph.java-test-fixtures")
 }
 
 description = "Hedera API"
