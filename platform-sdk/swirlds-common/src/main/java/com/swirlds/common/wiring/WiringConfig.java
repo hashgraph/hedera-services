@@ -26,10 +26,10 @@ import java.time.Duration;
  * @param healthMonitorEnabled           whether the health monitor is enabled
  * @param hardBackpressureEnabled        whether hard backpressure is enabled
  * @param defaultPoolMultiplier          used when calculating the size of the default platform fork join pool. Maximum
- *                                       parallelism in this pool is calculated as max(1, (defaultPoolMultipler *
+ *                                       parallelism in this pool is calculated as max(1, (defaultPoolMultiplier *
  *                                       [number of processors] + defaultPoolConstant)).
  * @param defaultPoolConstant            used when calculating the size of the default platform fork join pool. Maximum
- *                                       parallelism in this pool is calculated as max(1, (defaultPoolMultipler *
+ *                                       parallelism in this pool is calculated as max(1, (defaultPoolMultiplier *
  *                                       [number of processors] + defaultPoolConstant)). It is legal for this constant
  *                                       to be a negative number.
  * @param healthMonitorSchedulerCapacity the unhandled task capacity of the health monitor's scheduler

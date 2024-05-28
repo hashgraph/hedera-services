@@ -97,7 +97,7 @@ class SyncPermitProviderTests {
      * <li>System becomes healthy for a while. We immediately get back the minimum permit count,
      *     followed slowly by remaining permits.</li>
      * <li>System becomes unhealthy before all permits are returned.
-     *     We continue for a little while in the grace priod.</li>
+     *     We continue for a little while in the grace period.</li>
      * <li>System remains unhealthy until we lose all permits.</li>
      * <li>System becomes healthy and stays healthy. Eventually all permits are returned.</li>
      * </ol>

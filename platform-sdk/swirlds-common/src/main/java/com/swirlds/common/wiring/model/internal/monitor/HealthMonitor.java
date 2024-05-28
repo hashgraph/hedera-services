@@ -130,7 +130,7 @@ public class HealthMonitor {
             } else {
                 this.longestUnhealthyDuration.set(longestUnhealthyDuration);
                 metrics.reportUnhealthyDuration(longestUnhealthyDuration);
-                return longestUnhealthyDuration.equals(previouslyReportedDuration) ? null : longestUnhealthyDuration;
+                return longestUnhealthyDuration;
             }
         } finally {
             previouslyReportedDuration = longestUnhealthyDuration;

@@ -132,7 +132,7 @@ public class SyncPermitProvider {
     }
 
     /**
-     * Attempt to a quire a permit to sync with a peer.
+     * Attempt to acquire a permit to sync with a peer.
      *
      * @return true if a permit was acquired, false otherwise
      */
@@ -146,9 +146,9 @@ public class SyncPermitProvider {
     }
 
     /**
-     * Report that the system is healthy.
+     * Report the health status of the system.
      *
-     * @param duration the duration for which the system has been healthy, or {@link Duration#ZERO} if the system has
+     * @param duration the duration for which the system has been unhealthy, or {@link Duration#ZERO} if the system has
      *                 become healthy again
      */
     public synchronized void reportUnhealthyDuration(@NonNull final Duration duration) {

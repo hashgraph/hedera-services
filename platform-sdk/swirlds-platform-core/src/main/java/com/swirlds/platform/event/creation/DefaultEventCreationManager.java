@@ -100,7 +100,6 @@ public class DefaultEventCreationManager implements EventCreationManager {
         } else {
             rules.add(new PlatformHealthRule(config.maximumPermissibleUnhealthyDuration(), this::getUnhealthyDuration));
         }
-        rules.add(new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
 
         this.eventCreationRules = AggregateEventCreationRules.of(rules);
 

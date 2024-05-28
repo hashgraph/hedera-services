@@ -462,7 +462,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     }
 
     /**
-     * Resume gossiping. If called when already running then this has no effect.
+     * Resume gossiping. Undoes the effect of {@link #pause()}. Should be called exactly once after each call to
+     * {@link #pause()}.
      */
     private void resume() {
         if (!started) {

@@ -74,7 +74,8 @@ public class HealthMonitorLogger {
     /**
      * Report an unhealthy scheduler.
      *
-     * @param scheduler the unhealthy scheduler
+     * @param scheduler         the unhealthy scheduler
+     * @param unhealthyDuration the duration for which the scheduler has been unhealthy
      */
     public void reportUnhealthyScheduler(
             @NonNull final TaskScheduler<?> scheduler, @NonNull final Duration unhealthyDuration) {
