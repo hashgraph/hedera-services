@@ -123,7 +123,7 @@ An update into the `feeSchedule` file would be needed to specify that.
         - The transaction must be signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list
     - Handle:
         - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
-        - Check if the sender has sufficient balance or has enough approved allowance to fulfill the airdrop
+        - Check if the sender has sufficient amount or has enough approved allowance of the tokens being claimed to fulfill the airdrop
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
             - We need to create a token association between each `receiver_id` and `token_reference`, future rents for token association slot should be paid by `receiver_id`
