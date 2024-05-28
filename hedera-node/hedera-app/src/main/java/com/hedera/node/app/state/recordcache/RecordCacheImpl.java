@@ -44,6 +44,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -324,14 +325,18 @@ public class RecordCacheImpl implements HederaRecordCache {
 
         // While we still need to gather more records, collect them from the different histories.
         final var records = new ArrayList<TransactionRecord>(maxRemaining);
-        for (final var transactionID : transactionIDs) {
-            final var history = histories.get(transactionID);
-            if (history != null) {
-                final var recs = history.orderedRecords();
-                records.addAll(recs.size() > maxRemaining ? recs.subList(0, maxRemaining) : recs);
-                maxRemaining -= recs.size();
-                if (maxRemaining <= 0) break;
+        try {
+            for (final var transactionID : transactionIDs) {
+                final var history = histories.get(transactionID);
+                if (history != null) {
+                    final var recs = history.orderedRecords();
+                    records.addAll(recs.size() > maxRemaining ? recs.subList(0, maxRemaining) : recs);
+                    maxRemaining -= recs.size();
+                    if (maxRemaining <= 0) break;
+                }
             }
+        } catch (ConcurrentModificationException ignore) {
+            // Ignore the exception and return what we found; this query is unused in production environments
         }
 
         records.sort((a, b) -> TIMESTAMP_COMPARATOR.compare(
