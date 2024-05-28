@@ -17,6 +17,7 @@
 package com.hedera.node.app.fixtures.state;
 
 import static com.hedera.node.app.fixtures.AppTestBase.METRIC_EXECUTOR;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.base.time.Time;
@@ -48,6 +49,7 @@ public final class FakePlatform implements Platform {
     private final NodeId selfNodeId;
     private final AddressBook addressBook;
     private final PlatformContext context;
+    private final NotificationEngine notificationEngine;
     private final Random random = new Random(12345L);
 
     public FakePlatform() {
@@ -58,12 +60,14 @@ public final class FakePlatform implements Platform {
 
         this.addressBook = new AddressBook(List.of(address));
         this.context = createPlatformContext();
+        this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
 
     public FakePlatform(final long nodeId, final AddressBook addresses) {
         this.selfNodeId = new NodeId(nodeId);
         this.addressBook = addresses;
         this.context = createPlatformContext();
+        this.notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
     }
 
     private PlatformContext createPlatformContext() {
@@ -91,7 +95,7 @@ public final class FakePlatform implements Platform {
 
     @Override
     public NotificationEngine getNotificationEngine() {
-        return null;
+        return notificationEngine;
     }
 
     @Override
