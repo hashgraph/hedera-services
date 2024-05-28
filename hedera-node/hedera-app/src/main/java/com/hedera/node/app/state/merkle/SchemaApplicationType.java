@@ -19,9 +19,10 @@ package com.hedera.node.app.state.merkle;
 import com.hedera.node.app.spi.state.Schema;
 
 /**
- * Enumerates the ways a {@link Schema} may be used by the {@link MerkleSchemaRegistry}.
+ * Enumerates the ways the {@link MerkleSchemaRegistry} may apply a {@link Schema}
+ * to the {@link MerkleHederaState}.
  */
-public enum SchemaUseType {
+public enum SchemaApplicationType {
     /**
      * A schema may contribute state definitions to the {@link MerkleHederaState}
      * no matter if it was first registered before or after the version of the

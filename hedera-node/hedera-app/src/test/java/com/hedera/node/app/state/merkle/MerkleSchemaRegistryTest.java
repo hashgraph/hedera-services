@@ -73,7 +73,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         // faster if we use a mocked one
         registry = mock(ConstructableRegistry.class);
         schemaRegistry = new MerkleSchemaRegistry(
-                registry, FIRST_SERVICE, new NoOpGenesisRecordsBuilder(), new SchemaUseAnalysis());
+                registry, FIRST_SERVICE, new NoOpGenesisRecordsBuilder(), new SchemaApplications());
         config = mock(Configuration.class);
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -88,7 +88,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void nullRegistryThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> new MerkleSchemaRegistry(
-                            null, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaUseAnalysis()))
+                            null, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -97,7 +97,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void nullServiceNameThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> new MerkleSchemaRegistry(
-                            registry, null, mock(GenesisRecordsBuilder.class), new SchemaUseAnalysis()))
+                            registry, null, mock(GenesisRecordsBuilder.class), new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -105,7 +105,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null genesisRecordsBuilder throws")
         void nullGenesisRecordsBuilderThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, null, new SchemaUseAnalysis()))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, null, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 

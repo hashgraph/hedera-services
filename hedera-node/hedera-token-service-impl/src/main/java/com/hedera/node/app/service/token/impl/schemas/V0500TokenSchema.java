@@ -62,10 +62,10 @@ public class V0500TokenSchema extends Schema {
                     .build();
             final var account = writableAccounts.get(accountId);
             if (account == null) {
-                log.warn("Contract account {} not found in the new state", accountId);
+                log.error("Contract account {} not found in the new state", accountId);
             } else if (!firstKey.equals(account.firstContractStorageKey())) {
                 if (!account.smartContract()) {
-                    log.warn("Non-contract account {} has storage slots", accountId);
+                    log.error("Non-contract account {} has storage slots", accountId);
                 }
                 writableAccounts.put(
                         accountId,

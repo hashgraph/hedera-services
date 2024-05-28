@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.state.merkle.SchemaUseType.MIGRATION;
-import static com.hedera.node.app.state.merkle.SchemaUseType.RESTART;
-import static com.hedera.node.app.state.merkle.SchemaUseType.STATE_DEFINITIONS;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
@@ -103,26 +103,26 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     /**
      * The analysis to use when determining how to apply a schema.
      */
-    private final SchemaUseAnalysis schemaUseAnalysis;
+    private final SchemaApplications schemaApplications;
 
     /**
-     * Create a new instance with the default {@link SchemaUseAnalysis}.
+     * Create a new instance with the default {@link SchemaApplications}.
      *
      * @param constructableRegistry The {@link ConstructableRegistry} to register states with for
      * deserialization
      * @param serviceName The name of the service using this registry.
      * @param genesisRecordsBuilder class used to store entities created at genesis
-     * @param schemaUseAnalysis the analysis to use when determining how to apply a schema
+     * @param schemaApplications the analysis to use when determining how to apply a schema
      */
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final String serviceName,
             @NonNull final GenesisRecordsBuilder genesisRecordsBuilder,
-            @NonNull final SchemaUseAnalysis schemaUseAnalysis) {
+            @NonNull final SchemaApplications schemaApplications) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
         this.genesisRecordsBuilder = requireNonNull(genesisRecordsBuilder);
-        this.schemaUseAnalysis = requireNonNull(schemaUseAnalysis);
+        this.schemaApplications = requireNonNull(schemaApplications);
     }
 
     /**
@@ -214,8 +214,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(currentVersion),
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
-            final var uses = schemaUseAnalysis.computeUses(previousVersion, latestVersion, schema);
-            logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), uses);
+            final var applications = schemaApplications.computeApplications(previousVersion, latestVersion, schema);
+            logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap
@@ -232,7 +232,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // states that were actually removed by this schema
             final WritableStates writableStates;
             final WritableStates newStates;
-            if (uses.contains(STATE_DEFINITIONS)) {
+            if (applications.contains(STATE_DEFINITIONS)) {
                 final var redefinedWritableStates = applyStateDefinitions(schema, metrics, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
@@ -248,10 +248,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     entityIdStore,
                     previousVersion,
                     sharedValues);
-            if (uses.contains(MIGRATION)) {
+            if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }
-            if (uses.contains(RESTART)) {
+            if (applications.contains(RESTART)) {
                 schema.restart(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration

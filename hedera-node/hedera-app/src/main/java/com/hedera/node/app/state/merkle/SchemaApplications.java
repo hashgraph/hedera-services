@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.state.merkle.SchemaUseType.MIGRATION;
-import static com.hedera.node.app.state.merkle.SchemaUseType.RESTART;
-import static com.hedera.node.app.state.merkle.SchemaUseType.STATE_DEFINITIONS;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.MIGRATION;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.RESTART;
+import static com.hedera.node.app.state.merkle.SchemaApplicationType.STATE_DEFINITIONS;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSameVersion;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
@@ -31,26 +31,27 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Analyzes the ways in which a {@link Schema} should be used by the {@link MerkleSchemaRegistry}.
+ * Analyzes the ways in which the {@link MerkleSchemaRegistry} should apply a {@link Schema}
+ * to the {@link MerkleHederaState}.
  *
- * @see SchemaUseType
+ * @see SchemaApplicationType
  */
-public class SchemaUseAnalysis {
+public class SchemaApplications {
     /**
-     * Computes the set of {@link SchemaUseType}s that should be used for the given {@link Schema}.
+     * Computes the {@link SchemaApplicationType}s for the given {@link Schema}.
      *
      * @param deserializedVersion the version of the deserialized state
      * @param latestVersion the latest schema version of the relevant service
      * @param schema the schema to analyze
-     * @return the ways the schema should be used
+     * @return the ways the schema should be applied
      */
-    public Set<SchemaUseType> computeUses(
+    public Set<SchemaApplicationType> computeApplications(
             @Nullable final SemanticVersion deserializedVersion,
             @NonNull final SemanticVersion latestVersion,
             @NonNull final Schema schema) {
         requireNonNull(schema);
         requireNonNull(latestVersion);
-        final var uses = EnumSet.noneOf(SchemaUseType.class);
+        final var uses = EnumSet.noneOf(SchemaApplicationType.class);
         // Always add state definitions, even if later schemas will remove them all
         if (hasStateDefinitions(schema)) {
             uses.add(STATE_DEFINITIONS);
