@@ -32,6 +32,10 @@ public class PlatformRunningAverageMetric extends AbstractDistributionMetric imp
     @SuppressWarnings("removal")
     private final @NonNull StatsRunningAverage runningAverage;
 
+    /**
+     * Constructs a new PlatformRunningAverageMetric with the given configuration.
+     * @param config the configuration for this running average
+     */
     public PlatformRunningAverageMetric(@NonNull final RunningAverageMetric.Config config) {
         this(config, Time.getCurrent());
     }

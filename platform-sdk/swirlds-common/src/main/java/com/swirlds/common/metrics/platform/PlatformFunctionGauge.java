@@ -36,6 +36,10 @@ public class PlatformFunctionGauge<T> extends AbstractMetric implements Platform
     private final DataType dataType;
     private final Supplier<T> supplier;
 
+    /**
+     * Constructs a new PlatformFunctionGauge with the given configuration.
+     * @param config the configuration for this function gauge
+     */
     public PlatformFunctionGauge(@NonNull final FunctionGauge.Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());

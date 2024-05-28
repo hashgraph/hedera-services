@@ -21,6 +21,11 @@ import com.swirlds.metrics.api.snapshot.Snapshot;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ * Represents a snapshot event that contains a collection of snapshots.
+ * @param nodeId the node identifier
+ * @param snapshots the collection of snapshots
+ */
 public record SnapshotEvent(NodeId nodeId, Collection<Snapshot> snapshots) {
 
     /**

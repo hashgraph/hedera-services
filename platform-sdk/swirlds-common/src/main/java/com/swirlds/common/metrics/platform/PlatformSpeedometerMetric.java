@@ -31,6 +31,10 @@ public class PlatformSpeedometerMetric extends AbstractDistributionMetric implem
     @SuppressWarnings("removal")
     private final StatsSpeedometer speedometer;
 
+    /**
+     * Constructs a new PlatformSpeedometerMetric with the given configuration.
+     * @param config the configuration for this speedometer
+     */
     public PlatformSpeedometerMetric(@NonNull final SpeedometerMetric.Config config) {
         this(config, Time.getCurrent());
     }

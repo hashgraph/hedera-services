@@ -42,6 +42,10 @@ public class PlatformIntegerPairAccumulator<T> extends AbstractMetric
     private final IntSupplier leftInitializer;
     private final IntSupplier rightInitializer;
 
+    /**
+     * Constructs a new PlatformIntegerPairAccumulator with the given configuration.
+     * @param config the configuration for this integer pair accumulator
+     */
     public PlatformIntegerPairAccumulator(@NonNull final Config<T> config) {
         super(config);
         this.dataType = MetricConfig.mapDataType(config.getType());

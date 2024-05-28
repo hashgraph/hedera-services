@@ -41,6 +41,10 @@ import java.util.Objects;
 public class PlatformMetricsFactoryImpl implements PlatformMetricsFactory {
     private final MetricsConfig metricsConfig;
 
+    /**
+     * Constructs a new PlatformMetricsFactoryImpl with the given configuration.
+     * @param metricsConfig the configuration for this metrics factory
+     */
     public PlatformMetricsFactoryImpl(@NonNull final MetricsConfig metricsConfig) {
         this.metricsConfig = Objects.requireNonNull(metricsConfig, "metricsConfig is null");
     }

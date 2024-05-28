@@ -35,6 +35,10 @@ public class PlatformDurationGauge extends AbstractMetric implements PlatformMet
     private final AtomicLong nanos;
     private final ChronoUnit unit;
 
+    /**
+     * Constructs a new PlatformDurationGauge with the given configuration.
+     * @param config the configuration for this duration gauge
+     */
     public PlatformDurationGauge(@NonNull final DurationGauge.Config config) {
         super(config);
         this.unit = config.getTimeUnit();
