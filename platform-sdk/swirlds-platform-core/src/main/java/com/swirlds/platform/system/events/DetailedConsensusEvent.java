@@ -62,7 +62,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      *
      * @param event the event to copy the data from
      */
-    public DetailedConsensusEvent(final EventImpl event) {
+    public DetailedConsensusEvent(@NonNull final EventImpl event) {
         this.gossipEvent = event.getBaseEvent();
         this.roundReceived = event.getRoundReceived();
         this.lastInRoundReceived = event.isLastInRoundReceived();
