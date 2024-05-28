@@ -36,8 +36,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.services.cli,
             com.hedera.node.app.service.file.impl,
-            com.hedera.node.app.service.network.admin.impl,
-            com.hedera.node.app.service.addressbook.impl;
+            com.hedera.node.app.service.network.admin.impl;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
