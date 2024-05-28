@@ -62,8 +62,8 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "3s") Duration nonAncestorFilterThreshold,
         @ConfigProperty(defaultValue = "500ms") Duration syncKeepalivePeriod,
         @ConfigProperty(defaultValue = "1m") Duration maxSyncTime,
-        @ConfigProperty(defaultValue = "0") int maxSyncEventCount,
+        @ConfigProperty(defaultValue = "5000") int maxSyncEventCount,
         @ConfigProperty(defaultValue = "5s") Duration unhealthyGracePeriod,
-        @ConfigProperty(defaultValue = "1") double permitsRevokedPerSecond,
+        @ConfigProperty(defaultValue = "5") double permitsRevokedPerSecond,
         @ConfigProperty(defaultValue = "0.1") double permitsReturnedPerSecond,
         @ConfigProperty(defaultValue = "1") int minimumHealthyUnrevokedPermitCount) {}
