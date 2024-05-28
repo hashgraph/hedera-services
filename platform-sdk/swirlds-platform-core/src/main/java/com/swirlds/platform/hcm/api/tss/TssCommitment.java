@@ -38,7 +38,7 @@ public interface TssCommitment {
     GroupElement extractPublicKey(@NonNull final TssShareId shareId);
 
     /**
-     * Get the term at the given index. // TODO: does this method make sense, naming and content wise?
+     * Get the term at the given index.
      *
      * @param index the index of the term to get
      * @return the term at the given index

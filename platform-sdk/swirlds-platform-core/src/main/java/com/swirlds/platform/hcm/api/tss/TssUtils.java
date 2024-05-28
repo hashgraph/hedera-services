@@ -184,6 +184,7 @@ public final class TssUtils {
     @NonNull
     public static PairingPrivateKey aggregatePrivateShares(
             @NonNull final Tss tss, @NonNull final List<TssPrivateShare> privateShares) {
+
         if (privateShares.isEmpty()) {
             throw new IllegalArgumentException("At least one private share is required to recover a secret");
         }

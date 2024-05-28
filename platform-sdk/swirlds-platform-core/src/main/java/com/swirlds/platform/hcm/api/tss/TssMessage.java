@@ -40,8 +40,7 @@ public record TssMessage(
      * @return true if the message is valid, false otherwise
      */
     boolean verify(@NonNull final PairingPublicKey publicKey) {
-        // TODO: figure out which operation is more expensive, and do the other check first
-        return proof.verify(cipherText, commitment) && publicKey.equals(commitment.getTerm(0));
+        return publicKey.keyElement().equals(commitment.getTerm(0)) && proof.verify(cipherText, commitment);
     }
 
     /**
