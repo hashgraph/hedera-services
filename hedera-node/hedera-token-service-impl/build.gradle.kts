@@ -40,4 +40,5 @@ testModuleInfo {
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
     requires("com.google.protobuf")
+    requires("com.swirlds.merkledb")
 }
