@@ -17,7 +17,6 @@
 package com.hedera.node.app.fixtures.state;
 
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
