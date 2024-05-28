@@ -28,7 +28,7 @@ import java.util.List;
 public interface Consensus extends GraphGenerations, RoundNumberProvider {
 
     /**
-     * Set the flag to signal whether we are currently replaying the PCES or not.
+     * Set the flag to signal whether we are currently replaying the PCES (preconsensus event stream) or not.
      *
      * @param pcesMode true if we are currently replaying the PCES, false otherwise
      */

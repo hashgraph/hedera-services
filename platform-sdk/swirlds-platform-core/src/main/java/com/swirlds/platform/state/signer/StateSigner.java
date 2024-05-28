@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * This class is responsible for signing states and producing {@link StateSignaturePayload}s.
+ * This component is responsible for signing states and producing {@link StateSignaturePayload}s.
  */
 public interface StateSigner {
 

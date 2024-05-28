@@ -706,7 +706,7 @@ public class PlatformWiring {
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
         statusStateMachineWiring
                 .getOutputWire()
-                .solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::updatePlatformStatus));
+                .solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::updatePlatformStatus), INJECT);
 
         solderNotifier();
 
