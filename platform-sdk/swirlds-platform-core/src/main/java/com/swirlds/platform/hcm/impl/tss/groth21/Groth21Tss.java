@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.hcm.impl.tss.groth21;
 
-import static com.swirlds.platform.hcm.api.tss.TssUtils.computeLagrangeCoefficient;
-
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
@@ -32,11 +30,14 @@ import com.swirlds.platform.hcm.api.tss.TssPrivateKey;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssPublicShare;
 import com.swirlds.platform.hcm.api.tss.TssShareClaim;
+import com.swirlds.platform.hcm.api.tss.TssShareSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import static com.swirlds.platform.hcm.api.tss.TssUtils.computeLagrangeCoefficient;
 
 /**
  * A Groth21 implementation of a Threshold Signature Scheme.
@@ -45,9 +46,9 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
-    public PairingSignature aggregateSignatures(@NonNull final List<PairingSignature> partialSignatures) {
+    public PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

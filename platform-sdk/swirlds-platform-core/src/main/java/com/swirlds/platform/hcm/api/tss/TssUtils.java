@@ -95,6 +95,7 @@ public final class TssUtils {
      * @param threshold   the threshold number of messages required to compute the public share
      * @return the public share, or null if there aren't enough messages to meet the threshold
      */
+    @Nullable
     public static TssPublicShare computePublicShare(
             @NonNull final Tss tss,
             @NonNull final TssShareId shareId,
@@ -125,6 +126,8 @@ public final class TssUtils {
      * Compute the lagrange coefficient at a specific index.
      * <p>
      * The output of this method is the evaluation of the lagrange polynomial x = 0
+     * <p>
+     * TODO: This method is only needed internally, and should be moved to a location where it is not exposed to the API
      *
      * @param xCoordinates   the x-coordinates
      * @param indexToCompute the index to compute the lagrange coefficient for

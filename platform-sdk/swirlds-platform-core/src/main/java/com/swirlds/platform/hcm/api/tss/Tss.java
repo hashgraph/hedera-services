@@ -20,7 +20,7 @@ import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -34,16 +34,22 @@ import java.util.List;
  */
 public interface Tss {
     /**
-     * Aggregate a threshold number of {@link PairingSignature}s.
+     * Aggregate a threshold number of {@link TssShareSignature}s.
+     * <p>
+     * It is the responsibility of the caller to ensure that the list of partial signatures meets the required
+     * threshold. If the threshold is not met, the signature returned by this method will be invalid.
      *
      * @param partialSignatures the list of signatures to aggregate
-     * @return the interpolated signature if the threshold is met, otherwise null.
+     * @return the interpolated signature
      */
-    @Nullable
-    PairingSignature aggregateSignatures(@NonNull final List<PairingSignature> partialSignatures);
+    @NonNull
+    PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
+     * <p>
+     * It is the responsibility of the caller to ensure that the list of public shares meets the required threshold.
+     * If the threshold is not met, the public key returned by this method will be invalid.
      * <p>
      * This method is used for two distinct purposes:
      * <ul>
@@ -59,6 +65,9 @@ public interface Tss {
 
     /**
      * Aggregate a threshold number of {@link TssPrivateShare}s.
+     * <p>
+     * It is the responsibility of the caller to ensure that the list of private shares meets the required threshold.
+     * If the threshold is not met, the private key returned by this method will be invalid.
      *
      * @param privateShares the private shares to aggregate
      * @return the aggregate private key
