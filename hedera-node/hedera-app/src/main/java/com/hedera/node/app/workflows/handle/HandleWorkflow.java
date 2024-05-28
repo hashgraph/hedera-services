@@ -447,6 +447,11 @@ public class HandleWorkflow {
                 transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
             }
 
+            // Log start of user transaction to transaction state log
+            logStartUserTransaction(platformTxn, txBody, payer);
+            logStartUserTransactionPreHandleResultP2(preHandleResult);
+            logStartUserTransactionPreHandleResultP3(preHandleResult);
+
             // Initialize record builder list
             recordBuilder
                     .transaction(transactionInfo.transaction())
@@ -454,11 +459,6 @@ public class HandleWorkflow {
                     .transactionID(transactionInfo.transactionID())
                     .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
-
-            // Log start of user transaction to transaction state log
-            logStartUserTransaction(platformTxn, txBody, payer);
-            logStartUserTransactionPreHandleResultP2(preHandleResult);
-            logStartUserTransactionPreHandleResultP3(preHandleResult);
 
             // Set up the verifier
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
