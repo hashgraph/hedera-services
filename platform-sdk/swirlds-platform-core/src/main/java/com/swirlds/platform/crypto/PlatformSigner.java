@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.InvalidKeyException;
@@ -60,7 +61,7 @@ public class PlatformSigner implements Signer, HashSigner {
         } catch (final SignatureException e) {
             // this can only occur if this signature object is not initialized properly, which we ensure is done in the
             // constructor. so this can never happen
-            throw new CryptographyException(e);
+            throw new CryptographyException("Unexpected exception occurred while signing!", e, LogMarker.EXCEPTION);
         }
     }
 
@@ -74,7 +75,7 @@ public class PlatformSigner implements Signer, HashSigner {
         } catch (final SignatureException e) {
             // this can only occur if this signature object is not initialized properly, which we ensure is done in the
             // constructor. so this can never happen
-            throw new CryptographyException(e);
+            throw new CryptographyException("Unexpected exception occurred while signing!", e, LogMarker.EXCEPTION);
         }
     }
 

@@ -48,27 +48,22 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
-     * Create a hash with a specific digest type but without any hash data.
-     *
-     * @param digestType
-     * 		the digest type
+     * Same as {@link #Hash(byte[], DigestType)} but with an empty byte array.
      */
     public Hash(@NonNull final DigestType digestType) {
         this(new byte[digestType.digestLength()], digestType);
     }
 
     /**
-     * Instantiate a hash with data from a byte array. Uses the default digest type ({@link DigestType#SHA_384}).
-     *
-     * @param value
-     * 		the hash bytes
+     * Same as {@link #Hash(byte[], DigestType)} but with a digest type ({@link DigestType#SHA_384})
      */
     public Hash(@NonNull final byte[] value) {
         this(value, DigestType.SHA_384);
     }
 
     /**
-     * Instantiate a hash with data from a byte array with a specific digest type.
+     * Instantiate a hash with data from a byte array with a specific digest type. This constructor assumes that the
+     * array provided will not be modified after this call.
      *
      * @param value
      * 		the hash bytes
@@ -88,7 +83,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
-     * Create a hash making a deep copy of another hash.
+     * Create a hash by copying data from another hash.
      *
      * @param other
      * 		the hash to copy
@@ -147,7 +142,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         requireNonNull(digestType, "digestType");
-        requireNonNull(bytes, "value");
+        requireNonNull(bytes, "bytes");
         out.writeInt(digestType.id());
         out.writeInt((int) bytes.length());
         bytes.writeTo(out);
@@ -201,6 +196,14 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     @Override
     public int hashCode() {
+        // A few notes about this implementation:
+        // - it is very important that this method has very low overhead, some usages are very performance sensitive
+        // - since this is a cryptographic hash, it is safe to use the first 4 bytes of the hash as the hash code.
+        //   it fulfills the requirements of hashCode, it is consistent with equals, and it is very unlikely to conflict
+        //   with other hash codes. by using the first 4 bytes, we can avoid unnecessary overhead
+        // - it does not make a difference if the bytes are big endian or little endian, as long as they are consistent.
+        //   this is why we don't specify the order when calling getInt(), we use whatever order is the default to avoid
+        //   the overhead of reordering the bytes
         return bytes.getInt(0);
     }
 
