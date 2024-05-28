@@ -196,7 +196,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 TransactionBody txBody;
                 AccountID payerID = null;
                 if (paymentRequired) {
-                    allegedPayment = queryHeader.paymentOrThrow();
+                    allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                     final var configuration = configProvider.getConfiguration();
 
                     // 3.i Ingest checks
