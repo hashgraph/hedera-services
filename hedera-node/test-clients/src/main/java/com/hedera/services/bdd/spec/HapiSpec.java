@@ -64,6 +64,7 @@ import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
@@ -83,6 +84,7 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -96,7 +98,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,6 +133,7 @@ import org.junit.jupiter.api.function.Executable;
 public class HapiSpec implements Runnable, Executable {
     private static final String CI_CHECK_NAME_SYSTEM_PROPERTY = "ci.check.name";
     private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
+    private static final Duration NETWORK_ACTIVE_TIMEOUT = Duration.ofSeconds(300);
 
     /**
      * The name of the DynamicTest that executes the HapiSpec as written,
@@ -246,9 +251,16 @@ public class HapiSpec implements Runnable, Executable {
      */
     @Nullable
     private SpecStateObserver specStateObserver;
-
+    /**
+     * If non-null, a list of shared states to include in this spec's initial state.
+     */
     @Nullable
     private List<SpecStateObserver.SpecState> sharedStates;
+    /**
+     * If non-null, a spec-scoped sidecar watcher to use with sidecar assertions.
+     */
+    @Nullable
+    private SidecarWatcher sidecarWatcher;
 
     boolean quietMode;
 
@@ -288,6 +300,10 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setSpecStateObserver(@NonNull final SpecStateObserver specStateObserver) {
         this.specStateObserver = specStateObserver;
+    }
+
+    public void setSidecarWatcher(@NonNull final SidecarWatcher watcher) {
+        this.sidecarWatcher = requireNonNull(watcher);
     }
 
     public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
@@ -348,6 +364,23 @@ public class HapiSpec implements Runnable, Executable {
         this.sharedStates = sharedStates;
     }
 
+    @Nullable
+    public SidecarWatcher getSidecarWatcher() {
+        return sidecarWatcher;
+    }
+
+    /**
+     * Get the path to the record stream for the node selected by the given selector.
+     *
+     * @param selector the selector for the node
+     * @return the path to the record stream
+     * @throws RuntimeException if the spec has no target network or the node is not found
+     */
+    public @NonNull Path streamsLoc(@NonNull final NodeSelector selector) {
+        requireNonNull(selector);
+        return targetNetworkOrThrow().getRequiredNode(selector).getRecordStreamPath();
+    }
+
     public HederaNetwork targetNetworkOrThrow() {
         return requireNonNull(targetNetwork);
     }
@@ -367,7 +400,7 @@ public class HapiSpec implements Runnable, Executable {
     @Override
     public void execute() throws Throwable {
         // Only JUnit will use execute(), and in that case the target network must be set
-        requireNonNull(targetNetwork).waitForReady();
+        requireNonNull(targetNetwork).awaitReady(NETWORK_ACTIVE_TIMEOUT);
         run();
         if (failure != null) {
             throw failure.cause;
@@ -521,6 +554,9 @@ public class HapiSpec implements Runnable, Executable {
         if (finalizingExecutor != null) {
             finalizingExecutor.shutdown();
         }
+        if (sidecarWatcher != null) {
+            sidecarWatcher.ensureUnsubscribed();
+        }
     }
 
     @SuppressWarnings("java:S2629")
@@ -635,6 +671,15 @@ public class HapiSpec implements Runnable, Executable {
             if (maybeRecordStreamError.isPresent()) {
                 status = FAILED;
                 failure = maybeRecordStreamError.get();
+            }
+            if (sidecarWatcher != null) {
+                try {
+                    sidecarWatcher.assertExpectations(this);
+                } catch (Throwable t) {
+                    log.error("Sidecar assertion failed", t);
+                    status = FAILED;
+                    failure = new Failure(t, "Sidecar assertion");
+                }
             }
         } else if (assertions != null) {
             assertions.forEach(EventualRecordStreamAssertion::unsubscribe);

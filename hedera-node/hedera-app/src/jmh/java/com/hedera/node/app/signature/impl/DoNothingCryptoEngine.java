@@ -58,11 +58,6 @@ public class DoNothingCryptoEngine implements Cryptography {
     }
 
     @Override
-    public void verifyAsync(List<TransactionSignature> list) {
-        // fake crypto engine does nothing
-    }
-
-    @Override
     public boolean verifySync(TransactionSignature transactionSignature) {
         return false;
     }

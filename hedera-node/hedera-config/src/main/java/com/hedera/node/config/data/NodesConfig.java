@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.test.utils;
+package com.hedera.node.config.data;
 
-import com.swirlds.common.crypto.config.CryptoConfig;
+import com.hedera.node.config.NetworkProperty;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-public class CryptoConfigUtils {
-    public static CryptoConfig MINIMAL_CRYPTO_CONFIG = new CryptoConfig(1, 1, "keystorePass", false);
-
-    private CryptoConfigUtils() {}
-}
+@ConfigData("nodes")
+public record NodesConfig(@ConfigProperty(defaultValue = "1000") @NetworkProperty long maxNumber) {}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.hedera.node.app.service.addressbook.impl.records;
 
-import com.swirlds.common.crypto.config.CryptoConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class CryptoConfigUtils {
-    public static CryptoConfig MINIMAL_CRYPTO_CONFIG = new CryptoConfig(1, 1, "keystorePass", false);
-
-    private CryptoConfigUtils() {}
+/**
+ * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code NodeCreate} transaction.
+ */
+public interface NodeCreateRecordBuilder {
+    /**
+     * Tracks creation of a new node by {@link nodeID}.
+     *
+     * @param nodeID  the new node
+     * @return this builder
+     */
+    @NonNull
+    NodeCreateRecordBuilder nodeID(long nodeID);
 }
