@@ -18,10 +18,12 @@ package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_KEYS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
@@ -52,29 +54,30 @@ public class Issue2319Spec {
 
     @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> propsPermissionsSigReqsWaivedForAddressBookAdmin() {
-        return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
-                .given(
-                        newKeyNamed(NON_TREASURY_KEY),
-                        newKeyListNamed(NON_TREASURY_ADMIN_KEY, List.of(NON_TREASURY_KEY)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
-                .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .wacl(NON_TREASURY_ADMIN_KEY),
-                        fileUpdate(API_PERMISSIONS)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .wacl(NON_TREASURY_ADMIN_KEY))
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("claimHashSize", "49"))
-                                .signedBy(GENESIS),
-                        fileUpdate(API_PERMISSIONS)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("claimHashSize", "49"))
-                                .signedBy(GENESIS),
-                        fileUpdate(APP_PROPERTIES).wacl(GENESIS),
-                        fileUpdate(API_PERMISSIONS).wacl(GENESIS));
+        return hapiTest(
+                newKeyNamed(NON_TREASURY_KEY),
+                newKeyListNamed(NON_TREASURY_ADMIN_KEY, List.of(NON_TREASURY_KEY)),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+                fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).wacl(NON_TREASURY_ADMIN_KEY),
+                fileUpdate(API_PERMISSIONS).payingWith(ADDRESS_BOOK_CONTROL).wacl(NON_TREASURY_ADMIN_KEY),
+                fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of())
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileUpdate(API_PERMISSIONS)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of())
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileAppend(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .content(new byte[0])
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileAppend(API_PERMISSIONS)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .content(new byte[0])
+                        .signedBy(ADDRESS_BOOK_CONTROL),
+                fileUpdate(APP_PROPERTIES).wacl(GENESIS),
+                fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
     @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
