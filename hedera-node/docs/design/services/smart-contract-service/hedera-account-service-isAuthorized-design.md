@@ -9,7 +9,7 @@ System Contract".
 HIP-632 as written refers a lot to 
 [HIP-631](https://hips.hedera.com/hip/hip-631) - "Account Virtual Addresses".
 However, that HIP, though `Accepted` will not be implemented.  (Or at least, not
-at any time soon.)  So -632 needs to be read with that in mind.  Specifically, 
+at any time soon.)  So HIP-632 needs to be read with that in mind.  Specifically, 
 anywhere that there's a provision for dealing with "virtual addresses", of which there
 may be several/many per Hedera account, there is in fact only _one_: the _alias_.
 
@@ -18,7 +18,7 @@ it will have _at most one_ EVM address in it.
   
 ## Phased implementation
 
-The first release of -631 will include only `isVirtualAddress` and `isAuthorizedRaw`.
+The first release of HIP-632 will include only `isAuthorizedRaw`.
 
 ## Where does this go?
 
@@ -32,14 +32,7 @@ Following the existing pattern for HAS each method will be given a package under
   then builds a `TransactionBody` for it.
 * `[method]Call` - which takes that `TransactionBody` and then has an `execute()` method
   that does the work.
-
-
-## Design for `isVirtualAddress`
-
-Looking up a Hedera account from an EVM address is done through the
-`HederaWorldUpdator.Enhancement` which can map from an EVM address to the Hedera account it
-is an alias for.  This functionality is provided by `HasCallAttempt.linkedAccount()`.
-
+  
 ## Design for `isAuthorizedRaw`
 
 [TBD shortly as I fix up some problems with understanding HAS]
@@ -54,12 +47,16 @@ the `ECRECOVER` operation given the message hash + signature (encoded as a calld
 the precompile) (and a `MessageFrame` which it ignores).  This returns either the
 recovered address, if successful, or "empty", if not.  The recovered address must then
 match the address given as an argument to `isAuthorizedRaw`.
+  * 3000gas will be charged to match `ECRECOVER` behavior
   
 * If an Hedera account then it gets the account, looks in it to find a key _which it must
 have_ and which must be a _single key_ (otherwise: failure).  Then given the key and the
 signature verifies that the signature matches the message hash and is attested by 
 the account. This is an operation provided by `HandleContext` (which can be accessed via
 the `HederaWorldUpdater.Enhancement`).
+  * Some fee will be charged to account for the signature verification cost, but it
+will have to be hard-coded (at this time) because we have no access to that fine-grained
+fee now.
 
 ## TBD
 
@@ -73,16 +70,15 @@ provide a way for the contract to compute this hash at the same level of expense
 KECCAK256 version.
   
 * `isAuthorized{Raw}` does a relatively expensive (resource-wise) computation that should
-be charged for.  Currently we have no method for charging fees (gas or otherwise) for
+be charged for.  Currently we have no fee schedule for charging fees (gas or otherwise) for
 system contract calls, not to mention varying the fee for individual system contract
 methods.  (All existing system contract methods are either "cheap" - as in too small to
-charge for - or involve child transactions that themselves do incur fees.) 
-  * TBD #1: A
+charge for - or involve child transactions that themselves do incur fees.)  We _can_
+charge hard-coded fees.
+  * TBD #1: A fee schedule
 mechanism to charge fees for individual system contract methods 
-  * TBD #2: How do we
-choose the fee for `isAuthorized` and `isAuthorizedRaw`?  (For `isAuthorized` we could
-simply charge the gas as if the `ECRECOVER` precompile was executed, if that was
-appropriate.)
+  * TBD #2: How do we choose the fee for the Hedera signature verification part of
+`isAuthorized` and `isAuthorizedRaw`?
 
 
 
