@@ -30,6 +30,8 @@ public interface TssCommitment {
      * <p>
      * The public key returned by this method will be aggregated with the public keys from all other commitments for
      * the same share, and the result will be the final public key for that share.
+     * <p>
+     * TODO: rename this method
      *
      * @param shareId the share ID of the public key to extract
      * @return the public key extracted from this commitment

@@ -37,6 +37,7 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
             @NonNull final List<TssShareClaim> pendingShareClaims,
             @NonNull final TssPrivateShare privateShare,
             final int threshold) {
+
         throw new UnsupportedOperationException("Not implemented");
     }
 

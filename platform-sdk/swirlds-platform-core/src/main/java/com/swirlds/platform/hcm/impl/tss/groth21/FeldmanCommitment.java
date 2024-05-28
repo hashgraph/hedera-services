@@ -26,11 +26,11 @@ import java.math.BigInteger;
 import java.util.List;
 
 /**
- * A TSS commitment, as utilized by the Groth21 scheme.
+ * A Feldman polynomial commitment.
  *
  * @param coefficientCommitments TODO
  */
-public record Groth21Commitment(@NonNull List<GroupElement> coefficientCommitments) implements TssCommitment {
+public record FeldmanCommitment(@NonNull List<GroupElement> coefficientCommitments) implements TssCommitment {
     /**
      * {@inheritDoc}
      */
