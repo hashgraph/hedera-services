@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class FakeServicesRegistry implements ServicesRegistry {
 
-    private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
+    private static final Logger logger = LogManager.getLogger(FakeServicesRegistry.class);
     /** The set of registered services */
     private final SortedSet<ServicesRegistry.Registration> entries;
     /**
