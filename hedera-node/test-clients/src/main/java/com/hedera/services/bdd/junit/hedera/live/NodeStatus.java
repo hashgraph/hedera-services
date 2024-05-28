@@ -20,7 +20,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record NodeStatus(@Nullable PlatformStatus platformStatus, @NonNull GrpcStatus grpcStatus) {
+public record NodeStatus(@Nullable PlatformStatus platformStatus, @NonNull GrpcStatus grpcStatus, int retryCount) {
     public enum GrpcStatus {
         NA,
         UP,

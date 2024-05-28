@@ -19,30 +19,66 @@ package com.hedera.services.bdd.junit.hedera.live;
 import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.DATA_DIR;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class ProcessUtils {
+    private static final Logger log = LogManager.getLogger(ProcessUtils.class);
+
     private static final int FIRST_AGENT_PORT = 5005;
     private static final long NODE_ID_TO_SUSPEND = -1;
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final String OVERRIDE_RECORD_STREAM_FOLDER = "recordStreams";
-    private static final long WAIT_SLEEP_MILLIS = 10L;
+    private static final long WAIT_SLEEP_MILLIS = 100L;
 
     public static final Executor EXECUTOR = Executors.newCachedThreadPool();
 
     private ProcessUtils() {
         throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Waits for the given node to reach the specified status within the given timeout.
+     * Throws an assertion error if the status is not reached within the timeout.
+     *
+     * @param node the node to wait for
+     * @param status the status to wait for
+     * @param timeout the timeout duration
+     */
+    public static void awaitStatus(
+            @NonNull final HederaNode node, @NonNull final PlatformStatus status, @NonNull final Duration timeout) {
+        final AtomicReference<NodeStatus> lastStatus = new AtomicReference<>();
+        log.info("Waiting for node '{}' to be {} within {}", node.getName(), status, timeout);
+        try {
+            node.statusFuture(status, lastStatus::set).get(timeout.toMillis(), MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            Assertions.fail("Node '" + node.getName() + "' did not reach status " + status + " within " + timeout
+                    + "\n  Final status: " + lastStatus.get()
+                    + "\n  Cause       : " + e);
+        }
+        log.info("Node '{}' is {}", node.getName(), status);
     }
 
     /**
