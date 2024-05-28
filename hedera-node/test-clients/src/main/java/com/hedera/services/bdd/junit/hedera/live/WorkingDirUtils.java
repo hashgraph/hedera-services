@@ -131,6 +131,23 @@ public class WorkingDirUtils {
         }
     }
 
+    /**
+     * Returns the given path after a best-effort attempt to ensure it exists.
+     *
+     * @param path the path to ensure exists
+     * @return the path
+     */
+    public static Path guaranteedExtant(@NonNull final Path path) {
+        if (!Files.exists(path)) {
+            try {
+                createDirectoriesUnchecked(path);
+            } catch (UncheckedIOException ignore) {
+                // We don't care if the directory already exists
+            }
+        }
+        return path;
+    }
+
     private static String readStringUnchecked(@NonNull final Path path) {
         try {
             return Files.readString(path);
