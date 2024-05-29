@@ -18,19 +18,14 @@ package com.swirlds.platform.hcm.impl.tss.groth21;
 
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
-import com.swirlds.platform.hcm.api.pairings.Group;
-import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import com.swirlds.platform.hcm.api.tss.Tss;
 import com.swirlds.platform.hcm.api.tss.TssMessage;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssShareClaim;
-import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 /**
@@ -59,25 +54,13 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
         final List<FieldElement> randomness = generateRandomness(random, signatureSchema.getField());
 
         final List<Groth21UnencryptedShare> unencryptedShares = new ArrayList<>();
-        final Map<TssShareId, Groth21ShareCiphertext> shareCiphertexts = new HashMap<>();
         for (final TssShareClaim shareClaim : pendingShareClaims) {
-            final Groth21UnencryptedShare unencryptedShare = Groth21UnencryptedShare.create(shareClaim, polynomial);
-            unencryptedShares.add(unencryptedShare);
-            shareCiphertexts.put(shareClaim.shareId(), Groth21ShareCiphertext.create(randomness, unencryptedShare));
-        }
-
-        final Group publicKeyGroup = signatureSchema.getPublicKeyGroup();
-        final GroupElement publicKeyGenerator = publicKeyGroup.getGenerator();
-
-        // TODO: find a better name for this
-        final List<GroupElement> committedRandomness = new ArrayList<>();
-        for (final FieldElement randomElement : randomness) {
-            committedRandomness.add(publicKeyGenerator.power(randomElement));
+            unencryptedShares.add(new Groth21UnencryptedShare(
+                    shareClaim, polynomial.evaluate(shareClaim.shareId().idElement())));
         }
 
         final Groth21MultishareCiphertext multishareCiphertext =
-                new Groth21MultishareCiphertext(committedRandomness, shareCiphertexts);
-
+                Groth21MultishareCiphertext.create(signatureSchema, randomness, unencryptedShares);
         final Groth21Proof proof = Groth21Proof.create(random, randomness, unencryptedShares);
 
         return new TssMessage(privateShare.shareId(), multishareCiphertext, polynomialCommitment, proof);

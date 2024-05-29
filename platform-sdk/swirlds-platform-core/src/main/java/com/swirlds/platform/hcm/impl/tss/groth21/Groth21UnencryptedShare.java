@@ -26,10 +26,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param shareClaim   the share claim that this share is for
  * @param shareElement the unencrypted share element
  */
-public record Groth21UnencryptedShare(@NonNull TssShareClaim shareClaim, @NonNull FieldElement shareElement) {
-    public static Groth21UnencryptedShare create(
-            @NonNull final TssShareClaim shareClaim, @NonNull final DensePolynomial polynomial) {
-        return new Groth21UnencryptedShare(
-                shareClaim, polynomial.evaluate(shareClaim.shareId().idElement()));
-    }
-}
+public record Groth21UnencryptedShare(@NonNull TssShareClaim shareClaim, @NonNull FieldElement shareElement) {}
