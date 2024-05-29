@@ -50,7 +50,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
@@ -102,7 +102,7 @@ class FrameUtilsTest {
     private FeatureFlags featureFlags;
 
     @Mock
-    private ProxyEvmAccount proxyEvmAccount;
+    private ProxyEvmContract proxyEvmContract;
 
     private final Deque<MessageFrame> stack = new ArrayDeque<>();
 
@@ -241,8 +241,8 @@ class FrameUtilsTest {
         given(initialFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
         given(initialFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
 
-        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
-        given(proxyEvmAccount.isRegularAccount()).willReturn(true);
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isRegularAccount()).willReturn(true);
 
         assertEquals(DIRECT_OR_PROXY_REDIRECT, FrameUtils.callTypeForAccountOf(frame));
     }
@@ -257,8 +257,8 @@ class FrameUtilsTest {
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
         given(frame.getContractAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
-        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmAccount);
-        given(proxyEvmAccount.isRegularAccount()).willReturn(false);
+        given(proxyWorldUpdater.getHederaAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
+        given(proxyEvmContract.isRegularAccount()).willReturn(false);
 
         assertEquals(UNQUALIFIED_DELEGATE, FrameUtils.callTypeForAccountOf(frame));
     }

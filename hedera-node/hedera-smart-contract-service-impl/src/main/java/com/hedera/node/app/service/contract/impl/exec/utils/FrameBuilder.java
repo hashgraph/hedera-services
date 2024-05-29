@@ -165,7 +165,9 @@ public class FrameBuilder {
             if (account == null && contractMustBePresent(config, featureFlags, contractId)) {
                 validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
             } else {
-                code = account.getEvmCode(Bytes.wrap(transaction.payload().toByteArray()));
+                code = account != null
+                        ? account.getEvmCode(Bytes.wrap(transaction.payload().toByteArray()))
+                        : CodeV0.EMPTY_CODE;
                 validateTrue(
                         emptyCodePossiblyAllowed(config, featureFlags, contractId, transaction, code),
                         INVALID_CONTRACT_ID);

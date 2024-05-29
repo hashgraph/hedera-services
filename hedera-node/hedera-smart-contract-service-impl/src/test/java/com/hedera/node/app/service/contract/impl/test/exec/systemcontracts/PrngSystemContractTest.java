@@ -36,7 +36,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystem
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -74,7 +74,7 @@ class PrngSystemContractTest {
     ContractCallRecordBuilder contractCallRecordBuilder;
 
     @Mock
-    private ProxyEvmAccount mutableAccount;
+    private ProxyEvmContract mutableAccount;
 
     @Mock
     private AccountID accountID;
