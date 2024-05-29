@@ -67,6 +67,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -1802,25 +1803,28 @@ public class CryptoTransferHTSSuite {
         for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
             int finalI = i;
             opsArray[i] = withOpContext((spec, opLog) -> {
-                contractCall(
-                                HTS_TRANSFER_FROM_CONTRACT,
-                                HTS_TRANSFER_FROM_NFT,
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NFT_TOKEN))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(OWNER))),
-                                mirrorAddrWith(nonExistingSystemAccounts.get(finalI)),
-                                BigInteger.TWO)
-                        .via("nftTransfer")
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                allRunFor(
+                        spec,
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_NFT,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NFT_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        mirrorAddrWith(nonExistingSystemAccounts.get(finalI)),
+                                        BigInteger.TWO)
+                                .via("nftTransfer" + finalI)
+                                .gas(1000000)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
             });
             childRecordsChecks[i] = childRecordsCheck(
-                    "nftTransfer" + i, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT));
+                    "nftTransfer" + i, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY));
         }
-        return defaultHapiSpec("testNftTransferToNonExistingSystemAccountt", EXPECT_STREAMLINED_INGEST_RECORDS)
+        return defaultHapiSpec("testNftTransferToNonExistingSystemAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(OWNER).balance(ONE_MILLION_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
