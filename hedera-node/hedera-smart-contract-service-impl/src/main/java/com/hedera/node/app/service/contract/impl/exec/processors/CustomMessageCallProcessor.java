@@ -31,7 +31,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tr
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.hapi.streams.ContractActionType;
@@ -267,9 +266,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final Address codeAddress,
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer operationTracer) {
-        if (precompiles.get(codeAddress) == null) {
-            doHalt(frame, PRECOMPILE_ERROR, operationTracer);
-        } else if (transfersValue(frame)) {
+        if (transfersValue(frame)) {
             doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
         }
     }
