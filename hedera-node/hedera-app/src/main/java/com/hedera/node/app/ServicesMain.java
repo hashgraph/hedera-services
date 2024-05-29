@@ -121,8 +121,8 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
-     * Launches Services directly, without use of the "app browser" from
-     * {@link com.swirlds.platform.Browser}. The approximate startup sequence is:
+     * Launches Services directly, without use of the "app browser" from {@link com.swirlds.platform.Browser}. The
+     * approximate startup sequence is:
      * <ol>
      *     <li>Scan the classpath for {@link RuntimeConstructable} classes,
      *     registering their no-op constructors as the default factories for their
@@ -186,9 +186,10 @@ public class ServicesMain implements SwirldMain {
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance());
 
-        SoftwareVersion version = hedera.getSoftwareVersion();
+        final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
+        // TODO
         final PlatformContext platformContext =
                 buildPlatformContext(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME), selfId);
 
@@ -196,7 +197,14 @@ public class ServicesMain implements SwirldMain {
                 PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
 
         builder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
-        builder.withPlatformContext(platformContext);
+
+        builder.withConfiguration(platformContext.getConfiguration())
+                .withCryptography(platformContext.getCryptography())
+                .withMetrics(platformContext.getMetrics())
+                .withTime(platformContext.getTime())
+                .withFileSystemManager(platformContext.getFileSystemManager())
+                .withRecycleBin(platformContext.getRecycleBin())
+                .withExecutorFactory(platformContext.getExecutorFactory());
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -230,7 +238,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun the list of nodes configured to run based on the address book.
+     * @param nodesToRun        the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.

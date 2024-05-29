@@ -17,11 +17,13 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.LOG4J_FILE_NAME;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
@@ -207,6 +209,11 @@ public class Browser {
                 configBuilder.withConfigDataType(configType);
             }
 
+            rethrowIO(() ->
+                    BootstrapUtils.setupConfigBuilder(configBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            final Configuration configuration = configBuilder.build();
+            checkConfiguration(configuration);
+
             final PlatformBuilder builder = PlatformBuilder.create(
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
@@ -219,8 +226,8 @@ public class Browser {
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
 
-            final SwirldsPlatform platform = (SwirldsPlatform)
-                    builder.withConfigurationBuilder(configBuilder).build();
+            final SwirldsPlatform platform =
+                    (SwirldsPlatform) builder.withConfiguration(configuration).build();
             platforms.put(nodeId, platform);
 
             if (showUi) {
