@@ -170,7 +170,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
     private static final String ERC20_ABI = "ERC20ABI";
-    private static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
+    protected static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
