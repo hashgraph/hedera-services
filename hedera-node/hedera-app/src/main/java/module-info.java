@@ -77,6 +77,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.validation;
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow to
+            com.hedera.node.app.test.fixtures;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

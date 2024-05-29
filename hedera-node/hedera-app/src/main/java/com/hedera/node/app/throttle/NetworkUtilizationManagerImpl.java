@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.meta.HandleScope;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -40,6 +41,7 @@ import javax.inject.Inject;
  * Implementation of {@link NetworkUtilizationManager}  that delegates to injected
  * {@link ThrottleAccumulator} and {@link CongestionMultipliers}.
  */
+@HandleScope
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;

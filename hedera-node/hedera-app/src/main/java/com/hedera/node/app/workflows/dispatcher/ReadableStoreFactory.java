@@ -50,6 +50,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,6 +68,7 @@ import org.apache.logging.log4j.Logger;
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
  */
+@HandleScope
 public class ReadableStoreFactory {
     private static final Logger logger = LogManager.getLogger(ReadableStoreFactory.class);
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
@@ -110,6 +113,7 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
+    @Inject
     public ReadableStoreFactory(@NonNull final HederaState state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
