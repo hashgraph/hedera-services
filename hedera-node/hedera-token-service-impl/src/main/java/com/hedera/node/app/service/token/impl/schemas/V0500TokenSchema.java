@@ -53,7 +53,10 @@ public class V0500TokenSchema extends Schema {
         @SuppressWarnings("unchecked")
         final SortedMap<ContractID, Bytes> migratedFirstKeys =
                 (SortedMap<ContractID, Bytes>) ctx.sharedValues().get(SHARED_VALUES_KEY);
-        requireNonNull(migratedFirstKeys, SHARED_VALUES_KEY + " must be present in shared values");
+        if (migratedFirstKeys == null) {
+            log.warn("  -> No first contract keys were published, skipping migration");
+            return;
+        }
         final WritableKVState<AccountID, Account> writableAccounts =
                 ctx.newStates().get(ACCOUNTS_KEY);
         migratedFirstKeys.forEach((contractId, firstKey) -> {
