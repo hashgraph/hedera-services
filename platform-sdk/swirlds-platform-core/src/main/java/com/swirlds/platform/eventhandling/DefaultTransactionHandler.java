@@ -60,11 +60,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
     private static final Logger logger = LogManager.getLogger(DefaultTransactionHandler.class);
 
     /**
-     * The name of the thread that handles transactions. For the sake of the app, to allow logging.
-     */
-    public static final String TRANSACTION_HANDLING_THREAD_NAME = "<scheduler TransactionHandler>";
-
-    /**
      * The class responsible for all interactions with the swirld state
      */
     private final SwirldStateManager swirldStateManager;
