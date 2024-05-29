@@ -60,7 +60,6 @@ import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -203,12 +202,14 @@ public final class Hedera implements SwirldMain {
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      * @param registry the registry to register services with. This is optional and can be null.
-     *                         If null, a new instance of {@link ServicesRegistryImpl} will be created.
+     *                         If null, a new instance of {@link ServicesRegistry} will be created.
      *                         This is useful for testing.
      */
-    public Hedera(@NonNull final ConstructableRegistry constructableRegistry, @NonNull ServicesRegistry registry) {
+    public Hedera(
+            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final ServicesRegistry registry) {
         requireNonNull(constructableRegistry);
         requireNonNull(registry);
+
         this.servicesRegistry = registry;
         this.genesisRecordsBuilder = registry.getGenesisRecords();
 
