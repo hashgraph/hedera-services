@@ -365,7 +365,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         return hashedData.getOtherParents();
     }
 
-    public List<EventDescriptor> getAllParents(){
+    public List<EventDescriptor> getAllParents() {
         return hashedData.getAllParents();
     }
 

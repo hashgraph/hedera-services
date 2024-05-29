@@ -315,8 +315,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
 
     @NonNull
     public List<EventDescriptor> getAllParents() {
-        return !hasSelfParent() ? otherParents : Stream.concat(Stream.of(selfParent), otherParents.stream())
-                .toList();
+        return !hasSelfParent()
+                ? otherParents
+                : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
     }
 
     /**

@@ -73,8 +73,7 @@ public class EventMigrationTest {
                 new StatefulEventHasher().hashEvent(gossipEvent);
                 numEvents++;
                 eventHashes.add(gossipEvent.getHash());
-                gossipEvent.getAllParents()
-                        .stream()
+                gossipEvent.getAllParents().stream()
                         .filter(Objects::nonNull)
                         .map(EventDescriptor::getHash)
                         .forEach(parentHashes::add);

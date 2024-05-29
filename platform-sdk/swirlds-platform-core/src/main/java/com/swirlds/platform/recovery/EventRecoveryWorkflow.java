@@ -24,7 +24,6 @@ import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;

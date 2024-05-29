@@ -159,8 +159,11 @@ public class AddedEventMetrics {
         if (event.isCreatedBy(selfId)) {
             eventsCreatedPerSecond.cycle();
             if (!event.getBaseEvent().getOtherParents().isEmpty()) {
-                averageOtherParentAgeDiff.update(event.getGeneration() - event.getBaseEvent().getOtherParents().stream().map(
-                        EventDescriptor::getGeneration).max(Long::compareTo).orElse(0L));
+                averageOtherParentAgeDiff.update(event.getGeneration()
+                        - event.getBaseEvent().getOtherParents().stream()
+                                .map(EventDescriptor::getGeneration)
+                                .max(Long::compareTo)
+                                .orElse(0L));
             }
         } else {
             avgCreatedReceivedTime.update(

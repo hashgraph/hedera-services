@@ -235,10 +235,7 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final BaseEventHashedData event) {
 
-        eventCreators
-                .get(event.getCreatorId())
-                .tipsetTracker
-                .addEvent(event.getDescriptor(), event.getAllParents());
+        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
 
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());

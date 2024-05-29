@@ -24,7 +24,6 @@ import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -118,8 +117,7 @@ public class SimpleLinker {
             return null;
         }
 
-        final Instant parentTimeCreated =
-                candidateParent.getBaseEvent().getTimeCreated();
+        final Instant parentTimeCreated = candidateParent.getBaseEvent().getTimeCreated();
         final Instant childTimeCreated = child.getTimeCreated();
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time

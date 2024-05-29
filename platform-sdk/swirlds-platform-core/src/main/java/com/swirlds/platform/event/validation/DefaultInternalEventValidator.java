@@ -29,7 +29,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;

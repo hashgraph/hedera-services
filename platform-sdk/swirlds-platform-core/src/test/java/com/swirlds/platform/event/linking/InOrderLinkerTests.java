@@ -134,8 +134,7 @@ class InOrderLinkerTests {
         long ancientValue = 0;
         for (final GossipEvent ancientEvent : ancientEvents) {
             ancientValue = switch (ancientMode) {
-                case BIRTH_ROUND_THRESHOLD -> Math.max(
-                        ancientValue, ancientEvent.getBirthRound());
+                case BIRTH_ROUND_THRESHOLD -> Math.max(ancientValue, ancientEvent.getBirthRound());
                 case GENERATION_THRESHOLD -> Math.max(ancientValue, ancientEvent.getGeneration());};
         }
 
@@ -356,8 +355,7 @@ class InOrderLinkerTests {
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
-                .overrideSelfParentBirthRound(
-                        genesisSelfParent.getBirthRound() + 1) // birth round doesn't match actual
+                .overrideSelfParentBirthRound(genesisSelfParent.getBirthRound() + 1) // birth round doesn't match actual
                 .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);

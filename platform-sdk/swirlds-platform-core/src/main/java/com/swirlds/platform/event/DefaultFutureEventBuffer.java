@@ -87,9 +87,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
         }
 
         // this is a future event, buffer it
-        futureEvents
-                .computeIfAbsent(event.getBirthRound(), BUILD_LIST)
-                .add(event);
+        futureEvents.computeIfAbsent(event.getBirthRound(), BUILD_LIST).add(event);
         bufferedEventCount.incrementAndGet();
         return null;
     }

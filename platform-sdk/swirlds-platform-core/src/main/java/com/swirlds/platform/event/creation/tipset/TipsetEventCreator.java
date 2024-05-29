@@ -187,8 +187,7 @@ public class TipsetEventCreator implements EventCreator {
                 lastSelfEvent = event.getDescriptor();
                 lastSelfEventCreationTime = event.getTimeCreated();
                 lastSelfEventTransactionCount = event.getPayloadCount();
-                childlessOtherEventTracker.registerSelfEventParents(
-                        event.getOtherParents());
+                childlessOtherEventTracker.registerSelfEventParents(event.getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
                 return;

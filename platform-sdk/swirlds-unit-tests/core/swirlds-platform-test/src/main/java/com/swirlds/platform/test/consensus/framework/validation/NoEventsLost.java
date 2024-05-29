@@ -41,8 +41,8 @@ public final class NoEventsLost {
      */
     public static void validateNoEventsAreLost(
             @NonNull final ConsensusOutput output, @NonNull final ConsensusOutput ignored) {
-        final Map<Hash, GossipEvent> stale = output.getStaleEvents().stream()
-                .collect(Collectors.toMap(AbstractHashable::getHash, e -> e));
+        final Map<Hash, GossipEvent> stale =
+                output.getStaleEvents().stream().collect(Collectors.toMap(AbstractHashable::getHash, e -> e));
         final Map<Hash, EventImpl> cons = output.getConsensusRounds().stream()
                 .flatMap(r -> r.getConsensusEvents().stream())
                 .collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
@@ -60,8 +60,7 @@ public final class NoEventsLost {
                 // non-ancient events are not checked
                 continue;
             }
-            if (stale.containsKey(event.getHash())
-                    == cons.containsKey(event.getHash())) {
+            if (stale.containsKey(event.getHash()) == cons.containsKey(event.getHash())) {
                 Assertions.fail(String.format(
                         "An ancient event should be either stale or consensus, but not both!\n"
                                 + "nonAncientGen=%d, Event %s, stale=%s, consensus=%s",
