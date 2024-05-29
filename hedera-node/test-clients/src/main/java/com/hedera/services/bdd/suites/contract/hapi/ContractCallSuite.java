@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -55,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.DEFAULT_ID_SENTINEL;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -88,6 +90,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest.TOKEN;
+import static com.hedera.services.bdd.suites.regression.factories.HollowAccountCompletedFuzzingFactory.CONTRACT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -144,7 +147,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
+@HapiTestSuite(fuzzyMatch = false)
 @Tag(SMART_CONTRACT)
 public class ContractCallSuite extends HapiSuite {
 
@@ -211,6 +214,7 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVER_2_INFO = "receiver2Info";
     private static final String RECEIVER_3_INFO = "receiver3Info";
     public static final String DELEGATE_CALL_SPECIFIC = "delegateCallSpecific";
+    private static final long INTRINSIC_GAS_FOR_0_ARG_METHOD = 21_064L;
 
     public static void main(String... args) {
         new ContractCallSuite().runSuiteAsync();
@@ -1582,7 +1586,11 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(uploadInitCode(PAY_RECEIVABLE_CONTRACT), contractCreate(PAY_RECEIVABLE_CONTRACT))
                 .when()
-                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)));
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)),
+                        // It's also ok to use a default PBJ ContractID (i.e. an id with
+                        // UNSET contract oneof) to make a no-op call to address 0x00...00
+                        contractCall(DEFAULT_ID_SENTINEL));
     }
 
     @HapiTest
@@ -1674,14 +1682,14 @@ public class ContractCallSuite extends HapiSuite {
                                     .balance(0)
                                     .payingWith(civilian)
                                     .gas(1)
-                                    .hasKnownStatus(INSUFFICIENT_GAS)
+                                    .hasPrecheck(INSUFFICIENT_GAS)
                                     .via(FAIL_INSUFFICIENT_GAS);
-                            final var subop3 = getTxnRecord(FAIL_INSUFFICIENT_GAS);
-                            allRunFor(spec, subop1, subop2, subop3);
-                            final var delta = subop3.getResponseRecord().getTransactionFee();
-                            final var subop4 = getAccountBalance(civilian)
+                            // There should be no fee charged for this transaction as it fails in precheck
+                            allRunFor(spec, subop1, subop2);
+                            final var delta = 0;
+                            final var subop3 = getAccountBalance(civilian)
                                     .hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
-                            allRunFor(spec, subop4);
+                            allRunFor(spec, subop3);
                         }),
                         withOpContext((spec, ignore) -> {
                             final var subop1 = balanceSnapshot("balanceBefore1", civilian);
@@ -1763,10 +1771,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .hasTinyBars(changeFromSnapshot("balanceBefore5", -delta));
                             allRunFor(spec, subop4);
                         }))
-                .then(
-                        getTxnRecord(FAIL_INSUFFICIENT_GAS),
-                        getTxnRecord(SUCCESS_WITH_ZERO_INITIAL_BALANCE),
-                        getTxnRecord(FAIL_INVALID_INITIAL_BALANCE));
+                .then(getTxnRecord(SUCCESS_WITH_ZERO_INITIAL_BALANCE), getTxnRecord(FAIL_INVALID_INITIAL_BALANCE));
     }
 
     @HapiTest
@@ -2611,6 +2616,23 @@ public class ContractCallSuite extends HapiSuite {
                 .when()
                 .then(contractCall(
                         contract, "callRequested", nonExtantEvmAddress, new byte[0], BigInteger.valueOf(88_888L)));
+    }
+
+    @HapiTest
+    final HapiSpec failsWithLessThanIntrinsicGas() {
+        final String randomContract = "0.0.1051";
+        final String functionName = "name";
+        final String contractName = "ERC721ABI";
+        return defaultHapiSpec("failsWithLessThanIntrinsicGas")
+                .given(cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS), withOpContext((spec, opLog) -> spec.registry()
+                        .saveContractId(CONTRACT, asContract(randomContract))))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi(CONTRACT, getABIFor(FUNCTION, functionName, contractName))
+                                .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
+                                .signingWith(ACCOUNT)
+                                .hasPrecheck(INSUFFICIENT_GAS))))
+                .then();
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

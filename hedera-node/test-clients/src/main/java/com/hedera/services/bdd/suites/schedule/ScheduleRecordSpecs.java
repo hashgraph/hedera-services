@@ -144,7 +144,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                                         "set",
                                                         BigInteger.valueOf(5),
                                                         BigInteger.valueOf(42))
-                                                .gas(10_000L)
+                                                .gas(23_000L)
                                                 .memo("")
                                                 .fee(ONE_HBAR))
                                 .payingWith(OTHER_PAYER)
