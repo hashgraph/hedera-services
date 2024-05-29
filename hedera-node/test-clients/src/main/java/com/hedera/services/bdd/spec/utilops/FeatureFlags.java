@@ -63,6 +63,8 @@ public enum FeatureFlags {
         "contracts.precompile.atomicCryptoTransfer.enabled",
         "scheduling.longTermEnabled",
         // Not being tested
-        "contracts.evm.version.dynamic"
+        "contracts.evm.version.dynamic",
+        // HIP-904
+        "entities.unlimitedAutoAssociationsEnabled"
     };
 }

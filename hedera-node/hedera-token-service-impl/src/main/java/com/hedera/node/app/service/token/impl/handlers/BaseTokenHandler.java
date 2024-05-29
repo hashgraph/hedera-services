@@ -334,6 +334,7 @@ public class BaseTokenHandler {
                 entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
+        // TODO: check for unlimited associations flag and include -1 as infinite associations
         final var maxAutoAssociations = account.maxAutoAssociations();
         final var usedAutoAssociations = account.usedAutoAssociations();
         validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
