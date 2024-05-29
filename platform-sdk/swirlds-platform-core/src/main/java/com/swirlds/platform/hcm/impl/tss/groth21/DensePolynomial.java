@@ -59,4 +59,23 @@ public record DensePolynomial(@NonNull List<FieldElement> coefficients) {
 
         return new DensePolynomial(coefficients);
     }
+
+    /**
+     * Evaluate the polynomial at a given point.
+     * <p>
+     * This uses Horner's method for polynomial evaluation.
+     *
+     * @param point the point at which to evaluate the polynomial
+     * @return the value of the polynomial at the given point
+     */
+    public FieldElement evaluate(@NonNull final FieldElement point) {
+        final Field field = point.getField();
+
+        FieldElement result = field.zeroElement();
+        for (final FieldElement coefficient : coefficients) {
+            result = result.multiply(point).add(coefficient);
+        }
+
+        return result;
+    }
 }
