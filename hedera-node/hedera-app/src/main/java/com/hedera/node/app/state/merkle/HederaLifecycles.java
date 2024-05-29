@@ -64,7 +64,7 @@ public interface HederaLifecycles {
      * @param previousVersion if non-null, the Hedera network version that was previously in use
      */
     void onStateInitialized(
-            @NonNull MerkleHederaState state,
+            @NonNull HederaState state,
             @NonNull Platform platform,
             @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,
