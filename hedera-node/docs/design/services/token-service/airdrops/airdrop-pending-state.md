@@ -52,12 +52,17 @@ In addition, we should define a new protobuf type that will be used for the cons
 ```proto
 message AccountAirdrop {
     /**
-     * The previous airdrop id of account's airdrops linked list
+     * The airdrop involved in the relation between a sender account and the airdrop initiated by them
+     */
+    PendingAirdropId pending_airdrop_id;
+    
+    /**
+     * The previous airdrop id of sender account's airdrops linked list
      */
     PendingAirdropId previous_airdrop;
     
     /**
-     * The next airdrop id of account's airdrops linked list
+     * The next airdrop id of sender account's airdrops linked list
      */
     PendingAirdropId next_airdrop;
 }
