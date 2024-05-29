@@ -4,8 +4,8 @@ module com.hedera.node.app.test.fixtures {
     requires transitive com.hedera.node.app.spi.test.fixtures;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.app;
-    requires transitive com.swirlds.platform.core.test.fixtures;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.platform.core.test.fixtures;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
     requires com.hedera.node.app.service.mono;
