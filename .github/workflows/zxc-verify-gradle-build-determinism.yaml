@@ -118,12 +118,6 @@ jobs:
         if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: ./gradlew assemble --scan
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: Artifacts Baseline
-          path: hedera-node/data/lib/**
-
       - name: Generate Manifest
         id: manifest
         env:
@@ -208,12 +202,6 @@ jobs:
       - name: Build Artifacts
         id: gradle-build
         run: ./gradlew assemble --scan --no-build-cache
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: Artifacts (${{ join(matrix.os, ', ') }})
-          path: hedera-node/data/lib/**
 
       - name: Regenerate Manifest
         id: regen-manifest
