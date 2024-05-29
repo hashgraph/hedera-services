@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Set;
@@ -60,4 +61,17 @@ public interface ServicesRegistry {
      */
     @NonNull
     Set<Registration> registrations();
+
+    /**
+     * Gets the genesis records builder.
+     * @return The genesis records builder
+     */
+    @NonNull
+    GenesisRecordsBuilder getGenesisRecords();
+
+    /**
+     * Register a service with the registry.
+     * @param service The service to register
+     */
+    void register(@NonNull final Service service);
 }

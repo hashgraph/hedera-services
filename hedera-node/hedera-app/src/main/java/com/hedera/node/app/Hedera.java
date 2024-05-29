@@ -59,6 +59,7 @@ import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
@@ -103,7 +104,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -145,7 +145,7 @@ public final class Hedera implements SwirldMain {
     /**
      * The registry of all known services
      */
-    private final ServicesRegistryImpl servicesRegistry;
+    private final ServicesRegistry servicesRegistry;
     /**
      * The current version of THIS software
      */
@@ -206,8 +206,11 @@ public final class Hedera implements SwirldMain {
      *                         If null, a new instance of {@link ServicesRegistryImpl} will be created.
      *                         This is useful for testing.
      */
-    public Hedera(@NonNull final ConstructableRegistry constructableRegistry, @Nullable ServicesRegistryImpl registry) {
+    public Hedera(@NonNull final ConstructableRegistry constructableRegistry, @NonNull ServicesRegistry registry) {
         requireNonNull(constructableRegistry);
+        requireNonNull(registry);
+        this.servicesRegistry = registry;
+        this.genesisRecordsBuilder = registry.getGenesisRecords();
 
         // Print welcome message
         logger.info(
@@ -239,14 +242,8 @@ public final class Hedera implements SwirldMain {
 
         // Create a records generator for any synthetic records that need to be CREATED
         this.recordsGenerator = new SyntheticRecordsGenerator();
-        // Create a records builder for any genesis records that need to be RECORDED
-        this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
-
         // Create all the service implementations
         logger.info("Registering services");
-
-        this.servicesRegistry = Objects.requireNonNullElseGet(
-                registry, () -> new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder));
         registerServices(servicesRegistry);
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
@@ -262,10 +259,10 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
-     * Register all the services with the {@link ServicesRegistryImpl}.
+     * Register all the services with the {@link ServicesRegistry}.
      * @param servicesRegistry the registry to register the services with
      */
-    private void registerServices(@NonNull ServicesRegistryImpl servicesRegistry) {
+    private void registerServices(@NonNull ServicesRegistry servicesRegistry) {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
