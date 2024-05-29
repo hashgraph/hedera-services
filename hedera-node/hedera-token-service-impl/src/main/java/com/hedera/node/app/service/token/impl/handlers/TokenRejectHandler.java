@@ -142,7 +142,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn, "Transaction body cannot be null");
         final var op = txn.tokenRejectOrThrow();
 
-        //    validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
+        validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
         if (op.hasOwner()) {
             validateAccountID(op.owner(), null);
         }
