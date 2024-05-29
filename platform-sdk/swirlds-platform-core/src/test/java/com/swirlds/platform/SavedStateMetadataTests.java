@@ -18,23 +18,21 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.EPOCH_HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.NODE_ID;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.ROUND;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.RUNNING_EVENT_HASH_MNEMONIC;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_NODES;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.SOFTWARE_VERSION;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.TOTAL_WEIGHT;
-import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH_MNEMONIC;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH_MNEMONIC;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.MINIMUM_GENERATION_NON_ANCIENT;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.NODE_ID;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.ROUND;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SIGNING_NODES;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SIGNING_WEIGHT_SUM;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.SOFTWARE_VERSION;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.TOTAL_WEIGHT;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.WALL_CLOCK_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,10 +45,10 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.signed.SavedStateMetadata;
-import com.swirlds.platform.state.signed.SavedStateMetadataField;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.snapshot.SavedStateMetadata;
+import com.swirlds.platform.state.snapshot.SavedStateMetadataField;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -105,10 +103,9 @@ class SavedStateMetadataTests {
         final Hash hash = randomHash(random);
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
         final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
@@ -126,8 +123,6 @@ class SavedStateMetadataTests {
                 hash.toMnemonic(),
                 numberOfConsensusEvents,
                 timestamp,
-                runningEventHash,
-                runningEventHash.toMnemonic(),
                 legacyRunningEventHash,
                 legacyRunningEventHash.toMnemonic(),
                 minimumGenerationNonAncient,
@@ -147,8 +142,6 @@ class SavedStateMetadataTests {
         assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
-        assertEquals(runningEventHash, deserialized.runningEventHash());
-        assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
         assertEquals(legacyRunningEventHash, deserialized.legacyRunningEventHash());
         assertEquals(legacyRunningEventHash.toMnemonic(), deserialized.legacyRunningEventHashMnemonic());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
@@ -171,10 +164,9 @@ class SavedStateMetadataTests {
         final Hash hash = randomHash(random);
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
         final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
@@ -189,8 +181,6 @@ class SavedStateMetadataTests {
                 hash.toMnemonic(),
                 numberOfConsensusEvents,
                 timestamp,
-                runningEventHash,
-                runningEventHash.toMnemonic(),
                 legacyRunningEventHash,
                 legacyRunningEventHash.toMnemonic(),
                 minimumGenerationNonAncient,
@@ -210,8 +200,6 @@ class SavedStateMetadataTests {
         assertEquals(hash.toMnemonic(), deserialized.hashMnemonic());
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
-        assertEquals(runningEventHash, deserialized.runningEventHash());
-        assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
         assertEquals(softwareVersion.toString(), deserialized.softwareVersion());
         assertEquals(wallClockTime, deserialized.wallClockTime());
@@ -259,8 +247,6 @@ class SavedStateMetadataTests {
         final String hashMnemonic = hash.toMnemonic();
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
-        final String runningEventHashMnemonic = runningEventHash.toMnemonic();
         final Hash legacyRunningEventHash = randomHash(random);
         final String legacyRunningEventHashMnemonic = legacyRunningEventHash.toMnemonic();
         final long minimumGenerationNonAncient = random.nextLong();
@@ -281,8 +267,6 @@ class SavedStateMetadataTests {
                 hashMnemonic,
                 numberOfConsensusEvents,
                 timestamp,
-                runningEventHash,
-                runningEventHashMnemonic,
                 legacyRunningEventHash,
                 legacyRunningEventHashMnemonic,
                 minimumGenerationNonAncient,
@@ -302,8 +286,6 @@ class SavedStateMetadataTests {
         assertEquals(hashMnemonic, deserialized.hashMnemonic());
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
-        assertEquals(runningEventHash, deserialized.runningEventHash());
-        assertEquals(runningEventHashMnemonic, deserialized.runningEventHashMnemonic());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
         assertEquals("why//are//there//newlines//here//please//stop//", deserialized.softwareVersion());
         assertEquals(wallClockTime, deserialized.wallClockTime());
@@ -348,10 +330,9 @@ class SavedStateMetadataTests {
         final Hash hash = randomHash(random);
         final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
-        final Hash runningEventHash = randomHash(random);
         final Hash legacyRunningEventHash = randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
-        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextInt());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
         final NodeId nodeId = generateRandomNodeId(random);
         final List<NodeId> signingNodes = new ArrayList<>();
@@ -368,8 +349,6 @@ class SavedStateMetadataTests {
                 hash.toMnemonic(),
                 numberOfConsensusEvents,
                 timestamp,
-                runningEventHash,
-                runningEventHash.toMnemonic(),
                 legacyRunningEventHash,
                 legacyRunningEventHash.toMnemonic(),
                 minimumGenerationNonAncient,
@@ -418,16 +397,6 @@ class SavedStateMetadataTests {
         }
         assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
-        if (invalidFields.contains(RUNNING_EVENT_HASH)) {
-            assertNull(deserialized.runningEventHash());
-        } else {
-            assertEquals(runningEventHash, deserialized.runningEventHash());
-        }
-        if (invalidFields.contains(RUNNING_EVENT_HASH_MNEMONIC)) {
-            assertNull(deserialized.runningEventHashMnemonic());
-        } else {
-            assertEquals(runningEventHash.toMnemonic(), deserialized.runningEventHashMnemonic());
-        }
         if (invalidFields.contains(LEGACY_RUNNING_EVENT_HASH)) {
             assertNull(deserialized.legacyRunningEventHash());
         } else {
@@ -569,8 +538,8 @@ class SavedStateMetadataTests {
         final Random random = getRandomPrintSeed();
         testMalformedFile(
                 random,
-                (s, m) -> s.replace(m.runningEventHash().toString(), "NOT_A_REAL_HASH"),
-                Set.of(SavedStateMetadataField.RUNNING_EVENT_HASH));
+                (s, m) -> s.replace(m.legacyRunningEventHash().toString(), "NOT_A_REAL_HASH"),
+                Set.of(LEGACY_RUNNING_EVENT_HASH));
     }
 
     @Test
@@ -613,14 +582,6 @@ class SavedStateMetadataTests {
                 Set.of(NUMBER_OF_CONSENSUS_EVENTS));
         testMalformedFile(
                 random, (s, m) -> s.replace(CONSENSUS_TIMESTAMP.name(), "notARealKey"), Set.of(CONSENSUS_TIMESTAMP));
-        testMalformedFile(
-                random,
-                (s, m) -> s.replace("\n" + RUNNING_EVENT_HASH.name() + ":", "\nnotARealKey:"),
-                Set.of(RUNNING_EVENT_HASH));
-        testMalformedFile(
-                random,
-                (s, m) -> s.replace("\n" + RUNNING_EVENT_HASH_MNEMONIC.name(), "\nnotARealKey"),
-                Set.of(RUNNING_EVENT_HASH_MNEMONIC));
         testMalformedFile(
                 random,
                 (s, m) -> s.replace(LEGACY_RUNNING_EVENT_HASH.name() + ":", "notARealKey:"),

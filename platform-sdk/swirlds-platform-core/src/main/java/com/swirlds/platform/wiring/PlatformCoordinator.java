@@ -17,23 +17,29 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.counters.ObjectCounter;
+import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.stale.StaleEventDetector;
+import com.swirlds.platform.event.stale.StaleEventDetectorOutput;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.pool.TransactionPool;
+import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
-import com.swirlds.platform.wiring.components.StateHasherWiring;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -42,13 +48,11 @@ import java.util.Objects;
  * Responsible for coordinating the clearing of the platform wiring objects.
  */
 public class PlatformCoordinator {
+
     /**
-     * The object counter which spans the {@link com.swirlds.platform.event.hashing.EventHasher EventHasher} and the
-     * postHashCollector
-     * <p>
-     * Used to flush the pair of components together.
+     * Flushes the event hasher.
      */
-    private final ObjectCounter hashingObjectCounter;
+    private final Runnable flushTheEventHasher;
 
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
@@ -61,12 +65,16 @@ public class PlatformCoordinator {
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
-    private final StateHasherWiring stateHasherWiring;
+    private final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring;
+    private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
+            staleEventDetectorWiring;
+    private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
+    private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
 
     /**
      * Constructor
      *
-     * @param hashingObjectCounter                   the hashing object counter
+     * @param flushTheEventHasher                    a lambda that flushes the event hasher
      * @param internalEventValidatorWiring           the internal event validator wiring
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
@@ -79,9 +87,12 @@ public class PlatformCoordinator {
      * @param consensusRoundHandlerWiring            the consensus round handler wiring
      * @param roundDurabilityBufferWiring            the round durability buffer wiring
      * @param stateHasherWiring                      the state hasher wiring
+     * @param staleEventDetectorWiring               the stale event detector wiring
+     * @param transactionPoolWiring                  the transaction pool wiring
+     * @param statusStateMachineWiring               the status state machine wiring
      */
     public PlatformCoordinator(
-            @NonNull final ObjectCounter hashingObjectCounter,
+            @NonNull final Runnable flushTheEventHasher,
             @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
@@ -95,9 +106,14 @@ public class PlatformCoordinator {
                             stateSignatureCollectorWiring,
             @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
-            @NonNull final StateHasherWiring stateHasherWiring) {
+            @NonNull final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring,
+            @NonNull
+                    final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
+                            staleEventDetectorWiring,
+            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
+            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring) {
 
-        this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
+        this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
@@ -110,6 +126,9 @@ public class PlatformCoordinator {
         this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
         this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
+        this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
+        this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
+        this.statusStateMachineWiring = Objects.requireNonNull(statusStateMachineWiring);
     }
 
     /**
@@ -123,11 +142,7 @@ public class PlatformCoordinator {
         // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
         // whether to change the order of these lines.
 
-        // it isn't possible to flush the event hasher and the post hash collector independently, since the framework
-        // currently doesn't support flushing if multiple components share the same object counter. As a workaround,
-        // we just wait for the shared object counter to be empty, which is equivalent to flushing both components.
-        hashingObjectCounter.waitUntilEmpty();
-
+        flushTheEventHasher.run();
         internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();
@@ -148,6 +163,10 @@ public class PlatformCoordinator {
         // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
         // whether to change the order of these lines.
 
+        // Phase 0: flush the status state machine.
+        // When reconnecting, this will force us to adopt a status that will halt event creation and gossip.
+        statusStateMachineWiring.flush();
+
         // Phase 1: squelch
         // Break cycles in the system. Flush squelched components just in case there is a task being executed when
         // squelch is activated.
@@ -155,6 +174,7 @@ public class PlatformCoordinator {
         consensusEngineWiring.flush();
         eventCreationManagerWiring.startSquelching();
         eventCreationManagerWiring.flush();
+        staleEventDetectorWiring.startSquelching();
 
         // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
         // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
@@ -165,16 +185,18 @@ public class PlatformCoordinator {
         // Phase 2: flush
         // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
         flushIntakePipeline();
-        stateHasherWiring.flushRunnable().run();
+        stateHasherWiring.flush();
         stateSignatureCollectorWiring.flush();
         roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
+        staleEventDetectorWiring.flush();
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         consensusEngineWiring.stopSquelching();
         eventCreationManagerWiring.stopSquelching();
         consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+        staleEventDetectorWiring.stopSquelching();
 
         // Phase 4: clear
         // Data is no longer moving through the system. Clear all the internal data structures in the wiring objects.
@@ -186,5 +208,7 @@ public class PlatformCoordinator {
                 .inject(NoInput.getInstance());
         eventCreationManagerWiring.getInputWire(EventCreationManager::clear).inject(NoInput.getInstance());
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
+        staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
+        transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
     }
 }

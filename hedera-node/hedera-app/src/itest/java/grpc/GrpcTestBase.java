@@ -23,9 +23,9 @@ import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -44,6 +44,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.test.fixtures.state.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -177,7 +178,8 @@ abstract class GrpcTestBase extends TestBase {
         };
 
         final var cr = ConstructableRegistry.getInstance();
-        final var registry = new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder());
+        final var registry =
+                new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder(), new SchemaApplications());
         final var registration = new ServicesRegistry.Registration(testService, registry);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(

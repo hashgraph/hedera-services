@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.ids;
 
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -39,7 +40,7 @@ public class WritableEntityIdStore {
      */
     public WritableEntityIdStore(@NonNull final WritableStates states) {
         requireNonNull(states);
-        this.entityIdState = states.getSingleton(EntityIdService.ENTITY_ID_STATE_KEY);
+        this.entityIdState = states.getSingleton(ENTITY_ID_STATE_KEY);
     }
 
     /**

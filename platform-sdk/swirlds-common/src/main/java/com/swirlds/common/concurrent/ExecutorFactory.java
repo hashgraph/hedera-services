@@ -16,7 +16,10 @@
 
 package com.swirlds.common.concurrent;
 
+import com.swirlds.common.concurrent.internal.DefaultExecutorFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
@@ -62,4 +65,32 @@ public interface ExecutorFactory {
     @Deprecated
     @NonNull
     Thread createThread(@NonNull Runnable runnable);
+
+    /**
+     * Creates a new instance of {@link ExecutorFactory}.
+     *
+     * @param groupName        the thread group name
+     * @param onStartup        the on startup runnable
+     * @param exceptionHandler the exception handler
+     * @return the new instance of {@link ExecutorFactory}
+     */
+    @NonNull
+    static ExecutorFactory create(
+            @NonNull final String groupName,
+            @Nullable final Runnable onStartup,
+            @NonNull final UncaughtExceptionHandler exceptionHandler) {
+        return DefaultExecutorFactory.create(groupName, onStartup, exceptionHandler);
+    }
+
+    /**
+     * Creates a new instance of {@link ExecutorFactory}.
+     *
+     * @param groupName        the thread group name
+     * @param exceptionHandler the exception handler
+     * @return the new instance of {@link ExecutorFactory}
+     */
+    static ExecutorFactory create(
+            @NonNull final String groupName, @NonNull final UncaughtExceptionHandler exceptionHandler) {
+        return create(groupName, null, exceptionHandler);
+    }
 }

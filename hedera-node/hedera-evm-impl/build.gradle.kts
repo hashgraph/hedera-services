@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
-
-group = "com.hedera.evm"
+plugins {
+    id("com.hedera.gradle.evm")
+    id("com.hedera.gradle.evm-publish")
+}
 
 description = "Hedera EVM - Implementation"

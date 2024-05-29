@@ -503,7 +503,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         final var baos = new ByteArrayOutputStream();
         try (final var out = new SerializableDataOutputStream(baos)) {
             serializeNonHashData(out);
-            out.write(blockHashes.getHash().getValue());
+            blockHashes.getHash().getBytes().writeTo(out);
             out.writeLong(totalStakedRewardStart);
             out.writeLong(totalStakedStart);
         } catch (final IOException | UncheckedIOException e) {
@@ -1038,10 +1038,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     /* --- Utility methods --- */
     public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
-        final byte[] hashBytesToConvert = hash.getValue();
-        final byte[] prefixBytes = new byte[32];
-        System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);
-        return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
+        return org.hyperledger.besu.datatypes.Hash.wrap(
+                Bytes32.wrap(hash.getBytes().toByteArray(0, 32)));
     }
 
     /* --- Used for tests --- */

@@ -22,12 +22,13 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
@@ -51,8 +52,8 @@ public class WritableContractStateStore implements ContractStateStore {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         requireNonNull(states);
-        this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
-        this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
+        this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
+        this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
 
         final ContractsConfig contractsConfig = configuration.getConfigData(ContractsConfig.class);
 

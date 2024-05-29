@@ -18,16 +18,12 @@ package com.swirlds.platform.state.editor;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatFile;
-import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
-import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
+import static com.swirlds.platform.state.snapshot.SavedStateMetadata.NO_NODE_ID;
+import static com.swirlds.platform.state.snapshot.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.legacy.LogMarker;
@@ -77,8 +73,7 @@ public class StateEditorSave extends StateEditorOperation {
             final Configuration configuration =
                     DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
 
-            final PlatformContext platformContext = new DefaultPlatformContext(
-                    configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+            final PlatformContext platformContext = PlatformContext.create(configuration);
 
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
                 writeSignedStateFilesToDirectory(platformContext, NO_NODE_ID, directory, signedState.get());

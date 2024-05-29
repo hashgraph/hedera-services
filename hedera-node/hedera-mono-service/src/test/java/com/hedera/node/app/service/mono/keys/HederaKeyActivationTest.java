@@ -28,7 +28,6 @@ import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +51,6 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.sigs.SigWrappers;
-import com.hedera.test.utils.CryptoConfigUtils;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -150,7 +148,7 @@ class HederaKeyActivationTest {
 
         final var cryptoSigs = createCryptoSigsFrom(explicitList, mockSigs, new ReusableBodySigningFactory(accessor))
                 .getPlatformSigs();
-        new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG).verifySync(cryptoSigs);
+        new CryptoEngine().verifySync(cryptoSigs);
         final var subject = pkToSigMapFrom(cryptoSigs);
 
         final var ed25519Sig = subject.apply(ed25519Key.getEd25519());

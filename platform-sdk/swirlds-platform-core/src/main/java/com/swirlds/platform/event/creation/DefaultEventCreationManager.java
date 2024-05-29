@@ -30,12 +30,16 @@ import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
+import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
@@ -59,28 +63,45 @@ public class DefaultEventCreationManager implements EventCreationManager {
      */
     private final PhaseTimer<EventCreationStatus> phase;
 
+    /**
+     * The current platform status.
+     */
     private PlatformStatus platformStatus;
+
+    /**
+     * The duration that the system has been unhealthy.
+     */
+    private Duration unhealthyDuration = Duration.ZERO;
 
     /**
      * Constructor.
      *
      * @param platformContext      the platform context
-     * @param transactionPool      provides transactions to be added to new events
+     * @param transactionPoolNexus provides transactions to be added to new events
      * @param eventIntakeQueueSize supplies the size of the event intake queue
      * @param creator              creates events
      */
     public DefaultEventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final TransactionPool transactionPool,
+            @NonNull final TransactionPoolNexus transactionPoolNexus,
             @NonNull final LongSupplier eventIntakeQueueSize,
             @NonNull final EventCreator creator) {
 
         this.creator = Objects.requireNonNull(creator);
 
-        this.eventCreationRules = AggregateEventCreationRules.of(
-                new MaximumRateRule(platformContext),
-                new BackpressureRule(platformContext, eventIntakeQueueSize),
-                new PlatformStatusRule(this::getPlatformStatus, transactionPool));
+        final EventCreationConfig config = platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+        final boolean useLegacyBackpressure = config.useLegacyBackpressure();
+
+        final List<EventCreationRule> rules = new ArrayList<>();
+        rules.add(new MaximumRateRule(platformContext));
+        rules.add(new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
+        if (useLegacyBackpressure) {
+            rules.add(new BackpressureRule(platformContext, eventIntakeQueueSize));
+        } else {
+            rules.add(new PlatformHealthRule(config.maximumPermissibleUnhealthyDuration(), this::getUnhealthyDuration));
+        }
+
+        this.eventCreationRules = AggregateEventCreationRules.of(rules);
 
         phase = new PhaseTimerBuilder<>(
                         platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)
@@ -151,6 +172,14 @@ public class DefaultEventCreationManager implements EventCreationManager {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reportUnhealthyDuration(@NonNull final Duration duration) {
+        unhealthyDuration = Objects.requireNonNull(duration);
+    }
+
+    /**
      * Get the current platform status.
      *
      * @return the current platform status
@@ -158,5 +187,14 @@ public class DefaultEventCreationManager implements EventCreationManager {
     @NonNull
     private PlatformStatus getPlatformStatus() {
         return platformStatus;
+    }
+
+    /**
+     * Get the duration that the system has been unhealthy.
+     *
+     * @return the duration that the system has been unhealthy
+     */
+    private Duration getUnhealthyDuration() {
+        return unhealthyDuration;
     }
 }

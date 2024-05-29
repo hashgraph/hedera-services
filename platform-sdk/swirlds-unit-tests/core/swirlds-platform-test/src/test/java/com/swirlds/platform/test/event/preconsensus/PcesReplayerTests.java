@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("PcesReplayer Tests")
 class PcesReplayerTests {
+
     @Test
     @DisplayName("Test standard operation")
     void testStandardOperation() {
@@ -75,7 +76,7 @@ class PcesReplayerTests {
         final Supplier<ReservedSignedState> latestImmutableStateSupplier = () -> latestImmutableState;
 
         final PcesReplayer replayer = new PcesReplayer(
-                time, eventOutputWire, flushIntake, flushTransactionHandling, latestImmutableStateSupplier);
+                time, eventOutputWire, flushIntake, flushTransactionHandling, latestImmutableStateSupplier, () -> true);
 
         final List<GossipEvent> events = new ArrayList<>();
         final int eventCount = 100;

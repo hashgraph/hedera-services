@@ -17,7 +17,6 @@
 package com.swirlds.platform.gossip.shadowgraph;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.utility.CommonUtils;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,9 +45,7 @@ public final class SyncLogging {
         if (hashes == null) {
             return "null";
         }
-        return hashes.stream()
-                .map(h -> CommonUtils.hex(h.getValue(), BRIEF_HASH_LENGTH))
-                .collect(Collectors.joining(","));
+        return hashes.stream().map(h -> h.toHex(BRIEF_HASH_LENGTH)).collect(Collectors.joining(","));
     }
 
     public static String toShortBooleans(List<Boolean> booleans) {

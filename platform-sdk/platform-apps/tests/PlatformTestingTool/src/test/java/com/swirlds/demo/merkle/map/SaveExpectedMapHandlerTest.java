@@ -30,6 +30,7 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler;
 import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,7 +114,7 @@ public class SaveExpectedMapHandlerTest {
 
     // Serializes and deserializes the expected map with all valid keys
     @Test
-    public void serializeAndDeserializePositiveTest() {
+    public void serializeAndDeserializePositiveTest() throws IOException {
         String jsonValue = serialize(expectedMap, new File("."), expectedMapName, true);
         for (int i = 0; i < 20; i++) {
             assertTrue(jsonValue.contains("[0,0," + i + "]"));
@@ -126,7 +127,7 @@ public class SaveExpectedMapHandlerTest {
 
     // serializes and deserializes expectedMap with null EntityType ExpectedValues.
     @Test
-    public void DeserializeNullEntityTypeTest() {
+    public void DeserializeNullEntityTypeTest() throws IOException {
         addInvalidKeysToMap();
         String jsonValue = serialize(expectedMap, new File("."), expectedMapName, true);
 

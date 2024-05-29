@@ -23,8 +23,9 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -43,7 +44,7 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      * @param states The state to use.
      */
     public ReadableTokenRelationStoreImpl(@NonNull final ReadableStates states) {
-        this.readableTokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
+        this.readableTokenRelState = requireNonNull(states).get(V0490TokenSchema.TOKEN_RELS_KEY);
     }
 
     /**

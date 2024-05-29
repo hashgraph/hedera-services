@@ -37,7 +37,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -61,7 +61,6 @@ public class RandomSignedStateGenerator {
     private State state;
     private Long round;
     private Hash legacyRunningEventHash;
-    private Hash runningEventHash;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
@@ -105,9 +104,8 @@ public class RandomSignedStateGenerator {
     public SignedState build() {
         final AddressBook addressBookInstance;
         if (addressBook == null) {
-            addressBookInstance = new RandomAddressBookGenerator(random)
-                    .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                    .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+            addressBookInstance = RandomAddressBookBuilder.create(random)
+                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                     .build();
         } else {
             addressBookInstance = addressBook;
@@ -140,13 +138,6 @@ public class RandomSignedStateGenerator {
             legacyRunningEventHashInstance = legacyRunningEventHash;
         }
 
-        final Hash runningEventHashInstance;
-        if (runningEventHash == null) {
-            runningEventHashInstance = randomHash(random);
-        } else {
-            runningEventHashInstance = runningEventHash;
-        }
-
         final Instant consensusTimestampInstance;
         if (consensusTimestamp == null) {
             consensusTimestampInstance = RandomUtils.randomInstant(random);
@@ -170,7 +161,7 @@ public class RandomSignedStateGenerator {
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
+            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
         } else {
             softwareVersionInstance = softwareVersion;
         }
@@ -193,7 +184,6 @@ public class RandomSignedStateGenerator {
 
         platformState.setRound(roundInstance);
         platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
-        platformState.setRunningEventHash(runningEventHashInstance);
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
@@ -313,17 +303,6 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setLegacyRunningEventHash(final Hash legacyRunningEventHash) {
         this.legacyRunningEventHash = legacyRunningEventHash;
-        return this;
-    }
-
-    /**
-     * Set the running hash of all events that have been applied to this state since the last freeze.
-     *
-     * @return this object
-     */
-    @NonNull
-    public RandomSignedStateGenerator setRunningEventHash(final Hash runningEventHash) {
-        this.runningEventHash = runningEventHash;
         return this;
     }
 
