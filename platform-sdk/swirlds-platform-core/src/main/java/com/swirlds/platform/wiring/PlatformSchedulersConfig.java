@@ -25,14 +25,6 @@ import java.time.Duration;
 /**
  * Contains configuration values for the platform schedulers.
  *
- * @param defaultPoolMultiplier                  used when calculating the size of the default platform fork join pool.
- *                                               Maximum parallelism in this pool is calculated as max(1,
- *                                               (defaultPoolMultiplier * [number of processors] +
- *                                               defaultPoolConstant)).
- * @param defaultPoolConstant                    used when calculating the size of the default platform fork join pool.
- *                                               Maximum parallelism in this pool is calculated as max(1,
- *                                               (defaultPoolMultiplier * [number of processors] + defaultPoolConstant)).
- *                                               It is legal for this constant to be a negative number.
  * @param eventHasherUnhandledCapacity           number of unhandled tasks allowed in the event hasher scheduler
  * @param internalEventValidator                 configuration for the internal event validator scheduler
  * @param eventDeduplicator                      configuration for the event deduplicator scheduler
@@ -73,14 +65,12 @@ import java.time.Duration;
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
-        @ConfigProperty(defaultValue = "1.0") double defaultPoolMultiplier,
-        @ConfigProperty(defaultValue = "0") int defaultPoolConstant,
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventDeduplicator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventSignatureValidator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
@@ -112,7 +102,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
         @ConfigProperty(
                         defaultValue =
-                                "SEQUENTIAL_THREAD CAPACITY(2) FLUSHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                                "SEQUENTIAL_THREAD CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration stateHasher,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(60) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateGarbageCollector,
@@ -134,7 +124,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration gossip,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
-                TaskSchedulerConfiguration postHashCollector) {}
+                TaskSchedulerConfiguration postHashCollector,
+        @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}

@@ -19,7 +19,8 @@ package com.swirlds.platform.network.protocol;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.FallenBehindManager;
-import com.swirlds.platform.gossip.SyncPermitProvider;
+import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -39,6 +40,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
     private final ShadowgraphSynchronizer synchronizer;
     private final FallenBehindManager fallenBehindManager;
     private final SyncPermitProvider permitProvider;
+    private final IntakeEventCounter intakeEventCounter;
     private final BooleanSupplier gossipHalted;
     private final BooleanSupplier intakeIsTooFull;
     private final Duration sleepAfterSync;
@@ -52,6 +54,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
      * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
      * @param fallenBehindManager    manager to determine whether this node has fallen behind
      * @param permitProvider         provides permits to sync
+     * @param intakeEventCounter     keeps track of how many events have been received from each peer
      * @param gossipHalted           returns true if gossip is halted, false otherwise
      * @param intakeIsTooFull        returns true if the intake queue is too full to continue syncing, false otherwise
      * @param sleepAfterSync         the amount of time to sleep after a sync
@@ -63,6 +66,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
             @NonNull final ShadowgraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final SyncPermitProvider permitProvider,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final BooleanSupplier gossipHalted,
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
@@ -73,6 +77,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
         this.synchronizer = Objects.requireNonNull(synchronizer);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.permitProvider = Objects.requireNonNull(permitProvider);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.gossipHalted = Objects.requireNonNull(gossipHalted);
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
@@ -92,6 +97,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
                 synchronizer,
                 fallenBehindManager,
                 permitProvider,
+                intakeEventCounter,
                 gossipHalted,
                 intakeIsTooFull,
                 sleepAfterSync,

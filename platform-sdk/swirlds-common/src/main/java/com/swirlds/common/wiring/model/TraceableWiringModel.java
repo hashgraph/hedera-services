@@ -36,6 +36,7 @@ import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +75,11 @@ public abstract class TraceableWiringModel implements WiringModel {
      * Input wires with at least one thing soldered to them.
      */
     private final Set<InputWireDescriptor> solderedInputWires = new HashSet<>();
+
+    /**
+     * All task schedulers in the model.
+     */
+    protected final List<TaskScheduler<?>> schedulers = new ArrayList<>();
 
     /**
      * True if start() has been called.
@@ -174,6 +180,8 @@ public abstract class TraceableWiringModel implements WiringModel {
      */
     public void registerScheduler(@NonNull final TaskScheduler<?> scheduler, @Nullable final String hyperlink) {
         throwIfStarted();
+        Objects.requireNonNull(scheduler);
+        schedulers.add(scheduler);
         registerVertex(scheduler.getName(), scheduler.getType(), hyperlink, scheduler.isInsertionBlocking());
     }
 

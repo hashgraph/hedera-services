@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
@@ -56,6 +57,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.event.validation.AddressBookUpdate;
@@ -64,7 +66,6 @@ import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
-import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
@@ -102,6 +103,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -158,11 +160,6 @@ public class SwirldsPlatform implements Platform {
     private final SwirldStateManager swirldStateManager;
 
     /**
-     * Checks the validity of transactions and submits valid ones to the transaction pool
-     */
-    private final SwirldTransactionSubmitter transactionSubmitter;
-
-    /**
      * For passing notifications between the platform and the application.
      */
     private final NotificationEngine notificationEngine;
@@ -181,6 +178,11 @@ public class SwirldsPlatform implements Platform {
      * Controls which states are saved to disk
      */
     private final SavedStateController savedStateController;
+
+    /**
+     * Used to submit application transactions.
+     */
+    private final TransactionPoolNexus transactionPoolNexus;
 
     /**
      * Encapsulated wiring for the platform.
@@ -255,12 +257,17 @@ public class SwirldsPlatform implements Platform {
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
+        final Duration replayHealthThreshold = platformContext
+                .getConfiguration()
+                .getConfigData(PcesConfig.class)
+                .replayHealthThreshold();
         final PcesReplayer pcesReplayer = new PcesReplayer(
                 platformContext.getTime(),
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
                 platformWiring::flushConsensusRoundHandler,
-                () -> latestImmutableStateNexus.getState("PCES replay"));
+                () -> latestImmutableStateNexus.getState("PCES replay"),
+                () -> isLessThan(blocks.model().getUnhealthyDuration(), replayHealthThreshold));
 
         initializeState(initialState);
 
@@ -335,12 +342,7 @@ public class SwirldsPlatform implements Platform {
             platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
         }
 
-        final TransactionPoolNexus transactionPoolNexus = blocks.transactionPoolNexus();
-        transactionSubmitter = new SwirldTransactionSubmitter(
-                statusNexus,
-                transactionConfig,
-                transaction -> transactionPoolNexus.submitTransaction(transaction, false),
-                new TransactionMetrics(platformContext.getMetrics()));
+        transactionPoolNexus = blocks.transactionPoolNexus();
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
@@ -569,7 +571,6 @@ public class SwirldsPlatform implements Platform {
     @Override
     public void start() {
         logger.info(STARTUP.getMarker(), "Starting platform {}", selfId);
-        platformWiring.getModel().preventJvmExit();
 
         platformContext.getRecycleBin().start();
         platformContext.getMetrics().start();
@@ -664,7 +665,7 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
-        return transactionSubmitter.submitTransaction(new SwirldTransaction(transaction));
+        return transactionPoolNexus.submitApplicationTransaction(new SwirldTransaction(transaction));
     }
 
     /**

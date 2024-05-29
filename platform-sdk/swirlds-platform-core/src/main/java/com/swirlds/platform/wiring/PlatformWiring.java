@@ -32,6 +32,7 @@ import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
+import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.RoutableData;
@@ -171,6 +172,8 @@ public class PlatformWiring {
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<PlatformStatusNexus, Void> statusNexusWiring;
 
+    private final boolean hashCollectorEnabled;
+
     /**
      * Constructor.
      *
@@ -188,6 +191,7 @@ public class PlatformWiring {
         this.model = Objects.requireNonNull(model);
 
         config = platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+        hashCollectorEnabled = config.hashCollectorEnabled();
 
         final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
 
@@ -208,18 +212,28 @@ public class PlatformWiring {
         }
 
         // Provides back pressure across both the event hasher and the post hash collector
-        final ObjectCounter hashingObjectCounter = new BackpressureObjectCounter(
-                "hashingObjectCounter",
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(PlatformSchedulersConfig.class)
-                        .eventHasherUnhandledCapacity(),
-                Duration.ofNanos(100));
+        final ObjectCounter hashingObjectCounter;
+        if (hashCollectorEnabled) {
+            hashingObjectCounter = new BackpressureObjectCounter(
+                    "hashingObjectCounter",
+                    platformContext
+                            .getConfiguration()
+                            .getConfigData(PlatformSchedulersConfig.class)
+                            .eventHasherUnhandledCapacity(),
+                    Duration.ofNanos(100));
+        } else {
+            hashingObjectCounter = null;
+        }
 
         eventHasherWiring =
                 new ComponentWiring<>(model, EventHasher.class, buildEventHasherScheduler(hashingObjectCounter));
-        postHashCollectorWiring =
-                new PassThroughWiring<>(model, "GossipEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
+
+        if (hashCollectorEnabled) {
+            postHashCollectorWiring = new PassThroughWiring<>(
+                    model, "GossipEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
+        } else {
+            postHashCollectorWiring = null;
+        }
 
         internalEventValidatorWiring =
                 new ComponentWiring<>(model, InternalEventValidator.class, config.internalEventValidator());
@@ -329,7 +343,13 @@ public class PlatformWiring {
         transactionPoolWiring = new ComponentWiring<>(model, TransactionPool.class, config.transactionPool());
 
         platformCoordinator = new PlatformCoordinator(
-                hashingObjectCounter,
+                () -> {
+                    if (hashCollectorEnabled) {
+                        hashingObjectCounter.waitUntilEmpty();
+                    } else {
+                        eventHasherWiring.flush();
+                    }
+                },
                 internalEventValidatorWiring,
                 eventDeduplicatorWiring,
                 eventSignatureValidatorWiring,
@@ -359,13 +379,22 @@ public class PlatformWiring {
      */
     @NonNull
     private TaskScheduler<GossipEvent> buildEventHasherScheduler(@NonNull final ObjectCounter hashingObjectCounter) {
-        return model.schedulerBuilder("EventHasher")
+        final TaskSchedulerBuilder<Object> builder = model.schedulerBuilder("EventHasher")
                 .configure(config.eventHasher())
-                .withOnRamp(hashingObjectCounter)
-                .withExternalBackPressure(true)
-                .withHyperlink(platformCoreHyperlink(EventHasher.class))
-                .build()
-                .cast();
+                .withUnhandledTaskMetricEnabled(true)
+                .withHyperlink(platformCoreHyperlink(EventHasher.class));
+
+        if (hashCollectorEnabled) {
+            builder.withOnRamp(hashingObjectCounter).withExternalBackPressure(true);
+        } else {
+            builder.withUnhandledTaskCapacity(platformContext
+                            .getConfiguration()
+                            .getConfigData(PlatformSchedulersConfig.class)
+                            .eventHasherUnhandledCapacity())
+                    .withFlushingEnabled(true);
+        }
+
+        return builder.build().cast();
     }
 
     /**
@@ -449,10 +478,17 @@ public class PlatformWiring {
         }
 
         gossipWiring.getEventOutput().solderTo(pipelineInputWire);
-        eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
-        postHashCollectorWiring
-                .getOutputWire()
-                .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
+        if (hashCollectorEnabled) {
+            eventHasherWiring.getOutputWire().solderTo(postHashCollectorWiring.getInputWire());
+            postHashCollectorWiring
+                    .getOutputWire()
+                    .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
+        } else {
+            eventHasherWiring
+                    .getOutputWire()
+                    .solderTo(internalEventValidatorWiring.getInputWire(InternalEventValidator::validateEvent));
+        }
+
         internalEventValidatorWiring
                 .getOutputWire()
                 .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
@@ -469,6 +505,13 @@ public class PlatformWiring {
         pcesSequencerWiring.getOutputWire().solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
 
         splitOrphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
+        model.getHealthMonitorWire()
+                .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::reportUnhealthyDuration));
+
+        model.getHealthMonitorWire().solderTo(gossipWiring.getSystemHealthInput());
+
+        model.getHealthMonitorWire()
+                .solderTo(transactionPoolWiring.getInputWire(TransactionPool::reportUnhealthyDuration));
 
         // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
         // events fast enough, but we have no other choice until we implement the platform health monitor.
@@ -519,10 +562,10 @@ public class PlatformWiring {
         // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
         final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignaturePayload>>>
                 preConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "extractPreconsensusSignatureTransactions",
-                        "preconsensus signatures",
-                        event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
+                model,
+                "extractPreconsensusSignatureTransactions",
+                "preconsensus signatures",
+                event -> SystemTransactionExtractionUtils.extractFromEvent(event, StateSignaturePayload.class));
         splitOrphanBufferOutput.solderTo(preConsensusTransformer.getInputWire());
         preConsensusTransformer
                 .getOutputWire()
@@ -580,8 +623,8 @@ public class PlatformWiring {
         // specified ordering, relative to the wire carrying consensus rounds to the round handler
         final WireTransformer<ConsensusRound, Long> keystoneEventSequenceNumberTransformer = new WireTransformer<>(
                 model, "getKeystoneEventSequenceNumber", "rounds", round -> round.getKeystoneEvent()
-                        .getBaseEvent()
-                        .getStreamSequenceNumber());
+                .getBaseEvent()
+                .getStreamSequenceNumber());
         keystoneEventSequenceNumberTransformer
                 .getOutputWire()
                 .solderTo(pcesWriterWiring.getInputWire(PcesWriter::submitFlushRequest));
@@ -651,10 +694,10 @@ public class PlatformWiring {
         // Extract signatures from post-consensus events for input to the StateSignatureCollector.
         final WireTransformer<ConsensusRound, List<ScopedSystemTransaction<StateSignaturePayload>>>
                 postConsensusTransformer = new WireTransformer<>(
-                        model,
-                        "extractConsensusSignatureTransactions",
-                        "consensus events",
-                        round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class));
+                model,
+                "extractConsensusSignatureTransactions",
+                "consensus events",
+                round -> SystemTransactionExtractionUtils.extractFromRound(round, StateSignaturePayload.class));
         hashedConsensusRoundOutput.solderTo(postConsensusTransformer.getInputWire());
         postConsensusTransformer
                 .getOutputWire()
@@ -707,6 +750,9 @@ public class PlatformWiring {
         statusStateMachineWiring
                 .getOutputWire()
                 .solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::updatePlatformStatus), INJECT);
+        statusStateMachineWiring
+                .getOutputWire()
+                .solderTo(transactionPoolWiring.getInputWire(TransactionPool::updatePlatformStatus));
 
         solderNotifier();
 
@@ -932,7 +978,11 @@ public class PlatformWiring {
      */
     @NonNull
     public LongSupplier getIntakeQueueSizeSupplier() {
-        return () -> postHashCollectorWiring.getScheduler().getUnprocessedTaskCount();
+        if (hashCollectorEnabled) {
+            return () -> postHashCollectorWiring.getScheduler().getUnprocessedTaskCount();
+        } else {
+            return () -> 0;
+        }
     }
 
     /**

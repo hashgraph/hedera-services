@@ -214,7 +214,7 @@ public class AddressBookUtils {
             // validate that an InetAddress can be created from the internal hostname.
             InetAddress.getByName(internalHostname);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[5] + ",", 5);
+            throw new ParseException("Cannot parse ip address from '" + parts[5] + "'", 5);
         }
         final int internalPort;
         try {
@@ -228,7 +228,7 @@ public class AddressBookUtils {
             // validate that an InetAddress can be created from the external hostname.
             InetAddress.getByName(externalHostname);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[7] + ",", 7);
+            throw new ParseException("Cannot parse ip address from '" + parts[7] + "'", 7);
         }
         final int externalPort;
         try {

@@ -13,7 +13,7 @@ pcli diagram \
     -l 'EventCreationManager:get transactions:TransactionPool' \
     -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
     -s 'eventWindowManager:event window:🌀' \
-    -s 'heartbeat:heartbeat:❤️' \
+    -s 'Heartbeat:heartbeat:❤️' \
     -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
     -s 'OrphanBufferSplitter:events to gossip:📬' \
@@ -25,7 +25,6 @@ pcli diagram \
     -s 'StateSigner:signature transactions:🖋️' \
     -s 'IssDetectorSplitter:IssNotification:💥' \
     -s 'getStatusAction:PlatformStatusAction:💀' \
-    -s 'toNotification:state written notification:📦' \
     -s 'latestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
@@ -33,18 +32,17 @@ pcli diagram \
     -s 'StaleEventDetectorRouter:publishStaleEvent:⚰️' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
+    -s 'HealthMonitor:health info:🏥' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
-    -g 'Event Hashing:EventHasher,PostHashCollector' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
-    -g 'State File Management:State Snapshot Manager,📦,📀,💾' \
+    -g 'State File Management:State Snapshot Manager,📀,💾' \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
     -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
-    -g 'Heartbeat:heartbeat,❤️' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:StateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
