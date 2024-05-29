@@ -52,11 +52,9 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.PlatformConfigurationExtension;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -206,20 +204,9 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Get the configuration extension for the platform. Must be registered with any {@link Configuration} passed to
-     * {@link #withConfiguration(Configuration)}.
-     *
-     * @return the configuration extension
-     */
-    @NonNull
-    public static ConfigurationExtension getPlatformConfigurationExtension() { // TODO
-        return new PlatformConfigurationExtension();
-    }
-
-    /**
      * Provide a configuration to use for the platform. If not provided then default configuration is used.
      * <p>
-     * Note that any configuration provided here must have the {@link #getPlatformConfigurationExtension()} registered.
+     * Note that any configuration provided here must have the platform configuration properly registered.
      *
      * @param configuration the configuration to use
      * @return this
@@ -441,27 +428,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Build the configuration for the node.
-     *
-     * @param settingsPath the path to the settings file
-     * @return the configuration
-     */
-    @NonNull
-    private static Configuration buildConfiguration(
-            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
-
-        Objects.requireNonNull(configurationBuilder);
-        Objects.requireNonNull(settingsPath);
-
-        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
-
-        final Configuration configuration = configurationBuilder.build();
-        checkConfiguration(configuration);
-
-        return configuration;
-    }
-
-    /**
      * Parse the address book from the config.txt file.
      *
      * @return the address book
@@ -471,43 +437,6 @@ public final class PlatformBuilder {
         final LegacyConfigProperties legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
         return legacyConfig.getAddressBook();
-    }
-
-    // TODO remove this
-
-    /**
-     * Build a platform context that is compatible with the platform.
-     *
-     * @param configurationBuilder used to build configuration, can be pre-configured for application specific
-     *                             configuration needs
-     * @param settingsPath         the path to the settings file
-     * @param selfId               the ID of this node
-     * @return a new platform context
-     */
-    @NonNull
-    public static PlatformContext buildPlatformContext(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @NonNull final Path settingsPath,
-            @NonNull final NodeId selfId) {
-
-        final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
-
-        final Cryptography cryptography = CryptographyFactory.create();
-        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-
-        // For backwards compatibility with the old static access pattern.
-        CryptographyHolder.set(cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
-
-        setupGlobalMetrics(configuration);
-        final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        final FileSystemManager fileSystemManager = FileSystemManager.create(configuration);
-
-        final Time time = Time.getCurrent();
-        final RecycleBin recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-
-        return PlatformContext.create(configuration, time, metrics, cryptography, fileSystemManager, recycleBin);
     }
 
     /**
