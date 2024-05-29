@@ -56,6 +56,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -171,6 +173,8 @@ public class PlatformWiring {
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<PlatformStatusNexus, Void> statusNexusWiring;
+    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     private final boolean hashCollectorEnabled;
 
@@ -341,6 +345,8 @@ public class PlatformWiring {
         transactionResubmitterWiring =
                 new ComponentWiring<>(model, TransactionResubmitter.class, config.transactionResubmitter());
         transactionPoolWiring = new ComponentWiring<>(model, TransactionPool.class, config.transactionPool());
+        branchDetectorWiring = new ComponentWiring<>(model, BranchDetector.class, config.branchDetector());
+        branchReporterWiring = new ComponentWiring<>(model, BranchReporter.class, config.branchReporter());
 
         platformCoordinator = new PlatformCoordinator(
                 () -> {
@@ -364,7 +370,9 @@ public class PlatformWiring {
                 stateHasherWiring,
                 staleEventDetectorWiring,
                 transactionPoolWiring,
-                statusStateMachineWiring);
+                statusStateMachineWiring,
+                branchDetectorWiring,
+                branchReporterWiring);
 
         wire();
     }
@@ -443,6 +451,8 @@ public class PlatformWiring {
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow), INJECT);
         eventWindowOutputWire.solderTo(
                 latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::updateEventWindow));
+        eventWindowOutputWire.solderTo(branchDetectorWiring.getInputWire(BranchDetector::updateEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(branchReporterWiring.getInputWire(BranchReporter::updateEventWindow), INJECT);
     }
 
     /**
@@ -516,6 +526,9 @@ public class PlatformWiring {
         // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
         // events fast enough, but we have no other choice until we implement the platform health monitor.
         splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
+
+        splitOrphanBufferOutput.solderTo(branchDetectorWiring.getInputWire(BranchDetector::checkForBranches));
+        branchDetectorWiring.getOutputWire().solderTo(branchReporterWiring.getInputWire(BranchReporter::reportBranch));
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -787,6 +800,8 @@ public class PlatformWiring {
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear);
         transactionPoolWiring.getInputWire(TransactionPool::clear);
         stateSnapshotManagerWiring.getInputWire(StateSnapshotManager::dumpStateTask);
+        branchDetectorWiring.getInputWire(BranchDetector::clear);
+        branchReporterWiring.getInputWire(BranchReporter::clear);
     }
 
     /**
@@ -864,6 +879,8 @@ public class PlatformWiring {
         transactionResubmitterWiring.bind(builder::buildTransactionResubmitter);
         transactionPoolWiring.bind(builder::buildTransactionPool);
         gossipWiring.bind(builder.buildGossip());
+        branchDetectorWiring.bind(builder::buildBranchDetector);
+        branchReporterWiring.bind(builder::buildBranchReporter);
     }
 
     /**

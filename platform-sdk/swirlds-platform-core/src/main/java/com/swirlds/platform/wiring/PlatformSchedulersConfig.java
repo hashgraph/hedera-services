@@ -64,6 +64,8 @@ import java.time.Duration;
  * @param gossip                                 configuration for the gossip scheduler
  * @param eventHasher                            configuration for the event hasher scheduler
  * @param postHashCollector                      configuration for the post hash collector scheduler
+ * @param branchDetector                         configuration for the branch detector scheduler
+ * @param branchReporter                         configuration for the branch reporter scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -130,4 +132,8 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration eventHasher,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration postHashCollector,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration branchDetector,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration branchReporter,
         @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}

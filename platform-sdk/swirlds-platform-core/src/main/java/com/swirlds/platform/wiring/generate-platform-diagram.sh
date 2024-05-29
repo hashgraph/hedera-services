@@ -32,6 +32,7 @@ pcli diagram \
     -s 'StaleEventDetectorRouter:publishStaleEvent:⚰️' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
+    -s 'PcesWriter:durable event info:📝' \
     -s 'HealthMonitor:health info:🏥' \
     -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
@@ -41,7 +42,9 @@ pcli diagram \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
-    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner' \
+    -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
+    -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
+    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,Stale Event Detector,Transaction Resubmitter,⚰️,♻️' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
@@ -50,9 +53,7 @@ pcli diagram \
     -g 'State Verification:stateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
-    -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
-    -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
-    -g 'Stale Events:Stale Event Detector,Transaction Resubmitter,⚰️,♻️,🍎' \
+    -g 'Branch Detection:BranchDetector,BranchReporter' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
@@ -64,4 +65,5 @@ pcli diagram \
     -c 'Wait For Crash Durability' \
     -c 'Stale Event Detector' \
     -c 'Transaction Resubmitter' \
+    -c 'Branch Detection' \
     -o "${SCRIPT_PATH}/../../../../../../../../docs/core/wiring-diagram.svg"
