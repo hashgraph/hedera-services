@@ -257,7 +257,6 @@ public class SwirldsPlatform implements Platform {
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
-        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), statusNexus);
         final Duration replayHealthThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(PcesConfig.class)
@@ -308,7 +307,6 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                stateSigner,
                 pcesReplayer,
                 stateSignatureCollector,
                 eventWindowManager,

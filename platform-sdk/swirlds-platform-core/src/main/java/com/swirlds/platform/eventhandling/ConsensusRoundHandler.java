@@ -294,7 +294,8 @@ public class ConsensusRoundHandler {
                 immutableStateCons,
                 "ConsensusRoundHandler.createSignedState()",
                 freezeRoundReceived,
-                true);
+                true,
+                consensusRound.isPcesRound());
 
         final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
         return new StateAndRound(reservedSignedState, consensusRound);

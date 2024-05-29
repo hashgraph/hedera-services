@@ -20,6 +20,8 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -70,6 +72,8 @@ public class PlatformCoordinator {
             staleEventDetectorWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
+    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     /**
      * Constructor
@@ -90,6 +94,8 @@ public class PlatformCoordinator {
      * @param staleEventDetectorWiring               the stale event detector wiring
      * @param transactionPoolWiring                  the transaction pool wiring
      * @param statusStateMachineWiring               the status state machine wiring
+     * @param branchDetectorWiring                   the branch detector wiring
+     * @param branchReporterWiring                   the branch reporter wiring
      */
     public PlatformCoordinator(
             @NonNull final Runnable flushTheEventHasher,
@@ -111,7 +117,9 @@ public class PlatformCoordinator {
                     final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
                             staleEventDetectorWiring,
             @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
-            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring) {
+            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring,
+            @NonNull final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring,
+            @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring) {
 
         this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -129,6 +137,8 @@ public class PlatformCoordinator {
         this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
         this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
         this.statusStateMachineWiring = Objects.requireNonNull(statusStateMachineWiring);
+        this.branchDetectorWiring = Objects.requireNonNull(branchDetectorWiring);
+        this.branchReporterWiring = Objects.requireNonNull(branchReporterWiring);
     }
 
     /**
@@ -190,6 +200,8 @@ public class PlatformCoordinator {
         roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
         staleEventDetectorWiring.flush();
+        branchDetectorWiring.flush();
+        branchReporterWiring.flush();
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
@@ -210,5 +222,7 @@ public class PlatformCoordinator {
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
         transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
+        branchDetectorWiring.getInputWire(BranchDetector::clear).inject(NoInput.getInstance());
+        branchReporterWiring.getInputWire(BranchReporter::clear).inject(NoInput.getInstance());
     }
 }

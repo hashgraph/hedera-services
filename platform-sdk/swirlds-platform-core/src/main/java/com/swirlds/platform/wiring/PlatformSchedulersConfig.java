@@ -33,9 +33,7 @@ import java.time.Duration;
  * @param consensusEngine                        configuration for the consensus engine scheduler
  * @param eventCreationManager                   configuration for the event creation manager scheduler
  * @param selfEventSigner                        configuration for the self event signer scheduler
- * @param stateSignerSchedulerType               the state signer scheduler type
- * @param stateSignerUnhandledCapacity           number of unhandled tasks allowed in the state signer scheduler,
- *                                               default is -1 (unlimited)
+ * @param stateSigner                            configuration for the state signer scheduler
  * @param pcesWriter                             configuration for the preconsensus event writer scheduler
  * @param pcesSequencer                          configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler       configuration for the application transaction prehandler scheduler
@@ -64,6 +62,8 @@ import java.time.Duration;
  * @param gossip                                 configuration for the gossip scheduler
  * @param eventHasher                            configuration for the event hasher scheduler
  * @param postHashCollector                      configuration for the post hash collector scheduler
+ * @param branchDetector                         configuration for the branch detector scheduler
+ * @param branchReporter                         configuration for the branch reporter scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -85,8 +85,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(20) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateSnapshotManager,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType stateSignerSchedulerType,
-        @ConfigProperty(defaultValue = "-1") int stateSignerUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(10) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration stateSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration pcesWriter,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration pcesSequencer,
@@ -130,4 +130,8 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration eventHasher,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration postHashCollector,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration branchDetector,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration branchReporter,
         @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}

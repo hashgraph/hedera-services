@@ -207,6 +207,7 @@ public class StateEditor {
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
                     reservedSignedState.get().isFreezeState(),
+                    false,
                     false);
 
             signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");
