@@ -25,14 +25,14 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase;
+import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Provides access to statistics relevant to {@link ConsensusRoundHandler}
+ * Provides access to statistics relevant to {@link DefaultTransactionHandler}
  */
 public class RoundHandlingMetrics {
     private static final LongGauge.Config consensusTimeConfig = new LongGauge.Config(INTERNAL_CATEGORY, "consensusTime")
