@@ -125,9 +125,16 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
 
         // Check to see if the code address is a system account and possibly halt
+        final var evmPrecompile = precompiles.get(codeAddress);
         if (addressChecks.isSystemAccount(codeAddress)) {
             doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
             if (alreadyHalted(frame)) {
+                return;
+            }
+
+            if (evmPrecompile == null) {
+                handleNonExtantSystemAccount(frame, tracer);
+
                 return;
             }
         }
@@ -141,7 +148,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
 
         // Handle evm precompiles
-        final var evmPrecompile = precompiles.get(codeAddress);
         if (evmPrecompile != null) {
             doExecutePrecompile(evmPrecompile, frame, tracer);
             return;
@@ -161,6 +167,13 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
 
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
         return featureFlags.isImplicitCreationEnabled(config);
+    }
+
+    private void handleNonExtantSystemAccount(
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
+        frame.clearGasRemaining();
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
     private void doExecutePrecompile(
