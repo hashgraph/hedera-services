@@ -34,9 +34,9 @@ import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -102,11 +102,11 @@ abstract class GrpcTestBase extends TestBase {
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
      * correctly for different types of calls.
      */
-    protected final Metrics metrics = new DefaultMetrics(
+    protected final Metrics metrics = new DefaultPlatformMetrics(
             nodeSelfId,
             new MetricKeyRegistry(),
             METRIC_EXECUTOR,
-            new DefaultMetricsFactory(configuration.getConfigData(MetricsConfig.class)),
+            new PlatformMetricsFactoryImpl(configuration.getConfigData(MetricsConfig.class)),
             configuration.getConfigData(MetricsConfig.class));
     /** The query method to set up on the server. Only one method supported today */
     private String queryMethodName;

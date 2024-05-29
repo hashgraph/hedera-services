@@ -43,9 +43,9 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.source.ConfigSource;
@@ -165,11 +165,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public AppTestBase() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        this.metrics = new DefaultMetrics(
+        this.metrics = new DefaultPlatformMetrics(
                 nodeSelfId,
                 new MetricKeyRegistry(),
                 METRIC_EXECUTOR,
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 
