@@ -325,6 +325,9 @@ jobs:
   gradle-determinism:
     name: Gradle Determinism
     uses: ./.github/workflows/zxc-verify-gradle-build-determinism.yaml
+    needs:
+      - dependency-check
+      - spotless
     if: ${{ github.event_name != 'pull_request' || (github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository) }}
     with:
       ref: ${{ github.event.inputs.ref || '' }}
