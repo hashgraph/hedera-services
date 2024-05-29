@@ -155,7 +155,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // Currently cannot be adapted to v2 because we have to explore an asynchronous process or prior approval.
-    // See HIP-755 and HIP-756 for more context
+    // See HIP-755 (Schedule Service System Contract) and HIP-756 (Contract Scheduled Token Create)
     final Stream<DynamicTest> updateTokenWithKeysHappyPath() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateTokenWithKeysHappyPath")
@@ -649,7 +649,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // Currently cannot be adapted to v2 because we have to explore an asynchronous process or prior approval.
-    // See HIP-755 and HIP-756 for more context
+    // See HIP-755 (Schedule Service System Contract) and HIP-756 (Contract Scheduled Token Create)
     final Stream<DynamicTest> updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
@@ -845,7 +845,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // Currently cannot be adapted to v2 because we have to explore an asynchronous process or prior approval.
-    // See HIP-755 and HIP-756 for more context
+    // See HIP-755 (Schedule Service System Contract) and HIP-756 (Contract Scheduled Token Create)
     final Stream<DynamicTest> updateOnlyKeysForNonFungibleToken() {
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return propertyPreservingHapiSpec("updateOnlyKeysForNonFungibleToken")
@@ -916,7 +916,7 @@ public class TokenUpdatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     // Currently cannot be adapted to v2 because we have to explore an asynchronous process or prior approval.
-    // See HIP-755 and HIP-756 for more context
+    // See HIP-755 (Schedule Service System Contract) and HIP-756 (Contract Scheduled Token Create)
     final Stream<DynamicTest> updateTokenWithoutNameSymbolMemo() {
         final var updateTokenWithoutNameSymbolMemoFunc = "updateTokenWithoutNameSymbolMemo";
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

@@ -98,8 +98,6 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
         return List.of(updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
-    // Currently cannot be adapted to v2 because we have to explore an asynchronous process or prior approval.
-    // See HIP-755 and HIP-756 for more context
     @SuppressWarnings({"java:S5960", "java:S1192"
     }) // using `assertThat` in production code - except this isn't production code
     final Stream<DynamicTest> updateExpiryInfoForToken() {
@@ -253,8 +251,6 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
                         }));
     }
 
-    // Currently cannot be adapted to v2 because we have to explore an asynchronous process or prior approval.
-    // See HIP-755 and HIP-756 for more context
     @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
     final Stream<DynamicTest> updateExpiryInfoForTokenAndReadLatestInfo() {
 
