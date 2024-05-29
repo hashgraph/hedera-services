@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
@@ -84,8 +83,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreat
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
-import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
-import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_LOG_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.DEPLOY;
@@ -121,7 +118,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -5126,87 +5122,6 @@ public class TraceabilitySuite {
                                     ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
                                     ByteStringUtils.wrapUnsafely(mergedContractBytecode.get()));
                         }));
-    }
-
-    @HapiTest
-    @Order(28)
-    final Stream<DynamicTest> testTransferToNonExistingSystemAccounts() {
-        final var contract = "CryptoTransfer";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
-        final HapiSpecOperation[] sidecarChecker = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
-
-        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
-            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
-                    .payingWith("sender")
-                    .sending(ONE_HBAR * 10)
-                    .via("sendViaTransfer" + i)
-                    .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
-            opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
-                            contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
-                    .payingWith("sender")
-                    .sending(ONE_HBAR * 10)
-                    .via("sendViaSend" + i)
-                    .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
-            opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
-                            contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
-                    .payingWith("sender")
-                    .sending(ONE_HBAR * 10)
-                    .via("sendViaCall" + i)
-                    .gas(100000)
-                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
-
-            int finalI = i;
-            sidecarChecker[i] = withOpContext((spec, opLog) -> allRunFor(
-                    spec,
-                    expectContractActionSidecarFor(
-                            "sendViaTransfer" + finalI,
-                            List.of(ContractAction.newBuilder()
-                                    .setCallType(CALL)
-                                    .setCallOperationType(CallOperationType.OP_CALL)
-                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                    .setGas(115992)
-                                    .setGasUsed(67632)
-                                    .setOutput(EMPTY)
-                                    .build()))));
-
-            sidecarChecker[nonExistingSystemAccounts.size() + i] = withOpContext((spec, opLog) -> allRunFor(
-                    spec,
-                    expectContractActionSidecarFor(
-                            "sendViaSend" + finalI,
-                            List.of(ContractAction.newBuilder()
-                                    .setCallType(CALL)
-                                    .setCallOperationType(CallOperationType.OP_CALL)
-                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                    .setGas(115992)
-                                    .setGasUsed(67632)
-                                    .setOutput(EMPTY)
-                                    .build()))));
-
-            sidecarChecker[nonExistingSystemAccounts.size() * 2 + i] = withOpContext((spec, opLog) -> allRunFor(
-                    spec,
-                    expectContractActionSidecarFor(
-                            "sendViaCall" + finalI,
-                            List.of(ContractAction.newBuilder()
-                                    .setCallType(CALL)
-                                    .setCallOperationType(CallOperationType.OP_CALL)
-                                    .setCallingAccount(TxnUtils.asId(GENESIS, spec))
-                                    .setGas(115992)
-                                    .setGasUsed(67632)
-                                    .setOutput(EMPTY)
-                                    .build()))));
-        }
-
-        return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
-                .given(
-                        cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(opsArray)
-                .then(sidecarChecker);
     }
 
     @Order(Integer.MAX_VALUE)

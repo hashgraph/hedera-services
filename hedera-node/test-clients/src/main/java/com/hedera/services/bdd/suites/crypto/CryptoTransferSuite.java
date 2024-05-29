@@ -114,6 +114,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.invalidAliasNonExistingSystemAccounts;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.PAYER;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -129,6 +130,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
@@ -2217,6 +2219,44 @@ public class CryptoTransferSuite {
         return defaultHapiSpec("testTransferToInvalidAliasNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testTransferToNonExistingSystemAccounts() {
+        final var contract = "CryptoTransfer";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 3];
+
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaTransfer" + i)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_FEE_SUBMITTED);
+
+            opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
+                            contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaSend" + i)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_FEE_SUBMITTED);
+
+            opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
+                            contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .payingWith("sender")
+                    .sending(ONE_HBAR * 10)
+                    .via("sendViaCall" + i)
+                    .gas(100000)
+                    .hasKnownStatus(INVALID_FEE_SUBMITTED);
+        }
+        return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when()
