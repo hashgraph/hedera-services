@@ -17,7 +17,6 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
@@ -51,13 +50,11 @@ import java.util.Objects;
  * Responsible for coordinating the clearing of the platform wiring objects.
  */
 public class PlatformCoordinator {
+
     /**
-     * The object counter which spans the {@link com.swirlds.platform.event.hashing.EventHasher EventHasher} and the
-     * postHashCollector
-     * <p>
-     * Used to flush the pair of components together.
+     * Flushes the event hasher.
      */
-    private final ObjectCounter hashingObjectCounter;
+    private final Runnable flushTheEventHasher;
 
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
@@ -81,7 +78,7 @@ public class PlatformCoordinator {
     /**
      * Constructor
      *
-     * @param hashingObjectCounter                   the hashing object counter
+     * @param flushTheEventHasher                    a lambda that flushes the event hasher
      * @param internalEventValidatorWiring           the internal event validator wiring
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
@@ -101,7 +98,7 @@ public class PlatformCoordinator {
      * @param branchReporterWiring                   the branch reporter wiring
      */
     public PlatformCoordinator(
-            @NonNull final ObjectCounter hashingObjectCounter,
+            @NonNull final Runnable flushTheEventHasher,
             @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
@@ -124,7 +121,7 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring,
             @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring) {
 
-        this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
+        this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
@@ -155,11 +152,7 @@ public class PlatformCoordinator {
         // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
         // whether to change the order of these lines.
 
-        // it isn't possible to flush the event hasher and the post hash collector independently, since the framework
-        // currently doesn't support flushing if multiple components share the same object counter. As a workaround,
-        // we just wait for the shared object counter to be empty, which is equivalent to flushing both components.
-        hashingObjectCounter.waitUntilEmpty();
-
+        flushTheEventHasher.run();
         internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();

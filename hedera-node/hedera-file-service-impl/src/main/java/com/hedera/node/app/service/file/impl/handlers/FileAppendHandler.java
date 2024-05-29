@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.file.FileSignatureWaivers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
@@ -60,13 +61,15 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
     private static final Logger logger = LogManager.getLogger(FileAppendHandler.class);
+    private final FileSignatureWaivers fileSignatureWaivers;
 
     /**
      * Default constructor for injection.
+     * @param fileSignatureWaivers the file signature waivers
      */
     @Inject
-    public FileAppendHandler() {
-        // Exists for injection
+    public FileAppendHandler(final FileSignatureWaivers fileSignatureWaivers) {
+        this.fileSignatureWaivers = fileSignatureWaivers;
     }
 
     /**
@@ -93,11 +96,15 @@ public class FileAppendHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-
-        final var transactionBody = context.body().fileAppendOrThrow();
+        final var body = context.body();
+        final var op = body.fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var transactionFileId = transactionBody.fileIDOrThrow();
+        final var transactionFileId = requireNonNull(op.fileID());
         preValidate(transactionFileId, fileStore, context);
+        final var areSignaturesWaived = fileSignatureWaivers.areFileAppendSignaturesWaived(body, context.payer());
+        if (areSignaturesWaived) {
+            return;
+        }
 
         var file = fileStore.getFileLeaf(transactionFileId);
         validateAndAddRequiredKeys(file, null, context);

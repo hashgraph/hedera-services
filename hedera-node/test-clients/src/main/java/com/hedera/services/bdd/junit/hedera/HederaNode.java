@@ -60,6 +60,13 @@ public interface HederaNode {
     Path getRecordStreamPath();
 
     /**
+     * Gets the path to the node's application log.
+     *
+     * @return the path to the node's application log
+     */
+    Path getApplicationLogPath();
+
+    /**
      * Initializes the working directory for the node. Must be called before the node is started.
      *
      * @param configTxt the address book the node should start with

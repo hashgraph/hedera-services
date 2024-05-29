@@ -120,12 +120,20 @@ class PlatformWiringTests {
         // In the future when gossip is refactored to operate within the wiring
         // framework like other components, such things will not be needed.
         componentBuilder.withGossip(
-                (wiringModel, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput) -> {
+                (wiringModel,
+                        eventInput,
+                        eventWindowInput,
+                        eventOutput,
+                        startInput,
+                        stopInput,
+                        clearInput,
+                        systemHealthInput) -> {
                     eventInput.bindConsumer(event -> {});
                     eventWindowInput.bindConsumer(eventWindow -> {});
                     startInput.bindConsumer(noInput -> {});
                     stopInput.bindConsumer(noInput -> {});
                     clearInput.bindConsumer(noInput -> {});
+                    systemHealthInput.bindConsumer(duration -> {});
                 });
 
         wiring.bind(
@@ -144,6 +152,8 @@ class PlatformWiringTests {
                 mock(PlatformPublisher.class),
                 mock(PlatformStatusNexus.class));
 
+        wiring.start();
         assertFalse(wiring.getModel().checkForUnboundInputWires());
+        wiring.stop();
     }
 }

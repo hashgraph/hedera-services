@@ -23,9 +23,9 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.gossip.SyncPermitProvider;
-import com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult;
+import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -73,6 +73,12 @@ public class SyncProtocol implements Protocol {
     private final SyncPermitProvider permitProvider;
 
     /**
+     * Keeps track of how many events have been received from each peer, but haven't yet made it through the intake
+     * pipeline.
+     */
+    private final IntakeEventCounter intakeEventCounter;
+
+    /**
      * Returns true if gossip is halted, false otherwise
      */
     private final BooleanSupplier gossipHalted;
@@ -104,6 +110,8 @@ public class SyncProtocol implements Protocol {
      * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
      * @param fallenBehindManager    manager to determine whether this node has fallen behind
      * @param permitProvider         provides permits to sync
+     * @param intakeEventCounter     keeps track of how many events have been received from each peer, but haven't yet
+     *                               made it through the intake pipeline
      * @param gossipHalted           returns true if gossip is halted, false otherwise
      * @param intakeIsTooFull        returns true if the intake queue is too full to continue syncing, false otherwise
      * @param sleepAfterSync         the amount of time to sleep after a sync
@@ -116,6 +124,7 @@ public class SyncProtocol implements Protocol {
             @NonNull final ShadowgraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final SyncPermitProvider permitProvider,
+            @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final BooleanSupplier gossipHalted,
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
@@ -127,6 +136,7 @@ public class SyncProtocol implements Protocol {
         this.synchronizer = Objects.requireNonNull(synchronizer);
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.permitProvider = Objects.requireNonNull(permitProvider);
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
         this.gossipHalted = Objects.requireNonNull(gossipHalted);
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
@@ -175,22 +185,17 @@ public class SyncProtocol implements Protocol {
             return false;
         }
 
-        final PermitRequestResult permitRequestResult = permitProvider.tryAcquire(peerId);
+        if (intakeEventCounter.hasUnprocessedEvents(peerId)) {
+            syncMetrics.doNotSyncIntakeCounter();
+            return false;
+        }
 
-        return switch (permitRequestResult) {
-            case PERMIT_ACQUIRED -> {
-                syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
-                yield true;
-            }
-            case UNPROCESSED_EVENTS -> {
-                syncMetrics.doNotSyncIntakeCounter();
-                yield false;
-            }
-            case NO_PERMIT_AVAILABLE -> {
-                syncMetrics.doNotSyncNoPermits();
-                yield false;
-            }
-        };
+        if (!permitProvider.acquire()) {
+            syncMetrics.doNotSyncNoPermits();
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -227,9 +232,7 @@ public class SyncProtocol implements Protocol {
      * Return the existing permit
      */
     private void returnPermit() {
-        permitProvider.returnPermit();
-
-        syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+        permitProvider.release();
     }
 
     /**

@@ -21,17 +21,18 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,7 +72,7 @@ public class RecordAssertions extends UtilOp {
                 return false;
             }
         } while (Instant.now().isBefore(deadline));
-        throw Objects.requireNonNull(lastFailure);
+        throw requireNonNull(lastFailure);
     }
 
     public static void triggerAndCloseAtLeastOneFile(final HapiSpec spec) throws InterruptedException {
@@ -85,12 +86,20 @@ public class RecordAssertions extends UtilOp {
     }
 
     public static void triggerAndCloseAtLeastOneFileIfNotInterrupted(final HapiSpec spec) {
-        try {
+        doIfNotInterrupted(() -> {
             RecordAssertions.triggerAndCloseAtLeastOneFile(spec);
             LOG.info("Sleeping a bit to give the record stream a chance to close");
             Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
-        } catch (final InterruptedException ignore) {
+        });
+    }
+
+    public static void doIfNotInterrupted(@NonNull final InterruptibleRunnable runnable) {
+        requireNonNull(runnable);
+        try {
+            runnable.run();
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
         }
     }
 

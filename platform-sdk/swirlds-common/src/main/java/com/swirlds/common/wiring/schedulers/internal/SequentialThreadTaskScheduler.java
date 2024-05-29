@@ -49,6 +49,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     private final ObjectCounter offRamp;
     private final FractionalTimer busyTimer;
     private final Duration sleepDuration;
+    private final long capacity;
 
     private final BlockingQueue<SequentialThreadTask> tasks = new LinkedBlockingQueue<>();
 
@@ -68,6 +69,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
      * @param offRamp                  the counter to decrement when a task is removed from the queue
      * @param busyTimer                the timer to activate when a task is being handled
      * @param sleepDuration            the duration to sleep when the queue is empty
+     * @param capacity                 the maximum desired capacity for this task scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
@@ -81,6 +83,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
             @NonNull final Duration sleepDuration,
+            final long capacity,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
@@ -91,6 +94,7 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
         this.sleepDuration = Objects.requireNonNull(sleepDuration);
+        this.capacity = capacity;
 
         thread = new Thread(this::run, "<scheduler " + name + ">");
     }
@@ -101,6 +105,14 @@ public class SequentialThreadTaskScheduler<OUT> extends TaskScheduler<OUT> imple
     @Override
     public long getUnprocessedTaskCount() {
         return onRamp.getCount();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getCapacity() {
+        return capacity;
     }
 
     /**
