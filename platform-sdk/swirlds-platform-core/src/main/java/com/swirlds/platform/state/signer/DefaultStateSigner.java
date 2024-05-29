@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.state.signer;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,41 +28,37 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * This class is responsible for signing states and producing {@link StateSignaturePayload}s.
+ * A standard implementation of a {@link StateSigner}.
  */
-public class StateSigner {
+public class DefaultStateSigner implements StateSigner {
+
     /**
      * An object responsible for signing states with this node's key.
      */
     private final PlatformSigner signer;
-    /**
-     * provides the current platform status
-     */
-    private final PlatformStatusNexus statusNexus;
 
     /**
-     * Create a new {@link StateSigner} instance.
+     * Constructor.
      *
      * @param signer      an object responsible for signing states with this node's key
-     * @param statusNexus provides the current platform status
      */
-    public StateSigner(@NonNull final PlatformSigner signer, @NonNull final PlatformStatusNexus statusNexus) {
+    public DefaultStateSigner(@NonNull final PlatformSigner signer) {
         this.signer = Objects.requireNonNull(signer);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
     }
 
     /**
-     * Sign the given state and produce a {@link StateSignaturePayload} containing the signature. This method
-     * assumes that the given {@link ReservedSignedState} is reserved by the caller and will release the state when
-     * done.
+     * Sign the given state and produce a {@link StateSignaturePayload} containing the signature. This method assumes
+     * that the given {@link ReservedSignedState} is reserved by the caller and will release the state when done.
      *
      * @param reservedSignedState the state to sign
      * @return a {@link StateSignaturePayload} containing the signature, or null if the state should not be signed
      */
-    public @Nullable ConsensusTransactionImpl signState(@NonNull final ReservedSignedState reservedSignedState) {
+    @Override
+    @Nullable
+    public ConsensusTransactionImpl signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
-            if (statusNexus.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
-                // the only time we don't want to submit signatures is during PCES replay
+            if (reservedSignedState.get().isPcesRound()) {
+                // don't sign states produced during PCES replay
                 return null;
             }
 

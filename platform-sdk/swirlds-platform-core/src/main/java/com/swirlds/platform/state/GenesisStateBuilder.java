@@ -79,8 +79,8 @@ public final class GenesisStateBuilder {
             state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
 
-        final SignedState signedState =
-                new SignedState(platformContext, CryptoStatic::verifySignature, state, "genesis state", false, false);
+        final SignedState signedState = new SignedState(
+                platformContext, CryptoStatic::verifySignature, state, "genesis state", false, false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }
