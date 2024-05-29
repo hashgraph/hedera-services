@@ -29,6 +29,10 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
+import com.swirlds.platform.event.branching.DefaultBranchDetector;
+import com.swirlds.platform.event.branching.DefaultBranchReporter;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
@@ -142,6 +146,8 @@ public class PlatformComponentBuilder {
     private StateHasher stateHasher;
     private StateSnapshotManager stateSnapshotManager;
     private HashLogger hashLogger;
+    private BranchDetector branchDetector;
+    private BranchReporter branchReporter;
     private StateSigner stateSigner;
 
     private boolean metricsDocumentationEnabled = true;
@@ -1131,6 +1137,70 @@ public class PlatformComponentBuilder {
             hashLogger = new DefaultHashLogger(blocks.platformContext());
         }
         return hashLogger;
+    }
+
+    /**
+     * Provide a branch detector in place of the platform's default branch detector.
+     *
+     * @param branchDetector the branch detector to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withBranchDetector(@NonNull final BranchDetector branchDetector) {
+        throwIfAlreadyUsed();
+        if (this.branchDetector != null) {
+            throw new IllegalStateException("Branch detector has already been set");
+        }
+        this.branchDetector = Objects.requireNonNull(branchDetector);
+        return this;
+    }
+
+    /**
+     * Build the branch detector if it has not yet been built. If one has been provided via
+     * {@link #withBranchDetector(BranchDetector)}, that detector will be used. If this method is called more than once,
+     * only the first call will build the branch detector. Otherwise, the default detector will be created and
+     * returned.
+     *
+     * @return the branch detector
+     */
+    @NonNull
+    public BranchDetector buildBranchDetector() {
+        if (branchDetector == null) {
+            branchDetector = new DefaultBranchDetector(blocks.initialAddressBook());
+        }
+        return branchDetector;
+    }
+
+    /**
+     * Provide a branch reporter in place of the platform's default branch reporter.
+     *
+     * @param branchReporter the branch reporter to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withBranchReporter(@NonNull final BranchReporter branchReporter) {
+        throwIfAlreadyUsed();
+        if (this.branchReporter != null) {
+            throw new IllegalStateException("Branch reporter has already been set");
+        }
+        this.branchReporter = Objects.requireNonNull(branchReporter);
+        return this;
+    }
+
+    /**
+     * Build the branch reporter if it has not yet been built. If one has been provided via
+     * {@link #withBranchReporter(BranchReporter)}, that reporter will be used. If this method is called more than once,
+     * only the first call will build the branch reporter. Otherwise, the default reporter will be created and
+     * returned.
+     *
+     * @return the branch reporter
+     */
+    @NonNull
+    public BranchReporter buildBranchReporter() {
+        if (branchReporter == null) {
+            branchReporter = new DefaultBranchReporter(blocks.platformContext(), blocks.initialAddressBook());
+        }
+        return branchReporter;
     }
 
     /**

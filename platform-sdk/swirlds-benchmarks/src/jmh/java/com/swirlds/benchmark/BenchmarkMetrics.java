@@ -25,9 +25,9 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.LongGauge;
@@ -355,8 +355,8 @@ public final class BenchmarkMetrics {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         metricService = Executors.newSingleThreadScheduledExecutor(
                 getStaticThreadManager().createThreadFactory("benchmark", "MetricsWriter"));
-        metrics = new DefaultMetrics(
-                null, registry, metricService, new DefaultMetricsFactory(metricsConfig), metricsConfig);
+        metrics = new DefaultPlatformMetrics(
+                null, registry, metricService, new PlatformMetricsFactoryImpl(metricsConfig), metricsConfig);
 
         metrics.getOrCreate(TIMESTAMP_CONFIG);
         metrics.getOrCreate(MEM_TOT_CONFIG);
