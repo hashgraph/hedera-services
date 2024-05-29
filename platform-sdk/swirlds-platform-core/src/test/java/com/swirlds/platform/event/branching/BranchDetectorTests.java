@@ -476,8 +476,6 @@ class BranchDetectorTests {
         branchDetector.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
-        boolean branchingEventAdded = false;
-
         for (final GossipEvent event : events) {
             if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.

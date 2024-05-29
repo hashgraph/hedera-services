@@ -43,7 +43,7 @@ public interface BranchReporter {
     void updateEventWindow(@NonNull EventWindow eventWindow);
 
     /**
-     * Clear the branch detector, returning it to its initial state.
+     * Clear the branch reporter, returning it to its initial state.
      */
     void clear();
 }
