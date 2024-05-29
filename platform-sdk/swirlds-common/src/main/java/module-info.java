@@ -44,9 +44,6 @@ module com.swirlds.common {
     exports com.swirlds.common.metrics.platform.prometheus;
     exports com.swirlds.common.notification;
     exports com.swirlds.common.platform;
-    exports com.swirlds.common.sequence;
-    exports com.swirlds.common.sequence.map;
-    exports com.swirlds.common.sequence.set;
     exports com.swirlds.common.stream;
     exports com.swirlds.common.stream.internal;
     exports com.swirlds.common.threading;
@@ -64,6 +61,7 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring;
     exports com.swirlds.common.wiring.component;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;

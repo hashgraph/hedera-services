@@ -130,24 +130,6 @@ public interface Cryptography {
     Hash getNullHash(final DigestType digestType);
 
     /**
-     * Verifies the given digital signatures for authenticity. The result of the verification will be returned by the
-     * {@link TransactionSignature#getSignatureStatus()} method once the future (available via
-     * {@link TransactionSignature#getFuture()}) has been completed.
-     * <p>
-     * Note: This implementation is non-blocking and returns almost immediately.
-     * <p>
-     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
-     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
-     * length and the output of 256-bit hashing function.
-     *
-     * @param signatures a list of signatures to be verified
-     * @deprecated use {@link #verifySync(List)} instead, asynchronous verification is a feature that is scheduled for
-     * removal
-     */
-    @Deprecated(forRemoval = true)
-    void verifyAsync(final List<TransactionSignature> signatures);
-
-    /**
      * Verifies the given digital signature for authenticity. The result of the verification will be returned by the
      * {@link TransactionSignature#getSignatureStatus()} method once the future (available via
      * {@link TransactionSignature#getFuture()}) has been completed.

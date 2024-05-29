@@ -43,6 +43,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
@@ -79,7 +80,6 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
-import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -461,7 +461,7 @@ public final class PlatformBuilder {
 
         final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
 
-        final Cryptography cryptography = CryptographyFactory.create(configuration);
+        final Cryptography cryptography = CryptographyFactory.create();
         final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
 
         // For backwards compatibility with the old static access pattern.
@@ -617,18 +617,24 @@ public final class PlatformBuilder {
                 softwareVersion);
 
         if (model == null) {
-            final PlatformSchedulersConfig schedulersConfig =
-                    platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+            final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
 
             final int coreCount = Runtime.getRuntime().availableProcessors();
-            final int parallelism = (int) Math.max(
-                    1, schedulersConfig.defaultPoolMultiplier() * coreCount + schedulersConfig.defaultPoolConstant());
+            final int parallelism = (int)
+                    Math.max(1, wiringConfig.defaultPoolMultiplier() * coreCount + wiringConfig.defaultPoolConstant());
             final ForkJoinPool defaultPool =
                     platformContext.getExecutorFactory().createForkJoinPool(parallelism);
             logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
 
             model = WiringModelBuilder.create(platformContext)
+                    .withJvmAnchorEnabled(true)
                     .withDefaultPool(defaultPool)
+                    .withHealthMonitorEnabled(wiringConfig.healthMonitorEnabled())
+                    .withHardBackpressureEnabled(wiringConfig.hardBackpressureEnabled())
+                    .withHealthMonitorCapacity(wiringConfig.healthMonitorSchedulerCapacity())
+                    .withHealthMonitorPeriod(wiringConfig.healthMonitorHeartbeatPeriod())
+                    .withHealthLogThreshold(wiringConfig.healthLogThreshold())
+                    .withHealthLogPeriod(wiringConfig.healthLogPeriod())
                     .build();
         }
 

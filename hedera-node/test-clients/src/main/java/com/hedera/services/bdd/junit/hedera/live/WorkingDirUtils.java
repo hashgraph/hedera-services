@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
-    private static final String OUTPUT_DIR = "output";
     private static final String KEYS_FOLDER = "keys";
     private static final String CONFIG_FOLDER = "config";
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER);
@@ -40,6 +39,7 @@ public class WorkingDirUtils {
     private static final String BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
 
     public static final String DATA_DIR = "data";
+    public static final String OUTPUT_DIR = "output";
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -129,6 +129,23 @@ public class WorkingDirUtils {
                 throw new UncheckedIOException(e);
             }
         }
+    }
+
+    /**
+     * Returns the given path after a best-effort attempt to ensure it exists.
+     *
+     * @param path the path to ensure exists
+     * @return the path
+     */
+    public static Path guaranteedExtant(@NonNull final Path path) {
+        if (!Files.exists(path)) {
+            try {
+                createDirectoriesUnchecked(path);
+            } catch (UncheckedIOException ignore) {
+                // We don't care if the directory already exists
+            }
+        }
+        return path;
     }
 
     private static String readStringUnchecked(@NonNull final Path path) {

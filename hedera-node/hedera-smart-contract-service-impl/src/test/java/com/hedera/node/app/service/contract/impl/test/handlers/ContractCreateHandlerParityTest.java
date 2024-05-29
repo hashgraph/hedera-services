@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.util.Set;
 import javax.inject.Provider;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,12 +49,15 @@ class ContractCreateHandlerParityTest {
     @Mock
     private Provider<TransactionComponent.Factory> provider;
 
+    @Mock
+    private GasCalculator gasCalculator;
+
     private ContractCreateHandler subject;
 
     @BeforeEach
     void setUp() {
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
-        subject = new ContractCreateHandler(provider);
+        subject = new ContractCreateHandler(provider, gasCalculator);
     }
 
     @Test

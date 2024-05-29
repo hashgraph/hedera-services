@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,7 +46,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
         super(states);
         requireNonNull(states);
 
-        this.stakingInfoState = states.get(TokenServiceImpl.STAKING_INFO_KEY);
+        this.stakingInfoState = states.get(V0490TokenSchema.STAKING_INFO_KEY);
     }
 
     /**

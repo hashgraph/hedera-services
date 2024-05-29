@@ -78,12 +78,11 @@ class ConsensusRoundHandlerTests {
     }
 
     private EventImpl buildEvent() {
-        final EventImpl event = EventImplTestUtils.createEventImpl(new TestingEventBuilder(random), null, null);
-        event.setConsensusTimestamp(time.now());
+        final EventImpl event = EventImplTestUtils.createEventImpl(
+                new TestingEventBuilder(random).setConsensusTimestamp(time.now()), null, null);
 
         event.getBaseEvent().signalPrehandleCompletion();
         event.getRunningHash().setHash(mock(Hash.class));
-        event.setConsensusOrder(1L);
 
         return event;
     }
