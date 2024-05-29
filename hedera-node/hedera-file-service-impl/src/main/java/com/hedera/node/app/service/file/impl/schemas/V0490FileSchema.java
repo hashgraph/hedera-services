@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.file.impl.schemas;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -89,28 +87,41 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47FileGenesisSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
-public class InitialModFileGenesisSchema extends Schema {
-    private static final Logger logger = LogManager.getLogger(InitialModFileGenesisSchema.class);
+public class V0490FileSchema extends Schema {
+    private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
+
+    public static final String BLOBS_KEY = "FILES";
+    public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
+    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
+
     /**
      * A hint to the database system of the maximum number of files we will store. This MUST NOT BE CHANGED. If it is
      * changed, then the database has to be rebuilt.
      */
     private static final int MAX_FILES_HINT = 50_000_000;
+    /**
+     * The version of the schema.
+     */
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     private final ConfigProvider configProvider;
-    private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState;
-    private Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
-    private Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
 
     /**
-     * Constructs a new {@link InitialModFileGenesisSchema} instance with the given {@link SemanticVersion} and {@link ConfigProvider}.
+     * These fields hold the state of the file service during migration.
+     */
+    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState;
+
+    private static Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
+    private static Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
+
+    /**
+     * Constructs a new {@link V0490FileSchema} instance with the given {@link ConfigProvider}.
      *
-     * @param version the version of the schema
      * @param configProvider the configuration provider
      */
-    public InitialModFileGenesisSchema(
-            @NonNull final SemanticVersion version, @NonNull final ConfigProvider configProvider) {
-        super(version);
+    public V0490FileSchema(@NonNull final ConfigProvider configProvider) {
+        super(VERSION);
         this.configProvider = requireNonNull(configProvider);
     }
 
@@ -669,5 +680,12 @@ public class InitialModFileGenesisSchema extends Schema {
                             .expirationSecond(bootstrapConfig.systemEntityExpiry())
                             .build());
         }
+    }
+
+    public static void setFileFromState(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState) {
+        V0490FileSchema.fileFromState = fileFromState;
+        final var blobStore = new FcBlobsBytesStore(fileFromState);
+        V0490FileSchema.fileContents = DataMapFactory.dataMapFrom(blobStore);
+        V0490FileSchema.fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
     }
 }

@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,7 +44,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      */
     public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
+        this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
     }
 
     // FUTURE: remove this method and the TokenMetadata object entirely

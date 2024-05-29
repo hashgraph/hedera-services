@@ -35,13 +35,16 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47addressbookSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
-public class InitialServiceNodeSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(InitialServiceNodeSchema.class);
+public class V050AddressBookSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V050AddressBookSchema.class);
 
     private static final long MAX_NODES = 1_000L;
 
-    public InitialServiceNodeSchema(@NonNull final SemanticVersion version) {
-        super(version);
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(50).patch(0).build();
+
+    public V050AddressBookSchema() {
+        super(VERSION);
     }
 
     @NonNull

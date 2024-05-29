@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.schedule.impl.schemas;
 
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -53,28 +53,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 
-class InitialModServiceScheduleSchemaTest {
+class V0490ScheduleSchemaTest {
 
-    private static final SemanticVersion VERSION_123 = new SemanticVersion(1, 2, 3, "pre", "build");
-
-    private InitialModServiceScheduleSchema subject;
+    private V0490ScheduleSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new InitialModServiceScheduleSchema(VERSION_123);
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void constructorNullArgThrows() {
-        Assertions.assertThatThrownBy(() -> new InitialModServiceScheduleSchema(null))
-                .isInstanceOf(NullPointerException.class);
+        subject = new V0490ScheduleSchema();
     }
 
     @Test
     void constructorHappyPath() {
         // Instance created in setup
-        Assertions.assertThat(subject.getVersion()).isEqualTo(VERSION_123);
+        Assertions.assertThat(subject.getVersion())
+                .isEqualTo(
+                        SemanticVersion.newBuilder().major(0).minor(49).patch(0).build());
     }
 
     @Test
