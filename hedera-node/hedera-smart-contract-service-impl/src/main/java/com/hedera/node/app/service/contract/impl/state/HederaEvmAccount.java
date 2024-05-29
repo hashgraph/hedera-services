@@ -68,7 +68,9 @@ public interface HederaEvmAccount extends MutableAccount {
      * cache of {@link org.hyperledger.besu.evm.Code} wrappers around raw bytecode returned by
      * {@link Account#getCode()}.
      *
-     * @param functionSelector the function selector to use when fetching the code.  Only relevant for regular accounts.
+     * @param functionSelector the function selector to use when fetching the code.  If more than 4 bytes for the
+     *                         function selector is passed in, only the first 4 bytes will be used.
+     *                         Only relevant for regular accounts.
      * @return the EVM code for this account
      */
     @NonNull
