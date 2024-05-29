@@ -50,7 +50,7 @@ message Account {
 In addition, we should define a new protobuf type that will be used for the construction of a linked list holding the sender's pending airdrops:
 
 ```proto
-message account_airdrop {
+message AccountAirdrop {
     /**
      * The previous airdrop id of account's airdrops linked list
      */
