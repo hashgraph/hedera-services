@@ -2194,21 +2194,24 @@ public class CryptoTransferSuite {
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                    .via("sendViaTransfer" + i)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
             opsArray[invalidAliasNonExistingSystemAccounts.size() + i] = contractCall(
                             contract, "sendViaSend", mirrorAddrWith(invalidAliasNonExistingSystemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                    .via("sendViaSend" + i)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
             opsArray[invalidAliasNonExistingSystemAccounts.size() * 2 + i] = contractCall(
                             contract, "sendViaCall", mirrorAddrWith(invalidAliasNonExistingSystemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_ALIAS_KEY);
+                    .via("sendViaCall" + i)
+                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
         }
 
         return defaultHapiSpec("testTransferToInvalidAliasNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)

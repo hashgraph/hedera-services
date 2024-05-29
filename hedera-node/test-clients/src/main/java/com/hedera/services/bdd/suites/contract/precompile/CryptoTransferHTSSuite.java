@@ -1777,8 +1777,7 @@ public class CryptoTransferHTSSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
             });
             childRecordsChecks[i] = childRecordsCheck(
-                    "htsTransfer" + i, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY));
-            recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT);
+                    "htsTransfer" + i, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT));
         }
         return defaultHapiSpec("testHtsTokenTransferToNonExistingSystemAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
