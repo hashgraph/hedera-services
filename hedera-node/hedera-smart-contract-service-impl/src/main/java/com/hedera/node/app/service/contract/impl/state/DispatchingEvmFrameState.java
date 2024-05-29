@@ -91,14 +91,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
             "6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
+    // The following byte code is created by compiling the contract defined in HIP-906
+    // (https://hips.hedera.com/hip/hip-906)
     private static final String ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY =
             "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     private final HederaNativeOperations nativeOperations;
     private final ContractStateStore contractStateStore;
-    // This state is necessary to determine if we should return the proxy contract bytecode for an account
-    // This is only currently supported for certain function calls to the Hedera Account Service system contract.
-    private AccountBytecodeType accountBytecodeType = AccountBytecodeType.RETURN_CONTRACT_BYTECODE;
 
     public DispatchingEvmFrameState(
             @NonNull final HederaNativeOperations nativeOperations,
@@ -183,27 +182,14 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public void setAccountBytecodeType(@NonNull final AccountBytecodeType type) {
-        this.accountBytecodeType = type;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public @NonNull Bytes getCode(@NonNull final ContractID contractID) {
         requireNonNull(contractID);
-        if (accountBytecodeType == AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE && contractID.hasContractNum()) {
-            final var address = getAddress(contractID.contractNumOrElse(0L));
-            return address == null ? Bytes.EMPTY : accountProxyBytecodeFor(address);
-        }
-
         final var numberedBytecode = contractStateStore.getBytecode(contractID);
         if (numberedBytecode == null) {
             return Bytes.EMPTY;
         } else {
             final var code = numberedBytecode.code();
-            return code == null ? Bytes.EMPTY : pbjToTuweniBytes(code);
+            return pbjToTuweniBytes(code);
         }
     }
 
@@ -213,10 +199,6 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull Hash getCodeHash(@NonNull final ContractID contractID) {
         requireNonNull(contractID);
-        // return the hash of the proxy contract if the account bytecode type is set to return proxy contract bytecode
-        if (accountBytecodeType == AccountBytecodeType.RETURN_PROXY_CONTRACT_BYTECODE) {
-            return CodeFactory.createCode(getCode(contractID), 0, false).getCodeHash();
-        }
 
         final var numberedBytecode = contractStateStore.getBytecode(contractID);
         if (numberedBytecode == null) {
@@ -241,6 +223,23 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull Hash getTokenRedirectCodeHash(@NonNull final Address address) {
         return CodeFactory.createCode(proxyBytecodeFor(address), 0, false).getCodeHash();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull Bytes getAccountRedirectCode(@Nullable final Address address) {
+        return accountProxyBytecodeFor(address);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public @NonNull Hash getAccountRedirectCodeHash(@Nullable final Address address) {
+        return CodeFactory.createCode(accountProxyBytecodeFor(address), 0, false)
+                .getCodeHash();
     }
 
     /**
@@ -398,7 +397,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             @NonNull final Address recipient,
             final long amount,
             final boolean delegateCall) {
-        final var from = (ProxyEvmAccount) getAccount(sendingContract);
+        final var from = (AbstractProxyEvmAccount) getAccount(sendingContract);
         if (from == null) {
             return Optional.of(INVALID_SOLIDITY_ADDRESS);
         }
@@ -412,7 +411,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         final var status = nativeOperations.transferWithReceiverSigCheck(
                 amount,
                 from.hederaId(),
-                ((ProxyEvmAccount) to).hederaId(),
+                ((AbstractProxyEvmAccount) to).hederaId(),
                 new ActiveContractVerificationStrategy(
                         from.hederaContractId(),
                         tuweniToPbjBytes(from.getAddress()),
@@ -423,7 +422,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 return Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE);
             } else {
                 throw new IllegalStateException("Transfer from 0.0." + from.accountID
-                        + " to 0.0." + ((ProxyEvmAccount) to).accountID
+                        + " to 0.0." + ((AbstractProxyEvmAccount) to).accountID
                         + " failed with status " + status + " despite valid preconditions");
             }
         } else {
@@ -478,7 +477,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             return Optional.of(INVALID_SOLIDITY_ADDRESS);
         }
         // Token addresses don't have bytecode that could run a selfdestruct, so this cast is safe
-        final var deletedAccount = (ProxyEvmAccount) requireNonNull(getAccount(deleted));
+        final var deletedAccount = (AbstractProxyEvmAccount) requireNonNull(getAccount(deleted));
         if (deletedAccount.numTreasuryTitles() > 0) {
             return Optional.of(CONTRACT_IS_TREASURY);
         }
@@ -486,7 +485,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             return Optional.of(CONTRACT_STILL_OWNS_NFTS);
         }
         nativeOperations.trackSelfDestructBeneficiary(
-                deletedAccount.hederaId(), ((ProxyEvmAccount) beneficiaryAccount).hederaId(), frame);
+                deletedAccount.hederaId(), ((AbstractProxyEvmAccount) beneficiaryAccount).hederaId(), frame);
         return Optional.empty();
     }
 
@@ -521,7 +520,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (account.deleted() || account.expiredAndPendingRemoval() || isNotPriority(address, account)) {
             return null;
         }
-        return new ProxyEvmAccount(account.accountId(), this);
+        if (account.smartContract()) {
+            return new ProxyEvmContract(account.accountId(), this);
+        } else {
+            return new ProxyEvmAccount(account.accountId(), this);
+        }
     }
 
     private Bytes proxyBytecodeFor(@NonNull final Address address) {
@@ -530,10 +533,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 
-    private Bytes accountProxyBytecodeFor(@NonNull final Address address) {
-        requireNonNull(address);
-        return Bytes.fromHexString(ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY.replace(
-                ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
+    private Bytes accountProxyBytecodeFor(@Nullable final Address address) {
+        return address == null
+                ? Bytes.EMPTY
+                : Bytes.fromHexString(ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY.replace(
+                        ADDRESS_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 
     private boolean isNotPriority(

@@ -46,15 +46,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public interface EvmFrameState {
     /**
-     * Determines if the contract bytecode returned for an account or a contract should be the proxy redirect bytecode
-     * or the actual contract bytecode.
-     */
-    public enum AccountBytecodeType {
-        RETURN_PROXY_CONTRACT_BYTECODE,
-        RETURN_CONTRACT_BYTECODE
-    }
-
-    /**
      * Returns the number of bytecodes in state; we use this to enforce the contract creation
      * limit.
      *
@@ -223,6 +214,25 @@ public interface EvmFrameState {
     Hash getTokenRedirectCodeHash(@NonNull Address address);
 
     /**
+     * Returns the redirect bytecode for the account with the given address.  This should only be called for regular accounts
+     * that are not contracts.
+     *
+     * @param address the account address
+     * @return the redirect code for the account
+     */
+    @NonNull
+    Bytes getAccountRedirectCode(@Nullable Address address);
+
+    /**
+     * Returns the hash of the redirect bytecode for the account with the given address.
+     *
+     * @param address the account address
+     * @return the redirect code for the token
+     */
+    @NonNull
+    Hash getAccountRedirectCodeHash(@Nullable Address address);
+
+    /**
      * Returns the native account with the given account id.
      *
      * @param accountID the account id
@@ -339,10 +349,4 @@ public interface EvmFrameState {
      */
     @NonNull
     RentFactors getRentFactorsFor(ContractID contractID);
-
-    /**
-     * Sets which bytecode to return for a given account.  This should only be modified if a function selector matches
-     * a call supported by the proxy redirect contract.
-     */
-    void setAccountBytecodeType(@NonNull final AccountBytecodeType type);
 }

@@ -38,7 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -156,7 +156,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         // as a special case eligible for staking rewards
         if (isTopLevelTransaction(frame)) {
             final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
-            if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
+            if (maybeCalledContract instanceof ProxyEvmContract a && a.isContract()) {
                 recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
             }
         }
