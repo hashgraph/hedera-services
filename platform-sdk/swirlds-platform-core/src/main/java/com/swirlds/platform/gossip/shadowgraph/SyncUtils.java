@@ -401,11 +401,7 @@ public final class SyncUtils {
                 // If we've decided to send an event, we also want to send its parents if those parents are needed
                 // by the peer.
                 filteredList.addFirst(event);
-                final Hash selfParentHash = event.getBaseEvent().getHashedData().getSelfParentHash();
-                if (selfParentHash != null) {
-                    parentHashesOfEventsToSend.add(selfParentHash);
-                }
-                for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
+                for (final EventDescriptor otherParent : event.getBaseEvent().getAllParents()) {
                     parentHashesOfEventsToSend.add(otherParent.getHash());
                 }
             }

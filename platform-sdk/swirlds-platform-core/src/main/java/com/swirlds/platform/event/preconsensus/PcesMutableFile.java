@@ -95,7 +95,7 @@ public class PcesMutableFile {
     public void writeEvent(final GossipEvent event) throws IOException {
         if (!descriptor.canContain(event.getAncientIndicator(descriptor.getFileType()))) {
             throw new IllegalStateException(
-                    "Cannot write event " + event.getHashedData().getHash() + " with ancient indicator "
+                    "Cannot write event " + event.getHash() + " with ancient indicator "
                             + event.getAncientIndicator(descriptor.getFileType()) + " to file " + descriptor);
         }
         out.writeSerializable(event, false);

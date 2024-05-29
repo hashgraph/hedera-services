@@ -59,7 +59,7 @@ public class EventSerialization {
         final Random random = new Random(seed);
 
         event = new TestingEventBuilder(random).setSystemTransactionCount(1).build();
-        StaticSoftwareVersion.setSoftwareVersion(event.getHashedData().getSoftwareVersion());
+        StaticSoftwareVersion.setSoftwareVersion(event.getSoftwareVersion());
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
         final PipedInputStream inputStream = new PipedInputStream();
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);

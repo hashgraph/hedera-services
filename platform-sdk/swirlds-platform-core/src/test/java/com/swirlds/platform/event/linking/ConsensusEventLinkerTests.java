@@ -94,17 +94,17 @@ class ConsensusEventLinkerTests {
                 linkedEvents.add(linkedEvent);
                 assertSame(event, linkedEvent.getBaseEvent());
 
-                final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+                final EventDescriptor selfParent = event.getSelfParent();
                 if (selfParent == null || eventWindow.isAncient(selfParent)) {
                     assertNull(linkedEvent.getSelfParent());
                 } else {
                     assertNotNull(linkedEvent.getSelfParent());
                     assertEquals(
-                            event.getHashedData().getSelfParent(),
+                            event.getSelfParent(),
                             linkedEvent.getSelfParent().getBaseEvent().getDescriptor());
                 }
 
-                final List<EventDescriptor> otherParents = event.getHashedData().getOtherParents();
+                final List<EventDescriptor> otherParents = event.getOtherParents();
                 if (otherParents.isEmpty()) {
                     assertNull(linkedEvent.getOtherParent());
                 } else {

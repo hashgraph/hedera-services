@@ -26,6 +26,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -93,16 +94,16 @@ class BirthRoundMigrationShimTests {
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(1, 100),
                     birthRound);
 
-            assertEquals(birthRound, event.getHashedData().getBirthRound());
-            final Hash originalHash = event.getHashedData().getHash();
+            assertEquals(birthRound, event.getBirthRound());
+            final Hash originalHash = event.getHash();
 
             assertSame(event, shim.migrateEvent(event));
-            assertEquals(ROUND_FIRST, event.getHashedData().getBirthRound());
+            assertEquals(ROUND_FIRST, event.getBirthRound());
 
             // The hash of the event should not have changed
-            event.getHashedData().invalidateHash();
-            platformContext.getCryptography().digestSync(event.getHashedData());
-            assertEquals(originalHash, event.getHashedData().getHash());
+            event.invalidateHash();
+            new StatefulEventHasher().hashEvent(event);
+            assertEquals(originalHash, event.getHash());
         }
     }
 
@@ -137,15 +138,15 @@ class BirthRoundMigrationShimTests {
                     lowestJudgeGenerationBeforeBirthRoundMode + random.nextInt(0, 10),
                     birthRound);
 
-            assertEquals(birthRound, event.getHashedData().getBirthRound());
-            final Hash originalHash = event.getHashedData().getHash();
+            assertEquals(birthRound, event.getBirthRound());
+            final Hash originalHash = event.getHash();
 
             assertSame(event, shim.migrateEvent(event));
-            assertEquals(lastRoundBeforeBirthRoundMode, event.getHashedData().getBirthRound());
+            assertEquals(lastRoundBeforeBirthRoundMode, event.getBirthRound());
 
             // The hash of the event should not have changed
             event.getHashedData().invalidateHash();
-            platformContext.getCryptography().digestSync(event.getHashedData());
+            new StatefulEventHasher().hashEvent(event);
             assertEquals(originalHash, event.getHashedData().getHash());
         }
     }
@@ -179,15 +180,15 @@ class BirthRoundMigrationShimTests {
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(-100, 100),
                     birthRound);
 
-            assertEquals(birthRound, event.getHashedData().getBirthRound());
-            final Hash originalHash = event.getHashedData().getHash();
+            assertEquals(birthRound, event.getBirthRound());
+            final Hash originalHash = event.getHash();
 
             assertSame(event, shim.migrateEvent(event));
-            assertEquals(birthRound, event.getHashedData().getBirthRound());
+            assertEquals(birthRound, event.getBirthRound());
 
             // The hash of the event should not have changed
-            event.getHashedData().invalidateHash();
-            platformContext.getCryptography().digestSync(event.getHashedData());
+            event.invalidateHash();
+            new StatefulEventHasher().hashEvent(event);
             assertEquals(originalHash, event.getHashedData().getHash());
         }
     }

@@ -119,8 +119,8 @@ public class SimpleLinker {
         }
 
         final Instant parentTimeCreated =
-                candidateParent.getBaseEvent().getHashedData().getTimeCreated();
-        final Instant childTimeCreated = child.getHashedData().getTimeCreated();
+                candidateParent.getBaseEvent().getTimeCreated();
+        final Instant childTimeCreated = child.getTimeCreated();
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time
         // when deciding on the event creation time
@@ -145,12 +145,11 @@ public class SimpleLinker {
             return null;
         }
 
-        final BaseEventHashedData hashedData = event.getHashedData();
-        final EventImpl selfParent = getParentToLink(event, hashedData.getSelfParent());
+        final EventImpl selfParent = getParentToLink(event, event.getSelfParent());
 
         // FUTURE WORK: Extend other parent linking to support multiple other parents.
         // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = hashedData.getOtherParents();
+        final List<EventDescriptor> otherParents = event.getOtherParents();
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);

@@ -242,7 +242,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher(blocks.platformContext());
+            eventHasher = new DefaultEventHasher();
         }
         return eventHasher;
     }

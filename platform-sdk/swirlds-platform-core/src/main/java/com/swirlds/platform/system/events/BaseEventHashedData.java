@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -310,6 +311,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     @NonNull
     public List<EventDescriptor> getOtherParents() {
         return otherParents;
+    }
+
+    @NonNull
+    public List<EventDescriptor> getAllParents() {
+        return !hasSelfParent() ? otherParents : Stream.concat(Stream.of(selfParent), otherParents.stream())
+                .toList();
     }
 
     /**

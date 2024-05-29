@@ -76,6 +76,6 @@ public interface GraphGenerations {
      * @return true if the event is ancient, false otherwise
      */
     default boolean isAncient(@NonNull final GossipEvent event) {
-        return event.getHashedData().getGeneration() < getMinGenerationNonAncient();
+        return event.getGeneration() < getMinGenerationNonAncient();
     }
 }

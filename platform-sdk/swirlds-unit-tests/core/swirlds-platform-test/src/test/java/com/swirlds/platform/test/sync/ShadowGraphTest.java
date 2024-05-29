@@ -40,6 +40,7 @@ import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -109,7 +110,7 @@ class ShadowgraphTest {
             final IndexedEvent event = emitter.emitEvent();
 
             final Hash hash = event.getBaseHash();
-            ancestorsMap.put(hash, ancestorsOf(event.getSelfParentHash(), event.getOtherParentHash()));
+            ancestorsMap.put(hash, ancestorsOf(event.getBaseEvent().getAllParents()));
             assertDoesNotThrow(() -> shadowgraph.addEvent(event), "Unable to insert event into shadow graph.");
             assertTrue(
                     shadowgraph.isHashInGraph(hash),
@@ -181,18 +182,12 @@ class ShadowgraphTest {
         }
     }
 
-    private Set<Hash> ancestorsOf(final Hash selfParent, final Hash otherParent) {
+    private Set<Hash> ancestorsOf(final List<EventDescriptor> parents) {
         final Set<Hash> ancestorSet = new HashSet<>();
-        if (selfParent != null) {
-            ancestorSet.add(selfParent);
-            if (ancestorsMap.containsKey(selfParent)) {
-                ancestorSet.addAll(ancestorsMap.get(selfParent));
-            }
-        }
-        if (otherParent != null) {
-            ancestorSet.add(otherParent);
-            if (ancestorsMap.containsKey(otherParent)) {
-                ancestorSet.addAll(ancestorsMap.get(otherParent));
+        for (final EventDescriptor parent : parents) {
+            ancestorSet.add(parent.getHash());
+            if (ancestorsMap.containsKey(parent.getHash())) {
+                ancestorSet.addAll(ancestorsMap.get(parent.getHash()));
             }
         }
         return ancestorSet;

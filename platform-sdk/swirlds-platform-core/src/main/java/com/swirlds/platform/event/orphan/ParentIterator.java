@@ -47,8 +47,8 @@ class ParentIterator implements Iterator<EventDescriptor> {
     ParentIterator(@NonNull final GossipEvent event) {
         parents = new ArrayList<>();
 
-        final EventDescriptor selfParent = event.getHashedData().getSelfParent();
-        final List<EventDescriptor> otherParents = event.getHashedData().getOtherParents();
+        final EventDescriptor selfParent = event.getSelfParent();
+        final List<EventDescriptor> otherParents = event.getOtherParents();
 
         if (selfParent != null) {
             parents.add(selfParent);

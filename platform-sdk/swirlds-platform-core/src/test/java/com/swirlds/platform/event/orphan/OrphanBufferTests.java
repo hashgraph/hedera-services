@@ -175,10 +175,8 @@ class OrphanBufferTests {
             @NonNull final GossipEvent event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
-        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), eventWindow, emittedEvents));
-
-        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            assertTrue(eventEmittedOrAncient(otherParent, eventWindow, emittedEvents));
+        for (final EventDescriptor parent : event.getAllParents()) {
+            assertTrue(eventEmittedOrAncient(parent, eventWindow, emittedEvents));
         }
     }
 
@@ -270,7 +268,7 @@ class OrphanBufferTests {
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {
                 assertValidParents(unorphanedEvent, eventWindow, emittedEvents);
-                emittedEvents.add(unorphanedEvent.getHashedData().getHash());
+                emittedEvents.add(unorphanedEvent.getHash());
             }
         }
 

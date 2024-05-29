@@ -183,11 +183,10 @@ public class GraphGeneratorTests {
         int count = 0;
         for (final IndexedEvent event : events) {
             final NodeId otherParentId;
-            if (event.getBaseEvent().getHashedData().getOtherParents().isEmpty()) {
+            if (event.getBaseEvent().getOtherParents().isEmpty()) {
                 otherParentId = null;
             } else {
                 otherParentId = event.getBaseEvent()
-                        .getHashedData()
                         .getOtherParents()
                         .getFirst()
                         .getCreator();

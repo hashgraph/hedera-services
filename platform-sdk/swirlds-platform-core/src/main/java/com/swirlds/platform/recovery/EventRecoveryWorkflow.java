@@ -43,6 +43,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -376,7 +377,7 @@ public final class EventRecoveryWorkflow {
         previousState.get().getState().throwIfImmutable();
         final State newState = previousState.get().getState().copy();
         final EventImpl lastEvent = (EventImpl) getLastEvent(round);
-        CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
+        new StatefulEventHasher().hashEvent(lastEvent.getBaseEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 
