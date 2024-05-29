@@ -29,8 +29,7 @@ import java.util.Set;
  */
 public class StaticTopology implements NetworkTopology {
 
-    /** nodes are mapped so lookups are efficient. **/
-    private final Set<NodeId> nodeIdToIndexSet = new HashSet<>();
+    private final Set<NodeId> nodeIds = new HashSet<>();
 
     private final NodeId selfId;
 
@@ -42,7 +41,7 @@ public class StaticTopology implements NetworkTopology {
     public StaticTopology(@NonNull final List<PeerInfo> peers, @NonNull final NodeId selfId) {
         Objects.requireNonNull(peers);
         Objects.requireNonNull(selfId);
-        peers.forEach(peer -> nodeIdToIndexSet.add(peer.nodeId()));
+        peers.forEach(peer -> nodeIds.add(peer.nodeId()));
         this.selfId = selfId;
     }
 
@@ -51,7 +50,7 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public Set<NodeId> getNeighbors() {
-        return nodeIdToIndexSet;
+        return nodeIds;
     }
 
     /**
@@ -69,7 +68,7 @@ public class StaticTopology implements NetworkTopology {
      * @return true if this node is my neighbor, false if not
      */
     private boolean isNeighbor(final NodeId nodeId) {
-        return nodeIdToIndexSet.contains(nodeId);
+        return nodeIds.contains(nodeId);
     }
 
     /**
