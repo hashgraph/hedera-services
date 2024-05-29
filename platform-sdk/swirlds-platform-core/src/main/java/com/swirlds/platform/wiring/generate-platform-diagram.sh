@@ -34,8 +34,8 @@ pcli diagram \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
     -s 'PcesWriter:durable event info:📝' \
     -s 'HealthMonitor:health info:🏥' \
-    -g 'Event Validation:InternalEventValidator,EventDeduplicator,EventSignatureValidator' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
+    -g 'Event Intake:EventHasher,InternalEventValidator,EventDeduplicator,EventSignatureValidator,Orphan Buffer' \
     -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
     -g 'State File Management:State Snapshot Manager,📀,💾' \
@@ -54,6 +54,7 @@ pcli diagram \
     -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Branch Detection:BranchDetector,BranchReporter' \
+    -g 'Miscellaneous:Mystery Input,RunningEventHashOverride,HealthMonitor,SignedStateSentinel,StatusStateMachine,PlatformStatusNexus,Heartbeat,❔,🏥,❤️,💨,🚦' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
