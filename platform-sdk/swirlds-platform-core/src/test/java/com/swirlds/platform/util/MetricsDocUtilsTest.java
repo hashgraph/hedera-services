@@ -25,13 +25,13 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.config.MetricsConfig_;
-import com.swirlds.common.metrics.platform.DefaultCounter;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.metrics.impl.DefaultCounter;
 import com.swirlds.platform.SwirldsPlatform;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -63,16 +63,16 @@ class MetricsDocUtilsTest {
         assertFalse(oldFile.exists(), "The metric document file should be removed before testing: " + docFilePath);
 
         // given
-        final Metrics globalMetrics = mock(DefaultMetrics.class);
+        final Metrics globalMetrics = mock(DefaultPlatformMetrics.class);
         final SwirldsPlatform platform1 = mock(SwirldsPlatform.class);
         final PlatformContext context1 = mock(PlatformContext.class);
         when(platform1.getContext()).thenReturn(context1);
         final SwirldsPlatform platform2 = mock(SwirldsPlatform.class);
         final PlatformContext context2 = mock(PlatformContext.class);
         when(platform2.getContext()).thenReturn(context2);
-        final Metrics platform1Metrics = mock(DefaultMetrics.class);
+        final Metrics platform1Metrics = mock(DefaultPlatformMetrics.class);
         when(context1.getMetrics()).thenReturn(platform1Metrics);
-        final Metrics platform2Metrics = mock(DefaultMetrics.class);
+        final Metrics platform2Metrics = mock(DefaultPlatformMetrics.class);
         when(context2.getMetrics()).thenReturn(platform2Metrics);
         final Collection<SwirldsPlatform> platforms = List.of(platform1, platform2);
 
