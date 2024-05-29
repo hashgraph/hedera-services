@@ -86,7 +86,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
@@ -96,7 +95,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
@@ -222,12 +220,6 @@ public interface BaseScaffoldingModule {
     @Singleton
     static ConfigProvider provideConfigProvider(@NonNull final Configuration configuration) {
         return () -> new VersionedConfigImpl(configuration, 1L);
-    }
-
-    @Provides
-    @Singleton
-    static ServicesRegistry provideServicesRegistry(@NonNull final ServicesRegistry servicesRegistry) {
-        return new ServicesRegistryImpl(ConstructableRegistry.getInstance(), new GenesisRecordsConsensusHook());
     }
 
     @Binds
