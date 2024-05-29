@@ -41,7 +41,6 @@ import com.swirlds.common.wiring.transformers.WireTransformer;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -56,6 +55,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
@@ -90,6 +91,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
@@ -135,7 +137,7 @@ public class PlatformWiring {
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final StateSignerWiring stateSignerWiring;
+    private final ComponentWiring<StateSigner, ConsensusTransactionImpl> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -171,6 +173,8 @@ public class PlatformWiring {
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<PlatformStatusNexus, Void> statusNexusWiring;
+    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     private final boolean hashCollectorEnabled;
 
@@ -254,7 +258,7 @@ public class PlatformWiring {
                 new ComponentWiring<>(model, StateSignatureCollector.class, config.stateSignatureCollector());
         stateSnapshotManagerWiring =
                 new ComponentWiring<>(model, StateSnapshotManager.class, config.stateSnapshotManager());
-        stateSignerWiring = StateSignerWiring.create(schedulers.stateSignerScheduler());
+        stateSignerWiring = new ComponentWiring<>(model, StateSigner.class, config.stateSigner());
         consensusRoundHandlerWiring = ConsensusRoundHandlerWiring.create(schedulers.consensusRoundHandlerScheduler());
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
@@ -341,6 +345,8 @@ public class PlatformWiring {
         transactionResubmitterWiring =
                 new ComponentWiring<>(model, TransactionResubmitter.class, config.transactionResubmitter());
         transactionPoolWiring = new ComponentWiring<>(model, TransactionPool.class, config.transactionPool());
+        branchDetectorWiring = new ComponentWiring<>(model, BranchDetector.class, config.branchDetector());
+        branchReporterWiring = new ComponentWiring<>(model, BranchReporter.class, config.branchReporter());
 
         platformCoordinator = new PlatformCoordinator(
                 () -> {
@@ -364,7 +370,9 @@ public class PlatformWiring {
                 stateHasherWiring,
                 staleEventDetectorWiring,
                 transactionPoolWiring,
-                statusStateMachineWiring);
+                statusStateMachineWiring,
+                branchDetectorWiring,
+                branchReporterWiring);
 
         wire();
     }
@@ -443,6 +451,8 @@ public class PlatformWiring {
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow), INJECT);
         eventWindowOutputWire.solderTo(
                 latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::updateEventWindow));
+        eventWindowOutputWire.solderTo(branchDetectorWiring.getInputWire(BranchDetector::updateEventWindow), INJECT);
+        eventWindowOutputWire.solderTo(branchReporterWiring.getInputWire(BranchReporter::updateEventWindow), INJECT);
     }
 
     /**
@@ -454,7 +464,7 @@ public class PlatformWiring {
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendLatestCompleteStateNotification));
         stateSnapshotManagerWiring
                 .getTransformedOutput(StateSnapshotManager::toNotification)
-                .solderTo(notifierWiring.getInputWire(AppNotifier::sendStateWrittenToDiskNotification));
+                .solderTo(notifierWiring.getInputWire(AppNotifier::sendStateWrittenToDiskNotification), INJECT);
 
         final OutputWire<IssNotification> issNotificationOutputWire = issDetectorWiring.getSplitOutput();
         issNotificationOutputWire.solderTo(notifierWiring.getInputWire(AppNotifier::sendIssNotification));
@@ -516,6 +526,9 @@ public class PlatformWiring {
         // This must use injection to avoid cyclical back pressure. There is a risk of OOM if gossip can't ingest
         // events fast enough, but we have no other choice until we implement the platform health monitor.
         splitOrphanBufferOutput.solderTo(gossipWiring.getEventInput(), INJECT);
+
+        splitOrphanBufferOutput.solderTo(branchDetectorWiring.getInputWire(BranchDetector::checkForBranches));
+        branchDetectorWiring.getOutputWire().solderTo(branchReporterWiring.getInputWire(BranchReporter::reportBranch));
 
         final double eventCreationHeartbeatFrequency = platformContext
                 .getConfiguration()
@@ -681,11 +694,11 @@ public class PlatformWiring {
                 .buildTransformer("postHasher_getConsensusRound", "stateAndRound", StateAndRound::round);
 
         hashedStateOutputWire.solderTo(hashLoggerWiring.getInputWire(HashLogger::logHashes));
-        hashedStateOutputWire.solderTo(stateSignerWiring.signState());
+        hashedStateOutputWire.solderTo(stateSignerWiring.getInputWire(StateSigner::signState));
         hashedStateAndRoundOutputWire.solderTo(issDetectorWiring.getInputWire(IssDetector::handleStateAndRound));
 
         stateSignerWiring
-                .stateSignature()
+                .getOutputWire()
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
@@ -749,6 +762,9 @@ public class PlatformWiring {
                 .solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus));
         statusStateMachineWiring
                 .getOutputWire()
+                .solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::updatePlatformStatus), INJECT);
+        statusStateMachineWiring
+                .getOutputWire()
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::updatePlatformStatus));
 
         solderNotifier();
@@ -787,13 +803,14 @@ public class PlatformWiring {
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear);
         transactionPoolWiring.getInputWire(TransactionPool::clear);
         stateSnapshotManagerWiring.getInputWire(StateSnapshotManager::dumpStateTask);
+        branchDetectorWiring.getInputWire(BranchDetector::clear);
+        branchReporterWiring.getInputWire(BranchReporter::clear);
     }
 
     /**
      * Bind components to the wiring.
      *
      * @param builder                   builds platform components that need to be bound to wires
-     * @param stateSigner               the state signer to bind
      * @param pcesReplayer              the PCES replayer to bind
      * @param stateSignatureCollector   the signed state manager to bind
      * @param eventWindowManager        the event window manager to bind
@@ -810,7 +827,6 @@ public class PlatformWiring {
      */
     public void bind(
             @NonNull final PlatformComponentBuilder builder,
-            @NonNull final StateSigner stateSigner,
             @NonNull final PcesReplayer pcesReplayer,
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final EventWindowManager eventWindowManager,
@@ -831,7 +847,7 @@ public class PlatformWiring {
         orphanBufferWiring.bind(builder::buildOrphanBuffer);
         consensusEngineWiring.bind(builder::buildConsensusEngine);
         stateSnapshotManagerWiring.bind(builder::buildStateSnapshotManager);
-        stateSignerWiring.bind(stateSigner);
+        stateSignerWiring.bind(builder::buildStateSigner);
         pcesReplayerWiring.bind(pcesReplayer);
         pcesWriterWiring.bind(builder::buildPcesWriter);
         roundDurabilityBufferWiring.bind(builder::buildRoundDurabilityBuffer);
@@ -864,6 +880,8 @@ public class PlatformWiring {
         transactionResubmitterWiring.bind(builder::buildTransactionResubmitter);
         transactionPoolWiring.bind(builder::buildTransactionPool);
         gossipWiring.bind(builder.buildGossip());
+        branchDetectorWiring.bind(builder::buildBranchDetector);
+        branchReporterWiring.bind(builder::buildBranchReporter);
     }
 
     /**

@@ -217,6 +217,7 @@ class SignedStateTests {
                 state,
                 "test",
                 false,
+                false,
                 false);
 
         assertFalse(state.isDestroyed(), "state should not yet be destroyed");

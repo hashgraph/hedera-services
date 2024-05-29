@@ -107,12 +107,12 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                 .addRow("", "first event", "last event")
                 .addRow(
                         "round",
-                        commaSeparatedNumber(firstEvent.getConsensusData().getRoundReceived()),
-                        commaSeparatedNumber(lastEvent.getConsensusData().getRoundReceived()))
+                        commaSeparatedNumber(firstEvent.getRoundReceived()),
+                        commaSeparatedNumber(lastEvent.getRoundReceived()))
                 .addRow(
                         "timestamp",
-                        firstEvent.getConsensusData().getConsensusTimestamp(),
-                        lastEvent.getConsensusData().getConsensusTimestamp())
+                        firstEvent.getGossipEvent().getConsensusTimestamp(),
+                        lastEvent.getGossipEvent().getConsensusTimestamp())
                 .addRow(
                         "hash",
                         firstEvent.getHash().toHex(HASH_STRING_LENGTH),
@@ -123,8 +123,8 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         lastEvent.getRunningHash().getHash().toHex(HASH_STRING_LENGTH))
                 .addRow(
                         "consensus order",
-                        commaSeparatedNumber(firstEvent.getConsensusData().getConsensusOrder()),
-                        commaSeparatedNumber(lastEvent.getConsensusData().getConsensusOrder()))
+                        commaSeparatedNumber(firstEvent.getGossipEvent().getConsensusOrder()),
+                        commaSeparatedNumber(lastEvent.getGossipEvent().getConsensusOrder()))
                 .addRow(
                         "generation",
                         commaSeparatedNumber(firstEvent.getGossipEvent().getGeneration()),
@@ -135,8 +135,8 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         lastEvent.getGossipEvent().getCreatorId())
                 .addRow(
                         "last in round",
-                        firstEvent.getConsensusData().isLastInRoundReceived() ? "yes" : "no",
-                        lastEvent.getConsensusData().isLastInRoundReceived() ? "yes" : "no")
+                        firstEvent.isLastInRoundReceived() ? "yes" : "no",
+                        lastEvent.isLastInRoundReceived() ? "yes" : "no")
                 .addRow(
                         "transaction count",
                         commaSeparatedNumber(firstEvent.getGossipEvent().getPayloadCount()),
