@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -40,9 +44,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -61,6 +67,13 @@ public final class FeeManager {
     private record Entry(HederaFunctionality function, SubType subType) {}
 
     private static final long DEFAULT_FEE = 100_000L;
+    /**
+     * A set of operations that we do not expect to find the fee schedule. These include
+     * privileged operations (which are either rejected at ingest or not charged fees at
+     * consensus); and unsupported queries that are never answered.
+     */
+    private static final Set<HederaFunctionality> INAPPLICABLE_OPERATIONS = EnumSet.of(
+            FREEZE, GET_ACCOUNT_DETAILS, TRANSACTION_GET_FAST_RECORD, TOKEN_GET_NFT_INFOS, TOKEN_GET_ACCOUNT_NFT_INFOS);
 
     private static final FeeComponents DEFAULT_FEE_COMPONENTS =
             FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
@@ -221,9 +234,7 @@ public final class FeeManager {
         // Now, lookup the fee data for the transaction type.
         final var result = feeDataMap.get(new Entry(functionality, subType));
         if (result == null) {
-            // There is no point in adding a fee schedule entry for a privileged query type,
-            // since privileged queries are not charged fees in the first place
-            if (functionality != GET_ACCOUNT_DETAILS) {
+            if (!INAPPLICABLE_OPERATIONS.contains(functionality)) {
                 logger.warn("Using default usage prices to calculate fees for {}!", functionality);
             }
             return DEFAULT_FEE_DATA;

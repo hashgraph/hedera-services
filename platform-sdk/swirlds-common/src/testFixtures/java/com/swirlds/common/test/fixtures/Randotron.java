@@ -39,7 +39,7 @@ public final class Randotron extends Random {
     public static Randotron create() {
         final long seed = new Random().nextLong();
         System.out.println("Random seed: " + seed + "L");
-        return new Randotron(new Random().nextLong());
+        return new Randotron(seed);
     }
 
     /**

@@ -20,7 +20,7 @@ import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.isBefore;
 import static com.hedera.hapi.util.HapiUtils.minus;
 import static com.hedera.node.app.state.recordcache.RecordCacheService.NAME;
-import static com.hedera.node.app.state.recordcache.RecordCacheService.TXN_RECORD_QUEUE;
+import static com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema.TXN_RECORD_QUEUE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +44,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -324,14 +325,22 @@ public class RecordCacheImpl implements HederaRecordCache {
 
         // While we still need to gather more records, collect them from the different histories.
         final var records = new ArrayList<TransactionRecord>(maxRemaining);
-        for (final var transactionID : transactionIDs) {
-            final var history = histories.get(transactionID);
-            if (history != null) {
-                final var recs = history.orderedRecords();
-                records.addAll(recs.size() > maxRemaining ? recs.subList(0, maxRemaining) : recs);
-                maxRemaining -= recs.size();
-                if (maxRemaining <= 0) break;
+        // Because the set of transaction IDs could be concurrently modified by
+        // the handle thread, wrap this in a try-catch block to deal with a CME
+        // and return whatever we are able to gather. (I.e. this is a best-effort
+        // query, and not a critical path; unused in production environments)
+        try {
+            for (final var transactionID : transactionIDs) {
+                final var history = histories.get(transactionID);
+                if (history != null) {
+                    final var recs = history.orderedRecords();
+                    records.addAll(recs.size() > maxRemaining ? recs.subList(0, maxRemaining) : recs);
+                    maxRemaining -= recs.size();
+                    if (maxRemaining <= 0) break;
+                }
             }
+        } catch (ConcurrentModificationException ignore) {
+            // Ignore the exception and return what we found; this query is unused in production environments
         }
 
         records.sort((a, b) -> TIMESTAMP_COMPARATOR.compare(

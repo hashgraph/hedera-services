@@ -44,10 +44,6 @@ import java.time.temporal.ChronoUnit;
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
-    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "syncPermitsAvailable")
-            .withDescription("number of sync permits available");
-    private final RunningAverageMetric permitsAvailable;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes_per_sec_sync")
@@ -260,8 +256,6 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-
-        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
@@ -358,15 +352,6 @@ public class SyncMetrics {
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
-    }
-
-    /**
-     * Updates the number of permits available for syncs
-     *
-     * @param permits the number of permits available
-     */
-    public void updateSyncPermitsAvailable(final int permits) {
-        permitsAvailable.update(permits);
     }
 
     /**

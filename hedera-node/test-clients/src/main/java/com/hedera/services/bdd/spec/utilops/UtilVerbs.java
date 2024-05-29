@@ -135,8 +135,10 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
+import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
+import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion;
@@ -236,6 +238,35 @@ public class UtilVerbs {
 
     public static HapiFreeze freezeAbort() {
         return new HapiFreeze(FREEZE_ABORT);
+    }
+
+    /**
+     * Returns an operation that validates the streams of the target network.
+     *
+     * @return the operation that validates the streams
+     */
+    public static StreamValidationOp validateStreams() {
+        return new StreamValidationOp();
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * any of the target network node application logs.
+     *
+     * @return the operation that validates the logs of a node
+     */
+    public static HapiSpecOperation validateAnyLogAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ANY_NODE, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * all of the target network node application logs.
+     *
+     * @return the operation that validates the logs of the target network
+     */
+    public static HapiSpecOperation validateAllLogsAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ALL_NODES, delay);
     }
 
     /* Some fairly simple utility ops */

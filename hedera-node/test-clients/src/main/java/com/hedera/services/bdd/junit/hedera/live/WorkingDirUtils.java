@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
-    private static final String OUTPUT_DIR = "output";
     private static final String KEYS_FOLDER = "keys";
     private static final String CONFIG_FOLDER = "config";
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER);
@@ -40,6 +39,7 @@ public class WorkingDirUtils {
     private static final String BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
 
     public static final String DATA_DIR = "data";
+    public static final String OUTPUT_DIR = "output";
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
