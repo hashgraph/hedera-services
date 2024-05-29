@@ -190,6 +190,10 @@ public interface BaseScaffoldingModule {
     @Singleton
     Authorizer bindAuthorizer(AuthorizerImpl authorizer);
 
+    @Binds
+    @Singleton
+    ServicesRegistry bindServicesRegistry(ServicesRegistryImpl servicesRegistry);
+
     @Provides
     @Singleton
     static Signer provideSigner() {
