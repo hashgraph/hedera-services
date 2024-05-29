@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -91,14 +90,10 @@ public class TokenRejectSuite {
 
     private static final String MULTI_KEY = "multiKey";
 
-    private static final String TOKEN_REJECT_ENABLED_PROPERTY = "tokens.reject.enabled";
-
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksAndAvoidsCustomFees() {
-        return propertyPreservingHapiSpec("tokenRejectWorksAndAvoidsCustomFees")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
+        return defaultHapiSpec("tokenRejectWorksAndAvoidsCustomFees")
                 .given(
-                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(FEE_COLLECTOR).balance(0L).maxAutomaticTokenAssociations(5),
                         cryptoCreate(ACCOUNT).maxAutomaticTokenAssociations(5),
@@ -160,10 +155,8 @@ public class TokenRejectSuite {
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksWithFungibleAndNFTTokens() {
-        return propertyPreservingHapiSpec("tokenRejectWorksWithFungibleAndNFTTokens")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
+        return defaultHapiSpec("tokenRejectWorksWithFungibleAndNFTTokens")
                 .given(
-                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).maxAutomaticTokenAssociations(2),
                         cryptoCreate(TOKEN_TREASURY),
@@ -217,10 +210,8 @@ public class TokenRejectSuite {
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowancesCorrectly() {
-        return propertyPreservingHapiSpec("tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowances")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
+        return defaultHapiSpec("tokenRejectWorksWithFungibleAndNFTTokensAndRemovesAllowances")
                 .given(
-                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(3),
                         cryptoCreate(ACCOUNT_1).maxAutomaticTokenAssociations(3),
@@ -297,10 +288,8 @@ public class TokenRejectSuite {
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksWhileFreezeOrPausedOrSigRequired() {
-        return propertyPreservingHapiSpec("tokenRejectWorksWhileFreezeOrPausedOrSigRequired")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
+        return defaultHapiSpec("tokenRejectWorksWhileFreezeOrPausedOrSigRequired")
                 .given(
-                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed("freezeKey"),
                         newKeyNamed("pauseKey"),
@@ -381,10 +370,8 @@ public class TokenRejectSuite {
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectInvalidSignaturesAndInvalidAccountOrTokensFailingScenarios() {
-        return propertyPreservingHapiSpec("tokenRejectInvalidSignaturesAndTokensScenarios")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
+        return defaultHapiSpec("tokenRejectInvalidSignaturesAndTokensScenarios")
                 .given(
-                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(ACCOUNT_1).maxAutomaticTokenAssociations(5),
@@ -486,10 +473,8 @@ public class TokenRejectSuite {
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectFailsWithInvalidBodyInputsScenarios() {
-        return propertyPreservingHapiSpec("tokenRejectFailsWithInvalidBodyInputsScenarios")
-                .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
+        return defaultHapiSpec("tokenRejectFailsWithInvalidBodyInputsScenarios")
                 .given(
-                        overriding(TOKEN_REJECT_ENABLED_PROPERTY, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).maxAutomaticTokenAssociations(5),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),

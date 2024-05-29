@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -79,7 +78,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -144,7 +142,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn, "Transaction body cannot be null");
         final var op = txn.tokenRejectOrThrow();
 
-        validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
+        //    validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
         if (op.hasOwner()) {
             validateAccountID(op.owner(), null);
         }
@@ -178,8 +176,6 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.tokenRejectEnabled(), NOT_SUPPORTED);
         validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), INVALID_TRANSACTION_BODY);
 
         final var accountStore = context.writableStore(WritableAccountStore.class);
