@@ -23,28 +23,49 @@ import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * A Feldman polynomial commitment.
  *
- * @param coefficientCommitments TODO
+ * @param commitmentCoefficients the commitment coefficients. Each element in this list consists of the group generator,
+ *                               raised to the power of a coefficient of the polynomial being committed to.
  */
-public record FeldmanCommitment(@NonNull List<GroupElement> coefficientCommitments) implements TssCommitment {
+public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficients) implements TssCommitment {
+    /**
+     * Creates a Feldman commitment.
+     *
+     * @param group      the group that elements of the commitment are in
+     * @param polynomial the polynomial to commit to
+     * @return the Feldman commitment
+     */
+    public static FeldmanCommitment create(@NonNull final Group group, @NonNull final DensePolynomial polynomial) {
+
+        final GroupElement generator = group.getGenerator();
+
+        final List<GroupElement> commitmentCoefficients = new ArrayList<>();
+        for (final FieldElement polynomialCoefficient : polynomial.coefficients()) {
+            commitmentCoefficients.add(generator.power(polynomialCoefficient));
+        }
+
+        return new FeldmanCommitment(commitmentCoefficients);
+    }
+
     /**
      * {@inheritDoc}
      */
     @NonNull
     public GroupElement extractShareKeyMaterial(@NonNull final TssShareId shareId) {
-        if (coefficientCommitments.size() < 2) {
+        if (commitmentCoefficients.size() < 2) {
             throw new IllegalArgumentException("Coefficient commitments must have at least 2 elements");
         }
 
-        final Group group = coefficientCommitments.getFirst().getGroup();
+        final Group group = commitmentCoefficients.getFirst().getGroup();
 
         GroupElement publicKey = group.oneElement();
-        for (int i = 0; i < coefficientCommitments.size(); i++) {
-            final GroupElement term = coefficientCommitments.get(i);
+        for (int i = 0; i < commitmentCoefficients.size(); i++) {
+            final GroupElement term = commitmentCoefficients.get(i);
             final FieldElement exponentiatedShareId = shareId.idElement().power(BigInteger.valueOf(i));
 
             publicKey = publicKey.multiply(term.power(exponentiatedShareId));
@@ -59,7 +80,7 @@ public record FeldmanCommitment(@NonNull List<GroupElement> coefficientCommitmen
     @NonNull
     @Override
     public GroupElement getTerm(final int index) {
-        return coefficientCommitments.get(index);
+        return commitmentCoefficients.get(index);
     }
 
     /**
