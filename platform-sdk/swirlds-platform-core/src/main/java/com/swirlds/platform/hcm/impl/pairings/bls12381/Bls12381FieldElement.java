@@ -61,6 +61,11 @@ public class Bls12381FieldElement implements FieldElement {
     }
 
     @Override
+    public BigInteger toBigInteger() {
+        return null;
+    }
+
+    @Override
     @NonNull
     public byte[] toBytes() {
         return new byte[0];

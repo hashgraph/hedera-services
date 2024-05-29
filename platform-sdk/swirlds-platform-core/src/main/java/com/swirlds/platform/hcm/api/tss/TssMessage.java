@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record TssMessage(
         @NonNull TssShareId shareId,
-        @NonNull TssCiphertext cipherText,
+        @NonNull TssMultishareCiphertext cipherText,
         @NonNull TssCommitment commitment,
         @NonNull TssProof proof) {
 

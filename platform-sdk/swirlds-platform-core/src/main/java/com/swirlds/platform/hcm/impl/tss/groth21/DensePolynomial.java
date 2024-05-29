@@ -42,7 +42,7 @@ public record DensePolynomial(@NonNull List<FieldElement> coefficients) {
      * @param threshold the number of coefficients the polynomial should have
      * @return a random polynomial of degree threshold - 1, with the given secret embedded at x = 0
      */
-    public static DensePolynomial create(
+    public static DensePolynomial fromSecret(
             @NonNull final Random random, @NonNull final FieldElement secret, final int threshold) {
 
         final Field field = secret.getField();
@@ -51,10 +51,8 @@ public record DensePolynomial(@NonNull List<FieldElement> coefficients) {
         // the secret is embedded at x = 0
         coefficients.set(0, secret);
 
-        final byte[] seed = new byte[field.getSeedSize()];
         for (int i = 1; i < threshold; i++) {
-            random.nextBytes(seed);
-            coefficients.set(i, field.randomElement(seed));
+            coefficients.set(i, field.randomElement(random));
         }
 
         return new DensePolynomial(coefficients);

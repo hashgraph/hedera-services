@@ -95,6 +95,13 @@ public interface FieldElement {
     FieldElement power(@NonNull BigInteger exponent);
 
     /**
+     * Returns the field element as a BigInteger
+     *
+     * @return the field element as a BigInteger
+     */
+    BigInteger toBigInteger();
+
+    /**
      * Returns the byte array representation of the field element
      *
      * @return the byte array representation of the field element

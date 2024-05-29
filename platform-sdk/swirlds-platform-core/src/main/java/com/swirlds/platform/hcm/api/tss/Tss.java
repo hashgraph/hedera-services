@@ -19,6 +19,7 @@ package com.swirlds.platform.hcm.api.tss;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A Threshold Signature Scheme.
@@ -33,6 +34,8 @@ public interface Tss {
     /**
      * Generate a TSS message for a set of share claims, from a private share.
      *
+     * @param random             a source of randomness
+     * @param signatureSchema    the signature schema to use
      * @param pendingShareClaims the share claims that we should generate the message for
      * @param privateShare       the secret to use for generating new keys
      * @param threshold          the threshold for recovering the secret
@@ -40,6 +43,8 @@ public interface Tss {
      */
     @NonNull
     TssMessage generateTssMessage(
+            @NonNull final Random random,
+            @NonNull final SignatureSchema signatureSchema,
             @NonNull final List<TssShareClaim> pendingShareClaims,
             @NonNull final TssPrivateShare privateShare,
             final int threshold);

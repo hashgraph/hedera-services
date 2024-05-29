@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A ciphertext produced by a single node.
  */
-public interface TssCiphertext {
+public interface TssMultishareCiphertext {
     /**
      * Extract the private key data from this ciphertext.
      * <p>

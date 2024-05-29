@@ -29,5 +29,5 @@ public interface TssProof {
      * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
      * @return true if the proof is valid, false otherwise
      */
-    boolean verify(@NonNull final TssCiphertext ciphertext, @NonNull final TssCommitment commitment);
+    boolean verify(@NonNull final TssMultishareCiphertext ciphertext, @NonNull final TssCommitment commitment);
 }

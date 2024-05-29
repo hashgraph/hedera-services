@@ -20,7 +20,7 @@ import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
-import com.swirlds.platform.hcm.api.tss.TssCiphertext;
+import com.swirlds.platform.hcm.api.tss.TssMultishareCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import com.swirlds.platform.hcm.impl.internal.ElGamalCache;
@@ -35,9 +35,9 @@ import java.util.Map;
  * @param chunkRandomness  TODO
  * @param shareCiphertexts TODO
  */
-public record Groth21Ciphertext(
-        @NonNull List<GroupElement> chunkRandomness, @NonNull Map<TssShareId, List<GroupElement>> shareCiphertexts)
-        implements TssCiphertext {
+public record Groth21MultishareCiphertext(
+        @NonNull List<GroupElement> chunkRandomness, @NonNull Map<TssShareId, Groth21ShareCiphertext> shareCiphertexts)
+        implements TssMultishareCiphertext {
 
     /**
      * {@inheritDoc}
@@ -49,9 +49,12 @@ public record Groth21Ciphertext(
             @NonNull final TssShareId shareId,
             @NonNull final ElGamalCache elGamalCache) {
 
-        final List<GroupElement> shareIdChunks = shareCiphertexts.get(shareId);
-        if (chunkRandomness.size() != shareIdChunks.size()) {
-            throw new IllegalArgumentException("Mismatched chunk randomness count and share chunk count");
+        final Groth21ShareCiphertext shareCiphertext = shareCiphertexts.get(shareId);
+        final List<GroupElement> ciphertextChunks = shareCiphertext.ciphertextElements();
+        final int shareCiphertextSize = ciphertextChunks.size();
+
+        if (chunkRandomness.size() != shareCiphertextSize) {
+            throw new IllegalArgumentException("Mismatched chunk randomness count and ciphertext chunk count");
         }
 
         final FieldElement keyElement = elGamalPrivateKey.secretElement();
@@ -59,8 +62,8 @@ public record Groth21Ciphertext(
         final FieldElement zeroElement = keyField.zeroElement();
 
         FieldElement output = zeroElement;
-        for (int i = 0; i < shareIdChunks.size(); i++) {
-            final GroupElement chunkCiphertext = shareIdChunks.get(i);
+        for (int i = 0; i < shareCiphertextSize; i++) {
+            final GroupElement chunkCiphertext = ciphertextChunks.get(i);
             final GroupElement chunkRandomness = this.chunkRandomness.get(i);
 
             final GroupElement antiMask = chunkRandomness.power(zeroElement.subtract(keyElement));
