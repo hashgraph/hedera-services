@@ -107,6 +107,7 @@ class IngestComponentTest {
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
                 .genesisRecordsConsensusHook(mock(GenesisRecordsConsensusHook.class))
+                .softwareVersion(mock(HederaSoftwareVersion.class))
                 .build();
 
         final var state = new FakeHederaState();
