@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.eventhandling;
 
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.platform.event.AncientMode;
