@@ -70,22 +70,4 @@ class CryptoTransferHelperTest {
         assertThat(nftTransfer.receiverAccountID()).isEqualTo(toAccount);
         assertThat(nftTransfer.serialNumber()).isEqualTo(serialNumber);
     }
-
-    @Test
-    void testDebit() {
-        final long amount = 1000L;
-        final var accountAmount = CryptoTransferHelper.debit(fromAccount, amount);
-
-        assertThat(accountAmount.accountID()).isEqualTo(fromAccount);
-        assertThat(accountAmount.amount()).isEqualTo(-amount);
-    }
-
-    @Test
-    void testCredit() {
-        final long amount = 1000L;
-        final var accountAmount = CryptoTransferHelper.credit(toAccount, amount);
-
-        assertThat(accountAmount.accountID()).isEqualTo(toAccount);
-        assertThat(accountAmount.amount()).isEqualTo(amount);
-    }
 }

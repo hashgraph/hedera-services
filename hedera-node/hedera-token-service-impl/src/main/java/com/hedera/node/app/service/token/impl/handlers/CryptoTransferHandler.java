@@ -239,7 +239,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // create a new transfer context that is specific only for this transaction
         final var transferContext =
-                new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
+                new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments, false);
 
         transferContext.validateHbarAllowances();
 

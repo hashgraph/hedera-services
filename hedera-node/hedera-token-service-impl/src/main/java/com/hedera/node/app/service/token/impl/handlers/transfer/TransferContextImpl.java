@@ -59,24 +59,28 @@ public class TransferContextImpl implements TransferContext {
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
-    private boolean allowFreezeAndPausedTokenTransfer = false;
+    private final boolean allowFreezeAndPausedTokenTransfer;
 
     /**
      * Create a new {@link TransferContextImpl} instance.
      * @param context The context to use.
      */
     public TransferContextImpl(final HandleContext context) {
-        this(context, true);
+        this(context, true, false);
     }
 
     /**
      * Create a new {@link TransferContextImpl} instance.
+     *
      * @param context The context to use.
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
-     *                                                                      on auto creation custom fee payments.
+     * on auto creation custom fee payments.
+     * @param allowFreezeAndPausedTokenTransfer Whether to override paused token and frozen account checks.
      */
     public TransferContextImpl(
-            final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
+            final HandleContext context,
+            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments,
+            boolean allowFreezeAndPausedTokenTransfer) {
         this.context = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
@@ -85,20 +89,6 @@ public class TransferContextImpl implements TransferContext {
         this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
                 enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
-    }
-
-    /**
-     * Create a new {@link TransferContextImpl} instance.
-     * @param context The context to use.
-     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
-     *                                                                      on auto creation custom fee payments.
-     * @param allowFreezeAndPausedTokenTransfer Whether to override paused token and frozen account checks.
-     */
-    public TransferContextImpl(
-            final HandleContext context,
-            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments,
-            final boolean allowFreezeAndPausedTokenTransfer) {
-        this(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
         this.allowFreezeAndPausedTokenTransfer = allowFreezeAndPausedTokenTransfer;
     }
 
