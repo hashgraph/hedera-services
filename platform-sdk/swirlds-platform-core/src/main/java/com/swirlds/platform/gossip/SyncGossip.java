@@ -517,6 +517,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         });
 
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
+        platformStatusInput.bindConsumer(currentPlatformStatus::set);
 
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()
@@ -542,8 +543,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     throw new RuntimeException("interrupted while attempting to enqueue event from gossip", e);
                 }
             };
-
-            platformStatusInput.bindConsumer(currentPlatformStatus::set);
 
         } else {
             receivedEventHandler = eventOutput::forward;
