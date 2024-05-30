@@ -220,7 +220,7 @@ public final class TssUtils {
         }
 
         final Field field = shareIds.getFirst().getField();
-        FieldElement sum = field.zeroElement();
+        FieldElement sum = field.elementFromLong(0L);
         for (int i = 0; i < lagrangeCoefficients.size(); i++) {
             sum = sum.add(lagrangeCoefficients.get(i).multiply(privateKeys.get(i)));
         }
@@ -285,8 +285,8 @@ public final class TssUtils {
         final FieldElement xi = xCoordinates.get(indexToCompute);
 
         final Field field = xi.getField();
-        final FieldElement zeroElement = field.zeroElement();
-        final FieldElement oneElement = field.oneElement();
+        final FieldElement zeroElement = field.elementFromLong(0L);
+        final FieldElement oneElement = field.elementFromLong(1L);
 
         FieldElement numerator = oneElement;
         FieldElement denominator = oneElement;

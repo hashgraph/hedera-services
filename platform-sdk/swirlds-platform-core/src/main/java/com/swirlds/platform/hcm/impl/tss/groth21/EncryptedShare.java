@@ -87,7 +87,7 @@ public record EncryptedShare(@NonNull List<GroupElement> ciphertextElements) {
 
         final FieldElement keyElement = elGamalPrivateKey.secretElement();
         final Field keyField = keyElement.getField();
-        final FieldElement zeroElement = keyField.zeroElement();
+        final FieldElement zeroElement = keyField.elementFromLong(0L);
 
         FieldElement output = zeroElement;
         for (int i = 0; i < ciphertextElements.size(); i++) {

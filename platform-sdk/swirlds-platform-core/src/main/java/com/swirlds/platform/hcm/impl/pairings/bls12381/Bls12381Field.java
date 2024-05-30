@@ -48,18 +48,6 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement zeroElement() {
-        return null;
-    }
-
-    @NonNull
-    @Override
-    public FieldElement oneElement() {
-        return null;
-    }
-
-    @NonNull
-    @Override
     public FieldElement randomElement(final byte[] seed) {
         return null;
     }

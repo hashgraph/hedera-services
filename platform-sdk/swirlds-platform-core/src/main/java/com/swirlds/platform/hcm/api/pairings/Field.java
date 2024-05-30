@@ -53,22 +53,6 @@ public interface Field {
     FieldElement elementFromLong(long inputLong);
 
     /**
-     * Creates a new field element with value 0
-     *
-     * @return the new field element
-     */
-    @NonNull
-    FieldElement zeroElement();
-
-    /**
-     * Creates a new field element with value 1
-     *
-     * @return the new field element
-     */
-    @NonNull
-    FieldElement oneElement();
-
-    /**
      * Creates a field element from a seed (32 bytes)
      *
      * @param seed a seed to use to generate randomness

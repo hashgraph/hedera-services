@@ -69,7 +69,7 @@ public record DensePolynomial(@NonNull List<FieldElement> coefficients) {
     public FieldElement evaluate(@NonNull final FieldElement point) {
         final Field field = point.getField();
 
-        FieldElement result = field.zeroElement();
+        FieldElement result = field.elementFromLong(0L);
         for (final FieldElement coefficient : coefficients) {
             result = result.multiply(point).add(coefficient);
         }

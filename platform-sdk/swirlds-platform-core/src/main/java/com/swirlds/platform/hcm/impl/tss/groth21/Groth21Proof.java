@@ -109,7 +109,7 @@ public record Groth21Proof(
         final FieldElement combinedRandomness = combineFieldRandomness(randomness);
         final FieldElement z_r = xPrime.multiply(combinedRandomness).add(rho);
 
-        FieldElement combinedShares = field.zeroElement();
+        FieldElement combinedShares = field.elementFromLong(0L);
         for (final UnencryptedShare unencryptedShare : unencryptedShares) {
             final FieldElement indexSecret = unencryptedShare.shareElement();
             final FieldElement shareId = unencryptedShare.shareClaim().shareId().idElement();
@@ -129,7 +129,7 @@ public record Groth21Proof(
      */
     private static FieldElement combineFieldRandomness(@NonNull final List<FieldElement> fieldRandomness) {
         final Field field = fieldRandomness.getFirst().getField();
-        FieldElement output = field.zeroElement();
+        FieldElement output = field.elementFromLong(0L);
 
         // TODO: is this `256` the same as the size of the elgamal cache?
         for (int i = 0; i < fieldRandomness.size(); i++) {
@@ -231,7 +231,7 @@ public record Groth21Proof(
                 coefficientIndex < commitment.commitmentCoefficients().size();
                 coefficientIndex++) {
 
-            FieldElement foldedShareIds = field.zeroElement();
+            FieldElement foldedShareIds = field.elementFromLong(0L);
             for (final TssShareId shareId : shareIds) {
                 final FieldElement idElement = shareId.idElement();
                 foldedShareIds = foldedShareIds.add(idElement
