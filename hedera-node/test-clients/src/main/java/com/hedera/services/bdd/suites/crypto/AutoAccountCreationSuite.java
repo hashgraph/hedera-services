@@ -126,15 +126,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
 public class AutoAccountCreationSuite {
 
-    private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
     private static final long INITIAL_BALANCE = 1000L;
     private static final ByteString ALIAS_CONTENT = ByteString.copyFromUtf8(
             "a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771");
@@ -971,7 +968,7 @@ public class AutoAccountCreationSuite {
 
     @HapiTest
     final Stream<DynamicTest> aliasCanBeUsedOnManyAccountsNotAsAlias() {
-        return  propertyPreservingHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
+        return propertyPreservingHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
@@ -1035,7 +1032,7 @@ public class AutoAccountCreationSuite {
 
     @HapiTest
     final Stream<DynamicTest> autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
-        return  propertyPreservingHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
+        return propertyPreservingHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
@@ -1303,7 +1300,7 @@ public class AutoAccountCreationSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private void assertAliasBalanceAndFeeInChildRecord(
+    static void assertAliasBalanceAndFeeInChildRecord(
             final TransactionRecord parent,
             final TransactionRecord child,
             final AccountID sponsor,
@@ -1734,126 +1731,5 @@ public class AutoAccountCreationSuite {
                             .hasChildRecords(
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO).alias(evmAddress.get()));
                 }));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationHappyPath() {
-        final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
-        return propertyPreservingHapiSpec(
-                        "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
-                        newKeyNamed(VALID_ALIAS),
-                        cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
-                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
-                        cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(cryptoTransfer(
-                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
-                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
-                        .via(TRANSFER_TXN)
-                        .payingWith(PAYER))
-                .then(
-                        getReceipt(TRANSFER_TXN).andAnyChildReceipts().hasChildAutoAccountCreations(1),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAccountInfo(SPONSOR)
-                                .has(accountWith()
-                                        .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
-                                        .noAlias()),
-                        childRecordsCheck(
-                                TRANSFER_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS)),
-                        assertionsHold((spec, opLog) -> {
-                            final var lookup = getTxnRecord(TRANSFER_TXN)
-                                    .andAllChildRecords()
-                                    .hasNonStakingChildRecordCount(1)
-                                    .hasNoAliasInChildRecord(0)
-                                    .logged();
-                            allRunFor(spec, lookup);
-                            final var sponsor = spec.registry().getAccountID(SPONSOR);
-                            final var payer = spec.registry().getAccountID(PAYER);
-                            final var parent = lookup.getResponseRecord();
-                            var child = lookup.getChildRecord(0);
-                            if (isEndOfStakingPeriodRecord(child)) {
-                                child = lookup.getChildRecord(1);
-                            }
-                            assertAliasBalanceAndFeeInChildRecord(
-                                    parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
-                            creationTime.set(child.getConsensusTimestamp().getSeconds());
-                        }),
-                        sourcing(() -> getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith()
-                                        .key(VALID_ALIAS)
-                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS + ONE_HBAR, 0, 0)
-                                        .alias(VALID_ALIAS)
-                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
-                                        .memo(AUTO_MEMO)
-                                        .maxAutoAssociations(-1))
-                                .logged()));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> transferHbarsToEVMAddressAliasUnlimitedAssociations() {
-
-        final AtomicReference<AccountID> partyId = new AtomicReference<>();
-        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
-        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("transferHbarsToEVMAddressAliasUnlimitedAssociations")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
-                    var op1 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
-                            .signedBy(DEFAULT_PAYER, PARTY)
-                            .via(HBAR_XFER);
-
-                    var op2 = getAliasedAccountInfo(counterAlias.get())
-                            .has(accountWith()
-                                    .expectedBalanceWithChargedUsd(2 * ONE_HBAR, 0, 0)
-                                    .hasEmptyKey()
-                                    .noAlias()
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false)
-                                    .memo(LAZY_MEMO));
-
-                    final var txnRequiringHollowAccountSignature = tokenCreate(A_TOKEN)
-                            .adminKey(SECP_256K1_SOURCE_KEY)
-                            .signedBy(SECP_256K1_SOURCE_KEY)
-                            .hasPrecheck(INVALID_SIGNATURE);
-
-                    allRunFor(spec, op1, op2, txnRequiringHollowAccountSignature);
-                }))
-                .then(
-                        getTxnRecord(HBAR_XFER)
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        // and transfers to the 0.0.ECDSA_BYTES alias should succeed.
-                        cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
-                                .hasKnownStatus(SUCCESS)
-                                .via(TRANSFER_TXN),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().expectedBalanceWithChargedUsd(3 * ONE_HBAR, 0, 0)));
     }
 }
