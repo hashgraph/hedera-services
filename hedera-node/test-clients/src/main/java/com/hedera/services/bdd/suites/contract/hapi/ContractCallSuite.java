@@ -1581,7 +1581,6 @@ public class ContractCallSuite extends HapiSuite {
                                         resultWith().logs(inOrder(logWith().longAtBytes(DEPOSIT_AMOUNT, 24))))));
     }
 
-    @HapiTest
     final HapiSpec idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(uploadInitCode(PAY_RECEIVABLE_CONTRACT), contractCreate(PAY_RECEIVABLE_CONTRACT))
