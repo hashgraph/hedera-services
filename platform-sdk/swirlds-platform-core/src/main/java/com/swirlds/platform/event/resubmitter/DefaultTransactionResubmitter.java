@@ -40,6 +40,8 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
 
     /**
      * Constructor.
+     *
+     * @param platformContext the platform context
      */
     public DefaultTransactionResubmitter(@NonNull final PlatformContext platformContext) {
         maxSignatureResubmitAge = platformContext

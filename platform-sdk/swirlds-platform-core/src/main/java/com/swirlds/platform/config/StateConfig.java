@@ -79,7 +79,9 @@ import java.time.Duration;
  *                                      state validation is intended to be a test-only feature.
  * @param maxSignatureResubmitAge       The maximum age of a signature that can be resubmitted (if the host event
  *                                      becomes stale). If a signature is older than this value, it will not be
- *                                      resubmitted.
+ *                                      resubmitted. Age is measured by taking the round number of the most recent round
+ *                                      to reach consensus and subtracting the round that the signature transaction
+ *                                      signs.
  */
 @ConfigData("state")
 public record StateConfig(
