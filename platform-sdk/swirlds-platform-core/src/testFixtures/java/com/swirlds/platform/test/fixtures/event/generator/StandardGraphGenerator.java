@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
@@ -499,9 +500,11 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // and links it. The event must be hashed and have a descriptor built for its use in the InOrderLinker.
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
-        CryptographyHolder.get().digestSync(next.getBaseEvent().getHashedData());
-        consensus.addEvent(inOrderLinker.linkEvent(new GossipEvent(
-                next.getBaseEvent().getHashedData(), next.getBaseEvent().getSignature())));
+        new StatefulEventHasher().hashEvent(next.getBaseEvent());
+        final GossipEvent tmp = new GossipEvent(
+                next.getBaseEvent().getHashedData(), next.getBaseEvent().getSignature());
+        tmp.setHash(next.getBaseEvent().getHash());
+        consensus.addEvent(inOrderLinker.linkEvent(tmp));
 
         return next;
     }
