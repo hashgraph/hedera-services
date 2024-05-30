@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.components.consensus;
 
+import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
@@ -34,6 +36,7 @@ import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -84,6 +87,14 @@ public class DefaultConsensusEngine implements ConsensusEngine {
                 .roundsNonAncient();
 
         eventAddedMetrics = new AddedEventMetrics(selfId, platformContext.getMetrics());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
+        consensus.setPcesMode(platformStatus == REPLAYING_EVENTS);
     }
 
     /**

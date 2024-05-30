@@ -33,6 +33,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.io.utility.RecycleBinImpl;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -240,15 +241,14 @@ class PcesBirthRoundMigrationTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
-                .withTestFileSystemManager(
-                        testDirectory,
-                        (m, t) -> new RecycleBinImpl(
-                                m,
-                                AdHocThreadManager.getStaticThreadManager(),
-                                time,
-                                recycleBinPath,
-                                TestRecycleBin.MAXIMUM_FILE_AGE,
-                                TestRecycleBin.MINIMUM_PERIOD))
+                .withTestFileSystemManagerUnder(testDirectory)
+                .withRecycleBin(new RecycleBinImpl(
+                        new NoOpMetrics(),
+                        AdHocThreadManager.getStaticThreadManager(),
+                        time,
+                        testDirectory.resolve(recycleBinPath),
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD))
                 .build();
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, discontinuityType);
@@ -335,15 +335,14 @@ class PcesBirthRoundMigrationTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
-                .withTestFileSystemManager(
-                        testDirectory,
-                        (m, t) -> new RecycleBinImpl(
-                                m,
-                                AdHocThreadManager.getStaticThreadManager(),
-                                time,
-                                recycleBinPath,
-                                TestRecycleBin.MAXIMUM_FILE_AGE,
-                                TestRecycleBin.MINIMUM_PERIOD))
+                .withTestFileSystemManagerUnder(testDirectory)
+                .withRecycleBin(new RecycleBinImpl(
+                        new NoOpMetrics(),
+                        AdHocThreadManager.getStaticThreadManager(),
+                        time,
+                        testDirectory.resolve(recycleBinPath),
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD))
                 .build();
 
         // should not throw
@@ -363,15 +362,14 @@ class PcesBirthRoundMigrationTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withTime(time)
                 .withConfiguration(configuration)
-                .withTestFileSystemManager(
-                        testDirectory,
-                        (m, t) -> new RecycleBinImpl(
-                                m,
-                                AdHocThreadManager.getStaticThreadManager(),
-                                time,
-                                recycleBinPath,
-                                TestRecycleBin.MAXIMUM_FILE_AGE,
-                                TestRecycleBin.MINIMUM_PERIOD))
+                .withTestFileSystemManagerUnder(testDirectory)
+                .withRecycleBin(new RecycleBinImpl(
+                        new NoOpMetrics(),
+                        AdHocThreadManager.getStaticThreadManager(),
+                        time,
+                        testDirectory.resolve(recycleBinPath),
+                        TestRecycleBin.MAXIMUM_FILE_AGE,
+                        TestRecycleBin.MINIMUM_PERIOD))
                 .build();
 
         final PcesFilesWritten filesWritten = generateLegacyPcesFiles(random, DiscontinuityType.NONE);

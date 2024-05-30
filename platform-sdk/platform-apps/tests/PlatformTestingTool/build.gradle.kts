@@ -17,7 +17,7 @@
 import com.google.protobuf.gradle.ProtobufExtract
 
 plugins {
-    id("com.hedera.hashgraph.application")
+    id("com.hedera.gradle.application")
     id("com.google.protobuf")
 }
 

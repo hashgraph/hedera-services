@@ -123,7 +123,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     }
 
     @Override
-    public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
+    public Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall) {
         var functionParameters = tuweniToPbjBytes(input);
         var contractCallBodyBuilder =
                 ContractCallTransactionBody.newBuilder().contractID(contractID).functionParameters(functionParameters);

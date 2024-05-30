@@ -17,9 +17,9 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
-import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 

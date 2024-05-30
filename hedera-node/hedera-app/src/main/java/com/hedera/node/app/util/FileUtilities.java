@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.util;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;

@@ -35,6 +35,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
 
     private final ObjectCounter onRamp;
     private final ObjectCounter offRamp;
+    private final long capacity;
 
     /**
      * Constructor.
@@ -44,6 +45,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param type                the type of task scheduler
      * @param onRamp              counts when things are added to this scheduler to be eventually handled
      * @param offRamp             counts when things are handled by this scheduler
+     * @param capacity            the maximum desired capacity for this task scheduler
      * @param flushEnabled        if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param squelchingEnabled   if true, then squelching will be enabled, otherwise trying to squelch will throw.
      * @param insertionIsBlocking when data is inserted into this task scheduler, will it block until capacity is
@@ -56,6 +58,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final TaskSchedulerType type,
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
+            final long capacity,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
             final boolean insertionIsBlocking,
@@ -65,6 +68,7 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
         this.submitWork = Objects.requireNonNull(submitWork);
+        this.capacity = capacity;
     }
 
     /**
@@ -79,8 +83,18 @@ public class DeterministicTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * {@inheritDoc}
      */
     @Override
+    public long getCapacity() {
+        return capacity;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void flush() {
-        throw new UnsupportedOperationException("Flush is not supported on deterministic task schedulers");
+        // Future work: flushing is incompatible with deterministic task schedulers.
+        // This is because flushing currently requires us to block thread A while
+        // thread B does work, but with turtle there is only a single thread.
     }
 
     /**

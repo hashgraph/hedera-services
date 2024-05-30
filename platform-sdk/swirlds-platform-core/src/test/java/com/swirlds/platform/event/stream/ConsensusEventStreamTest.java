@@ -99,7 +99,7 @@ class ConsensusEventStreamTest {
         wiring.bind(CONSENSUS_EVENT_STREAM);
 
         wiring.getInputWire(ConsensusEventStream::legacyHashOverride)
-                .inject(new RunningEventHashOverride(runningHash, randomHash(random), startWriteAtCompleteWindow));
+                .inject(new RunningEventHashOverride(runningHash, startWriteAtCompleteWindow));
         verify(multiStreamMock).setRunningHash(runningHash);
     }
 

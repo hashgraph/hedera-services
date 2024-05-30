@@ -25,10 +25,10 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
@@ -91,7 +91,7 @@ public final class PcesBirthRoundMigration {
                     EXCEPTION.getMarker(),
                     "PCES birth round migration has already been completed, but there "
                             + "are still legacy formatted PCES files present. Cleaning up.");
-            makeBackupFiles(platformContext.getFileSystemManager(), databaseDirectory);
+            makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
             cleanUpOldFiles(databaseDirectory);
 
             return;
@@ -104,7 +104,7 @@ public final class PcesBirthRoundMigration {
                 migrationRound,
                 minimumJudgeGenerationInMigrationRound);
 
-        makeBackupFiles(platformContext.getFileSystemManager(), databaseDirectory);
+        makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
 
         final List<GossipEvent> eventsToMigrate =
                 readEventsToBeMigrated(platformContext, selfId, minimumJudgeGenerationInMigrationRound, migrationRound);
@@ -125,18 +125,17 @@ public final class PcesBirthRoundMigration {
      * Copy PCES files into recycle bin. A measure to reduce the chances of permanent data loss in the event of a
      * migration failure.
      *
-     * @param fileSystemManager the fileSystemManager
+     * @param recycleBin        the fileSystemManager
      * @param databaseDirectory the database directory (i.e. where PCES files are stored)
      */
-    private static void makeBackupFiles(
-            @NonNull final FileSystemManager fileSystemManager, @NonNull final Path databaseDirectory)
+    private static void makeBackupFiles(@NonNull final RecycleBin recycleBin, @NonNull final Path databaseDirectory)
             throws IOException {
         logger.info(
                 STARTUP.getMarker(), "Backing up PCES files prior to PCES modification in case of unexpected failure.");
 
         final Path copyDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("pces-backup");
         FileUtils.hardLinkTree(databaseDirectory, copyDirectory);
-        fileSystemManager.recycle(copyDirectory);
+        recycleBin.recycle(copyDirectory);
     }
 
     /**
