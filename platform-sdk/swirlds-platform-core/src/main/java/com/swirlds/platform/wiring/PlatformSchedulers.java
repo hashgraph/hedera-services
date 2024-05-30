@@ -23,10 +23,8 @@ import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.platform.StateSigner;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -35,14 +33,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>
  * This class is being phased out. Do not add additional schedulers to this class!
  *
- * @param stateSignerScheduler                      the scheduler for the state signer
  * @param pcesReplayerScheduler                     the scheduler for the pces replayer
  * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
  * @param runningHashUpdateScheduler                the scheduler for the running hash updater
  * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
-        @NonNull TaskScheduler<ConsensusTransactionImpl> stateSignerScheduler,
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
         @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
@@ -60,13 +56,6 @@ public record PlatformSchedulers(
                 context.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
 
         return new PlatformSchedulers(
-                model.schedulerBuilder("stateSigner")
-                        .withType(config.stateSignerSchedulerType())
-                        .withUnhandledTaskCapacity(config.stateSignerUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(StateSigner.class))
-                        .build()
-                        .cast(),
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))

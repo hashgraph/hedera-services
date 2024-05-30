@@ -109,7 +109,8 @@ class UptimeTests {
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
-                snapshot);
+                snapshot,
+                false);
         final Instant consensusTimestamp = events.get(events.size() - 1).getConsensusTimestamp();
         when(snapshot.consensusTimestamp()).thenReturn(consensusTimestamp);
         return round;
