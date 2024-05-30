@@ -23,15 +23,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.exceptions.BadIOException;
-import com.swirlds.common.io.streams.AugmentedDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -41,7 +37,6 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     public static final long CLASS_ID = 0xf422da83a251741eL;
     public static final int CLASS_VERSION = 1;
 
-    private byte[] value;
     private Bytes bytes;
     private DigestType digestType;
 
@@ -53,27 +48,22 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     }
 
     /**
-     * Create a hash with a specific digest type but without any hash data.
-     *
-     * @param digestType
-     * 		the digest type
+     * Same as {@link #Hash(byte[], DigestType)} but with an empty byte array.
      */
     public Hash(@NonNull final DigestType digestType) {
         this(new byte[digestType.digestLength()], digestType);
     }
 
     /**
-     * Instantiate a hash with data from a byte array. Uses the default digest type ({@link DigestType#SHA_384}).
-     *
-     * @param value
-     * 		the hash bytes
+     * Same as {@link #Hash(byte[], DigestType)} but with a digest type ({@link DigestType#SHA_384})
      */
     public Hash(@NonNull final byte[] value) {
         this(value, DigestType.SHA_384);
     }
 
     /**
-     * Instantiate a hash with data from a byte array with a specific digest type.
+     * Instantiate a hash with data from a byte array with a specific digest type. This constructor assumes that the
+     * array provided will not be modified after this call.
      *
      * @param value
      * 		the hash bytes
@@ -89,25 +79,11 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         }
 
         this.digestType = digestType;
-        this.value = value;
-        this.bytes = Bytes.wrap(this.value);
+        this.bytes = Bytes.wrap(value);
     }
 
     /**
-     * Instantiate a hash with a byte buffer and a digest type.
-     *
-     * @param byteBuffer
-     * 		a buffer that contains the data for this hash
-     * @param digestType
-     * 		the digest type of this hash
-     */
-    public Hash(@NonNull final ByteBuffer byteBuffer, @NonNull final DigestType digestType) {
-        this(digestType);
-        byteBuffer.get(this.value);
-    }
-
-    /**
-     * Create a hash making a deep copy of another hash.
+     * Create a hash by copying data from another hash.
      *
      * @param other
      * 		the hash to copy
@@ -118,17 +94,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         }
 
         this.digestType = other.digestType;
-        this.value = Arrays.copyOf(other.value, other.value.length);
         this.bytes = other.bytes;
-    }
-
-    /**
-     * Get the byte array representing the value of the hash.
-     *
-     * @return the hash value
-     */
-    public @NonNull byte[] getValue() {
-        return value;
     }
 
     /**
@@ -176,14 +142,17 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         requireNonNull(digestType, "digestType");
-        requireNonNull(value, "value");
+        requireNonNull(bytes, "bytes");
         out.writeInt(digestType.id());
-        out.writeByteArray(value);
+        out.writeInt((int) bytes.length());
+        bytes.writeTo(out);
     }
 
     @Override
     public int getSerializedLength() {
-        return Integer.BYTES + AugmentedDataOutputStream.getArraySerializedLength(value);
+        return Integer.BYTES // digest type
+                + Integer.BYTES // length of the hash
+                + (int) bytes.length();
     }
 
     /**
@@ -198,7 +167,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
         }
 
         this.digestType = digestType;
-        this.value = in.readByteArray(digestType.digestLength());
+        final byte[] value = in.readByteArray(digestType.digestLength());
 
         if (value == null) {
             throw new BadIOException("Invalid hash value read from the stream");
@@ -219,18 +188,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
             return false;
         }
 
-        return digestType.id() == that.digestType.id() && Arrays.equals(value, that.value);
-    }
-
-    /**
-     * Check if the bytes of this hash are equal to the bytes supplied.
-     *
-     * @param bytes
-     * 		the bytes to compare
-     * @return true if the bytes are equal, false otherwise
-     */
-    public boolean equalBytes(@Nullable final Bytes bytes) {
-        return bytes != null && value.length == bytes.length() && bytes.contains(0, value);
+        return digestType.id() == that.digestType.id() && Objects.equals(bytes, that.bytes);
     }
 
     /**
@@ -238,7 +196,15 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     @Override
     public int hashCode() {
-        return ((value[0] << 24) + (value[1] << 16) + (value[2] << 8) + (value[3]));
+        // A few notes about this implementation:
+        // - it is very important that this method has very low overhead, some usages are very performance sensitive
+        // - since this is a cryptographic hash, it is safe to use the first 4 bytes of the hash as the hash code.
+        //   it fulfills the requirements of hashCode, it is consistent with equals, and it is very unlikely to conflict
+        //   with other hash codes. by using the first 4 bytes, we can avoid unnecessary overhead
+        // - it does not make a difference if the bytes are big endian or little endian, as long as they are consistent.
+        //   this is why we don't specify the order when calling getInt(), we use whatever order is the default to avoid
+        //   the overhead of reordering the bytes
+        return bytes.getInt(0);
     }
 
     /**
@@ -260,7 +226,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
             return ret;
         }
 
-        return Arrays.compare(value, that.value);
+        return Bytes.SORT_BY_SIGNED_VALUE.compare(bytes, that.bytes);
     }
 
     /**
@@ -268,7 +234,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      */
     @Override
     public @NonNull String toString() {
-        return (value == null) ? "null" : hex(value);
+        return (bytes == null) ? "null" : bytes.toHex();
     }
 
     /**
@@ -285,7 +251,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * 		the number of characters to include in the short string
      */
     public @NonNull String toHex(final int length) {
-        return (value == null) ? "null" : hex(value, length);
+        return (bytes == null) ? "null" : hex(bytes, length);
     }
 
     /**
@@ -294,7 +260,7 @@ public class Hash implements Comparable<Hash>, SerializableWithKnownLength, Seri
      * @return a mnemonic for this hash
      */
     public @NonNull String toMnemonic() {
-        return generateMnemonic(value, 4);
+        return generateMnemonic(copyToByteArray(), 4);
     }
 
     /**

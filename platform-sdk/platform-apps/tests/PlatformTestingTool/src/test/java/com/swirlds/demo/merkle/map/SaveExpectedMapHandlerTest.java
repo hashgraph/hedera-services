@@ -17,7 +17,7 @@
 package com.swirlds.demo.merkle.map;
 
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.deserialize;
-import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serializeThrowing;
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionType.Update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -103,33 +103,34 @@ public class SaveExpectedMapHandlerTest {
         return content;
     }
 
-    // Verify if actual HashMap and deserialized HashMap are equal
-    private boolean areEqual(Map<MapKey, ExpectedValue> actualMap, Map<MapKey, ExpectedValue> expectedMap) {
-        if (actualMap.size() != expectedMap.size()) {
-            return false;
-        }
-
-        return actualMap.entrySet().stream().allMatch(e -> e.getValue().equals(expectedMap.get(e.getKey())));
-    }
-
     // Serializes and deserializes the expected map with all valid keys
     @Test
     public void serializeAndDeserializePositiveTest() throws IOException {
-        String jsonValue = serialize(expectedMap, new File("."), expectedMapName, true);
+        String jsonValue = serializeThrowing(expectedMap, new File("."), expectedMapName, true);
         for (int i = 0; i < 20; i++) {
             assertTrue(jsonValue.contains("[0,0," + i + "]"));
         }
 
         deserializedMap = deserialize(new File(".", expectedMapZip));
 
-        assertTrue(areEqual(expectedMap, deserializedMap));
+        assertEquals(
+                expectedMap.size(),
+                deserializedMap.size(),
+                "Size of the maps should be equal, expected: %d, actual: %d"
+                        .formatted(expectedMap.size(), deserializedMap.size()));
+        expectedMap.entrySet().stream()
+                .forEach(e -> assertEquals(
+                        e.getValue(),
+                        deserializedMap.get(e.getKey()),
+                        "Expected value should be equal to deserialized value. Expected: %s, Actual: %s"
+                                .formatted(e.getValue(), deserializedMap.get(e.getKey()))));
     }
 
     // serializes and deserializes expectedMap with null EntityType ExpectedValues.
     @Test
     public void DeserializeNullEntityTypeTest() throws IOException {
         addInvalidKeysToMap();
-        String jsonValue = serialize(expectedMap, new File("."), expectedMapName, true);
+        String jsonValue = serializeThrowing(expectedMap, new File("."), expectedMapName, true);
 
         for (int i = 20; i < 25; i++) {
             assertTrue(jsonValue.contains("MapKey[0,0," + i + "]"));

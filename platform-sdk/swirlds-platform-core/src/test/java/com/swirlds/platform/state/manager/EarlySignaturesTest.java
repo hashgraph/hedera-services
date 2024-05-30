@@ -21,6 +21,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
@@ -77,9 +79,14 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Early Signatures Test")
     void earlySignaturesTest() throws InterruptedException {
         final int count = 100;
-        final StateConfig stateConfig = buildStateConfig();
-        final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
+        final int futureSignatures = platformContext
+                .getConfiguration()
+                .getConfigData(StateConfig.class)
+                .maxAgeOfFutureStateSignatures();
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

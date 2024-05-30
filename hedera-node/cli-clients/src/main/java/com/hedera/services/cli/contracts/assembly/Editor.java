@@ -118,7 +118,7 @@ public class Editor {
         }
     }
 
-    /** Merge a List<Line> with a bunch of Edits, producing a new assembly List<Line> */
+    /** Merge a {@link List<Line>} with a bunch of Edits, producing a new assembly {@link List<Line>} */
     public @NonNull List<Line> merge() {
         var merged = new ArrayList<Line>(baseLines);
         final Consumer<Edit> inserter = edit -> merged.addAll(edit.lineRange().from(), edit.newLines());

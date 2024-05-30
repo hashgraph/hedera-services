@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.BYTECODE_KEY;
-import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.STORAGE_KEY;
+import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.BYTECODE_KEY;
+import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertSame;

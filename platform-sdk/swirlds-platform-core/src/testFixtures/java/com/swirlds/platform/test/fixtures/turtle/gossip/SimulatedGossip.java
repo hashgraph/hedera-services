@@ -22,9 +22,11 @@ import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -34,12 +36,28 @@ public class SimulatedGossip implements Gossip {
 
     private final SimulatedNetwork network;
     private final NodeId selfId;
+    private IntakeEventCounter intakeEventCounter;
 
     private StandardOutputWire<GossipEvent> eventOutput;
 
+    /**
+     * Constructor.
+     *
+     * @param network the network on which this gossip system will run
+     * @param selfId  the ID of the node running this gossip system
+     */
     public SimulatedGossip(@NonNull final SimulatedNetwork network, @NonNull final NodeId selfId) {
         this.network = Objects.requireNonNull(network);
         this.selfId = Objects.requireNonNull(selfId);
+    }
+
+    /**
+     * Add an intake event counter that gets incremented for all events that enter the intake pipeline.
+     *
+     * @param intakeEventCounter the intake event counter
+     */
+    public void provideIntakeEventCounter(@NonNull final IntakeEventCounter intakeEventCounter) {
+        this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
     }
 
     /**
@@ -53,7 +71,8 @@ public class SimulatedGossip implements Gossip {
             @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput) {
 
         this.eventOutput = Objects.requireNonNull(eventOutput);
         eventInput.bindConsumer(event -> network.submitEvent(selfId, event));
@@ -62,6 +81,7 @@ public class SimulatedGossip implements Gossip {
         startInput.bindConsumer(ignored -> {});
         stopInput.bindConsumer(ignored -> {});
         clearInput.bindConsumer(ignored -> {});
+        systemHealthInput.bindConsumer(ignored -> {});
     }
 
     /**
@@ -70,6 +90,9 @@ public class SimulatedGossip implements Gossip {
      * @param event the event that was received
      */
     void receiveEvent(@NonNull final GossipEvent event) {
+        if (intakeEventCounter != null) {
+            intakeEventCounter.eventEnteredIntakePipeline(event.getSenderId());
+        }
         eventOutput.forward(event);
     }
 }

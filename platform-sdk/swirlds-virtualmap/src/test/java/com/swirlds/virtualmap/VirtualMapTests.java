@@ -47,9 +47,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -878,11 +878,11 @@ class VirtualMapTests extends VirtualTestBase {
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
 
         VirtualMap<TestKey, TestValue> map0 = createMap();
@@ -938,11 +938,11 @@ class VirtualMapTests extends VirtualTestBase {
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
 
         VirtualMap<TestKey, TestValue> map0 = createMap();

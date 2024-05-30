@@ -31,8 +31,6 @@ include(":app-hapi-fees", "hedera-node/hapi-fees")
 
 include(":app-hapi-utils", "hedera-node/hapi-utils")
 
-include(":app-service-addressbook", "hedera-node/hedera-addressbook-service")
-
 include(":app-service-consensus", "hedera-node/hedera-consensus-service")
 
 include(":app-service-consensus-impl", "hedera-node/hedera-consensus-service-impl")
@@ -97,6 +95,8 @@ include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
 include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-metrics-api", "platform-sdk/swirlds-metrics-api")
+
+include(":swirlds-metrics-impl", "platform-sdk/swirlds-metrics-impl")
 
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
