@@ -158,7 +158,7 @@ public class FrameBuilder {
         Code code = CodeV0.EMPTY_CODE;
         final var contractId = transaction.contractIdOrThrow();
 
-        // If the contract has been deleted, then always return empty byte code
+        // If the contract has been deleted, then always use empty byte code
         if (!contractDeleted(worldUpdater, contractId)) {
             final var contractMustBePresent = contractMustBePresent(config, featureFlags, contractId);
             final var account = worldUpdater.getHederaAccount(contractId);
@@ -193,7 +193,11 @@ public class FrameBuilder {
                 .nativeOperations()
                 .readableAccountStore()
                 .getContractById(contractId);
-        return contract == null || !contract.deleted();
+
+        if (contract != null) {
+            return contract.deleted();
+        }
+        return true;
     }
 
     private boolean contractMustBePresent(
@@ -208,6 +212,6 @@ public class FrameBuilder {
             final boolean contractMustBePresent, @NonNull final HederaEvmTransaction transaction) {
         // Empty code is allowed if the transaction is an Ethereum transaction or has a value or the contract does not
         // have to be present via config
-        return !contractMustBePresent || transaction.isEthereumTransaction() || transaction.hasValue();
+        return transaction.isEthereumTransaction() || transaction.hasValue() || !contractMustBePresent;
     }
 }
