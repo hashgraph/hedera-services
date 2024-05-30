@@ -50,12 +50,6 @@ public class Bls12381FieldElement implements FieldElement {
 
     @NonNull
     @Override
-    public FieldElement divide(@NonNull final FieldElement other) {
-        return null;
-    }
-
-    @NonNull
-    @Override
     public FieldElement power(@NonNull final BigInteger exponent) {
         return null;
     }

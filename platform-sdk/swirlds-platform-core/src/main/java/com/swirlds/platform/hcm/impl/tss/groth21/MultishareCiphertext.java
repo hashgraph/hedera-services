@@ -53,7 +53,7 @@ public record MultishareCiphertext(
 
         final List<GroupElement> chunkRandomness = new ArrayList<>();
         for (final FieldElement randomElement : randomness) {
-            chunkRandomness.add(publicKeyGenerator.power(randomElement));
+            chunkRandomness.add(publicKeyGenerator.multiply(randomElement));
         }
 
         final List<EncryptedShare> shareCiphertexts = new ArrayList<>();

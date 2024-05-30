@@ -59,22 +59,13 @@ public interface GroupElement {
     Group getGroup();
 
     /**
-     * Takes the group element to the power of a field element
+     * Multiplies the group element with a field element
      *
-     * @param exponent the field element exponent
-     * @return a new group element which is this group element to the power of a field element
+     * @param other the field element
+     * @return a new group element which is this group element multiplied by the field element
      */
     @NonNull
-    GroupElement power(@NonNull FieldElement exponent);
-
-    /**
-     * Multiplies this group element with another
-     *
-     * @param other the other group element
-     * @return a new group element which is the product of this element and another
-     */
-    @NonNull
-    GroupElement multiply(@NonNull GroupElement other);
+    GroupElement multiply(@NonNull FieldElement other);
 
     /**
      * Adds this group element with another
@@ -84,15 +75,6 @@ public interface GroupElement {
      */
     @NonNull
     GroupElement add(@NonNull GroupElement other);
-
-    /**
-     * Divides this group element by another
-     *
-     * @param other the other group element
-     * @return a new group element which is the quotient of this element and another
-     */
-    @NonNull
-    GroupElement divide(@NonNull GroupElement other);
 
     /**
      * Compresses the group element

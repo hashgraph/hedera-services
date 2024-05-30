@@ -80,7 +80,7 @@ public record PairingPrivateKey(@NonNull SignatureSchema signatureSchema, @NonNu
     public PairingSignature sign(@NonNull final byte[] message) {
         return new PairingSignature(
                 signatureSchema,
-                signatureSchema.getSignatureGroup().elementFromHash(message).power(secretElement));
+                signatureSchema.getSignatureGroup().elementFromHash(message).multiply(secretElement));
     }
 
     /**

@@ -83,17 +83,25 @@ public record Groth21Proof(
         final FieldElement rho = field.randomElement(random);
 
         // TODO: are there any better names for these?
-        final GroupElement f = publicKeyGroup.getGenerator().power(rho);
-        final GroupElement a = publicKeyGroup.getGenerator().power(alpha);
+        final GroupElement f = publicKeyGroup.getGenerator().multiply(rho);
+        final GroupElement a = publicKeyGroup.getGenerator().multiply(alpha);
 
-        // TODO: is oneElement with multiply to accumulate correct here, or do we need to introduce a zeroElement?
-        GroupElement y = publicKeyGroup.oneElement();
+        //     // compute Y = Π_{i=1}^{n} (y_i)^x^i
+        //    let inner = statement.public_keys
+        //        .iter()
+        //        .zip(statement.ids.iter())
+        //        .fold(G::Affine::zero(), |acc, (y_i, &id_i)| {
+        //        acc.add(y_i.mul(&x.pow(id_i.into_bigint())).into_affine()).into_affine()
+        //    });
+        //    let Y = inner.mul(rho).add(A).into_affine();
+
+        GroupElement y = publicKeyGroup.zeroElement();
         for (final UnencryptedShare unencryptedShare : unencryptedShares) {
             final TssShareClaim shareClaim = unencryptedShare.shareClaim();
             final GroupElement publicKey = shareClaim.publicKey().keyElement();
             final FieldElement shareId = shareClaim.shareId().idElement();
 
-            y = y.multiply(publicKey.power(x.power(shareId.toBigInteger())));
+            y = y.add(publicKey.multiply(x.power(shareId.toBigInteger())));
         }
 
         final FieldElement xPrime = field.elementFromLong(86L); // obviously TODO
@@ -142,12 +150,20 @@ public record Groth21Proof(
         final Group group = groupElements.getFirst().getGroup();
         final Field field = group.getPairing().getField();
 
-        GroupElement output = group.oneElement();
+        //         let c1 = ctxt.c1
+        //            .iter().enumerate().fold(
+        //                G::Affine::zero(),
+        //                |acc, (j, c1_j)|
+        //                    acc.add(c1_j.mul(&G::ScalarField::from(256u64).pow([j as u64])).into_affine())
+        //                .into_affine()
+        //            );
+
+        GroupElement output = group.zeroElement();
         for (int i = 0; i < groupElements.size(); i++) {
             final GroupElement randomElement = groupElements.get(i);
             // TODO: is this `256` the same as the size of the elgamal cache?
-            output = output.multiply(
-                    randomElement.power(field.elementFromLong(256).power(BigInteger.valueOf(i))));
+            output =
+                    output.add(randomElement.multiply(field.elementFromLong(256).power(BigInteger.valueOf(i))));
         }
 
         return output;
@@ -186,9 +202,9 @@ public record Groth21Proof(
         //    if lhs != rhs { return false; }
 
         final GroupElement lhsRandomness = collapseGroupElements(ciphertext.chunkRandomness())
-                .power(xPrime)
+                .multiply(xPrime)
                 .add(f);
-        final GroupElement rhsRandomness = group.getGenerator().power(z_a);
+        final GroupElement rhsRandomness = group.getGenerator().multiply(z_a);
         if (!lhsRandomness.equals(rhsRandomness)) {
             return false;
         }
@@ -210,10 +226,11 @@ public record Groth21Proof(
         //            ).into_affine()
         //        });
 
-        GroupElement foldedCommitment = group.oneElement();
+        GroupElement foldedCommitment = group.zeroElement();
         for (int coefficientIndex = 0;
                 coefficientIndex < commitment.commitmentCoefficients().size();
                 coefficientIndex++) {
+
             FieldElement foldedShareIds = field.zeroElement();
             for (final TssShareId shareId : shareIds) {
                 final FieldElement idElement = shareId.idElement();
@@ -224,15 +241,15 @@ public record Groth21Proof(
 
             final GroupElement commitmentElement =
                     commitment.commitmentCoefficients().get(coefficientIndex);
-            foldedCommitment = foldedCommitment.multiply(commitmentElement.power(foldedShareIds));
+            foldedCommitment = foldedCommitment.add(commitmentElement.multiply(foldedShareIds));
         }
 
         //    let lhs = inner.mul(&x_prime).add(&proof.A).into_affine();
         //    let rhs = G::generator().mul(&proof.z_a).into_affine();
         //    if lhs != rhs { return false; }
 
-        final GroupElement lhsCommitment = foldedCommitment.power(xPrime).add(a);
-        final GroupElement rhsCommitment = group.getGenerator().power(z_a);
+        final GroupElement lhsCommitment = foldedCommitment.multiply(xPrime).add(a);
+        final GroupElement rhsCommitment = group.getGenerator().multiply(z_a);
         if (!lhsCommitment.equals(rhsCommitment)) {
             return false;
         }
@@ -250,14 +267,14 @@ public record Groth21Proof(
             collapsedShares.add(collapseGroupElements(shareCiphertext.ciphertextElements()));
         }
 
-        GroupElement sharesLhsInner = group.oneElement();
+        GroupElement sharesLhsInner = group.zeroElement();
         for (int i = 0; i < collapsedShares.size(); i++) {
             final GroupElement collapsedShare = collapsedShares.get(i);
             final FieldElement shareId = shareIds.get(i).idElement();
-            sharesLhsInner = sharesLhsInner.multiply(collapsedShare.power(x.power(shareId.toBigInteger())));
+            sharesLhsInner = sharesLhsInner.add(collapsedShare.multiply(x.power(shareId.toBigInteger())));
         }
 
-        final GroupElement lhsShares = sharesLhsInner.power(xPrime).add(y);
+        final GroupElement lhsShares = sharesLhsInner.multiply(xPrime).add(y);
 
         //    let inner = statement.public_keys
         //        .iter()
@@ -266,17 +283,17 @@ public record Groth21Proof(
         //            acc.add(y_i.mul(proof.z_r * x.pow(id_i.into_bigint())).into_affine()).into_affine()
         //        });
 
-        GroupElement shareRhsInner = group.oneElement();
+        GroupElement shareRhsInner = group.zeroElement();
         for (int i = 0; i < sharePublicKeys.size(); i++) {
             final GroupElement publicKey = sharePublicKeys.get(i).keyElement();
             final FieldElement shareId = shareIds.get(i).idElement();
-            shareRhsInner = shareRhsInner.multiply(publicKey.power(z_r.multiply(x.power(shareId.toBigInteger()))));
+            shareRhsInner = shareRhsInner.add(publicKey.multiply(z_r.multiply(x.power(shareId.toBigInteger()))));
         }
 
         //    let rhs = inner.add(G::generator().mul(proof.z_a)).into_affine();
         //    if lhs != rhs { return false; }
 
-        final GroupElement rhsShares = shareRhsInner.add(group.getGenerator().power(z_a));
+        final GroupElement rhsShares = shareRhsInner.add(group.getGenerator().multiply(z_a));
 
         return lhsShares.equals(rhsShares);
     }

@@ -253,15 +253,16 @@ public final class TssUtils {
 
         final Group group = elements.getFirst().getGroup();
 
-        // TODO: the rust code has this being a sum, but my previous interface definition didn't include a zero group
-        //  element. Is this another case of different operation definitions, or does group need a 0 element in
-        //  addition to a 1 element?
-        GroupElement product = group.oneElement();
+        //         let public_key = λs.iter()
+        //            .zip(dealt_share_pubkeys.iter())
+        //            .fold(G::zero(), |acc, (&λ_i, &y_i)| { acc + y_i.mul(λ_i) });
+
+        GroupElement sum = group.zeroElement();
         for (int i = 0; i < lagrangeCoefficients.size(); i++) {
-            product = product.multiply(elements.get(i).power(lagrangeCoefficients.get(i)));
+            sum = sum.add(elements.get(i).multiply(lagrangeCoefficients.get(i)));
         }
 
-        return product;
+        return sum;
     }
 
     /**

@@ -60,8 +60,8 @@ public record EncryptedShare(@NonNull List<GroupElement> ciphertextElements) {
             final FieldElement randomnessElement = randomness.get(i);
             final FieldElement byteElement = field.elementFromLong(shareBytes[i]);
 
-            // TODO: is `add` the correct operation, or should it be `multiply`?
-            encryptedShareElements.add(publicKeyElement.power(randomnessElement).add(generator.power(byteElement)));
+            encryptedShareElements.add(
+                    publicKeyElement.multiply(randomnessElement).add(generator.multiply(byteElement)));
         }
 
         return new EncryptedShare(encryptedShareElements);
@@ -94,7 +94,7 @@ public record EncryptedShare(@NonNull List<GroupElement> ciphertextElements) {
             final GroupElement chunkCiphertext = ciphertextElements.get(i);
             final GroupElement chunkRandomness = randomness.get(i);
 
-            final GroupElement antiMask = chunkRandomness.power(zeroElement.subtract(keyElement));
+            final GroupElement antiMask = chunkRandomness.multiply(zeroElement.subtract(keyElement));
             final GroupElement commitment = chunkCiphertext.add(antiMask);
             final FieldElement decryptedCommitment = elGamalCache.cacheMap().get(commitment);
 

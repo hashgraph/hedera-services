@@ -58,12 +58,12 @@ public interface Group {
     GroupElement getGenerator();
 
     /**
-     * Creates a new group element with value 1
+     * Creates a new group element with value 0
      *
      * @return the new group element
      */
     @NonNull
-    GroupElement oneElement();
+    GroupElement zeroElement();
 
     /**
      * Creates a group element from a seed (32 bytes)

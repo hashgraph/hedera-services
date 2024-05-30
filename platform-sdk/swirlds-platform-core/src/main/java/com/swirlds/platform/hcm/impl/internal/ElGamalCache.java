@@ -42,7 +42,7 @@ public record ElGamalCache(@NonNull Map<GroupElement, FieldElement> cacheMap) {
         final Map<GroupElement, FieldElement> cacheMap = new HashMap<>(cacheSize);
         for (int i = 0; i < cacheSize; i++) {
             final FieldElement indexElement = cacheGroup.getPairing().getField().elementFromLong(i);
-            final GroupElement candidate = cacheGroup.getGenerator().power(indexElement);
+            final GroupElement candidate = cacheGroup.getGenerator().multiply(indexElement);
             cacheMap.put(candidate, indexElement);
         }
 

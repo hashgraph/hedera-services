@@ -48,7 +48,7 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement oneElement() {
+    public GroupElement zeroElement() {
         return null;
     }
 

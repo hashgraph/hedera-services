@@ -44,7 +44,7 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
 
         final List<GroupElement> commitmentCoefficients = new ArrayList<>();
         for (final FieldElement polynomialCoefficient : polynomial.coefficients()) {
-            commitmentCoefficients.add(generator.power(polynomialCoefficient));
+            commitmentCoefficients.add(generator.multiply(polynomialCoefficient));
         }
 
         return new FeldmanCommitment(commitmentCoefficients);
@@ -67,12 +67,20 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
 
         final Group group = commitmentCoefficients.getFirst().getGroup();
 
-        GroupElement publicKey = group.oneElement();
+        //         for msg in dkg_messages.iter() {
+        //            // compute powers of share_id
+        //            let xs = (0..msg.commitment.len()).map(|i| share_id.pow([i as u64])).collect::<Vec<ShareId<G>>>();
+        //            let share_of_share_pubkey = msg.commitment.iter().zip(xs.iter()).fold(G::zero(), |acc, (&a_i,
+        // &x_i)| { acc + a_i.mul(x_i) });
+        //            dealt_share_pubkeys.push(share_of_share_pubkey);
+        //        }
+
+        GroupElement publicKey = group.zeroElement();
         for (int i = 0; i < commitmentCoefficients.size(); i++) {
             final GroupElement term = commitmentCoefficients.get(i);
             final FieldElement exponentiatedShareId = shareId.idElement().power(BigInteger.valueOf(i));
 
-            publicKey = publicKey.multiply(term.power(exponentiatedShareId));
+            publicKey = publicKey.add(term.multiply(exponentiatedShareId));
         }
 
         return publicKey;
