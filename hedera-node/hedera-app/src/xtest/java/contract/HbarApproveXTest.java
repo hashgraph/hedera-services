@@ -62,7 +62,7 @@ public class HbarApproveXTest extends AbstractContractXTest {
                                 HbarApproveTranslator.HBAR_APPROVE.getOutputs().encodeElements((long)
                                         SUCCESS.getNumber())),
                         output),
-                "Successful execution of hbarAllowance for SENDER by OWNER.");
+                "Successful execution of hbarApprove for SENDER by OWNER.");
         runHasCallAndExpectOnSuccess(
                 OWNER_BESU_ADDRESS,
                 Bytes.wrapByteBuffer(HbarApproveTranslator.HBAR_APPROVE.encodeCall(
@@ -72,7 +72,7 @@ public class HbarApproveXTest extends AbstractContractXTest {
                                 HbarApproveTranslator.HBAR_APPROVE.getOutputs().encodeElements((long)
                                         SUCCESS.getNumber())),
                         output),
-                "Successful execution of hbarAllowance for SENDER by OWNER.");
+                "Successful execution of hbarApprove for SENDER by OWNER.");
         runHasCallAndExpectRevert(
                 OWNER_BESU_ADDRESS,
                 bytesForRedirectForAccount(
