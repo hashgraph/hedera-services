@@ -14,42 +14,36 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.test.handlers;
+package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.file.FileDeleteTransactionBody;
-import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
-import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.test.FileTestBase;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -59,47 +53,43 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileDeleteTest extends FileTestBase {
+class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
 
     @Mock
-    private ReadableFileStoreImpl mockStore;
+    private ReadableNodeStoreImpl mockStore;
+
 
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
 
     @Mock
-    private FileDeleteHandler subject;
+    private NodeDeleteHandler subject;
 
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
+    @Mock(strictness = Strictness.LENIENT)
     protected TransactionDispatcher mockDispatcher;
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
+    @Mock(strictness = Strictness.LENIENT)
     protected ReadableStoreFactory mockStoreFactory;
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
+    @Mock(strictness = Strictness.LENIENT)
     protected Account payerAccount;
-
-    @Mock
-    protected FileFeeBuilder usageEstimator;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -108,205 +98,203 @@ class FileDeleteTest extends FileTestBase {
 
     @BeforeEach
     void setUp() {
-        mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileDeleteHandler(usageEstimator);
+        mockStore = mock(ReadableNodeStoreImpl.class);
+        subject = new NodeDeleteHandler();
 
-        writableFileState = writableFileStateWithOneKey();
-        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
+        writableNodeState = writableNodeStateWithOneKey();
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         testConfig = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
-        when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
+        when(mockStoreFactory.getStore(ReadableNodeStore.class)).thenReturn(mockStore);
         when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
     }
 
     @Test
-    @DisplayName("pureChecks throws exception when file id is null")
+    @DisplayName("pureChecks throws exception when node id is negative or zero")
     public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
-        FileDeleteTransactionBody transactionBody = mock(FileDeleteTransactionBody.class);
+        NodeDeleteTransactionBody transactionBody = mock(NodeDeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
         given(handleContext.body()).willReturn(transaction);
-        given(transaction.fileDeleteOrThrow()).willReturn(transactionBody);
-        given(transactionBody.fileID()).willReturn(null);
+        given(transaction.nodeDeleteOrThrow()).willReturn(transactionBody);
+        given(transactionBody.nodeId()).willReturn(-1L);
 
         assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+        var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(handleContext.body()));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+
+        given(transactionBody.nodeId()).willReturn(0L);
+
+        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+        msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(handleContext.body()));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
-    @DisplayName("pureChecks does not throw exception when file id is not null")
-    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+    @DisplayName("pureChecks does not throw exception when node id is not null")
+    public void testPureChecksDoesNotThrowExceptionWhenNodeIdIsNotNull() {
         given(handleContext.body()).willReturn(newDeleteTxn());
 
         assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("calculateFees method invocations")
+    @DisplayName("check that fees are free for delete node trx")
     public void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
-
-        subject.calculateFees(feeContext);
-
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext).body();
-        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
-        inOrder.verify(feeCalculator).legacyCalculate(any());
+        assertThat( subject.calculateFees(feeContext)).isEqualTo(Fees.FREE);
     }
 
     @Test
-    @DisplayName("File not found returns error")
-    void fileIdNotFound() throws PreCheckException {
+    @DisplayName("prehandle throws exception when node id is negative, zero or greater than max number")
+    public void testPreHandleChecksThrowsExceptionWhenFileIdIsNull() {
+        NodeDeleteTransactionBody transactionBody = mock(NodeDeleteTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(preHandleContext.body()).willReturn(transaction);
+        given(transaction.nodeDeleteOrThrow()).willReturn(transactionBody);
+        given(transactionBody.nodeId()).willReturn(-1L);
+
+        assertThatThrownBy(() -> subject.preHandle(preHandleContext)).isInstanceOf(PreCheckException.class);
+        var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+
+        given(transactionBody.nodeId()).willReturn(0L);
+
+        assertThatThrownBy(() -> subject.preHandle(preHandleContext)).isInstanceOf(PreCheckException.class);
+        msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+
+        given(transactionBody.nodeId()).willReturn(101L);
+
+        assertThatThrownBy(() -> subject.preHandle(preHandleContext)).isInstanceOf(PreCheckException.class);
+        msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+    }
+
+    @Test
+    @DisplayName("Node not found returns error")
+    void NodeIdNotFound() throws PreCheckException {
         // given:
-        mockPayerLookup();
-        given(mockStore.getFileMetadata(notNull())).willReturn(null);
+        mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
+        given(mockStore.get(anyLong())).willReturn(null);
         final var context = new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
-
-        // when:
-        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
-    }
-
-    @Test
-    @DisplayName("Pre handle works as expected immutable")
-    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
-        file = createFileEmptyMemoAndKeys();
-        refreshStoresWithCurrentFileOnlyInReadable();
-        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
-        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
-
-        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
-        TransactionBody transactionBody = TransactionBody.newBuilder()
-                .transactionID(txnId)
-                .fileDelete(deleteFileBuilder.build())
-                .build();
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
-
-        subject.preHandle(realPreContext);
-
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(0);
+        assertThatThrownBy(() -> subject.preHandle(context)).isInstanceOf(PreCheckException.class);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(context));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
     @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
-        refreshStoresWithCurrentFileOnlyInReadable();
+    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+        node = createNode();
+        refreshStoresWithCurrentNodeOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
-        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableNodeStore.class)).willReturn(readableStore);
         BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var deleteNodeBuilder = NodeDeleteTransactionBody.newBuilder().nodeId(WELL_KNOWN_NODE_ID);
+        TransactionBody transactionBody = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .nodeDelete(deleteNodeBuilder.build())
+                .build();
         PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
+                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
 
-        subject.preHandle(realPreContext);
+        assertThatCode(() ->subject.preHandle(realPreContext)).doesNotThrowAnyException();
 
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(1);
-        assertThat(realPreContext
-                        .requiredNonPayerKeys()
-                        .toArray(Key[]::new)[0]
-                        .thresholdKey()
-                        .threshold())
-                .isEqualTo(1);
     }
 
     @Test
-    @DisplayName("Fails handle if file doesn't exist")
+    @DisplayName("Fails handle if node doesn't exist")
     void fileDoesntExist() {
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+        final var txn = newDeleteTxn().nodeDeleteOrThrow();
 
-        writableFileState = emptyWritableFileState();
-        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        writableNodeState = emptyWritableNodeState();
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
+        writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+                .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
-        assertThat(thrown.getStatus()).isEqualTo(INVALID_FILE_ID);
+        assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
-    @DisplayName("Fails handle if keys doesn't exist on file to be deleted")
-    void keysDoesntExist() {
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+    @DisplayName("Node is null")
+    void NodeIsNull() {
+        final var txn = newDeleteTxn().nodeDeleteOrThrow();
 
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
+        node = null;
 
-        writableFileState = writableFileStateWithOneKey();
-        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        writableNodeState = writableNodeStateWithOneKey();
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
+        writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+                .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
-        assertThat(thrown.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
+        assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+        final var txn = newDeleteTxn().nodeDeleteOrThrow();
 
-        final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
-        assertThat(existingFile.get().deleted()).isFalse();
+        final var existingNode = writableStore.get(WELL_KNOWN_NODE_ID);
+        assertThat(existingNode).isNotNull();
+        assertThat(existingNode.deleted()).isFalse();
 
         given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+                .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileId);
+        final var changedFile = writableStore.get(WELL_KNOWN_NODE_ID);
 
-        assertThat(changedFile.isPresent()).isTrue();
-        assertThat(changedFile.get().deleted()).isTrue();
-        assertThat(Bytes.EMPTY).isEqualTo(changedFile.get().contents());
+        assertThat(changedFile).isNotNull();
+        assertThat(changedFile.deleted()).isTrue();
     }
 
     @Test
-    @DisplayName("File without keys returns error")
+    @DisplayName("Node already deleted returns error")
     void noFileKeys() {
-        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false, 0L);
-        refreshStoresWithCurrentFileInBothReadableAndWritable();
+        givenValidNode(true);
+        refreshStoresWithCurrentNodeInBothReadableAndWritable();
 
-        final var txn = newDeleteTxn().fileDeleteOrThrow();
+        final var txn = newDeleteTxn().nodeDeleteOrThrow();
 
-        final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
-        assertThat(existingFile.get().deleted()).isFalse();
+        final var existingNode = writableStore.get(WELL_KNOWN_NODE_ID);
+        assertThat(existingNode).isNotNull();
+        assertThat(existingNode.deleted()).isTrue();
 
         given(handleContext.body())
-                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+                .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         // expect:
-        assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
+        assertFailsWith(() -> subject.handle(handleContext), ResponseCodeEnum.NODE_DELETED);
     }
 
-    private Key mockPayerLookup() throws PreCheckException {
-        return FileTestUtils.mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
-    }
 
     private TransactionBody newDeleteTxn() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
+        final var deleteFileBuilder = NodeDeleteTransactionBody.newBuilder().nodeId(WELL_KNOWN_NODE_ID);
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
-                .fileDelete(deleteFileBuilder.build())
+                .nodeDelete(deleteFileBuilder.build())
                 .build();
     }
 
-    private static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
+    private static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
         assertThatThrownBy(something::run)
                 .isInstanceOf(HandleException.class)
                 .extracting(ex -> ((HandleException) ex).getStatus())

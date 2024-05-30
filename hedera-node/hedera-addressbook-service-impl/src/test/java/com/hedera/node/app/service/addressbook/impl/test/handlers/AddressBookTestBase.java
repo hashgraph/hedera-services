@@ -19,6 +19,7 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,10 +29,13 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -55,7 +59,8 @@ public class AddressBookTestBase {
             AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
     protected final byte[] grpcCertificateHash = "grpcCertificateHash".getBytes();
     protected final byte[] gossipCaCertificate = "gossipCaCertificate".getBytes();
-    protected final EntityNumber nodeId = EntityNumber.newBuilder().number(1L).build();
+    protected final long WELL_KNOWN_NODE_ID = 1L;
+    protected final EntityNumber nodeId = EntityNumber.newBuilder().number(WELL_KNOWN_NODE_ID).build();
     protected final EntityNumber nodeId2 = EntityNumber.newBuilder().number(3L).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
@@ -160,6 +165,10 @@ public class AddressBookTestBase {
     }
 
     protected void givenValidNode() {
+        givenValidNode(false);
+    }
+
+    protected void givenValidNode(boolean deleted) {
         node = new Node(
                 nodeId.number(),
                 accountId,
@@ -169,7 +178,7 @@ public class AddressBookTestBase {
                 Bytes.wrap(gossipCaCertificate),
                 Bytes.wrap(grpcCertificateHash),
                 0,
-                false);
+                deleted);
     }
 
     protected Node createNode() {
@@ -183,5 +192,13 @@ public class AddressBookTestBase {
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
                 .build();
+    }
+
+    static Key mockPayerLookup(Key key, AccountID accountId, ReadableAccountStore accountStore)
+            throws PreCheckException {
+        final var account = mock(Account.class);
+        lenient().when(accountStore.getAccountById(accountId)).thenReturn(account);
+        lenient().when(account.key()).thenReturn(key);
+        return key;
     }
 }
