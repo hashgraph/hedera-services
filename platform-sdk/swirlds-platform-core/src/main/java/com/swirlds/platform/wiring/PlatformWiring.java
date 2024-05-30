@@ -88,6 +88,7 @@ import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
@@ -954,6 +955,22 @@ public class PlatformWiring {
     @NonNull
     public InputWire<ReservedSignedState> getHashLoggerInput() {
         return hashLoggerWiring.getInputWire(HashLogger::logHashes);
+    }
+
+    /**
+     * Forward a state to the hash logger.
+     *
+     * @param signedState the state to forward
+     */
+    public void sendStateToHashLogger(@NonNull final SignedState signedState) {
+        if (signedState.getState().getHash() != null) {
+            final ReservedSignedState stateReservedForHasher = signedState.reserve("logging state hash");
+
+            final boolean offerResult = getHashLoggerInput().offer(stateReservedForHasher);
+            if (!offerResult) {
+                stateReservedForHasher.close();
+            }
+        }
     }
 
     /**
