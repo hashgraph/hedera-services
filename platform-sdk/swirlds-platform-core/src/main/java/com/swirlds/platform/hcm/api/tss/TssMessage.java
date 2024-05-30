@@ -20,7 +20,6 @@ import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.impl.tss.groth21.FeldmanCommitment;
 import com.swirlds.platform.hcm.impl.tss.groth21.MultishareCiphertext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * A message sent as part of either genesis keying, or rekeying.
@@ -43,7 +42,7 @@ public record TssMessage(
      * @param shareClaims the pending share claims the TSS message was created for
      * @return true if the message is valid, false otherwise
      */
-    boolean verify(@NonNull final PairingPublicKey publicKey, @NonNull final List<TssShareClaim> shareClaims) {
+    boolean verify(@NonNull final PairingPublicKey publicKey, @NonNull final ShareClaims shareClaims) {
         return publicKey.keyElement().equals(commitment.commitmentCoefficients().getFirst())
                 && proof.verify(cipherText, commitment, shareClaims);
     }

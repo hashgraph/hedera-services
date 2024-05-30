@@ -19,7 +19,6 @@ package com.swirlds.platform.hcm.api.tss;
 import com.swirlds.platform.hcm.impl.tss.groth21.FeldmanCommitment;
 import com.swirlds.platform.hcm.impl.tss.groth21.MultishareCiphertext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * A TSS proof.
@@ -37,5 +36,5 @@ public interface TssProof {
     boolean verify(
             @NonNull final MultishareCiphertext ciphertext,
             @NonNull final FeldmanCommitment commitment,
-            @NonNull final List<TssShareClaim> pendingShareClaims);
+            @NonNull final ShareClaims pendingShareClaims);
 }

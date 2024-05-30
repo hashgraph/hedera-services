@@ -21,6 +21,7 @@ import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.api.tss.ShareClaims;
 import com.swirlds.platform.hcm.api.tss.TssProof;
 import com.swirlds.platform.hcm.api.tss.TssShareClaim;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
@@ -159,13 +160,15 @@ public record Groth21Proof(
     public boolean verify(
             @NonNull final MultishareCiphertext ciphertext,
             @NonNull final FeldmanCommitment commitment,
-            @NonNull final List<TssShareClaim> pendingShareClaims) {
+            @NonNull final ShareClaims pendingShareClaims) {
         final Field field = z_r.getField();
         final Group group = f.getGroup();
 
         final List<TssShareId> shareIds = new ArrayList<>();
-        for (final EncryptedShare shareCiphertext : ciphertext.getShareCiphertexts()) {
-            shareIds.add(shareCiphertext.shareId());
+        final List<PairingPublicKey> sharePublicKeys = new ArrayList<>();
+        for (final TssShareClaim shareClaim : pendingShareClaims.getClaims()) {
+            shareIds.add(shareClaim.shareId());
+            sharePublicKeys.add(shareClaim.publicKey());
         }
 
         //     // compute x := RO(instance)
@@ -182,7 +185,7 @@ public record Groth21Proof(
         //    let rhs = G::generator().mul(&proof.z_r).into_affine();
         //    if lhs != rhs { return false; }
 
-        final GroupElement lhsRandomness = collapseGroupElements(ciphertext.getChunkRandomness())
+        final GroupElement lhsRandomness = collapseGroupElements(ciphertext.chunkRandomness())
                 .power(xPrime)
                 .add(f);
         final GroupElement rhsRandomness = group.getGenerator().power(z_a);
@@ -242,13 +245,8 @@ public record Groth21Proof(
         //        });
         //    let lhs = inner.mul(&x_prime).add(&proof.Y).into_affine();
 
-        final List<PairingPublicKey> sharePublicKeys = new ArrayList<>();
-        for (final TssShareClaim shareClaim : pendingShareClaims) {
-            sharePublicKeys.add(shareClaim.publicKey());
-        }
-
         final List<GroupElement> collapsedShares = new ArrayList<>();
-        for (final EncryptedShare shareCiphertext : ciphertext.getShareCiphertexts()) {
+        for (final EncryptedShare shareCiphertext : ciphertext.shareCiphertexts()) {
             collapsedShares.add(collapseGroupElements(shareCiphertext.ciphertextElements()));
         }
 

@@ -19,6 +19,7 @@ package com.swirlds.platform.hcm.impl.tss.groth21;
 import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
+import com.swirlds.platform.hcm.api.tss.ShareClaims;
 import com.swirlds.platform.hcm.api.tss.Tss;
 import com.swirlds.platform.hcm.api.tss.TssMessage;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
@@ -42,7 +43,7 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
     public TssMessage generateTssMessage(
             @NonNull final Random random,
             @NonNull final SignatureSchema signatureSchema,
-            @NonNull final List<TssShareClaim> pendingShareClaims,
+            @NonNull final ShareClaims pendingShareClaims,
             @NonNull final TssPrivateShare privateShare,
             final int threshold) {
 
@@ -54,7 +55,7 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
         final List<FieldElement> randomness = generateRandomness(random, signatureSchema.getField());
 
         final List<UnencryptedShare> unencryptedShares = new ArrayList<>();
-        for (final TssShareClaim shareClaim : pendingShareClaims) {
+        for (final TssShareClaim shareClaim : pendingShareClaims.getClaims()) {
             unencryptedShares.add(new UnencryptedShare(
                     shareClaim, polynomial.evaluate(shareClaim.shareId().idElement())));
         }

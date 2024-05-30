@@ -25,6 +25,8 @@ import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingSignature;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import com.swirlds.platform.hcm.impl.internal.ElGamalCache;
+import com.swirlds.platform.hcm.impl.tss.groth21.EncryptedShare;
+import com.swirlds.platform.hcm.impl.tss.groth21.MultishareCiphertext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -48,6 +50,7 @@ public final class TssUtils {
      * @param elGamalPrivateKey the ElGamal private key of this node
      * @param tssMessages       the TSS messages to extract the private shares from
      * @param elGamalCache      the ElGamal cache
+     * @param shareClaims       the share claims that the tss messages were created for
      * @param threshold         the threshold number of cipher texts required to decrypt the private share
      * @return the private share, or null if there aren't enough shares to meet the threshold
      */
@@ -58,6 +61,7 @@ public final class TssUtils {
             @NonNull final PairingPrivateKey elGamalPrivateKey,
             @NonNull final List<TssMessage> tssMessages,
             @NonNull final ElGamalCache elGamalCache,
+            @NonNull final ShareClaims shareClaims,
             final int threshold) {
 
         // check if there are enough messages to meet the required threshold
@@ -65,10 +69,20 @@ public final class TssUtils {
             return null;
         }
 
+        final int shareIndex = shareClaims.getShareIdIndex(shareId);
+
         // decrypt the partial private shares from the cipher texts
         final List<TssPrivateShare> partialPrivateShares = new ArrayList<>();
-        tssMessages.forEach(tssMessage -> partialPrivateShares.add(
-                tssMessage.cipherText().decryptPrivateShare(elGamalPrivateKey, shareId, elGamalCache)));
+
+        for (final TssMessage tssMessage : tssMessages) {
+            final MultishareCiphertext multishareCiphertext = tssMessage.cipherText();
+            final List<GroupElement> randomness = multishareCiphertext.chunkRandomness();
+            final EncryptedShare encryptedShare =
+                    multishareCiphertext.shareCiphertexts().get(shareIndex);
+
+            partialPrivateShares.add(new TssPrivateShare(
+                    shareId, encryptedShare.decryptPrivateKey(elGamalPrivateKey, elGamalCache, randomness)));
+        }
 
         // aggregate the decrypted partial private shares, creating the actual private share
         return new TssPrivateShare(shareId, aggregatePrivateShares(tss, partialPrivateShares));

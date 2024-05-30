@@ -18,7 +18,6 @@ package com.swirlds.platform.hcm.api.tss;
 
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -45,7 +44,7 @@ public interface Tss {
     TssMessage generateTssMessage(
             @NonNull final Random random,
             @NonNull final SignatureSchema signatureSchema,
-            @NonNull final List<TssShareClaim> pendingShareClaims,
+            @NonNull final ShareClaims pendingShareClaims,
             @NonNull final TssPrivateShare privateShare,
             final int threshold);
 

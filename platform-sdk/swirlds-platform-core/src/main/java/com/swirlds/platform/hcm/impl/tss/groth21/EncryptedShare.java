@@ -20,18 +20,19 @@ import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.tss.TssShareId;
+import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
+import com.swirlds.platform.hcm.impl.internal.ElGamalCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * A ciphertext corresponding to a share.
  *
- * @param shareId            the share ID
  * @param ciphertextElements the group elements that comprise the ciphertext
  */
-public record EncryptedShare(@NonNull TssShareId shareId, @NonNull List<GroupElement> ciphertextElements) {
+public record EncryptedShare(@NonNull List<GroupElement> ciphertextElements) {
     /**
      * Creates a share ciphertext.
      *
@@ -63,6 +64,45 @@ public record EncryptedShare(@NonNull TssShareId shareId, @NonNull List<GroupEle
             encryptedShareElements.add(publicKeyElement.power(randomnessElement).add(generator.power(byteElement)));
         }
 
-        return new EncryptedShare(unencryptedShare.shareClaim().shareId(), encryptedShareElements);
+        return new EncryptedShare(encryptedShareElements);
+    }
+
+    /**
+     * Decrypts the share ciphertext.
+     *
+     * @param elGamalPrivateKey the ElGamal private key to use for decryption
+     * @param elGamalCache      the ElGamal cache to use for decryption
+     * @param randomness        the randomness used during encryption
+     * @return the decrypted share
+     */
+    @NonNull
+    public PairingPrivateKey decryptPrivateKey(
+            @NonNull final PairingPrivateKey elGamalPrivateKey,
+            @NonNull final ElGamalCache elGamalCache,
+            @NonNull final List<GroupElement> randomness) {
+
+        if (randomness.size() != ciphertextElements.size()) {
+            throw new IllegalArgumentException("Mismatched chunk randomness count and ciphertext chunk count");
+        }
+
+        final FieldElement keyElement = elGamalPrivateKey.secretElement();
+        final Field keyField = keyElement.getField();
+        final FieldElement zeroElement = keyField.zeroElement();
+
+        FieldElement output = zeroElement;
+        for (int i = 0; i < ciphertextElements.size(); i++) {
+            final GroupElement chunkCiphertext = ciphertextElements.get(i);
+            final GroupElement chunkRandomness = randomness.get(i);
+
+            final GroupElement antiMask = chunkRandomness.power(zeroElement.subtract(keyElement));
+            final GroupElement commitment = chunkCiphertext.add(antiMask);
+            final FieldElement decryptedCommitment = elGamalCache.cacheMap().get(commitment);
+
+            output = output.add(keyField.elementFromLong(elGamalCache.cacheMap().size())
+                    .power(BigInteger.valueOf(i))
+                    .multiply(decryptedCommitment));
+        }
+
+        return new PairingPrivateKey(elGamalPrivateKey.signatureSchema(), output);
     }
 }
