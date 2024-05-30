@@ -30,18 +30,20 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 
 /**
  * An implementation of {@link MigrationContext}.
  *
- * @param previousStates        The previous states.
- * @param newStates             The new states, preloaded with any new state definitions.
- * @param configuration         The configuration to use
+ * @param previousStates The previous states.
+ * @param newStates The new states, preloaded with any new state definitions.
+ * @param configuration The configuration to use
  * @param genesisRecordsBuilder The instance responsible for genesis records
  * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
- *                              migrations). Note that this is nullable only because it cannot exist
- *                              when the entity ID service itself is being migrated
+ * migrations). Note that this is nullable only because it cannot exist
+ * when the entity ID service itself is being migrated
  * @param previousVersion
+ * @param sharedValues
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
@@ -50,7 +52,8 @@ public record MigrationContextImpl(
         @NonNull NetworkInfo networkInfo,
         @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
         @Nullable WritableEntityIdStore writableEntityIdStore,
-        @Nullable SemanticVersion previousVersion)
+        @Nullable SemanticVersion previousVersion,
+        @NonNull Map<String, Object> sharedValues)
         implements MigrationContext {
 
     public MigrationContextImpl {
@@ -59,6 +62,7 @@ public record MigrationContextImpl(
         requireNonNull(configuration);
         requireNonNull(networkInfo);
         requireNonNull(genesisRecordsBuilder);
+        requireNonNull(sharedValues);
     }
 
     @Override

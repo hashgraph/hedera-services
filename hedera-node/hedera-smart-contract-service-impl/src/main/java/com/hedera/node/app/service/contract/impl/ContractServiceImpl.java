@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
+import com.hedera.node.app.service.contract.impl.state.V0500ContractSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
@@ -58,6 +59,7 @@ public enum ContractServiceImpl implements ContractService {
     public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
         initialContractSchema = new InitialModServiceContractSchema(version);
         registry.register(initialContractSchema);
+        registry.register(new V0500ContractSchema());
     }
 
     public ContractHandlers handlers() {
