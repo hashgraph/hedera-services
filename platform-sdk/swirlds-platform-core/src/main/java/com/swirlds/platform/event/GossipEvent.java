@@ -366,13 +366,12 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         return hashedData.getOtherParents();
     }
 
+    /** @return a list of all parents, self parent (if any), + all other parents */
+    @NonNull
     public List<EventDescriptor> getAllParents() {
         return hashedData.getAllParents();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
@@ -426,9 +425,6 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
                 && Objects.equals(consensusData, that.consensusData);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int hashCode() {
         return getHash().hashCode();
