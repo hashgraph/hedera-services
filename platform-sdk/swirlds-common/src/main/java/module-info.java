@@ -67,7 +67,6 @@ module com.swirlds.common {
     exports com.swirlds.common.wiring.model;
     exports com.swirlds.common.wiring.schedulers;
     exports com.swirlds.common.wiring.schedulers.builders;
-    exports com.swirlds.common.wiring.tasks;
     exports com.swirlds.common.wiring.transformers;
     exports com.swirlds.common.wiring.wires;
     exports com.swirlds.common.wiring.wires.input;
@@ -141,6 +140,7 @@ module com.swirlds.common {
     exports com.swirlds.common.threading.atomic;
     exports com.swirlds.common.wiring.model.diagram;
     exports com.swirlds.common.concurrent;
+    exports com.swirlds.common.wiring.schedulers.internal;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

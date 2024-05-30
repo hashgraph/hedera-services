@@ -120,6 +120,8 @@ include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
+include(":hedera-wiring", "platform-sdk/hedera-wiring")
+
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
 

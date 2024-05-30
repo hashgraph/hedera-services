@@ -25,7 +25,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.common.wiring.tasks.AbstractTask;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -149,7 +148,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         return hash(hashReader, sortedDirtyLeaves, firstLeafPath, lastLeafPath, null);
     }
 
-    class HashHoldingTask extends AbstractTask {
+    class HashHoldingTask extends AbstractHashHoldingTask {
 
         // Input hashes. Some hashes may be null, which indicates they should be loaded from disk
         protected final Hash[] ins;

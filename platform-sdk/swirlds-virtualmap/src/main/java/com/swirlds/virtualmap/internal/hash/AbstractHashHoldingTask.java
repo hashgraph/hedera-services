@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.wiring.tasks;
+package com.swirlds.virtualmap.internal.hash;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ForkJoinPool;
@@ -23,9 +23,9 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A unit of work that is processed by a task scheduler.
+ * A unit of work.
  */
-public abstract class AbstractTask extends ForkJoinTask<Void> {
+public abstract class AbstractHashHoldingTask extends ForkJoinTask<Void> {
 
     /**
      * Counts outstanding dependencies. When it reaches 0, the task is ready to run.
@@ -44,7 +44,7 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      * @param dependencyCount the number of dependencies that must be satisfied before this task is eligible for
      *                        execution
      */
-    protected AbstractTask(@NonNull final ForkJoinPool pool, final int dependencyCount) {
+    protected AbstractHashHoldingTask(@NonNull final ForkJoinPool pool, final int dependencyCount) {
         this.pool = pool;
         this.dependencyCount = dependencyCount > 0 ? new AtomicInteger(dependencyCount) : null;
     }
