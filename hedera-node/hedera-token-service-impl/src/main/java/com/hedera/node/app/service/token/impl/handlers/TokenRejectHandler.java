@@ -267,7 +267,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     }
 
     /**
-     * Processes a single fungible token rejection by performing validations and adds the transfer for the rejected
+     * Processes a single fungible token rejection by performing validations and builds the transfer for the rejected
      * token.
      *
      * @param rejection The token reference detailing the rejection.
@@ -287,8 +287,6 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         validateTrue(token.treasuryAccountId() != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         validateTrue(!token.treasuryAccountId().equals(accountID), ACCOUNT_IS_TREASURY);
         validateTrue(tokenRelation.balance() > 0, INSUFFICIENT_TOKEN_BALANCE);
-
-        rejectingAccount.tokenAllowances().removeIf(allowance -> tokenId.equals(allowance.tokenId()));
 
         return createFungibleTransfer(tokenId, accountID, tokenRelation.balance(), token.treasuryAccountId());
     }
