@@ -18,10 +18,10 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.meta.HandleScope;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;

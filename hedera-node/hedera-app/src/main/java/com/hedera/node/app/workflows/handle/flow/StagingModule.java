@@ -16,16 +16,23 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import com.hedera.node.app.meta.HandleScope;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 @Module
 public interface StagingModule {
@@ -43,5 +50,23 @@ public interface StagingModule {
     @HandleScope
     static TransactionInfo provideTransactionInfo(@NonNull PreHandleResult preHandleResult) {
         return preHandleResult.txInfo();
+    }
+
+    @Provides
+    @HandleScope
+    static Map<Key, SignatureVerificationFuture> provideKeyVerifications(@NonNull PreHandleResult preHandleResult) {
+        return preHandleResult.getVerificationResults();
+    }
+
+    @Provides
+    @HandleScope
+    static int provideLegacyFeeCalcNetworkVpt(@NonNull TransactionInfo txnInfo) {
+        return txnInfo.signatureMap().sigPair().size();
+    }
+
+    @Provides
+    @HandleScope
+    static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo){
+        return txnInfo.functionality();
     }
 }

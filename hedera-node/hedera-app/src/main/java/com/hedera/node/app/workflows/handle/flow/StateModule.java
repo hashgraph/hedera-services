@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import com.hedera.node.app.meta.HandleScope;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
 import com.swirlds.state.HederaState;
 import dagger.Module;
 import dagger.Provides;

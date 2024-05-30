@@ -16,14 +16,22 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @Subcomponent(modules = {StateModule.class, ContextModule.class, StagingModule.class})
 @HandleScope
@@ -34,8 +42,9 @@ public interface HandleComponent {
                 @BindsInstance PlatformState platformState,
                 @BindsInstance ConsensusEvent platformEvent,
                 @BindsInstance NodeInfo creator,
-                @BindsInstance ConsensusTransaction platformTxn);
+                @BindsInstance ConsensusTransaction platformTxn,
+                @BindsInstance Instant consensusTime);
     }
-
-    HandleContext handleContext();
+    HederaFunctionality functionality();
+    Supplier<Stream<SingleTransactionRecord>> recordStream();
 }

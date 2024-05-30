@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,9 +40,12 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.inject.Inject;
+
 /**
  * Base implementation of {@link KeyVerifier}
  */
+@HandleScope
 public class DefaultKeyVerifier implements KeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
@@ -54,8 +58,10 @@ public class DefaultKeyVerifier implements KeyVerifier {
      * Creates a {@link DefaultKeyVerifier}
      *
      * @param legacyFeeCalcNetworkVpt the number of verifications to report for temporary mono-service parity
+     * @param config configuration for the node
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
+    @Inject
     public DefaultKeyVerifier(
             final int legacyFeeCalcNetworkVpt,
             @NonNull final HederaConfig config,

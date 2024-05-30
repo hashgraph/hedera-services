@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.meta.HandleScope;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -42,6 +41,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,10 +51,21 @@ import java.util.List;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 
-@HandleScope
+/**
+ * The HandleContext Implementation
+ */
 public class FlowHandleContext implements HandleContext {
+    private final PreHandleLogic preHandleLogic;
+//    private final Provider<HandleComponent.Factory> handleComponentProvider;
+
+    /**
+     * Constructor
+     * @param preHandleLogic
+     */
     @Inject
-    public FlowHandleContext() {}
+    public FlowHandleContext(PreHandleLogic preHandleLogic) {
+        this.preHandleLogic = preHandleLogic;
+    }
 
     @NonNull
     @Override

@@ -37,7 +37,8 @@ public class PreHandleLogic {
 
     @Inject
     public PreHandleLogic(
-            @NonNull final PreHandleWorkflow preHandleWorkflow, @NonNull final SolvencyPreCheck solvencyPreCheck) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.preHandleWorkflow = preHandleWorkflow;
         this.solvencyPreCheck = solvencyPreCheck;
     }
