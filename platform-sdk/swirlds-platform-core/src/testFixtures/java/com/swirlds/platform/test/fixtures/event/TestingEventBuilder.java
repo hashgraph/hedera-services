@@ -521,15 +521,18 @@ public class TestingEventBuilder {
                 createDescriptorFromParent(selfParent, selfParentGenerationOverride, selfParentBirthRoundOverride);
         final List<EventDescriptor> otherParentDescriptors = Stream.ofNullable(otherParents)
                 .flatMap(List::stream)
-                .map(parent -> createDescriptorFromParent(parent, otherParentGenerationOverride,
-                        otherParentBirthRoundOverride))
+                .map(parent -> createDescriptorFromParent(
+                        parent, otherParentGenerationOverride, otherParentBirthRoundOverride))
                 .toList();
 
         if (this.birthRound == null) {
 
-            final long maxParentBirthRound = Stream.concat(Stream.ofNullable(selfParent), Stream.ofNullable(otherParents).flatMap(List::stream))
+            final long maxParentBirthRound = Stream.concat(
+                            Stream.ofNullable(selfParent),
+                            Stream.ofNullable(otherParents).flatMap(List::stream))
                     .mapToLong(GossipEvent::getBirthRound)
-                    .max().orElse(BIRTH_ROUND_UNDEFINED);
+                    .max()
+                    .orElse(BIRTH_ROUND_UNDEFINED);
 
             // randomly add between 0 and 2 to max parent birth round
             birthRound = maxParentBirthRound + random.nextLong(0, 3);

@@ -282,19 +282,14 @@ class OrphanBufferTests {
     void testParentIterator() {
         final Random random = Randotron.create();
 
-
-        final GossipEvent selfParent = new TestingEventBuilder(random)
-                .setCreatorId(new NodeId(0))
-                .build();
-        final GossipEvent otherParent1 = new TestingEventBuilder(random)
-                .setCreatorId(new NodeId(1))
-                .build();
-        final GossipEvent otherParent2 = new TestingEventBuilder(random)
-                .setCreatorId(new NodeId(2))
-                .build();
-        final GossipEvent otherParent3 = new TestingEventBuilder(random)
-                .setCreatorId(new NodeId(3))
-                .build();
+        final GossipEvent selfParent =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(0)).build();
+        final GossipEvent otherParent1 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
+        final GossipEvent otherParent2 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
+        final GossipEvent otherParent3 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(3)).build();
 
         final GossipEvent event = new TestingEventBuilder(random)
                 .setSelfParent(selfParent)
