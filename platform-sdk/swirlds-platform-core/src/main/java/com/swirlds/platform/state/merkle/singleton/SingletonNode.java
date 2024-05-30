@@ -22,6 +22,7 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logSingleton
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
+import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.platform.state.merkle.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param <T> The value type
  */
+@DebugIterationEndpoint
 public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
     private static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;

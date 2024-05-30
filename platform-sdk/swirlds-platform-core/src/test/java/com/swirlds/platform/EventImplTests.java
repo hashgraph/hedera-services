@@ -136,11 +136,12 @@ public class EventImplTests {
         mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
 
         final Instant eventConsTime = Instant.now();
-        final EventImpl event =
-                createEventImpl(new TestingEventBuilder(random).setTransactions(mixedTransactions), null, null);
-
-        event.setConsensusOrder(3L);
-        event.setConsensusTimestamp(eventConsTime);
+        final EventImpl event = createEventImpl(
+                new TestingEventBuilder(random)
+                        .setTransactions(mixedTransactions)
+                        .setConsensusTimestamp(eventConsTime),
+                null,
+                null);
 
         event.consensusReached();
 

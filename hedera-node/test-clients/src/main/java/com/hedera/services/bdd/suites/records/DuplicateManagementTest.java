@@ -32,6 +32,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -41,37 +44,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class DuplicateManagementTest extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(DuplicateManagementTest.class);
+public class DuplicateManagementTest {
     private static final String REPEATED = "repeated";
     private static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
     private static final long MS_TO_WAIT_FOR_CONSENSUS = 6_000L;
 
-    public static void main(String... args) {
-        new DuplicateManagementTest().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                usesUnclassifiableIfNoClassifiableAvailable(),
-                hasExpectedDuplicates(),
-                classifiableTakesPriorityOverUnclassifiable());
-    }
-
     @HapiTest
     @SuppressWarnings("java:S5960")
-    final HapiSpec hasExpectedDuplicates() {
+    final Stream<DynamicTest> hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
@@ -131,7 +116,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
+    final Stream<DynamicTest> usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
@@ -154,7 +139,7 @@ public class DuplicateManagementTest extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec classifiableTakesPriorityOverUnclassifiable() {
+    final Stream<DynamicTest> classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
                         cryptoCreate(CIVILIAN).balance(100 * 100_000_000L),
@@ -182,10 +167,5 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .andAnyDuplicates()
                                 .hasPriority(recordWith().status(SUCCESS))
                                 .hasDuplicates(inOrder(recordWith().status(INVALID_NODE_ACCOUNT))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

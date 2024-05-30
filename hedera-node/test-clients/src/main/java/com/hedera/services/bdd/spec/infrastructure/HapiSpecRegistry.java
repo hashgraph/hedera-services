@@ -34,8 +34,6 @@ import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistr
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
-import com.hedera.services.bdd.spec.stats.OpObs;
-import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -64,16 +62,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HapiSpecRegistry {
-    static final Logger log = LogManager.getLogger(HapiSpecRegistry.class);
-
     private final Map<String, Object> registry = new HashMap<>();
     private final HapiSpecSetup setup;
-    private final List<OpObs> obs = new ArrayList<>();
-    private final List<ThroughputObs> throughputObs = new ArrayList<>();
     private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
     private static final Integer ZERO = 0;
@@ -145,6 +137,10 @@ public class HapiSpecRegistry {
         saveKey(HapiSuite.NONSENSE_KEY, nonsenseKey());
     }
 
+    public void include(@NonNull final HapiSpecRegistry that) {
+        this.registry.putAll(that.registry);
+    }
+
     private Key nonsenseKey() {
         return Key.getDefaultInstance();
     }
@@ -162,27 +158,6 @@ public class HapiSpecRegistry {
     public void register(RegistryChangeListener<?> listener) {
         Class<?> type = listener.forType();
         listenersByType.computeIfAbsent(type, ignore -> new ArrayList<>()).add(listener);
-    }
-
-    public synchronized void record(OpObs stat) {
-        obs.add(stat);
-    }
-
-    public List<OpObs> stats() {
-        return obs;
-    }
-
-    public void saveThroughputObs(ThroughputObs obs) {
-        put(obs.getName(), obs);
-        throughputObs.add(obs);
-    }
-
-    public ThroughputObs getThroughputObs(String name) {
-        return get(name, ThroughputObs.class);
-    }
-
-    public List<ThroughputObs> throughputObs() {
-        return throughputObs;
     }
 
     public void saveContractChoice(String name, SupportedContract choice) {

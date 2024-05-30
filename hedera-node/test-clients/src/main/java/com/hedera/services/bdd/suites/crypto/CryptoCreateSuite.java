@@ -43,6 +43,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -59,28 +66,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoCreateSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
-
+public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
@@ -92,47 +91,8 @@ public class CryptoCreateSuite extends HapiSuite {
     public static final String EMPTY_KEY_STRING = "emptyKey";
     private static final String ED_KEY = "EDKEY";
 
-    public static void main(String... args) {
-        new CryptoCreateSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                createAnAccountEmptyThresholdKey(),
-                createAnAccountEmptyKeyList(),
-                createAnAccountEmptyNestedKey(),
-                createAnAccountInvalidKeyList(),
-                createAnAccountInvalidNestedKeyList(),
-                createAnAccountInvalidThresholdKey(),
-                createAnAccountInvalidNestedThresholdKey(),
-                createAnAccountThresholdKeyWithInvalidThreshold(),
-                createAnAccountInvalidED25519(),
-                syntaxChecksAreAsExpected(),
-                usdFeeAsExpected(),
-                createAnAccountWithStakingFields(),
-                /* --- HIP-583 --- */
-                createAnAccountWithECDSAAlias(),
-                createAnAccountWithED25519Alias(),
-                createAnAccountWithECKeyAndNoAlias(),
-                createAnAccountWithEDKeyAndNoAlias(),
-                createAnAccountWithED25519KeyAndED25519Alias(),
-                createAnAccountWithECKeyAndECKeyAlias(),
-                createAnAccountWithEVMAddressAliasFromSameKey(),
-                createAnAccountWithEVMAddressAliasFromDifferentKey(),
-                createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail(),
-                createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail(),
-                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress(),
-                successfullyRecreateAccountWithSameAliasAfterDeletion());
-    }
-
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given()
                 .when()
@@ -141,7 +101,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithStakingFields() {
+    final Stream<DynamicTest> createAnAccountWithStakingFields() {
         return defaultHapiSpec("createAnAccountWithStakingFields")
                 .given(
                         cryptoCreate("civilianWORewardStakingNode")
@@ -196,7 +156,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress() {
+    final Stream<DynamicTest> cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress() {
         final AtomicReference<ByteString> secp256k1Key = new AtomicReference<>();
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var ecdsaKey = "ecdsaKey";
@@ -222,7 +182,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
     @HapiTest
-    final HapiSpec usdFeeAsExpected() {
+    final Stream<DynamicTest> usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
         double v13PriceUsd = 0.05;
         double autoAssocSlotPrice = 0.0018;
@@ -320,7 +280,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec syntaxChecksAreAsExpected() {
+    final Stream<DynamicTest> syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")
                 .given()
                 .when()
@@ -330,7 +290,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountEmptyThresholdKey() {
+    final Stream<DynamicTest> createAnAccountEmptyThresholdKey() {
         KeyShape shape = threshOf(0, 0);
         long initialBalance = 10_000L;
 
@@ -345,7 +305,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountEmptyKeyList() {
+    final Stream<DynamicTest> createAnAccountEmptyKeyList() {
         KeyShape shape = listOf(0);
         long initialBalance = 10_000L;
         ShardID shardID = ShardID.newBuilder().build();
@@ -369,7 +329,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountEmptyNestedKey() {
+    final Stream<DynamicTest> createAnAccountEmptyNestedKey() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
         KeyShape emptyListShape = listOf(0);
         KeyShape shape = threshOf(2, emptyThresholdShape, emptyListShape);
@@ -387,7 +347,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
     // One of element in key list is not valid
     @HapiTest
-    final HapiSpec createAnAccountInvalidKeyList() {
+    final Stream<DynamicTest> createAnAccountInvalidKeyList() {
         KeyShape emptyThresholdShape = threshOf(0, 0);
         KeyShape shape = listOf(SIMPLE, SIMPLE, emptyThresholdShape);
         long initialBalance = 10_000L;
@@ -404,7 +364,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
     // One of element in nested key list is not valid
     @HapiTest
-    final HapiSpec createAnAccountInvalidNestedKeyList() {
+    final Stream<DynamicTest> createAnAccountInvalidNestedKeyList() {
         KeyShape invalidListShape = listOf(SIMPLE, SIMPLE, listOf(0));
         KeyShape shape = listOf(SIMPLE, SIMPLE, invalidListShape);
         long initialBalance = 10_000L;
@@ -421,7 +381,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
     // One of element in threshold key is not valid
     @HapiTest
-    final HapiSpec createAnAccountInvalidThresholdKey() {
+    final Stream<DynamicTest> createAnAccountInvalidThresholdKey() {
         KeyShape emptyListShape = listOf(0);
         KeyShape thresholdShape = threshOf(1, SIMPLE, SIMPLE, emptyListShape);
         long initialBalance = 10_000L;
@@ -478,7 +438,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountInvalidNestedThresholdKey() {
+    final Stream<DynamicTest> createAnAccountInvalidNestedThresholdKey() {
         KeyShape goodShape = threshOf(2, 3);
         KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
         KeyShape thresholdShape4 = threshOf(4, SIMPLE, SIMPLE, SIMPLE);
@@ -507,7 +467,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountThresholdKeyWithInvalidThreshold() {
+    final Stream<DynamicTest> createAnAccountThresholdKeyWithInvalidThreshold() {
         KeyShape thresholdShape0 = threshOf(0, SIMPLE, SIMPLE, SIMPLE);
         KeyShape thresholdShape4 = threshOf(4, SIMPLE, SIMPLE, SIMPLE);
 
@@ -530,7 +490,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountInvalidED25519() {
+    final Stream<DynamicTest> createAnAccountInvalidED25519() {
         long initialBalance = 10_000L;
         Key emptyKey = Key.newBuilder().setEd25519(ByteString.EMPTY).build();
         Key shortKey =
@@ -562,7 +522,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithECDSAAlias() {
+    final Stream<DynamicTest> createAnAccountWithECDSAAlias() {
         return defaultHapiSpec("CreateAnAccountWithECDSAAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
@@ -578,7 +538,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithED25519Alias() {
+    final Stream<DynamicTest> createAnAccountWithED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519Alias")
                 .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(withOpContext((spec, opLog) -> {
@@ -594,7 +554,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithECKeyAndNoAlias() {
+    final Stream<DynamicTest> createAnAccountWithECKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndNoAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
@@ -639,7 +599,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithEDKeyAndNoAlias() {
+    final Stream<DynamicTest> createAnAccountWithEDKeyAndNoAlias() {
         return defaultHapiSpec("CreateAnAccountWithEDKeyAndNoAlias")
                 .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(cryptoCreate(ACCOUNT).key(ED_25519_KEY))
@@ -648,7 +608,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithED25519KeyAndED25519Alias() {
+    final Stream<DynamicTest> createAnAccountWithED25519KeyAndED25519Alias() {
         return defaultHapiSpec("CreateAnAccountWithED25519KeyAndED25519Alias")
                 .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(withOpContext((spec, opLog) -> {
@@ -665,7 +625,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithECKeyAndECKeyAlias() {
+    final Stream<DynamicTest> createAnAccountWithECKeyAndECKeyAlias() {
         return defaultHapiSpec("CreateAnAccountWithECKeyAndECKeyAlias")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
@@ -701,7 +661,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail() {
+    final Stream<DynamicTest> createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail() {
         return defaultHapiSpec("createAnAccountWithECDSAKeyAliasDifferentThanAdminKeyShouldFail")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -721,7 +681,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithEVMAddressAliasFromSameKey() {
+    final Stream<DynamicTest> createAnAccountWithEVMAddressAliasFromSameKey() {
         final var edKey = "edKey";
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromSameKey")
                 .given(
@@ -768,7 +728,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithEVMAddressAliasFromDifferentKey() {
+    final Stream<DynamicTest> createAnAccountWithEVMAddressAliasFromDifferentKey() {
         return defaultHapiSpec("createAnAccountWithEVMAddressAliasFromDifferentKey")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -808,7 +768,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail() {
+    final Stream<DynamicTest> createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail() {
         return defaultHapiSpec("createAnAccountWithEDKeyAliasDifferentThanAdminKeyShouldFail")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -828,7 +788,7 @@ public class CryptoCreateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec successfullyRecreateAccountWithSameAliasAfterDeletion() {
+    final Stream<DynamicTest> successfullyRecreateAccountWithSameAliasAfterDeletion() {
         return defaultHapiSpec("successfullyRecreateAccountWithSameAliasAfterDeletion")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -858,10 +818,5 @@ public class CryptoCreateSuite extends HapiSuite {
                     allRunFor(spec, op1, op2, op3);
                 }))
                 .then(getAccountInfo(ACCOUNT).has(accountWith().balance(ONE_HBAR)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

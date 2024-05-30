@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,7 +42,7 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
      */
     public ReadableNftStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
+        this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
     }
 
     @Override

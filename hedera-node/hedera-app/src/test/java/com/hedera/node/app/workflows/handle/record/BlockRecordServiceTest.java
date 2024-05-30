@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -65,7 +66,7 @@ final class BlockRecordServiceTest {
             Object[] args = invocation.getArguments();
             assertEquals(1, args.length);
             Schema schema = (Schema) args[0];
-            assertEquals(CURRENT_VERSION, schema.getVersion());
+            assertThat(schema).isInstanceOf(V0490BlockRecordSchema.class);
             Set<StateDefinition> states = schema.statesToCreate();
             assertEquals(2, states.size());
             assertTrue(states.contains(StateDefinition.singleton("RUNNING_HASHES", RunningHashes.PROTOBUF)));
@@ -89,6 +90,6 @@ final class BlockRecordServiceTest {
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();
-        blockRecordService.registerSchemas(schemaRegistry, CURRENT_VERSION);
+        blockRecordService.registerSchemas(schemaRegistry);
     }
 }

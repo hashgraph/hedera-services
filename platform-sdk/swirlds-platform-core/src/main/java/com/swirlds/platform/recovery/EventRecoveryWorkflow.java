@@ -55,8 +55,8 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
-import com.swirlds.platform.state.signed.SignedStateFileWriter;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
+import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -383,7 +383,6 @@ public final class EventRecoveryWorkflow {
         platformState.setRound(round.getRoundNum());
         platformState.setLegacyRunningEventHash(getHashEventsCons(
                 previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
-        platformState.setRunningEventHash(platformContext.getCryptography().getNullHash());
         platformState.setConsensusTimestamp(currentRoundTimestamp);
         platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                 round.getRoundNum(),
@@ -415,6 +414,7 @@ public final class EventRecoveryWorkflow {
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",
                         isFreezeState,
+                        false,
                         false)
                 .reserve("recovery");
         previousState.close();
