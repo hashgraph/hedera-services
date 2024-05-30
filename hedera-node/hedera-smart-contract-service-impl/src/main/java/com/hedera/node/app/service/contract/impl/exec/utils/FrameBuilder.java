@@ -159,27 +159,33 @@ public class FrameBuilder {
         final var contractId = transaction.contractIdOrThrow();
         final var contractMustBePresent = contractMustBePresent(config, featureFlags, contractId);
 
-        // If the contract has been deleted, then always use empty byte code
-        if (!contractDeleted(worldUpdater, contractId)) {
-            final var account = worldUpdater.getHederaAccount(contractId);
-            if (account != null) {
-                // Hedera account for contract is present, get the byte code
-                code = account.getEvmCode(Bytes.wrap(transaction.payload().toByteArray()));
+        // Handle deleted contracts
+        if (contractDeleted(worldUpdater, contractId)) {
+            // if the contract has been deleted, throw an exception
+            // unless the transaction permits missing contract byte code
+            validateTrue(!contractMustBePresent || transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
+            return builder.type(MessageFrame.Type.MESSAGE_CALL)
+                    .address(to)
+                    .contract(to)
+                    .inputData(transaction.evmPayload())
+                    .code(code)
+                    .build();
+        }
 
-                // If after getting the code, it is empty, then check if this is allowed
-                if (code.equals(CodeV0.EMPTY_CODE)) {
-                    validateTrue(emptyCodePossiblyAllowed(contractMustBePresent, transaction), INVALID_CONTRACT_ID);
-                }
-            } else {
-                // Only do this check if the contract must be present
-                if (contractMustBePresent) {
-                    validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
-                }
+        final var account = worldUpdater.getHederaAccount(contractId);
+        if (account != null) {
+            // Hedera account for contract is present, get the byte code
+            code = account.getEvmCode(Bytes.wrap(transaction.payload().toByteArray()));
+
+            // If after getting the code, it is empty, then check if this is allowed
+            if (code.equals(CodeV0.EMPTY_CODE)) {
+                validateTrue(emptyCodePossiblyAllowed(contractMustBePresent, transaction), INVALID_CONTRACT_ID);
             }
         } else {
-            // if the contract has been deleted, throw an exception unless the transaction permits missing contract byte
-            // code
-            validateTrue(!contractMustBePresent || transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
+            // Only do this check if the contract must be present
+            if (contractMustBePresent) {
+                validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
+            }
         }
 
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
