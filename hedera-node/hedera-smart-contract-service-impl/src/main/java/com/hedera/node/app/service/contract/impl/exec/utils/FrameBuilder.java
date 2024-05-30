@@ -197,7 +197,8 @@ public class FrameBuilder {
         if (contract != null) {
             return contract.deleted();
         }
-        return true;
+
+        return false;
     }
 
     private boolean contractMustBePresent(
