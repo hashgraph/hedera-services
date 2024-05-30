@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.log4j.appender;
+package com.swirlds.logging.log4j.factory;
 
 import com.google.auto.service.AutoService;
 import com.swirlds.config.api.Configuration;
@@ -23,12 +23,12 @@ import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class is a factory for creating a Log4JProvider to install swirlds-logging to {@link SwirldsLogAppender}.
+ * This class is a factory for creating a Log4JProvider to install swirlds-logging to {@link BaseLoggerContext}.
  * <p>
  * Please note that the {@code SwirldsLogAppender} only works if the log4j2 configuration is set to use the
  * {@code SwirldsLogAppender} as the appender for the root logger.
  *
- * @see SwirldsLogAppender
+ * @see BaseLoggerContext
  * @see Log4JProvider
  * @see LogProvider
  */
