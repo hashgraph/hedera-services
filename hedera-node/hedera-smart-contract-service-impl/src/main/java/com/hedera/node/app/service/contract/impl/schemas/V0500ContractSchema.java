@@ -32,6 +32,8 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +54,8 @@ import org.apache.logging.log4j.Logger;
  */
 public class V0500ContractSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0500ContractSchema.class);
+
+    private static final long MAX_SUPPORTED_STORAGE_SIZE = 4_000_000L;
 
     private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
 
@@ -76,6 +80,11 @@ public class V0500ContractSchema extends Schema {
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         final ReadableKVState<SlotKey, SlotValue> storage = ctx.previousStates().get(STORAGE_KEY);
+        if (storage.size() > MAX_SUPPORTED_STORAGE_SIZE) {
+            log.warn("  -> Link repair is impractical with {} slots in state, skipping migration", storage.size());
+            return;
+        }
+        final var begin = Instant.now();
         final Map<ContractID, List<StorageMapping>> mappings = new HashMap<>();
         final SortedMap<ContractID, Bytes> firstKeys = new TreeMap<>(CONTRACT_ID_COMPARATOR);
         // Collect all storage mappings from the previous state
@@ -95,7 +104,10 @@ public class V0500ContractSchema extends Schema {
         });
 
         final List<ContractID> contractIdsToMigrate = new ArrayList<>(mappings.keySet());
-        log.info("Previous state had {} contracts with broken storage links", contractIdsToMigrate.size());
+        log.info(
+                "Previous state with {} slots had {} contracts with broken storage links",
+                storage.size(),
+                contractIdsToMigrate.size());
         if (!contractIdsToMigrate.isEmpty()) {
             contractIdsToMigrate.sort(CONTRACT_ID_COMPARATOR);
             final WritableKVState<SlotKey, SlotValue> writableStorage =
@@ -107,6 +119,8 @@ public class V0500ContractSchema extends Schema {
 
         // Expose the first keys of all contracts in the migration context for the token service
         ctx.sharedValues().put(SHARED_VALUES_KEY, firstKeys);
+        final var end = Instant.now();
+        log.info("Completed link repair in {}", Duration.between(begin, end));
     }
 
     private MappingSummary summarizeWithRequiredFixes(@NonNull final List<StorageMapping> mappings) {
