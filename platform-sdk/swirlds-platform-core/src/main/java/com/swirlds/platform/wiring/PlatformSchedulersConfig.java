@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.wiring;
 
-import com.hedera.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
 import java.time.Duration;
 
 /**

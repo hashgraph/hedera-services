@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.pool;
 
-import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 

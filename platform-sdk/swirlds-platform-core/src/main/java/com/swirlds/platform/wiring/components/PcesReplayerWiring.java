@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.hedera.wiring.schedulers.TaskScheduler;
-import com.hedera.wiring.wires.input.BindableInputWire;
-import com.hedera.wiring.wires.input.InputWire;
-import com.hedera.wiring.wires.output.OutputWire;
-import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.wiring.schedulers.TaskScheduler;
+import com.swirlds.wiring.wires.input.BindableInputWire;
+import com.swirlds.wiring.wires.input.InputWire;
+import com.swirlds.wiring.wires.output.OutputWire;
+import com.swirlds.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

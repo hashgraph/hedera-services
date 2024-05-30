@@ -16,11 +16,6 @@
 
 package com.swirlds.platform.cli;
 
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.model.WiringModelBuilder;
-import com.hedera.wiring.model.diagram.ModelEdgeSubstitution;
-import com.hedera.wiring.model.diagram.ModelGroup;
-import com.hedera.wiring.model.diagram.ModelManualLink;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
@@ -31,6 +26,11 @@ import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.util.VirtualTerminal;
 import com.swirlds.platform.wiring.PlatformWiring;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.model.WiringModelBuilder;
+import com.swirlds.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.wiring.model.diagram.ModelGroup;
+import com.swirlds.wiring.model.diagram.ModelManualLink;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;

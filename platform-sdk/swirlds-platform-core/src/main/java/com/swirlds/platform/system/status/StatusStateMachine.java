@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.system.status;
 
-import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
+import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

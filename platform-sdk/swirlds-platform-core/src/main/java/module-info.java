@@ -130,7 +130,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
 
-    requires transitive com.hedera.wiring;
+    requires transitive com.swirlds.wiring;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;

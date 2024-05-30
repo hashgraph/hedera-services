@@ -18,7 +18,6 @@ package com.swirlds.platform.event.stale;
 
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
-import com.hedera.wiring.transformers.RoutableData;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
@@ -29,6 +28,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.wiring.transformers.RoutableData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

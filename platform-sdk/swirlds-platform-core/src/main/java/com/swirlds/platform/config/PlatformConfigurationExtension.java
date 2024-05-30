@@ -17,8 +17,6 @@
 package com.swirlds.platform.config;
 
 import com.google.auto.service.AutoService;
-import com.hedera.wiring.WiringConfig;
-import com.hedera.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -41,6 +39,8 @@ import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.wiring.WiringConfig;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

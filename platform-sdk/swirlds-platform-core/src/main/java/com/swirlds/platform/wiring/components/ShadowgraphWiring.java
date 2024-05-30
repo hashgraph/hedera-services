@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.hedera.wiring.schedulers.TaskScheduler;
-import com.hedera.wiring.wires.input.BindableInputWire;
-import com.hedera.wiring.wires.input.InputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.wiring.schedulers.TaskScheduler;
+import com.swirlds.wiring.wires.input.BindableInputWire;
+import com.swirlds.wiring.wires.input.InputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

@@ -21,13 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.wiring.component.ComponentWiring;
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.model.WiringModelBuilder;
-import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.wiring.component.ComponentWiring;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.model.WiringModelBuilder;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 

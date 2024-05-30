@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.event.stale;
 
-import com.hedera.wiring.component.InputWireLabel;
-import com.hedera.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.wiring.component.InputWireLabel;
+import com.swirlds.wiring.transformers.RoutableData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

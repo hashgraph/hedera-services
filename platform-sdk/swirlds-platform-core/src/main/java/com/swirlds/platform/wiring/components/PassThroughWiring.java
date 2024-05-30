@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.schedulers.TaskScheduler;
-import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
-import com.hedera.wiring.wires.input.BindableInputWire;
-import com.hedera.wiring.wires.input.InputWire;
-import com.hedera.wiring.wires.output.OutputWire;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.schedulers.TaskScheduler;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.wiring.wires.input.BindableInputWire;
+import com.swirlds.wiring.wires.input.InputWire;
+import com.swirlds.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;

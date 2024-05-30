@@ -19,8 +19,6 @@ package com.swirlds.platform.wiring;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.model.WiringModelBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;
@@ -65,6 +63,8 @@ import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.StatusStateMachine;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.model.WiringModelBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

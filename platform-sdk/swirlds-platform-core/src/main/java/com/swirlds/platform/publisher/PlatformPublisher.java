@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.publisher;
 
-import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

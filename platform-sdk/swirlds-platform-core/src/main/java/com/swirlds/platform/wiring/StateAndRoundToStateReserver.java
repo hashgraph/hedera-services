@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring;
 
-import com.hedera.wiring.transformers.AdvancedTransformation;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.wiring.transformers.AdvancedTransformation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

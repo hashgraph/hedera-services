@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.turtle.runner;
 
-import com.hedera.wiring.model.DeterministicWiringModel;
-import com.hedera.wiring.model.WiringModelBuilder;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -37,6 +35,8 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
+import com.swirlds.wiring.model.DeterministicWiringModel;
+import com.swirlds.wiring.model.WiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

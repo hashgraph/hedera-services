@@ -23,7 +23,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.event.GossipEvent;
@@ -32,6 +31,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.wiring.wires.output.StandardOutputWire;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

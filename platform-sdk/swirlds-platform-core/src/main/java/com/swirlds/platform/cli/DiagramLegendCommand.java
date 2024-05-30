@@ -16,14 +16,6 @@
 
 package com.swirlds.platform.cli;
 
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.model.WiringModelBuilder;
-import com.hedera.wiring.model.diagram.ModelEdgeSubstitution;
-import com.hedera.wiring.model.diagram.ModelGroup;
-import com.hedera.wiring.model.diagram.ModelManualLink;
-import com.hedera.wiring.schedulers.TaskScheduler;
-import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
-import com.hedera.wiring.wires.SolderType;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
@@ -31,6 +23,14 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.model.WiringModelBuilder;
+import com.swirlds.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.wiring.model.diagram.ModelGroup;
+import com.swirlds.wiring.model.diagram.ModelManualLink;
+import com.swirlds.wiring.schedulers.TaskScheduler;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.wiring.wires.SolderType;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;

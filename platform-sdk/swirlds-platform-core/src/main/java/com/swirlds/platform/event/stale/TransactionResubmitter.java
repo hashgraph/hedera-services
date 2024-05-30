@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.event.stale;
 
-import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 

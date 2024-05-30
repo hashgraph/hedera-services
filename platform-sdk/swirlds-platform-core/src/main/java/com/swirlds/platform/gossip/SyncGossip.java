@@ -18,9 +18,6 @@ package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.wires.input.BindableInputWire;
-import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -88,6 +85,9 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.wires.input.BindableInputWire;
+import com.swirlds.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;

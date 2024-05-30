@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.schedulers.TaskScheduler;
-import com.hedera.wiring.wires.input.BindableInputWire;
-import com.hedera.wiring.wires.input.InputWire;
-import com.hedera.wiring.wires.output.OutputWire;
-import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.schedulers.TaskScheduler;
+import com.swirlds.wiring.wires.input.BindableInputWire;
+import com.swirlds.wiring.wires.input.InputWire;
+import com.swirlds.wiring.wires.output.OutputWire;
+import com.swirlds.wiring.wires.output.StandardOutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 

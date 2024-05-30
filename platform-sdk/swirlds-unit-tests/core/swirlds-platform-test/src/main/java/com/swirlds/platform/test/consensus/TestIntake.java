@@ -16,16 +16,10 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.hedera.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
+import static com.swirlds.wiring.wires.SolderType.INJECT;
 
-import com.hedera.wiring.component.ComponentWiring;
-import com.hedera.wiring.model.WiringModel;
-import com.hedera.wiring.model.WiringModelBuilder;
-import com.hedera.wiring.schedulers.TaskScheduler;
-import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
-import com.hedera.wiring.wires.output.OutputWire;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
@@ -48,6 +42,12 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
+import com.swirlds.wiring.component.ComponentWiring;
+import com.swirlds.wiring.model.WiringModel;
+import com.swirlds.wiring.model.WiringModelBuilder;
+import com.swirlds.wiring.schedulers.TaskScheduler;
+import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Deque;

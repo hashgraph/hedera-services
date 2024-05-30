@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.wiring;
 
-import com.hedera.wiring.component.ComponentWiring;
-import com.hedera.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.branching.BranchDetector;
@@ -42,6 +40,8 @@ import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
+import com.swirlds.wiring.component.ComponentWiring;
+import com.swirlds.wiring.transformers.RoutableData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
