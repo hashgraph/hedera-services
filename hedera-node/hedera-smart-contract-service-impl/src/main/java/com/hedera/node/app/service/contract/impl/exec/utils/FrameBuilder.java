@@ -157,10 +157,10 @@ public class FrameBuilder {
             @NonNull final ContractsConfig config) {
         Code code = CodeV0.EMPTY_CODE;
         final var contractId = transaction.contractIdOrThrow();
+        final var contractMustBePresent = contractMustBePresent(config, featureFlags, contractId);
 
         // If the contract has been deleted, then always use empty byte code
         if (!contractDeleted(worldUpdater, contractId)) {
-            final var contractMustBePresent = contractMustBePresent(config, featureFlags, contractId);
             final var account = worldUpdater.getHederaAccount(contractId);
             if (account != null) {
                 // Hedera account for contract is present, get the byte code
@@ -176,6 +176,10 @@ public class FrameBuilder {
                     validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
                 }
             }
+        } else {
+            // if the contract has been deleted, throw an exception unless the transaction permits missing contract byte
+            // code
+            validateTrue(!contractMustBePresent || transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
         }
 
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
