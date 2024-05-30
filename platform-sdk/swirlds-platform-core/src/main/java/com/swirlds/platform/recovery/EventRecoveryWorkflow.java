@@ -414,6 +414,7 @@ public final class EventRecoveryWorkflow {
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",
                         isFreezeState,
+                        false,
                         false)
                 .reserve("recovery");
         previousState.close();

@@ -808,7 +808,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
         final Cryptography crypto = CryptographyHolder.get();
         // return a hash of a hash, in order to make state proofs smaller in the future
         crypto.digestSync(element);
-        return crypto.digestSync(element.getHash()).getValue();
+        return crypto.digestBytesSync(element.getHash(), DigestType.SHA_384);
     }
 
     @Override

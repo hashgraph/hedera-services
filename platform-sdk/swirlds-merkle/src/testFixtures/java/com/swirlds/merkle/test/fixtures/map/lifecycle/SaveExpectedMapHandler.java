@@ -18,15 +18,22 @@ package com.swirlds.merkle.test.fixtures.map.lifecycle;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import com.swirlds.merkle.test.fixtures.map.serialization.MapKeyDeserializer;
@@ -56,16 +63,15 @@ public class SaveExpectedMapHandler {
     public static final String STORAGE_DIRECTORY = "data/lifecycle";
     private static final String JSON_FILE_NAME_TEMPLATE = "Node%04d_ExpectedMap_%d_%d.json";
 
-    private static final ObjectMapper objectMapper =
-            new ObjectMapper().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS).addMixIn(Hash.class, MixIn.class);
-    private static final ObjectWriter objectWriter = objectMapper.writer(new DefaultPrettyPrinter());
+    private static final ObjectMapper objectMapper;
+    private static final ObjectWriter objectWriter;
 
-    /**
-     * MixIn class to ignore Bytes field in Hash class without polluting the Hash class with Jackson annotations
-     */
-    abstract static class MixIn {
-        @JsonIgnore
-        abstract Bytes getBytes();
+    static {
+        final SimpleModule hashModule = new SimpleModule();
+        hashModule.addSerializer(Hash.class, new HashSerializer());
+        hashModule.addDeserializer(Hash.class, new HashDeserializer());
+        objectMapper = new ObjectMapper().registerModule(hashModule).disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectWriter = objectMapper.writer(new DefaultPrettyPrinter());
     }
 
     /**
@@ -85,6 +91,18 @@ public class SaveExpectedMapHandler {
             final File directory,
             final String fileName,
             boolean returnJsonString) {
+
+        try {
+            return serializeThrowing(map, directory, fileName, returnJsonString);
+        } catch (IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Error occurred while serializing ExpectedMap", e);
+        }
+        return "";
+    }
+
+    public static String serializeThrowing(
+            final Map<MapKey, ExpectedValue> map, final File directory, final String fileName, boolean returnJsonString)
+            throws IOException {
         String jsonValue = "";
 
         if (!directory.exists()) {
@@ -111,11 +129,6 @@ public class SaveExpectedMapHandler {
 
             zos.flush();
             fos.flush();
-        } catch (IOException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    String.format("Error occurred while serializing ExpectedMap: %s", jsonZipFileName),
-                    e);
         }
 
         return jsonValue;
@@ -195,5 +208,35 @@ public class SaveExpectedMapHandler {
         mapKeyModule.addKeyDeserializer(MapKey.class, new MapKeyDeserializer());
         objectMapper.registerModule(mapKeyModule);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    }
+
+    public static class HashSerializer extends StdSerializer<Hash> {
+        public HashSerializer() {
+            super(Hash.class);
+        }
+
+        @Override
+        public void serialize(final Hash value, final JsonGenerator gen, final SerializerProvider provider)
+                throws IOException {
+            gen.writeStartObject();
+            gen.writeStringField("digestType", value.getDigestType().toString());
+            gen.writeStringField("bytes", value.getBytes().toHex());
+            gen.writeEndObject();
+        }
+    }
+
+    public static class HashDeserializer extends StdDeserializer<Hash> {
+        public HashDeserializer() {
+            super(Hash.class);
+        }
+
+        @Override
+        public Hash deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
+            final JsonNode node = p.getCodec().readTree(p);
+            final String digestString = node.get("digestType").asText();
+            final DigestType digestType = DigestType.valueOf(digestString);
+            final String hex = node.get("bytes").asText();
+            return new Hash(Bytes.fromHex(hex).toByteArray(), digestType);
+        }
     }
 }

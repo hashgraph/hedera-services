@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.platform.DefaultMetrics.EXCEPTION_RATE_THRESHOLD;
+import static com.swirlds.common.metrics.platform.DefaultPlatformMetrics.EXCEPTION_RATE_THRESHOLD;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
