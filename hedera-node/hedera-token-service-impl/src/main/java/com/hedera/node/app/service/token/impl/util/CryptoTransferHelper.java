@@ -104,7 +104,7 @@ public class CryptoTransferHelper {
      * @return AccountAmount specifying the account and the negative amount debited
      */
     public static AccountAmount debit(@NonNull final AccountID account, final long amount) {
-        return adjust(account, -amount);
+        return AccountAmount.newBuilder().accountID(account).amount(-amount).build();
     }
 
     /**
@@ -115,17 +115,6 @@ public class CryptoTransferHelper {
      * @return AccountAmount specifying the account and the positive amount credited
      */
     public static AccountAmount credit(@NonNull final AccountID account, final long amount) {
-        return adjust(account, amount);
-    }
-
-    /**
-     * Helper method to create an {@link AccountAmount} with a specified adjustment.
-     *
-     * @param account the account to be adjusted
-     * @param amount  the amount of the adjustment (can be positive or negative)
-     * @return AccountAmount with the specified adjustment
-     */
-    private static AccountAmount adjust(@NonNull final AccountID account, final long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 }

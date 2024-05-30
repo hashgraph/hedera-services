@@ -63,7 +63,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
-        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
+        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), payerId);
 
         final var senderAccountBefore = writableAccountStore.getAliasedAccountById(ownerId);
         final var receiverAccountBefore = writableAccountStore.getAliasedAccountById(receiver);
@@ -108,7 +108,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         final var replacedOp = getReplacedOp();
         // payer is spender for allowances
-        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
+        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), spenderId);
 
         final var senderAccountBefore = writableAccountStore.getAliasedAccountById(ownerId);
         final var receiverAccountBefore = writableAccountStore.getAliasedAccountById(receiver);
@@ -168,7 +168,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
 
         final var replacedOp = getReplacedOp();
         // payer is spender for allowances
-        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
+        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), payerId);
 
         assertThatThrownBy(() -> adjustFungibleTokenChangesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
@@ -194,7 +194,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
 
         final var replacedOp = getReplacedOp();
-        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
+        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), spenderId);
         final var tokenRel = writableTokenRelStore.get(tokenReceiverId, fungibleTokenId);
         writableTokenRelStore.put(tokenRel.copyBuilder()
                 .kycGranted(true)
@@ -225,7 +225,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         given(handleContext.payer()).willReturn(spenderId);
 
         final var replacedOp = getReplacedOp();
-        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
+        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp.tokenTransfers(), spenderId);
         final var tokenRel = writableTokenRelStore.get(tokenReceiverId, fungibleTokenId);
         writableTokenRelStore.put(tokenRel.copyBuilder()
                 .kycGranted(true)

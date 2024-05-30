@@ -78,7 +78,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), payerId);
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
@@ -168,7 +168,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
 
         final var receiver = asAccount(tokenReceiver);
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), spenderId);
 
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
@@ -236,7 +236,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         transferContext = new TransferContextImpl(handleContext);
 
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), payerId);
 
         assertThatThrownBy(() -> changeNFTOwnersStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
