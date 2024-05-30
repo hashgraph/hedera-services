@@ -92,36 +92,36 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
     /**
-     * < * the current record stream type; used to obtain file extensions and versioning
+     * The current record stream type; used to obtain file extensions and versioning
      */
     private final RecordStreamType streamType;
 
     /**
-     * a messageDigest object for digesting entire stream file and generating entire record stream
+     * A messageDigest object for digesting entire stream file and generating entire record stream
      * file hash
      */
     private final MessageDigest streamDigest;
 
     /**
-     * a messageDigest object for digesting metaData in the stream file and generating metaData
+     * A messageDigest object for digesting metaData in the stream file and generating metaData
      * hash. Metadata contains: record stream version || HAPI proto version || startRunningHash ||
      * endRunningHash || blockNumber, where || denotes concatenation
      */
     private final MessageDigest metadataStreamDigest;
 
     /**
-     * a messageDigest object for digesting sidecar files and generating sidecar file hash
+     * A messageDigest object for digesting sidecar files and generating sidecar file hash
      */
     private final MessageDigest sidecarStreamDigest;
 
     /**
-     * current runningHash before consuming the object added by calling {@link
+     * Current runningHash before consuming the object added by calling {@link
      * #addObject(RecordStreamObject)} method
      */
     private RunningHash runningHash;
 
     /**
-     * signer for generating signatures
+     * Signer for generating signatures
      */
     private final Signer signer;
 
@@ -138,7 +138,7 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
     private int currentSidecarFileSize;
 
     /**
-     * the max file size (in bytes) a sidecar file can have
+     * The max file size (in bytes) a sidecar file can have
      */
     private final int maxSidecarFileSize;
 
@@ -148,12 +148,12 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
     private Instant firstTxnInstant;
 
     /**
-     * the path to which we write record stream files and signature files
+     * The path to which we write record stream files and signature files
      */
     private final String dirPath;
 
     /**
-     * the path to which we write sidecar record stream files
+     * The path to which we write sidecar record stream files
      */
     private final String sidecarDirPath;
 

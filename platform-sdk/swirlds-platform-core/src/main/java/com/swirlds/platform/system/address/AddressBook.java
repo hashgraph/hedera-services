@@ -62,7 +62,7 @@ public class AddressBook implements Iterable<Address>, SelfSerializable, Hashabl
          */
         public static final int AD_HOC_SERIALIZATION = 2;
         /**
-         * In this version, AddressBook uses the serialization utilities to read & write the list of addresses.
+         * In this version, AddressBook uses the serialization utilities to read and write the list of addresses.
          */
         public static final int UTILITY_SERIALIZATION = 3;
         /**

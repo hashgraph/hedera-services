@@ -638,7 +638,7 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * This method returns a snapshot of the current {@link data}. FOR TEST PURPOSES ONLY. NOT
+     * This method returns a snapshot of the current data. FOR TEST PURPOSES ONLY. NOT
      * THREAD SAFE
      *
      * @return a copy of data.

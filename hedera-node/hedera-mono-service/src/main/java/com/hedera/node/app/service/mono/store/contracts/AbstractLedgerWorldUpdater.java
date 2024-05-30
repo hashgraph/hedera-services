@@ -135,7 +135,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
      * - hedera entity num will not be allocated for that account
      * - customizer will not be attached for that account
      *
-     * @param Address addressOrAlias
+     * @param addressOrAlias address or alias of the account
      * @return MutableAccount
      */
     private MutableAccount createGhostAccount(final Address addressOrAlias) {
