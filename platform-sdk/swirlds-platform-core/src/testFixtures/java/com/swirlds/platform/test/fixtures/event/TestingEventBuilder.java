@@ -310,8 +310,8 @@ public class TestingEventBuilder {
      * @param otherParent the other-parent
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setOtherParent(@NonNull final GossipEvent otherParent) {
-        this.otherParents = List.of(otherParent);
+    public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
+        this.otherParents = otherParent == null ? null : List.of(otherParent);
         return this;
     }
 
