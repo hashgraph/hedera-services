@@ -78,13 +78,13 @@ public class ReconnectStateLoader {
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final SavedStateController savedStateController,
             @NonNull final AddressBook addressBook) {
-        this.platform = platform;
-        this.platformContext = platformContext;
-        this.platformWiring = platformWiring;
-        this.swirldStateManager = swirldStateManager;
-        this.latestImmutableStateNexus = latestImmutableStateNexus;
-        this.savedStateController = savedStateController;
-        this.addressBook = addressBook;
+        this.platform = Objects.requireNonNull(platform);
+        this.platformContext = Objects.requireNonNull(platformContext);
+        this.platformWiring = Objects.requireNonNull(platformWiring);
+        this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
+        this.latestImmutableStateNexus = Objects.requireNonNull(latestImmutableStateNexus);
+        this.savedStateController = Objects.requireNonNull(savedStateController);
+        this.addressBook = Objects.requireNonNull(addressBook);
     }
 
     /**
@@ -121,7 +121,7 @@ public class ReconnectStateLoader {
 
             swirldStateManager.loadFromSignedState(signedState);
             // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
-            // this guarantees that the platform statusp will be RECONNECT_COMPLETE before the state is saved
+            // this guarantees that the platform status will be RECONNECT_COMPLETE before the state is saved
             platformWiring
                     .getStatusActionSubmitter()
                     .submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));

@@ -50,7 +50,9 @@ public final class StateInitializer {
     /**
      * Initialize the state.
      *
-     * @param signedState the state to initialize
+     * @param platform        the platform instance
+     * @param platformContext the platform context
+     * @param signedState     the state to initialize
      */
     public static void initializeState(
             @NonNull final Platform platform,
