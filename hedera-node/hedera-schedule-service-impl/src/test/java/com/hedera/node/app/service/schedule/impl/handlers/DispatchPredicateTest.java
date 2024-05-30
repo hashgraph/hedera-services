@@ -59,7 +59,7 @@ class DispatchPredicateTest {
     }
 
     @Test
-    @DisplayName("Test for when predicate contains keys")
+    @DisplayName("Test for when predicate is missing keys")
     void testContainsKeyIsNotNull() {
         assertThatThrownBy(() -> predicate.test(null)).isInstanceOf(NullPointerException.class);
     }
