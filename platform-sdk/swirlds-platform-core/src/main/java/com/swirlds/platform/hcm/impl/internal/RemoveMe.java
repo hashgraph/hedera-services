@@ -22,6 +22,6 @@ public class RemoveMe {
     private static void remove() {
         // Dummy call so the module system does not fail when incorporating this swirlds-tss into this module
         // dependencies
-        TssUtils.computePublicShares(null, null, null, 0);
+        TssUtils.computePublicShare(null, null, null, 0);
     }
 }

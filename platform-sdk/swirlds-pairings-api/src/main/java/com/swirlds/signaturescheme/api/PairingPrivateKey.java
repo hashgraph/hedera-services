@@ -38,10 +38,7 @@ public record PairingPrivateKey(@NonNull SignatureSchema signatureSchema, @NonNu
     @NonNull
     public static PairingPrivateKey create(@NonNull final SignatureSchema type, @NonNull final Random random) {
         final Field field = type.getField();
-        final byte[] seed = new byte[field.getSeedSize()];
-        random.nextBytes(seed);
-
-        return new PairingPrivateKey(type, field.randomElement(seed));
+        return new PairingPrivateKey(type, field.randomElement(random));
     }
 
     /**
@@ -74,7 +71,7 @@ public record PairingPrivateKey(@NonNull SignatureSchema signatureSchema, @NonNu
     public PairingSignature sign(@NonNull final byte[] message) {
         return new PairingSignature(
                 signatureSchema,
-                signatureSchema.getSignatureGroup().elementFromHash(message).power(secretElement));
+                signatureSchema.getSignatureGroup().elementFromHash(message).multiply(secretElement));
     }
 
     /**

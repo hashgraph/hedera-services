@@ -71,22 +71,21 @@ public class Bls12381Group2Element implements GroupElement {
         return GROUP;
     }
 
-    /** {@inheritDoc} */
     @Override
     public byte[] toBytes() {
         return groupElement;
     }
 
-    /** {@inheritDoc} */
+    @NonNull
     @Override
-    public GroupElement power(final FieldElement exponent) {
-        if (!(exponent instanceof final Bls12381FieldElement exponentElement)) {
-            throw new IllegalArgumentException("exponent must be a valid Bls12381FieldElement");
+    public GroupElement multiply(@NonNull final FieldElement other) {
+        if (!(other instanceof final Bls12381FieldElement otherElement)) {
+            throw new IllegalArgumentException("other must be a valid Bls12381FieldElement");
         }
 
         final byte[] output = new byte[GROUP.getUncompressedSize()];
 
-        final int errorCode = g2PowZn(this, exponentElement, output);
+        final int errorCode = g2PowZn(this, otherElement, output);
         if (errorCode != SUCCESS) {
             throw new Bls12381Exception("g2PowZn", errorCode);
         }
@@ -94,47 +93,13 @@ public class Bls12381Group2Element implements GroupElement {
         return new Bls12381Group2Element(output);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public GroupElement multiply(final GroupElement other) {
-        if (!(other instanceof final Bls12381Group2Element otherElement)) {
-            throw new IllegalArgumentException("other must be a valid Bls12381Group2Element");
-        }
-
-        final byte[] output = new byte[GROUP.getUncompressedSize()];
-
-        final int errorCode = g2Multiply(this, otherElement, output);
-        if (errorCode != SUCCESS) {
-            throw new Bls12381Exception("g2Multiply", errorCode);
-        }
-
-        return new Bls12381Group2Element(output);
-    }
-
     @NonNull
     @Override
-    public GroupElement add(@NonNull GroupElement groupElement) {
+    public GroupElement add(@NonNull final GroupElement other) {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public GroupElement divide(final GroupElement other) {
-        if (!(other instanceof final Bls12381Group2Element otherElement)) {
-            throw new IllegalArgumentException("other must be a valid Bls12381Group2Element");
-        }
-
-        final byte[] output = new byte[GROUP.getUncompressedSize()];
-
-        final int errorCode = g2Divide(this, otherElement, output);
-        if (errorCode != SUCCESS) {
-            throw new Bls12381Exception("g2Divide", errorCode);
-        }
-
-        return new Bls12381Group2Element(output);
-    }
-
-    /** {@inheritDoc} */
+    @NonNull
     @Override
     public GroupElement compress() {
         // Already compressed, no need to do anything
@@ -155,7 +120,6 @@ public class Bls12381Group2Element implements GroupElement {
         return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public boolean isCompressed() {
         return compressed;
@@ -166,10 +130,11 @@ public class Bls12381Group2Element implements GroupElement {
         return Arrays.toString(groupElement);
     }
 
-    /** {@inheritDoc} */
     @NonNull
     @Override
-    public Bls12381Group2Element copy() {
+    public GroupElement copy() {
         return new Bls12381Group2Element(this);
     }
+
+    // TODO: implement equals and hashCode
 }

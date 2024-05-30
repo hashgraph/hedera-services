@@ -19,6 +19,7 @@ package com.swirlds.pairings.bls12381.impl;
 import com.swirlds.pairings.api.Field;
 import com.swirlds.pairings.api.FieldElement;
 import com.swirlds.pairings.bls12381.impl.jni.Bls12381Bindings;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 
 /**
@@ -59,8 +60,9 @@ public class Bls12381FieldElement implements FieldElement {
         return FIELD;
     }
 
+    @NonNull
     @Override
-    public FieldElement add(final FieldElement other) {
+    public FieldElement add(@NonNull final FieldElement other) {
         if (!(other instanceof final Bls12381FieldElement otherElement)) {
             throw new IllegalArgumentException("other must be a valid Bls12381FieldElement");
         }
@@ -75,8 +77,9 @@ public class Bls12381FieldElement implements FieldElement {
         return new Bls12381FieldElement(output);
     }
 
+    @NonNull
     @Override
-    public FieldElement subtract(final FieldElement other) {
+    public FieldElement subtract(@NonNull final FieldElement other) {
         if (!(other instanceof final Bls12381FieldElement otherElement)) {
             throw new IllegalArgumentException("other must be a valid Bls12381FieldElement");
         }
@@ -90,9 +93,10 @@ public class Bls12381FieldElement implements FieldElement {
 
         return new Bls12381FieldElement(output);
     }
-    /** {@inheritDoc} */
+
+    @NonNull
     @Override
-    public FieldElement multiply(final FieldElement other) {
+    public FieldElement multiply(@NonNull final FieldElement other) {
         if (!(other instanceof final Bls12381FieldElement otherElement)) {
             throw new IllegalArgumentException("other must be a valid Bls12381FieldElement");
         }
@@ -107,25 +111,9 @@ public class Bls12381FieldElement implements FieldElement {
         return new Bls12381FieldElement(output);
     }
 
+    @NonNull
     @Override
-    public FieldElement divide(final FieldElement other) {
-        if (!(other instanceof final Bls12381FieldElement otherElement)) {
-            throw new IllegalArgumentException("other must be a valid Bls12381FieldElement");
-        }
-
-        final byte[] output = new byte[Bls12381Field.ELEMENT_BYTE_SIZE];
-
-        final int errorCode = Bls12381Bindings.scalarDivide(this, otherElement, output);
-        if (errorCode != Bls12381Bindings.SUCCESS) {
-            throw new Bls12381Exception("scalarDivide", errorCode);
-        }
-
-        return new Bls12381FieldElement(output);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public FieldElement power(final BigInteger exponent) {
+    public FieldElement power(@NonNull final BigInteger exponent) {
         if (exponent == null) {
             throw new IllegalArgumentException("exponent cannot be null");
         }
@@ -141,7 +129,15 @@ public class Bls12381FieldElement implements FieldElement {
     }
 
     @Override
+    public BigInteger toBigInteger() {
+        return null;
+    }
+
+    @Override
+    @NonNull
     public byte[] toBytes() {
         return fieldElement;
     }
+
+    // TODO: implement equals and hashCode
 }

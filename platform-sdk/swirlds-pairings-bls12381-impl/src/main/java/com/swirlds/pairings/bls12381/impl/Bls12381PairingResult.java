@@ -52,4 +52,6 @@ public record Bls12381PairingResult(@NonNull GroupElement element1, @NonNull Gro
     public byte[] getPairingBytes() {
         throw new UnsupportedOperationException("Pairing result serialization is not supported");
     }
+
+    // TODO: implement equals and hashCode
 }

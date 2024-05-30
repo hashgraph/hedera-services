@@ -16,21 +16,25 @@
 
 package com.swirlds.tss.api;
 
-import com.swirlds.signaturescheme.api.PairingPublicKey;
+import com.swirlds.tss.impl.groth21.FeldmanCommitment;
+import com.swirlds.tss.impl.groth21.MultishareCiphertext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A TSS proof.
- *
- * @param <P> the type of public key to be used during verification of this proof
  */
-public interface TssProof<P extends PairingPublicKey> {
+public interface TssProof {
     /**
      * Verify this proof.
      *
-     * @param ciphertext the ciphertext that this proof is for
-     * @param commitment the commitment that was made to the ciphertext // TODO: check correctness of this description
+     * @param ciphertext         the ciphertext that this proof is for
+     * @param commitment         the commitment that was made to the ciphertext // TODO: check correctness of this
+     *                           description
+     * @param pendingShareClaims the pending share claims the TSS message was created for
      * @return true if the proof is valid, false otherwise
      */
-    boolean verify(@NonNull final TssCiphertext<P> ciphertext, @NonNull final TssCommitment<P> commitment);
+    boolean verify(
+            @NonNull final MultishareCiphertext ciphertext,
+            @NonNull final FeldmanCommitment commitment,
+            @NonNull final ShareClaims pendingShareClaims);
 }

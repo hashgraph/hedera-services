@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.tss.impl.groth21;
+package com.swirlds.tss.api;
 
-import com.swirlds.tss.api.TssShareId;
+import com.swirlds.signaturescheme.api.PairingSignature;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A share ID for the Groth21 TSS scheme.
- * TODO: complete me, removed for compilation
+ * Represents a signature created by a TSS share.
+ *
+ * @param shareId   the share ID
+ * @param signature the signature
  */
-public record Groth21ShareId() implements TssShareId {}
+public record TssShareSignature(@NonNull TssShareId shareId, @NonNull PairingSignature signature) {}

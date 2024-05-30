@@ -16,8 +16,7 @@
 
 package com.swirlds.tss.api;
 
-import com.swirlds.signaturescheme.api.PairingPublicKey;
-import com.swirlds.signaturescheme.api.PairingSignature;
+import com.swirlds.signaturescheme.api.PairingPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -25,18 +24,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param shareId    the share ID
  * @param privateKey the private key
- * @param <P>        the type of public key that can verify signatures produced by this private share
  */
-public record TssPrivateShare<P extends PairingPublicKey>(
-        @NonNull TssShareId shareId, @NonNull TssPrivateKey<P> privateKey) {
-    /**
-     * Sign a message using the private key.
-     *
-     * @param message the message to sign
-     * @return the signature
-     */
-    @NonNull
-    PairingSignature sign(@NonNull final byte[] message) {
-        return privateKey.sign(shareId, message);
-    }
-}
+public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {}

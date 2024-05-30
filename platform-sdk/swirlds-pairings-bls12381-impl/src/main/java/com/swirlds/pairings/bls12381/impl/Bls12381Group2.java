@@ -56,7 +56,7 @@ public class Bls12381Group2 implements Group {
     @NonNull
     @Override
     public BilinearPairing getPairing() {
-        return null;
+        return Bls12381BilinearPairing.getInstance();
     }
 
     @NonNull
@@ -65,9 +65,9 @@ public class Bls12381Group2 implements Group {
         return null;
     }
 
-    /** {@inheritDoc} */
+    @NonNull
     @Override
-    public GroupElement oneElement() {
+    public GroupElement zeroElement() {
         final byte[] output = new byte[UNCOMPRESSED_SIZE];
 
         final int errorCode = newG2Identity(output);
@@ -78,7 +78,7 @@ public class Bls12381Group2 implements Group {
         return new Bls12381Group2Element(output);
     }
 
-    /** {@inheritDoc} */
+    @NonNull
     @Override
     public GroupElement randomElement(final byte[] seed) {
         if (seed.length != SEED_SIZE) {
@@ -97,13 +97,13 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement elementFromHash(byte[] input) {
+    public GroupElement elementFromHash(final byte[] input) {
         return randomElement(computeSha256(input));
     }
 
     @NonNull
     @Override
-    public GroupElement batchMultiply(@NonNull GroupElement groupElement) {
+    public GroupElement batchMultiply(@NonNull final GroupElement groupElement) {
         final Collection<GroupElement> elements = List.of(groupElement); // TODO
         if (elements.isEmpty()) {
             throw new IllegalArgumentException("Empty collection is invalid");
@@ -131,28 +131,26 @@ public class Bls12381Group2 implements Group {
         return new Bls12381Group2Element(output);
     }
 
-    /** {@inheritDoc} */
     @NonNull
     @Override
-    public GroupElement elementFromBytes(byte[] inputBytes) {
+    public GroupElement elementFromBytes(final byte[] inputBytes) {
         return new Bls12381Group2Element(inputBytes);
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getCompressedSize() {
         return COMPRESSED_SIZE;
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getUncompressedSize() {
         return UNCOMPRESSED_SIZE;
     }
 
-    /** {@inheritDoc} */
     @Override
     public int getSeedSize() {
         return SEED_SIZE;
     }
+
+    // TODO: implement equals and hashCode
 }

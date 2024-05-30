@@ -17,6 +17,8 @@
 package com.swirlds.tss.api;
 
 import com.swirlds.signaturescheme.api.PairingPublicKey;
+import com.swirlds.tss.impl.groth21.FeldmanCommitment;
+import com.swirlds.tss.impl.groth21.MultishareCiphertext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,23 +28,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param cipherText contains secrets that are being distributed
  * @param commitment a commitment to the polynomial that was used to generate the secrets
  * @param proof      a proof that the polynomial commitment is valid
- * @param <P>        the type of public key that is used to verify the message
  */
-public record TssMessage<P extends PairingPublicKey>(
+public record TssMessage(
         @NonNull TssShareId shareId,
-        @NonNull TssCiphertext<P> cipherText,
-        @NonNull TssCommitment<P> commitment,
-        @NonNull TssProof<P> proof) {
+        @NonNull MultishareCiphertext cipherText,
+        @NonNull FeldmanCommitment commitment,
+        @NonNull TssProof proof) {
 
     /**
      * Verify that the message is valid.
      *
-     * @param publicKey the public key which corresponds to the private key used to generate the message
+     * @param publicKey   the public key which corresponds to the private key used to generate the message
+     * @param shareClaims the pending share claims the TSS message was created for
      * @return true if the message is valid, false otherwise
      */
-    boolean verify(@NonNull final P publicKey) {
-        // TODO: figure out which operation is more expensive, and do the other check first
-        return proof.verify(cipherText, commitment) && publicKey.equals(commitment.getTerm(0));
+    boolean verify(@NonNull final PairingPublicKey publicKey, @NonNull final ShareClaims shareClaims) {
+        return publicKey.keyElement().equals(commitment.commitmentCoefficients().getFirst())
+                && proof.verify(cipherText, commitment, shareClaims);
     }
 
     /**
@@ -50,7 +52,6 @@ public record TssMessage<P extends PairingPublicKey>(
      *
      * @return the byte array representation of the message
      */
-    @NonNull
     byte[] toBytes() {
         throw new UnsupportedOperationException("Not implemented");
     }

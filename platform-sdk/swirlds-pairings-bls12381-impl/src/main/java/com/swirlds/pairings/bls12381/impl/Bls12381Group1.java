@@ -38,13 +38,9 @@ public class Bls12381Group1 implements Group {
     /**
      * @return the singleton instance of this class
      */
+    @NonNull
     public static Bls12381Group1 getInstance() {
         return INSTANCE;
-    }
-
-    @Override
-    public Group getOppositeGroup() {
-        return Group.super.getOppositeGroup();
     }
 
     @NonNull
@@ -61,7 +57,7 @@ public class Bls12381Group1 implements Group {
 
     @NonNull
     @Override
-    public GroupElement oneElement() {
+    public GroupElement zeroElement() {
         final byte[] output = new byte[UNCOMPRESSED_SIZE];
 
         final int errorCode = Bls12381Bindings.newG1Identity(output);
@@ -72,7 +68,7 @@ public class Bls12381Group1 implements Group {
         return new Bls12381Group1Element(output);
     }
 
-    /** {@inheritDoc} */
+    @NonNull
     @Override
     public GroupElement randomElement(final byte[] seed) {
         if (seed.length != Bls12381Field.SEED_SIZE) {
@@ -95,6 +91,7 @@ public class Bls12381Group1 implements Group {
         return null;
     }
 
+    @NonNull
     @Override
     public GroupElement elementFromHash(final byte[] input) {
         return randomElement(Utils.computeSha256(input));
@@ -102,7 +99,7 @@ public class Bls12381Group1 implements Group {
 
     @NonNull
     @Override
-    public GroupElement batchMultiply(@NonNull GroupElement groupElement) {
+    public GroupElement batchMultiply(@NonNull final GroupElement groupElement) {
         List<GroupElement> elements = List.of(groupElement); // TODO: fix
 
         if (elements.isEmpty()) {
@@ -131,6 +128,7 @@ public class Bls12381Group1 implements Group {
         return new Bls12381Group1Element(output);
     }
 
+    @NonNull
     @Override
     public GroupElement elementFromBytes(final byte[] bytes) {
         return null;
@@ -150,4 +148,6 @@ public class Bls12381Group1 implements Group {
     public int getSeedSize() {
         return 0;
     }
+
+    // TODO: implement equals and hashCode
 }

@@ -77,15 +77,6 @@ public interface FieldElement {
     FieldElement multiply(@NonNull FieldElement other);
 
     /**
-     * Divides the field element by another
-     *
-     * @param other the other field element
-     * @return a new field element which is the quotient of this element and another
-     */
-    @NonNull
-    FieldElement divide(@NonNull FieldElement other);
-
-    /**
      * Takes the field element to the power of an integer
      *
      * @param exponent the exponent integer
@@ -93,6 +84,13 @@ public interface FieldElement {
      */
     @NonNull
     FieldElement power(@NonNull BigInteger exponent);
+
+    /**
+     * Returns the field element as a BigInteger
+     *
+     * @return the field element as a BigInteger
+     */
+    BigInteger toBigInteger();
 
     /**
      * Returns the byte array representation of the field element

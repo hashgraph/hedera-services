@@ -17,6 +17,7 @@
 package com.swirlds.pairings.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Random;
 
 /**
  * Represents a finite field used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
@@ -29,6 +30,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @see FieldElement
  */
 public interface Field {
+    /**
+     * Creates a random field element
+     *
+     * @param random the source of randomness
+     * @return the random field element
+     */
+    default FieldElement randomElement(@NonNull final Random random) {
+        final byte[] seed = new byte[getSeedSize()];
+        random.nextBytes(seed);
+
+        return randomElement(seed);
+    }
 
     /**
      * Creates a new field element from a long
@@ -38,22 +51,6 @@ public interface Field {
      */
     @NonNull
     FieldElement elementFromLong(long inputLong);
-
-    /**
-     * Creates a new field element with value 0
-     *
-     * @return the new field element
-     */
-    @NonNull
-    FieldElement zeroElement();
-
-    /**
-     * Creates a new field element with value 1
-     *
-     * @return the new field element
-     */
-    @NonNull
-    FieldElement oneElement();
 
     /**
      * Creates a field element from a seed (32 bytes)

@@ -35,7 +35,7 @@ public record PairingPublicKey(@NonNull SignatureSchema signatureSchema, @NonNul
     public static PairingPublicKey create(@NonNull final PairingPrivateKey privateKey) {
         return new PairingPublicKey(
                 privateKey.signatureSchema(),
-                privateKey.signatureSchema().getPublicKeyGroup().getGenerator().power(privateKey.secretElement()));
+                privateKey.signatureSchema().getPublicKeyGroup().getGenerator().multiply(privateKey.secretElement()));
     }
 
     /**

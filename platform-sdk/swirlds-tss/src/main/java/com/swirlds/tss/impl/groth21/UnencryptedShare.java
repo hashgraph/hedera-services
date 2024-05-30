@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.tss.api;
+package com.swirlds.tss.impl.groth21;
 
-import com.swirlds.signaturescheme.api.PairingPublicKey;
+import com.swirlds.pairings.api.FieldElement;
+import com.swirlds.tss.api.TssShareClaim;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains a share ID, and the corresponding public key.
+ * An unencrypted share, created for a particular {@link TssShareClaim}.
  *
- * @param shareId   the share ID
- * @param publicKey the public key
+ * @param shareClaim   the share claim that this share is for
+ * @param shareElement the unencrypted share element
  */
-public record TssPublicShare(@NonNull TssShareId shareId, @NonNull PairingPublicKey publicKey) {}
+public record UnencryptedShare(@NonNull TssShareClaim shareClaim, @NonNull FieldElement shareElement) {}

@@ -20,6 +20,7 @@ import com.swirlds.pairings.api.BilinearPairing;
 import com.swirlds.pairings.api.Field;
 import com.swirlds.pairings.api.FieldElement;
 import com.swirlds.pairings.bls12381.impl.jni.Bls12381Bindings;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Represents the finite field used in BLS12-381
@@ -42,10 +43,12 @@ public class Bls12381Field implements Field {
     /**
      * @return the singleton instance of this class
      */
+    @NonNull
     public static Bls12381Field getInstance() {
         return INSTANCE;
     }
 
+    @NonNull
     @Override
     public FieldElement elementFromLong(final long inputLong) {
         final byte[] output = new byte[ELEMENT_BYTE_SIZE];
@@ -58,33 +61,7 @@ public class Bls12381Field implements Field {
         return new Bls12381FieldElement(output);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public FieldElement zeroElement() {
-        final byte[] output = new byte[ELEMENT_BYTE_SIZE];
-
-        final int errorCode = Bls12381Bindings.newZeroScalar(output);
-        if (errorCode != Bls12381Bindings.SUCCESS) {
-            throw new Bls12381Exception("newZeroScalar", errorCode);
-        }
-
-        return new Bls12381FieldElement(output);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public FieldElement oneElement() {
-        final byte[] output = new byte[ELEMENT_BYTE_SIZE];
-
-        final int errorCode = Bls12381Bindings.newOneScalar(output);
-        if (errorCode != Bls12381Bindings.SUCCESS) {
-            throw new Bls12381Exception("newOneScalar", errorCode);
-        }
-
-        return new Bls12381FieldElement(output);
-    }
-
-    /** {@inheritDoc} */
+    @NonNull
     @Override
     public FieldElement randomElement(final byte[] seed) {
         if (seed.length != SEED_SIZE) {
@@ -101,10 +78,9 @@ public class Bls12381Field implements Field {
         return new Bls12381FieldElement(output);
     }
 
-    /** {@inheritDoc} */
+    @NonNull
     @Override
     public FieldElement elementFromBytes(final byte[] bytes) {
-
         return new Bls12381FieldElement(bytes);
     }
 
@@ -118,8 +94,11 @@ public class Bls12381Field implements Field {
         return SEED_SIZE;
     }
 
+    @NonNull
     @Override
     public BilinearPairing getPairing() {
         return Bls12381BilinearPairing.getInstance();
     }
+
+    // TODO: implement equals and hashCode
 }
