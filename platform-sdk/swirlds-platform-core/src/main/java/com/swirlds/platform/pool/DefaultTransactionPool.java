@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.pool;
 
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -43,6 +45,24 @@ public class DefaultTransactionPool implements TransactionPool {
     public void submitSystemTransaction(@NonNull final ConsensusTransactionImpl transaction) {
         Objects.requireNonNull(transaction);
         transactionPoolNexus.submitTransaction(transaction, true);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
+        Objects.requireNonNull(platformStatus);
+        transactionPoolNexus.updatePlatformStatus(platformStatus);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reportUnhealthyDuration(@NonNull final Duration duration) {
+        Objects.requireNonNull(duration);
+        transactionPoolNexus.reportUnhealthyDuration(duration);
     }
 
     /**

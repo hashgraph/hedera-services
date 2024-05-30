@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -54,6 +55,8 @@ import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
+    public static final String DEFAULT_ID_SENTINEL = "<DEFAULT_ID>";
+
     protected List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
@@ -218,10 +221,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         return fee;
     }
 
-    public Optional<Long> getSubmitDelay() {
-        return submitDelay;
-    }
-
     public Optional<Long> getValidDurationSeconds() {
         return validDurationSecs;
     }
@@ -302,7 +301,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
                 .<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
                         ContractCallTransactionBody.class, builder -> {
                             if (contract != null) {
-                                if (!tryAsHexedAddressIfLenMatches) {
+                                if (DEFAULT_ID_SENTINEL.equals(contract)) {
+                                    builder.setContractID(ContractID.getDefaultInstance());
+                                } else if (!tryAsHexedAddressIfLenMatches) {
                                     builder.setContractID(spec.registry().getContractId(contract));
                                 } else {
                                     builder.setContractID(TxnUtils.asContractId(contract, spec));

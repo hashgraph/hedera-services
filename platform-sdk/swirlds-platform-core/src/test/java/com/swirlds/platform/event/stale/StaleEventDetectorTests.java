@@ -179,7 +179,8 @@ class StaleEventDetectorTests {
                 mock(EventImpl.class),
                 mock(Generations.class),
                 eventWindow,
-                mock(ConsensusSnapshot.class));
+                mock(ConsensusSnapshot.class),
+                false);
     }
 
     @Test

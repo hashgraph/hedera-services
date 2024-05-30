@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -116,7 +117,7 @@ class InternalEventValidatorTests {
 
         final GossipEvent event = mock(GossipEvent.class);
         when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getSignature()).thenReturn(new byte[0]);
+        when(event.getSignature()).thenReturn(Bytes.EMPTY);
         when(event.getGeneration()).thenReturn(self.getGeneration());
         when(event.getDescriptor()).thenReturn(self);
 

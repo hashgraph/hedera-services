@@ -37,7 +37,9 @@ public final class Randotron extends Random {
      * @return a new instance of Randotron
      */
     public static Randotron create() {
-        return new Randotron(new Random().nextLong());
+        final long seed = new Random().nextLong();
+        System.out.println("Random seed: " + seed + "L");
+        return new Randotron(seed);
     }
 
     /**
@@ -60,7 +62,16 @@ public final class Randotron extends Random {
     private Randotron(final long seed) {
         super(seed);
         this.seed = seed;
-        System.out.println("Random seed: " + seed + "L");
+    }
+
+    /**
+     * Get a copy of this Randotron with the same starting seed. The copy will have the same state as this Randotron at
+     * the moment it was first created (not the current state!).
+     *
+     * @return a copy of this Randotron
+     */
+    public Randotron copyAndReset() {
+        return new Randotron(seed);
     }
 
     /**

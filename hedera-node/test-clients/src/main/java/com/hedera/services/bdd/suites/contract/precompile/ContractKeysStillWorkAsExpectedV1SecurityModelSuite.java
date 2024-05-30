@@ -61,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -70,8 +69,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSuite {
 
@@ -93,7 +94,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 contractKeysWorkAsExpectedForFungibleTokenMgmt(),
                 topLevelSigsStillWorkWithDefaultGrandfatherNum(),
@@ -103,7 +104,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                 fixedFeeFailsWhenDisabledButWorksWhenEnabled());
     }
 
-    final HapiSpec fixedFeeFailsWhenDisabledButWorksWhenEnabled() {
+    final Stream<DynamicTest> fixedFeeFailsWhenDisabledButWorksWhenEnabled() {
         final AtomicReference<Address> senderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -176,7 +177,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                                 .alsoSigningWithFullPrefix(sender)));
     }
 
-    final HapiSpec fallbackFeePayerMustSign() {
+    final Stream<DynamicTest> fallbackFeePayerMustSign() {
         final AtomicReference<Address> senderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -269,7 +270,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         getAccountBalance(receiver).hasTinyBars(0L));
     }
 
-    final HapiSpec fallbackFeeForHtsPayerMustSign() {
+    final Stream<DynamicTest> fallbackFeeForHtsPayerMustSign() {
         final AtomicReference<Address> senderAddr = new AtomicReference<>();
         final AtomicReference<Address> receiverAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
@@ -349,7 +350,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         getAccountBalance(receiver).hasTokenBalance(fungible, 9));
     }
 
-    final HapiSpec contractCanStillTransferItsOwnAssets() {
+    final Stream<DynamicTest> contractCanStillTransferItsOwnAssets() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -409,7 +410,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         someWellKnownAssertions());
     }
 
-    final HapiSpec topLevelSigsStillWorkWithDefaultGrandfatherNum() {
+    final Stream<DynamicTest> topLevelSigsStillWorkWithDefaultGrandfatherNum() {
         final AtomicReference<Address> fungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> nonFungibleTokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<Address> aSenderAddr = new AtomicReference<>();
@@ -584,7 +585,7 @@ public class ContractKeysStillWorkAsExpectedV1SecurityModelSuite extends HapiSui
                         .hasKnownStatus(expectedStatus)));
     }
 
-    final HapiSpec contractKeysWorkAsExpectedForFungibleTokenMgmt() {
+    final Stream<DynamicTest> contractKeysWorkAsExpectedForFungibleTokenMgmt() {
         final var fungibleToken = "token";
         final var managementContract = "DoTokenManagement";
         final var mgmtContractAsKey = "mgmtContractAsKey";

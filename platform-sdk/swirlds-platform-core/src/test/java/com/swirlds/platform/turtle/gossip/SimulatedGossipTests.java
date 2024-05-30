@@ -38,7 +38,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,7 +87,7 @@ class SimulatedGossipTests {
                 TestPlatformContextBuilder.create().withTime(time).build();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(randotron).withSize(networkSize).build();
 
         // We can safely choose large numbers because time is simulated
         final Duration averageDelay = Duration.ofMillis(randotron.nextInt(1, 1_000_000));
@@ -128,6 +128,7 @@ class SimulatedGossipTests {
                             eventInputWire,
                             mock(BindableInputWire.class),
                             eventOutputWire,
+                            mock(BindableInputWire.class),
                             mock(BindableInputWire.class),
                             mock(BindableInputWire.class),
                             mock(BindableInputWire.class));

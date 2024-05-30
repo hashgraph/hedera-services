@@ -46,6 +46,11 @@ class ReadableScheduleStoreTest extends ScheduleTestBase {
     }
 
     @Test
+    void getNullReturnsNull() {
+        assertThat(scheduleStore.get(null)).isNull();
+    }
+
+    @Test
     void getsExpectedSize() {
         assertThat(scheduleStore.numSchedulesInState()).isEqualTo(2);
     }

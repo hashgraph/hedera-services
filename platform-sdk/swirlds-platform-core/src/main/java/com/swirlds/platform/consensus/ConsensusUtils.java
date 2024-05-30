@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.internal.EventImpl;
@@ -43,7 +44,8 @@ public final class ConsensusUtils {
      */
     public static boolean coin(@NonNull final EventImpl event) {
         // coin is one bit from signature (LSB of second of two middle bytes)
-        return ((event.getSignature()[(event.getSignature().length / 2)] & 1) == 1);
+        final int sigLen = (int) event.getBaseEvent().getSignature().length();
+        return ((event.getBaseEvent().getSignature().getByte((sigLen / 2)) & 1) == 1);
     }
 
     /**
@@ -72,9 +74,10 @@ public final class ConsensusUtils {
         // find whitening for round
         for (final EventImpl w : judges) { // calculate the whitening byte array
             if (w != null) {
-                final int mn = Math.min(whitening.length, w.getSignature().length);
+                final Bytes sig = w.getBaseEvent().getSignature();
+                final int mn = Math.min(whitening.length, (int) sig.length());
                 for (int i = 0; i < mn; i++) {
-                    whitening[i] ^= w.getSignature()[i];
+                    whitening[i] ^= sig.getByte(i);
                 }
             }
         }

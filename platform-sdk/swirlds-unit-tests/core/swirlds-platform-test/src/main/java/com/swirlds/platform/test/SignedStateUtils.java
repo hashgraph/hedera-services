@@ -45,6 +45,7 @@ public class SignedStateUtils {
                 root,
                 "test",
                 shouldSaveToDisk,
+                false,
                 false);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;

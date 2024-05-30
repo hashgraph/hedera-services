@@ -23,10 +23,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.platform.DefaultFunctionGauge;
-import com.swirlds.common.metrics.platform.Snapshot;
+import com.swirlds.common.metrics.platform.PlatformFunctionGauge;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metric;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -48,8 +48,8 @@ class StringAdapterTest {
     void testCreateGlobalMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric =
-                new DefaultFunctionGauge<>(new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
+        final Metric metric = new PlatformFunctionGauge<>(
+                new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
                         .withDescription(DESCRIPTION));
 
         // when
@@ -68,8 +68,8 @@ class StringAdapterTest {
     void testCreatePlatformMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric =
-                new DefaultFunctionGauge<>(new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
+        final Metric metric = new PlatformFunctionGauge<>(
+                new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
                         .withDescription(DESCRIPTION));
 
         // when
@@ -89,7 +89,7 @@ class StringAdapterTest {
         // given
         final String brokenName = ".- /%";
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultFunctionGauge<>(
+        final Metric metric = new PlatformFunctionGauge<>(
                 new FunctionGauge.Config<>(brokenName, brokenName, String.class, () -> "Hello World"));
 
         // when
@@ -107,8 +107,8 @@ class StringAdapterTest {
     void testConstructorWithNullParameters() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric =
-                new DefaultFunctionGauge<>(new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
+        final Metric metric = new PlatformFunctionGauge<>(
+                new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
                         .withDescription(DESCRIPTION));
 
         // then
@@ -123,7 +123,7 @@ class StringAdapterTest {
     void testUpdateGlobalMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultFunctionGauge<String> metric = new DefaultFunctionGauge<>(
+        final PlatformFunctionGauge<String> metric = new PlatformFunctionGauge<>(
                 new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World"));
         final StringAdapter adapter = new StringAdapter(registry, metric, GLOBAL);
 
@@ -139,7 +139,7 @@ class StringAdapterTest {
     void testUpdatePlatformMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultFunctionGauge<String> metric = new DefaultFunctionGauge<>(
+        final PlatformFunctionGauge<String> metric = new PlatformFunctionGauge<>(
                 new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World"));
         final StringAdapter adapter = new StringAdapter(registry, metric, PLATFORM);
 
@@ -155,7 +155,7 @@ class StringAdapterTest {
     void testUpdateWithNullParameters() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultFunctionGauge<String> metric = new DefaultFunctionGauge<>(
+        final PlatformFunctionGauge<String> metric = new PlatformFunctionGauge<>(
                 new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World"));
         final StringAdapter adapter = new StringAdapter(registry, metric, PLATFORM);
         final NodeId nodeId = new NodeId(1L);
@@ -169,8 +169,8 @@ class StringAdapterTest {
     void testAdaptedUnitIsEmptyWhenConfigUnitIsSet() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final DefaultFunctionGauge<String> metric =
-                new DefaultFunctionGauge<>(new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
+        final PlatformFunctionGauge<String> metric = new PlatformFunctionGauge<>(
+                new FunctionGauge.Config<>(CATEGORY, NAME, String.class, () -> "Hello World")
                         .withDescription(DESCRIPTION)
                         .withUnit("AnUnIt"));
 

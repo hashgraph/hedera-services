@@ -27,7 +27,7 @@ import com.swirlds.common.test.fixtures.io.ResourceNotFoundException;
 import com.swirlds.platform.crypto.SerializableX509Certificate;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -92,7 +92,7 @@ public class PreGeneratedX509Certs {
 
         // create address book without any certs.
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(numCerts).build();
+                RandomAddressBookBuilder.create(random).withSize(numCerts).build();
 
         // generate certs for the address book.
         generateKeysAndCerts(addressBook);

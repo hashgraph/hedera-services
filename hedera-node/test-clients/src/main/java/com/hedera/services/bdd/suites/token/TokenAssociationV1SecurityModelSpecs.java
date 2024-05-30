@@ -38,12 +38,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
 
@@ -63,7 +64,7 @@ public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(multiAssociationWithSameRepeatedTokenAsExpected());
     }
 
@@ -72,7 +73,7 @@ public class TokenAssociationV1SecurityModelSpecs extends HapiSuite {
         return false;
     }
 
-    final HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
+    final Stream<DynamicTest> multiAssociationWithSameRepeatedTokenAsExpected() {
         final var nfToken = "nfToken";
         final var civilian = "civilian";
         final var multiAssociate = "multiAssociate";

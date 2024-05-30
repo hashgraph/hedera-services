@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.InvalidKeyException;
@@ -60,14 +61,28 @@ public class PlatformSigner implements Signer, HashSigner {
         } catch (final SignatureException e) {
             // this can only occur if this signature object is not initialized properly, which we ensure is done in the
             // constructor. so this can never happen
-            throw new CryptographyException(e);
+            throw new CryptographyException("Unexpected exception occurred while signing!", e, LogMarker.EXCEPTION);
+        }
+    }
+
+    /**
+     * Same as {@link #sign(byte[])} but takes a {@link Bytes} object instead of a byte array.
+     */
+    private @NonNull com.swirlds.common.crypto.Signature signBytes(@NonNull final Bytes data) {
+        try {
+            data.updateSignature(signature);
+            return new com.swirlds.common.crypto.Signature(SignatureType.RSA, signature.sign());
+        } catch (final SignatureException e) {
+            // this can only occur if this signature object is not initialized properly, which we ensure is done in the
+            // constructor. so this can never happen
+            throw new CryptographyException("Unexpected exception occurred while signing!", e, LogMarker.EXCEPTION);
         }
     }
 
     @Override
     public @NonNull com.swirlds.common.crypto.Signature sign(@NonNull final Hash hash) {
         Objects.requireNonNull(hash, "hash must not be null");
-        return sign(hash.getValue());
+        return signBytes(hash.getBytes());
     }
 
     /**
@@ -77,7 +92,7 @@ public class PlatformSigner implements Signer, HashSigner {
      */
     public @NonNull Bytes signImmutable(@NonNull final Hash hash) {
         try {
-            signature.update(hash.getValue());
+            hash.getBytes().updateSignature(signature);
             return Bytes.wrap(signature.sign());
         } catch (final SignatureException e) {
             // this can only occur if this signature object is not initialized properly, which we ensure is done in the

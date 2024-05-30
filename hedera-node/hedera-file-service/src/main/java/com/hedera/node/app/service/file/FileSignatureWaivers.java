@@ -29,4 +29,12 @@ public interface FileSignatureWaivers extends SigWaivers {
      * @return whether the target account's key must sign
      */
     boolean areFileUpdateSignaturesWaived(TransactionBody fileUpdateTxn, AccountID payer);
+
+    /**
+     * Advises if the target file's key must sign a given file append.
+     *
+     * @param fileAppendTxn a file append transaction
+     * @return whether the target account's key must sign
+     */
+    boolean areFileAppendSignaturesWaived(TransactionBody fileAppendTxn, AccountID payer);
 }
