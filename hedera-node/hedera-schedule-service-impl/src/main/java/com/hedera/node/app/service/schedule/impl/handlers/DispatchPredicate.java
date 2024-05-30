@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -35,12 +38,12 @@ public class DispatchPredicate implements Predicate<Key> {
      * @param preValidatedKeys an <strong>unmodifiable</strong> {@link Set<Key>} of primitive keys
      *         previously verified.
      */
-    public DispatchPredicate(final Set<Key> preValidatedKeys) {
-        this.preValidatedKeys = preValidatedKeys;
+    public DispatchPredicate(@NonNull final Set<Key> preValidatedKeys) {
+        this.preValidatedKeys = requireNonNull(preValidatedKeys);
     }
 
     @Override
-    public boolean test(final Key key) {
-        return preValidatedKeys.contains(key);
+    public boolean test(@NonNull final Key key) {
+        return preValidatedKeys.contains(requireNonNull(key));
     }
 }
