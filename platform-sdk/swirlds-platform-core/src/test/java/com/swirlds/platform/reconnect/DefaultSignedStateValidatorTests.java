@@ -319,10 +319,10 @@ class DefaultSignedStateValidatorTests {
         final SignatureVerifier signatureVerifier = (data, signature, key) -> {
             // a signature with a 0 byte is always invalid
             // this is set in the nodeSigs() method
-            if (signature[0] == 0) {
+            if (signature.getByte(0) == 0) {
                 return false;
             }
-            final Hash hash = new Hash(data, stateHash.getDigestType());
+            final Hash hash = new Hash(data.toByteArray(), stateHash.getDigestType());
 
             return hash.equals(stateHash);
         };

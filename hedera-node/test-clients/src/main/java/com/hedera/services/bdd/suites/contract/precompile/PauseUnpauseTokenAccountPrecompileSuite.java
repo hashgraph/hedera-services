@@ -42,6 +42,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
@@ -58,23 +61,16 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
+public class PauseUnpauseTokenAccountPrecompileSuite {
     public static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
 
     private static final String PAUSE_FUNGIBLE_TXN = "pauseFungibleTxn";
@@ -88,6 +84,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
     private static final String ACCOUNT = "account";
+    private static final String TREASURY = "treasury";
 
     public static final long INITIAL_BALANCE = 1_000_000_000L;
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -97,33 +94,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     public static final String UNPAUSE_TX = "UnpauseTx";
     public static final String PAUSE_TX = "PauseTx";
 
-    public static void main(String... args) {
-        new PauseUnpauseTokenAccountPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                noTokenIdReverts(),
-                noAccountKeyReverts(),
-                pauseFungibleToken(),
-                unpauseFungibleToken(),
-                pauseNonFungibleToken(),
-                unpauseNonFungibleToken());
-    }
-
     @HapiTest
-    HapiSpec pauseFungibleToken() {
+    final Stream<DynamicTest> pauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("PauseFungibleToken")
                 .given(
@@ -194,7 +166,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec unpauseFungibleToken() {
+    final Stream<DynamicTest> unpauseFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("unpauseFungibleToken")
                 .given(
@@ -246,7 +218,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pauseNonFungibleToken() {
+    final Stream<DynamicTest> pauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("pauseNonFungibleToken")
                 .given(
@@ -319,7 +291,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec unpauseNonFungibleToken() {
+    final Stream<DynamicTest> unpauseNonFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("unpauseNonFungibleToken")
                 .given(
@@ -373,7 +345,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noTokenIdReverts() {
+    final Stream<DynamicTest> noTokenIdReverts() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
@@ -417,7 +389,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec noAccountKeyReverts() {
+    final Stream<DynamicTest> noAccountKeyReverts() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec(

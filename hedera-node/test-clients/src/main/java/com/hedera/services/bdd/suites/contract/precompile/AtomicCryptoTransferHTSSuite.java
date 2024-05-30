@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -65,6 +66,10 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.precompile.ApproveAllowanceSuite.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -79,30 +84,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class AtomicCryptoTransferHTSSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(AtomicCryptoTransferHTSSuite.class);
-
+public class AtomicCryptoTransferHTSSuite {
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
@@ -124,37 +123,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
 
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
 
-    public static void main(final String... args) {
-        new AtomicCryptoTransferHTSSuite().runSuiteSync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            cryptoTransferForHbarOnly(),
-            cryptoTransferForFungibleTokenOnly(),
-            cryptoTransferForFungibleTokenWithFees(),
-            cryptoTransferForNFTWithFees(),
-            cryptoTransferForNonFungibleTokenOnly(),
-            cryptoTransferHBarFungibleNft(),
-            cryptoTransferSpecialAccounts(),
-            blockCryptoTransferForPermittedDelegates(),
-            cryptoTransferAllowanceToContractHbar(),
-            cryptoTransferAllowanceToContractFT(),
-            cryptoTransferAllowanceToContractNFT(),
-            cryptoTransferAllowanceToContractFromContract(),
-            receiverSigRequiredButNotProvided(),
-            cryptoTransferSpecialAccounts()
-        });
-    }
-
     @HapiTest
-    final HapiSpec cryptoTransferForHbarOnly() {
+    final Stream<DynamicTest> cryptoTransferForHbarOnly() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
         final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
@@ -344,7 +314,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferForFungibleTokenOnly() {
+    final Stream<DynamicTest> cryptoTransferForFungibleTokenOnly() {
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
         final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
 
@@ -452,7 +422,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferForFungibleTokenWithFees() {
+    final Stream<DynamicTest> cryptoTransferForFungibleTokenWithFees() {
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
         final var FEE_TOKEN = "FeeToken";
 
@@ -544,7 +514,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferForNFTWithFees() {
+    final Stream<DynamicTest> cryptoTransferForNFTWithFees() {
         final var cryptoTransferTxnForNonFungible = "cryptoTransferTxnForNonFungible";
         final var FEE_TOKEN = "FeeToken";
 
@@ -640,7 +610,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferForNonFungibleTokenOnly() {
+    final Stream<DynamicTest> cryptoTransferForNonFungibleTokenOnly() {
         final var cryptoTransferTxnForNft = "cryptoTransferTxnForNft";
         final var cryptoTransferRevertNoKeyTxn = "cryptoTransferRevertNoKeyTxn";
 
@@ -745,7 +715,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferHBarFungibleNft() {
+    final Stream<DynamicTest> cryptoTransferHBarFungibleNft() {
         final var cryptoTransferTxnForAll = "cryptoTransferTxnForAll";
 
         return propertyPreservingHapiSpec(
@@ -877,7 +847,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferAllowanceToContractHbar() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractHbar() {
         final var allowance = 11L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -1041,7 +1011,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferAllowanceToContractFT() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractFT() {
         final var allowance = 11L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -1232,7 +1202,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferAllowanceToContractNFT() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         return propertyPreservingHapiSpec(
@@ -1320,7 +1290,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cryptoTransferAllowanceToContractFromContract() {
+    final Stream<DynamicTest> cryptoTransferAllowanceToContractFromContract() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         final var simpleStorageContract = "SimpleStorage";
@@ -1383,7 +1353,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec receiverSigRequiredButNotProvided() {
+    final Stream<DynamicTest> receiverSigRequiredButNotProvided() {
         final var failedTransferFromTxn = "failed_txn";
         final long allowance = 20L;
 
@@ -1437,8 +1407,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                 .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
-    @HapiTest
-    final HapiSpec cryptoTransferSpecialAccounts() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return propertyPreservingHapiSpec(
@@ -1514,7 +1484,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec blockCryptoTransferForPermittedDelegates() {
+    final Stream<DynamicTest> blockCryptoTransferForPermittedDelegates() {
         final var blockCryptoTransferForPermittedDelegates = "blockCryptoTransferForPermittedDelegates";
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
@@ -1588,10 +1558,5 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .contractCallResult(
                                                 htsPrecompileResult().withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

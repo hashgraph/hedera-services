@@ -136,7 +136,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         this.expectedStatus = Optional.of(contractCreate.getExpectedStatus());
         this.expectedPrecheck = Optional.of(contractCreate.getExpectedPrecheck());
         this.fiddler = contractCreate.getFiddler();
-        this.submitDelay = contractCreate.getSubmitDelay();
         this.validDurationSecs = contractCreate.getValidDurationSecs();
         this.customTxnId = contractCreate.getCustomTxnId();
         this.node = contractCreate.getNode();

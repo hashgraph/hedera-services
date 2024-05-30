@@ -28,6 +28,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 
 /**
  * Wiring for gossip.
@@ -74,6 +75,12 @@ public class GossipWiring {
      */
     private final BindableInputWire<NoInput, Void> clearInput;
 
+    /**
+     * This wire is used to tell gossip the health of the system, carries the duration that the system has been in an
+     * unhealthy state.
+     */
+    private final BindableInputWire<Duration, Void> systemHealthInput;
+
     public GossipWiring(@NonNull final PlatformContext platformContext, @NonNull final WiringModel model) {
         this.model = model;
 
@@ -92,6 +99,7 @@ public class GossipWiring {
         startInput = scheduler.buildInputWire("start");
         stopInput = scheduler.buildInputWire("stop");
         clearInput = scheduler.buildInputWire("clear");
+        systemHealthInput = scheduler.buildInputWire("health info");
     }
 
     /**
@@ -100,7 +108,8 @@ public class GossipWiring {
      * @param gossip the gossip implementation
      */
     public void bind(@NonNull final Gossip gossip) {
-        gossip.bind(model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput);
+        gossip.bind(
+                model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput, systemHealthInput);
     }
 
     /**
@@ -161,6 +170,16 @@ public class GossipWiring {
     @NonNull
     public InputWire<NoInput> getClearInput() {
         return clearInput;
+    }
+
+    /**
+     * Get the input wire to tell gossip the health of the system.
+     *
+     * @return the input wire to tell gossip the health of the system
+     */
+    @NonNull
+    public InputWire<Duration> getSystemHealthInput() {
+        return systemHealthInput;
     }
 
     /**

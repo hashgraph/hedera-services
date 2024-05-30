@@ -16,27 +16,17 @@
 
 package com.hedera.node.app.service.file.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 
 /** Standard implementation of the {@link FileService} {@link Service}. */
 public final class FileServiceImpl implements FileService {
-    public static final String BLOBS_KEY = "FILES";
-    public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
-    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
     private final ConfigProvider configProvider;
-    private InitialModFileGenesisSchema initialFileSchema;
 
     /**
      * Constructs a {@link FileServiceImpl} with the given {@link ConfigProvider}.
@@ -48,16 +38,10 @@ public final class FileServiceImpl implements FileService {
     }
 
     /**
-     * Sets the {@link Supplier} for the {@link VirtualMapLike} that will be used to store file data.
-     * @param fss the file data storage supplier
+     * {@inheritDoc}
      */
-    public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
-        initialFileSchema.setFs(fss);
-    }
-
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialFileSchema = new InitialModFileGenesisSchema(version, configProvider);
-        registry.register(initialFileSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490FileSchema(configProvider));
     }
 }

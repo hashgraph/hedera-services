@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"uint256","name":"_a","type":"uint256"},{"internalType":"uint256","name":"_b","type":"uint256"}],"name":"setAB","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_c","type":"uint256"}],"name":"setC","outputs":[],"stateMutability":"nonpayable","type":"function"}]

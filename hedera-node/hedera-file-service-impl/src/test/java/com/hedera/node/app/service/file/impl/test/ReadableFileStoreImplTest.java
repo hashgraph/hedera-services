@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.test;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;

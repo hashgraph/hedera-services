@@ -49,9 +49,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 public class PrecompileMintThrottlingCheck extends HapiSuite {
 
@@ -69,12 +71,12 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(precompileNftMintsAreLimitedByConsThrottle());
     }
 
     @SuppressWarnings("java:S5960")
-    final HapiSpec precompileNftMintsAreLimitedByConsThrottle() {
+    final Stream<DynamicTest> precompileNftMintsAreLimitedByConsThrottle() {
         var mainnetLimits = protoDefsFromResource("testSystemFiles/mainnet-throttles.json");
         return propertyPreservingHapiSpec("PrecompileNftMintsAreLimitedByConsThrottle")
                 .preserving("contracts.throttle.throttleByGas")

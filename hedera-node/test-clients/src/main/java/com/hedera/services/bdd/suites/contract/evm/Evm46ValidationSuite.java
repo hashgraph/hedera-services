@@ -50,6 +50,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -71,27 +75,22 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Evm46ValidationSuite extends HapiSuite {
+public class Evm46ValidationSuite {
 
-    private static final Logger LOG = LogManager.getLogger(Evm46ValidationSuite.class);
     private static final long FIRST_NONEXISTENT_CONTRACT_NUM = 4303224382569680425L;
     private static final String NAME = "name";
     private static final String ERC_721_ABI = "ERC721ABI";
@@ -101,13 +100,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String INTERNAL_CALLER_CONTRACT = "InternalCaller";
     private static final String INTERNAL_CALLEE_CONTRACT = "InternalCallee";
     private static final String REVERT_WITH_REVERT_REASON_FUNCTION = "revertWithRevertReason";
-    private static final String REVERT_WITHOUT_REVERT_REASON_FUNCTION = "revertWithoutRevertReason";
     private static final String CALL_NON_EXISTING_FUNCTION = "callNonExisting";
     private static final String CALL_EXTERNAL_FUNCTION = "callExternalFunction";
     private static final String DELEGATE_CALL_EXTERNAL_FUNCTION = "delegateCallExternalFunction";
     private static final String STATIC_CALL_EXTERNAL_FUNCTION = "staticCallExternalFunction";
     private static final String CALL_REVERT_WITH_REVERT_REASON_FUNCTION = "callRevertWithRevertReason";
-    private static final String CALL_REVERT_WITHOUT_REVERT_REASON_FUNCTION = "callRevertWithoutRevertReason";
     private static final String TRANSFER_TO_FUNCTION = "transferTo";
     private static final String SEND_TO_FUNCTION = "sendTo";
     private static final String CALL_WITH_VALUE_TO_FUNCTION = "callWithValueTo";
@@ -123,11 +120,6 @@ public class Evm46ValidationSuite extends HapiSuite {
     private static final String CUSTOM_PAYER = "customPayer";
     private static final String BENEFICIARY = "beneficiary";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
-    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String EVM_ALLOW_CALLS_TO_NON_CONTRACT_ACCOUNTS =
-            "contracts.evm.allowCallsToNonContractAccounts";
-    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
-    private static final String EVM_VERSION_046 = "v0.46";
     private static final String BALANCE_OF = "balanceOf";
     public static final List<Long> nonExistingSystemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);
@@ -135,145 +127,8 @@ public class Evm46ValidationSuite extends HapiSuite {
     public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
 
-    public static void main(String... args) {
-        new Evm46ValidationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                // Top-level calls:
-                // EOA -calls-> NonExistingMirror, expect noop success
-                directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp(),
-                // EOA -calls-> NonExistingNonMirror, expect noop success
-                directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp(),
-                // EOA -calls-> ExistingCryptoAccount, expect noop success
-                directCallToExistingCryptoAccountResultsInSuccess(),
-                // EOA -callsWValue-> ExistingCryptoAccount, expect successful transfer
-                directCallWithValueToExistingCryptoAccountResultsInSuccess(),
-                // EOA -calls-> Reverting, expect revert
-                directCallToRevertingContractRevertsWithCorrectRevertReason(),
-
-                // Internal calls:
-                // EOA -calls-> InternalCaller -calls-> NonExistingMirror, expect noop success
-                internalCallToNonExistingMirrorAddressResultsInNoopSuccess(),
-                // EOA -calls-> InternalCaller -calls-> ExistingMirror, expect successful call
-                internalCallToExistingMirrorAddressResultsInSuccessfulCall(),
-                // EOA -calls-> InternalCaller -calls-> NonExistingNonMirror, expect noop success
-                internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess(),
-                // EOA -calls-> InternalCaller -calls-> Existing reverting without revert message
-                internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn(),
-
-                // Internal transfers:
-                // EOA -calls-> InternalCaller -transfer-> NonExistingMirror, expect revert
-                internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey(),
-                // EOA -calls-> InternalCaller -transfer-> ExistingMirror, expect success
-                internalTransferToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -transfer-> NonExistingNonMirror, expect revert
-                internalTransferToNonExistingNonMirrorAddressResultsInRevert(),
-                // EOA -calls-> InternalCaller -transfer-> ExistingNonMirror, expect success
-                internalTransferToExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal sends:
-                // EOA -calls-> InternalCaller -send-> NonExistingMirror, expect revert
-                internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt(),
-                // EOA -calls-> InternalCaller -send-> ExistingMirror, expect success
-                internalSendToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -send-> NonExistingNonMirror, expect revert
-                internalSendToNonExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -send-> ExistingNonMirror, expect success
-                internalSendToExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal calls with value:
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingMirror, expect revert
-                internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey(),
-                // EOA -calls-> InternalCaller -callWValue-> ExistingMirror, expect success
-                internalCallWithValueToExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror and not enough gas for lazy creation,
-                // expect success with no account created
-                internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated(),
-                // EOA -calls-> InternalCaller -callWValue-> NonExistingNonMirror and enough gas for lazy creation,
-                // expect success with account created
-                internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated(),
-                // EOA -calls-> InternalCaller -callWValue-> ExistingNonMirror, expect ?
-                internalCallWithValueToExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal calls to selfdestruct:
-                // EOA -calls-> InternalCaller -selfdestruct-> NonExistingNonMirror, expect INVALID_SOLIDITY_ADDRESS
-                selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress(),
-                // EOA -calls-> InternalCaller -selfdestruct-> NonExistingMirror, expect INVALID_SOLIDITY_ADDRESS
-                selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress(),
-                // EOA -calls-> InternalCaller -selfdestruct-> ExistingNonMirror, expect success
-                selfdestructToExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -selfdestruct-> ExistingMirror, expect success
-                selfdestructToExistingMirrorAddressResultsInSuccess(),
-
-                // Calls to deleted contract
-                // EOA -calls-> InternalCaller -call-> deleted contract, expect success noop
-                internalCallToDeletedContractReturnsSuccessfulNoop(),
-                // EOA -calls-> deleted contract, expect success noop
-                directCallToDeletedContractResultsInSuccessfulNoop(),
-                // prerequisite: several successful calls then delete
-                // the contract (bytecode is already cached in AbstractCodeCache)
-                // then: EOA -calls-> deleted contract, expect success noop
-                callingDestructedContractReturnsStatusSuccess(),
-
-                // Internal static calls:
-                // EOA -calls-> InternalCaller -staticcall-> NonExistingMirror, expect success noop
-                internalStaticCallNonExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -staticcall-> ExistingMirror, expect success noop
-                internalStaticCallExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -staticcall-> NonExistingNonMirror, expect success noop
-                internalStaticCallNonExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -staticcall-> ExistingNonMirror, expect success noop
-                internalStaticCallExistingNonMirrorAddressResultsInSuccess(),
-
-                // Internal delegate calls:
-                // EOA -calls-> InternalCaller -delegatecall-> NonExistingMirror, expect success noop
-                internalDelegateCallNonExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -delegatecall-> ExistingMirror, expect success noop
-                internalDelegateCallExistingMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -delegatecall-> NonExistingNonMirror, expect success noop
-                internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess(),
-                // EOA -calls-> InternalCaller -delegatecall-> ExistingNonMirror, expect success noop
-                internalDelegateCallExistingNonMirrorAddressResultsInSuccess(),
-
-                // EOA -calls-> InternalCaller -callWithValue-> ExistingMirror
-                // with receiverSigRequired=true, expect INVALID_SIGNATURE
-                internalCallWithValueToAccountWithReceiverSigRequiredTrue(),
-
-                // Internal call to system account
-                // EOA -calls-> MakeCalls -callWithValue-> 0.0.357 (system account)
-                internalCallsAgainstSystemAccountsWithValue(),
-                // EOA -calls-> MakeCalls -call-> 0.0.357 (system account)
-                internalCallsAgainstSystemAccountsWithoutValue(),
-                // EOA -calls-> InternalCaller -call-> 0.0.2 (ethereum precompile)
-                internalCallToEthereumPrecompile0x2ResultsInSuccess(),
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.2 (ethereum precompile)
-                internalCallWithValueToEthereumPrecompile0x2ResultsInRevert(),
-                // EOA -calls-> InternalCaller -call-> 0.0.564 (system account < 0.0.750)
-                internalCallToSystemAccount564ResultsInSuccessNoop(),
-                // EOA -calls-> InternalCaller -call-> 0.0.800 (existing system account > 0.0.750)
-                internalCallToExistingSystemAccount800ResultsInSuccessNoop(),
-                // EOA -calls-> InternalCaller -call-> 0.0.852 (non-existing system account > 0.0.750)
-                internalCallToNonExistingSystemAccount852ResultsInSuccessNoop(),
-
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.564 (system account < 0.0.750)
-                internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer(),
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.800 (existing system account > 0.0.750)
-                internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer(),
-                // EOA -calls-> InternalCaller -callWithValue-> 0.0.852 (non-existing system account > 0.0.750)
-                internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey(),
-                testBalanceOfForSystemAccounts());
-    }
-
     @HapiTest
-    private HapiSpec directCallToDeletedContractResultsInSuccessfulNoop() {
+    final Stream<DynamicTest> directCallToDeletedContractResultsInSuccessfulNoop() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
         return defaultHapiSpec("directCallToDeletedContractResultsInSuccessfulNoop")
@@ -302,7 +157,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfdestructToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> selfdestructToExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("selfdestructToExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -325,7 +180,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfdestructToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> selfdestructToExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("selfdestructToExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -350,7 +205,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
+    final Stream<DynamicTest> selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
         return defaultHapiSpec("selfdestructToNonExistingNonMirrorAddressResultsInInvalidSolidityAddress")
@@ -382,7 +237,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
+    final Stream<DynamicTest> selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress() {
         return defaultHapiSpec("selfdestructToNonExistingMirrorAddressResultsInInvalidSolidityAddress")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -403,7 +258,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
+    final Stream<DynamicTest> directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingMirrorAddressResultsInSuccessfulNoOp")
                 .given(withOpContext((spec, ctxLog) -> spec.registry()
@@ -434,7 +289,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
+    final Stream<DynamicTest> directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp() {
 
         return defaultHapiSpec("directCallToNonExistingNonMirrorAddressResultsInSuccessfulNoOp")
                 .given(withOpContext((spec, ctxLog) -> spec.registry()
@@ -468,7 +323,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec directCallToRevertingContractRevertsWithCorrectRevertReason() {
+    final Stream<DynamicTest> directCallToRevertingContractRevertsWithCorrectRevertReason() {
 
         return defaultHapiSpec("directCallToRevertingContractRevertsWithCorrectRevertReason")
                 .given(uploadInitCode(INTERNAL_CALLEE_CONTRACT), contractCreate(INTERNAL_CALLEE_CONTRACT))
@@ -489,7 +344,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec directCallToExistingCryptoAccountResultsInSuccess() {
+    final Stream<DynamicTest> directCallToExistingCryptoAccountResultsInSuccess() {
 
         AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
 
@@ -537,7 +392,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec directCallWithValueToExistingCryptoAccountResultsInSuccess() {
+    final Stream<DynamicTest> directCallWithValueToExistingCryptoAccountResultsInSuccess() {
 
         AtomicReference<AccountID> mirrorAccountID = new AtomicReference<>();
 
@@ -604,7 +459,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
+    final Stream<DynamicTest> internalCallToNonExistingMirrorAddressResultsInNoopSuccess() {
 
         return defaultHapiSpec("internalCallToNonExistingMirrorAddressResultsInNoopSuccess")
                 .given(
@@ -624,7 +479,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
+    final Stream<DynamicTest> internalCallToExistingMirrorAddressResultsInSuccessfulCall() {
 
         final AtomicLong calleeNum = new AtomicLong();
 
@@ -654,7 +509,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess() {
+    final Stream<DynamicTest> internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess() {
 
         return defaultHapiSpec("internalCallToNonExistingNonMirrorAddressResultsInNoopSuccess")
                 .given(
@@ -674,7 +529,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn() {
+    final Stream<DynamicTest> internalCallToExistingRevertingResultsInSuccessfulTopLevelTxn() {
 
         final AtomicLong calleeNum = new AtomicLong();
 
@@ -696,7 +551,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    final Stream<DynamicTest> internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalTransferToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -713,7 +568,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalTransferToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalTransferToExistingMirrorAddressResultsInSuccess() {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -739,7 +594,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalTransferToNonExistingNonMirrorAddressResultsInRevert() {
+    final Stream<DynamicTest> internalTransferToNonExistingNonMirrorAddressResultsInRevert() {
         return defaultHapiSpec("internalTransferToNonExistingNonMirrorAddressResultsInRevert")
                 .given(
                         cryptoCreate(CUSTOM_PAYER).balance(ONE_HUNDRED_HBARS),
@@ -757,7 +612,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalTransferToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalTransferToExistingNonMirrorAddressResultsInSuccess() {
 
         return defaultHapiSpec("internalTransferToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -789,7 +644,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt() {
+    final Stream<DynamicTest> internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt() {
         return defaultHapiSpec("internalSendToNonExistingMirrorAddressDoesNotLazyCreateIt")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -806,7 +661,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalSendToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalSendToExistingMirrorAddressResultsInSuccess() {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -832,7 +687,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalSendToNonExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalSendToNonExistingNonMirrorAddressResultsInSuccess() {
 
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
 
@@ -868,7 +723,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalSendToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalSendToExistingNonMirrorAddressResultsInSuccess() {
 
         return defaultHapiSpec("internalSendToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -897,7 +752,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
+    final Stream<DynamicTest> internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey() {
         return defaultHapiSpec("internalCallWithValueToNonExistingMirrorAddressResultsInInvalidAliasKey")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -913,7 +768,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalCallWithValueToExistingMirrorAddressResultsInSuccess() {
 
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
@@ -939,7 +794,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    final Stream<DynamicTest>
             internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated() {
         return defaultHapiSpec(
                         "internalCallWithValueToNonExistingNonMirrorAddressWithoutEnoughGasForLazyCreationResultsInSuccessNoAccountCreated")
@@ -964,7 +819,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec
+    final Stream<DynamicTest>
             internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated() {
         return defaultHapiSpec(
                         "internalCallWithValueToNonExistingNonMirrorAddressWithEnoughGasForLazyCreationResultsInSuccessAccountCreated")
@@ -989,7 +844,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalCallWithValueToExistingNonMirrorAddressResultsInSuccess() {
 
         return defaultHapiSpec("internalCallWithValueToExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1021,7 +876,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToDeletedContractReturnsSuccessfulNoop() {
+    final Stream<DynamicTest> internalCallToDeletedContractReturnsSuccessfulNoop() {
         final AtomicLong calleeNum = new AtomicLong();
         return defaultHapiSpec("internalCallToDeletedContractReturnsSuccessfulNoop")
                 .given(
@@ -1054,7 +909,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec callingDestructedContractReturnsStatusSuccess() {
+    final Stream<DynamicTest> callingDestructedContractReturnsStatusSuccess() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("callingDestructedContractReturnsStatusSuccess")
                 .given(
@@ -1075,7 +930,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalStaticCallNonExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallNonExistingMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalStaticCallNonExistingMirrorAddressResultsInSuccess")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -1094,7 +949,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalStaticCallExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("internalStaticCallExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -1118,7 +973,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalStaticCallNonExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
         return defaultHapiSpec("internalStaticCallNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1153,7 +1008,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalStaticCallExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalStaticCallExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalStaticCallExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -1183,7 +1038,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallNonExistingMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalDelegateCallNonExistingMirrorAddressResultsInSuccess")
                 .given(
                         uploadInitCode(INTERNAL_CALLER_CONTRACT),
@@ -1202,7 +1057,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalDelegateCallExistingMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallExistingMirrorAddressResultsInSuccess() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
         return defaultHapiSpec("internalDelegateCallExistingMirrorAddressResultsInSuccess")
                 .given(
@@ -1226,7 +1081,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess() {
         AtomicReference<Bytes> nonExistingNonMirrorAddress = new AtomicReference<>();
         return defaultHapiSpec("internalDelegateCallNonExistingNonMirrorAddressResultsInSuccess")
                 .given(
@@ -1261,7 +1116,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
+    final Stream<DynamicTest> internalDelegateCallExistingNonMirrorAddressResultsInSuccess() {
         return defaultHapiSpec("internalDelegateCallExistingNonMirrorAddressResultsInSuccess")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -1291,7 +1146,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToAccountWithReceiverSigRequiredTrue() {
+    final Stream<DynamicTest> internalCallWithValueToAccountWithReceiverSigRequiredTrue() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
 
         return defaultHapiSpec("internalCallWithValueToAccountWithReceiverSigRequiredTrue")
@@ -1316,7 +1171,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToSystemAccount564ResultsInSuccessNoop() {
+    final Stream<DynamicTest> internalCallToSystemAccount564ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 
@@ -1341,7 +1196,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec internalCallsAgainstSystemAccountsWithValue() {
+    final Stream<DynamicTest> internalCallsAgainstSystemAccountsWithValue() {
         final var withAmount = "makeCallWithAmount";
         return defaultHapiSpec(
                         "internalCallsAgainstSystemAccountsWithValue",
@@ -1367,7 +1222,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec internalCallsAgainstSystemAccountsWithoutValue() {
+    final Stream<DynamicTest> internalCallsAgainstSystemAccountsWithoutValue() {
         final var withoutAmount = "makeCallWithoutAmount";
         return defaultHapiSpec(
                         "internalCallsAgainstSystemAccountsWithoutValue",
@@ -1394,7 +1249,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToEthereumPrecompile0x2ResultsInSuccess() {
+    final Stream<DynamicTest> internalCallToEthereumPrecompile0x2ResultsInSuccess() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
 
@@ -1426,7 +1281,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToEthereumPrecompile0x2ResultsInRevert() {
+    final Stream<DynamicTest> internalCallWithValueToEthereumPrecompile0x2ResultsInRevert() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(2L).build());
 
@@ -1449,7 +1304,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
+    final Stream<DynamicTest> internalCallToNonExistingSystemAccount852ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(852L).build());
 
@@ -1474,7 +1329,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
+    final Stream<DynamicTest> internalCallWithValueToNonExistingSystemAccount852ResultsInInvalidAliasKey() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         final var systemAccountNum = 852L;
         targetId.set(AccountID.newBuilder().setAccountNum(systemAccountNum).build());
@@ -1499,7 +1354,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
+    final Stream<DynamicTest> internalCallWithValueToSystemAccount564ResultsInSuccessNoopNoTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(564L).build());
 
@@ -1522,7 +1377,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer() {
+    final Stream<DynamicTest> internalCallWithValueToExistingSystemAccount800ResultsInSuccessfulTransfer() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
@@ -1547,7 +1402,7 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec internalCallToExistingSystemAccount800ResultsInSuccessNoop() {
+    final Stream<DynamicTest> internalCallToExistingSystemAccount800ResultsInSuccessNoop() {
         AtomicReference<AccountID> targetId = new AtomicReference<>();
         targetId.set(AccountID.newBuilder().setAccountNum(800L).build());
 
@@ -1572,11 +1427,11 @@ public class Evm46ValidationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testBalanceOfForSystemAccounts() {
+    final Stream<DynamicTest> testBalanceOfForSystemAccounts() {
         final var contract = "BalanceChecker46Version";
         final var balance = 10L;
         final var systemAccountBalance = 0;
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+        final var opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
 
         for (int i = 0; i < systemAccounts.size(); i++) {
             // add contract call for all accounts in the list
@@ -1598,8 +1453,25 @@ public class Evm46ValidationSuite extends HapiSuite {
                 .then(opsArray);
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
+    @HapiTest
+    final Stream<DynamicTest> directCallToSystemAccountResultsInSuccessfulNoOp() {
+        return defaultHapiSpec("directCallToSystemAccountResultsInSuccessfulNoOp")
+                .given(
+                        cryptoCreate("account").balance(ONE_HUNDRED_HBARS),
+                        withOpContext((spec, opLog) -> spec.registry()
+                                .saveContractId(
+                                        "contract",
+                                        asContractIdWithEvmAddress(ByteString.copyFrom(
+                                                unhex("0000000000000000000000000000000000000275"))))))
+                .when(withOpContext((spec, ctxLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi("contract", getABIFor(FUNCTION, NAME, ERC_721_ABI))
+                                .gas(GAS_LIMIT_FOR_CALL)
+                                .via("callToSystemAddress")
+                                .signingWith("account"))))
+                .then(getTxnRecord("callToSystemAddress")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith().gasUsed(GAS_LIMIT_FOR_CALL))));
     }
 }

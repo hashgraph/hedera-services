@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_CREATIONS;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -79,6 +81,15 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
@@ -122,15 +133,13 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -145,14 +154,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class Create2OperationSuite extends HapiSuite {
+public class Create2OperationSuite {
 
     public static final String GET_BYTECODE = "getBytecode";
     public static final String DEPLOY = "deploy";
@@ -172,44 +182,9 @@ public class Create2OperationSuite extends HapiSuite {
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
 
-    public static void main(String... args) {
-        new Create2OperationSuite().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return false;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                create2FactoryWorksAsExpected(),
-                payableCreate2WorksAsExpected(),
-                canDeleteViaAlias(),
-                cannotSelfDestructToMirrorAddress(),
-                priorityAddressIsCreate2ForStaticHapiCalls(),
-                create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-                canUseAliasesInPrecompilesAndContractKeys(),
-                inlineCreateCanFailSafely(),
-                inlineCreate2CanFailSafely(),
-                allLogOpcodesResolveExpectedContractId(),
-                eip1014AliasIsPriorityInErcOwnerPrecompile(),
-                canAssociateInConstructor(),
-                /* --- HIP 583 --- */
-                canMergeCreate2ChildWithHollowAccount(),
-                canMergeCreate2MultipleCreatesWithHollowAccount(),
-                canCallFinalizedContractViaHapi());
-    }
-
     @SuppressWarnings("java:S5669")
-    @HapiTest
-    final HapiSpec allLogOpcodesResolveExpectedContractId() {
+    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    final Stream<DynamicTest> allLogOpcodesResolveExpectedContractId() {
         final var contract = "OuterCreator";
 
         final AtomicLong outerCreatorNum = new AtomicLong();
@@ -242,8 +217,8 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2868
-    @HapiTest
-    final HapiSpec inlineCreate2CanFailSafely() {
+    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    final Stream<DynamicTest> inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
         final var foo = BigInteger.valueOf(22);
@@ -290,8 +265,8 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    @HapiTest
-    final HapiSpec inlineCreateCanFailSafely() {
+    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    final Stream<DynamicTest> inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
         final var creation = CREATION;
         final var contract = "RevertingCreateFactory";
@@ -339,7 +314,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canAssociateInConstructor() {
+    final Stream<DynamicTest> canAssociateInConstructor() {
         final var token = "token";
         final var contract = "SelfAssociating";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
@@ -364,7 +339,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec payableCreate2WorksAsExpected() {
+    final Stream<DynamicTest> payableCreate2WorksAsExpected() {
         final var contract = "PayableCreate2Deploy";
         AtomicReference<String> tcMirrorAddr2 = new AtomicReference<>();
         AtomicReference<String> tcAliasAddr2 = new AtomicReference<>();
@@ -386,8 +361,8 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
-    @HapiTest
-    final HapiSpec create2FactoryWorksAsExpected() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
@@ -404,13 +379,15 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "Create2FactoryWorksAsExpected",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
                         uploadInitCode(contract),
@@ -524,7 +501,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec canMergeCreate2ChildWithHollowAccount() {
+    final Stream<DynamicTest> canMergeCreate2ChildWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var creation = CREATION;
@@ -645,7 +622,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec canMergeCreate2MultipleCreatesWithHollowAccount() {
+    final Stream<DynamicTest> canMergeCreate2MultipleCreatesWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2MultipleCreates";
         final var creation = CREATION;
@@ -768,8 +745,8 @@ public class Create2OperationSuite extends HapiSuite {
                         cryptoCreate("confirmingNoEntityIdCollision"));
     }
 
-    @HapiTest
-    final HapiSpec canCallFinalizedContractViaHapi() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> canCallFinalizedContractViaHapi() {
         final var contract = "FinalizedDestructible";
         final var salt = BigInteger.valueOf(1_234_567_890L);
         final AtomicReference<Address> childAddress = new AtomicReference<>();
@@ -777,11 +754,13 @@ public class Create2OperationSuite extends HapiSuite {
         final var vacateAddressAbi =
                 "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "CanCallFinalizedContractViaHapi",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
@@ -808,7 +787,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
+    final Stream<DynamicTest> eip1014AliasIsPriorityInErcOwnerPrecompile() {
         final var ercContract = "ERC721Contract";
         final var pc2User = "Create2PrecompileUser";
         final var nft = "nonFungibleToken";
@@ -875,7 +854,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec canUseAliasesInPrecompilesAndContractKeys() {
+    final Stream<DynamicTest> canUseAliasesInPrecompilesAndContractKeys() {
         final var creation2 = CREATE_2_TXN;
         final var contract = "Create2PrecompileUser";
         final var userContract = "Create2User";
@@ -1065,7 +1044,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2925
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec cannotSelfDestructToMirrorAddress() {
+    final Stream<DynamicTest> cannotSelfDestructToMirrorAddress() {
         final var creation2 = CREATE_2_TXN;
         final var messyCreation2 = "messyCreate2Txn";
         final var contract = "CreateDonor";
@@ -1119,7 +1098,7 @@ public class Create2OperationSuite extends HapiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2874
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec canDeleteViaAlias() {
+    final Stream<DynamicTest> canDeleteViaAlias() {
         final var adminKey = ADMIN_KEY;
         final var creation2 = CREATE_2_TXN;
         final var deletion = "deletion";
@@ -1192,8 +1171,8 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    @HapiTest
-    final HapiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
         final var creation2 = CREATE_2_TXN;
         final var innerCreation2 = "innerCreate2Txn";
         final var delegateCreation2 = "delegateCreate2Txn";
@@ -1209,11 +1188,13 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("contracts.evm.version")
                 .given(
+                        overriding("contracts.evm.version", "v0.46"),
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
                         contractCall(contract, "buildCreator", salt)
@@ -1270,7 +1251,7 @@ public class Create2OperationSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
+    final Stream<DynamicTest> priorityAddressIsCreate2ForStaticHapiCalls() {
         final var contract = "AddressValueRet";
 
         final AtomicReference<String> aliasAddr = new AtomicReference<>();
