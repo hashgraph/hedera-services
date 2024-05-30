@@ -118,7 +118,6 @@ class FrameBuilderTest {
         final var transaction = wellKnownHapiCall();
         givenContractExists();
         final var recordBuilder = mock(ContractOperationRecordBuilder.class);
-        given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
         given(account.getEvmCode(Bytes.wrap(CALL_DATA.toByteArray()))).willReturn(CONTRACT_CODE);
         given(worldUpdater.updater()).willReturn(stackedUpdater);
@@ -169,7 +168,6 @@ class FrameBuilderTest {
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
-        given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
         given(account.getEvmCode(Bytes.wrap(CALL_DATA.toByteArray()))).willReturn(CONTRACT_CODE);
         final var config = HederaTestConfigBuilder.create()
@@ -216,9 +214,10 @@ class FrameBuilderTest {
         givenContractExists();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
-        given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
-        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(null);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("contracts.evm.allowCallsToNonContractAccounts", "false")
+                .getOrCreateConfig();
 
         assertThrows(
                 HandleException.class,
@@ -239,8 +238,8 @@ class FrameBuilderTest {
         givenContractExists();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
-        given(worldUpdater.getHederaAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(null);
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(account);
+        given(account.getEvmCode(Bytes.wrap(CALL_DATA.toByteArray()))).willReturn(CONTRACT_CODE);
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
 
         final var frame = subject.buildInitialFrameWith(
@@ -270,7 +269,7 @@ class FrameBuilderTest {
         assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getRecipientAddress());
         assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getContractAddress());
         assertEquals(transaction.evmPayload(), frame.getInputData());
-        assertSame(CodeV0.EMPTY_CODE, frame.getCode());
+        assertSame(CONTRACT_CODE, frame.getCode());
         assertSame(tinybarValues, tinybarValuesFor(frame));
     }
 
