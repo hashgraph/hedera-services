@@ -186,8 +186,8 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.flush();
         staleEventDetectorWiring.startSquelching();
 
-        // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
-        // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
+        // Also squelch the transaction handler. It isn't strictly necessary to do this to prevent dataflow through
+        // the system, but it prevents the transaction handler from wasting time handling rounds that don't need to
         // be handled.
         transactionHandlerWiring.startSquelching();
         transactionHandlerWiring.flush();

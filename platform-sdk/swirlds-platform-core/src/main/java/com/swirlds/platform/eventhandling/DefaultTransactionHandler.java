@@ -18,14 +18,14 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.CREATING_SIGNED_STATE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.GETTING_STATE_TO_SIGN;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.HANDLING_CONSENSUS_ROUND;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_PREHANDLE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.CREATING_SIGNED_STATE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.GETTING_STATE_TO_SIGN;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.HANDLING_CONSENSUS_ROUND;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.IDLE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.WAITING_FOR_PREHANDLE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -307,12 +307,12 @@ public class DefaultTransactionHandler implements TransactionHandler {
                 platformContext,
                 CryptoStatic::verifySignature,
                 immutableStateCons,
-                "ConsensusRoundHandler.createSignedState()",
+                "TransactionHandler.createSignedState()",
                 freezeRoundReceived,
                 true,
                 consensusRound.isPcesRound());
 
-        final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
+        final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
         return new StateAndRound(reservedSignedState, consensusRound);
     }
 }
