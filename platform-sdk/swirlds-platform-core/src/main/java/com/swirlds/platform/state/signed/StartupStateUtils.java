@@ -21,18 +21,21 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
+import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
 
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.snapshot.DeserializedSignedState;
+import com.swirlds.platform.state.snapshot.SavedStateInfo;
+import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -166,6 +169,7 @@ public final class StartupStateUtils {
                 stateCopy,
                 "StartupStateUtils: copy initial state",
                 false,
+                false,
                 false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
@@ -243,7 +247,7 @@ public final class StartupStateUtils {
 
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             if (stateConfig.deleteInvalidStateFiles()) {
-                recycleState(platformContext.getFileSystemManager(), savedStateFile);
+                recycleState(platformContext.getRecycleBin(), savedStateFile);
                 return null;
             } else {
                 throw new SignedStateLoadingException("unable to load state, this is unrecoverable");
@@ -284,14 +288,13 @@ public final class StartupStateUtils {
     /**
      * Recycle a state.
      *
-     * @param fileSystemManager  the fileSystemManager
+     * @param recycleBin  the recycleBin
      * @param stateInfo  the state to recycle
      */
-    private static void recycleState(
-            @NonNull final FileSystemManager fileSystemManager, @NonNull final SavedStateInfo stateInfo) {
+    private static void recycleState(@NonNull final RecycleBin recycleBin, @NonNull final SavedStateInfo stateInfo) {
         logger.warn(STARTUP.getMarker(), "Moving state {} to the recycle bin.", stateInfo.stateFile());
         try {
-            fileSystemManager.recycle(stateInfo.getDirectory());
+            recycleBin.recycle(stateInfo.getDirectory());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to recycle state", e);
         }

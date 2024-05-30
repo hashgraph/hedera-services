@@ -107,7 +107,7 @@ public class CacheWarmer {
         // We can potentially optimize this by limiting the code to the bare minimum needed
         // or keeping the result for later.
         try {
-            final Bytes buffer = Bytes.wrap(platformTransaction.getContents());
+            final Bytes buffer = platformTransaction.getApplicationPayload();
             return checker.parseAndCheck(buffer).txBody();
         } catch (PreCheckException ex) {
             return null;

@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -50,6 +51,9 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACC
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.assertTxnRecordHasNoTraceabilityEnrichedContractFnResult;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
@@ -70,27 +74,20 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ContractMintHTSSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ContractMintHTSSuite.class);
-
+public class ContractMintHTSSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String CONTRACT_KEY = "ContractKey";
@@ -111,35 +108,9 @@ public class ContractMintHTSSuite extends HapiSuite {
     private static final String TEST_METADATA_1 = "Test metadata 1";
     private static final String TEST_METADATA_2 = "Test metadata 2";
     private static final String RECIPIENT = "recipient";
-    public static final String MINT_FUNGIBLE_TOKEN_WITH_EVENT = "mintFungibleTokenWithEvent";
-
-    public static void main(final String... args) {
-        new ContractMintHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(
-                rollbackOnFailedMintAfterFungibleTransfer(),
-                mintTokensWithExtremeValues(),
-                mintTokensWithInvalidValues());
-    }
-
-    List<HapiSpec> positiveSpecs() {
-        return List.of(transferNftAfterNestedMint());
-    }
 
     @HapiTest
-    final HapiSpec mintTokensWithExtremeValues() {
+    final Stream<DynamicTest> mintTokensWithExtremeValues() {
         var mintExtremeValue = "mintExtremeValue";
         var mintInvalidAddressType = "mintInvalidAddressType";
 
@@ -249,7 +220,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec mintTokensWithInvalidValues() {
+    final Stream<DynamicTest> mintTokensWithInvalidValues() {
         var mintToken = "mintToken";
 
         var fungibleMintWithMetadataTest = "fungibleMintWithMetadataTest";
@@ -359,7 +330,7 @@ public class ContractMintHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferNftAfterNestedMint() {
+    final Stream<DynamicTest> transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
         final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
 
@@ -489,7 +460,7 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    final Stream<DynamicTest> rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec(
@@ -549,10 +520,5 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                         .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                                         .withTotalSupply(0L)
                                                         .withSerialNumbers()))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

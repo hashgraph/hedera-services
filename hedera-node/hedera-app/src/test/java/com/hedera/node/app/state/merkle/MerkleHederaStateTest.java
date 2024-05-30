@@ -86,7 +86,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @Override
         public void onStateInitialized(
-                @NotNull MerkleHederaState state,
+                @NotNull HederaState state,
                 @NotNull Platform platform,
                 @NotNull PlatformState platformState,
                 @NotNull InitTrigger trigger,

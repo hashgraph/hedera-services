@@ -136,6 +136,14 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isRegularAccount() {
+        return false;
+    }
+
     @Override
     public @NonNull AccountID hederaId() {
         throw new IllegalStateException("Token facade has no usable Hedera id");

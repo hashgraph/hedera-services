@@ -60,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -72,8 +71,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
@@ -107,16 +108,16 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of(
                 rollbackOnFailedAssociateAfterNonFungibleMint(), gasCostNotMetSetsInsufficientGasStatusInChildRecord());
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(
                 helloWorldFungibleMint(),
                 helloWorldNftMint(),
@@ -125,7 +126,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                 happyPathZeroUnitFungibleTokenMint());
     }
 
-    final HapiSpec happyPathZeroUnitFungibleTokenMint() {
+    final Stream<DynamicTest> happyPathZeroUnitFungibleTokenMint() {
         final var amount = 0L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -169,7 +170,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                 .newTotalSupply(0)));
     }
 
-    final HapiSpec helloWorldFungibleMint() {
+    final Stream<DynamicTest> helloWorldFungibleMint() {
         final var amount = 1_234_567L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -217,7 +218,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         changingFungibleBalances().including(FUNGIBLE_TOKEN, DEFAULT_PAYER, amount))));
     }
 
-    final HapiSpec helloWorldNftMint() {
+    final Stream<DynamicTest> helloWorldNftMint() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("helloWorldNftMint")
@@ -280,7 +281,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         .serialNos(List.of(2L))));
     }
 
-    final HapiSpec happyPathFungibleTokenMint() {
+    final Stream<DynamicTest> happyPathFungibleTokenMint() {
         final var amount = 10L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -334,7 +335,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         .newTotalSupply(10)));
     }
 
-    final HapiSpec happyPathNonFungibleTokenMint() {
+    final Stream<DynamicTest> happyPathNonFungibleTokenMint() {
         final var totalSupply = 2;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -391,7 +392,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                         .serialNos(Arrays.asList(1L, 2L))));
     }
 
-    final HapiSpec rollbackOnFailedAssociateAfterNonFungibleMint() {
+    final Stream<DynamicTest> rollbackOnFailedAssociateAfterNonFungibleMint() {
         final var nestedMintTxn = "nestedMintTxn";
 
         return propertyPreservingHapiSpec("rollbackOnFailedAssociateAfterNonFungibleMint")
@@ -449,7 +450,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                                         htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))));
     }
 
-    final HapiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
+    final Stream<DynamicTest> gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
         final var amount = 10L;
         final var baselineMintWithEnoughGas = "baselineMintWithEnoughGas";
 

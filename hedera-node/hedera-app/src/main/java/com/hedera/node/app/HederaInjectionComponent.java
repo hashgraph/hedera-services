@@ -59,6 +59,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
@@ -174,6 +175,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
+
+        @BindsInstance
+        Builder softwareVersion(SoftwareVersion softwareVersion);
 
         HederaInjectionComponent build();
     }

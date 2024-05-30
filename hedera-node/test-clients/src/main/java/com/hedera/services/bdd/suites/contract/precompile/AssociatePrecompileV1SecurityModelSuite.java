@@ -49,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -58,8 +57,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -88,20 +89,20 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiSpec> negativeSpecs() {
+    List<Stream<DynamicTest>> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiSpec> positiveSpecs() {
+    List<Stream<DynamicTest>> positiveSpecs() {
         return List.of(nestedAssociateWorksAsExpected(), multipleAssociatePrecompileWithSignatureWorksForFungible());
     }
 
     /* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
-    final HapiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
+    final Stream<DynamicTest> multipleAssociatePrecompileWithSignatureWorksForFungible() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
@@ -184,7 +185,7 @@ public class AssociatePrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
-    final HapiSpec nestedAssociateWorksAsExpected() {
+    final Stream<DynamicTest> nestedAssociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 

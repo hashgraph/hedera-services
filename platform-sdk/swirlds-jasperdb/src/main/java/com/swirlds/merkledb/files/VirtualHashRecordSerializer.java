@@ -97,7 +97,7 @@ public final class VirtualHashRecordSerializer implements BaseSerializer<Virtual
                     + Long.BYTES;
         }
         size += ProtoWriterTools.sizeOfDelimited(
-                FIELD_HASHRECORD_HASH, data.hash().getValue().length);
+                FIELD_HASHRECORD_HASH, (int) data.hash().getBytes().length());
         return size;
     }
 
@@ -116,8 +116,8 @@ public final class VirtualHashRecordSerializer implements BaseSerializer<Virtual
         ProtoWriterTools.writeDelimited(
                 out,
                 FIELD_HASHRECORD_HASH,
-                hashRecord.hash().getValue().length,
-                o -> o.writeBytes(hashRecord.hash().getValue()));
+                (int) hashRecord.hash().getBytes().length(),
+                o -> hashRecord.hash().getBytes().writeTo(o));
     }
 
     @Override
@@ -151,10 +151,10 @@ public final class VirtualHashRecordSerializer implements BaseSerializer<Virtual
 
     private Hash readHash(final ReadableSequentialData in) {
         final int hashSize = in.readVarInt(false);
-        final Hash hash = new Hash(DigestType.SHA_384);
-        assert hashSize == hash.getValue().length;
-        in.readBytes(hash.getValue());
-        return hash;
+        assert hashSize == DigestType.SHA_384.digestLength();
+        final byte[] hashBytes = new byte[hashSize];
+        in.readBytes(hashBytes);
+        return new Hash(hashBytes, DigestType.SHA_384);
     }
 
     public void extractAndWriteHashBytes(final ReadableSequentialData in, final SerializableDataOutputStream out)

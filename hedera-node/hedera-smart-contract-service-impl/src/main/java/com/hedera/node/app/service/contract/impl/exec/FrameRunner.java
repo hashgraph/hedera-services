@@ -46,6 +46,7 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
@@ -144,12 +145,17 @@ public class FrameRunner {
         frame.getExceptionalHaltReason().ifPresent(haltReason -> propagateHaltException(frame, haltReason));
         // For mono-service compatibility, we need to also halt the frame on the stack that
         // executed the CALL operation whose dispatched frame failed due to a missing receiver
-        // signature; since mono-service did that check as part of the CALL operation itself
+        // signature; since mono-service did that check as part of the CALL operation itself.
         final var maybeFailureToPropagate = getAndClearPropagatedCallFailure(frame);
         if (maybeFailureToPropagate != HevmPropagatedCallFailure.NONE) {
             maybeNext(frame).ifPresent(f -> {
                 f.setState(EXCEPTIONAL_HALT);
                 f.setExceptionalHaltReason(maybeFailureToPropagate.exceptionalHaltReason());
+                // Finalize the CONTRACT_ACTION for the propagated halt frame as well
+                maybeFailureToPropagate
+                        .exceptionalHaltReason()
+                        .ifPresent(reason -> tracer.tracePostExecution(
+                                f, new Operation.OperationResult(frame.getRemainingGas(), reason)));
             });
         }
     }

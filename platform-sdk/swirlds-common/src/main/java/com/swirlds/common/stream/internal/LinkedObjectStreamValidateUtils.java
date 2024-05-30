@@ -132,9 +132,9 @@ public final class LinkedObjectStreamValidateUtils {
             Hash metaHashInSig = parsedPairs.right().left();
             Signature metaSignature = parsedPairs.right().right();
 
-            if (!verifySignature(entireHash.getValue(), entireSignature, publicKey)) {
+            if (!verifySignature(entireHash, entireSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_ENTIRE_SIGNATURE;
-            } else if (!verifySignature(metaHashInSig.getValue(), metaSignature, publicKey)) {
+            } else if (!verifySignature(metaHashInSig, metaSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_META_SIGNATURE;
             } else {
                 result = StreamValidationResult.OK;
@@ -233,12 +233,12 @@ public final class LinkedObjectStreamValidateUtils {
     }
 
     // Code duplicated in order to avoid wasting time on the event stream which will be removed soon
-    public static boolean verifySignature(final byte[] data, final Signature signature, final PublicKey publicKey) {
+    public static boolean verifySignature(final Hash hash, final Signature signature, final PublicKey publicKey) {
         try {
             final java.security.Signature sig = java.security.Signature.getInstance(
                     SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
             sig.initVerify(publicKey);
-            sig.update(data);
+            hash.getBytes().updateSignature(sig);
             return sig.verify(signature.getSignatureBytes());
         } catch (final NoSuchAlgorithmException
                 | NoSuchProviderException

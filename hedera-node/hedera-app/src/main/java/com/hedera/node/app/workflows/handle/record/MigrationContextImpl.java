@@ -30,6 +30,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 
 /**
  * An implementation of {@link MigrationContext}.
@@ -50,9 +51,9 @@ public record MigrationContextImpl(
         @NonNull NetworkInfo networkInfo,
         @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
         @Nullable WritableEntityIdStore writableEntityIdStore,
-        @Nullable SemanticVersion previousVersion)
+        @Nullable SemanticVersion previousVersion,
+        @NonNull Map<String, Object> sharedValues)
         implements MigrationContext {
-
     public MigrationContextImpl {
         requireNonNull(previousStates);
         requireNonNull(newStates);

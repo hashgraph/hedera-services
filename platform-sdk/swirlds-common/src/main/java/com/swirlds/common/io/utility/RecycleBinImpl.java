@@ -17,8 +17,10 @@
 package com.swirlds.common.io.utility;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectory;
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
+import static java.nio.file.Files.exists;
 
 import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
@@ -90,6 +92,11 @@ public class RecycleBinImpl implements RecycleBin, Stoppable {
         this.time = Objects.requireNonNull(time);
         this.maximumFileAge = maximumFileAge;
         this.recycleBinPath = recycleBinPath;
+
+        if (!exists(recycleBinPath)) {
+            rethrowIO(() -> Files.createDirectories(recycleBinPath));
+        }
+
         this.topLevelRecycledFileCount = countRecycledFiles(recycleBinPath);
 
         this.recycledFileCountMetric = metrics.getOrCreate(RECYLED_FILE_COUNT_CONFIG);

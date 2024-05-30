@@ -31,11 +31,11 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateReference;
+import com.swirlds.platform.state.snapshot.DeserializedSignedState;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
@@ -207,6 +207,7 @@ public class StateEditor {
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
                     reservedSignedState.get().isFreezeState(),
+                    false,
                     false);
 
             signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");

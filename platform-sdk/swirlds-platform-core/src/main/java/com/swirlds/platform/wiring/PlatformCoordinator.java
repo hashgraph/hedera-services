@@ -17,10 +17,11 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -36,6 +37,8 @@ import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.status.PlatformStatus;
+import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
@@ -47,13 +50,11 @@ import java.util.Objects;
  * Responsible for coordinating the clearing of the platform wiring objects.
  */
 public class PlatformCoordinator {
+
     /**
-     * The object counter which spans the {@link com.swirlds.platform.event.hashing.EventHasher EventHasher} and the
-     * postHashCollector
-     * <p>
-     * Used to flush the pair of components together.
+     * Flushes the event hasher.
      */
-    private final ObjectCounter hashingObjectCounter;
+    private final Runnable flushTheEventHasher;
 
     private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
     private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
@@ -70,11 +71,14 @@ public class PlatformCoordinator {
     private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
             staleEventDetectorWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
+    private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
+    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     /**
      * Constructor
      *
-     * @param hashingObjectCounter                   the hashing object counter
+     * @param flushTheEventHasher                    a lambda that flushes the event hasher
      * @param internalEventValidatorWiring           the internal event validator wiring
      * @param eventDeduplicatorWiring                the event deduplicator wiring
      * @param eventSignatureValidatorWiring          the event signature validator wiring
@@ -89,9 +93,12 @@ public class PlatformCoordinator {
      * @param stateHasherWiring                      the state hasher wiring
      * @param staleEventDetectorWiring               the stale event detector wiring
      * @param transactionPoolWiring                  the transaction pool wiring
+     * @param statusStateMachineWiring               the status state machine wiring
+     * @param branchDetectorWiring                   the branch detector wiring
+     * @param branchReporterWiring                   the branch reporter wiring
      */
     public PlatformCoordinator(
-            @NonNull final ObjectCounter hashingObjectCounter,
+            @NonNull final Runnable flushTheEventHasher,
             @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
             @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
             @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
@@ -109,9 +116,12 @@ public class PlatformCoordinator {
             @NonNull
                     final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
                             staleEventDetectorWiring,
-            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring) {
+            @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
+            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring,
+            @NonNull final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring,
+            @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring) {
 
-        this.hashingObjectCounter = Objects.requireNonNull(hashingObjectCounter);
+        this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
         this.eventDeduplicatorWiring = Objects.requireNonNull(eventDeduplicatorWiring);
         this.eventSignatureValidatorWiring = Objects.requireNonNull(eventSignatureValidatorWiring);
@@ -126,6 +136,9 @@ public class PlatformCoordinator {
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
         this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
         this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
+        this.statusStateMachineWiring = Objects.requireNonNull(statusStateMachineWiring);
+        this.branchDetectorWiring = Objects.requireNonNull(branchDetectorWiring);
+        this.branchReporterWiring = Objects.requireNonNull(branchReporterWiring);
     }
 
     /**
@@ -139,11 +152,7 @@ public class PlatformCoordinator {
         // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
         // whether to change the order of these lines.
 
-        // it isn't possible to flush the event hasher and the post hash collector independently, since the framework
-        // currently doesn't support flushing if multiple components share the same object counter. As a workaround,
-        // we just wait for the shared object counter to be empty, which is equivalent to flushing both components.
-        hashingObjectCounter.waitUntilEmpty();
-
+        flushTheEventHasher.run();
         internalEventValidatorWiring.flush();
         eventDeduplicatorWiring.flush();
         eventSignatureValidatorWiring.flush();
@@ -163,6 +172,10 @@ public class PlatformCoordinator {
         // Important: the order of the lines within this function are important. Do not alter the order of these
         // lines without understanding the implications of doing so. Consult the wiring diagram when deciding
         // whether to change the order of these lines.
+
+        // Phase 0: flush the status state machine.
+        // When reconnecting, this will force us to adopt a status that will halt event creation and gossip.
+        statusStateMachineWiring.flush();
 
         // Phase 1: squelch
         // Break cycles in the system. Flush squelched components just in case there is a task being executed when
@@ -187,6 +200,8 @@ public class PlatformCoordinator {
         roundDurabilityBufferWiring.flush();
         consensusRoundHandlerWiring.flushRunnable().run();
         staleEventDetectorWiring.flush();
+        branchDetectorWiring.flush();
+        branchReporterWiring.flush();
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
@@ -207,5 +222,7 @@ public class PlatformCoordinator {
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
         transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
+        branchDetectorWiring.getInputWire(BranchDetector::clear).inject(NoInput.getInstance());
+        branchReporterWiring.getInputWire(BranchReporter::clear).inject(NoInput.getInstance());
     }
 }

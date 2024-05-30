@@ -29,7 +29,6 @@ import java.util.Set;
  * Service</a>.
  */
 public interface ConsensusService extends Service {
-
     String NAME = "ConsensusService";
 
     @NonNull

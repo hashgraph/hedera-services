@@ -47,7 +47,7 @@ public final class HashTools {
      */
     public static ByteBuffer hashToByteBuffer(final Hash hash) {
         final ByteBuffer buf = ByteBuffer.allocate(HASH_SIZE_BYTES);
-        buf.put(hash.getValue());
+        hash.getBytes().writeTo(buf);
         return buf.flip();
     }
 
@@ -60,7 +60,7 @@ public final class HashTools {
      * 		the byte buffer to receive the digest of the hash
      */
     public static void hashToByteBuffer(final Hash hash, final ByteBuffer buf) {
-        buf.put(hash.getValue());
+        hash.getBytes().writeTo(buf);
     }
 
     /**
@@ -77,7 +77,9 @@ public final class HashTools {
             throw new IllegalArgumentException(
                     "Current version is " + CURRENT_SERIALIZATION_VERSION + ", got " + serializationVersion);
         }
-        return new Hash(buffer, DEFAULT_DIGEST);
+        final byte[] bytes = new byte[DEFAULT_DIGEST.digestLength()];
+        buffer.get(bytes);
+        return new Hash(bytes, DEFAULT_DIGEST);
     }
 
     private HashTools() {

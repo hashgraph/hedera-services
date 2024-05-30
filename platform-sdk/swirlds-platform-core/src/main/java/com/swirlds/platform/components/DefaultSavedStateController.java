@@ -17,20 +17,20 @@
 package com.swirlds.platform.components;
 
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
-import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
-import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
-import static com.swirlds.platform.state.signed.StateToDiskReason.RECONNECT;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.FREEZE_STATE;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.PERIODIC_SNAPSHOT;
+import static com.swirlds.platform.state.snapshot.StateToDiskReason.RECONNECT;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.StateToDiskReason;
+import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,10 +50,10 @@ public class DefaultSavedStateController implements SavedStateController {
     /**
      * Constructor
      *
-     * @param stateConfig the state config
+     * @param platformContext the platform context
      */
-    public DefaultSavedStateController(@NonNull final StateConfig stateConfig) {
-        this.stateConfig = Objects.requireNonNull(stateConfig);
+    public DefaultSavedStateController(@NonNull final PlatformContext platformContext) {
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
     }
 
     /**

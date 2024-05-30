@@ -106,14 +106,19 @@ public class CustomRoyaltyFeeAssessor {
                 }
             }
         }
+        // We check this outside the for loop above because a sender should only be marked as paid royalty, after
+        // assessing
+        // all the fees for the given token. If a sender is sending multiple NFTs of the same token, royalty fee
+        // should be paid only once.
         // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-        // paid it for this token. This should be added only once per token transfer, so this is
-        // added here.
+        // paid it for this token.
+
         if (exchangedValue.isEmpty()) {
             // Receiver pays fallback fees
             result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
         } else {
-            // Sender effectively pays percent royalties
+            // Sender effectively pays percent royalties. Here we don't check isPayerExempt because
+            // the sender could be exempt for one fee on token, but not other fees(if any) on the same token.
             result.addToRoyaltiesPaid(Pair.of(sender, tokenId));
         }
     }

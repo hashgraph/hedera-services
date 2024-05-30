@@ -123,48 +123,6 @@ public class ReadableFreezeUpgradeActions {
         catchUpOnMissedUpgradePrep();
     }
 
-    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
-        final var isUpgradePrepared = freezeStore.updateFileHash() != null;
-        if (isFreezeScheduled(platformState) && isUpgradePrepared) {
-            final var freezeTime = platformState.getFreezeTime();
-            writeMarker(
-                    FREEZE_SCHEDULED_MARKER,
-                    Timestamp.newBuilder()
-                            .nanos(freezeTime.getNano())
-                            .seconds(freezeTime.getEpochSecond())
-                            .build());
-        }
-        /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
-        But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
-        us from correctly (1) catching up on a missed PREPARE_UPGRADE; or (2) handling an
-        imminent PREPARE_UPGRADE. */
-    }
-
-    private void catchUpOnMissedUpgradePrep() {
-        if (freezeStore.updateFileHash() == null) {
-            return;
-        }
-
-        final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
-        try {
-            final var curSpecialFileContents = upgradeFileStore.getFull(toPbj(upgradeFileId));
-            if (!isPreparedFileHashValidGiven(
-                    noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
-                    freezeStore.updateFileHash().toByteArray())) {
-                log.error(
-                        "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
-                        () -> readableId(upgradeFileId));
-                log.error(MANUAL_REMEDIATION_ALERT);
-                return;
-            }
-            extractSoftwareUpgrade(curSpecialFileContents).join();
-        } catch (final IOException e) {
-            log.error(
-                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
-            log.error(MANUAL_REMEDIATION_ALERT);
-        }
-    }
-
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
         return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
     }
@@ -217,6 +175,48 @@ public class ReadableFreezeUpgradeActions {
             // of marker files to determine whether to proceed with the upgrade
             // if second marker is present, that means the zip file was successfully extracted
             log.error("Failed to unzip archive for NMT consumption", e);
+            log.error(MANUAL_REMEDIATION_ALERT);
+        }
+    }
+
+    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
+        final var isUpgradePrepared = freezeStore.updateFileHash() != null;
+        if (isFreezeScheduled(platformState) && isUpgradePrepared) {
+            final var freezeTime = platformState.getFreezeTime();
+            writeMarker(
+                    FREEZE_SCHEDULED_MARKER,
+                    Timestamp.newBuilder()
+                            .nanos(freezeTime.getNano())
+                            .seconds(freezeTime.getEpochSecond())
+                            .build());
+        }
+        /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
+        But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
+        us from correctly (1) catching up on a missed PREPARE_UPGRADE; or (2) handling an
+        imminent PREPARE_UPGRADE. */
+    }
+
+    private void catchUpOnMissedUpgradePrep() {
+        if (freezeStore.updateFileHash() == null) {
+            return;
+        }
+
+        final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
+        try {
+            final var curSpecialFileContents = upgradeFileStore.getFull(toPbj(upgradeFileId));
+            if (!isPreparedFileHashValidGiven(
+                    noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
+                    freezeStore.updateFileHash().toByteArray())) {
+                log.error(
+                        "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
+                        () -> readableId(upgradeFileId));
+                log.error(MANUAL_REMEDIATION_ALERT);
+                return;
+            }
+            extractSoftwareUpgrade(curSpecialFileContents).join();
+        } catch (final IOException e) {
+            log.error(
+                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }

@@ -34,7 +34,6 @@ public class HapiSpecWaitUntil extends UtilOp {
     private long timeMs;
     private long stakePeriodMins;
     private long targetTimeOffsetSecs;
-    private boolean startOfNextStakingPeriod;
     private long adhocPeriodMs;
     private WaitUntilTarget waitUntilTarget;
 
@@ -69,7 +68,6 @@ public class HapiSpecWaitUntil extends UtilOp {
     private HapiSpecWaitUntil(final long stakePeriodMins, final long targetTimeOffsetSecs) {
         this.stakePeriodMins = stakePeriodMins;
         this.targetTimeOffsetSecs = targetTimeOffsetSecs;
-        this.startOfNextStakingPeriod = true;
         this.waitUntilTarget = WaitUntilTarget.START_OF_NEXT_STAKING_PERIOD;
     }
 
