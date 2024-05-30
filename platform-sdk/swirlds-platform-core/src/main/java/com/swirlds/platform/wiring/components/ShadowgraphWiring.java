@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.wiring.components;
 
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.input.InputWire;
+import com.hedera.wiring.schedulers.TaskScheduler;
+import com.hedera.wiring.wires.input.BindableInputWire;
+import com.hedera.wiring.wires.input.InputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;

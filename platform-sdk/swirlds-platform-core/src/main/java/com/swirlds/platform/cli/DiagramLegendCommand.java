@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.cli;
 
+import com.hedera.wiring.model.WiringModel;
+import com.hedera.wiring.model.WiringModelBuilder;
+import com.hedera.wiring.model.diagram.ModelEdgeSubstitution;
+import com.hedera.wiring.model.diagram.ModelGroup;
+import com.hedera.wiring.model.diagram.ModelManualLink;
+import com.hedera.wiring.schedulers.TaskScheduler;
+import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
+import com.hedera.wiring.wires.SolderType;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.diagram.ModelGroup;
-import com.swirlds.common.wiring.model.diagram.ModelManualLink;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.hedera.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;

@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
-import com.swirlds.common.wiring.component.InputWireLabel;
+import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

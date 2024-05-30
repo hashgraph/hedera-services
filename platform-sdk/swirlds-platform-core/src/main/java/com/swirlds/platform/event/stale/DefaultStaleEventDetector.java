@@ -18,9 +18,9 @@ package com.swirlds.platform.event.stale;
 
 import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
+import com.hedera.wiring.transformers.RoutableData;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;

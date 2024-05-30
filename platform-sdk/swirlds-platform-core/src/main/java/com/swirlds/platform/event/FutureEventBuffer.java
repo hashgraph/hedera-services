@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
+import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;

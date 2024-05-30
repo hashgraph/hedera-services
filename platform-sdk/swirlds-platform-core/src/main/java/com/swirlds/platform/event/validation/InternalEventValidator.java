@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
+import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

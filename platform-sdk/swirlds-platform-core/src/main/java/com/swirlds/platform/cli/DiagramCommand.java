@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.cli;
 
+import com.hedera.wiring.model.WiringModel;
+import com.hedera.wiring.model.WiringModelBuilder;
+import com.hedera.wiring.model.diagram.ModelEdgeSubstitution;
+import com.hedera.wiring.model.diagram.ModelGroup;
+import com.hedera.wiring.model.diagram.ModelManualLink;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.diagram.ModelGroup;
-import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;

@@ -21,10 +21,10 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.NoInput;

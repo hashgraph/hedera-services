@@ -18,6 +18,9 @@ package com.swirlds.platform.gossip;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
+import com.hedera.wiring.model.WiringModel;
+import com.hedera.wiring.wires.input.BindableInputWire;
+import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -30,9 +33,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;

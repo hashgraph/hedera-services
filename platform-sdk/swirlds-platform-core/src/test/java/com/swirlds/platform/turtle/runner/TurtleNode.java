@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import com.hedera.wiring.model.DeterministicWiringModel;
+import com.hedera.wiring.model.WiringModelBuilder;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.DeterministicWiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.builder.PlatformBuilder;

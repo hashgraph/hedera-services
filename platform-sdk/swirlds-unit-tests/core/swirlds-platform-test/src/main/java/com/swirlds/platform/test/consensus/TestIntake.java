@@ -16,19 +16,19 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.wiring.wires.SolderType.INJECT;
+import static com.hedera.wiring.wires.SolderType.INJECT;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
+import com.hedera.wiring.component.ComponentWiring;
+import com.hedera.wiring.model.WiringModel;
+import com.hedera.wiring.model.WiringModelBuilder;
+import com.hedera.wiring.schedulers.TaskScheduler;
+import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
+import com.hedera.wiring.wires.output.OutputWire;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.consensus.ConsensusEngine;

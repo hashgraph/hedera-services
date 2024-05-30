@@ -17,6 +17,8 @@
 package com.swirlds.platform.config;
 
 import com.google.auto.service.AutoService;
+import com.hedera.wiring.WiringConfig;
+import com.hedera.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.config.BasicCommonConfig;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -25,8 +27,6 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
-import com.swirlds.common.wiring.WiringConfig;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;

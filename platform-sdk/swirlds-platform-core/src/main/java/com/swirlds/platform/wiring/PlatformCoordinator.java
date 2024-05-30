@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.wiring;
 
-import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.transformers.RoutableData;
+import com.hedera.wiring.component.ComponentWiring;
+import com.hedera.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.branching.BranchDetector;

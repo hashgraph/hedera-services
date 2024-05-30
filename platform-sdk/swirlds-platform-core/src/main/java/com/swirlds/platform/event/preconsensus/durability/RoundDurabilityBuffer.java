@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.preconsensus.durability;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
+import com.hedera.wiring.component.InputWireLabel;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

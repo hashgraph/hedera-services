@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.wiring.components;
 
+import com.hedera.wiring.schedulers.TaskScheduler;
+import com.hedera.wiring.wires.input.BindableInputWire;
+import com.hedera.wiring.wires.input.InputWire;
+import com.hedera.wiring.wires.output.OutputWire;
+import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.NoInput;

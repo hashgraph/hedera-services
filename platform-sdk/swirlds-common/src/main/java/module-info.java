@@ -61,16 +61,6 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
-    exports com.swirlds.common.wiring;
-    exports com.swirlds.common.wiring.component;
-    exports com.swirlds.common.wiring.counters;
-    exports com.swirlds.common.wiring.model;
-    exports com.swirlds.common.wiring.schedulers;
-    exports com.swirlds.common.wiring.schedulers.builders;
-    exports com.swirlds.common.wiring.transformers;
-    exports com.swirlds.common.wiring.wires;
-    exports com.swirlds.common.wiring.wires.input;
-    exports com.swirlds.common.wiring.wires.output;
 
     /* Targeted exports */
     exports com.swirlds.common.crypto.internal to
@@ -138,9 +128,7 @@ module com.swirlds.common {
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
-    exports com.swirlds.common.wiring.model.diagram;
     exports com.swirlds.common.concurrent;
-    exports com.swirlds.common.wiring.schedulers.internal;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

@@ -3,6 +3,7 @@ module com.hedera.wiring {
     exports com.hedera.wiring.component;
     exports com.hedera.wiring.counters;
     exports com.hedera.wiring.model;
+    exports com.hedera.wiring.model.diagram;
     exports com.hedera.wiring.schedulers;
     exports com.hedera.wiring.schedulers.builders;
     exports com.hedera.wiring.transformers;

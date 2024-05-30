@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
+import com.hedera.wiring.model.WiringModel;
+import com.hedera.wiring.wires.input.BindableInputWire;
+import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;

@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.builder;
 
+import com.hedera.wiring.model.WiringModel;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;

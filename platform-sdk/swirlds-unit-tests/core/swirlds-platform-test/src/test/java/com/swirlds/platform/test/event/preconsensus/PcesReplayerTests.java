@@ -23,9 +23,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.wiring.wires.output.StandardOutputWire;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.state.signed.ReservedSignedState;

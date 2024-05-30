@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.wiring;
 
-import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.hedera.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
 
+import com.hedera.wiring.model.WiringModel;
+import com.hedera.wiring.schedulers.TaskScheduler;
+import com.hedera.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.wiring.components.StateAndRound;
