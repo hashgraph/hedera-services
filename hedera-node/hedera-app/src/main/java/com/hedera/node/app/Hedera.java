@@ -243,6 +243,11 @@ public final class Hedera implements SwirldMain {
 
         // Create a records generator for any synthetic records that need to be CREATED
         this.recordsGenerator = new SyntheticRecordsGenerator();
+        // Create all the service implementations
+        // This is done so early and not right before we create OrderedServiceMigrator because we need to register
+        // the services with the ConstructableRegistry before we can call OrderedServiceMigrator
+        logger.info("Registering services");
+        registerServices(servicesRegistry);
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
         // constructor to make sure it has the config and other info it needs to be created correctly.
@@ -469,10 +474,6 @@ public final class Hedera implements SwirldMain {
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
-
-        // Create all the service implementations
-        logger.info("Registering services");
-        registerServices(servicesRegistry);
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
