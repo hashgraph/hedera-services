@@ -21,7 +21,6 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice
 import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.event.GossipEvent;
