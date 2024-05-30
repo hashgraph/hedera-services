@@ -47,7 +47,15 @@ public class CryptoTransferHelper {
             final TokenID tokenId, final AccountID fromAccount, final long amount, final AccountID toAccount) {
         return TokenTransferList.newBuilder()
                 .token(tokenId)
-                .transfers(debit(fromAccount, amount), credit(toAccount, amount))
+                .transfers(
+                        AccountAmount.newBuilder()
+                                .accountID(fromAccount)
+                                .amount(-amount)
+                                .build(),
+                        AccountAmount.newBuilder()
+                                .accountID(toAccount)
+                                .amount(amount)
+                                .build())
                 .build();
     }
 
@@ -94,27 +102,5 @@ public class CryptoTransferHelper {
                 .senderAccountID(from)
                 .receiverAccountID(to)
                 .build();
-    }
-
-    /**
-     * Creates an {@link AccountAmount} representing a debit from an account.
-     *
-     * @param account the account from which funds will be debited
-     * @param amount  the amount to debit
-     * @return AccountAmount specifying the account and the negative amount debited
-     */
-    public static AccountAmount debit(@NonNull final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().accountID(account).amount(-amount).build();
-    }
-
-    /**
-     * Creates an {@link AccountAmount} representing a credit to an account.
-     *
-     * @param account the account to which funds will be credited
-     * @param amount  the amount to credit
-     * @return AccountAmount specifying the account and the positive amount credited
-     */
-    public static AccountAmount credit(@NonNull final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 }
