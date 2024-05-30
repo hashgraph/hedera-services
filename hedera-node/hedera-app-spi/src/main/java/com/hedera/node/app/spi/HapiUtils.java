@@ -339,7 +339,7 @@ public class HapiUtils {
     }
 
     private static int parsedIntOrZero(@Nullable final String s) {
-        if (s == null) {
+        if (s == null || s.isBlank()) {
             return 0;
         } else {
             try {
