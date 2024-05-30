@@ -51,12 +51,12 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.resubmitter.DefaultTransactionResubmitter;
+import com.swirlds.platform.event.resubmitter.TransactionResubmitter;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
-import com.swirlds.platform.event.stale.DefaultTransactionResubmitter;
 import com.swirlds.platform.event.stale.StaleEventDetector;
-import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
@@ -961,7 +961,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public TransactionResubmitter buildTransactionResubmitter() {
         if (transactionResubmitter == null) {
-            transactionResubmitter = new DefaultTransactionResubmitter();
+            transactionResubmitter = new DefaultTransactionResubmitter(blocks.platformContext());
         }
         return transactionResubmitter;
     }
