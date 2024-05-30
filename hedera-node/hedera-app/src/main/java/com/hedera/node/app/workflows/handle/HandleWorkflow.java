@@ -490,12 +490,11 @@ public class HandleWorkflow {
 
         // Start the user transaction
         if (!usingBlockStreams()) {
-            blockRecordManager.startUserTransaction(consensusNow, state); // Only implemented for v6.
+            blockRecordManager.startUserTransaction(consensusNow, state, platformState); // Only implemented for v6.
         }
 
         blockRecordManager.processUserTransaction(consensusNow, state, platformTxn, () -> {
-            final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow,
-                    state, platformState);
+            final boolean switchedBlocks = isConsTimeFirstTransactionInBlock(consensusNow);
 
             // Setup helpers
             final var configuration = configProvider.getConfiguration();
@@ -811,7 +810,7 @@ public class HandleWorkflow {
                     if (baseData.transaction() == null) {
                         // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                         logger.error("Failed to parse transaction from creator: {}", creator);
-                        return;
+                        return null;
                     }
                     functionality = baseData.functionality();
                     txBody = baseData.txBody();
