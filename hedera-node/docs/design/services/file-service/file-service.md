@@ -1,8 +1,8 @@
 # File Service
 
-The File Service is a service that handles all 
-transactions and queries related to file management. It provides a set of operations 
-that allow users to create, update, append, and delete files. It also 
+The File Service is a service (```FileService extends Service```) that handles all 
+transactions and queries related to the storage and retrieval of opaque binary data. 
+It provides a set of operations that allow transactions to create, update, append, and delete files. It also 
 provides a way to retrieve file contents and information.
 
 ### Table of Contents
@@ -27,28 +27,26 @@ provides a way to retrieve file contents and information.
   - [FileSystemUndeleteHandler](#FileSystemUndeleteHandler)
   - [FileGetContentsHandler](#FileGetContentsHandler)
   - [FileGetInfoHandler](#FileGetInfoHandler)
-- [Readable and Writable File Store's](#Readable-and-Writable-File-Stores)
 - [Network Response Messages](#Network-Response-Messages)
 - [File Service Schema Implementation](#File-Service-Schema-Implementation)
 
 ## Architecture Overview
 
-The File Service is designed to handle all transactions and queries related to file management.
+The File Service is designed to handle transactions and queries related to file management.
 It provides a set of operations that allow users to create, update, append, and delete files.
 The main components of the File Service are:
 
-1. `Handlers`: These are responsible for executing the transactions and queries. Each type of transaction or query has its own handler. Handlers interact with the File Stores to perform the required operations.
+1. `Protobuf Definitions`: These are used to define the structure of our transactions and queries. They ensure that the data sent between the client and the server is structured and typed.
 
-2. `File Stores`: These are interfaces that define methods for interacting with the file data. There are two types of file stores: Readable and Writable. The Readable File Store is used when retrieving file contents or information, while the Writable File Store is used when creating, updating, or deleting files.
+2. `Handlers`: These are responsible for executing the transactions and queries
+Each type of transaction or query has its own handler. 
+Handlers interact with the File Stores to perform the required operations.
 
-3. `Protobuf Definitions`: These are used to define the structure of our transactions and queries. They ensure that the data sent between the client and the server is structured and typed.
+3. `File Stores`: These are interfaces that define methods for interacting with the file data. There are two types of file stores: Readable and Writable. The Readable File Store is used when retrieving file contents or information, while the Writable File Store is used when creating, updating, or deleting files.
 
 4. `FileServiceInjectionModule`: This is a Dagger module that provides dependency injection for the File Service. It ensures that the correct implementations of interfaces are used at runtime.
 
 The File Service is designed to be stateless, meaning that it does not store any client-specific data between requests.
-
-### UML Diagram
-
 
 ## Transaction and Queries for the File Service
 Transactions and queries are the primary means of interacting with the 
@@ -57,13 +55,10 @@ such as creating a new file or retrieving the contents of an existing file.
 
 ## Protobuf Definitions
 Protobuf, or Protocol Buffers, is a method of serializing structured
-data. We use it to define the structure of our transactions and queries.
+data. The File Service uses it to define the structure of our transactions and queries.
 Here are some of the Protobuf definitions used in the File Service:
 
-```protobuf
-```
-
-### Transaction Body's
+### Transaction Body's & Queries
 These are the specific types of transactions that can be performed on files. 
 Each transaction body corresponds to a specific operation, 
 such as creating a new file (`FileCreateTransactionBody`), 
@@ -152,10 +147,11 @@ The `FileGetInfoQuery` message includes the following fields:
 
 ## Handlers
 
-Handlers are responsible for executing the transactions and queries. 
+Handlers are responsible for executing the transactions and queries.
 Each type of transaction or query has its own handler. 
-All the Handlers implement the ```TransactionHandler``` interface and provide implementations of
-pureChecks, preHandle, handle, and calculateFees methods.
+All the Handlers either implement the ```TransactionHandler``` interface and provide implementations of
+pureChecks, preHandle, handle, and calculateFees methods; or ultimately implement the ```QueryHandler``` interface
+through their inheritance structure. If the latter, they provide an implementation of the ```findResponse``` method.
 
 ### pureChecks
 The ```pureChecks``` method is responsible for performing checks that are independent 
@@ -219,11 +215,6 @@ The `FileGetContentsHandler` is responsible for handling queries that retrieve t
 ### FileGetInfoHandler
 
 The `FileGetInfoHandler` is responsible for handling queries that retrieve information about a file. The handler validates the query, checks the necessary permissions, retrieves the file information from the Readable File Store, and returns the information in the response message. The information includes the file's size, expiration time, and keys. If the file does not exist or the client does not have the necessary permissions, an error is returned.
-
-## Readable and Writable File Store's
-These are the two types of file stores used by the File Service. 
-The readable file store is used when retrieving file contents or information. 
-The writable file store is used when creating, updating, or deleting files.
 
 ## Network Response Messages
 Specific network response messages (```ResponseCodeEnum```) are wrapped by ```HandleException``` and the codes relevant to the File
