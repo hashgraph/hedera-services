@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.log4j.appender;
+package com.swirlds.logging.log4j.factory;
 
 import com.swirlds.logging.api.extensions.event.LogMessage;
 import edu.umd.cs.findbugs.annotations.NonNull;
