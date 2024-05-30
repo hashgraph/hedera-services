@@ -30,7 +30,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkle.test.fixtures.FakeVirtualMap;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
@@ -43,7 +42,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -130,6 +128,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.8")})
     @DisplayName("Teacher and Learner that are the same size but completely different")
+    @Tag(TIMING_SENSITIVE)
     void equalFullTeacherFullLearner() {
         teacherMap.put(A_KEY, AARDVARK);
         teacherMap.put(B_KEY, BEAR);
@@ -277,23 +276,6 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
         findBrokenChildren(learnerMap);
     }
 
-    /**
-     * Configure reconnect so that failed reconnect attempts abort very quickly.
-     */
-    private void configureReconnectToFailQuickly() {
-        new TestConfigBuilder()
-                .withValue("reconnect.active", "true")
-                .withValue("reconnect.reconnectWindowSeconds", "0")
-                .withValue("reconnect.fallenBehindThreshold", "0")
-                // This is important! A low value will cause a failed reconnect to finish more quicly.
-                .withValue("reconnect.asyncStreamTimeout", "500ms")
-                .withValue("reconnect.asyncOutputStreamFlush", "10ms")
-                .withValue("reconnect.asyncStreamBufferSize", "1000")
-                .withValue("reconnect.maximumReconnectFailuresBeforeShutdown", "0")
-                .withValue("reconnect.minimumTimeBetweenReconnects", "0s")
-                .getOrCreateConfig();
-    }
-
     private void buildReconnectMaps(final TreePermutation treePermutation) {
         for (int i = treePermutation.teacherStart; i < treePermutation.teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
@@ -307,10 +289,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect On First Operation")
-    @Tag(TIME_CONSUMING)
     void learnerAbortsReconnectOnFirstOperation(final TreePermutation treePermutation) {
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         learnerBuilder.setNumCallsBeforeThrow(0);
@@ -323,11 +302,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect Half Way Through")
     @Tag(TIMING_SENSITIVE)
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
-    @Disabled
     void learnerAbortsReconnectHalfWayThrough(final TreePermutation treePermutation) {
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         learnerBuilder.setNumCallsBeforeThrow((treePermutation.teacherEnd - treePermutation.teacherStart) / 2);
@@ -339,10 +314,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @ParameterizedTest
     @MethodSource("provideSmallTreePermutations")
     @DisplayName("Learner Aborts Reconnect On Last Operation")
-    @Tag(TIME_CONSUMING)
     void learnerAbortsReconnectOnLastOperation(final TreePermutation treePermutation) {
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         learnerBuilder.setNumCallsBeforeThrow(Math.min(treePermutation.teacherEnd, treePermutation.learnerEnd));
@@ -361,7 +333,8 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
 
             imitationMap.setChild(0, map.getChild(0).copy());
 
-            final TeacherTreeView<Long> view = ((VirtualRootNode<?, ?>) map.getChild(1)).buildTeacherView();
+            final TeacherTreeView<Long> view =
+                    ((VirtualRootNode<?, ?>) map.getChild(1)).buildTeacherView(reconnectConfig);
             final TeacherTreeView<Long> badView =
                     new BrokenVirtualMapTeacherView(view, permittedInternals, permittedLeaves);
             final MerkleNode imitationRoot = new FakeVirtualRootNode(badView);
@@ -375,13 +348,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On First Internal")
-    @Tag(TIME_CONSUMING)
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
-    @Disabled
     void teacherAbortsReconnectOnFirstInternal(final TreePermutation treePermutation) {
-
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         final int permittedLeaves = Integer.MAX_VALUE;
@@ -394,11 +361,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On Last Internal")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnLastInternal(final TreePermutation treePermutation) {
-
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         final int permittedLeaves = Integer.MAX_VALUE;
@@ -411,11 +374,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On First Leaf")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnFirstLeaf(final TreePermutation treePermutation) {
-
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         final int permittedLeaves = 0;
@@ -428,11 +387,7 @@ class VirtualMapReconnectTest extends VirtualMapReconnectTestBase {
     @MethodSource("provideSmallTreePermutations")
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect")})
     @DisplayName("Teacher Aborts Reconnect On Last Leaf")
-    @Tag(TIME_CONSUMING)
     void teacherAbortsReconnectOnLastLeaf(final TreePermutation treePermutation) {
-
-        configureReconnectToFailQuickly();
-
         buildReconnectMaps(treePermutation);
 
         final int permittedLeaves = 0;

@@ -37,10 +37,12 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -51,9 +53,13 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class HandleHederaNativeOperations implements HederaNativeOperations {
     private final HandleContext context;
 
+    @Nullable
+    private final Key maybeEthSenderKey;
+
     @Inject
-    public HandleHederaNativeOperations(@NonNull final HandleContext context) {
+    public HandleHederaNativeOperations(@NonNull final HandleContext context, @Nullable final Key maybeEthSenderKey) {
         this.context = requireNonNull(context);
+        this.maybeEthSenderKey = maybeEthSenderKey;
     }
 
     /**
@@ -114,7 +120,8 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                     synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
-            final var lazyCreateFees = context.dispatchComputeFees(synthTxn, context.payer());
+            final var lazyCreateFees =
+                    context.dispatchComputeFees(synthTxn, context.payer(), ComputeDispatchFeesAsTopLevel.NO);
             final var finalizationFees = getLazyCreationFinalizationFees();
             childRecordBuilder.transactionFee(lazyCreateFees.totalFee() + finalizationFees.totalFee());
 
@@ -152,7 +159,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {
         final var to = requireNonNull(getAccount(toEntityId));
-        final var signatureTest = strategy.asSignatureTestIn(context);
+        final var signatureTest = strategy.asSignatureTestIn(context, maybeEthSenderKey);
         if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
             return INVALID_SIGNATURE;
         }
@@ -182,6 +189,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                 CryptoUpdateTransactionBody.newBuilder().key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY));
         final var synthTxn =
                 TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody).build();
-        return context.dispatchComputeFees(synthTxn, context.payer());
+        return context.dispatchComputeFees(synthTxn, context.payer(), ComputeDispatchFeesAsTopLevel.NO);
     }
 }

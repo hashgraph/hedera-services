@@ -53,11 +53,11 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -281,6 +281,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .defaultKycStatus(fungibleToken.accountsKycGrantedByDefault() ? GRANTED : REVOKED)
                 .pauseStatus(fungibleToken.paused() ? PAUSED : UNPAUSED)
                 .customFees(fungibleToken.customFees())
+                .metadata(fungibleToken.metadata())
+                .metadataKey(fungibleToken.metadataKey())
                 .build();
     }
 
@@ -294,6 +296,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey((Key) null)
                 .feeScheduleKey((Key) null)
                 .pauseKey((Key) null)
+                .metadataKey((Key) null)
                 .defaultFreezeStatus(FREEZE_NOT_APPLICABLE)
                 .defaultKycStatus(KYC_NOT_APPLICABLE)
                 .pauseStatus(PAUSE_NOT_APPLICABLE)
@@ -319,6 +322,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey(Key.DEFAULT)
                 .feeScheduleKey(Key.DEFAULT)
                 .pauseKey(Key.DEFAULT)
+                .metadataKey(Key.DEFAULT)
                 .build();
     }
 

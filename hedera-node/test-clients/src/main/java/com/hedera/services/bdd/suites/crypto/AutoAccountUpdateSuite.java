@@ -30,18 +30,18 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -50,10 +50,8 @@ import org.junit.jupiter.api.Tag;
  * to decrease the expiration time of any entity, so we cannot test the behavior of the network when
  * the auto-created account is about to expire.
  */
-@HapiTestSuite
 @Tag(CRYPTO)
-public class AutoAccountUpdateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
+public class AutoAccountUpdateSuite {
     public static final long INITIAL_BALANCE = 1000L;
 
     private static final String PAYER = "payer";
@@ -62,27 +60,8 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     public static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_TXN_3 = "transferTxn3";
 
-    public static void main(String... args) {
-        new AutoAccountUpdateSuite().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(updateKeyOnAutoCreatedAccount(), modifySigRequiredAfterAutoAccountCreation());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec modifySigRequiredAfterAutoAccountCreation() {
+    final Stream<DynamicTest> modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -125,7 +104,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateKeyOnAutoCreatedAccount() {
+    final Stream<DynamicTest> updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
         SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(

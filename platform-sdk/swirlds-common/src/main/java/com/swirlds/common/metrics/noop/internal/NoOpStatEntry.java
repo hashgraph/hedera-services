@@ -21,6 +21,7 @@ import static com.swirlds.metrics.api.Metric.DataType.INT;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -29,13 +30,14 @@ import java.util.function.Supplier;
  */
 public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
 
-    public NoOpStatEntry(final MetricConfig<?, ?> config) {
+    public NoOpStatEntry(final @NonNull MetricConfig<?, ?> config) {
         super(config);
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public DataType getDataType() {
         return INT;
@@ -45,6 +47,7 @@ public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public StatsBuffered getBuffered() {
         return new NoOpStatsBuffered();
     }
@@ -53,6 +56,7 @@ public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Consumer<Double> getReset() {
         return x -> {};
     }
@@ -60,6 +64,7 @@ public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Supplier<Object> getStatsStringSupplier() {
         return () -> "";
@@ -68,6 +73,7 @@ public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Supplier<Object> getResetStatsStringSupplier() {
         return () -> "";

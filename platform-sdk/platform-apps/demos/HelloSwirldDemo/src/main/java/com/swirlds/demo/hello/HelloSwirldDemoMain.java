@@ -33,7 +33,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -79,9 +78,8 @@ public class HelloSwirldDemoMain implements SwirldMain {
 
         this.platform = (SwirldsPlatform) platform;
         this.selfId = id;
-        final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
+        final int winNum = (int) selfId.id();
         this.console = createConsole(platform, winNum, true); // create the window, make it visible
-        GuiModel.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
     }
 
     @Override
@@ -115,7 +113,8 @@ public class HelloSwirldDemoMain implements SwirldMain {
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
         final PlatformStatus newStatus = notification.getNewStatus();
         if (PlatformStatus.ACTIVE.equals(newStatus)) {
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    platform.getAddressBook().getAddress(platform.getSelfId()).getSelfName();
 
             console.out.println("Hello Swirld from " + myName);
 

@@ -65,19 +65,19 @@ public final class SignatureGenerator {
     }
 
     private static byte[] rawEcdsaSigFromAsn1Der(final byte[] derSig) {
-        final var R_LEN_INDEX = 3;
+        final var rLenIndex = 3;
         final var rawBytes = new byte[64];
 
-        final var origRLen = derSig[R_LEN_INDEX] & 0xff;
+        final var origRLen = derSig[rLenIndex] & 0xff;
         int finalRLen = origRLen;
-        int rStart = R_LEN_INDEX + 1;
+        int rStart = rLenIndex + 1;
         while (finalRLen > 32) {
             rStart++;
             finalRLen--;
         }
         System.arraycopy(derSig, rStart, rawBytes, 32 - finalRLen, Math.min(32, origRLen));
 
-        final var sLenPos = R_LEN_INDEX + (derSig[R_LEN_INDEX] & 0xff) + 2;
+        final var sLenPos = rLenIndex + (derSig[rLenIndex] & 0xff) + 2;
 
         final var origSLen = derSig[sLenPos] & 0xff;
         int finalSLen = origSLen;

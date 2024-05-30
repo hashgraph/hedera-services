@@ -98,7 +98,7 @@ class ContractUpdateResourceUsageTest {
     @Test
     void returnsDefaultUsageOnException() throws Exception {
         // when:
-        final FeeData actual = subject.usageGiven(contractUpdateTxn, sigUsage, null);
+        final FeeData actual = subject.usageGiven(contractUpdateTxn, sigUsage, (StateView) null);
 
         // then:
         assertEquals(FeeData.getDefaultInstance(), actual);

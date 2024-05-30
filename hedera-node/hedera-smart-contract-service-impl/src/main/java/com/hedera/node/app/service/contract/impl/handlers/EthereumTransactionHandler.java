@@ -17,18 +17,27 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
@@ -49,9 +58,12 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.math.BigInteger;
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -62,15 +74,18 @@ public class EthereumTransactionHandler implements TransactionHandler {
     private final EthTxSigsCache ethereumSignatures;
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
+    private final GasCalculator gasCalculator;
 
     @Inject
     public EthereumTransactionHandler(
             @NonNull final EthTxSigsCache ethereumSignatures,
             @NonNull final EthereumCallDataHydration callDataHydration,
-            @NonNull final Provider<TransactionComponent.Factory> provider) {
+            @NonNull final Provider<TransactionComponent.Factory> provider,
+            @NonNull final GasCalculator gasCalculator) {
         this.ethereumSignatures = requireNonNull(ethereumSignatures);
         this.callDataHydration = requireNonNull(callDataHydration);
         this.provider = requireNonNull(provider);
+        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     @Override
@@ -81,6 +96,23 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 context.body().ethereumTransactionOrThrow(),
                 context.createStore(ReadableFileStore.class),
                 context.configuration());
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var ethTxData = populateEthTxData(
+                requireNonNull(txn.ethereumTransactionOrThrow().ethereumData()).toByteArray());
+        validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
+        validateTruePreCheck(ethTxData.gasLimit() <= MAX_GAS_LIMIT, MAX_GAS_LIMIT_EXCEEDED);
+        final byte[] callData = ethTxData.hasCallData() ? ethTxData.callData() : new byte[0];
+        final var intrinsicGas =
+                gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
+        validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
+        // FUTURE: This was copied over from IngestChecker.  Investigate if it's still needed.
+        // Do not allow sending HBars to Burn Address
+        if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
+            validateFalsePreCheck(Arrays.equals(ethTxData.to(), new byte[20]), INVALID_SOLIDITY_ADDRESS);
+        }
     }
 
     /**
@@ -108,20 +140,20 @@ public class EthereumTransactionHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context, ETHEREUM_TRANSACTION);
 
-        // Assemble the appropriate top-level record for the result
-        final var ethTxData =
-                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
-
         // Run its in-scope transaction and get the outcome
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
-            outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
+            outcome.addCallDetailsTo(
+                    context.recordBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
         } else {
-            outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class));
+            outcome.addCreateDetailsTo(
+                    context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.YES);
         }
 
         throwIfUnsuccessful(outcome.status());
@@ -148,6 +180,11 @@ public class EthereumTransactionHandler implements TransactionHandler {
         validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
         final var ethTxData = hydratedTx.ethTxData();
         validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
-        return ethereumSignatures.computeIfAbsent(ethTxData);
+        try {
+            return ethereumSignatures.computeIfAbsent(ethTxData);
+        } catch (RuntimeException ignore) {
+            // Ignore and translate any signature computation exception
+            throw new PreCheckException(INVALID_ETHEREUM_TRANSACTION);
+        }
     }
 }

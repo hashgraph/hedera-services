@@ -284,7 +284,7 @@ class RequestBuilderTest {
     @Test
     void assertGetBySolidityIDQuery() {
         var solidityId = "solidityId";
-        var infoQuery = RequestBuilder.getBySolidityIDQuery(solidityId, transaction, responseType);
+        var infoQuery = RequestBuilder.getBySolidityIdQuery(solidityId, transaction, responseType);
 
         assertEquals(solidityId, infoQuery.getGetBySolidityID().getSolidityID());
         assertEquals(responseType, infoQuery.getGetBySolidityID().getHeader().getResponseType());

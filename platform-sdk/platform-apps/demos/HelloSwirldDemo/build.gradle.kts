@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+plugins { id("com.hedera.gradle.application") }
 
 application.mainClass.set("com.swirlds.demo.hello.HelloSwirldDemoMain")

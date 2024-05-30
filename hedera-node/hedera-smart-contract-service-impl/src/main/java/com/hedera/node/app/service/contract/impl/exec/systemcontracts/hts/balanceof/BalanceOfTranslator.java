@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balan
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,7 +30,7 @@ import javax.inject.Singleton;
  * Translates {@code balanceOf} calls to the HTS system contract.
  */
 @Singleton
-public class BalanceOfTranslator extends AbstractHtsCallTranslator {
+public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function BALANCE_OF = new Function("balanceOf(address)", ReturnTypes.INT);
 
     @Inject

@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
+import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 
@@ -39,9 +44,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -60,6 +67,13 @@ public final class FeeManager {
     private record Entry(HederaFunctionality function, SubType subType) {}
 
     private static final long DEFAULT_FEE = 100_000L;
+    /**
+     * A set of operations that we do not expect to find the fee schedule. These include
+     * privileged operations (which are either rejected at ingest or not charged fees at
+     * consensus); and unsupported queries that are never answered.
+     */
+    private static final Set<HederaFunctionality> INAPPLICABLE_OPERATIONS = EnumSet.of(
+            FREEZE, GET_ACCOUNT_DETAILS, TRANSACTION_GET_FAST_RECORD, TOKEN_GET_NFT_INFOS, TOKEN_GET_ACCOUNT_NFT_INFOS);
 
     private static final FeeComponents DEFAULT_FEE_COMPONENTS =
             FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
@@ -115,12 +129,7 @@ public final class FeeManager {
 
         // Populate the map of HederaFunctionality -> FeeData for the current schedule
         this.currentFeeDataMap = new HashMap<>();
-        if (currentSchedule.hasTransactionFeeSchedule()) {
-            populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeScheduleOrThrow());
-        } else {
-            logger.warn("The current fee schedule is missing transaction information, effectively disabling all"
-                    + "transactions.");
-        }
+        populateFeeDataMap(currentFeeDataMap, currentSchedule.transactionFeeSchedule());
 
         // Get the expiration time of the current schedule
         if (currentSchedule.hasExpiryTime()) {
@@ -145,12 +154,7 @@ public final class FeeManager {
         } else {
             // Populate the map of HederaFunctionality -> FeeData for the current schedule
             this.nextFeeDataMap = new HashMap<>();
-            if (nextSchedule.hasTransactionFeeSchedule()) {
-                populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeScheduleOrThrow());
-            } else {
-                logger.warn("The next fee schedule is missing transaction information, effectively disabling all"
-                        + "transactions once it becomes active.");
-            }
+            populateFeeDataMap(nextFeeDataMap, nextSchedule.transactionFeeSchedule());
         }
 
         return SUCCESS;
@@ -230,7 +234,9 @@ public final class FeeManager {
         // Now, lookup the fee data for the transaction type.
         final var result = feeDataMap.get(new Entry(functionality, subType));
         if (result == null) {
-            logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            if (!INAPPLICABLE_OPERATIONS.contains(functionality)) {
+                logger.warn("Using default usage prices to calculate fees for {}!", functionality);
+            }
             return DEFAULT_FEE_DATA;
         }
         return result;
@@ -244,8 +250,8 @@ public final class FeeManager {
     private void populateFeeDataMap(
             @NonNull final Map<Entry, FeeData> feeDataMap, @NonNull final List<TransactionFeeSchedule> feeSchedule) {
         feeSchedule.forEach(t -> {
-            if (t.hasFees()) {
-                for (final var feeData : t.feesOrThrow()) {
+            if (!t.fees().isEmpty()) {
+                for (final var feeData : t.fees()) {
                     feeDataMap.put(new Entry(t.hederaFunctionality(), feeData.subType()), feeData);
                 }
             } else if (t.hasFeeData()) {

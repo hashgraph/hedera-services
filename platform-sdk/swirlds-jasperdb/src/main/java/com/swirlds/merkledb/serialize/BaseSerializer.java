@@ -19,8 +19,6 @@ package com.swirlds.merkledb.serialize;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public interface BaseSerializer<T> {
@@ -98,19 +96,6 @@ public interface BaseSerializer<T> {
     void serialize(@NonNull final T data, @NonNull final WritableSequentialData out);
 
     /**
-     * Serialize a data item including header to the byte buffer returning the size of the data
-     * written. Serialization format must be identical to {@link #deserialize(ByteBuffer, long)}.
-     *
-     * <p>Deprecation note: this method is only used by MerkleDb, when it serializes data to
-     * JDB format. This format will be eventually removed.
-     *
-     * @param data The data item to serialize
-     * @param buffer Output buffer to write to
-     */
-    @Deprecated
-    void serialize(T data, ByteBuffer buffer) throws IOException;
-
-    /**
      * Deserialize a data item from a buffer where it was previously written using {@link
      * #serialize(Object, WritableSequentialData)} method.
      *
@@ -118,17 +103,4 @@ public interface BaseSerializer<T> {
      * @return Deserialized data item
      */
     T deserialize(@NonNull final ReadableSequentialData in);
-
-    /**
-     * Deserialize a data item from a byte buffer, that was written with given data version.
-     *
-     * <p>Deprecation note: this method is only used by MerkleDb, when it deserializes data
-     * from JDB format. This format will be eventually removed.
-     *
-     * @param buffer The buffer to read from containing the data item including its header
-     * @param dataVersion The serialization version the data item was written with
-     * @return Deserialized data item
-     */
-    @Deprecated
-    T deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 }

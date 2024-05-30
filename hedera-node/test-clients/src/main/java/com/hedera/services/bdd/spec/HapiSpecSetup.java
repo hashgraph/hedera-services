@@ -82,6 +82,10 @@ public class HapiSpecSetup {
 
     private HapiPropertySource props;
 
+    public static HapiSpecSetup setupFrom(Object... objs) {
+        return new HapiSpecSetup(inPriorityOrder(asSources(objs)));
+    }
+
     public enum NodeSelection {
         FIXED,
         RANDOM
@@ -420,7 +424,7 @@ public class HapiSpecSetup {
         return props.get("exchange.rates.controlAccount.name");
     }
 
-    public HapiSpec.SpecStatus expectedFinalStatus() {
+    final HapiSpec.SpecStatus expectedFinalStatus() {
         return props.getSpecStatus("expected.final.status");
     }
 
@@ -454,6 +458,14 @@ public class HapiSpecSetup {
 
     public long fixedFee() {
         return props.getLong("fees.fixedOffer");
+    }
+
+    public String softwareUpdateAdminName() {
+        return props.get("softwareUpdate.admin.name");
+    }
+
+    public AccountID softwareUpdateAdminId() {
+        return props.getAccount("softwareUpdate.admin.id");
     }
 
     public String freezeAdminName() {

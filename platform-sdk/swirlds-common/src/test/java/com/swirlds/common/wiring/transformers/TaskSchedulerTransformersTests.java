@@ -75,22 +75,20 @@ class TaskSchedulerTransformersTests {
         splitter.solderTo(wireCIn);
         taskSchedulerA.getOutputWire().solderTo(wireDIn);
 
-        wireAIn.bind(x -> {
-            return List.of(x, x, x);
-        });
+        wireAIn.bind(x -> List.of(x, x, x));
 
         final AtomicInteger countB = new AtomicInteger(0);
-        wireBIn.bind(x -> {
+        wireBIn.bindConsumer(x -> {
             countB.set(hash32(countB.get(), x));
         });
 
         final AtomicInteger countC = new AtomicInteger(0);
-        wireCIn.bind(x -> {
+        wireCIn.bindConsumer(x -> {
             countC.set(hash32(countC.get(), -x));
         });
 
         final AtomicInteger countD = new AtomicInteger(0);
-        wireDIn.bind(x -> {
+        wireDIn.bindConsumer(x -> {
             int product = 1;
             for (final int i : x) {
                 product *= i;
@@ -146,18 +144,18 @@ class TaskSchedulerTransformersTests {
         final OutputWire<Integer> filter =
                 taskSchedulerA.getOutputWire().buildFilter("onlyEven", "onlyEvenInput", x -> x % 2 == 0);
         filter.solderTo(inC);
-        filter.solderTo("lambda", x -> countLambda.set(hash32(countLambda.get(), x)));
+        filter.solderTo("lambda", "lambda input", x -> countLambda.set(hash32(countLambda.get(), x)));
 
         inA.bind(x -> {
             countA.set(hash32(countA.get(), x));
             return x;
         });
 
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             countB.set(hash32(countB.get(), x));
         });
 
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             countC.set(hash32(countC.get(), x));
         });
 
@@ -222,18 +220,18 @@ class TaskSchedulerTransformersTests {
         });
 
         final AtomicInteger countB = new AtomicInteger(0);
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             final int invert = x.invert() ? -1 : 1;
             countB.set(hash32(countB.get(), x.value() * invert));
         });
 
         final AtomicInteger countC = new AtomicInteger(0);
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             countC.set(hash32(countC.get(), x));
         });
 
         final AtomicInteger countD = new AtomicInteger(0);
-        inD.bind(x -> {
+        inD.bindConsumer(x -> {
             countD.set(hash32(countD.get(), x ? 1 : 0));
         });
 
@@ -301,18 +299,18 @@ class TaskSchedulerTransformersTests {
         });
 
         final AtomicInteger countB = new AtomicInteger(0);
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             final int invert = x.invert() ? -1 : 1;
             countB.set(hash32(countB.get(), x.value() * invert));
         });
 
         final AtomicInteger countC = new AtomicInteger(0);
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             countC.set(hash32(countC.get(), x));
         });
 
         final AtomicInteger countD = new AtomicInteger(0);
-        inD.bind(x -> {
+        inD.bindConsumer(x -> {
             countD.set(hash32(countD.get(), x ? 1 : 0));
         });
 
@@ -403,7 +401,7 @@ class TaskSchedulerTransformersTests {
         final BindableInputWire<FooBar, FooBar> inA = taskSchedulerA.buildInputWire("A in");
         final OutputWire<FooBar> outA = taskSchedulerA.getOutputWire();
         final OutputWire<FooBar> outAReserved = outA.buildAdvancedTransformer(new AdvancedTransformationHelper<>(
-                "reserve FooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
+                "reserveFooBar", FooBar::copyAndReserve, FooBar::release, FooBar::release));
 
         final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("B")
                 .withUncaughtExceptionHandler(exceptionHandler)
@@ -443,31 +441,33 @@ class TaskSchedulerTransformersTests {
         });
 
         final AtomicInteger countB = new AtomicInteger();
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countB.getAndIncrement();
             x.release();
         });
 
         final AtomicInteger countC = new AtomicInteger();
-        inC.bind(x -> {
+        inC.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countC.getAndIncrement();
             x.release();
         });
 
         final AtomicInteger countD = new AtomicInteger();
-        inD.bind(x -> {
+        inD.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countD.getAndIncrement();
             x.release();
         });
         final AtomicInteger countE = new AtomicInteger();
-        inE.bind(x -> {
+        inE.bindConsumer(x -> {
             assertTrue(x.getReferenceCount() > 0);
             countE.getAndIncrement();
             x.release();
         });
+
+        model.start();
 
         final List<FooBar> fooBars = new ArrayList<>(100);
         for (int i = 0; i < 100; i++) {
@@ -512,8 +512,8 @@ class TaskSchedulerTransformersTests {
      *                      forwarded to all destinations. The original data is passed to this method. Ignored if null.
      * @param outputCleanup an optional method that is called on output data if it is rejected by a destination. This is
      *                      possible if offer soldering is used and the destination declines to take the data.
-     * @param <A>     the input type of the transformer
-     * @param <B>     the output type of the transformer
+     * @param <A>           the input type of the transformer
+     * @param <B>           the output type of the transformer
      */
     private record AdvancedTransformationHelper<A, B>(
             @NonNull String name,
@@ -540,8 +540,14 @@ class TaskSchedulerTransformersTests {
 
         @NonNull
         @Override
-        public String getName() {
+        public String getTransformerName() {
             return name;
+        }
+
+        @NonNull
+        @Override
+        public String getTransformerInputName() {
+            return "transformer input";
         }
     }
 }

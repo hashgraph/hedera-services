@@ -41,6 +41,7 @@ public interface SpeedometerMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.SPEEDOMETER;
@@ -49,6 +50,7 @@ public interface SpeedometerMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.FLOAT;
@@ -57,6 +59,7 @@ public interface SpeedometerMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE, MAX, MIN, STD_DEV);
     }
@@ -64,8 +67,9 @@ public interface SpeedometerMetric extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    Double get(final ValueType valueType);
+    Double get(@NonNull final ValueType valueType);
 
     /**
      * Getter of the {@code halfLife}
@@ -150,6 +154,7 @@ public interface SpeedometerMetric extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public SpeedometerMetric.Config withDescription(@NonNull final String description) {
             return new SpeedometerMetric.Config(
@@ -165,6 +170,7 @@ public interface SpeedometerMetric extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public SpeedometerMetric.Config withUnit(@NonNull final String unit) {
             return new SpeedometerMetric.Config(
@@ -232,6 +238,7 @@ public interface SpeedometerMetric extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<SpeedometerMetric> getResultClass() {
             return SpeedometerMetric.class;

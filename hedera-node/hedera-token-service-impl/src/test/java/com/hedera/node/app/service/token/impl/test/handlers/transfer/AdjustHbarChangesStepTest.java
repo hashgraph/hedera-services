@@ -49,6 +49,11 @@ class AdjustHbarChangesStepTest extends StepsBase {
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
+        // balances of two accounts
+        writableAccountStore.put(
+                hbarReceiverAccount.copyBuilder().tinybarBalance(10000L).build());
+        writableAccountStore.put(
+                tokenReceiverAccount.copyBuilder().tinybarBalance(10000L).build());
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
@@ -64,8 +69,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep = new AdjustHbarChangesStep(replacedOp, payerId);
 
-        final var senderAccount = writableAccountStore.get(ownerId);
-        final var receiverAccount = writableAccountStore.get(receiver);
+        final var senderAccount = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccount = writableAccountStore.getAliasedAccountById(receiver);
 
         assertThat(senderAccount.tinybarBalance()).isEqualTo(10000L);
         assertThat(receiverAccount.tinybarBalance()).isEqualTo(10000L);
@@ -73,8 +78,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
         adjustHbarChangesStep.doIn(transferContext);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
 
         assertThat(senderAccountAfter.tinybarBalance()).isEqualTo(senderAccount.tinybarBalance() - 1000);
         assertThat(receiverAccountAfter.tinybarBalance()).isEqualTo(receiverAccount.tinybarBalance() + 1000);
@@ -93,8 +98,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
         adjustHbarChangesStep =
                 new AdjustHbarChangesStep(replacedOp, txn.transactionIDOrThrow().accountIDOrThrow());
 
-        final var senderAccount = writableAccountStore.get(ownerId);
-        final var receiverAccount = writableAccountStore.get(receiver);
+        final var senderAccount = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccount = writableAccountStore.getAliasedAccountById(receiver);
 
         assertThat(senderAccount.tinybarBalance()).isEqualTo(10000L);
         assertThat(receiverAccount.tinybarBalance()).isEqualTo(10000L);
@@ -105,8 +110,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
         adjustHbarChangesStep.doIn(transferContext);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
 
         assertThat(senderAccountAfter.tinybarBalance()).isEqualTo(senderAccount.tinybarBalance() - 1000);
         assertThat(receiverAccountAfter.tinybarBalance()).isEqualTo(receiverAccount.tinybarBalance() + 1000);
@@ -133,8 +138,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
         adjustHbarChangesStep =
                 new AdjustHbarChangesStep(replacedOp, txn.transactionIDOrThrow().accountIDOrThrow());
 
-        final var senderAccount = writableAccountStore.get(ownerId);
-        final var receiverAccount = writableAccountStore.get(receiver);
+        final var senderAccount = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccount = writableAccountStore.getAliasedAccountById(receiver);
 
         assertThat(senderAccount.tinybarBalance()).isEqualTo(10000L);
         assertThat(receiverAccount.tinybarBalance()).isEqualTo(10000L);
@@ -163,8 +168,8 @@ class AdjustHbarChangesStepTest extends StepsBase {
         adjustHbarChangesStep =
                 new AdjustHbarChangesStep(replacedOp, txn.transactionIDOrThrow().accountIDOrThrow());
 
-        final var senderAccount = writableAccountStore.get(ownerId);
-        final var receiverAccount = writableAccountStore.get(receiver);
+        final var senderAccount = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccount = writableAccountStore.getAliasedAccountById(receiver);
 
         assertThat(senderAccount.tinybarBalance()).isEqualTo(10000L);
         assertThat(receiverAccount.tinybarBalance()).isEqualTo(10000L);

@@ -76,26 +76,18 @@ public class LoggerImpl implements Logger {
      * @param marker           the initial marker of the logger (if present)
      * @param context          the initial context of the logger
      * @param logEventConsumer the consumer that is used to consume the log events
-     * @throws NullPointerException if the logEventConsumer is null. For all other use cases fallbacks are implemented
+     * @throws NullPointerException if the logEventFactory logEventConsumer or name is null.
      */
     protected LoggerImpl(
             @NonNull final String name,
             @Nullable final Marker marker,
-            @NonNull final Map<String, String> context,
+            @Nullable final Map<String, String> context,
             @NonNull final LogEventFactory logEventFactory,
             @NonNull final LogEventConsumer logEventConsumer) {
-        if (name == null) {
-            EMERGENCY_LOGGER.logNPE("name");
-            this.name = "";
-        } else {
-            this.name = name;
-        }
+        this.name = Objects.requireNonNull(
+                name, "name must not be null"); // Callers of this method need to make sure this is never possible
         this.marker = marker;
-        if (context == null) {
-            this.context = Collections.emptyMap();
-        } else {
-            this.context = Collections.unmodifiableMap(context);
-        }
+        this.context = (context == null) ? Collections.emptyMap() : Collections.unmodifiableMap(context);
         this.logEventFactory = Objects.requireNonNull(logEventFactory, "logEventFactory must not be null");
         this.logEventConsumer = Objects.requireNonNull(logEventConsumer, "logEventConsumer must not be null");
     }
@@ -208,16 +200,16 @@ public class LoggerImpl implements Logger {
     @Override
     @NonNull
     public Logger withContext(final @NonNull String key, final @Nullable String... values) {
-        if (values == null) {
-            EMERGENCY_LOGGER.logNPE("values");
-            return withContext(key, (String) null);
-        }
         if (key == null) {
             EMERGENCY_LOGGER.logNPE("key");
             return this;
         }
         final Map<String, String> newContext = new HashMap<>(context);
-        newContext.put(key, String.join(",", values));
+        if (values != null) {
+            newContext.put(key, String.join(",", values));
+        } else {
+            newContext.put(key, null);
+        }
 
         return withMarkerAndContext(marker, newContext);
     }

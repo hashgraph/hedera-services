@@ -21,12 +21,14 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.workflows.handle.HandleWorkflow.extraRewardReceivers;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -39,6 +41,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
@@ -52,10 +55,10 @@ import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -64,12 +67,14 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -97,10 +102,13 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -118,6 +126,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final TransactionBody txBody;
     private final HederaFunctionality functionality;
     private final AccountID payer;
+    private AccountID topLevelPayer;
     private final Key payerKey;
     private final NetworkInfo networkInfo;
     private final TransactionCategory category;
@@ -141,13 +150,17 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
     private final ChildRecordFinalizer childRecordFinalizer;
+    private final ParentRecordFinalizer parentRecordFinalizer;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final StoreMetricsService storeMetricsService;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
     private ExpiryValidator expiryValidator;
     private ExchangeRateInfo exchangeRateInfo;
+    private Map<AccountID, Long> dispatchPaidRewards;
+    private PlatformState platformState;
 
     /**
      * Constructs a {@link HandleContextImpl}.
@@ -173,8 +186,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param authorizer The {@link Authorizer} used to authorize the transaction
      * @param solvencyPreCheck The {@link SolvencyPreCheck} used to validate if the account is able to pay the fees
      * @param childRecordFinalizer The {@link ChildRecordFinalizer} used to finalize child records
+     * @param parentRecordFinalizer The {@link ParentRecordFinalizer} used to finalize parent records (if schedule dispatch)
      * @param networkUtilizationManager The {@link NetworkUtilizationManager} used to manage the tracking of backend network throttling
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
+     * @param platformState The {@link PlatformState} of the node
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -200,11 +215,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             @NonNull final Authorizer authorizer,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final PlatformState platformState,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.functionality = requireNonNull(functionality, "functionality must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
+        this.topLevelPayer = requireNonNull(payer, "payer must not be null");
         this.payerKey = payerKey;
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.category = requireNonNull(category, "category must not be null");
@@ -223,14 +242,16 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.childRecordFinalizer = requireNonNull(childRecordFinalizer, "childRecordFinalizer must not be null");
+        this.parentRecordFinalizer = requireNonNull(parentRecordFinalizer, "parentRecordFinalizer must not be null");
         this.networkUtilizationManager =
                 requireNonNull(networkUtilizationManager, "networkUtilization must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
 
+        this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope, configuration, storeMetricsService);
+        this.serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
 
         if (payerKey == null) {
             this.feeCalculatorCreator = ignore -> NoOpFeeCalculator.INSTANCE;
@@ -252,6 +273,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+        this.platformState = requireNonNull(platformState, "platformState must not be null");
     }
 
     private WrappedHederaState current() {
@@ -343,7 +365,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long newEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
@@ -352,7 +375,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      */
     @Override
     public long peekAtNewEntityNum() {
-        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 
@@ -416,7 +440,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public boolean isSuperUser() {
-        return authorizer.isSuperUser(payer());
+        return authorizer.isSuperUser(topLevelPayer);
     }
 
     @Override
@@ -480,7 +504,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     public @NonNull Fees dispatchComputeFees(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel) {
         var bodyToDispatch = txBody;
         if (!txBody.hasTransactionID()) {
             // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
@@ -502,8 +528,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
             throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
 
-        return dispatcher.dispatchComputeFees(
-                new ChildFeeContextImpl(feeManager, this, bodyToDispatch, syntheticPayerId));
+        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(
+                feeManager,
+                this,
+                bodyToDispatch,
+                syntheticPayerId,
+                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO));
     }
 
     @Override
@@ -560,8 +590,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         requireNonNull(txBody, "txBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
 
-        if (category != TransactionCategory.USER && category != TransactionCategory.CHILD) {
-            throw new IllegalArgumentException("Only user- or child-transactions can dispatch preceding transactions");
+        if (category == PRECEDING) {
+            throw new IllegalArgumentException("A preceding transaction cannot dispatch preceding transactions");
         }
 
         final var precedingRecordBuilder = recordBuilderFactory.get();
@@ -619,6 +649,10 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         dispatchSyntheticTxn(syntheticPayer, txBody, childCategory, childRecordBuilder, callback);
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
+    }
+
+    public @NonNull Map<AccountID, Long> dispatchPaidRewards() {
+        return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }
 
     private void dispatchSyntheticTxn(
@@ -720,8 +754,14 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 authorizer,
                 solvencyPreCheck,
                 childRecordFinalizer,
+                parentRecordFinalizer,
                 networkUtilizationManager,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                platformState,
+                storeMetricsService);
+
+        // in order to work correctly isSuperUser(), we need to keep track of top level payer in child context
+        childContext.setTopLevelPayer(topLevelPayer);
 
         if (dispatchValidationResult != null) {
             childContext.feeAccumulator.chargeFees(
@@ -739,13 +779,35 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 }
             }
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildrenOf(recordBuilder);
+            recordListBuilder.revertChildrenOf(childRecordBuilder);
         }
-        final var finalizeContext = new ChildFinalizeContextImpl(
-                new ReadableStoreFactory(childStack),
-                new WritableStoreFactory(childStack, TokenService.NAME),
-                childRecordBuilder);
-        childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+        // For mono-service fidelity, we need to attach staking rewards for a
+        // triggered transaction to the record of the child here, and not the
+        // "parent" ScheduleCreate or ScheduleSign transaction
+        if (childCategory == SCHEDULED) {
+            final var finalizeContext = new TriggeredFinalizeContext(
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, storeMetricsService),
+                    childRecordBuilder,
+                    consensusNow(),
+                    configuration);
+            parentRecordFinalizer.finalizeParentRecord(
+                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
+            final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
+            if (!paidStakingRewards.isEmpty()) {
+                if (dispatchPaidRewards == null) {
+                    dispatchPaidRewards = new LinkedHashMap<>();
+                }
+                paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
+            }
+        } else {
+            final var finalizeContext = new ChildFinalizeContextImpl(
+                    configuration,
+                    new ReadableStoreFactory(childStack),
+                    new WritableStoreFactory(childStack, TokenService.NAME, configuration, storeMetricsService),
+                    childRecordBuilder);
+            childRecordFinalizer.finalizeChildRecord(finalizeContext, function);
+        }
         childStack.commitFullStack();
         // });
     }
@@ -775,8 +837,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 throw new PreCheckException(DUPLICATE_TRANSACTION);
             }
 
-            // Check the status and solvency of the payer
-            final var serviceFee = dispatchComputeFees(transactionBody, syntheticPayerId)
+            // Check the status and solvency of the payer, using
+            // the same calculation strategy as a top-level transaction
+            // since mono-service did that for scheduled transactions
+            final var serviceFee = dispatchComputeFees(
+                            transactionBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.YES)
                     .copyBuilder()
                     .networkFee(0)
                     .nodeFee(0)
@@ -916,11 +981,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public void reclaimPreviouslyReservedThrottle(int n, HederaFunctionality function) {
-        synchronizedThrottleAccumulator.leakUnusedThrottlePreviouslyReserved(n, function);
-    }
-
-    @Override
     public boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function) {
         return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, userTransactionConsensusTime);
     }
@@ -1007,5 +1067,15 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         public DispatchValidationResult {
             requireNonNull(key);
         }
+    }
+
+    private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
+        this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
+    }
+
+    @Nullable
+    @Override
+    public Instant freezeTime() {
+        return platformState.getFreezeTime();
     }
 }

@@ -27,17 +27,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class ShadowgraphReservation implements AutoCloseable {
 
     /**
-     * The event ancient indicator that is reserved
+     * The threshold that is being reserved. No event with an ancient indicator greater than or equal to this value may
+     * be expired.
      */
-    private final long reservedIndicator;
+    private final long reservedThreshold;
 
     /**
      * The number of reservations on this ancient indicator.
      */
     private final AtomicInteger reservationCount;
 
-    public ShadowgraphReservation(final long reservedIndicator) {
-        this.reservedIndicator = reservedIndicator;
+    /**
+     * Constructor.
+     *
+     * @param reservedThreshold the ancient indicator that is being reserved, no event with an ancient indicator greater
+     *                          than or equal to this value may be expired
+     */
+    public ShadowgraphReservation(final long reservedThreshold) {
+        this.reservedThreshold = reservedThreshold;
         reservationCount = new AtomicInteger(1);
     }
 
@@ -71,7 +78,7 @@ public final class ShadowgraphReservation implements AutoCloseable {
      *
      * @return the ancient indicator that is reserved
      */
-    public long getReservedIndicator() {
-        return reservedIndicator;
+    public long getReservedThreshold() {
+        return reservedThreshold;
     }
 }

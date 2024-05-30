@@ -7,9 +7,166 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus",
+      "usage": {
+        "libraryPanels": [
+          {
+            "name": "Platform Status (new)",
+            "uid": "bdcky36wafe9se"
+          }
+        ]
+      }
     }
   ],
   "__elements": {
+    "bdcky36wafe9se": {
+      "name": "Platform Status (new)",
+      "uid": "bdcky36wafe9se",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "continuous-GrYlRd"
+            },
+            "custom": {
+              "fillOpacity": 61,
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineWidth": 0,
+              "spanNulls": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "super-light-green",
+                    "index": 0,
+                    "text": "STARTING_UP"
+                  },
+                  "2": {
+                    "color": "green",
+                    "index": 1,
+                    "text": "ACTIVE"
+                  },
+                  "4": {
+                    "color": "red",
+                    "index": 2,
+                    "text": "BEHIND"
+                  },
+                  "5": {
+                    "color": "light-blue",
+                    "index": 3,
+                    "text": "FREEZING"
+                  },
+                  "6": {
+                    "color": "dark-blue",
+                    "index": 4,
+                    "text": "FREEZE_COMPLETE"
+                  },
+                  "7": {
+                    "color": "super-light-yellow",
+                    "index": 5,
+                    "text": "REPLAYING_EVENTS"
+                  },
+                  "8": {
+                    "color": "text",
+                    "index": 6,
+                    "text": "OBSERVING"
+                  },
+                  "9": {
+                    "color": "orange",
+                    "index": 7,
+                    "text": "CHECKING"
+                  },
+                  "10": {
+                    "color": "purple",
+                    "index": 8,
+                    "text": "RECONNECT_COMPLETE"
+                  },
+                  "11": {
+                    "color": "#250707",
+                    "index": 9,
+                    "text": "CATASTROPHIC_FAILURE"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unitScale": true
+          },
+          "overrides": []
+        },
+        "libraryPanel": {
+          "name": "Platform Status (new)",
+          "uid": "bdcky36wafe9se"
+        },
+        "options": {
+          "alignValue": "left",
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "mergeValues": true,
+          "rowHeight": 0.9,
+          "showValue": "auto",
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "platform_PlatformStatus{environment=\"$network\", node_id=~\"$NodeID\"}",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Platform Status",
+        "type": "state-timeline"
+      }
+    },
     "ea3a07d5-8f0b-4705-997d-51935e44d3c0": {
       "name": "intakeQueue",
       "uid": "ea3a07d5-8f0b-4705-997d-51935e44d3c0",
@@ -322,16 +479,10 @@
   },
   "__requires": [
     {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.3.0-63588"
+      "version": "10.4.0-66955"
     },
     {
       "type": "datasource",
@@ -391,138 +542,42 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "1": {
-                  "color": "super-light-blue",
-                  "index": 0,
-                  "text": "Starting Up"
-                },
-                "2": {
-                  "color": "semi-dark-green",
-                  "index": 1,
-                  "text": "Active"
-                },
-                "3": {
-                  "color": "#808080",
-                  "index": 10,
-                  "text": "Disconnected"
-                },
-                "4": {
-                  "color": "semi-dark-orange",
-                  "index": 2,
-                  "text": "Behind"
-                },
-                "5": {
-                  "color": "purple",
-                  "index": 3,
-                  "text": "Freezing"
-                },
-                "6": {
-                  "color": "dark-purple",
-                  "index": 4,
-                  "text": "Freeze Complete"
-                },
-                "7": {
-                  "color": "blue",
-                  "index": 5,
-                  "text": "Replaying Events"
-                },
-                "8": {
-                  "color": "super-light-green",
-                  "index": 6,
-                  "text": "Observing"
-                },
-                "9": {
-                  "color": "light-yellow",
-                  "index": 7,
-                  "text": "Checking"
-                },
-                "10": {
-                  "color": "light-orange",
-                  "index": 8,
-                  "text": "Reconnect Complete"
-                },
-                "11": {
-                  "color": "dark-red",
-                  "index": 9,
-                  "text": "Catastrophic Failure"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 8,
+        "h": 1,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 12,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.3.0-63588",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM}"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "exemplar": false,
-          "expr": "platform_PlatformStatus{environment=\"$network\"}",
-          "format": "time_series",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "node {{node_id}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
+      "id": 25,
+      "panels": [],
       "title": "Platform Status",
-      "type": "stat"
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 19,
+        "w": 22,
+        "x": 0,
+        "y": 1
+      },
+      "id": 27,
+      "libraryPanel": {
+        "uid": "bdcky36wafe9se",
+        "name": "Platform Status (new)"
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 24,
+      "panels": [],
+      "type": "row"
     },
     {
       "datasource": {
@@ -592,9 +647,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 8
+        "y": 21
       },
       "id": 13,
       "options": {
@@ -663,14 +718,15 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 8
+        "w": 2,
+        "x": 22,
+        "y": 21
       },
       "id": 21,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -679,11 +735,11 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -703,7 +759,7 @@
         }
       ],
       "title": "Current healthyNetworkFraction",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -771,9 +827,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 16
+        "y": 29
       },
       "id": 3,
       "options": {
@@ -843,14 +899,15 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 16
+        "w": 2,
+        "x": 22,
+        "y": 29
       },
-      "id": 4,
+      "id": 23,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -859,11 +916,11 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -883,7 +940,7 @@
         }
       ],
       "title": "Avg trans/sec",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -951,9 +1008,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 24
+        "y": 37
       },
       "id": 1,
       "options": {
@@ -963,9 +1020,6 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "timezone": [
-          "utc"
-        ],
         "tooltip": {
           "mode": "single",
           "sort": "none"
@@ -1015,12 +1069,8 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
-                "value": 5
-              },
-              {
                 "color": "red",
-                "value": 10
+                "value": 80
               }
             ]
           }
@@ -1029,25 +1079,28 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 24
+        "w": 2,
+        "x": 22,
+        "y": 37
       },
       "id": 2,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1104,7 +1157,7 @@
         }
       ],
       "title": "secC2C",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1172,9 +1225,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 32
+        "y": 45
       },
       "id": 5,
       "options": {
@@ -1244,14 +1297,15 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 32
+        "w": 2,
+        "x": 22,
+        "y": 45
       },
       "id": 6,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -1260,11 +1314,11 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1318,14 +1372,14 @@
         }
       ],
       "title": "cEvents/sec",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "gridPos": {
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 40
+        "y": 53
       },
       "id": 7,
       "libraryPanel": {
@@ -1338,7 +1392,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 40
+        "y": 53
       },
       "id": 20,
       "libraryPanel": {
@@ -1349,9 +1403,9 @@
     {
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 48
+        "y": 61
       },
       "id": 11,
       "libraryPanel": {
@@ -1393,25 +1447,26 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 48
+        "w": 2,
+        "x": 22,
+        "y": 61
       },
       "id": 14,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [],
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1465,7 +1520,7 @@
         }
       ],
       "title": "consEvents",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1535,9 +1590,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 56
+        "y": 69
       },
       "id": 10,
       "options": {
@@ -1574,7 +1629,6 @@
         }
       ],
       "title": "secTransH",
-      "transformations": [],
       "type": "timeseries"
     },
     {
@@ -1612,14 +1666,15 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 56
+        "w": 2,
+        "x": 22,
+        "y": 69
       },
       "id": 15,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -1628,11 +1683,11 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1686,7 +1741,7 @@
         }
       ],
       "title": "Network secTransH",
-      "type": "gauge"
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1751,9 +1806,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 22,
         "x": 0,
-        "y": 64
+        "y": 77
       },
       "id": 9,
       "options": {
@@ -1824,14 +1879,15 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 64
+        "w": 2,
+        "x": 22,
+        "y": 77
       },
       "id": 17,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -1840,11 +1896,11 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.3.0-63588",
+      "pluginVersion": "10.4.0-66955",
       "targets": [
         {
           "datasource": {
@@ -1899,10 +1955,9 @@
         }
       ],
       "title": "Network preHandleMicros",
-      "type": "gauge"
+      "type": "stat"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -1961,13 +2016,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "2024-02-09T17:50:36.987Z",
+    "to": "2024-02-11T21:57:23.869Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Network Health",
   "uid": "ec9413c6-6f17-49fc-951b-51cbc21a1eef",
-  "version": 11,
+  "version": 16,
   "weekStart": ""
 }

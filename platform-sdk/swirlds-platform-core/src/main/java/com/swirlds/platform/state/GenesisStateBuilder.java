@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -46,7 +47,7 @@ public final class GenesisStateBuilder {
 
         platformState.setCreationSoftwareVersion(appVersion);
         platformState.setRound(0);
-        platformState.setRunningEventHash(null);
+        platformState.setLegacyRunningEventHash(null);
         platformState.setEpochHash(null);
         platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
@@ -78,7 +79,8 @@ public final class GenesisStateBuilder {
             state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
 
-        final SignedState signedState = new SignedState(platformContext, state, "genesis state", false);
+        final SignedState signedState = new SignedState(
+                platformContext, CryptoStatic::verifySignature, state, "genesis state", false, false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }

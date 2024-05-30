@@ -20,7 +20,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.utils.sysfiles.ParsingUtils;
 
 public record ScaleFactor(int numerator, int denominator) implements Comparable<ScaleFactor> {
-    public static ScaleFactor ONE_TO_ONE = new ScaleFactor(1, 1);
+    public static final ScaleFactor ONE_TO_ONE = new ScaleFactor(1, 1);
 
     public static ScaleFactor from(String literal) {
         return ParsingUtils.fromTwoPartDelimited(

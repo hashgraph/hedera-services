@@ -30,23 +30,19 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -101,8 +97,6 @@ public final class MerkleDb {
      */
     private static final String TABLES_DIRNAME = "tables";
     /** Metadata file name. Relative to database storage dir */
-    private static final String METADATA_FILENAME_OLD = "metadata.mdb";
-
     private static final String METADATA_FILENAME = "database_metadata.pbj";
 
     /** Label for database component used in logging, stats, etc. */
@@ -127,7 +121,7 @@ public final class MerkleDb {
 
     /**
      * The base directory in which the database directory will be created. By default, a temporary
-     * location provided by {@link com.swirlds.common.io.utility.TemporaryFileBuilder}.
+     * location provided by {@link LegacyTemporaryFileBuilder}.
      */
     private final Path storageDir;
 
@@ -191,7 +185,7 @@ public final class MerkleDb {
         return defaultInstancePath.updateAndGet(p -> {
             if (p == null) {
                 try {
-                    p = TemporaryFileBuilder.buildTemporaryFile("merkledb");
+                    p = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb");
                 } catch (IOException z) {
                     throw new UncheckedIOException(z);
                 }
@@ -264,8 +258,7 @@ public final class MerkleDb {
             throw new UncheckedIOException(z);
         }
         // If this is a new database, create the metadata file
-        if (!Files.exists(storageDir.resolve(METADATA_FILENAME_OLD))
-                && !Files.exists(storageDir.resolve(METADATA_FILENAME))) {
+        if (!Files.exists(storageDir.resolve(METADATA_FILENAME))) {
             storeMetadata();
         }
         logger.info(MERKLE_DB.getMarker(), "New MerkleDb instance is created, storageDir={}", storageDir);
@@ -578,8 +571,7 @@ public final class MerkleDb {
      */
     public static MerkleDb restore(final Path source, final Path target) throws IOException {
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath();
-        if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME_OLD))
-                && !Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
+        if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
             // For all data files, it's enough to create hard-links from the source dir to the
             // target dir. However, hard-linking the metadata file wouldn't work. The target
@@ -587,13 +579,8 @@ public final class MerkleDb {
             // in DB metadata. With hard links, changing target metadata would also change the
             // source metadata, which is strictly prohibited as existing saved states must
             // never be changed. So just copy the metadata file
-            if (Files.exists(source.resolve(METADATA_FILENAME))) {
-                assert !Files.exists(source.resolve(METADATA_FILENAME_OLD));
-                Files.copy(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
-            } else {
-                assert !Files.exists(source.resolve(METADATA_FILENAME));
-                Files.copy(source.resolve(METADATA_FILENAME_OLD), defaultInstancePath.resolve(METADATA_FILENAME_OLD));
-            }
+            assert Files.exists(source.resolve(METADATA_FILENAME));
+            Files.copy(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
             final Path sharedDirPath = source.resolve(SHARED_DIRNAME);
             // No shared data yet, so the folder may be empty or even may not exist
             if (Files.exists(sharedDirPath)) {
@@ -608,10 +595,6 @@ public final class MerkleDb {
         return getInstance(defaultInstancePath);
     }
 
-    private void storeMetadata() {
-        storeMetadata(storageDir, getPrimaryTables());
-    }
-
     /**
      * Writes database metadata file to the specified dir. Only table configs from the given list of
      * tables are included.
@@ -623,38 +606,27 @@ public final class MerkleDb {
      *   <li>(for every table) table ID, table Name, and table serialization config
      * </ul>
      *
-     * @param dir Folder to write metadata file to
-     * @param tables List of tables to include to the metadata file
+     * This method has to be synchronized, as it's totally possible for multiple tables to be processed
+     * at the same time, and we'd like to guarantee that the metadata file is consistent.
      */
-    @SuppressWarnings("rawtypes")
-    private void storeMetadata(final Path dir, final Collection<TableMetadata> tables) {
-        if (config.usePbj()) {
-            final Path dbMetadataFile = dir.resolve(METADATA_FILENAME);
-            try (final OutputStream fileOut =
-                    Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
-                final WritableSequentialData out = new WritableStreamingData(fileOut);
-                for (final TableMetadata metadata : tables) {
-                    final int len = metadata.pbjSizeInBytes();
-                    ProtoWriterTools.writeDelimited(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
-                }
-            } catch (final IOException z) {
-                throw new UncheckedIOException(z);
+    private synchronized void storeMetadata() {
+        final Set<TableMetadata> tables = new HashSet<>();
+        for (int i = 0; i < tableConfigs.length(); i++) {
+            final TableMetadata tableMetadata = tableConfigs.get(i);
+            if ((tableMetadata != null) && primaryTables.contains(i)) {
+                tables.add(tableMetadata);
             }
-        } else {
-            final Path dbMetadataFile = dir.resolve(METADATA_FILENAME_OLD);
-            try (final OutputStream fileOut =
-                            Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                    SerializableDataOutputStream out = new SerializableDataOutputStream(fileOut)) {
-                out.writeInt(tables.size());
-                for (final TableMetadata metadata : tables) {
-                    final int tableId = metadata.getTableId();
-                    out.writeInt(tableId);
-                    out.writeNormalisedString(metadata.getTableName());
-                    out.writeSerializable(metadata.getTableConfig(), false);
-                }
-            } catch (final IOException z) {
-                throw new UncheckedIOException(z);
+        }
+        final Path dbMetadataFile = storageDir.resolve(METADATA_FILENAME);
+        try (final OutputStream fileOut =
+                Files.newOutputStream(dbMetadataFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+            final WritableSequentialData out = new WritableStreamingData(fileOut);
+            for (final TableMetadata metadata : tables) {
+                final int len = metadata.pbjSizeInBytes();
+                ProtoWriterTools.writeDelimited(out, FIELD_DBMETADATA_TABLEMETADATA, len, metadata::writeTo);
             }
+        } catch (final IOException z) {
+            throw new UncheckedIOException(z);
         }
     }
 
@@ -680,10 +652,9 @@ public final class MerkleDb {
     @SuppressWarnings("rawtypes")
     private static AtomicReferenceArray<TableMetadata> loadMetadata(final Path dir) {
         final AtomicReferenceArray<TableMetadata> tableConfigs = new AtomicReferenceArray<>(MAX_TABLES);
-        final Path tableConfigFilePbj = dir.resolve(METADATA_FILENAME);
-        final Path tableConfigFile = dir.resolve(METADATA_FILENAME_OLD);
-        if (Files.exists(tableConfigFilePbj)) {
-            try (final ReadableStreamingData in = new ReadableStreamingData(tableConfigFilePbj)) {
+        final Path tableConfigFile = dir.resolve(METADATA_FILENAME);
+        if (Files.exists(tableConfigFile)) {
+            try (final ReadableStreamingData in = new ReadableStreamingData(tableConfigFile)) {
                 while (in.hasRemaining()) {
                     final int tag = in.readVarInt(false);
                     final int fieldNum = tag >> TAG_FIELD_OFFSET;
@@ -703,22 +674,6 @@ public final class MerkleDb {
                     }
                 }
 
-            } catch (final IOException z) {
-                throw new UncheckedIOException(z);
-            }
-        } else if (Files.exists(tableConfigFile)) {
-            try (InputStream fileIn = Files.newInputStream(tableConfigFile, StandardOpenOption.READ);
-                    SerializableDataInputStream in = new SerializableDataInputStream(fileIn)) {
-                final int size = in.readInt();
-                for (int i = 0; i < size; i++) {
-                    final int tableId = in.readInt();
-                    if ((tableId < 0) || (tableId >= MAX_TABLES)) {
-                        throw new IllegalStateException("Corrupted MerkleDb metadata: wrong table ID");
-                    }
-                    final String name = in.readNormalisedString(256);
-                    final MerkleDbTableConfig config = in.readSerializable(false, MerkleDbTableConfig::new);
-                    tableConfigs.set(tableId, new TableMetadata(tableId, name, config));
-                }
             } catch (final IOException z) {
                 throw new UncheckedIOException(z);
             }
@@ -759,26 +714,6 @@ public final class MerkleDb {
             }
         }
         return null;
-    }
-
-    /**
-     * Returns the set of primary tables in this database. The corresponding data source may
-     * or may not be opened.
-     *
-     * @return Set of all tables in the database
-     */
-    private Set<TableMetadata> getPrimaryTables() {
-        // I wish there was AtomicReferenceArray.stream()
-        final Set<TableMetadata> tables = new HashSet<>();
-        for (int i = 0; i < tableConfigs.length(); i++) {
-            final TableMetadata tableMetadata = tableConfigs.get(i);
-            if ((tableMetadata != null) && primaryTables.contains(i)) {
-                tables.add(tableConfigs.get(i));
-            }
-        }
-        // If this method is ever used outside this class, change it to return an
-        // unmodifiable set instead
-        return tables;
     }
 
     /**

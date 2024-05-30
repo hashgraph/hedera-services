@@ -34,6 +34,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.metrics.api.snapshot.Snapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -50,12 +51,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A {@code LegacyCsvWriter} writes the current CSV-format. It is called "legacy", because
- * we plan to replace the CSV-format with something that is closer to the CSV standard.
+ * A {@code LegacyCsvWriter} writes the current CSV-format. It is called "legacy", because we plan to replace the
+ * CSV-format with something that is closer to the CSV standard.
  * <p>
  * The {@code LegacyCsvWriter} can be configured with the following settings:
  * <dl>
@@ -94,16 +96,14 @@ public class LegacyCsvWriter {
             new ThresholdLimitingHandler<>(1, Function.identity());
 
     private final AtomicBoolean initialized = new AtomicBoolean();
+    private final AtomicBoolean inconsistent = new AtomicBoolean();
 
     /**
      * Constructor of a {@code LegacyCsvWriter}
      *
-     * @param selfId
-     *        {@link NodeId} of the platform for which the CSV-file is written
-     * @param folderPath
-     *        {@link Path} to the folder where the file should be stored
-     * @param configuration
-     *		the configuration
+     * @param selfId        {@link NodeId} of the platform for which the CSV-file is written
+     * @param folderPath    {@link Path} to the folder where the file should be stored
+     * @param configuration the configuration
      */
     public LegacyCsvWriter(
             @NonNull final NodeId selfId, @NonNull final Path folderPath, @NonNull final Configuration configuration) {
@@ -128,11 +128,10 @@ public class LegacyCsvWriter {
     }
 
     /**
-     * Initializes the file with all known metrics. Once writing metrics to a legacy CSV-file has started,
-     * it is not possible to add new metrics.
+     * Initializes the file with all known metrics. Once writing metrics to a legacy CSV-file has started, it is not
+     * possible to add new metrics.
      *
-     * @param snapshots
-     *        {@link List} of {@link Snapshot}s of all known metrics at this point in time
+     * @param snapshots {@link List} of {@link Snapshot}s of all known metrics at this point in time
      */
     private void init(final Collection<Snapshot> snapshots) {
         logger.info(
@@ -234,8 +233,7 @@ public class LegacyCsvWriter {
     /**
      * Handle notification with new snapshots
      *
-     * @param snapshotEvent
-     * 		the {@link SnapshotEvent}
+     * @param snapshotEvent the {@link SnapshotEvent}
      */
     public void handleSnapshots(final SnapshotEvent snapshotEvent) {
         if (snapshotEvent.nodeId() != selfId) {
@@ -247,12 +245,18 @@ public class LegacyCsvWriter {
             init(snapshots);
         }
         final Snapshot[] sortedSnapshots = new Snapshot[indexLookup.size()];
+        boolean changedAfterInit = indexLookup.size() != snapshots.size();
         for (final Snapshot snapshot : snapshots) {
             final Metric metric = snapshot.metric();
             final Integer index = indexLookup.get(Pair.of(metric.getCategory(), metric.getName()));
             if (index != null) {
                 sortedSnapshots[index] = snapshot;
+            } else {
+                changedAfterInit = true;
             }
+        }
+        if (changedAfterInit && inconsistent.compareAndSet(false, changedAfterInit)) {
+            reportInconsistentState(snapshots);
         }
 
         final ContentBuilder builder = new ContentBuilder();
@@ -276,6 +280,22 @@ public class LegacyCsvWriter {
             Files.writeString(csvFilePath, builder.toString(), APPEND);
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
+        }
+    }
+
+    private void reportInconsistentState(final Collection<Snapshot> snapshots) {
+        logger.warn("Some metrics were not exported due to changes after LegacyCsvWriter initialization.");
+        if (logger.isTraceEnabled()) {
+            // Collect metrics that will not be exported
+            final String willNotBeExported = snapshots.stream()
+                    .map(Snapshot::metric)
+                    .map(m -> Pair.of(m.getCategory(), m.getName()))
+                    .filter(p -> !indexLookup.containsKey(p))
+                    .map(p -> "[" + p.key() + "-" + p.right() + "]")
+                    .collect(Collectors.joining(","));
+            logger.trace(
+                    "The following metrics will not be exported because they were not part of the initialization:{}",
+                    willNotBeExported);
         }
     }
 

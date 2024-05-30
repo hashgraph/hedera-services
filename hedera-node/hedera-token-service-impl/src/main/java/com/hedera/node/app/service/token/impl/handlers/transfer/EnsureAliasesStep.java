@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -43,11 +42,17 @@ import java.util.Map;
 public class EnsureAliasesStep implements TransferStep {
     final CryptoTransferTransactionBody op;
 
-    // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
-    // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
-    // token transfer list
+    /**
+     * Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
+     * an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
+     * token transfer list
+     */
     private final Map<Bytes, AccountID> tokenTransferResolutions = new LinkedHashMap<>();
 
+    /**
+     * Constructs a {@link EnsureAliasesStep} instance.
+     * @param op the crypto transfer transaction body
+     */
     public EnsureAliasesStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = requireNonNull(op);
     }
@@ -55,8 +60,8 @@ public class EnsureAliasesStep implements TransferStep {
     @Override
     public void doIn(@NonNull final TransferContext transferContext) {
         requireNonNull(transferContext);
-        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
+        final var tokenTransfers = op.tokenTransfers();
         // resolve hbar adjusts and add all alias resolutions to resolutions map in TransferContext
         resolveHbarAdjusts(hbarTransfers, transferContext);
         // resolve hbar adjusts and add all alias resolutions to resolutions map
@@ -75,7 +80,7 @@ public class EnsureAliasesStep implements TransferStep {
             @NonNull final List<TokenTransferList> tokenTransfers, @NonNull final TransferContext transferContext) {
         for (final var tt : tokenTransfers) {
             tokenTransferResolutions.clear();
-            for (final var adjust : tt.transfersOrElse(emptyList())) {
+            for (final var adjust : tt.transfers()) {
                 if (isAlias(adjust.accountIDOrThrow())) {
                     final var account = resolveForFungibleToken(adjust, transferContext);
                     final var alias = adjust.accountIDOrThrow().alias();
@@ -84,7 +89,7 @@ public class EnsureAliasesStep implements TransferStep {
                 }
             }
 
-            for (final var nftAdjust : tt.nftTransfersOrElse(emptyList())) {
+            for (final var nftAdjust : tt.nftTransfers()) {
                 resolveForNft(nftAdjust, transferContext);
             }
         }
@@ -195,9 +200,9 @@ public class EnsureAliasesStep implements TransferStep {
         requireNonNull(op);
         requireNonNull(aliasedReceiverId);
         int ans = 0;
-        for (final var tokenTransferList : op.tokenTransfersOrElse(emptyList())) {
+        for (final var tokenTransferList : op.tokenTransfers()) {
             boolean impliedAutoAssociationHere = false;
-            for (final var unitAdjust : tokenTransferList.transfersOrElse(emptyList())) {
+            for (final var unitAdjust : tokenTransferList.transfers()) {
                 if (unitAdjust.amount() > 0 && unitAdjust.accountIDOrThrow().equals(aliasedReceiverId)) {
                     impliedAutoAssociationHere = true;
                     break;
@@ -205,7 +210,7 @@ public class EnsureAliasesStep implements TransferStep {
             }
             // If impliedAutoAssociationHere is true, we don't need to check nftTransfers; but it will
             // also be empty because that means this token has fungible balance adjustments
-            for (final var nftTransfer : tokenTransferList.nftTransfersOrElse(emptyList())) {
+            for (final var nftTransfer : tokenTransferList.nftTransfers()) {
                 if (nftTransfer.receiverAccountIDOrThrow().equals(aliasedReceiverId)) {
                     impliedAutoAssociationHere = true;
                     break;

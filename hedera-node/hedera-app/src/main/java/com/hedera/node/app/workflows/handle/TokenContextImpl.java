@@ -21,21 +21,26 @@ import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
+    private final HederaState state;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final RecordListBuilder recordListBuilder;
@@ -44,18 +49,22 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     public TokenContextImpl(
             @NonNull final Configuration configuration,
+            @NonNull final HederaState state,
+            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final BlockRecordManager blockRecordManager,
             final boolean isFirstTransaction) {
+        this.state = requireNonNull(state, "state must not be null");
+        requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
-        requireNonNull(stack, "stack must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
         this.isFirstTransaction = isFirstTransaction;
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
-        this.writableStoreFactory = new WritableStoreFactory(stack, TokenService.NAME);
+        this.writableStoreFactory =
+                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
     }
 
     @NonNull
@@ -132,7 +141,19 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     }
 
     @Override
+    public boolean isScheduleDispatch() {
+        return false;
+    }
+
+    @Override
     public void markMigrationRecordsStreamed() {
         blockRecordManager.markMigrationRecordsStreamed();
+    }
+
+    @Override
+    public Set<Long> knownNodeIds() {
+        return new ReadableStoreFactory(state)
+                .getStore(ReadableStakingInfoStore.class)
+                .getAll();
     }
 }

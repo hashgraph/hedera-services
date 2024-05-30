@@ -49,6 +49,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoDeleteHandler() {
         // Exists for injection

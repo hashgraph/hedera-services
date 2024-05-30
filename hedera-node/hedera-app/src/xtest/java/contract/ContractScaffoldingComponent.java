@@ -16,8 +16,10 @@
 
 package contract;
 
+import com.hedera.node.app.service.contract.impl.exec.processors.HasTranslatorsModule;
 import com.hedera.node.app.service.contract.impl.exec.processors.HtsTranslatorsModule;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -26,6 +28,7 @@ import common.BaseScaffoldingModule;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.util.List;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -33,12 +36,25 @@ import javax.inject.Singleton;
  * {@link com.hedera.node.app.service.contract.ContractService} handlers.
  */
 @Singleton
-@Component(modules = {HandlersInjectionModule.class, BaseScaffoldingModule.class, HtsTranslatorsModule.class})
+@Component(
+        modules = {
+            HandlersInjectionModule.class,
+            BaseScaffoldingModule.class,
+            HtsTranslatorsModule.class,
+            HasTranslatorsModule.class
+        })
 public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
     @Component.Factory
     interface Factory {
-        ContractScaffoldingComponent create(@BindsInstance Metrics metrics, @BindsInstance Configuration configuration);
+        ContractScaffoldingComponent create(
+                @BindsInstance Metrics metrics,
+                @BindsInstance Configuration configuration,
+                @BindsInstance StoreMetricsService storeMetricsService);
     }
 
-    List<HtsCallTranslator> callTranslators();
+    @Named("HtsTranslators")
+    List<CallTranslator> callHtsTranslators();
+
+    @Named("HasTranslators")
+    List<CallTranslator> callHasTranslators();
 }

@@ -35,22 +35,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 /**
- * Service for validation of the config
+ * Service for validation of the config.
  */
 class ConfigValidationService implements ConfigLifecycle {
 
     /**
-     * Set opf all validators that shpuld be executed on a validation
+     * Set opf all validators that shpuld be executed on a validation.
      */
     private final Queue<ConfigValidator> validators;
 
     /**
-     * A specific validator that checks all {@link ConfigPropertyConstraint} instances
+     * A specific validator that checks all {@link ConfigPropertyConstraint} instances.
      */
     private final ConstraintValidator constraintValidator;
 
     /**
-     * Defines if this service is initialized
+     * Defines if this service is initialized.
      */
     private boolean initialized = false;
 

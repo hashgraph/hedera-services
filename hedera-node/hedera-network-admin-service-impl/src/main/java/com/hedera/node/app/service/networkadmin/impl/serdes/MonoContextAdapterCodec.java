@@ -31,7 +31,9 @@ import java.io.IOException;
 public class MonoContextAdapterCodec implements Codec<MerkleNetworkContext> {
     @NonNull
     @Override
-    public MerkleNetworkContext parse(final @NonNull ReadableSequentialData input) throws ParseException {
+    public MerkleNetworkContext parse(
+            final @NonNull ReadableSequentialData input, final boolean strictMode, final int maxDepth)
+            throws ParseException {
         try {
             final var length = input.readInt();
             final var javaIn = new byte[length];

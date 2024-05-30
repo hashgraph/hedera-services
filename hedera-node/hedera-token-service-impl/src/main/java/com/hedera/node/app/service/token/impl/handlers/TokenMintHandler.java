@@ -79,6 +79,10 @@ import javax.inject.Singleton;
 public class TokenMintHandler extends BaseTokenHandler implements TransactionHandler {
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the token supply change ops validator
+     */
     @Inject
     public TokenMintHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = requireNonNull(validator);
@@ -157,9 +161,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     nftStore);
             recordBuilder.newTotalSupply(tokenStore.get(tokenId).totalSupply());
             recordBuilder.serialNumbers(mintedSerials);
-            // TODO: Need to build transfer ownership from list to transfer NFT to treasury
-            // This should probably be done in finalize method on token service which constructs the
-            // transfer list looking at state
         }
         recordBuilder.tokenType(token.tokenType());
     }
@@ -205,7 +206,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var tokenId = treasuryRel.tokenId();
 
         // get the treasury account
-        final var treasuryAccount = accountStore.get(treasuryRel.accountId());
+        var treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         // get the latest serial number minted for the token
@@ -214,6 +215,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
+        // Since changeSupply call above modifies the treasuryAccount, we need to get the modified treasuryAccount
+        treasuryAccount = accountStore.get(treasuryRel.accountIdOrThrow());
         // The token is modified in previous step, so we need to get the modified token
         final var modifiedToken = tokenStore.get(token.tokenId());
         final var mintedSerials = new ArrayList<Long>(metadata.size());

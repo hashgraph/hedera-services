@@ -86,15 +86,15 @@ public class FeesJsonToProtoSerde {
     private static void constructWithBuilder(
             CurrentAndNextFeeSchedule.Builder builder, List<Map<String, Object>> rawFeeSchedules)
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        int i = 0;
+        int index = 0;
         for (String rawFeeSchedule : FEE_SCHEDULE_KEYS) {
             set(
                     CurrentAndNextFeeSchedule.Builder.class,
                     builder,
                     rawFeeSchedule,
                     FeeSchedule.class,
-                    bindFeeScheduleFrom(
-                            (List<Map<String, Object>>) rawFeeSchedules.get(i++).get(rawFeeSchedule)));
+                    bindFeeScheduleFrom((List<Map<String, Object>>)
+                            rawFeeSchedules.get(index++).get(rawFeeSchedule)));
         }
     }
 

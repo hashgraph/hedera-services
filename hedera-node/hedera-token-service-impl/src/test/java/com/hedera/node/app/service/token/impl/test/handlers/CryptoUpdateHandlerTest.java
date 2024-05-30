@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
@@ -30,6 +31,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
@@ -42,7 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -57,15 +62,20 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -83,6 +93,7 @@ import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -127,12 +138,12 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        configuration = HederaTestConfigBuilder.createConfig();
         updateAccount =
                 givenValidAccount(updateAccountNum).copyBuilder().key(otherKey).build();
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
-        configuration = HederaTestConfigBuilder.createConfig();
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
@@ -153,6 +164,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
         assertTrue(context.requiredNonPayerKeys().contains(otherKey));
+    }
+
+    @Test
+    void cryptoUpdateMissingAccountID() throws PreCheckException {
+        final var txn = new CryptoUpdateBuilder().withTarget(null).build();
+
+        given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, id)).willReturn(false);
+
+        final var context = new FakePreHandleContext(readableStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
     @Test
@@ -469,6 +491,21 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    void zeroAutoAssociationsLessThanExistingFails() {
+        final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(0).build();
+        givenTxnWith(txn);
+        // initially account has 10 auto association slots and 2 are used
+        assertEquals(2, writableStore.get(updateAccountId).usedAutoAssociations());
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+
+        // changing to less than 2 slots will fail
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT));
+        assertEquals(10, writableStore.get(updateAccountId).maxAutoAssociations());
+    }
+
+    @Test
     void maxAutoAssociationUpdateToMoreThanTokenAssociationLimitFails() {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(12).build();
         givenTxnWith(txn);
@@ -706,6 +743,44 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .has(responseCode(ACCOUNT_DELETED));
     }
 
+    @Test
+    void testCalculateFeesHappyPath() {
+        FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+
+        TransactionBody cryptoUpdateTransaction = new CryptoUpdateBuilder()
+                .withPayer(id)
+                .withAutoRenewPeriod(account.autoRenewSeconds())
+                .withReceiverSigReq(account.receiverSigRequired())
+                .withDeclineReward(account.declineReward())
+                .withStakedNodeId(account.stakedNodeId())
+                .withStakedAccountId(
+                        account.stakedAccountId() == null
+                                ? 0L
+                                : account.stakedAccountId().accountNum())
+                .withExpiration(account.expirationSecond())
+                .withMaxAutoAssociations(account.maxAutoAssociations())
+                .withMemo("")
+                .withKey(account.key())
+                .withTarget(id)
+                .build();
+
+        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableStore);
+        when(feeContext.body()).thenReturn(cryptoUpdateTransaction);
+        when(feeContext.configuration()).thenReturn(configuration);
+        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+
+        subject.calculateFees(feeContext);
+
+        InOrder inOrder = inOrder(feeCalculator);
+        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(212L);
+        inOrder.verify(feeCalculator, times(2)).addRamByteSeconds(0L);
+        inOrder.verify(feeCalculator, times(1)).calculate();
+    }
+
     /**
      * A builder for {@link TransactionBody} instances.
      */
@@ -803,7 +878,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
             return this;
         }
 
+        public CryptoUpdateHandlerTest.CryptoUpdateBuilder withStakedAccountId(final Long id) {
+            this.stakedAccountId = id;
+            return this;
+        }
+
         public CryptoUpdateHandlerTest.CryptoUpdateBuilder withStakedNodeId(final long id) {
+            this.stakeNodeId = id;
+            return this;
+        }
+
+        public CryptoUpdateHandlerTest.CryptoUpdateBuilder withStakedNodeId(final Long id) {
             this.stakeNodeId = id;
             return this;
         }
@@ -843,6 +928,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
             this.opKey = key;
             return this;
         }
+
+        public CryptoUpdateBuilder withPayer(AccountID payer) {
+            this.payer = payer;
+            return this;
+        }
     }
 
     private void updateReadableAccountStore(Map<Long, Account> accountsToAdd) {
@@ -862,7 +952,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates);
+        writableStore = new WritableAccountStore(writableStates, configuration, mock(StoreMetricsService.class));
     }
 
     private void givenTxnWith(TransactionBody txn) {

@@ -85,14 +85,12 @@ class ContractDeleteHandlerTest {
     }
 
     @Test
-    void preHandleRejectsPermanentRemoval() {
+    void pureChecksRejectsPermanentRemoval() {
         final var txn = TransactionBody.newBuilder()
                 .contractDeleteInstance(
                         ContractDeleteTransactionBody.newBuilder().permanentRemoval(true))
                 .build();
-        given(preHandleContext.body()).willReturn(txn);
-
-        final var ex = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, ex.responseCode());
     }
 
@@ -122,9 +120,11 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithoutObtainerSet() {
-        givenFailContextWith(missingObtainer(VALID_CONTRACT_ADDRESS));
-
-        assertFailsWith(OBTAINER_REQUIRED, () -> subject.handle(context));
+        final var txn = TransactionBody.newBuilder()
+                .contractDeleteInstance(missingObtainer(VALID_CONTRACT_ADDRESS))
+                .build();
+        final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertEquals(OBTAINER_REQUIRED, ex.responseCode());
     }
 
     @Test

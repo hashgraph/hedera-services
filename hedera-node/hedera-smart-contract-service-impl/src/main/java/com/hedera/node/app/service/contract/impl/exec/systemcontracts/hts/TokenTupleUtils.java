@@ -65,7 +65,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                token.autoRenewSeconds());
+                Math.max(0, token.autoRenewSeconds()));
     }
 
     /**
@@ -247,7 +247,7 @@ public class TokenTupleUtils {
                 tokenInfoTupleFor(token, ledgerId),
                 serialNumber,
                 // The odd construct allowing a token to not have a treasury account set is to accommodate
-                // Token.DEFAULT being passed into this method, which a few HtsCall implementations do
+                // Token.DEFAULT being passed into this method, which a few Call implementations do
                 priorityAddressOf(nft.ownerIdOrElse(token.treasuryAccountIdOrElse(ZERO_ACCOUNT_ID)), nativeOperations),
                 nft.mintTimeOrElse(new Timestamp(0, 0)).seconds(),
                 nftMetaData,
@@ -259,7 +259,7 @@ public class TokenTupleUtils {
         requireNonNull(accountId);
         return (ZERO_ACCOUNT_ID == accountId)
                 ? ZERO_ADDRESS
-                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId.accountNumOrThrow())));
+                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId)));
     }
 
     /**

@@ -26,7 +26,7 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
@@ -37,16 +37,13 @@ import com.swirlds.platform.stats.AverageStat;
 import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.stats.MaxStat;
 import com.swirlds.platform.system.PlatformStatNames;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 
 /**
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
-    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "syncPermitsAvailable")
-            .withDescription("number of sync permits available");
-    private final RunningAverageMetric permitsAvailable;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes_per_sec_sync")
@@ -142,7 +139,7 @@ public class SyncMetrics {
 
     private final RunningAverageMetric tipsPerSync;
 
-    private final AverageStat syncGenerationDiff;
+    private final AverageStat syncIndicatorDiff;
     private final AverageStat eventRecRate;
     private final AverageTimeStat avgSyncDuration1;
     private final AverageTimeStat avgSyncDuration2;
@@ -199,11 +196,11 @@ public class SyncMetrics {
                 "number of events received per successful sync",
                 FORMAT_8_1);
 
-        syncGenerationDiff = new AverageStat(
+        syncIndicatorDiff = new AverageStat(
                 metrics,
                 INTERNAL_CATEGORY,
-                "syncGenDiff",
-                "number of generation ahead (positive) or behind (negative) when syncing",
+                "syncIndicatorDiff",
+                "number of ancient indicators ahead (positive) or behind (negative) when syncing",
                 FORMAT_8_1,
                 AverageStat.WEIGHT_VOLATILE);
         eventRecRate = new AverageStat(
@@ -259,18 +256,16 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-
-        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
-     * Supplies the generation numbers of a sync for statistics
+     * Supplies the event window numbers of a sync for statistics
      *
-     * @param self  generations of our graph at the start of the sync
-     * @param other generations of their graph at the start of the sync
+     * @param self  event window of our graph at the start of the sync
+     * @param other event window of their graph at the start of the sync
      */
-    public void generations(final GraphGenerations self, final GraphGenerations other) {
-        syncGenerationDiff.update(self.getMaxRoundGeneration() - other.getMaxRoundGeneration());
+    public void eventWindow(@NonNull final EventWindow self, @NonNull final EventWindow other) {
+        syncIndicatorDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
     }
 
     /**
@@ -357,15 +352,6 @@ public class SyncMetrics {
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
-    }
-
-    /**
-     * Updates the number of permits available for syncs
-     *
-     * @param permits the number of permits available
-     */
-    public void updateSyncPermitsAvailable(final int permits) {
-        permitsAvailable.update(permits);
     }
 
     /**

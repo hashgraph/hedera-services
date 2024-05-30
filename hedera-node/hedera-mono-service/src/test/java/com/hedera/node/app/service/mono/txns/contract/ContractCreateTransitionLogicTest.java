@@ -770,7 +770,6 @@ class ContractCreateTransitionLogicTest {
                 .willReturn(result);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
 
         // when:
@@ -798,7 +797,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,
@@ -859,7 +857,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
@@ -922,7 +919,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, output, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
@@ -986,7 +982,6 @@ class ContractCreateTransitionLogicTest {
         given(worldSenderAccount.getNonce()).willReturn(5644L);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var result = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, create1ContractAddress, Map.of(), new ArrayList<>());
         given(txnCtx.consensusTime()).willReturn(consensusTime);
@@ -1042,7 +1037,6 @@ class ContractCreateTransitionLogicTest {
         given(worldSenderAccount.getNonce()).willReturn(5644L);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
@@ -1122,7 +1116,6 @@ class ContractCreateTransitionLogicTest {
         given(worldState.getContractNonces()).willReturn(targetContractNonces);
         given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
                 .willReturn(autoRenewModel);
-        given(autoRenewModel.isSmartContract()).willReturn(false);
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,

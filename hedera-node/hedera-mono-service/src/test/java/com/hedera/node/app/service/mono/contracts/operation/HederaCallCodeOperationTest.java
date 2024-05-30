@@ -106,7 +106,16 @@ class HederaCallCodeOperationTest {
     void haltWithInvalidAddr() {
         given(worldUpdater.get(any())).willReturn(null);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -126,7 +135,16 @@ class HederaCallCodeOperationTest {
     @Test
     void executesAsExpected() {
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -158,10 +176,28 @@ class HederaCallCodeOperationTest {
     @Test
     void executeHaltsWithInvalidSignature() {
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);

@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.context.properties.SemanticVersio
 import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.forHapiAndHedera;
 import static com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
 import static com.hedera.test.utils.AddresBookUtils.createPretendBookFrom;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -81,7 +80,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
-import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -330,7 +328,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void getsAccountIdAsExpected() {
         // setup:
-        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setPlatform(platform);
         given(platform.getAddressBook()).willReturn(addressBook);
 
@@ -404,7 +401,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void merkleMetaAsExpected() {
         // expect:
-        assertEquals(0x8e300b0dfdafbb1aL, subject.getClassId());
+        assertEquals(0x8e300b0dfdafbb1bL, subject.getClassId());
         assertEquals(StateVersions.CURRENT_VERSION, subject.getVersion());
     }
 
@@ -896,16 +893,13 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void copiesNonNullChildren() {
-        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         // and:
         subject.setMetadata(metadata);
         subject.setDeserializedStateVersion(10);
         subject.setPlatform(platform);
-        given(platform.getAddressBook()).willReturn(addressBook);
 
-        given(addressBook.copy()).willReturn(addressBook);
         given(networkContext.copy()).willReturn(networkContext);
         given(specialFiles.copy()).willReturn(specialFiles);
         given(metadata.copy()).willReturn(metadata);
@@ -920,7 +914,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(metadata, copy.getMetadata());
         verify(metadata).copy();
         // and:
-        assertSame(addressBook, copy.addressBook());
         assertSame(networkContext, copy.networkCtx());
         assertSame(specialFiles, copy.specialFiles());
     }
@@ -1054,8 +1047,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var platform = mock(Platform.class);
         final var platformContext = mock(PlatformContext.class);
         when(platform.getSelfId()).thenReturn(new NodeId(0));
-        when(platformContext.getCryptography())
-                .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
+        when(platformContext.getCryptography()).thenReturn(new CryptoEngine());
         assertNotNull(platformContext.getCryptography());
         return platform;
     }

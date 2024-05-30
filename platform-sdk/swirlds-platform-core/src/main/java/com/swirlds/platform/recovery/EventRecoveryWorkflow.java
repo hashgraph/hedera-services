@@ -19,7 +19,7 @@ package com.swirlds.platform.recovery;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.PlatformBuilder.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
@@ -41,6 +41,7 @@ import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -54,10 +55,11 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
-import com.swirlds.platform.state.signed.SignedStateFileWriter;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
+import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -148,6 +150,8 @@ public final class EventRecoveryWorkflow {
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
                         platformContext, signedStateFile)
                 .reservedSignedState()) {
+            StaticSoftwareVersion.setSoftwareVersion(
+                    initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
             logger.info(
                     STARTUP.getMarker(),
@@ -377,7 +381,8 @@ public final class EventRecoveryWorkflow {
         final PlatformState platformState = newState.getPlatformState();
 
         platformState.setRound(round.getRoundNum());
-        platformState.setRunningEventHash(getHashEventsCons(previousState.get().getHashEventsCons(), round));
+        platformState.setLegacyRunningEventHash(getHashEventsCons(
+                previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
         platformState.setConsensusTimestamp(currentRoundTimestamp);
         platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                 round.getRoundNum(),
@@ -404,7 +409,13 @@ public final class EventRecoveryWorkflow {
         }
 
         final ReservedSignedState signedState = new SignedState(
-                        platformContext, newState, "EventRecoveryWorkflow.handleNextRound()", isFreezeState)
+                        platformContext,
+                        CryptoStatic::verifySignature,
+                        newState,
+                        "EventRecoveryWorkflow.handleNextRound()",
+                        isFreezeState,
+                        false,
+                        false)
                 .reserve("recovery");
         previousState.close();
 

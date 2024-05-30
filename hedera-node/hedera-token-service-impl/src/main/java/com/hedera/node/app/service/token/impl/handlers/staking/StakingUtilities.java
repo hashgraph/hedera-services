@@ -24,18 +24,38 @@ import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Utility class for staking.
+ */
 public class StakingUtilities {
     private StakingUtilities() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
+    /**
+     * The default value to represent that the account has not been rewarded since the last staking metadata change.
+     */
     public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
+    /**
+     * The default value to represent that the account has no stake period start.
+     */
     public static final long NO_STAKE_PERIOD_START = -1;
 
+    /**
+     * Rounds the value to the nearest hbar.
+     * @param value the value to round
+     * @return the value rounded to the nearest hbar
+     */
     public static long roundedToHbar(final long value) {
         return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
     }
 
+    /**
+     * Calculates the total stake of the account. The total stake is the sum of the tinybars balance and the amount
+     * staked to the account.
+     * @param account the account
+     * @return the total stake of the account
+     */
     public static long totalStake(@NonNull Account account) {
         return account.tinybarBalance() + account.stakedToMe();
     }

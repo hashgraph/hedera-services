@@ -32,12 +32,13 @@ import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModel
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class Create2OperationV1SecurityModelSuite extends HapiSuite {
 
@@ -60,11 +61,11 @@ public class Create2OperationV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor());
     }
 
-    final HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
+    final Stream<DynamicTest> childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
         final var ft = "fungibleToken";
         final var multiKey = SWISS;
         final var creationAndAssociation = "creationAndAssociation";

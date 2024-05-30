@@ -25,11 +25,6 @@ public enum ConsensusRoundHandlerPhase {
      */
     IDLE,
     /**
-     * The handler is waiting for the keystone event of the round to become durable before applying the contained
-     * transactions to the state.
-     */
-    WAITING_FOR_EVENT_DURABILITY,
-    /**
      * The consensus fields of the events in a round are being populated.
      */
     SETTING_EVENT_CONSENSUS_DATA,
@@ -49,10 +44,6 @@ public enum ConsensusRoundHandlerPhase {
      * The platform state is being updated with the running hash of the round.
      */
     UPDATING_PLATFORM_STATE_RUNNING_HASH,
-    /**
-     * The consensus hash manager is being informed that the round has been handled.
-     */
-    MARKING_ROUND_COMPLETE,
     /**
      * The handler is getting the state to sign.
      */

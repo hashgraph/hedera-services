@@ -3,7 +3,8 @@
     Authors: Robert Fink, Brian Worth, Merrick Zoubeiri, and many other contributors. Based in part on http://checkstyle.sourceforge.net/google_style.html
     Please keep checks alphabetized with one exception: "relaxed" checks are grouped together at the bottom for easier disabling.
     Check-specific comments reference documents internal to Palantir and can be safely ignored or removed.
- --><!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
+ -->
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
@@ -38,7 +39,7 @@
     </module>
     <module name="LineLength"> <!-- Java Style Guide: No line-wrapping -->
         <property name="max" value="120"/>
-        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://|\{@link"/>
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://|\{@link|@see.*#.*"/>
     </module>
     <module name="TreeWalker">
         <module name="SuppressionCommentFilter"/> <!-- baseline-gradle: README.md -->
@@ -143,11 +144,6 @@
             <message key="import.illegal" value="math is deprecated, use math3 instead."/>
         </module>
         <module name="IllegalImport">
-            <property name="id" value="BanLoggingImplementations"/>
-            <property name="illegalPkgs" value="org.apache.log4j, org.apache.logging.log4j, java.util.logging, ch.qos.logback"/>
-            <message key="import.illegal" value="Use SLF4J instead of a logging framework directly."/>
-        </module>
-        <module name="IllegalImport">
             <property name="illegalClasses" value="com.google.common.base.Optional, com.google.common.base.Supplier"/>
             <message key="import.illegal" value="Use the Java8 version of Guava objects."/>
         </module>
@@ -197,7 +193,9 @@
         <module name="ModifierOrder"/> <!-- Java Style Guide: Modifiers -->
         <module name="MultipleVariableDeclarations"/> <!-- Java Style Guide: One variable per declaration -->
         <module name="MutableException"/> <!-- Java Coding Guidelines: Exceptions: Always immutable -->
-        <module name="NeedBraces"/> <!-- Java Style Guide: Braces are used where optional -->
+        <module name="NeedBraces"> <!-- Java Style Guide: Braces are used where optional -->
+            <property name="allowSingleLineStatement" value="true"/>
+        </module>
         <module name="NoClone"/> <!-- Java Coding Guidelines: Never override Object#finalize or Object#clone -->
         <module name="NoFinalizer"/> <!-- Java Coding Guidelines: Never override Object#finalize -->
         <module name="NoLineWrap"/> <!-- Java Style Guide: No line-wrapping -->
@@ -299,13 +297,13 @@
             <property name="format" value="^\s*super\(\);"/>
             <property name="message" value="This is unnecessary; please delete."/>
         </module>
-        <module name="RegexpSinglelineJava">
-            <property name="format" value="@return.*\.$"/>
-            <property name="message" value="Please delete the period."/>
-        </module>
         <module name="RegexpSinglelineJava"> <!-- Java Style Guide: Horizontal whitespace -->
             <property name="format" value="\s+$"/>
             <property name="message" value="Trailing whitespace is not allowed."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="@return.*\.$"/>
+            <property name="message" value="Please delete the period."/>
         </module>
         <module name="RegexpSinglelineJava">
             <property name="format" value="\? extends Object\W"/>
@@ -399,6 +397,7 @@
         </module>
         <module name="CyclomaticComplexity"> <!-- Java Coding Guidelines: Reduce Cyclomatic Complexity -->
             <property name="switchBlockAsSingleDecisionPoint" value="true"/>
+            <property name="max" value="20"/>
         </module>
         <module name="DesignForExtension"> <!-- Java Coding Guidelines: Design for extension -->
             <property name="ignoredAnnotations" value="ParameterizedTest, Test, Before, BeforeEach, After, AfterEach, BeforeClass, BeforeAll, AfterClass, AfterAll"/>
@@ -438,6 +437,9 @@
             <property name="forbiddenSummaryFragments" value="^@return the *|^This method returns |^A [{]@code [a-zA-Z0-9]+[}]( is a )"/>
         </module>
 
+        <module name="SuppressionXpathFilter"> <!-- baseline-gradle: README.md -->
+            <property name="file" value="${config_loc}/checkstyle-xpath-suppressions.xml"/>
+        </module>
         <!-- Stricter checks end -->
     </module>
 </module>

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-pluginManagement { includeBuild("build-logic") }
+pluginManagement { includeBuild("gradle/plugins") }
 
-plugins { id("com.hedera.hashgraph.settings") }
+plugins { id("com.hedera.gradle.settings") }
 
 // "BOM" with versions of 3rd party dependencies
 include("hedera-dependency-versions")
+
+// Project to aggregate code coverage data for the whole repository into one report
+include(":reports", "gradle/reports")
 
 // Hedera Node projects
 include(":app", "hedera-node/hedera-app")
@@ -36,9 +39,9 @@ include(":app-service-contract", "hedera-node/hedera-smart-contract-service")
 
 include(":app-service-contract-impl", "hedera-node/hedera-smart-contract-service-impl")
 
-include(":app-service-evm", "hedera-node/hedera-evm")
+include(":hedera-evm", "hedera-node/hedera-evm")
 
-include(":app-service-evm-impl", "hedera-node/hedera-evm-impl")
+include(":hedera-evm-impl", "hedera-node/hedera-evm-impl")
 
 include(":app-service-file", "hedera-node/hedera-file-service")
 
@@ -66,7 +69,7 @@ include(":app-spi", "hedera-node/hedera-app-spi")
 
 include(":config", "hedera-node/hedera-config")
 
-include(":hapi", "hedera-node/hapi")
+include(":hapi", "hapi")
 
 include(":services-cli", "hedera-node/cli-clients")
 
@@ -81,6 +84,8 @@ include(":swirlds-base", "platform-sdk/swirlds-base")
 
 include(":swirlds-logging", "platform-sdk/swirlds-logging")
 
+include(":swirlds-logging-log4j-appender", "platform-sdk/swirlds-logging-log4j-appender")
+
 include(":swirlds-common", "platform-sdk/swirlds-common")
 
 include(":swirlds-config-api", "platform-sdk/swirlds-config-api")
@@ -90,6 +95,8 @@ include(":swirlds-config-processor", "platform-sdk/swirlds-config-processor")
 include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-metrics-api", "platform-sdk/swirlds-metrics-api")
+
+include(":swirlds-metrics-impl", "platform-sdk/swirlds-metrics-impl")
 
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
@@ -105,6 +112,8 @@ include(":swirlds-virtualmap", "platform-sdk/swirlds-virtualmap")
 
 include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
 
+include(":swirlds-state-api", "platform-sdk/swirlds-state-api")
+
 include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
@@ -115,6 +124,20 @@ include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-
 includeAllProjects("platform-sdk/platform-apps/demos")
 
 includeAllProjects("platform-sdk/platform-apps/tests")
+
+//Platform-base demo applications
+include(":swirlds-platform-base-example", "example-apps/swirlds-platform-base-example")
+
+// Block Node Projects
+include(":blocknode-core", "block-node/blocknode-core")
+include(":blocknode-core-spi", "block-node/blocknode-core-spi")
+include(":blocknode-filesystem-api", "block-node/blocknode-filesystem-api")
+include(":blocknode-filesystem-local", "block-node/blocknode-filesystem-local")
+include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
+include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
+include(":blocknode-state", "block-node/blocknode-state")
+
+
 
 fun include(name: String, path: String) {
     include(name)
@@ -132,7 +155,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.47.0"
+val hapiProtoVersion = "0.50.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions
@@ -141,6 +164,6 @@ dependencyResolutionManagement {
         version("grpc-proto", "1.45.1")
         version("hapi-proto", hapiProtoVersion)
 
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.7.19")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.8.9")
     }
 }

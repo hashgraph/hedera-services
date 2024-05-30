@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
@@ -99,38 +97,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     @Override
     public MerkleNode migrate(final int version) {
         if (version < ClassVersion.REMOVE_DUAL_STATE) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    "Migrating legacy platform state to new platform state at version (State version {} -> {}).",
-                    version,
-                    getVersion());
-
-            final State newState = new State();
-
-            final PlatformState newPlatformState = new PlatformState();
-
-            final LegacyPlatformState platformState = getChild(ChildIndices.PLATFORM_STATE);
-            final PlatformData platformData = platformState.getPlatformData();
-            final DualStateImpl dualState = getChild(ChildIndices.DUAL_STATE);
-
-            newPlatformState.setAddressBook(platformState.getAddressBook());
-            newPlatformState.setPreviousAddressBook(platformState.getPreviousAddressBook());
-            newPlatformState.setRound(platformData.getRound());
-            newPlatformState.setRunningEventHash(platformData.getHashEventsCons());
-            newPlatformState.setConsensusTimestamp(platformData.getConsensusTimestamp());
-            newPlatformState.setCreationSoftwareVersion(platformData.getCreationSoftwareVersion());
-            newPlatformState.setEpochHash(platformData.getEpochHash());
-            newPlatformState.setNextEpochHash(platformData.getNextEpochHash());
-            newPlatformState.setRoundsNonAncient(platformData.getRoundsNonAncient());
-            newPlatformState.setSnapshot(platformData.getSnapshot());
-            newPlatformState.setFreezeTime(dualState.getFreezeTime());
-            newPlatformState.setLastFrozenTime(dualState.getLastFrozenTime());
-            newPlatformState.setUptimeData(dualState.getUptimeData());
-
-            newState.setPlatformState(newPlatformState);
-            newState.setSwirldState(getSwirldState());
-
-            return newState;
+            throw new UnsupportedOperationException("State migration from version " + version + " is not supported."
+                    + " The minimum supported version is " + getMinimumSupportedVersion());
         }
         return this;
     }
@@ -140,7 +108,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.ADD_DUAL_STATE;
+        return ClassVersion.REMOVE_DUAL_STATE;
     }
 
     /**
@@ -255,9 +223,10 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     public String getInfoString(final int hashDepth) {
         final PlatformState platformState = getPlatformState();
         final Hash epochHash = platformState.getNextEpochHash();
-        final Hash hashEventsCons = platformState.getRunningEventHash();
-        final List<MinGenInfo> minGenInfo = platformState.getMinGenInfo();
+        final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
+
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
+        final List<MinimumJudgeInfo> minimumJudgeInfo = snapshot == null ? null : snapshot.getMinimumJudgeInfoList();
 
         final StringBuilder sb = new StringBuilder();
 
@@ -266,14 +235,17 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Round:", platformState.getRound())
                 .addRow("Timestamp:", platformState.getConsensusTimestamp())
                 .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
-                .addRow("Running event hash:", hashEventsCons)
-                .addRow("Running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
+                .addRow("Legacy running event hash:", hashEventsCons)
+                .addRow("Legacy running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
                 .addRow("Creation version:", platformState.getCreationSoftwareVersion())
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Epoch hash:", epochHash)
-                .addRow("Min gen hash code:", minGenInfo == null ? "null" : minGenInfo.hashCode())
+                .addRow("Minimum judge hash code:", minimumJudgeInfo == null ? "null" : minimumJudgeInfo.hashCode())
                 .addRow("Root hash:", getHash())
+                .addRow("First BR Version:", platformState.getFirstVersionInBirthRoundMode())
+                .addRow("Last round before BR:", platformState.getLastRoundBeforeBirthRoundMode())
+                .addRow("Lowest Judge Gen before BR", platformState.getLowestJudgeGenerationBeforeBirthRoundMode())
                 .render(sb);
 
         sb.append("\n");

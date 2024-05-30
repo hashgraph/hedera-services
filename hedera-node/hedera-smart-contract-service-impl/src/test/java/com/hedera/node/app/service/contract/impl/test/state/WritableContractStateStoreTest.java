@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.BYTECODE_KEY;
-import static com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema.STORAGE_KEY;
+import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.BYTECODE_KEY;
+import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -29,9 +30,11 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +65,9 @@ class WritableContractStateStoreTest {
         given(states.<SlotKey, SlotValue>get(STORAGE_KEY)).willReturn(storage);
         given(states.<ContractID, Bytecode>get(BYTECODE_KEY)).willReturn(bytecode);
 
-        subject = new WritableContractStateStore(states);
+        final var config = HederaTestConfigBuilder.createConfig();
+
+        subject = new WritableContractStateStore(states, config, mock(StoreMetricsService.class));
     }
 
     @Test

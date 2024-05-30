@@ -418,7 +418,7 @@ public final class PcesFile implements Comparable<PcesFile> {
      * reached, which is never deleted.
      *
      * @param rootDirectory the root directory where event files are stored
-     * @param recycleBin    if not null, then recycle the files instead of deleting them
+     * @param recycleBin  if not null, then recycle the files instead of deleting them
      */
     public void deleteFile(@NonNull final Path rootDirectory, @Nullable final RecycleBin recycleBin)
             throws IOException {

@@ -37,6 +37,7 @@ public final class TokenListChecks {
      *
      * @param tokens the list of {@link TokenID}s to check
      * @throws NullPointerException if {@code tokens} is {@code null}
+     * @return {@code true} if the list contains no duplicates, {@code false} otherwise
      */
     public static boolean repeatsItself(@NonNull final List<TokenID> tokens) {
         requireNonNull(tokens);

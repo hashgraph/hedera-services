@@ -29,10 +29,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -45,11 +43,14 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -65,6 +66,10 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     private final StakingRewardsHandler stakingRewardsHandler;
 
+    /**
+     * Constructs a {@link FinalizeParentRecordHandler} instance.
+     * @param stakingRewardsHandler the {@link StakingRewardsHandler} instance
+     */
     @Inject
     public FinalizeParentRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
         this.stakingRewardsHandler = stakingRewardsHandler;
@@ -72,9 +77,11 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(
-            @NonNull final AccountID payer,
+            @Nullable final AccountID payer,
             @NonNull final FinalizeContext context,
-            @NonNull final HederaFunctionality functionality) {
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Set<AccountID> explicitRewardReceivers,
+            @NonNull final Map<AccountID, Long> prePaidRewards) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -85,7 +92,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
-        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         if (stakingConfig.isEnabled()) {
@@ -93,16 +99,19 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             // a node. They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
-            final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
+            final var rewardsPaid =
+                    stakingRewardsHandler.applyStakingRewards(context, explicitRewardReceivers, prePaidRewards);
             if (requiresExternalization(rewardsPaid)) {
                 recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
             }
         }
 
         // Hbar changes from transaction including staking rewards
+        final var maxLegalBalance =
+                context.configuration().getConfigData(LedgerConfig.class).totalTinyBarFloat();
         final Map<AccountID, Long> hbarChanges;
         try {
-            hbarChanges = hbarChangesFrom(writableAccountStore);
+            hbarChanges = hbarChangesFrom(writableAccountStore, maxLegalBalance);
         } catch (HandleException e) {
             if (e.getStatus() == FAIL_INVALID) {
                 logHbarFinalizationFailInvalid(
@@ -115,22 +124,21 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
         // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = functionality == HederaFunctionality.CRYPTO_TRANSFER;
-        final var tokenChanges = tokenRelChangesFrom(
-                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
-        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
-
-        if (nftChanges.isEmpty()) {
-            final var nonFungibleTokenChanges = tokenRelChangesFrom(
-                    writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
-            nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
-        }
+        // get all the token relation changes for fungible and non-fungible tokens
+        final var tokenRelChanges = tokenRelChangesFrom(writableTokenRelStore, !isCryptoTransfer);
+        // get all the NFT changes. Go through the nft changes and see if there are any token relation changes
+        // for the sender and receiver of the NFTs. If there are, then reduce the balance change for that relation
+        // by 1 for receiver and increment the balance change for sender by 1. This is to ensure that the NFT
+        // transfer is not double counted in the token relation changes and the NFT changes. Also we don't need to
+        // represent the changes for Mint or Wipe of NFTs in the token relation changes.
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, tokenRelChanges);
 
         if (context.hasChildRecords()) {
             // All the above changes maps are mutable
-            deductChangesFromChildRecords(context, tokenChanges, nftChanges, hbarChanges);
+            deductChangesFromChildRecords(context, tokenRelChanges, nftChanges, hbarChanges);
             // In the current system a parent transaction that has child transactions cannot
             // *itself* cause any net fungible or NFT transfers; fail fast if that happens
-            validateTrue(tokenChanges.isEmpty(), FAIL_INVALID);
+            validateTrue(tokenRelChanges.isEmpty(), FAIL_INVALID);
             validateTrue(nftChanges.isEmpty(), FAIL_INVALID);
         }
         if (!hbarChanges.isEmpty()) {
@@ -139,9 +147,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                     .accountAmounts(asAccountAmounts(hbarChanges))
                     .build());
         }
-        final var hasTokenTransferLists = !tokenChanges.isEmpty() || !nftChanges.isEmpty();
+        final var hasTokenTransferLists = !tokenRelChanges.isEmpty() || !nftChanges.isEmpty();
         if (hasTokenTransferLists) {
-            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges, !isCryptoTransfer);
+            final var tokenTransferLists = asTokenTransferListFrom(tokenRelChanges, !isCryptoTransfer);
             final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
             tokenTransferLists.addAll(nftTokenTransferLists);
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
@@ -152,7 +160,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     // invoke logger parameters conditionally
     @SuppressWarnings("java:S2629")
     private void logHbarFinalizationFailInvalid(
-            @NonNull final AccountID payerId,
+            @Nullable final AccountID payerId,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final WritableAccountStore accountStore) {
         logger.error(
@@ -181,7 +189,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         context.forEachChildRecord(ChildRecordBuilder.class, childRecord -> {
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
-                    : childRecord.transferList().accountAmountsOrElse(emptyList());
+                    : childRecord.transferList().accountAmounts();
             for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {
@@ -192,7 +200,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                 }
             }
             for (final var tokenTransfers : childRecord.tokenTransferLists()) {
-                final var fungibleTransfers = tokenTransfers.transfersOrElse(emptyList());
+                final var fungibleTransfers = tokenTransfers.transfers();
                 final var tokenId = tokenTransfers.tokenOrThrow();
                 if (!fungibleTransfers.isEmpty()) {
                     for (final var unitAdjust : fungibleTransfers) {
@@ -207,7 +215,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                         }
                     }
                 } else {
-                    for (final var ownershipChange : tokenTransfers.nftTransfersOrElse(emptyList())) {
+                    for (final var ownershipChange : tokenTransfers.nftTransfers()) {
                         final var newOwnerId = ownershipChange.receiverAccountIDOrElse(ZERO_ACCOUNT_ID);
                         final var key = new NftID(tokenId, ownershipChange.serialNumber());
                         finalNftOwners.put(key, newOwnerId);

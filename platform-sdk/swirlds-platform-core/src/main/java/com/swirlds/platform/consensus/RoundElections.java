@@ -23,7 +23,7 @@ import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.MinGenInfo;
+import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -80,7 +80,10 @@ public class RoundElections {
      * @param witness the witness being added
      */
     public void addWitness(@NonNull final EventImpl witness) {
-        logger.info(CONSENSUS_VOTING.getMarker(), "Adding witness for election {}", witness::toShortString);
+        logger.info(
+                CONSENSUS_VOTING.getMarker(),
+                "Adding witness for election {}",
+                witness.getBaseEvent().getDescriptor());
         numUnknownFame.increment();
         elections.add(new CandidateWitness(witness, numUnknownFame, elections.size()));
     }
@@ -118,10 +121,10 @@ public class RoundElections {
     }
 
     /**
-     * @return create a {@link MinGenInfo} instance for this round
+     * @return create a {@link MinimumJudgeInfo} instance for this round
      */
-    public @NonNull MinGenInfo creatMinGenInfo() {
-        return new MinGenInfo(round, getMinGeneration());
+    public @NonNull MinimumJudgeInfo createMinimumJudgeInfo() {
+        return new MinimumJudgeInfo(round, getMinGeneration());
     }
 
     /**
@@ -169,7 +172,7 @@ public class RoundElections {
         // if this creator forked, then the judge is the "unique" famous witness, which is the one
         // with minimum hash
         // (where "minimum" is the lexicographically-least signed byte array)
-        if (Utilities.arrayCompare(e1.getBaseHash().getValue(), e2.getBaseHash().getValue()) < 0) {
+        if (Utilities.arrayCompare(e1.getBaseHash().getBytes(), e2.getBaseHash().getBytes()) < 0) {
             return e1;
         }
         return e2;

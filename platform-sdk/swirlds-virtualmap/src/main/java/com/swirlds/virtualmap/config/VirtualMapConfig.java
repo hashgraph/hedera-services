@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.config;
 
+import static com.swirlds.virtualmap.config.VirtualMapReconnectMode.PUSH;
+
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
@@ -39,6 +41,8 @@ import java.time.Duration;
  * @param virtualHasherChunkHeight
  *      The number of ranks minus one to handle in a single virtual hasher task. That is, when height is
  *      1, every task takes 2 inputs. Height 2 corresponds to tasks with 4 inputs. And so on.
+ * @param reconnectMode
+ *      Reconnect mode. For the list of accepted values, see {@link VirtualMapReconnectMode}.
  * @param reconnectFlushInterval
  *      During reconnect, virtual nodes are periodically flushed to disk after they are hashed. This
  *      interval indicates the number of nodes to hash before they are flushed to disk. If zero, all
@@ -48,7 +52,7 @@ import java.time.Duration;
  * 		cleaner threads. Ignored if an explicit number of threads is given via {@code virtualMap.numCleanerThreads}.
  * @param numCleanerThreads
  * 		The number of threads to devote to cache cleaning. If not set, defaults to the number of threads implied by
- *        {@code virtualMap.percentCleanerThreads} and {@link Runtime#availableProcessors()}.
+ *      {@code virtualMap.percentCleanerThreads} and {@link Runtime#availableProcessors()}.
  * @param maximumVirtualMapSize
  * 		The maximum number of entries allowed in the {@link VirtualMap} instance. If not set, defaults to
  * 		Integer.MAX_VALUE (2^31 - 1, or 2,147,483,647).
@@ -59,7 +63,7 @@ import java.time.Duration;
  * 		({@code getMaximumVirtualMapSize()}), we would log a warning message that there are only 5,000,000 slots left.
  * @param virtualMapWarningInterval
  * 		The threshold for each subsequent warning message to be logged, after the initial one, about the
- *        {@link VirtualMap} instance running close to the maximum allowable size. For example, if set to 100,000,
+ *      {@link VirtualMap} instance running close to the maximum allowable size. For example, if set to 100,000,
  * 		then for each 100,000 elements beyond {@code getVirtualMapWarningThreshold()} that we are closer to 0, we will
  * 		output an additional warning message that we are nearing the limit ({@code getMaximumVirtualMapSize()}), we
  * 		would log a warning message that there are only N slots left.
@@ -89,7 +93,8 @@ public record VirtualMapConfig(
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "50.0")
                 double percentHashThreads, // FUTURE WORK: We need to add min/max support for double values
         @Min(-1) @ConfigProperty(defaultValue = "-1") int numHashThreads,
-        @Min(1) @Max(64) @ConfigProperty(defaultValue = "6") int virtualHasherChunkHeight,
+        @Min(1) @Max(64) @ConfigProperty(defaultValue = "3") int virtualHasherChunkHeight,
+        @ConfigProperty(defaultValue = PUSH) String reconnectMode,
         @Min(0) @ConfigProperty(defaultValue = "500000") int reconnectFlushInterval,
         @Min(0) @Max(100) @ConfigProperty(defaultValue = "25.0")
                 double percentCleanerThreads, // FUTURE WORK: We need to add min/max support for double values
@@ -105,6 +110,7 @@ public record VirtualMapConfig(
         @ConfigProperty(defaultValue = "10000") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
+
     private static final double UNIT_FRACTION_PERCENT = 100.0;
 
     public ConfigViolation virtualMapWarningIntervalValidation(final Configuration configuration) {

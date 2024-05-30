@@ -47,9 +47,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -84,7 +84,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -879,11 +878,11 @@ class VirtualMapTests extends VirtualTestBase {
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
 
         VirtualMap<TestKey, TestValue> map0 = createMap();
@@ -939,11 +938,11 @@ class VirtualMapTests extends VirtualTestBase {
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        final Metrics metrics = new DefaultMetrics(
+        final Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
 
         VirtualMap<TestKey, TestValue> map0 = createMap();
@@ -1048,8 +1047,6 @@ class VirtualMapTests extends VirtualTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("VMAP-019")})
     @DisplayName("Insert one million elements with same key but different value")
     @Tag(TestQualifierTags.TIME_CONSUMING)
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11498
-    @Disabled
     void insertRemoveAndModifyOneMillion() throws InterruptedException {
         final int changesPerBatch = 15_432; // Some unexpected size just to be crazy
         final int max = 1_000_000;

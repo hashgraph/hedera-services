@@ -23,11 +23,6 @@ on:
         type: boolean
         required: false
         default: true
-      enable-sonar-analysis:
-        description: "Sonar Analysis Enabled"
-        type: boolean
-        required: false
-        default: true
       enable-integration-tests:
         description: "Integration Testing Enabled"
         type: boolean
@@ -81,7 +76,6 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '21.0.1' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
-      enable-sonar-analysis: false
       enable-integration-tests: ${{ github.event.inputs.enable-integration-tests == 'true' }}
       enable-hapi-tests-misc: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
       enable-hapi-tests-crypto: ${{ github.event.inputs.enable-hapi-tests == 'true' }}
@@ -96,8 +90,8 @@ jobs:
       enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
-      sonar-token: ${{ secrets.SONAR_TOKEN }}
       snyk-token: ${{ secrets.SNYK_TOKEN }}
       codacy-project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}

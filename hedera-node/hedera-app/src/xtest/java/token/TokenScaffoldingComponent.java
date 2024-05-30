@@ -18,6 +18,8 @@ package token;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -36,10 +38,15 @@ import javax.inject.Singleton;
 public interface TokenScaffoldingComponent extends BaseScaffoldingComponent {
     @Component.Factory
     interface Factory {
-        TokenScaffoldingComponent create(@BindsInstance Metrics metrics, @BindsInstance Configuration configuration);
+        TokenScaffoldingComponent create(
+                @BindsInstance Metrics metrics,
+                @BindsInstance Configuration configuration,
+                @BindsInstance StoreMetricsService storeMetricsService);
     }
 
     CryptoTransferHandler cryptoTransferHandler();
 
     TokenMintHandler tokenMintHandler();
+
+    TokenUpdateHandler tokenUpdateHandler();
 }

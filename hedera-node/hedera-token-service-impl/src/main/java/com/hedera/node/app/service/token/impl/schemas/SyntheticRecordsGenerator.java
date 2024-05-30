@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.schemas;
 
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
@@ -39,6 +39,9 @@ import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This class generates synthetic records for all reserved system accounts
+ */
 public class SyntheticRecordsGenerator {
     private static final Logger log = LogManager.getLogger(SyntheticRecordsGenerator.class);
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
@@ -59,22 +62,42 @@ public class SyntheticRecordsGenerator {
         blocklistParser = new BlocklistParser();
     }
 
+    /**
+     * Returns the synthetic records for system accounts
+     * @return the set of accounts for which records are generated
+     */
     public SortedSet<Account> sysAcctRecords() {
         return systemAcctRcds;
     }
 
+    /**
+     * Returns the synthetic records for staking accounts
+     * @return the set of accounts for which records are generated
+     */
     public SortedSet<Account> stakingAcctRecords() {
         return stakingAcctRcds;
     }
 
+    /**
+     * Returns the synthetic records for treasury accounts
+     * @return the set of accounts for which records are generated
+     */
     public SortedSet<Account> treasuryAcctRecords() {
         return treasuryAcctRcds;
     }
 
+    /**
+     * Returns the synthetic records for multi-use accounts
+     * @return the set of accounts for which records are generated
+     */
     public SortedSet<Account> multiUseAcctRecords() {
         return multiUseAcctRcds;
     }
 
+    /**
+     * Returns the synthetic records for blocklist accounts
+     * @return the set of accounts for which records are generated
+     */
     public SortedSet<Account> blocklistAcctRecords() {
         return blocklistAcctRcds;
     }
@@ -218,6 +241,11 @@ public class SyntheticRecordsGenerator {
                 .build();
     }
 
+    /**
+     * Returns an array of account numbers that are not reserved for system contracts.
+     * @param numReservedSystemEntities the number of reserved system entities
+     * @return an array of account numbers that are not reserved for system contracts
+     */
     @VisibleForTesting
     public static long[] nonContractSystemNums(final long numReservedSystemEntities) {
         return LongStream.rangeClosed(FIRST_POST_SYSTEM_FILE_ENTITY, numReservedSystemEntities)

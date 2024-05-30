@@ -74,15 +74,16 @@ import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -567,8 +568,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
-            writableNftStore = new WritableNftStore(new MapWritableStates(
-                    Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
+            writableNftStore = new WritableNftStore(
+                    new MapWritableStates(
+                            Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
+                    configuration,
+                    mock(StoreMetricsService.class));
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);

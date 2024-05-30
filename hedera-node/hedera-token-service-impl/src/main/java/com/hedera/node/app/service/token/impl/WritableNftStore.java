@@ -22,8 +22,13 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -44,10 +49,19 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Create a new {@link WritableNftStore} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum allowed mints.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableNftStore(@NonNull final WritableStates states) {
+    public WritableNftStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
+        this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
+
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
+        final var storeMetrics = storeMetricsService.get(StoreType.NFT, maxCapacity);
+        nftState.setMetrics(storeMetrics);
     }
 
     /**
@@ -58,6 +72,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void put(@NonNull final Nft nft) {
         Objects.requireNonNull(nft);
+        requireNotDefault(nft.nftId());
         nftState.put(nft.nftId(), nft);
     }
 
@@ -65,6 +80,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param id - the number of the unique token id to be retrieved.
+     * @return the Nft with the given NftId, or null if no such token exists.
      */
     @Nullable
     public Nft getForModify(final NftID id) {
@@ -75,6 +91,8 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Returns the {@link Nft} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the number of the unique token id to be retrieved.
+     * @param serialNumber - the serial number of the NFT to be retrieved.
+     * @return the Nft with the given tokenId and serial, or null if no such token exists.
      */
     @Nullable
     public Nft getForModify(final TokenID tokenId, final long serialNumber) {
@@ -108,7 +126,10 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * @param serialNum - the serial number of the NFT to remove
      */
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
-        remove(NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build());
+        final var nftId =
+                NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build();
+        requireNotDefault(nftId);
+        remove(nftId);
     }
 
     /**
@@ -123,5 +144,11 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public Nft getOriginalValue(@NonNull final NftID nftId) {
         requireNonNull(nftId);
         return nftState.getOriginalValue(nftId);
+    }
+
+    private void requireNotDefault(@NonNull final NftID nftId) {
+        if (nftId.equals(NftID.DEFAULT)) {
+            throw new IllegalArgumentException("Nft ID cannot be default");
+        }
     }
 }

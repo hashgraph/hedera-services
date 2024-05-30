@@ -214,8 +214,7 @@ class DataFileCollectionTest {
         assertEquals(
                 10,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "Temp file should not have changed since previous test in sequence");
@@ -439,8 +438,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files #1");
@@ -489,8 +487,7 @@ class DataFileCollectionTest {
         assertEquals(
                 2,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files");
@@ -597,8 +594,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f ->
-                                f.toString().endsWith(".pbj") || f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "unexpected # of files");
@@ -607,7 +603,7 @@ class DataFileCollectionTest {
     private static DataFileCompactor<long[]> createFileCompactor(
             String storeName, DataFileCollection<long[]> fileCollection, FilesTestType testType) {
         return new DataFileCompactor<>(
-                storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
+                config, storeName, fileCollection, storedOffsetsMap.get(testType), null, null, null, null) {
             @Override
             int getMinNumberOfFilesToCompact() {
                 return 2;
@@ -662,7 +658,7 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection2 =
                 new DataFileCollection<>(config, dbDir, storeName, testType.dataItemSerializer, null);
         final DataFileCompactor<long[]> fileCompactor = new DataFileCompactor<>(
-                storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
+                config, storeName, fileCollection2, storedOffsetsMap.get(testType), null, null, null, null);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -676,8 +672,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(dbDir)
-                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj")
-                                || file.getFileName().toString().matches(storeName + ".*jdb"))
+                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj"))
                         .filter(f -> !f.toString().contains("metadata"))
                         .count(),
                 "expected 1 db files but had ["
@@ -733,7 +728,7 @@ class DataFileCollectionTest {
                 new DataFileCollection<>(config, dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
         final DataFileCompactor<long[]> compactor =
-                new DataFileCompactor<>(storeName, fileCollection, storedOffsets, null, null, null, null);
+                new DataFileCompactor<>(config, storeName, fileCollection, storedOffsets, null, null, null, null);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th
@@ -743,9 +738,8 @@ class DataFileCollectionTest {
             List<DataFileReader<long[]>> allCompletedFiles = fileCollection.getAllCompletedFiles();
             DataFileReader<long[]> spy = Mockito.spy(allCompletedFiles.get(0));
             try {
-                AtomicInteger count = new AtomicInteger(0);
-                when(spy.getFileType()).thenAnswer(invocation -> {
-                    // on the first call to getFileType(), we interrupt the thread
+                when(spy.leaseFileChannel()).thenAnswer(invocation -> {
+                    // on the first call to leaseFileChannel(), we interrupt the thread
                     Thread.currentThread().interrupt();
                     return invocation.callRealMethod();
                 });

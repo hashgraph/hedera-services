@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -57,8 +57,8 @@ public class InputEventsValidation {
      */
     private static void assertBaseEventLists(
             @NonNull final String description,
-            @NonNull final List<EventImpl> l1,
-            @NonNull final List<EventImpl> l2,
+            @NonNull final List<GossipEvent> l1,
+            @NonNull final List<GossipEvent> l2,
             final boolean shouldBeEqual) {
 
         if (l1.size() != l2.size()) {
@@ -66,9 +66,9 @@ public class InputEventsValidation {
         }
 
         for (int index = 0; index < l1.size(); index++) {
-            final EventImpl e1 = l1.get(index);
-            final EventImpl e2 = l2.get(index);
-            final boolean equals = Objects.equals(e1.getBaseEvent(), e2.getBaseEvent());
+            final GossipEvent e1 = l1.get(index);
+            final GossipEvent e2 = l2.get(index);
+            final boolean equals = Objects.equals(e1.getHashedData(), e2.getHashedData());
             if (shouldBeEqual && !equals) {
                 final String sb = description
                         + "\n"

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -29,7 +30,7 @@ import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -49,14 +50,16 @@ class SyncFilteringTest {
     /**
      * Generate a random list of events.
      *
-     * @param random      a random number generator
-     * @param addressBook the address book
-     * @param time        provides the current time
-     * @param timeStep    the time between events
-     * @param count       the number of events to generate
+     * @param platformContext the platform context
+     * @param random          a random number generator
+     * @param addressBook     the address book
+     * @param time            provides the current time
+     * @param timeStep        the time between events
+     * @param count           the number of events to generate
      * @return the list of events
      */
     private static List<EventImpl> generateEvents(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Random random,
             @NonNull final AddressBook addressBook,
             @NonNull final FakeTime time,
@@ -69,7 +72,8 @@ class SyncFilteringTest {
         for (int i = 0; i < addressBook.getSize(); i++) {
             sources.add(new StandardEventSource(false));
         }
-        final StandardGraphGenerator generator = new StandardGraphGenerator(random.nextLong(), sources, addressBook);
+        final StandardGraphGenerator generator =
+                new StandardGraphGenerator(platformContext, random.nextLong(), sources, addressBook);
 
         for (int i = 0; i < count; i++) {
             final EventImpl event = generator.generateEvent();
@@ -121,21 +125,22 @@ class SyncFilteringTest {
         final Random random = getRandomPrintSeed();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(32).build();
+                RandomAddressBookBuilder.create(random).withSize(32).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final Instant startingTime = Instant.ofEpochMilli(random.nextInt());
         final Duration timeStep = Duration.ofMillis(10);
 
         final FakeTime time = new FakeTime(startingTime, Duration.ZERO);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final int eventCount = 1000;
-        final List<EventImpl> events = generateEvents(random, addressBook, time, timeStep, eventCount);
+        final List<EventImpl> events = generateEvents(platformContext, random, addressBook, time, timeStep, eventCount);
 
         events.sort(Comparator.comparingLong(EventImpl::getGeneration));
 
-        final Duration nonAncestorSendThreshold = TestPlatformContextBuilder.create()
-                .build()
+        final Duration nonAncestorSendThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(SyncConfig.class)
                 .nonAncestorFilterThreshold();

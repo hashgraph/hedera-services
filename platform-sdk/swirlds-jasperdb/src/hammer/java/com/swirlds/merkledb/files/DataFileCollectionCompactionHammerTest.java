@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeDataSerializer;
@@ -67,18 +67,16 @@ class DataFileCollectionCompactionHammerTest {
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
     void benchmark(int numFiles, int maxEntriesPerFile) throws IOException {
-        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+        final Path tempFileDir =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         assertDoesNotThrow(() -> {
             final LongListHeap index = new LongListHeap();
             final var serializer = new ExampleFixedSizeDataSerializer();
             String storeName = "benchmark";
+            final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
             final var coll = new DataFileCollection<>(
-                    ConfigurationHolder.getConfigData(MerkleDbConfig.class),
-                    tempFileDir.resolve(storeName),
-                    storeName,
-                    serializer,
-                    (dataLocation, dataValue) -> {});
-            final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
+                    dbConfig, tempFileDir.resolve(storeName), storeName, serializer, (dataLocation, dataValue) -> {});
+            final var compactor = new DataFileCompactor<>(dbConfig, storeName, coll, index, null, null, null, null);
 
             final Random rand = new Random(777);
             for (int i = 0; i < numFiles; i++) {
@@ -128,17 +126,15 @@ class DataFileCollectionCompactionHammerTest {
     @SuppressWarnings("unchecked")
     @Test
     void hammer() throws IOException, InterruptedException, ExecutionException {
-        final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
+        final Path tempFileDir =
+                LegacyTemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionCompactionHammerTest");
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
         String storeName = "hammer";
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         final var coll = new DataFileCollection<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
-                tempFileDir.resolve(storeName),
-                storeName,
-                serializer,
-                (dataLocation, dataValue) -> {});
-        final var compactor = new DataFileCompactor<>(storeName, coll, index, null, null, null, null);
+                dbConfig, tempFileDir.resolve(storeName), storeName, serializer, (dataLocation, dataValue) -> {});
+        final var compactor = new DataFileCompactor<>(dbConfig, storeName, coll, index, null, null, null, null);
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);

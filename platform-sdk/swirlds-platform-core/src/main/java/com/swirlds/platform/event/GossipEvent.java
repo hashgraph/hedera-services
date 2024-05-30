@@ -18,32 +18,38 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.system.events.BaseEvent;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements BaseEvent, ChatterEvent {
+public class GossipEvent implements Event, SelfSerializable {
+    private static final EventConsensusData NO_CONSENSUS =
+            new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-    private static final int MAX_SIG_LENGTH = 384;
 
     private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int REMOVED_ROUND = 2;
         /**
          * Event serialization changes
          *
@@ -52,10 +58,10 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         public static final int BIRTH_ROUND = 3;
     }
 
-    private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
-    private BaseEventUnhashedData unhashedData;
-    private EventDescriptor descriptor;
+    /** creator's signature for this event */
+    private Bytes signature;
+
     private Instant timeReceived;
 
     /**
@@ -77,6 +83,14 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     private NodeId senderId;
 
+    /** The consensus data for this event */
+    private EventConsensusData consensusData = NO_CONSENSUS;
+    /**
+     * The consensus timestamp of this event (if it has reached consensus). This is the same timestamp that is stored in
+     * {@link #consensusData}, but converted to an {@link Instant}.
+     */
+    private Instant consensusTimestamp = null;
+
     /**
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
@@ -87,15 +101,22 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
 
     /**
      * @param hashedData   the hashed data for the event
-     * @param unhashedData the unhashed data for the event
+     * @param signature the signature for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
+        this(hashedData, Bytes.wrap(signature));
+    }
+
+    /**
+     * @param hashedData   the hashed data for the event
+     * @param signature the signature for the event
+     */
+    public GossipEvent(final BaseEventHashedData hashedData, final Bytes signature) {
         this.hashedData = hashedData;
-        this.unhashedData = unhashedData;
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
+        this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
+        this.consensusData = NO_CONSENSUS;
     }
 
     /**
@@ -127,13 +148,9 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
-            out.writeSerializable(hashedData, false);
-            out.writeSerializable(unhashedData, false);
-        } else {
-            out.writeSerializable(hashedData, false);
-            out.writeByteArray(unhashedData.getSignature());
-        }
+        out.writeSerializable(hashedData, false);
+        out.writeInt((int) signature.length());
+        signature.writeTo(out);
     }
 
     /**
@@ -141,73 +158,78 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        serializedVersion = version;
-        if (version < ClassVersion.BIRTH_ROUND) {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        } else {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(null, signature);
-        }
-        // remove update of other parent event descriptor after 0.46.0 hits mainnet.
-        unhashedData.updateOtherParentEventDescriptor(hashedData);
+        hashedData = in.readSerializable(false, BaseEventHashedData::new);
+        final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
+        this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
     }
 
     /**
      * Get the hashed data for the event.
      */
-    @Override
     public BaseEventHashedData getHashedData() {
         return hashedData;
     }
 
     /**
-     * Get the unhashed data for the event.
+     * @return the signature for the event
      */
-    @Override
-    public BaseEventUnhashedData getUnhashedData() {
-        return unhashedData;
+    public @NonNull Bytes getSignature() {
+        return signature;
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public EventDescriptor getDescriptor() {
-        if (descriptor == null) {
-            throw new IllegalStateException("Can not get descriptor until event has been hashed");
-        }
-        return descriptor;
-    }
-
-    /**
-     * Build the descriptor of this event. This cannot be done when the event is first instantiated, it needs to be
-     * hashed before the descriptor can be built.
+     * Get the descriptor for the event.
      *
-     * @throws IllegalStateException if the descriptor has already been built
+     * @return the descriptor for the event
      */
-    public void buildDescriptor() {
-        if (descriptor != null) {
-            throw new IllegalStateException("Descriptor has already been built");
-        }
+    public EventDescriptor getDescriptor() {
+        return hashedData.getDescriptor();
+    }
 
-        this.descriptor = hashedData.createEventDescriptor();
+    @Override
+    public Iterator<Transaction> transactionIterator() {
+        return Arrays.asList((Transaction[]) hashedData.getTransactions()).iterator();
+    }
+
+    @Override
+    public Instant getTimeCreated() {
+        return hashedData.getTimeCreated();
+    }
+
+    @Nullable
+    @Override
+    public SoftwareVersion getSoftwareVersion() {
+        return hashedData.getSoftwareVersion();
+    }
+
+    @NonNull
+    @Override
+    public NodeId getCreatorId() {
+        return hashedData.getCreatorId();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the generation of the event.
+     *
+     * @return the generation of the event
      */
-    @Override
     public long getGeneration() {
         return hashedData.getGeneration();
     }
 
     /**
-     * {@inheritDoc}
+     * @return the number of payloads this event contains
      */
-    @Override
+    public int getPayloadCount() {
+        return hashedData.getTransactions().length;
+    }
+
+    /**
+     * Get the time this event was received via gossip
+     *
+     * @return the time this event was received
+     */
     public @NonNull Instant getTimeReceived() {
         return timeReceived;
     }
@@ -241,6 +263,46 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
     }
 
     /**
+     * @return this event's consensus data, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public EventConsensusData getConsensusData() {
+        return consensusData;
+    }
+
+    /**
+     * @return the consensus timestamp for this event, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public Instant getConsensusTimestamp() {
+        return consensusTimestamp;
+    }
+
+    /**
+     * @return the consensus order for this event, this will be
+     * {@link com.swirlds.platform.consensus.ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
+     * consensus
+     */
+    public long getConsensusOrder() {
+        return consensusData.consensusOrder();
+    }
+
+    /**
+     * Set the consensus data for this event
+     *
+     * @param consensusData the consensus data for this event
+     */
+    public void setConsensusData(@NonNull final EventConsensusData consensusData) {
+        if (this.consensusData != NO_CONSENSUS) {
+            throw new IllegalStateException("Consensus data already set");
+        }
+        Objects.requireNonNull(consensusData, "consensusData");
+        Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
+        this.consensusData = consensusData;
+        this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
+    }
+
+    /**
      * Signal that all transactions have been prehandled for this event.
      */
     public void signalPrehandleCompletion() {
@@ -267,12 +329,12 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public int getVersion() {
-        return serializedVersion;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.REMOVED_ROUND;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     /**
@@ -280,7 +342,34 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public String toString() {
-        return EventStrings.toMediumString(this);
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(hashedData.getDescriptor());
+        stringBuilder.append("\n");
+        stringBuilder.append("    sp: ");
+
+        final EventDescriptor selfParent = hashedData.getSelfParent();
+        if (selfParent != null) {
+            stringBuilder.append(selfParent);
+        } else {
+            stringBuilder.append("null");
+        }
+        stringBuilder.append("\n");
+
+        int otherParentCount = 0;
+        for (final EventDescriptor otherParent : hashedData.getOtherParents()) {
+            stringBuilder.append("    op");
+            stringBuilder.append(otherParentCount);
+            stringBuilder.append(": ");
+            stringBuilder.append(otherParent);
+
+            otherParentCount++;
+            if (otherParentCount != hashedData.getOtherParents().size()) {
+                stringBuilder.append("\n");
+            }
+        }
+
+        return stringBuilder.toString();
     }
 
     /**
@@ -288,6 +377,9 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     @Override
     public boolean equals(final Object o) {
+        // FUTURE WORK:
+        // this method seems to be exclusively used for testing purposes. if that is the case, it would be better to
+        // have a separate method for testing equality that is only used in the unit tests.
         if (this == o) {
             return true;
         }
@@ -297,7 +389,8 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
         }
 
         final GossipEvent that = (GossipEvent) o;
-        return Objects.equals(getHashedData(), that.getHashedData());
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(consensusData, that.consensusData);
     }
 
     /**
@@ -316,7 +409,7 @@ public class GossipEvent implements BaseEvent, ChatterEvent {
      */
     public long getAncientIndicator(@NonNull final AncientMode ancientMode) {
         return switch (ancientMode) {
-            case GENERATION_THRESHOLD -> getGeneration();
+            case GENERATION_THRESHOLD -> hashedData.getGeneration();
             case BIRTH_ROUND_THRESHOLD -> hashedData.getBirthRound();
         };
     }

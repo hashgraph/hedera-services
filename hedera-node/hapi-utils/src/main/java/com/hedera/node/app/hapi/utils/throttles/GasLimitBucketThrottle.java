@@ -32,7 +32,7 @@ public class GasLimitBucketThrottle {
     private long lastAllowedUnits = 0L;
 
     /**
-     * Creates an instance of the throttle with the specified capacity
+     * Creates an instance of the throttle with the specified capacity.
      *
      * @param capacity - the capacity for the throttle
      */
@@ -88,7 +88,7 @@ public class GasLimitBucketThrottle {
 
     /**
      * Returns the approximate ratio of free-to-used capacity in the underlying bucket; if there is
-     * no capacity used, returns {@code Long.MAX_VALUE}
+     * no capacity used, returns {@code Long.MAX_VALUE}.
      *
      * @return the free-to-used ratio
      */
@@ -109,7 +109,7 @@ public class GasLimitBucketThrottle {
     /**
      * Returns an instance of the {@link DiscreteLeakyBucket} used under the hood.
      *
-     * @return an instance of the {@link DiscreteLeakyBucket} used under the hood.
+     * @return an instance of the {@link DiscreteLeakyBucket} used under the hood
      */
     public DiscreteLeakyBucket bucket() {
         return bucket;

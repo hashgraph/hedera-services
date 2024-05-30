@@ -21,7 +21,9 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUti
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * On each transaction, before finalizing the state to a transaction record, goes through all the modified accounts
@@ -38,10 +40,22 @@ public interface StakingRewardsHandler {
     /**
      * Goes through all the modified accounts and pays out the staking rewards if any and returns the map of account id
      * to the amount of rewards paid out.
+     *
+     * <p>For mono-service fidelity, also supports taking an extra set of accounts
+     * to explicitly consider for staking rewards, even if they do not appear to be
+     * in a reward situation. This is needed to trigger rewards for accounts that
+     * are listed in the HBAR adjustments of a {@code CryptoTransfer}; but with a
+     * zero adjustment amount.
+     *
      * @param context the context of the transaction
+     * @param explicitRewardReceivers a set of accounts that must be considered for rewards independent of the context
+     * @param prePaidRewards a set of accounts that have already been paid rewards in the current transaction
      * @return a map of account id to the amount of rewards paid out
      */
-    Map<AccountID, Long> applyStakingRewards(final FinalizeContext context);
+    Map<AccountID, Long> applyStakingRewards(
+            FinalizeContext context,
+            @NonNull Set<AccountID> explicitRewardReceivers,
+            @NonNull Map<AccountID, Long> prePaidRewards);
 
     /**
      * Checks if the account has been rewarded since the last staking metadata change.

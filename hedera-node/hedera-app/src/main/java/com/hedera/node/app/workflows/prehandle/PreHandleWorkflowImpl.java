@@ -20,12 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -57,7 +56,7 @@ import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -186,7 +185,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // Transaction info is a pure function of the transaction, so we can
             // always reuse it from a prior result
             txInfo = previousResult == null
-                    ? transactionChecker.parseAndCheck(Bytes.wrap(platformTx.getContents()))
+                    ? transactionChecker.parseAndCheck(platformTx.getApplicationPayload())
                     : previousResult.txInfo();
             if (txInfo == null) {
                 // In particular, a null transaction info means we already know the transaction's final failure status
@@ -364,8 +363,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return previousResult.verificationResults();
         }
         // If not, bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
-        final var originals = txInfo.signatureMap().sigPairOrElse(emptyList());
-        final var expanded = new HashSet<ExpandedSignaturePair>();
+        final var originals = txInfo.signatureMap().sigPair();
+        final var expanded = new LinkedHashSet<ExpandedSignaturePair>();
         signatureExpander.expand(originals, expanded);
         // Expand the payer account key signatures if it is not a hollow account
         if (payerIsHollow == PayerIsHollow.NO) {

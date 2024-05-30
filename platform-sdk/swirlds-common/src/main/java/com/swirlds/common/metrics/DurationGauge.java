@@ -36,6 +36,7 @@ public interface DurationGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.GAUGE;
@@ -44,6 +45,7 @@ public interface DurationGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default DataType getDataType() {
         return DataType.FLOAT;
@@ -52,6 +54,7 @@ public interface DurationGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -60,9 +63,10 @@ public interface DurationGauge extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default Double get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -93,10 +97,9 @@ public interface DurationGauge extends Metric {
      */
     final class Config extends PlatformMetricConfig<DurationGauge, Config> {
 
-        private static final String TIME_UNIT = "timeUnit";
         private static final String UNSUPPORTED_TIME_UNIT = "Unsupported time unit: ";
 
-        private final ChronoUnit timeUnit;
+        private final @NonNull ChronoUnit timeUnit;
 
         /**
          * Constructor of {@code DoubleGauge.Config}
@@ -104,18 +107,29 @@ public interface DurationGauge extends Metric {
          * @param category the kind of metric (metrics are grouped or filtered by this)
          * @param name     a short name for the metric
          * @param timeUnit the time unit in which to display this duration
-         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
          */
-        public Config(@NonNull final String category, @NonNull final String name, final ChronoUnit timeUnit) {
+        public Config(@NonNull final String category, @NonNull final String name, final @NonNull ChronoUnit timeUnit) {
             super(category, name, name, getUnit(timeUnit), getFormat(timeUnit));
             this.timeUnit = timeUnit;
         }
 
+        /**
+         * Constructor of {@code DoubleGauge.Config}
+         *
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name     a short name for the metric
+         * @param description metric description
+         * @param timeUnit the time unit in which to display this duration
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
                 @NonNull final String description,
-                final ChronoUnit timeUnit) {
+                final @NonNull ChronoUnit timeUnit) {
             super(category, name, description, getUnit(timeUnit), getFormat(timeUnit));
             // at this point, timeUnit was checked for null in getUnit() and getFormat()
             this.timeUnit = timeUnit;
@@ -124,6 +138,7 @@ public interface DurationGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public DurationGauge.Config withDescription(@NonNull final String description) {
             return new DurationGauge.Config(getCategory(), getName(), description, getTimeUnit());
@@ -133,6 +148,7 @@ public interface DurationGauge extends Metric {
          * The unit of a {@link DurationGauge} depends on the configured {@link ChronoUnit}. Therefore, it is not
          * possible to specify the unit and this method throws an {@link UnsupportedOperationException}
          */
+        @NonNull
         @Override
         public DurationGauge.Config withUnit(@NonNull final String unit) {
             throw new UnsupportedOperationException("a String unit is not compatible with this class");
@@ -143,6 +159,7 @@ public interface DurationGauge extends Metric {
          *
          * @return the {@code timeUnit}
          */
+        @NonNull
         public ChronoUnit getTimeUnit() {
             return timeUnit;
         }
@@ -150,6 +167,7 @@ public interface DurationGauge extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public Class<DurationGauge> getResultClass() {
             return DurationGauge.class;
@@ -166,7 +184,7 @@ public interface DurationGauge extends Metric {
 
         @NonNull
         private static String getFormat(@NonNull final ChronoUnit timeUnit) {
-            Objects.requireNonNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, "timeUnit must not be null");
             return switch (timeUnit) {
                 case NANOS, MICROS -> FloatFormats.FORMAT_DECIMAL_0;
                 case MILLIS, SECONDS -> FloatFormats.FORMAT_DECIMAL_3;
@@ -176,7 +194,7 @@ public interface DurationGauge extends Metric {
 
         @NonNull
         private static String getUnit(final ChronoUnit timeUnit) {
-            Objects.requireNonNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, "timeUnit must not be null");
             return switch (timeUnit) {
                 case NANOS -> UnitConstants.NANOSECOND_UNIT;
                 case MICROS -> UnitConstants.MICROSECOND_UNIT;

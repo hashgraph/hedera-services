@@ -32,9 +32,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface ConfigConverter<T> {
 
     /**
-     * The method that is called to convert the given raw string value to a specific data type
+     * The method that is called to convert the given raw string value to a specific data type.
      *
-     * @param value
+     * @param value the value that should be converted to the specific data type
      * @return the converted value
      * @throws IllegalArgumentException if the given String value can not be converted
      * @throws NullPointerException     if the given String value is null

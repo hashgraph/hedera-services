@@ -55,12 +55,15 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FREEZE}.
  */
 @Singleton
 public class FreezeHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(FreezeHandler.class);
     // length of the hash of the update file included in the FreezeTransactionBody
     // used for a quick sanity check that the file hash is not invalid
     public static final int UPDATE_FILE_HASH_LEN = 48;
@@ -82,36 +85,28 @@ public class FreezeHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        pureChecks(context.body());
 
         final FreezeTransactionBody freezeTxn = context.body().freezeOrThrow();
         final FreezeType freezeType = freezeTxn.freezeType();
-        if (Arrays.asList(FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE).contains(freezeType)) {
-            final Timestamp txValidStart = context.body().transactionIDOrThrow().transactionValidStartOrThrow();
-            verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
-        }
         if (Arrays.asList(FREEZE_UPGRADE, TELEMETRY_UPGRADE, PREPARE_UPGRADE).contains(freezeType)) {
             // from proto specs, it looks like updateFileId not required for FREEZE_UPGRADE and TELEMETRY_UPGRADE
             // but specs aren't very clear previous code in FreezeTransitionLogic checks for it in all 3 cases,
             // so we will do the same
             final ReadableUpgradeFileStore upgradeStore = context.createStore(ReadableUpgradeFileStore.class);
             final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
-            verifyUpdateFileAndHash(freezeTxn, upgradeStore, filesConfig.softwareUpdateRange());
+            verifyUpdateFile(freezeTxn, upgradeStore, filesConfig.softwareUpdateRange());
         }
         // no need to add any keys to the context because this transaction does not require any signatures
         // it must be submitted by an account with superuser privileges, that is checked during ingest
     }
 
-    /**
-     * Performs checks independent of state or context
-     */
     @SuppressWarnings("java:S1874") // disables the warnings for use of deprecated code
     // it is necessary to check startHour, startMin, endHour, endMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-
         FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
+
         // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
         // reject any freeze transactions that set these properties
         if (freezeTxn.startHour() != 0
@@ -124,6 +119,26 @@ public class FreezeHandler implements TransactionHandler {
         final FreezeType freezeType = freezeTxn.freezeType();
         if (freezeType == UNKNOWN_FREEZE_TYPE) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+        }
+
+        if (Arrays.asList(FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE).contains(freezeType)) {
+            final Timestamp txValidStart = txn.transactionIDOrThrow().transactionValidStartOrThrow();
+            verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
+        }
+
+        if (freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE) {
+            final FileID updateFileID = freezeTxn.updateFile();
+            if (updateFileID == null) {
+                throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            }
+        }
+
+        if (Arrays.asList(FREEZE_UPGRADE, TELEMETRY_UPGRADE, PREPARE_UPGRADE).contains(freezeType)) {
+            final Bytes fileHash = freezeTxn.fileHash();
+            // don't verify the hash, just make sure it is not null or empty and is the correct length
+            if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
+                throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            }
         }
     }
 
@@ -143,13 +158,14 @@ public class FreezeHandler implements TransactionHandler {
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
         final FreezeUpgradeActions upgradeActions =
-                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor);
+                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE -> {
                 // by the time we get here, we've already checked that fileHash is non-null in preHandle()
                 freezeStore.updateFileHash(freezeTxn.fileHash());
+                log.info("Preparing upgrade with file {}, hash {}", updateFileID, freezeTxn.fileHash());
                 try {
                     if (updateFileID != null
                             && updateFileID.fileNum()
@@ -165,7 +181,8 @@ public class FreezeHandler implements TransactionHandler {
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTime));
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
-                freezeStore.updateFileHash(null);
+                freezeStore.updateFileHash(Bytes.EMPTY);
+                log.info("Preparing freeze abort with file {}, hash null", updateFileID);
             }
             case TELEMETRY_UPGRADE -> {
                 try {
@@ -245,7 +262,7 @@ public class FreezeHandler implements TransactionHandler {
      * the updateFile and fileHash fields must be set.
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
-    private static void verifyUpdateFileAndHash(
+    private static void verifyUpdateFile(
             final @NonNull FreezeTransactionBody freezeTxn,
             final @NonNull ReadableUpgradeFileStore upgradeStore,
             final LongPair softwareUpdateRange)
@@ -264,12 +281,6 @@ public class FreezeHandler implements TransactionHandler {
         }
         if (upgradeStore.peek(updateFileID) == null) {
             throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
-        }
-
-        final Bytes fileHash = freezeTxn.fileHash();
-        // don't verify the hash, just make sure it is not null or empty and is the correct length
-        if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
-            throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 }

@@ -76,7 +76,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.context.properties;
     exports com.hedera.node.app.service.mono.state.enums to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.services.cli;
+            com.hedera.node.services.cli,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.exports to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.records;
@@ -238,16 +239,27 @@ module com.hedera.node.app.service.mono {
 
     exports com.hedera.node.app.service.mono.fees.calculation.meta;
     exports com.hedera.node.app.service.mono.files.store;
+    exports com.hedera.node.app.service.mono.statedumpers;
+    exports com.hedera.node.app.service.mono.statedumpers.utils;
+    exports com.hedera.node.app.service.mono.statedumpers.contracts;
+    exports com.hedera.node.app.service.mono.statedumpers.files;
+    exports com.hedera.node.app.service.mono.statedumpers.associations;
+    exports com.hedera.node.app.service.mono.statedumpers.nfts;
+    exports com.hedera.node.app.service.mono.statedumpers.scheduledtransactions;
+    exports com.hedera.node.app.service.mono.statedumpers.tokentypes;
+    exports com.hedera.node.app.service.mono.statedumpers.topics;
+    exports com.hedera.node.app.service.mono.statedumpers.accounts;
+    exports com.hedera.node.app.service.mono.statedumpers.singleton;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
-    requires transitive com.hedera.node.app.service.evm;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.evm;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
@@ -256,6 +268,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
+    requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive grpc.netty;

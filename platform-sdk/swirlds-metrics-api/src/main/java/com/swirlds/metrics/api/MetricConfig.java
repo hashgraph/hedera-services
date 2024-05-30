@@ -38,31 +38,28 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
 
     private static final int MAX_DESCRIPTION_LENGTH = 255;
 
-    private final String category;
-    private final String name;
+    private final @NonNull String category;
+    private final @NonNull String name;
 
-    private final String description;
-    private final String unit;
-    private final String format;
+    private final @NonNull String description;
+    private final @NonNull String unit;
+    private final @NonNull String format;
 
     /**
      * Constructor of {@code MetricConfig}
      *
-     * @param category
-     * 		the kind of metric (metrics are grouped or filtered by this)
-     * @param name
-     * 		a short name for the metric
-     * @param format
-     * 		a string that can be passed to String.format() to format the metric
-     * @throws IllegalArgumentException
-     * 		if one of the parameters is {@code null} or consists only of whitespaces
+     * @param category the kind of metric (metrics are grouped or filtered by this)
+     * @param name     a short name for the metric
+     * @param format   a string that can be passed to String.format() to format the metric
+     * @throws NullPointerException     if one of the parameters is {@code null}
+     * @throws IllegalArgumentException if one of the parameters is consists only of whitespaces
      */
     protected MetricConfig(
-            final String category,
-            final String name,
-            final String description,
-            final String unit,
-            final String format) {
+            final @NonNull String category,
+            final @NonNull String name,
+            final @NonNull String description,
+            final @NonNull String unit,
+            final @NonNull String format) {
 
         this.category = ArgumentUtils.throwArgBlank(category, "category");
         this.name = ArgumentUtils.throwArgBlank(name, "name");
@@ -73,23 +70,20 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
                             + MAX_DESCRIPTION_LENGTH + " characters: "
                             + description);
         }
-        this.unit = Objects.requireNonNull(unit, "unit");
-        this.format = ArgumentUtils.throwArgBlank(format, "format");
+        this.unit = Objects.requireNonNull(unit, "unit must not be null");
+        this.format = ArgumentUtils.throwArgBlank(format, "format must not be null");
     }
 
     /**
      * Constructor of {@code MetricConfig}
      *
-     * @param category
-     * 		the kind of metric (metrics are grouped or filtered by this)
-     * @param name
-     * 		a short name for the metric
-     * @param defaultFormat
-     * 		a string that can be passed to String.format() to format the metric
-     * @throws IllegalArgumentException
-     * 		if one of the parameters is {@code null} or consists only of whitespaces
+     * @param category      the kind of metric (metrics are grouped or filtered by this)
+     * @param name          a short name for the metric
+     * @param defaultFormat a string that can be passed to String.format() to format the metric
+     * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
      */
-    protected MetricConfig(final String category, final String name, final String defaultFormat) {
+    protected MetricConfig(
+            final @NonNull String category, final @NonNull String name, final @NonNull String defaultFormat) {
         this(category, name, name, "", defaultFormat);
     }
 
@@ -98,6 +92,7 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
      *
      * @return the {@code category}
      */
+    @NonNull
     public String getCategory() {
         return category;
     }
@@ -107,6 +102,7 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
      *
      * @return the {@code name}
      */
+    @NonNull
     public String getName() {
         return name;
     }
@@ -116,6 +112,7 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
      *
      * @return the {@code description}
      */
+    @NonNull
     public String getDescription() {
         return description;
     }
@@ -123,40 +120,37 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
     /**
      * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
      *
-     * @param description
-     * 		the description
+     * @param description the description
      * @return a new configuration-object with updated {@code description}
-     * @throws IllegalArgumentException
-     * 		if {@code description} is {@code null}, too long or consists only of whitespaces
+     * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of
+     *                                  whitespaces
      */
-    public abstract C withDescription(final String description);
+    public abstract @NonNull C withDescription(final String description);
 
     /**
      * Getter of the {@link Metric#getUnit() Metric.unit}
      *
      * @return the {@code unit}
      */
-    public String getUnit() {
+    public @NonNull String getUnit() {
         return unit;
     }
 
     /**
      * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
      *
-     * @param unit
-     * 		the unit
+     * @param unit the unit
      * @return a new configuration-object with updated {@code unit}
-     * @throws IllegalArgumentException
-     * 		if {@code unit} is {@code null}
+     * @throws IllegalArgumentException if {@code unit} is {@code null}
      */
-    public abstract C withUnit(final String unit);
+    public abstract @NonNull C withUnit(final String unit);
 
     /**
      * Getter of the {@link Metric#getFormat() Metric.format}
      *
      * @return the format-{@code String}
      */
-    public String getFormat() {
+    public @NonNull String getFormat() {
         return format;
     }
 
@@ -165,16 +159,15 @@ public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C
      *
      * @return the {@code Class}
      */
-    public abstract Class<T> getResultClass();
+    public abstract @NonNull Class<T> getResultClass();
 
     /**
      * Create a {@code Metric} using the given {@link MetricsFactory}
+     * <p>
+     * Implementation note: we use the double-dispatch pattern when creating a {@link Metric}. More details can be found
+     * at {@link Metrics#getOrCreate(MetricConfig)}.
      *
-     * Implementation note: we use the double-dispatch pattern when creating a {@link Metric}. More details
-     * can be found at {@link Metrics#getOrCreate(MetricConfig)}.
-     *
-     * @param factory
-     * 		the {@code MetricFactory}
+     * @param factory the {@code MetricFactory}
      * @return the new {@code Metric}-instance
      */
     @NonNull

@@ -22,7 +22,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -35,7 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStoreException;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,6 +76,9 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-1")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-2")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-valid")).exists().isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-no-agreement-key"))
+                .exists()
+                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
                 .exists()
                 .isNotEmptyDirectory();
@@ -102,7 +103,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Positive Test")
-    @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid"})
+    @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid", "enhanced-valid-no-agreement-key"})
     void keyStoreLoaderPositiveTest(final String directoryName)
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
@@ -113,6 +114,7 @@ class EnhancedKeyStoreLoaderTest {
 
         assertThat(loader).isNotNull();
         assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::generateIfNecessary).doesNotThrowAnyException();
         assertThatCode(loader::verify).doesNotThrowAnyException();
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
 
@@ -196,8 +198,7 @@ class EnhancedKeyStoreLoaderTest {
      * @throws IOException if an I/O error occurs while loading the configuration file.
      */
     private Configuration configure(final Path keyDirectory) throws IOException {
-        ConfigurationBuilder builder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(builder, Set.of("com.swirlds"));
+        final ConfigurationBuilder builder = ConfigurationBuilder.create();
         BootstrapUtils.setupConfigBuilder(builder, testDataDirectory.resolve("settings.txt"));
 
         builder.withValue("paths.keysDirPath", keyDirectory.toAbsolutePath().toString());

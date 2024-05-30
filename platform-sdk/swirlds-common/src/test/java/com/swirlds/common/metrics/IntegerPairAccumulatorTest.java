@@ -22,74 +22,28 @@ import static com.swirlds.metrics.api.Metric.ValueType.STD_DEV;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.metrics.api.MetricType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 @DisplayName("Testing IntegerPairAccumulator")
 class IntegerPairAccumulatorTest {
 
-    private final IntegerPairAccumulator<Double> sut = new IntegerPairAccumulator<>() {
-        @Override
-        public Double get() {
-            return null;
-        }
+    private IntegerPairAccumulator<Double> sut;
 
-        @Override
-        public int getLeft() {
-            return 0;
-        }
-
-        @Override
-        public int getRight() {
-            return 0;
-        }
-
-        @Override
-        public void update(int leftValue, int rightValue) {}
-
-        @Override
-        public String getCategory() {
-            return null;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public String getDescription() {
-            return null;
-        }
-
-        @Override
-        public MetricType getMetricType() {
-            return MetricType.ACCUMULATOR;
-        }
-
-        @Override
-        public DataType getDataType() {
-            return null;
-        }
-
-        @Override
-        public String getUnit() {
-            return null;
-        }
-
-        @Override
-        public String getFormat() {
-            return null;
-        }
-
-        @Override
-        public void reset() {}
-    };
+    @BeforeEach
+    void setup() {
+        sut = Mockito.mock(IntegerPairAccumulator.class);
+        when(sut.get(Mockito.any())).thenCallRealMethod();
+        when(sut.getMetricType()).thenCallRealMethod();
+        when(sut.getValueTypes()).thenCallRealMethod();
+    }
 
     @Test
     void getMetricType() {
@@ -103,12 +57,10 @@ class IntegerPairAccumulatorTest {
 
     @Test
     void get_ShouldReturnValueByValueType() {
-        final IntegerPairAccumulator<Double> accumulator = spy(sut);
-
-        final Double value = accumulator.get(VALUE);
+        final Double value = sut.get(VALUE);
 
         assertThat(value).isEqualTo(sut.get());
-        verify(accumulator, times(1)).get();
+        verify(sut, times(2)).get();
     }
 
     @Test

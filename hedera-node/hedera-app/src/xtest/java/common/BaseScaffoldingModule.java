@@ -17,7 +17,7 @@
 package common;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.node.app.spi.HapiUtils.functionOf;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACKEND_THROTTLE;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
@@ -27,13 +27,14 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.authorization.AuthorizerImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.fees.congestion.EntityUtilizationMultiplier;
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
@@ -49,30 +50,33 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
-import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.*;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.throttle.impl.NetworkUtilizationManagerImpl;
+import com.hedera.node.app.throttle.ThrottleMetrics;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -83,6 +87,7 @@ import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.query.QueryContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -92,6 +97,8 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.state.HederaState;
 import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;
@@ -213,6 +220,15 @@ public interface BaseScaffoldingModule {
     @Singleton
     ChildRecordFinalizer provideChildRecordFinalizer(@NonNull FinalizeChildRecordHandler childRecordFinalizer);
 
+    @Binds
+    StakingRewardsHandler stakingRewardHandler(StakingRewardsHandlerImpl stakingRewardsHandler);
+
+    @Binds
+    StakeRewardCalculator stakeRewardCalculator(StakeRewardCalculatorImpl rewardCalculator);
+
+    @Binds
+    ParentRecordFinalizer parentRecordFinalizer(FinalizeParentRecordHandler parentRecordFinalizer);
+
     @Provides
     @Singleton
     static BiFunction<Query, AccountID, QueryContext> provideQueryContextFactory(
@@ -249,11 +265,15 @@ public interface BaseScaffoldingModule {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final ParentRecordFinalizer parentRecordFinalizer,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final PlatformStateAccessor platformState,
+            @NonNull final StoreMetricsService storeMetricsService) {
         final var consensusTime = Instant.now();
         final var recordListBuilder = new RecordListBuilder(consensusTime);
         final var parentRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
+        platformState.setPlatformState(new PlatformState());
         return body -> {
             // TODO: Temporary solution, better to simplify HandleContextImpl
             final HederaFunctionality function;
@@ -289,15 +309,37 @@ public interface BaseScaffoldingModule {
                     authorizer,
                     solvencyPreCheck,
                     childRecordFinalizer,
+                    parentRecordFinalizer,
                     networkUtilizationManager,
-                    synchronizedThrottleAccumulator);
+                    synchronizedThrottleAccumulator,
+                    platformState.getPlatformState(),
+                    storeMetricsService);
         };
     }
 
     @Provides
     @Singleton
-    static CongestionMultipliers createCongestionMultipliers(@NonNull ConfigProvider configProvider) {
-        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+    static Function<TransactionBody, PreHandleContext> providePreHandleContextCreator(
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HederaState state,
+            @NonNull final PlatformStateAccessor platformState) {
+        platformState.setPlatformState(new PlatformState());
+        return body -> {
+            try {
+                return new PreHandleContextImpl(new ReadableStoreFactory(state), body, configuration, dispatcher);
+            } catch (PreCheckException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    @Provides
+    @Singleton
+    static CongestionMultipliers createCongestionMultipliers(
+            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+        var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
+        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE, throttleMetrics);
         final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
 
         return getCongestionMultipliers(configProvider, genericFeeMultiplier, backendThrottle);
@@ -306,8 +348,9 @@ public interface BaseScaffoldingModule {
     @Provides
     @Singleton
     static SynchronizedThrottleAccumulator createSynchronizedThrottleAccumulator(
-            @NonNull ConfigProvider configProvider) {
-        var frontendThrottle = new ThrottleAccumulator(() -> 1, configProvider, FRONTEND_THROTTLE);
+            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+        var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
+        var frontendThrottle = new ThrottleAccumulator(() -> 1, configProvider, FRONTEND_THROTTLE, throttleMetrics);
         return new SynchronizedThrottleAccumulator(frontendThrottle);
     }
 
@@ -334,7 +377,7 @@ public interface BaseScaffoldingModule {
             @NotNull ConfigProvider configProvider,
             ThrottleMultiplier genericFeeMultiplier,
             ThrottleAccumulator backendThrottle) {
-        final var txnRateMultiplier = new EntityUtilizationMultiplier(genericFeeMultiplier, configProvider);
+        final var txnRateMultiplier = new UtilizationScaledThrottleMultiplier(genericFeeMultiplier, configProvider);
 
         final var gasFeeMultiplier = new ThrottleMultiplier(
                 "EVM gas/sec",
@@ -355,8 +398,10 @@ public interface BaseScaffoldingModule {
 
     @Provides
     @Singleton
-    static NetworkUtilizationManager createNetworkUtilizationManager(@NonNull ConfigProvider configProvider) {
-        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE);
+    static NetworkUtilizationManager createNetworkUtilizationManager(
+            @NonNull ConfigProvider configProvider, @NonNull Metrics metrics) {
+        var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
+        var backendThrottle = new ThrottleAccumulator(() -> 1, configProvider, BACKEND_THROTTLE, throttleMetrics);
         final var genericFeeMultiplier = getThrottleMultiplier(configProvider, backendThrottle);
 
         final var congestionMultipliers =

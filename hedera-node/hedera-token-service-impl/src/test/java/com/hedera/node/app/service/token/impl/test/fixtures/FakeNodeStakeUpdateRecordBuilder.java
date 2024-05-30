@@ -16,19 +16,31 @@
 
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Fake Node Stake Update Record Builder
+ */
 public class FakeNodeStakeUpdateRecordBuilder {
-
+    /**
+     * Constructs a {@link FakeNodeStakeUpdateRecordBuilder} instance.
+     * @return a {@link FakeNodeStakeUpdateRecordBuilder} instance
+     */
     public NodeStakeUpdateRecordBuilder create() {
         return new NodeStakeUpdateRecordBuilder() {
             private String memo;
             private Transaction txn;
             private TransactionBody.DataOneOfType transactionBodyType;
+
+            @Override
+            public NodeStakeUpdateRecordBuilder status(@NotNull ResponseCodeEnum status) {
+                return null;
+            }
 
             @NotNull
             @Override

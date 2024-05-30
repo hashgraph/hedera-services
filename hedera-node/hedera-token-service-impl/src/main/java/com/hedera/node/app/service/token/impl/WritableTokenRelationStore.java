@@ -16,14 +16,21 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.WritableAccountStore.requireNotDefault;
+import static com.hedera.node.app.service.token.impl.WritableTokenStore.requireNotDefault;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -44,10 +51,19 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * Create a new {@link WritableTokenRelationStore} instance.
      *
      * @param states The state to use.
+     * @param configuration The configuration used to read the maximum capacity.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
-    public WritableTokenRelationStore(@NonNull final WritableStates states) {
+    public WritableTokenRelationStore(
+            @NonNull final WritableStates states,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        this.tokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
+        this.tokenRelState = requireNonNull(states).get(V0490TokenSchema.TOKEN_RELS_KEY);
+
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAggregateRels();
+        final var storeMetrics = storeMetricsService.get(StoreType.TOKEN_RELATION, maxCapacity);
+        tokenRelState.setMetrics(storeMetrics);
     }
 
     /**
@@ -56,6 +72,8 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation - the tokenRelation to be persisted
      */
     public void put(@NonNull final TokenRelation tokenRelation) {
+        requireNotDefault(tokenRelation.accountIdOrThrow());
+        requireNotDefault(tokenRelation.tokenIdOrThrow());
         tokenRelState.put(
                 EntityIDPair.newBuilder()
                         .accountId(tokenRelation.accountId())
@@ -82,6 +100,8 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      *
      * @param accountId - the number of the account to be retrieved
      * @param tokenId   - the number of the token to be retrieved
+     * @return the token relation with the given token number and account number, or {@code Optional.empty()} if no such
+     * token relation exists
      */
     @Nullable
     public TokenRelation getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {

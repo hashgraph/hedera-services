@@ -16,23 +16,26 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.metrics.api.MetricConfig;
+import com.swirlds.metrics.api.snapshot.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.impl.AbstractMetric;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Represents a metric computed over a distribution function
  */
-public abstract class AbstractDistributionMetric extends DefaultMetric {
+public abstract class AbstractDistributionMetric extends AbstractMetric implements PlatformMetric {
 
     /**
      * Half-life of the metric
      */
     protected final double halfLife;
 
-    AbstractDistributionMetric(final MetricConfig<?, ?> config, final double halfLife) {
+    AbstractDistributionMetric(@NonNull final MetricConfig<?, ?> config, final double halfLife) {
         super(config);
         this.halfLife = halfLife;
     }
@@ -56,8 +59,9 @@ public abstract class AbstractDistributionMetric extends DefaultMetric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public Double get(final ValueType valueType) {
+    public Double get(@NonNull final ValueType valueType) {
         Objects.requireNonNull(valueType, "valueType must not be null");
         return switch (valueType) {
             case VALUE -> get();
@@ -71,6 +75,7 @@ public abstract class AbstractDistributionMetric extends DefaultMetric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public List<SnapshotEntry> takeSnapshot() {
         final StatsBuffered statsBuffered = getStatsBuffered();

@@ -42,19 +42,34 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenKey;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Provides common functionality for token handlers.
+ */
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
+    /**
+     * The set of token keys that are not admin keys.
+     */
+    protected static final Set<TokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKey.ADMIN_KEY));
+    /**
+     * The set of all token keys.
+     */
+    protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
+
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
@@ -170,22 +185,26 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         // create list of token relations to be added
         final var newTokenRels = createTokenRelsToAccount(account, tokens);
-        // Link the new token relations to the account
-        linkTokenRels(account, newTokenRels, tokenRelStore);
 
-        // Now replace the account's old head token number with the new head token number. This is
-        // how we link the new tokenRels to the account
-        final var firstOfNewTokenRels = newTokenRels.get(0);
-        final var updatedAcct = account.copyBuilder()
-                // replace the head token number with the first token number of the new tokenRels
-                .headTokenId(firstOfNewTokenRels.tokenId())
-                // and also update the account's total number of token associations
-                .numberAssociations(account.numberAssociations() + newTokenRels.size())
-                .build();
+        // FUTURE - We may need to return a proper error status when tokens are empty
+        if (!newTokenRels.isEmpty()) {
+            // Link the new token relations to the account
+            linkTokenRels(account, newTokenRels, tokenRelStore);
 
-        // Save the results
-        accountStore.put(updatedAcct);
-        newTokenRels.forEach(tokenRelStore::put);
+            // Now replace the account's old head token number with the new head token number. This is
+            // how we link the new tokenRels to the account
+            final var firstOfNewTokenRels = newTokenRels.get(0);
+            final var updatedAcct = account.copyBuilder()
+                    // replace the head token number with the first token number of the new tokenRels
+                    .headTokenId(firstOfNewTokenRels.tokenId())
+                    // and also update the account's total number of token associations
+                    .numberAssociations(account.numberAssociations() + newTokenRels.size())
+                    .build();
+
+            // Save the results
+            accountStore.put(updatedAcct);
+            newTokenRels.forEach(tokenRelStore::put);
+        }
     }
 
     /**
@@ -276,15 +295,7 @@ public class BaseTokenHandler {
             final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault() && !isTreasuryAccount;
             final var kycGranted = !token.hasKycKey() || isTreasuryAccount;
             final var newTokenRel = new TokenRelation(
-                    token.tokenId(),
-                    account.accountId(),
-                    0,
-                    isFrozen,
-                    kycGranted,
-                    false,
-                    false,
-                    prevTokenId,
-                    nextTokenId);
+                    token.tokenId(), account.accountId(), 0, isFrozen, kycGranted, false, prevTokenId, nextTokenId);
             newTokenRels.add(newTokenRel);
         }
         return newTokenRels;
@@ -309,8 +320,8 @@ public class BaseTokenHandler {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        final var accountId = account.accountId();
-        final var tokenId = token.tokenId();
+        final var accountId = account.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
         // If token is already associated, no need to associate again
         validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
@@ -344,6 +355,16 @@ public class BaseTokenHandler {
                 .headTokenId(tokenId)
                 .build();
 
+        final var existingFirstTokenId = account.headTokenId();
+        if (existingFirstTokenId != null) {
+            final var existingFirstTokenRel = tokenRelStore.get(accountId, existingFirstTokenId);
+            if (existingFirstTokenRel != null) {
+                tokenRelStore.put(existingFirstTokenRel
+                        .copyBuilder()
+                        .previousToken(tokenId)
+                        .build());
+            }
+        }
         accountStore.put(copyAccount);
         tokenRelStore.put(newTokenRel);
         return newTokenRel;
@@ -388,30 +409,31 @@ public class BaseTokenHandler {
         }
         final var copyAccount = account.copyBuilder();
         accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
-        // TODO: Need to track units change in record in finalize method for this
     }
 
     protected void validateNotFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {
         validateTrue(!rel.frozen(), ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
+
         validateTrue(rel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }
 
     /* ------------------------- Helper functions ------------------------- */
-
     /**
-     * Returns true if the given token update op is an expiry-only update op.
-     * This is needed for validating whether a token update op has admin key present on the token,
-     * to update any other fields other than expiry.
+     * Checks if the given op updates any of the non-key token properties that can only be
+     * changed given the admin key signature.
+     *
      * @param op the token update op to check
-     * @return true if the given token update op is an expiry-only update op
+     * @return true if it requires admin key signature
      */
-    public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
-        final var copyDefaultWithExpiry =
-                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
-        return op.equals(copyDefaultWithExpiry);
+    protected static boolean updatesAdminOnlyNonKeyTokenProperty(@NonNull final TokenUpdateTransactionBody op) {
+        return !op.symbol().isEmpty() || !op.name().isEmpty() || op.hasAutoRenewPeriod() || op.hasMemo();
     }
 
+    /**
+     * Returns a new {@link TokenID} with the given number.
+     * @param num the token number
+     * @return the new token ID
+     */
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();
