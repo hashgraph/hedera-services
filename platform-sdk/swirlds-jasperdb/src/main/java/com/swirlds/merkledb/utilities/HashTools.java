@@ -77,7 +77,9 @@ public final class HashTools {
             throw new IllegalArgumentException(
                     "Current version is " + CURRENT_SERIALIZATION_VERSION + ", got " + serializationVersion);
         }
-        return new Hash(buffer, DEFAULT_DIGEST);
+        final byte[] bytes = new byte[DEFAULT_DIGEST.digestLength()];
+        buffer.get(bytes);
+        return new Hash(bytes, DEFAULT_DIGEST);
     }
 
     private HashTools() {

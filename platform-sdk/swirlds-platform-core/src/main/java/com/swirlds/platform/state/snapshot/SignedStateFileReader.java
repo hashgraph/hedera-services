@@ -105,6 +105,7 @@ public final class SignedStateFileReader {
                 data.state(),
                 "SignedStateFileReader.readStateFile()",
                 false,
+                false,
                 false);
 
         newSignedState.setSigSet(data.sigSet());
