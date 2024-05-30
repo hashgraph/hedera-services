@@ -189,8 +189,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         // Apply all changes to the handleContext's states by performing the transfer to the treasuries
         final var transferContext = new TransferContextImpl(context, false, true);
-        final var fungibleTokensStep =
-                new AdjustFungibleTokenChangesStep(processedRejectTransfers, context.payer());
+        final var fungibleTokensStep = new AdjustFungibleTokenChangesStep(processedRejectTransfers, context.payer());
         final var nftOwnersChangeStep = new NFTOwnersChangeStep(processedRejectTransfers, context.payer());
         fungibleTokensStep.doIn(transferContext);
         nftOwnersChangeStep.doIn(transferContext);
