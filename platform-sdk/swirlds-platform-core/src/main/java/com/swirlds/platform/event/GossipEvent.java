@@ -22,6 +22,7 @@ import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -430,7 +431,13 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      */
     @Override
     public int hashCode() {
-        return hashedData.getHash().hashCode();
+        return getHash().hashCode();
+    }
+
+    @Override
+    public void setHash(final Hash hash) {
+        super.setHash(hash);
+        hashedData.setHash(hash);
     }
 
     /**
