@@ -17,18 +17,18 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.token.CryptoServiceDefinition;
 import com.hedera.node.app.service.token.TokenServiceDefinition;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
+import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
@@ -36,6 +36,7 @@ import java.util.TreeSet;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class TokenServiceImplTest {
 
@@ -92,7 +93,7 @@ class TokenServiceImplTest {
 
     @Test
     void defaultConstructor() {
-        Assertions.assertThat(new TokenServiceImpl()).isNotNull();
+        assertThat(new TokenServiceImpl()).isNotNull();
     }
 
     @Test
@@ -103,7 +104,7 @@ class TokenServiceImplTest {
         final var acc3 = mock(Account.class);
         anyNonNullAccts.addAll(Set.of(acc1, acc2, acc3));
 
-        Assertions.assertThat(new TokenServiceImpl(
+        assertThat(new TokenServiceImpl(
                         () -> anyNonNullAccts,
                         () -> anyNonNullAccts,
                         () -> anyNonNullAccts,
@@ -115,73 +116,30 @@ class TokenServiceImplTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void registerSchemasNullArgsThrow() {
-        Assertions.assertThatThrownBy(() -> subject.registerSchemas(null, SemanticVersion.DEFAULT))
-                .isInstanceOf(NullPointerException.class);
-
-        Assertions.assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class), null))
-                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> subject.registerSchemas(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerSchemasRegistersTokenSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
-        subject.registerSchemas(schemaRegistry, SemanticVersion.DEFAULT);
-        verify(schemaRegistry).register(notNull());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void triesToSetStateWithoutRegisteredTokenSchema() {
-        final var vMap = mock(VirtualMap.class);
-        final var mMap = mock(MerkleMap.class);
-
-        Assertions.assertThatThrownBy(() -> subject.setNftsFromState(vMap)).isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> subject.setTokenRelsFromState(vMap))
-                .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> subject.setAcctsFromState(vMap)).isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> subject.setTokensFromState(mMap)).isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> subject.setStakingFs(mMap, mock(MerkleNetworkContext.class)))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void stateSettersDontThrow() {
-        final var registry = mock(SchemaRegistry.class);
-        // registerSchemas(...) is required to instantiate the token schema
-        subject.registerSchemas(registry, SemanticVersion.DEFAULT);
-
-        final var vmap = mock(VirtualMap.class);
-        final var mMap = mock(MerkleMap.class);
-        final var netCtx = mock(MerkleNetworkContext.class);
-
-        subject.setNftsFromState(null);
-        subject.setNftsFromState(vmap);
-
-        subject.setTokenRelsFromState(null);
-        subject.setTokenRelsFromState(vmap);
-
-        subject.setAcctsFromState(null);
-        subject.setAcctsFromState(vmap);
-
-        subject.setTokensFromState(null);
-        subject.setTokensFromState(mMap);
-
-        subject.setStakingFs(null, null);
-        subject.setStakingFs(mMap, null);
-        subject.setStakingFs(null, netCtx);
-        subject.setStakingFs(mMap, netCtx);
+        subject.registerSchemas(schemaRegistry);
+        final var captor = ArgumentCaptor.forClass(Schema.class);
+        verify(schemaRegistry, times(2)).register(captor.capture());
+        final var schemas = captor.getAllValues();
+        assertThat(schemas).hasSize(2);
+        assertThat(schemas.getFirst()).isInstanceOf(V0490TokenSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V0500TokenSchema.class);
     }
 
     @Test
     void verifyServiceName() {
-        Assertions.assertThat(subject.getServiceName()).isEqualTo("TokenService");
+        assertThat(subject.getServiceName()).isEqualTo("TokenService");
     }
 
     @Test
     void rpcDefinitions() {
-        Assertions.assertThat(subject.rpcDefinitions())
+        assertThat(subject.rpcDefinitions())
                 .containsExactlyInAnyOrder(CryptoServiceDefinition.INSTANCE, TokenServiceDefinition.INSTANCE);
     }
 }

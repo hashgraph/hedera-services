@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import static com.hedera.node.app.spi.HapiUtils.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.node.app.spi.HapiUtils.TIMESTAMP_COMPARATOR;
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
-import static com.hedera.node.app.spi.HapiUtils.minus;
+import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.hapi.util.HapiUtils.minus;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TransactionID;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -113,7 +113,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onStateInitialized(
-            @NonNull final MerkleHederaState state,
+            @NonNull final HederaState state,
             @NonNull final Platform platform,
             @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,

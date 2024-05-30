@@ -166,12 +166,12 @@ class MerkleSpecialFilesTest {
 
         final var baos = new ByteArrayOutputStream();
         baos.write(Longs.toByteArray(fid.getFileNum()));
-        baos.write(fcq.getHash().getValue());
+        baos.write(fcq.getHash().copyToByteArray());
         baos.write(Longs.toByteArray(secondFid.getFileNum()));
-        baos.write(secondFcq.getHash().getValue());
+        baos.write(secondFcq.getHash().copyToByteArray());
         final var expected = CommonUtils.noThrowSha384HashOf(baos.toByteArray());
 
-        assertArrayEquals(expected, subject.getHash().getValue());
+        assertArrayEquals(expected, subject.getHash().copyToByteArray());
     }
 
     @Test

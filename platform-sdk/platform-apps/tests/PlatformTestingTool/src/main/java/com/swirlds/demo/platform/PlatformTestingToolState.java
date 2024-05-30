@@ -653,11 +653,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         throwIfImmutable();
         roundCounter++;
 
-        logger.info(
-                DEMO_INFO.getMarker(),
-                "Copying round {}, transactions ignored by expected map: {}." + " This log is added to debug #11254",
-                roundCounter,
-                transactionsIgnoredByExpectedMap);
+        if (transactionsIgnoredByExpectedMap > 0) {
+            logger.info(
+                    DEMO_INFO.getMarker(),
+                    "Copying round {}, transactions ignored by expected map: {}."
+                            + " This log is added to debug #11254",
+                    roundCounter,
+                    transactionsIgnoredByExpectedMap);
+        }
 
         final PlatformTestingToolState mutableCopy = new PlatformTestingToolState(this);
 
@@ -1303,6 +1306,11 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             final InitTrigger trigger,
             final SoftwareVersion previousSoftwareVersion) {
 
+        if (trigger == InitTrigger.RESTART) {
+            rebuildExpectedMapFromState(Instant.EPOCH, true);
+            rebuildExpirationQueue();
+        }
+
         this.platform = platform;
         UnsafeMutablePTTStateAccessor.getInstance().setMutableState(platform.getSelfId(), this);
 
@@ -1406,7 +1414,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         contents, sigOffset, signature.length, msgLen, publicKey.length, 0, msgLen, signatureType);
                 trans.setMetadata(transactionSignature);
 
-                CryptographyHolder.get().verifyAsync(List.of(transactionSignature));
+                CryptographyHolder.get().verifySync(List.of(transactionSignature));
 
             } catch (final InvalidProtocolBufferException ex) {
                 exceptionRateLimiter.handle(

@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TokensConfig;
@@ -58,7 +59,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        this.tokenRelState = requireNonNull(states).get(TokenServiceImpl.TOKEN_RELS_KEY);
+        this.tokenRelState = requireNonNull(states).get(V0490TokenSchema.TOKEN_RELS_KEY);
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAggregateRels();
         final var storeMetrics = storeMetricsService.get(StoreType.TOKEN_RELATION, maxCapacity);

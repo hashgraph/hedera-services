@@ -22,10 +22,10 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.inject.Singleton;
@@ -59,7 +59,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
             @NonNull final GenesisRecordsBuilder genesisRecords) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.genesisRecords = requireNonNull(genesisRecords);
-        this.entries = new TreeSet<>(Comparator.comparing(r -> r.service().getServiceName()));
+        this.entries = new TreeSet<>();
     }
 
     /**
@@ -71,8 +71,9 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
-        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
-        service.registerSchemas(registry, VERSION);
+        final var registry =
+                new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords, new SchemaApplications());
+        service.registerSchemas(registry);
 
         entries.add(new Registration(service, registry));
         logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());
