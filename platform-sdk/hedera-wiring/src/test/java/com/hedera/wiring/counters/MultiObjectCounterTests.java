@@ -35,15 +35,11 @@ class MultiObjectCounterTests {
     void onRampOffRampTest() {
         final Random random = getRandomPrintSeed();
 
-        final com.hedera.wiring.counters.ObjectCounter counterA =
-                new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterB =
-                new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterC =
-                new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofSeconds(1));
+        final ObjectCounter counterA = new StandardObjectCounter(Duration.ofSeconds(1));
+        final ObjectCounter counterB = new StandardObjectCounter(Duration.ofSeconds(1));
+        final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
-        final com.hedera.wiring.counters.MultiObjectCounter counter =
-                new com.hedera.wiring.counters.MultiObjectCounter(counterA, counterB, counterC);
+        final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
 
         int expectedCount = 0;
         for (int i = 0; i < 1000; i++) {
@@ -69,15 +65,11 @@ class MultiObjectCounterTests {
 
         // When attempting an on ramp, only the first counter's capacity should be consulted.
 
-        final com.hedera.wiring.counters.ObjectCounter counterA =
-                new com.hedera.wiring.counters.BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterB =
-                new com.hedera.wiring.counters.BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterC =
-                new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofSeconds(1));
+        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
+        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
-        final com.hedera.wiring.counters.MultiObjectCounter counter =
-                new com.hedera.wiring.counters.MultiObjectCounter(counterA, counterB, counterC);
+        final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
 
         int expectedCount = 0;
         for (int i = 0; i < 1000; i++) {
@@ -103,15 +95,11 @@ class MultiObjectCounterTests {
 
         // When attempting an on ramp, only the first counter's capacity should be consulted.
 
-        final com.hedera.wiring.counters.ObjectCounter counterA =
-                new com.hedera.wiring.counters.BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterB =
-                new com.hedera.wiring.counters.BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterC =
-                new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofSeconds(1));
+        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
+        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
-        final com.hedera.wiring.counters.MultiObjectCounter counter =
-                new com.hedera.wiring.counters.MultiObjectCounter(counterA, counterB, counterC);
+        final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
 
         int expectedCount = 0;
         for (int i = 0; i < 1000; i++) {
@@ -132,14 +120,11 @@ class MultiObjectCounterTests {
 
     @Test
     void waitUntilEmptyTest() throws InterruptedException {
-        final com.hedera.wiring.counters.ObjectCounter counterA =
-                new com.hedera.wiring.counters.BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
-        final com.hedera.wiring.counters.ObjectCounter counterB =
-                new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
+        final ObjectCounter counterA = new BackpressureObjectCounter("test", 10, Duration.ofSeconds(1));
+        final ObjectCounter counterB = new BackpressureObjectCounter("test", 5, Duration.ofSeconds(1));
         final ObjectCounter counterC = new StandardObjectCounter(Duration.ofSeconds(1));
 
-        final com.hedera.wiring.counters.MultiObjectCounter counter =
-                new MultiObjectCounter(counterA, counterB, counterC);
+        final MultiObjectCounter counter = new MultiObjectCounter(counterA, counterB, counterC);
 
         for (int i = 0; i < 100; i++) {
             counter.forceOnRamp();

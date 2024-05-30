@@ -42,20 +42,20 @@ public class ComponentWiringTests {
         @NonNull
         Long handleFoo(@NonNull Integer foo);
 
-        @com.hedera.wiring.component.InputWireLabel("bar")
+        @InputWireLabel("bar")
         @NonNull
         Long handleBar(@NonNull Boolean bar);
 
         void handleBaz(@NonNull String baz);
 
-        @com.hedera.wiring.component.InputWireLabel("trigger")
+        @InputWireLabel("trigger")
         @NonNull
         Long triggerQux();
 
         void triggerCorge();
 
-        @com.hedera.wiring.component.InputWireLabel("data to be transformed")
-        @com.hedera.wiring.component.SchedulerLabel("transformer")
+        @InputWireLabel("data to be transformed")
+        @SchedulerLabel("transformer")
         @NonNull
         default String transformer(@NonNull final Long baseOutput) {
             handleBar(true);
@@ -63,7 +63,7 @@ public class ComponentWiringTests {
         }
 
         @InputWireLabel("data to be filtered")
-        @com.hedera.wiring.component.SchedulerLabel("filter")
+        @SchedulerLabel("filter")
         default Boolean filter(@NonNull final Long baseOutput) {
             return baseOutput % 2 == 0;
         }
@@ -157,8 +157,8 @@ public class ComponentWiringTests {
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
-        final com.hedera.wiring.component.ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new com.hedera.wiring.component.ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
         assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         assertThrows(IllegalArgumentException.class, () -> fooBarBazWiring.getInputWire((x, y) -> 0L));
@@ -179,8 +179,8 @@ public class ComponentWiringTests {
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
-        final com.hedera.wiring.component.ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new com.hedera.wiring.component.ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
         assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
@@ -271,8 +271,8 @@ public class ComponentWiringTests {
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
-        final com.hedera.wiring.component.ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new com.hedera.wiring.component.ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
         assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         if (bindLocation == 0) {
@@ -341,8 +341,8 @@ public class ComponentWiringTests {
 
         final FooBarBazImpl fooBarBazImpl = new FooBarBazImpl();
 
-        final com.hedera.wiring.component.ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
-                new com.hedera.wiring.component.ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
+        final ComponentWiring<FooBarBaz, Long> fooBarBazWiring =
+                new ComponentWiring<>(wiringModel, FooBarBaz.class, schedulerConfiguration);
         assertEquals("FooBarBaz", fooBarBazWiring.getSchedulerName());
 
         if (bindLocation == 0) {
@@ -411,9 +411,8 @@ public class ComponentWiringTests {
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
-        final com.hedera.wiring.component.ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
-                new com.hedera.wiring.component.ComponentWiring<>(
-                        wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
         assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 
         if (bindLocation == 0) {
@@ -452,9 +451,8 @@ public class ComponentWiringTests {
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
-        final com.hedera.wiring.component.ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
-                new com.hedera.wiring.component.ComponentWiring<>(
-                        wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+                new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
         assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 
         if (bindLocation == 0) {
@@ -502,7 +500,7 @@ public class ComponentWiringTests {
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
-        final com.hedera.wiring.component.ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
+        final ComponentWiring<ComponentWithListOutput, List<String>> componentWiring =
                 new ComponentWiring<>(wiringModel, ComponentWithListOutput.class, schedulerConfiguration);
         assertEquals("actuallyCallThisSomethingDifferent", componentWiring.getSchedulerName());
 

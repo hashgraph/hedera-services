@@ -77,7 +77,7 @@ class WiringComponentPerformanceTests {
                 .build()
                 .cast();
 
-        final com.hedera.wiring.component.ComponentWiring<SimpleComponent, Void> componentWiring =
+        final ComponentWiring<SimpleComponent, Void> componentWiring =
                 new ComponentWiring<>(model, SimpleComponent.class, scheduler);
         final InputWire<Long> inputWire = componentWiring.getInputWire(SimpleComponent::handleInput);
         componentWiring.bind(component);

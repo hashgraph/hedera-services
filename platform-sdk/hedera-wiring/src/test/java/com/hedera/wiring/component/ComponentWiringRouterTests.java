@@ -132,8 +132,8 @@ class ComponentWiringRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.component.ComponentWiring<TestComponent, RoutableData<TestDataType>> wiring =
-                new com.hedera.wiring.component.ComponentWiring<>(model, TestComponent.class, DIRECT_CONFIGURATION);
+        final ComponentWiring<TestComponent, RoutableData<TestDataType>> wiring =
+                new ComponentWiring<>(model, TestComponent.class, DIRECT_CONFIGURATION);
 
         wiring.bind(new TestComponentImpl());
 
@@ -183,8 +183,8 @@ class ComponentWiringRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.component.ComponentWiring<TestListComponent, List<RoutableData<TestDataType>>> wiring =
-                new com.hedera.wiring.component.ComponentWiring<>(model, TestListComponent.class, DIRECT_CONFIGURATION);
+        final ComponentWiring<TestListComponent, List<RoutableData<TestDataType>>> wiring =
+                new ComponentWiring<>(model, TestListComponent.class, DIRECT_CONFIGURATION);
 
         wiring.bind(new TestListComponentImpl());
 
@@ -247,8 +247,8 @@ class ComponentWiringRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.component.ComponentWiring<TestComponent, RoutableData<TestDataType>> wiring =
-                new com.hedera.wiring.component.ComponentWiring<>(model, TestComponent.class, DIRECT_CONFIGURATION);
+        final ComponentWiring<TestComponent, RoutableData<TestDataType>> wiring =
+                new ComponentWiring<>(model, TestComponent.class, DIRECT_CONFIGURATION);
 
         wiring.getRoutedOutput(TestDataType.FOO);
 
@@ -264,8 +264,8 @@ class ComponentWiringRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.component.ComponentWiring<TestListComponent, RoutableData<TestDataType>> wiring =
-                new com.hedera.wiring.component.ComponentWiring<>(model, TestListComponent.class, DIRECT_CONFIGURATION);
+        final ComponentWiring<TestListComponent, RoutableData<TestDataType>> wiring =
+                new ComponentWiring<>(model, TestListComponent.class, DIRECT_CONFIGURATION);
 
         wiring.getRoutedOutput(TestDataType.FOO);
 
@@ -282,8 +282,8 @@ class ComponentWiringRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.component.ComponentWiring<TestComponent, RoutableData<TestDataType>> wiring =
-                new com.hedera.wiring.component.ComponentWiring<>(model, TestComponent.class, DIRECT_CONFIGURATION);
+        final ComponentWiring<TestComponent, RoutableData<TestDataType>> wiring =
+                new ComponentWiring<>(model, TestComponent.class, DIRECT_CONFIGURATION);
 
         wiring.getRoutedOutput(TestDataType.FOO);
 
@@ -300,7 +300,7 @@ class ComponentWiringRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.component.ComponentWiring<TestListComponent, RoutableData<TestDataType>> wiring =
+        final ComponentWiring<TestListComponent, RoutableData<TestDataType>> wiring =
                 new ComponentWiring<>(model, TestListComponent.class, DIRECT_CONFIGURATION);
 
         wiring.getSplitAndRoutedOutput(TestDataType.FOO);

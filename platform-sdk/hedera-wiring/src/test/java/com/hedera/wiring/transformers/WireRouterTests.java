@@ -38,13 +38,13 @@ class WireRouterTests {
         BAZ; // Boolean values
 
         /**
-         * Create a new {@link com.hedera.wiring.transformers.RoutableData} object with the given data.
+         * Create a new {@link RoutableData} object with the given data.
          *
          * @param data the data
-         * @return the new {@link com.hedera.wiring.transformers.RoutableData} object
+         * @return the new {@link RoutableData} object
          */
         @NonNull
-        public com.hedera.wiring.transformers.RoutableData<TestDataType> of(@NonNull final Object data) {
+        public RoutableData<TestDataType> of(@NonNull final Object data) {
             return new RoutableData<>(this, data);
         }
     }
@@ -57,8 +57,7 @@ class WireRouterTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.transformers.WireRouter<TestDataType> router =
-                new WireRouter<>(model, "router", "router input", TestDataType.class);
+        final WireRouter<TestDataType> router = new WireRouter<>(model, "router", "router input", TestDataType.class);
 
         final AtomicLong latestFoo = new AtomicLong();
         final AtomicLong latestBar = new AtomicLong();

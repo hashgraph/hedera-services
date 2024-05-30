@@ -376,10 +376,7 @@ class DeterministicModelTests {
         final long value1 = evaluateMesh(
                 dataSeed,
                 generateWiringMesh(
-                        meshSeed,
-                        com.hedera.wiring.model.WiringModelBuilder.create(platformContext)
-                                .build(),
-                        enableHeartbeat),
+                        meshSeed, WiringModelBuilder.create(platformContext).build(), enableHeartbeat),
                 () -> {
                     try {
                         MILLISECONDS.sleep(1);
@@ -392,10 +389,7 @@ class DeterministicModelTests {
         final long value2 = evaluateMesh(
                 dataSeed,
                 generateWiringMesh(
-                        meshSeed,
-                        com.hedera.wiring.model.WiringModelBuilder.create(platformContext)
-                                .build(),
-                        enableHeartbeat),
+                        meshSeed, WiringModelBuilder.create(platformContext).build(), enableHeartbeat),
                 () -> {
                     try {
                         MILLISECONDS.sleep(1);
@@ -418,10 +412,9 @@ class DeterministicModelTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
 
-        final com.hedera.wiring.model.DeterministicWiringModel deterministicWiringModel1 =
-                com.hedera.wiring.model.WiringModelBuilder.create(platformContext)
-                        .withDeterministicModeEnabled(true)
-                        .build();
+        final DeterministicWiringModel deterministicWiringModel1 = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
         final long value1 =
                 evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel1, true), () -> {
                     time.tick(Duration.ofMillis(1));
@@ -429,10 +422,9 @@ class DeterministicModelTests {
                 });
 
         time.reset();
-        final com.hedera.wiring.model.DeterministicWiringModel deterministicWiringModel2 =
-                com.hedera.wiring.model.WiringModelBuilder.create(platformContext)
-                        .withDeterministicModeEnabled(true)
-                        .build();
+        final DeterministicWiringModel deterministicWiringModel2 = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
         final long value2 =
                 evaluateMesh(dataSeed, generateWiringMesh(meshSeed, deterministicWiringModel2, true), () -> {
                     time.tick(Duration.ofMillis(1));

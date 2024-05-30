@@ -41,7 +41,7 @@ class NoOpTaskSchedulerTests {
                 TestPlatformContextBuilder.create().build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<List<Integer>> realFakeScheduler =
+        final TaskScheduler<List<Integer>> realFakeScheduler =
                 model.schedulerBuilder("A").withType(NO_OP).build().cast();
 
         final AtomicBoolean shouldAlwaysBeFalse = new AtomicBoolean(false);

@@ -36,11 +36,9 @@ public class DeterministicHeartbeatSchedulerTests {
         final FakeTime time = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
-        final com.hedera.wiring.model.DeterministicWiringModel model =
-                com.hedera.wiring.model.WiringModelBuilder.create(platformContext)
-                        .withDeterministicModeEnabled(true)
-                        .build();
-        ;
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -68,11 +66,9 @@ public class DeterministicHeartbeatSchedulerTests {
         final FakeTime time = new FakeTime();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
-        final com.hedera.wiring.model.DeterministicWiringModel model =
-                com.hedera.wiring.model.WiringModelBuilder.create(platformContext)
-                        .withDeterministicModeEnabled(true)
-                        .build();
-        ;
+        final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
+                .withDeterministicModeEnabled(true)
+                .build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
@@ -103,7 +99,6 @@ public class DeterministicHeartbeatSchedulerTests {
         final DeterministicWiringModel model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
-        ;
 
         final TaskScheduler<Void> scheduler = model.schedulerBuilder("test")
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)

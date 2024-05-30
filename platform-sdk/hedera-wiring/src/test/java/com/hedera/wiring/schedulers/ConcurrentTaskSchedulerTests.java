@@ -62,7 +62,7 @@ class ConcurrentTaskSchedulerTests {
             }
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.CONCURRENT)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -112,7 +112,7 @@ class ConcurrentTaskSchedulerTests {
             count.addAndGet(x.value);
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.CONCURRENT)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()

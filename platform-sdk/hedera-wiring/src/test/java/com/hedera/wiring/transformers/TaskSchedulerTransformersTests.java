@@ -503,7 +503,7 @@ class TaskSchedulerTransformersTests {
     }
 
     /**
-     * Helper class for building an {@link com.hedera.wiring.transformers.AdvancedTransformation}
+     * Helper class for building an {@link AdvancedTransformation}
      *
      * @param name          the name of the transformer
      * @param transform     the function that transforms the output of this wire into the output of the transformer,

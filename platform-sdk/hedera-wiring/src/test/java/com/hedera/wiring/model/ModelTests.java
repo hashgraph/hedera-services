@@ -47,7 +47,7 @@ class ModelTests {
      * @param illegalDirectSchedulerUseExpected true if illegal direct scheduler use is expected, false otherwise
      */
     private static void validateModel(
-            @NonNull final com.hedera.wiring.model.WiringModel model,
+            @NonNull final WiringModel model,
             final boolean cycleExpected,
             final boolean illegalDirectSchedulerUseExpected) {
 
@@ -66,7 +66,7 @@ class ModelTests {
 
     @Test
     void emptyModelTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
         validateModel(model, false, false);
@@ -74,7 +74,7 @@ class ModelTests {
 
     @Test
     void singleVertexTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -94,7 +94,7 @@ class ModelTests {
 
     @Test
     void shortChainTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -123,7 +123,7 @@ class ModelTests {
 
     @Test
     void loopSizeOneTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -146,7 +146,7 @@ class ModelTests {
 
     @Test
     void loopSizeOneBrokenByInjectionTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -169,7 +169,7 @@ class ModelTests {
 
     @Test
     void loopSizeTwoTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -197,7 +197,7 @@ class ModelTests {
 
     @Test
     void loopSizeTwoBrokenByInjectionTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -225,7 +225,7 @@ class ModelTests {
 
     @Test
     void loopSizeTwoBrokenByMissingBoundTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -255,7 +255,7 @@ class ModelTests {
 
     @Test
     void loopSizeThreeTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -288,7 +288,7 @@ class ModelTests {
 
     @Test
     void loopSizeThreeBrokenByInjectionTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -321,7 +321,7 @@ class ModelTests {
 
     @Test
     void loopSizeThreeBrokenByMissingBoundTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -356,7 +356,7 @@ class ModelTests {
 
     @Test
     void loopSizeFourTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -395,7 +395,7 @@ class ModelTests {
 
     @Test
     void loopSizeFourBrokenByInjectionTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -436,7 +436,7 @@ class ModelTests {
 
     @Test
     void loopSizeFourBrokenByMissingBoundTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -475,7 +475,7 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -554,7 +554,7 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainBrokenByInjectionTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -633,7 +633,7 @@ class ModelTests {
 
     @Test
     void loopSizeFourWithChainBrokenByMissingBoundTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -714,7 +714,7 @@ class ModelTests {
 
     @Test
     void multiLoopTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -797,7 +797,7 @@ class ModelTests {
 
     @Test
     void multiLoopBrokenByInjectionTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -880,7 +880,7 @@ class ModelTests {
 
     @Test
     void multiLoopBrokenByMissingBoundTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -967,7 +967,7 @@ class ModelTests {
 
     @Test
     void filterInCycleTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1051,7 +1051,7 @@ class ModelTests {
 
     @Test
     void transformerInCycleTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1135,7 +1135,7 @@ class ModelTests {
 
     @Test
     void splitterInCycleTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1217,7 +1217,7 @@ class ModelTests {
 
     @Test
     void multipleOutputCycleTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1312,7 +1312,7 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingDirectTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1419,7 +1419,7 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingMultipleDirectTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1529,7 +1529,7 @@ class ModelTests {
      */
     @Test
     void concurrentAccessingDirectThroughProxyTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 
@@ -1638,7 +1638,7 @@ class ModelTests {
      */
     @Test
     void multipleSequentialSchedulerTest() {
-        final com.hedera.wiring.model.WiringModel model = com.hedera.wiring.model.WiringModelBuilder.create(
+        final WiringModel model = WiringModelBuilder.create(
                         TestPlatformContextBuilder.create().build())
                 .build();
 

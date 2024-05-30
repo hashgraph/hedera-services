@@ -43,7 +43,7 @@ class HeartbeatSchedulerTests {
                 TestPlatformContextBuilder.create().withTime(fakeTime).build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> scheduler =
+        final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
 
         final BindableInputWire<Instant, Void> heartbeatBindable = scheduler.buildInputWire("heartbeat");
@@ -72,7 +72,7 @@ class HeartbeatSchedulerTests {
                 TestPlatformContextBuilder.create().withTime(fakeTime).build();
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> scheduler =
+        final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
 
         final BindableInputWire<Instant, Void> heartbeatBindable = scheduler.buildInputWire("heartbeat");

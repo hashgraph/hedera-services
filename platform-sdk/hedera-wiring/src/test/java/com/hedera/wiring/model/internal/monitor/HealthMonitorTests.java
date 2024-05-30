@@ -71,9 +71,8 @@ class HealthMonitorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
 
-        final com.hedera.wiring.model.internal.monitor.HealthMonitor healthMonitor =
-                new com.hedera.wiring.model.internal.monitor.HealthMonitor(
-                        platformContext, schedulers, Duration.ofSeconds(5), Duration.ofDays(10000));
+        final HealthMonitor healthMonitor =
+                new HealthMonitor(platformContext, schedulers, Duration.ofSeconds(5), Duration.ofDays(10000));
 
         final Instant endTime = startTime.plus(Duration.ofSeconds(10));
         while (time.now().isBefore(endTime)) {
@@ -104,9 +103,8 @@ class HealthMonitorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
 
-        final com.hedera.wiring.model.internal.monitor.HealthMonitor healthMonitor =
-                new com.hedera.wiring.model.internal.monitor.HealthMonitor(
-                        platformContext, schedulers, Duration.ofSeconds(5), Duration.ofDays(10000));
+        final HealthMonitor healthMonitor =
+                new HealthMonitor(platformContext, schedulers, Duration.ofSeconds(5), Duration.ofDays(10000));
 
         final Instant phase1EndTime = startTime.plus(Duration.ofSeconds(10));
         while (time.now().isBefore(phase1EndTime)) {
@@ -166,7 +164,7 @@ class HealthMonitorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withTime(time).build();
 
-        final com.hedera.wiring.model.internal.monitor.HealthMonitor healthMonitor =
+        final HealthMonitor healthMonitor =
                 new HealthMonitor(platformContext, schedulers, Duration.ofSeconds(5), Duration.ofDays(10000));
 
         final Instant phase1EndTime = startTime.plus(Duration.ofSeconds(10));

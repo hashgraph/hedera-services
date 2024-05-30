@@ -35,8 +35,7 @@ class StandardObjectCounterTests {
     void basicOperationTest() {
         final Random random = getRandomPrintSeed();
 
-        final com.hedera.wiring.counters.ObjectCounter counter =
-                new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofMillis(1));
+        final ObjectCounter counter = new com.hedera.wiring.counters.StandardObjectCounter(Duration.ofMillis(1));
 
         int count = 0;
         for (int i = 0; i < 1000; i++) {

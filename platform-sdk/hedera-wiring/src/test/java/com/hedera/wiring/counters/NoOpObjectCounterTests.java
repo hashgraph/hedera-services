@@ -27,7 +27,7 @@ class NoOpObjectCounterTests {
      */
     @Test
     void noThrowingTest() {
-        final com.hedera.wiring.counters.NoOpObjectCounter counter = NoOpObjectCounter.getInstance();
+        final NoOpObjectCounter counter = NoOpObjectCounter.getInstance();
 
         counter.onRamp();
         counter.attemptOnRamp();

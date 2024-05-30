@@ -51,7 +51,7 @@ class DirectTaskSchedulerTests {
 
         final StandardObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> schedulerA = model.schedulerBuilder("A")
+        final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("A")
                 .withType(type)
                 .withOnRamp(counter)
                 .build()
@@ -59,7 +59,7 @@ class DirectTaskSchedulerTests {
         final BindableInputWire<Integer, Integer> inA = schedulerA.buildInputWire("inA");
         final OutputWire<Integer> outA = schedulerA.getOutputWire();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
+        final TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withOffRamp(counter)
                 .build()
@@ -132,7 +132,7 @@ class DirectTaskSchedulerTests {
             assertEquals("intentional", e.getMessage());
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> scheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> scheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUncaughtExceptionHandler(handler)
                 .build()

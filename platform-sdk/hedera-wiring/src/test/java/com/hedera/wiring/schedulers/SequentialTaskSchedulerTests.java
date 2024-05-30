@@ -99,7 +99,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -149,7 +149,7 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -189,7 +189,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -260,7 +260,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), operationCount.getAndIncrement()));
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -339,7 +339,7 @@ class SequentialTaskSchedulerTests {
             }
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -401,7 +401,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskMetricEnabled(true)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
@@ -486,7 +486,7 @@ class SequentialTaskSchedulerTests {
 
         final long capacity = 11;
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(capacity)
                 .withSleepDuration(Duration.ofMillis(1))
@@ -590,7 +590,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .build()
@@ -665,7 +665,7 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger wireValue = new AtomicInteger();
         final Consumer<Integer> handler = x -> wireValue.set(hash32(wireValue.get(), x));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -715,22 +715,22 @@ class SequentialTaskSchedulerTests {
         final AtomicInteger countC = new AtomicInteger();
         final AtomicInteger countD = new AtomicInteger();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerToA = model.schedulerBuilder("wireToA")
+        final TaskScheduler<Integer> taskSchedulerToA = model.schedulerBuilder("wireToA")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerToB = model.schedulerBuilder("wireToB")
+        final TaskScheduler<Integer> taskSchedulerToB = model.schedulerBuilder("wireToB")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerToC = model.schedulerBuilder("wireToC")
+        final TaskScheduler<Integer> taskSchedulerToC = model.schedulerBuilder("wireToC")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerToD = model.schedulerBuilder("wireToD")
+        final TaskScheduler<Integer> taskSchedulerToD = model.schedulerBuilder("wireToD")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -840,7 +840,7 @@ class SequentialTaskSchedulerTests {
         final Consumer<Boolean> booleanHandler = x -> wireValue.set((x ? -1 : 1) * wireValue.get());
         final Consumer<String> stringHandler = x -> wireValue.set(hash32(wireValue.get(), x.hashCode()));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
@@ -910,7 +910,7 @@ class SequentialTaskSchedulerTests {
 
         final Consumer<Integer> handler2 = x -> wireValue.set(hash32(wireValue.get(), -x));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .build()
@@ -1001,14 +1001,14 @@ class SequentialTaskSchedulerTests {
 
         final ObjectCounter backpressure = new BackpressureObjectCounter("test", 11, Duration.ofMillis(1));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
+        final TaskScheduler<Void> taskSchedulerA = model.schedulerBuilder("testA")
                 .withType(type)
                 .withOnRamp(backpressure)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("testB")
+        final TaskScheduler<Void> taskSchedulerB = model.schedulerBuilder("testB")
                 .withType(type)
                 .withOffRamp(backpressure)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
@@ -1138,7 +1138,7 @@ class SequentialTaskSchedulerTests {
             wireValue.set(hash32(wireValue.get(), x));
         };
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(11)
                 .withFlushingEnabled(true)
@@ -1231,7 +1231,7 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
@@ -1260,7 +1260,7 @@ class SequentialTaskSchedulerTests {
 
         final AtomicInteger exceptionCount = new AtomicInteger();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
+        final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(type)
                 .withUncaughtExceptionHandler((t, e) -> exceptionCount.incrementAndGet())
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
@@ -1301,21 +1301,21 @@ class SequentialTaskSchedulerTests {
 
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> a = model.schedulerBuilder("a")
+        final TaskScheduler<Void> a = model.schedulerBuilder("a")
                 .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> b = model.schedulerBuilder("b")
+        final TaskScheduler<Void> b = model.schedulerBuilder("b")
                 .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> c = model.schedulerBuilder("c")
+        final TaskScheduler<Void> c = model.schedulerBuilder("c")
                 .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
@@ -1375,21 +1375,21 @@ class SequentialTaskSchedulerTests {
 
         // create 3 wires with the following bindings:
         // a -> b -> c -> latch
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> a = model.schedulerBuilder("a")
+        final TaskScheduler<Void> a = model.schedulerBuilder("a")
                 .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> b = model.schedulerBuilder("b")
+        final TaskScheduler<Void> b = model.schedulerBuilder("b")
                 .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
                 .withPool(pool)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> c = model.schedulerBuilder("c")
+        final TaskScheduler<Void> c = model.schedulerBuilder("c")
                 .withType(type)
                 .withUnhandledTaskCapacity(2)
                 .withSleepDuration(Duration.ofMillis(1))
@@ -1448,13 +1448,13 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA =
+        final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB =
+        final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerC =
+        final TaskScheduler<Integer> taskSchedulerC =
                 model.schedulerBuilder("C").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerD =
+        final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").withType(type).build().cast();
 
         final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
@@ -1517,13 +1517,13 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA =
+        final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB =
+        final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerC =
+        final TaskScheduler<Integer> taskSchedulerC =
                 model.schedulerBuilder("C").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerD =
+        final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").withType(type).build().cast();
 
         final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
@@ -1595,25 +1595,25 @@ class SequentialTaskSchedulerTests {
         // A passes data to X, Y, and Z
         // X, Y, and Z pass data to B
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA =
+        final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
         final BindableInputWire<Integer, Integer> addNewValueToA = taskSchedulerA.buildInputWire("addNewValueToA");
         final BindableInputWire<Boolean, Integer> setInversionBitInA =
                 taskSchedulerA.buildInputWire("setInversionBitInA");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerX =
+        final TaskScheduler<Integer> taskSchedulerX =
                 model.schedulerBuilder("X").withType(type).build().cast();
         final BindableInputWire<Integer, Integer> inputX = taskSchedulerX.buildInputWire("inputX");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerY =
+        final TaskScheduler<Integer> taskSchedulerY =
                 model.schedulerBuilder("Y").withType(type).build().cast();
         final BindableInputWire<Integer, Integer> inputY = taskSchedulerY.buildInputWire("inputY");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerZ =
+        final TaskScheduler<Integer> taskSchedulerZ =
                 model.schedulerBuilder("Z").withType(type).build().cast();
         final BindableInputWire<Integer, Integer> inputZ = taskSchedulerZ.buildInputWire("inputZ");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerB =
+        final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
         final BindableInputWire<Integer, Void> inputB = taskSchedulerB.buildInputWire("inputB");
 
@@ -1714,21 +1714,21 @@ class SequentialTaskSchedulerTests {
         // In this test, wires A and B are connected to the input of wire C, which has a maximum capacity.
         // Wire A respects back pressure, but wire B uses injection and can ignore it.
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final BindableInputWire<Integer, Integer> inA = taskSchedulerA.buildInputWire("inA");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final BindableInputWire<Integer, Integer> inB = taskSchedulerB.buildInputWire("inB");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
@@ -1834,13 +1834,13 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA =
+        final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB =
+        final TaskScheduler<Integer> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerC =
+        final TaskScheduler<Integer> taskSchedulerC =
                 model.schedulerBuilder("C").withType(type).build().cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerD =
+        final TaskScheduler<Void> taskSchedulerD =
                 model.schedulerBuilder("D").withType(type).build().cast();
 
         final BindableInputWire<Integer, Integer> inputA = taskSchedulerA.buildInputWire("inputA");
@@ -1931,25 +1931,25 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)
                 .withBusyFractionMetricsEnabled(true)
                 .withUnhandledTaskMetricEnabled(true)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withBusyFractionMetricsEnabled(true)
                 .withUnhandledTaskMetricEnabled(false)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
+        final TaskScheduler<Integer> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
                 .withBusyFractionMetricsEnabled(false)
                 .withUnhandledTaskMetricEnabled(true)
                 .build()
                 .cast();
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
+        final TaskScheduler<Void> taskSchedulerD = model.schedulerBuilder("D")
                 .withType(type)
                 .withBusyFractionMetricsEnabled(false)
                 .withUnhandledTaskMetricEnabled(false)
@@ -2013,13 +2013,13 @@ class SequentialTaskSchedulerTests {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA =
+        final TaskScheduler<Integer> taskSchedulerA =
                 model.schedulerBuilder("A").withType(type).build().cast();
         final BindableInputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
         final StandardOutputWire<Boolean> aOutBoolean = taskSchedulerA.buildSecondaryOutputWire();
         final StandardOutputWire<String> aOutString = taskSchedulerA.buildSecondaryOutputWire();
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerB =
+        final TaskScheduler<Void> taskSchedulerB =
                 model.schedulerBuilder("B").withType(type).build().cast();
         final BindableInputWire<Integer, Void> bInInteger = taskSchedulerB.buildInputWire("bIn1");
         final BindableInputWire<Boolean, Void> bInBoolean = taskSchedulerB.buildInputWire("bIn2");
@@ -2082,7 +2082,7 @@ class SequentialTaskSchedulerTests {
 
         final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)
                 .withOnRamp(counter)
                 .withExternalBackPressure(true)
@@ -2091,7 +2091,7 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final BindableInputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withExternalBackPressure(true)
                 .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
@@ -2099,7 +2099,7 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final BindableInputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
                 .withOffRamp(counter)
                 .withExternalBackPressure(true)
@@ -2212,7 +2212,7 @@ class SequentialTaskSchedulerTests {
 
         final ObjectCounter counter = new BackpressureObjectCounter("test", 10, Duration.ofMillis(1));
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
+        final TaskScheduler<Integer> taskSchedulerA = model.schedulerBuilder("A")
                 .withType(type)
                 .withOnRamp(counter)
                 .withExternalBackPressure(true)
@@ -2221,7 +2221,7 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final BindableInputWire<Integer, Integer> aIn = taskSchedulerA.buildInputWire("aIn");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
+        final TaskScheduler<Integer> taskSchedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withExternalBackPressure(true)
                 .withUnhandledTaskCapacity(5)
@@ -2229,7 +2229,7 @@ class SequentialTaskSchedulerTests {
                 .cast();
         final BindableInputWire<Integer, Integer> bIn = taskSchedulerB.buildInputWire("bIn");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
+        final TaskScheduler<Void> taskSchedulerC = model.schedulerBuilder("C")
                 .withType(type)
                 .withOffRamp(counter)
                 .withExternalBackPressure(true)
@@ -2335,14 +2335,14 @@ class SequentialTaskSchedulerTests {
 
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Integer> schedulerA = model.schedulerBuilder("A")
+        final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("A")
                 .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
                 .cast();
         final BindableInputWire<Integer, Integer> inputA = schedulerA.buildInputWire("inputA");
 
-        final com.hedera.wiring.schedulers.TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
+        final TaskScheduler<Void> schedulerB = model.schedulerBuilder("B")
                 .withType(type)
                 .withUnhandledTaskCapacity(10)
                 .build()
