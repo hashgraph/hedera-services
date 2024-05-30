@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -42,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
@@ -62,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -100,7 +103,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     private static final String NFT_XFER = "nftXfer";
     private static final String NFT_CREATE = "nftCreateTxn";
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
@@ -162,7 +165,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> transferHbarsToEVMAddressAliasUnlimitedAssociations() {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
@@ -277,7 +280,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .has(accountWith().maxAutoAssociations(-1)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> transferTokensToEVMAddressAliasUnlimitedAssociations() {
         double v13PriceUsd = 0.05;
         double autoAssocSlotPrice = 0.0018;
@@ -387,7 +390,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         );
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> transferNftToEVMAddressAliasUnlimitedAssociations() {
         double v13PriceUsd = 0.05;
         double autoAssocSlotPrice = 0.0018;
@@ -507,7 +510,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                 .then(
                         // verify fees of first transfer
                         // add this assertion after transfer changes are integrated
-                        // validateChargedUsd(FT_XFER, v13PriceUsdOneAutoAssociation)
+                         validateChargedUsd(NFT_XFER, v13PriceUsdOneAutoAssociation)
                         );
     }
 }
