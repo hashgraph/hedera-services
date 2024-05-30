@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
@@ -208,6 +207,7 @@ public final class Hedera implements SwirldMain {
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry, @NonNull final ServicesRegistry registry) {
         requireNonNull(constructableRegistry);
+        // FUTURE : We need to extract OrderedServiceMigrator and ServicesRegistry into its own class
         requireNonNull(registry);
 
         this.servicesRegistry = registry;
@@ -243,9 +243,6 @@ public final class Hedera implements SwirldMain {
 
         // Create a records generator for any synthetic records that need to be CREATED
         this.recordsGenerator = new SyntheticRecordsGenerator();
-        // Create all the service implementations
-        logger.info("Registering services");
-        registerServices(servicesRegistry);
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
         // constructor to make sure it has the config and other info it needs to be created correctly.
@@ -375,24 +372,8 @@ public final class Hedera implements SwirldMain {
         configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logConfiguration();
 
-        // Determine if we need to create synthetic records for system entities
-        final var blockRecordState = state.getReadableStates(BlockRecordService.NAME);
-        boolean createSynthRecords = false;
-        // In fact this will never be true - c.f. https://github.com/hashgraph/hedera-services/issues/13536
-        if (!blockRecordState.isEmpty()) {
-            final var blockInfo = blockRecordState
-                    .<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY)
-                    .get();
-            if (isDefaultConsTimeOfLastHandledTxn(blockInfo)) {
-                createSynthRecords = true;
-            }
-        } else {
-            createSynthRecords = true;
-        }
-        if (createSynthRecords) {
-            recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
-        }
-
+        recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
+        // This only sets static fields from mono service state in v0490 Schemas
         MonoMigrationUtils.maybeMigrateFrom(state, trigger, metrics);
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
@@ -434,6 +415,7 @@ public final class Hedera implements SwirldMain {
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
+
         try {
             switch (trigger) {
                 case GENESIS -> genesis(state, platformState, metrics);
@@ -487,6 +469,10 @@ public final class Hedera implements SwirldMain {
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
+
+        // Create all the service implementations
+        logger.info("Registering services");
+        registerServices(servicesRegistry);
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
         logger.info("Migration versions are {} to {}", previousVersion, currentVersion);
