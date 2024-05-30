@@ -164,16 +164,9 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @return true if the required fields of the event are non-null, otherwise false
      */
     private boolean areRequiredFieldsNonNull(@NonNull final GossipEvent event) {
-        if (event.getHashedData() == null) {
-            // do not log the event itself, since toString would throw a NullPointerException
-            nullHashedDataLogger.error(EXCEPTION.getMarker(), "Event has null hashed data");
-            nullHashedDataAccumulator.update(1);
-            return false;
-        }
-
         if (event.getSignature() == null) {
             // do not log the event itself, since toString would throw a NullPointerException
-            nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null unhashed data");
+            nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null signature");
             nullUnhashedDataAccumulator.update(1);
             return false;
         }

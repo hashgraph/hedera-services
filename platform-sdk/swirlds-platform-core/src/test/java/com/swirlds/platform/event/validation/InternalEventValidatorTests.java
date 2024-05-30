@@ -42,6 +42,7 @@ import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -50,6 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * Tests for {@link DefaultInternalEventValidator}
@@ -133,21 +135,9 @@ class InternalEventValidatorTests {
     }
 
     @Test
-    @DisplayName("An event with null hashed data is invalid")
-    void nullHashedData() {
-        final GossipEvent event = generateGoodEvent(random, 1111);
-        when(event.getHashedData()).thenReturn(null);
-
-        assertNull(multinodeValidator.validateEvent(event));
-        assertNull(singleNodeValidator.validateEvent(event));
-
-        assertEquals(2, exitedIntakePipelineCount.get());
-    }
-
-    @Test
     @DisplayName("An event with null signature is invalid")
     void nullSignatureData() {
-        final GossipEvent event = generateGoodEvent(random, 1111);
+        final GossipEvent event = Mockito.spy(new TestingEventBuilder(random).build());
         when(event.getSignature()).thenReturn(null);
 
         assertNull(multinodeValidator.validateEvent(event));
@@ -160,7 +150,11 @@ class InternalEventValidatorTests {
     @DisplayName("An event with too many transaction bytes is invalid")
     void tooManyTransactionBytes() {
         // default max is 245_760 bytes
-        final GossipEvent event = generateGoodEvent(random, 500_000);
+        final GossipEvent event = new TestingEventBuilder(random)
+                .setTransactionSize(100)
+                .setAppTransactionCount(5000)
+                .setSystemTransactionCount(0)
+                .build();
 
         assertNull(multinodeValidator.validateEvent(event));
         assertNull(singleNodeValidator.validateEvent(event));
