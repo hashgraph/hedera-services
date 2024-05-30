@@ -16,8 +16,6 @@
 
 package com.swirlds.logging.api.internal.level;
 
-import static com.swirlds.logging.utils.ConfigUtils.configValueOrElse;
-
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
@@ -28,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -98,21 +97,14 @@ public class HandlerLoggingLevelConfig {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
         final ConfigLevel defaultLevel =
-                configValueOrElse(configuration, PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
-        final Boolean inheritLevels = configValueOrElse(
-                configuration,
-                PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(handlerName),
-                Boolean.class,
-                Boolean.TRUE);
+                configuration.getValue(PROPERTY_LOGGING_LEVEL, ConfigLevel.class, ConfigLevel.UNDEFINED);
+        final Boolean inheritLevels = configuration.getValue(
+                PROPERTY_LOGGING_HANDLER_INHERIT_LEVELS.formatted(handlerName), Boolean.class, Boolean.TRUE);
 
         final String propertyHandler = PROPERTY_LOGGING_HANDLER_LEVEL.formatted(handlerName);
-        final ConfigLevel defaultHandlerLevel;
-        if (handlerName != null) {
-            defaultHandlerLevel =
-                    configValueOrElse(configuration, propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED);
-        } else {
-            defaultHandlerLevel = ConfigLevel.UNDEFINED;
-        }
+        final ConfigLevel defaultHandlerLevel = Optional.ofNullable(
+                        configuration.getValue(propertyHandler, ConfigLevel.class, ConfigLevel.UNDEFINED))
+                .orElse(ConfigLevel.UNDEFINED);
 
         final Map<String, Level> levelConfigProperties = new HashMap<>();
         final Map<String, MarkerState> markerConfigStore = new HashMap<>();
@@ -122,7 +114,7 @@ public class HandlerLoggingLevelConfig {
         } else if (defaultHandlerLevel != ConfigLevel.UNDEFINED) {
             levelConfigProperties.put("", defaultHandlerLevel.level());
         } else {
-            if (Boolean.TRUE.equals(inheritLevels)) {
+            if (Boolean.TRUE.equals(inheritLevels) && defaultLevel != null) {
                 levelConfigProperties.put("", defaultLevel.level());
             } else {
                 levelConfigProperties.put("", DEFAULT_LEVEL);
