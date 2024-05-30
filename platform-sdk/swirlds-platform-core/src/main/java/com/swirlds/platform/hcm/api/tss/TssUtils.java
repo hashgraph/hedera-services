@@ -45,7 +45,7 @@ public final class TssUtils {
     /**
      * Compute a private share that belongs to this node.
      *
-     * @param tss               the TSS instance TODO: can this be removed?
+     * @param signatureSchema   the signature schema to use
      * @param shareId           the share ID owned by this node, for which the private share will be decrypted
      * @param elGamalPrivateKey the ElGamal private key of this node
      * @param tssMessages       the TSS messages to extract the private shares from
@@ -56,7 +56,7 @@ public final class TssUtils {
      */
     @Nullable
     public static TssPrivateShare decryptPrivateShare(
-            @NonNull final Tss tss,
+            @NonNull final SignatureSchema signatureSchema,
             @NonNull final TssShareId shareId,
             @NonNull final PairingPrivateKey elGamalPrivateKey,
             @NonNull final List<TssMessage> tssMessages,
@@ -85,21 +85,21 @@ public final class TssUtils {
         }
 
         // aggregate the decrypted partial private shares, creating the actual private share
-        return new TssPrivateShare(shareId, aggregatePrivateShares(tss, partialPrivateShares));
+        return new TssPrivateShare(shareId, aggregatePrivateShares(signatureSchema, partialPrivateShares));
     }
 
     /**
      * Compute the public share for a specific share ID.
      *
-     * @param tss         the TSS instance TODO: can this be removed?
-     * @param shareId     the share ID to compute the public share for
-     * @param tssMessages the TSS messages to extract the public shares from
-     * @param threshold   the threshold number of messages required to compute the public share
+     * @param signatureSchema the signature schema to use
+     * @param shareId         the share ID to compute the public share for
+     * @param tssMessages     the TSS messages to extract the public shares from
+     * @param threshold       the threshold number of messages required to compute the public share
      * @return the public share, or null if there aren't enough messages to meet the threshold
      */
     @Nullable
     public static TssPublicShare computePublicShare(
-            @NonNull final Tss tss,
+            @NonNull final SignatureSchema signatureSchema,
             @NonNull final TssShareId shareId,
             @NonNull final List<TssMessage> tssMessages,
             final int threshold) {
@@ -118,7 +118,7 @@ public final class TssUtils {
             partialShares.add(new TssPublicShare(
                     tssMessage.shareId(),
                     new PairingPublicKey(
-                            tss.getSignatureSchema(), tssMessage.commitment().extractShareKeyMaterial(shareId))));
+                            signatureSchema, tssMessage.commitment().extractShareKeyMaterial(shareId))));
         }
 
         return new TssPublicShare(shareId, aggregatePublicShares(partialShares));
@@ -191,13 +191,13 @@ public final class TssUtils {
      * It is the responsibility of the caller to ensure that the list of private shares meets the required threshold.
      * If the threshold is not met, the private key returned by this method will be invalid.
      *
-     * @param tss           the TSS instance TODO: can this be removed?
-     * @param privateShares the private shares to aggregate
+     * @param signatureSchema the signature schema to use
+     * @param privateShares   the private shares to aggregate
      * @return the aggregate private key
      */
     @NonNull
     public static PairingPrivateKey aggregatePrivateShares(
-            @NonNull final Tss tss, @NonNull final List<TssPrivateShare> privateShares) {
+            @NonNull final SignatureSchema signatureSchema, @NonNull final List<TssPrivateShare> privateShares) {
 
         if (privateShares.isEmpty()) {
             throw new IllegalArgumentException("At least one private share is required to recover a secret");
@@ -225,7 +225,7 @@ public final class TssUtils {
             sum = sum.add(lagrangeCoefficients.get(i).multiply(privateKeys.get(i)));
         }
 
-        return new PairingPrivateKey(tss.getSignatureSchema(), sum);
+        return new PairingPrivateKey(signatureSchema, sum);
     }
 
     /**
