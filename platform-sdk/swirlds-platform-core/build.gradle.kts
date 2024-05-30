@@ -28,7 +28,6 @@ mainModuleInfo {
 }
 
 jmhModuleInfo {
-    requires("com.swirlds.wiring")
     requires("com.swirlds.base")
     requires("com.swirlds.common")
     requires("com.swirlds.platform.core")
