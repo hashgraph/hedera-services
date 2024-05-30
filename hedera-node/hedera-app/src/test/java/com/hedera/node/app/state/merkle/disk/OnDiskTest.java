@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.node.config.data.HederaConfig;
@@ -149,7 +150,8 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class));
+        final var r = new MerkleSchemaRegistry(
+                registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,7 +74,8 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
-        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords);
+        final var registry =
+                new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords, new SchemaApplications());
         service.registerSchemas(registry, VERSION);
 
         entries.add(new Registration(service, registry));

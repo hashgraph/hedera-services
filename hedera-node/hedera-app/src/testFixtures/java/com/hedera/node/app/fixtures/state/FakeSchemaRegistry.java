@@ -38,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
@@ -78,6 +79,13 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             final var previousStates = new EmptyReadableStates();
             final var writableStates = new MapWritableStates(writables);
             schema.migrate(new MigrationContext() {
+                private final Map<String, Object> sharedValues = new HashMap<>();
+
+                @Override
+                public Map<String, Object> sharedValues() {
+                    return sharedValues;
+                }
+
                 @Override
                 public void copyAndReleaseOnDiskState(String stateKey) {
                     // No-op

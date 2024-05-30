@@ -180,7 +180,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                CURRENT_VERSION,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -202,7 +203,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null);
+                null,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -222,7 +224,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null);
+                null,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -337,7 +340,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null);
+                null,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -463,7 +467,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                CURRENT_VERSION,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -508,7 +513,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                CURRENT_VERSION);
+                CURRENT_VERSION,
+                new HashMap<>());
 
         schema.migrate(migrationContext);
 
@@ -539,7 +545,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (int i = 1; i < DEFAULT_NUM_SYSTEM_ACCOUNTS; i++) {
@@ -569,7 +576,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         final var stakingRewardAccount = acctsStateResult.get(ACCT_IDS[800]);
@@ -601,7 +609,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
         for (final long reservedNum : NON_CONTRACT_RESERVED_NUMS) {
@@ -631,7 +640,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         final var acctsStateResult = newStates.<AccountID, Account>get(ACCOUNTS_KEY);
 
@@ -660,7 +670,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         // Verify that the assigned account ID matches the expected entity IDs
         for (int i = 0; i < EVM_ADDRESSES.length; i++) {
@@ -679,7 +690,8 @@ final class InitialModServiceTokenSchemaTest {
                 networkInfo,
                 genesisRecordsBuilder,
                 entityIdStore,
-                null));
+                null,
+                new HashMap<>()));
 
         // Verify contract entity IDs aren't used
         for (int i = 350; i < 400; i++) {
@@ -725,7 +737,14 @@ final class InitialModServiceTokenSchemaTest {
         final var schema = newSubjectWithAllExpected();
         // When we call restart, the state will be updated to mark node 1 and 3 as deleted
         schema.restart(new MigrationContextImpl(
-                previousStates, newStates, config, networkInfo, genesisRecordsBuilder, entityIdStore, null));
+                previousStates,
+                newStates,
+                config,
+                networkInfo,
+                genesisRecordsBuilder,
+                entityIdStore,
+                null,
+                new HashMap<>()));
         final var updatedStates = newStates.get(STAKING_INFO_KEY);
         // marks nodes 1, 2 as deleted
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();

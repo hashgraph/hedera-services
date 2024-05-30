@@ -36,7 +36,7 @@ import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_P
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
-import static com.hedera.node.app.state.merkle.MerkleSchemaRegistry.isSoOrdered;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;

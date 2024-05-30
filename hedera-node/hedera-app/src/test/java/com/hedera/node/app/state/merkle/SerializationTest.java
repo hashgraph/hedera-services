@@ -43,6 +43,7 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,18 +130,26 @@ class SerializationTest extends MerkleTestBase {
         // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(lifecycles);
-        final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var originalRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
-                originalTree, null, v1, config, networkInfo, mock(Metrics.class), mock(WritableEntityIdStore.class));
+                originalTree,
+                null,
+                v1,
+                config,
+                networkInfo,
+                mock(Metrics.class),
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
 
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
         CRYPTO.digestTreeSync(originalTree);
         final var serializedBytes = writeTree(originalTree, dir);
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var newRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -157,7 +166,8 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class));
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

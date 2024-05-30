@@ -30,6 +30,23 @@ import java.util.Set;
  */
 public interface Service {
     /**
+     * A sort value for the service, used to determine the order in which service
+     * schemas are migrated.
+     *
+     * <p><b>(FUTURE)</b> This order should actually depend on the migration
+     * software version, because nothing prevents service {@code A} from needing
+     * to precede service {@code B} in version {@code N}; while at the same time
+     * {@code B} needing to precede {@code A} in version {@code N+1}. But this
+     * will require a significant restructuring in {@code hedera-app} and does
+     * not provide any current value, so we defer that work.
+     *
+     * @return the migrationOrder value
+     */
+    default int migrationOrder() {
+        return 0;
+    }
+
+    /**
      * Returns the name of the service. This name must be unique for each service deployed on the
      * application.
      *

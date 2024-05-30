@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
+import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -98,6 +99,7 @@ public class TokenServiceImpl implements TokenService {
         modTokenSchema = new InitialModServiceTokenSchema(
                 sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts, version);
         registry.register(modTokenSchema);
+        registry.register(new V0500TokenSchema());
     }
 
     public void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
