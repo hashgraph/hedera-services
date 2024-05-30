@@ -53,14 +53,14 @@ public record Groth21Tss(@NonNull SignatureSchema signatureSchema) implements Ts
 
         final List<FieldElement> randomness = generateRandomness(random, signatureSchema.getField());
 
-        final List<Groth21UnencryptedShare> unencryptedShares = new ArrayList<>();
+        final List<UnencryptedShare> unencryptedShares = new ArrayList<>();
         for (final TssShareClaim shareClaim : pendingShareClaims) {
-            unencryptedShares.add(new Groth21UnencryptedShare(
+            unencryptedShares.add(new UnencryptedShare(
                     shareClaim, polynomial.evaluate(shareClaim.shareId().idElement())));
         }
 
-        final Groth21MultishareCiphertext multishareCiphertext =
-                Groth21MultishareCiphertext.create(signatureSchema, randomness, unencryptedShares);
+        final MultishareCiphertext multishareCiphertext =
+                MultishareCiphertext.create(signatureSchema, randomness, unencryptedShares);
         final Groth21Proof proof = Groth21Proof.create(random, randomness, unencryptedShares);
 
         return new TssMessage(privateShare.shareId(), multishareCiphertext, polynomialCommitment, proof);

@@ -22,7 +22,6 @@ import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPrivateKey;
 import com.swirlds.platform.hcm.api.signaturescheme.SignatureSchema;
-import com.swirlds.platform.hcm.api.tss.TssMultishareCiphertext;
 import com.swirlds.platform.hcm.api.tss.TssPrivateShare;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import com.swirlds.platform.hcm.impl.internal.ElGamalCache;
@@ -32,18 +31,42 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * A TSS ciphertext, as utilized by the Groth21 scheme.
+ * A TSS multishare ciphertext, as utilized by the Groth21 scheme.
  * <p>
  * Contains an encrypted share from an individual secret, to each existing share.
- *
- * @param chunkRandomness  the randomness used in generating the contained {@link Groth21ShareCiphertext}s
- * @param shareCiphertexts a map from {@link TssShareId}, to the corresponding {@link Groth21ShareCiphertext}
  */
-public record Groth21MultishareCiphertext(
-        @NonNull List<GroupElement> chunkRandomness, @NonNull Map<TssShareId, Groth21ShareCiphertext> shareCiphertexts)
-        implements TssMultishareCiphertext {
+public class MultishareCiphertext {
+
+    /**
+     * The randomness used in generating the contained {@link EncryptedShare}s
+     */
+    private final List<GroupElement> chunkRandomness;
+
+    /**
+     * The contained share ciphertexts, in order of the share IDs
+     */
+    private final List<EncryptedShare> shareCiphertexts;
+
+    /**
+     * A map from share ID to index in the {@link #shareCiphertexts} list. Created lazily.
+     */
+    private Map<TssShareId, Integer> shareIdToIndexMap = null;
+
+    /**
+     * Create a multishare ciphertext.
+     *
+     * @param chunkRandomness  the randomness used in generating the contained {@link EncryptedShare}s
+     * @param shareCiphertexts the contained share ciphertexts, in order of the share IDs
+     */
+    private MultishareCiphertext(
+            @NonNull final List<GroupElement> chunkRandomness, @NonNull final List<EncryptedShare> shareCiphertexts) {
+
+        this.chunkRandomness = Objects.requireNonNull(chunkRandomness);
+        this.shareCiphertexts = Objects.requireNonNull(shareCiphertexts);
+    }
 
     /**
      * Create a Groth21 multishare ciphertext.
@@ -53,10 +76,10 @@ public record Groth21MultishareCiphertext(
      * @param unencryptedShares the unencrypted shares to encrypt
      * @return the Groth21 multishare ciphertext
      */
-    public static Groth21MultishareCiphertext create(
+    public static MultishareCiphertext create(
             @NonNull final SignatureSchema signatureSchema,
             @NonNull final List<FieldElement> randomness,
-            @NonNull final List<Groth21UnencryptedShare> unencryptedShares) {
+            @NonNull final List<UnencryptedShare> unencryptedShares) {
 
         final Group publicKeyGroup = signatureSchema.getPublicKeyGroup();
         final GroupElement publicKeyGenerator = publicKeyGroup.getGenerator();
@@ -66,27 +89,24 @@ public record Groth21MultishareCiphertext(
             chunkRandomness.add(publicKeyGenerator.power(randomElement));
         }
 
-        final Map<TssShareId, Groth21ShareCiphertext> shareCiphertexts = new HashMap<>();
-        for (final Groth21UnencryptedShare unencryptedShare : unencryptedShares) {
-            shareCiphertexts.put(
-                    unencryptedShare.shareClaim().shareId(),
-                    Groth21ShareCiphertext.create(randomness, unencryptedShare));
+        final List<EncryptedShare> shareCiphertexts = new ArrayList<>();
+        for (final UnencryptedShare unencryptedShare : unencryptedShares) {
+            shareCiphertexts.add(EncryptedShare.create(randomness, unencryptedShare));
         }
 
-        return new Groth21MultishareCiphertext(chunkRandomness, shareCiphertexts);
+        return new MultishareCiphertext(chunkRandomness, shareCiphertexts);
     }
 
     /**
      * {@inheritDoc}
      */
     @NonNull
-    @Override
     public TssPrivateShare decryptPrivateShare(
             @NonNull final PairingPrivateKey elGamalPrivateKey,
             @NonNull final TssShareId shareId,
             @NonNull final ElGamalCache elGamalCache) {
 
-        final Groth21ShareCiphertext shareCiphertext = shareCiphertexts.get(shareId);
+        final EncryptedShare shareCiphertext = getEncryptedShare(shareId);
         final List<GroupElement> ciphertextChunks = shareCiphertext.ciphertextElements();
         final int shareCiphertextSize = ciphertextChunks.size();
 
@@ -115,10 +135,35 @@ public record Groth21MultishareCiphertext(
         return new TssPrivateShare(shareId, new PairingPrivateKey(elGamalPrivateKey.signatureSchema(), output));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    @NonNull
+    private Map<TssShareId, Integer> getShareIdToIndexMap() {
+        if (shareIdToIndexMap != null) {
+            return shareIdToIndexMap;
+        }
+
+        shareIdToIndexMap = new HashMap<>();
+        for (int i = 0; i < shareCiphertexts.size(); i++) {
+            shareIdToIndexMap.put(shareCiphertexts.get(i).shareId(), i);
+        }
+
+        return shareIdToIndexMap;
+    }
+
+    @NonNull
+    private EncryptedShare getEncryptedShare(@NonNull final TssShareId shareId) {
+        return shareCiphertexts.get(getShareIdToIndexMap().get(shareId));
+    }
+
+    @NonNull
+    public List<GroupElement> getChunkRandomness() {
+        return chunkRandomness;
+    }
+
+    @NonNull
+    public List<EncryptedShare> getShareCiphertexts() {
+        return shareCiphertexts;
+    }
+
     public byte[] toBytes() {
         throw new UnsupportedOperationException("Not implemented");
     }

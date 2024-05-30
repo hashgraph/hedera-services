@@ -20,6 +20,7 @@ import com.swirlds.platform.hcm.api.pairings.Field;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
+import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +28,10 @@ import java.util.List;
 /**
  * A ciphertext corresponding to a share.
  *
+ * @param shareId            the share ID
  * @param ciphertextElements the group elements that comprise the ciphertext
  */
-public record Groth21ShareCiphertext(@NonNull List<GroupElement> ciphertextElements) {
+public record EncryptedShare(@NonNull TssShareId shareId, @NonNull List<GroupElement> ciphertextElements) {
     /**
      * Creates a share ciphertext.
      *
@@ -37,8 +39,8 @@ public record Groth21ShareCiphertext(@NonNull List<GroupElement> ciphertextEleme
      * @param unencryptedShare the unencrypted share to encrypt
      * @return the share ciphertext
      */
-    public static Groth21ShareCiphertext create(
-            @NonNull final List<FieldElement> randomness, @NonNull final Groth21UnencryptedShare unencryptedShare) {
+    public static EncryptedShare create(
+            @NonNull final List<FieldElement> randomness, @NonNull final UnencryptedShare unencryptedShare) {
 
         if (randomness.isEmpty()) {
             throw new IllegalArgumentException("Randomness must have at least one element");
@@ -61,6 +63,6 @@ public record Groth21ShareCiphertext(@NonNull List<GroupElement> ciphertextEleme
             encryptedShareElements.add(publicKeyElement.power(randomnessElement).add(generator.power(byteElement)));
         }
 
-        return new Groth21ShareCiphertext(encryptedShareElements);
+        return new EncryptedShare(unencryptedShare.shareClaim().shareId(), encryptedShareElements);
     }
 }

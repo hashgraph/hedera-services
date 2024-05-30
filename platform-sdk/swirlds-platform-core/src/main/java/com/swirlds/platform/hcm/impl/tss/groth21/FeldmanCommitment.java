@@ -19,7 +19,6 @@ package com.swirlds.platform.hcm.impl.tss.groth21;
 import com.swirlds.platform.hcm.api.pairings.FieldElement;
 import com.swirlds.platform.hcm.api.pairings.Group;
 import com.swirlds.platform.hcm.api.pairings.GroupElement;
-import com.swirlds.platform.hcm.api.tss.TssCommitment;
 import com.swirlds.platform.hcm.api.tss.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -32,7 +31,7 @@ import java.util.List;
  * @param commitmentCoefficients the commitment coefficients. Each element in this list consists of the group generator,
  *                               raised to the power of a coefficient of the polynomial being committed to.
  */
-public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficients) implements TssCommitment {
+public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficients) {
     /**
      * Creates a Feldman commitment.
      *
@@ -41,7 +40,6 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
      * @return the Feldman commitment
      */
     public static FeldmanCommitment create(@NonNull final Group group, @NonNull final DensePolynomial polynomial) {
-
         final GroupElement generator = group.getGenerator();
 
         final List<GroupElement> commitmentCoefficients = new ArrayList<>();
@@ -53,7 +51,13 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
     }
 
     /**
-     * {@inheritDoc}
+     * Extract the public key material for the given share ID.
+     * <p>
+     * The key material returned by this method will be aggregated with the public keys from all other commitments for
+     * the same share, and the result will be the final public key for that share.
+     *
+     * @param shareId the share ID of the public key to extract
+     * @return the public key extracted from this commitment
      */
     @NonNull
     public GroupElement extractShareKeyMaterial(@NonNull final TssShareId shareId) {
@@ -75,18 +79,10 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
     }
 
     /**
-     * {@inheritDoc}
+     * Get the byte array representation of this commitment.
+     *
+     * @return the byte array representation of this commitment
      */
-    @NonNull
-    @Override
-    public GroupElement getTerm(final int index) {
-        return commitmentCoefficients.get(index);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public byte[] toBytes() {
         throw new UnsupportedOperationException("Not implemented");
     }

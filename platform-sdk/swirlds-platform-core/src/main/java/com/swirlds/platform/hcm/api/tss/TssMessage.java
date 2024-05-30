@@ -17,7 +17,10 @@
 package com.swirlds.platform.hcm.api.tss;
 
 import com.swirlds.platform.hcm.api.signaturescheme.PairingPublicKey;
+import com.swirlds.platform.hcm.impl.tss.groth21.FeldmanCommitment;
+import com.swirlds.platform.hcm.impl.tss.groth21.MultishareCiphertext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * A message sent as part of either genesis keying, or rekeying.
@@ -29,18 +32,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record TssMessage(
         @NonNull TssShareId shareId,
-        @NonNull TssMultishareCiphertext cipherText,
-        @NonNull TssCommitment commitment,
+        @NonNull MultishareCiphertext cipherText,
+        @NonNull FeldmanCommitment commitment,
         @NonNull TssProof proof) {
 
     /**
      * Verify that the message is valid.
      *
-     * @param publicKey the public key which corresponds to the private key used to generate the message
+     * @param publicKey   the public key which corresponds to the private key used to generate the message
+     * @param shareClaims the pending share claims the TSS message was created for
      * @return true if the message is valid, false otherwise
      */
-    boolean verify(@NonNull final PairingPublicKey publicKey) {
-        return publicKey.keyElement().equals(commitment.getTerm(0)) && proof.verify(cipherText, commitment);
+    boolean verify(@NonNull final PairingPublicKey publicKey, @NonNull final List<TssShareClaim> shareClaims) {
+        return publicKey.keyElement().equals(commitment.commitmentCoefficients().getFirst())
+                && proof.verify(cipherText, commitment, shareClaims);
     }
 
     /**
