@@ -28,8 +28,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     //    tag = "v0.50.0-release"
     // uncomment below to use a specific branch
-    //    branch = "main"
-    branch = "13265-backout-dab-change"
+    branch = "main"
 }
 
 sourceSets {

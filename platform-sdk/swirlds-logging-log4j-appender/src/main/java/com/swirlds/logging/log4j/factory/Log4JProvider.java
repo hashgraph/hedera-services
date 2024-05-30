@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.logging.log4j.appender;
+package com.swirlds.logging.log4j.factory;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.extensions.event.LogEventConsumer;
@@ -23,7 +23,7 @@ import com.swirlds.logging.api.extensions.provider.AbstractLogProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Install the {@link LogEventFactory} and {@link LogEventConsumer} to the {@link SwirldsLogAppender}.
+ * Install the {@link LogEventFactory} and {@link LogEventConsumer} to the {@link BaseLoggerContext}.
  */
 public class Log4JProvider extends AbstractLogProvider {
 
@@ -43,7 +43,7 @@ public class Log4JProvider extends AbstractLogProvider {
     }
 
     /**
-     * Installs the {@link LogEventFactory} and {@link LogEventConsumer} to the {@link SwirldsLogAppender}.
+     * Installs the {@link LogEventFactory} and {@link LogEventConsumer} to the {@link BaseLoggerContext}.
      *
      * @param logEventFactory the log event factory
      * @param logEventConsumer the log event consumer
@@ -51,7 +51,6 @@ public class Log4JProvider extends AbstractLogProvider {
     @Override
     public void install(
             @NonNull final LogEventFactory logEventFactory, @NonNull final LogEventConsumer logEventConsumer) {
-        SwirldsLogAppender.setLogEventFactory(logEventFactory);
-        SwirldsLogAppender.setLogEventConsumer(logEventConsumer);
+        BaseLoggerContext.initBaseLogging(logEventFactory, logEventConsumer);
     }
 }
