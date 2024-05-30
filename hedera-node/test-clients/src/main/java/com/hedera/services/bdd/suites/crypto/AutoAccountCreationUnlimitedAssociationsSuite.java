@@ -63,7 +63,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -510,7 +509,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                 .then(
                         // verify fees of first transfer
                         // add this assertion after transfer changes are integrated
-                         validateChargedUsd(NFT_XFER, v13PriceUsdOneAutoAssociation)
+                        // validateChargedUsd(NFT_XFER, v13PriceUsdOneAutoAssociation)
                         );
     }
 }
