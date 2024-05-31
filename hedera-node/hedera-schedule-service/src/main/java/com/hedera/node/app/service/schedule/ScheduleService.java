@@ -30,9 +30,6 @@ import java.util.Set;
  */
 public interface ScheduleService extends Service {
 
-    /**
-     * The constant NAME for ScheduleService.
-     */
     String NAME = "ScheduleService";
 
     @NonNull

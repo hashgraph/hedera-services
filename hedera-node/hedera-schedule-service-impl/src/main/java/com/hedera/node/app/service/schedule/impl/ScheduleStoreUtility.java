@@ -31,9 +31,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
+/**
+ * Provides utility methods for the schedule store.
+ * Used to calculate the hash of a schedule which is then used to store the schedule in the schedule store.
+ * */
 public final class ScheduleStoreUtility {
     private ScheduleStoreUtility() {}
 
+    /**
+     * Calculate bytes hash of a schedule based on the schedule's memo, admin key, scheduled transaction, expiration
+     * time, and wait for expiry flag.
+     *
+     * @param scheduleToHash the schedule to hash
+     * @return the bytes
+     */
     // @todo('7773') This requires rebuilding the equality virtual map on migration,
     //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
     @SuppressWarnings("UnstableApiUsage")
@@ -77,6 +88,15 @@ public final class ScheduleStoreUtility {
                 .anyMatch(s -> s.scheduleIdOrThrow().equals(scheduleId));
     }
 
+    /**
+     * Add or replace schedule list.
+     * If the schedule list already present, the schedule is added to the list.
+     * If the schedule is already present in the list, it is replaced with the new schedule.
+     *
+     * @param schedule     the schedule
+     * @param scheduleList the schedule list
+     * @return the schedule list
+     */
     static ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
         if (scheduleList == null) {
             return new ScheduleList(Collections.singletonList(schedule));
