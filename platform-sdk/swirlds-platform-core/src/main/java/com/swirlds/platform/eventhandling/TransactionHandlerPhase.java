@@ -17,9 +17,9 @@
 package com.swirlds.platform.eventhandling;
 
 /**
- * The phase of the consensus round handling process.
+ * The phase of the transaction handling process.
  */
-public enum ConsensusRoundHandlerPhase {
+public enum TransactionHandlerPhase {
     /**
      * Nothing is happening.
      */
