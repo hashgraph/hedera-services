@@ -333,7 +333,7 @@ public class BaseTokenHandler {
         validateFalse(
                 entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-        
+
         final var maxAutoAssociations = account.maxAutoAssociations();
         final var usedAutoAssociations = account.usedAutoAssociations();
 
