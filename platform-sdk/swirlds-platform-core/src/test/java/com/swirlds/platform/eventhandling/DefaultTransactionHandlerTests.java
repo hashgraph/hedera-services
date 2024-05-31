@@ -53,9 +53,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link ConsensusRoundHandler}.
+ * Unit tests for {@link DefaultTransactionHandler}.
  */
-class ConsensusRoundHandlerTests {
+class DefaultTransactionHandlerTests {
     private Random random;
     private Time time;
 
@@ -127,7 +127,7 @@ class ConsensusRoundHandlerTests {
 
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
+        final DefaultTransactionHandler defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
@@ -136,14 +136,14 @@ class ConsensusRoundHandlerTests {
         final long consensusRoundNumber = 5L;
         final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber, false);
 
-        final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
+        final StateAndRound handlerOutput = defaultTransactionHandler.handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
         assertEquals(
                 1,
                 handlerOutput.reservedSignedState().get().getReservationCount(),
                 "state should be returned with a reservation");
 
-        events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
+        events.forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
@@ -166,7 +166,7 @@ class ConsensusRoundHandlerTests {
 
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
+        final DefaultTransactionHandler defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
@@ -175,14 +175,14 @@ class ConsensusRoundHandlerTests {
         final long consensusRoundNumber = 5L;
         final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber, false);
 
-        final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
+        final StateAndRound handlerOutput = defaultTransactionHandler.handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
         assertEquals(
                 1,
                 handlerOutput.reservedSignedState().get().getReservationCount(),
                 "state should be returned with a reservation");
 
-        events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
+        events.forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
@@ -195,10 +195,10 @@ class ConsensusRoundHandlerTests {
 
         final ConsensusRound postFreezeConsensusRound =
                 mockConsensusRound(keystoneEvent, postFreezeEvents, consensusRoundNumber, false);
-        final StateAndRound postFreezeOutput = consensusRoundHandler.handleConsensusRound(postFreezeConsensusRound);
+        final StateAndRound postFreezeOutput = defaultTransactionHandler.handleConsensusRound(postFreezeConsensusRound);
         assertNull(postFreezeOutput, "no state should be created after freeze period");
 
-        postFreezeEvents.forEach(ConsensusRoundHandlerTests::assertEventDidNotReachConsensus);
+        postFreezeEvents.forEach(DefaultTransactionHandlerTests::assertEventDidNotReachConsensus);
 
         verify(statusActionSubmitter).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
@@ -217,7 +217,7 @@ class ConsensusRoundHandlerTests {
 
         final StatusActionSubmitter statusActionSubmitter = mock(StatusActionSubmitter.class);
 
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
+        final DefaultTransactionHandler defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
 
         final EventImpl keystoneEvent = buildEvent();
@@ -226,14 +226,14 @@ class ConsensusRoundHandlerTests {
         final long consensusRoundNumber = 5L;
         final ConsensusRound consensusRound = mockConsensusRound(keystoneEvent, events, consensusRoundNumber, true);
 
-        final StateAndRound handlerOutput = consensusRoundHandler.handleConsensusRound(consensusRound);
+        final StateAndRound handlerOutput = defaultTransactionHandler.handleConsensusRound(consensusRound);
         assertNotEquals(null, handlerOutput, "new state should have been created");
         assertEquals(
                 1,
                 handlerOutput.reservedSignedState().get().getReservationCount(),
                 "state should be returned with a reservation");
 
-        events.forEach(ConsensusRoundHandlerTests::assertEventReachedConsensus);
+        events.forEach(DefaultTransactionHandlerTests::assertEventReachedConsensus);
 
         verify(statusActionSubmitter, never()).submitStatusAction(any(FreezePeriodEnteredAction.class));
         verify(swirldStateManager).handleConsensusRound(consensusRound);
