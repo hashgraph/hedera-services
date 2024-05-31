@@ -178,6 +178,7 @@ public class AutoAccountCreationSuite {
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
     protected static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
+
     @HapiTest
     final Stream<DynamicTest> aliasedPayerDoesntWork() {
         return defaultHapiSpec("aliasedPayerDoesntWork")

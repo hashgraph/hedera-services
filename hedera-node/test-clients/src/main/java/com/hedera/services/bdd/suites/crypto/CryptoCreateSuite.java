@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
@@ -274,9 +275,13 @@ public class CryptoCreateSuite {
                         getTxnRecord(tenAutoAssocSlots).logged())
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
+                        getAccountInfo(noAutoAssocSlots).hasMaxAutomaticAssociations(0),
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsd),
+                        getAccountInfo(oneAutoAssocSlot).hasMaxAutomaticAssociations(1),
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsd),
-                        validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd));
+                        getAccountInfo(tenAutoAssocSlots).hasMaxAutomaticAssociations(10),
+                        validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd),
+                        getAccountInfo(unlimitedAutoAssocSlots).hasMaxAutomaticAssociations(-1));
     }
 
     @HapiTest

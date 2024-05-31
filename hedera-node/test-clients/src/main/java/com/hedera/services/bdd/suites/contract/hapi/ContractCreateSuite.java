@@ -79,6 +79,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -667,8 +668,7 @@ public class ContractCreateSuite {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
                 .given(uploadInitCode(contract))
-                .when()
-                .then(
+                .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .refusingEthConversion()
@@ -683,7 +683,75 @@ public class ContractCreateSuite {
                                 .adminKey(THRESHOLD)
                                 .refusingEthConversion()
                                 .maxAutomaticTokenAssociations(-1)
-                                .hasKnownStatus(SUCCESS));
+                                .hasKnownStatus(SUCCESS))
+                .then(getContractInfo(contract)
+                        .has(contractWith().maxAutoAssociations(-1))
+                        .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tryContractCreateWithZeroAutoAssoc() {
+        final var contract = "CreateTrivial";
+        return defaultHapiSpec("tryContractCreateWithZeroMaxAutoAssoc")
+                .given(uploadInitCode(contract))
+                .when(contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(0)
+                        .hasKnownStatus(SUCCESS))
+                .then(getContractInfo(contract)
+                        .has(contractWith().maxAutoAssociations(0))
+                        .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tryContractCreateWithBalance() {
+        final var contract = "Donor";
+        return defaultHapiSpec("tryContractCreateWithBalance")
+                .given(uploadInitCode(contract))
+                .when(contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .balance(ONE_HUNDRED_HBARS)
+                        .hasKnownStatus(SUCCESS))
+                .then(getContractInfo(contract)
+                        .has(contractWith().maxAutoAssociations(0).balance(ONE_HUNDRED_HBARS))
+                        .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> contractCreateShouldChargeTheSame() {
+        final var createFeeWithMaxAutoAssoc = 10L;
+        final var contract1 = "EmptyOne";
+        final var contract2 = "EmptyTwo";
+        return propertyPreservingHapiSpec("contractCreateShouldChargeTheSame")
+                .preserving("contracts.allowAutoAssociations")
+                .given(
+                        uploadInitCode(contract1),
+                        uploadInitCode(contract2),
+                        overriding("contracts.allowAutoAssociations", TRUE_VALUE))
+                .when(
+                        contractCreate(contract1)
+                                .via(contract1)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(1)
+                                .hasKnownStatus(SUCCESS),
+                        contractCreate(contract2)
+                                .via(contract2)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(1000)
+                                .hasKnownStatus(SUCCESS))
+                .then(
+                        getContractInfo(contract1)
+                                .has(contractWith().maxAutoAssociations(1))
+                                .logged(),
+                        getTxnRecord(contract1).fee(createFeeWithMaxAutoAssoc).logged(),
+                        getContractInfo(contract2)
+                                .has(contractWith().maxAutoAssociations(1000))
+                                .logged(),
+                        getTxnRecord(contract2).fee(createFeeWithMaxAutoAssoc).logged());
     }
 
     @HapiTest
