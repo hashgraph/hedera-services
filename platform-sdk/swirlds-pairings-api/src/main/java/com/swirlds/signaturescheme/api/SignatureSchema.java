@@ -25,10 +25,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * Represents elliptic curves used in cryptographic protocols.
+ * Represents a threshold signature schema.
  *
  * @implNote Given that we pack the type of the curve in serialized forms in 1 byte alongside other information
- * we can only support a limited amount of curves.
+ * we can only support a limited amount of curves (128).
  * <p>
  */
 public class SignatureSchema {
@@ -37,46 +37,22 @@ public class SignatureSchema {
     private final Curve curve;
 
     /**
-     * Returns the curve type from its byte representation
+     * Returns a signature scheme from its byte representation
+     * <p>
+     * The input byte is expected to be a packed byte, with the first 7 bits representing the curve type, and the last
+     * bit representing the group assignment.
      *
-     * @param byteArray the byte array with representation of the curve type
-     * @return the curve type
-     */
-    @NonNull
-    public static SignatureSchema fromIdByte(final byte[] byteArray) {
-        Objects.requireNonNull(byteArray, "byteArray must not be null");
-        return fromIdByte(byteArray[0]);
-    }
-
-    /**
-     * Returns the curve type from its byte representation
-     *
-     * @return the curve type
-     */
-    @NonNull
-    public static SignatureSchema forCurveAndType(final byte curveType, final @NonNull GroupAssignment assignment) {
-        return forCurveAndType(Curve.formId(curveType), assignment);
-    }
-
-    /**
-     * Returns the curve type from its byte representation
-     *
-     * @return the curve type
-     */
-    @NonNull
-    public static SignatureSchema forCurveAndType(final Curve curve, final @NonNull GroupAssignment assignment) {
-        return new SignatureSchema(BilinearPairingService.instanceOf(curve), assignment, curve);
-    }
-
-    /**
-     * Returns the curve type from its byte representation
-     *
-     * @param idByte the byte representation of the curve type
-     * @return the SignatureSchema instance to use
+     * @param idByte the byte representation of signature schema
+     * @return the SignatureSchema instance
      */
     @NonNull
     public static SignatureSchema fromIdByte(final byte idByte) {
-        return forCurveAndType(BytePacker.unpackCurveType(idByte), BytePacker.unpackGroupAssignment(idByte));
+        final byte curveIdByte = BytePacker.unpackCurveType(idByte);
+        final GroupAssignment groupAssignment = BytePacker.unpackGroupAssignment(idByte);
+        final Curve curve = Curve.fromId(curveIdByte);
+        final BilinearPairing pairing = BilinearPairingService.instanceOf(curve);
+
+        return new SignatureSchema(pairing, groupAssignment, curve);
     }
 
     /**
@@ -109,10 +85,21 @@ public class SignatureSchema {
         return pairing.getField();
     }
 
+    /**
+     * Get the ID byte representing this schema
+     *
+     * @return the ID byte
+     */
     public byte getIdByte() {
         return BytePacker.pack(groupAssignment, curve.getId());
     }
 
+    /**
+     * Get the bilinear pairing used for this schema
+     *
+     * @return the bilinear pairing
+     */
+    @NonNull
     public BilinearPairing getPairing() {
         return pairing;
     }
@@ -122,7 +109,7 @@ public class SignatureSchema {
      *
      * @param pairing         the pairing
      * @param groupAssignment the group assignment
-     * @param groupAssignment the curve id
+     * @param curve           the curve
      */
     private SignatureSchema(
             @NonNull final BilinearPairing pairing, @NonNull final GroupAssignment groupAssignment, final Curve curve) {
@@ -131,25 +118,47 @@ public class SignatureSchema {
         this.curve = curve;
     }
 
+    /**
+     * Packs and unpacks the curve type and group assignment into a single byte
+     */
     private static class BytePacker {
-        private static final int GASSIGNAMENT_MASK = 0b10000000; // 1 bit for GroupAssignment
+        private static final int G_ASSIGNMENT_MASK = 0b10000000; // 1 bit for GroupAssignment
         private static final int CURVE_MASK = 0b01111111; // 7 bits for curve type
 
-        public static byte pack(GroupAssignment groupAssignament, byte curveType) {
-            if (curveType < 0 || curveType > 63) {
-                throw new IllegalArgumentException("Curve type must be between 0 and 63");
+        /**
+         * Packs the group assignment and curve type into a single byte
+         *
+         * @param groupAssignment the group assignment
+         * @param curveType       the curve type
+         * @return the packed byte
+         */
+        public static byte pack(@NonNull final GroupAssignment groupAssignment, final byte curveType) {
+            if (curveType < 0) {
+                throw new IllegalArgumentException("Curve type must be between 0 and 127");
             }
 
-            int assignamentValue = groupAssignament.ordinal() << 7;
-            return (byte) (assignamentValue | (curveType & CURVE_MASK));
+            final int assignmentValue = groupAssignment.ordinal() << 7;
+            return (byte) (assignmentValue | (curveType & CURVE_MASK));
         }
 
-        public static GroupAssignment unpackGroupAssignment(byte packedByte) {
-            int schemaValue = (packedByte & GASSIGNAMENT_MASK) >> 7;
+        /**
+         * Unpacks the group assignment from a packed byte
+         *
+         * @param packedByte the packed byte
+         * @return the group assignment
+         */
+        public static GroupAssignment unpackGroupAssignment(final byte packedByte) {
+            final int schemaValue = (packedByte & G_ASSIGNMENT_MASK) >> 7;
             return GroupAssignment.values()[schemaValue];
         }
 
-        public static byte unpackCurveType(byte packedByte) {
+        /**
+         * Unpacks the curve type from a packed byte
+         *
+         * @param packedByte the packed byte
+         * @return the curve type
+         */
+        public static byte unpackCurveType(final byte packedByte) {
             return (byte) (packedByte & CURVE_MASK);
         }
     }

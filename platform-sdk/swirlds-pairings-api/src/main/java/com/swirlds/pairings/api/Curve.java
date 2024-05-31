@@ -31,7 +31,7 @@ public enum Curve {
         return id;
     }
 
-    public static Curve formId(byte curveId) {
+    public static Curve fromId(byte curveId) {
         for (Curve curve : values()) {
             if (curve.id == curveId) {
                 return curve;
