@@ -720,7 +720,7 @@ public class ContractCreateSuite {
                         .logged());
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> contractCreateShouldChargeTheSame() {
         final var createFeeWithMaxAutoAssoc = 10L;
         final var contract1 = "EmptyOne";
@@ -858,7 +858,7 @@ public class ContractCreateSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
         return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
                 .preserving("contracts.allowAutoAssociations")
