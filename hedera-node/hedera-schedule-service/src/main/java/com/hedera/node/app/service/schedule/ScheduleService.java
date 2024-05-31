@@ -30,6 +30,9 @@ import java.util.Set;
  */
 public interface ScheduleService extends Service {
 
+    /**
+     * The constant NAME for ScheduleService.
+     */
     String NAME = "ScheduleService";
 
     @NonNull
@@ -38,6 +41,11 @@ public interface ScheduleService extends Service {
         return NAME;
     }
 
+    /**
+     * Returns the RPC definitions for the service
+     *
+     * @return the RPC definitions
+     */
     @NonNull
     @Override
     default Set<RpcServiceDefinition> rpcDefinitions() {

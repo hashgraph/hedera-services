@@ -30,12 +30,30 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * transaction other than a ScheduleCreate, ScheduleSign, or ScheduleDelete.
  */
 public interface ScheduleRecordBuilder {
+    /**
+     * Schedule ref schedule record builder.
+     *
+     * @param scheduleRef the schedule ref
+     * @return the schedule record builder
+     */
     @NonNull
     ScheduleRecordBuilder scheduleRef(ScheduleID scheduleRef);
 
+    /**
+     * Schedule id schedule record builder.
+     *
+     * @param scheduleID the schedule id
+     * @return the schedule record builder
+     */
     @NonNull
     ScheduleRecordBuilder scheduleID(ScheduleID scheduleID);
 
+    /**
+     * Scheduled transaction id schedule record builder.
+     *
+     * @param scheduledTransactionID the scheduled transaction id
+     * @return the schedule record builder
+     */
     @NonNull
     ScheduleRecordBuilder scheduledTransactionID(TransactionID scheduledTransactionID);
 }
