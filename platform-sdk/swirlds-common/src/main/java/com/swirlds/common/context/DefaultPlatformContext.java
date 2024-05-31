@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.context.internal;
+package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
