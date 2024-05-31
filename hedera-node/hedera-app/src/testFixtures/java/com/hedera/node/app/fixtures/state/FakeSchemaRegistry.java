@@ -33,7 +33,7 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.worfklows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;

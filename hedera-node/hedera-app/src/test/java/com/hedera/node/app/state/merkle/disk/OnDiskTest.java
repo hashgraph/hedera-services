@@ -40,7 +40,7 @@ import com.swirlds.platform.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
-import com.swirlds.state.spi.worfklows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
