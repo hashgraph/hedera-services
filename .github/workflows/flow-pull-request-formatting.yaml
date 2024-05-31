@@ -61,7 +61,7 @@ jobs:
     steps:
       - name: Check Assignee
         run: |
-          if [ "${{ github.event.pull_request.assignee }}" == "null" ] || [ "${{ github.event.pull_request.assignee }}" == ""]; then
+          if [ "${{ github.event.pull_request.assignee }}" == "null" ] || [ "${{ github.event.pull_request.assignee }}" == "" ]; then
             echo "Assignee is not set. Failing the workflow."
             exit 1
           fi
