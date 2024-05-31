@@ -1,4 +1,4 @@
-name: PR Assignee Check
+name: PR Assignee check
 
 on:
   pull_request:
@@ -6,15 +6,16 @@ on:
 
 jobs:
   check_pr_assignee:
-    name: Is assignee valid?
+    name: Check Assignee Present
     runs-on: [self-hosted, Linux, medium, ephemeral]
 
     steps:
-      - name: Check if Assignee is set
-        if: ${{ github.event.pull_request.assignee == null }}
+      - name: Check Assignee
         run: |
+          if [ "${{ github.event.pull_request.assignee }}" == "null" ]; then
           echo "Assignee is not set. Failing the workflow."
           exit 1
+          fi
 
       - name: Assignee is set
         if: ${{ github.event.pull_request.assignee != null }}
