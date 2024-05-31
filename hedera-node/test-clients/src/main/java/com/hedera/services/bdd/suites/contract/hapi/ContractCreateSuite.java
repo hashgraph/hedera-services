@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -859,8 +860,11 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
-        return defaultHapiSpec("cannotSetMaxAutomaticAssociations")
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+        return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
+                .preserving("contracts.allowAutoAssociations")
+                .given(
+                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                        overriding("contracts.allowAutoAssociations", FALSE_VALUE))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .maxAutomaticTokenAssociations(10)
