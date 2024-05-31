@@ -22,7 +22,9 @@ class RustHelper {
                 }
             }
 
-            throw StopExecutionException("Cannot execute Cargo: No matching triplets found!")
+            val OS_NAME = System.getProperty("os.name").lowercase();
+            val OS_ARCH = System.getProperty("os.arch").lowercase()
+            throw StopExecutionException("The OS family:" + OS_NAME +  " or system architecture: " + OS_ARCH+ "is not supported." )
         }
 
         @JvmStatic
