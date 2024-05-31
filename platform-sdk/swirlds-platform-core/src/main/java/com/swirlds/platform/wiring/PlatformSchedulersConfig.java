@@ -53,7 +53,6 @@ import java.time.Duration;
  * @param signedStateSentinelHeartbeatPeriod     the frequency that heartbeats should be sent to the signed state
  *                                               sentinel
  * @param statusStateMachine                     configuration for the status state machine scheduler
- * @param platformStatusNexus                    configuration for the status nexus scheduler
  * @param staleEventDetector                     configuration for the stale event detector scheduler
  * @param transactionResubmitter                 configuration for the transaction resubmitter scheduler
  * @param transactionPool                        configuration for the transaction pool scheduler
@@ -119,7 +118,6 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration staleEventDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
