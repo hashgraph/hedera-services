@@ -39,7 +39,6 @@ class BirthRoundMigrationShimTests {
     @NonNull
     private GossipEvent buildEvent(
             @NonNull final Random random,
-            @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion softwareVersion,
             final long generation,
             final long birthRound) {
@@ -59,7 +58,7 @@ class BirthRoundMigrationShimTests {
                 .overrideSelfParentGeneration(generation - 1)
                 .build();
 
-        platformContext.getCryptography().digestSync(event.getHashedData());
+        new StatefulEventHasher().hashEvent(event);
 
         return event;
     }
@@ -88,7 +87,6 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final GossipEvent event = buildEvent(
                     random,
-                    platformContext,
                     new BasicSoftwareVersion(
                             firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(1, 100),
@@ -132,7 +130,6 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final GossipEvent event = buildEvent(
                     random,
-                    platformContext,
                     new BasicSoftwareVersion(
                             firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
                     lowestJudgeGenerationBeforeBirthRoundMode + random.nextInt(0, 10),
@@ -175,7 +172,6 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final GossipEvent event = buildEvent(
                     random,
-                    platformContext,
                     new BasicSoftwareVersion(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(0, 10)),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(-100, 100),
                     birthRound);
