@@ -17,9 +17,21 @@
 name: "PR Formatting"
 on:
   pull_request:
-    types: [opened, reopened, edited, ready_for_review, review_requested, synchronize]
+    types:
+      - opened
+      - reopened
+      - edited
+      - ready_for_review
+      - review_requested
+      - synchronize
   pull_request_target:
-    types: [opened, reopened, edited, ready_for_review, review_requested, synchronize]
+    types:
+      - opened
+      - reopened
+      - edited
+      - ready_for_review
+      - review_requested
+      - synchronize
 
 defaults:
   run:
