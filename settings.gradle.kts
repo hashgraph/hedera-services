@@ -120,6 +120,8 @@ include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
+include(":swirlds-pairings-api", "platform-sdk/swirlds-pairings-api")
+
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
 
