@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
@@ -532,7 +533,7 @@ public class TestingEventBuilder {
                             Stream.ofNullable(otherParents).flatMap(List::stream))
                     .mapToLong(GossipEvent::getBirthRound)
                     .max()
-                    .orElse(BIRTH_ROUND_UNDEFINED);
+                    .orElse(MINIMUM_ROUND_CREATED);
 
             // randomly add between 0 and 2 to max parent birth round
             birthRound = maxParentBirthRound + random.nextLong(0, 3);
@@ -559,12 +560,13 @@ public class TestingEventBuilder {
                 birthRound,
                 timeCreated,
                 transactions);
-        hashedData.setHash(RandomUtils.randomHash(random));
 
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
         final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
+
+        gossipEvent.setHash(RandomUtils.randomHash(random));
 
         if (consensusTimestamp != null || consensusOrder != null) {
             gossipEvent.setConsensusData(new EventConsensusData.Builder()

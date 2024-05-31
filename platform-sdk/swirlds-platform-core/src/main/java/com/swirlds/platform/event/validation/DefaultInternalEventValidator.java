@@ -64,7 +64,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
     private final AncientMode ancientMode;
 
-    private final RateLimitedLogger nullHashedDataLogger;
     private final RateLimitedLogger nullUnhashedDataLogger;
     private final RateLimitedLogger tooManyTransactionBytesLogger;
     private final RateLimitedLogger inconsistentSelfParentLogger;
@@ -73,7 +72,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
     private final RateLimitedLogger invalidGenerationLogger;
     private final RateLimitedLogger invalidBirthRoundLogger;
 
-    private final LongAccumulator nullHashedDataAccumulator;
     private final LongAccumulator nullUnhashedDataAccumulator;
     private final LongAccumulator tooManyTransactionBytesAccumulator;
     private final LongAccumulator inconsistentSelfParentAccumulator;
@@ -103,7 +101,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        this.nullHashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.nullUnhashedDataLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.tooManyTransactionBytesLogger =
                 new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
@@ -115,11 +112,6 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         this.invalidGenerationLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.invalidBirthRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
 
-        this.nullHashedDataAccumulator = platformContext
-                .getMetrics()
-                .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithNullHashedData")
-                        .withDescription("Events that had null hashed data")
-                        .withUnit("events"));
         this.nullUnhashedDataAccumulator = platformContext
                 .getMetrics()
                 .getOrCreate(new LongAccumulator.Config(PLATFORM_CATEGORY, "eventsWithNullUnhashedData")
