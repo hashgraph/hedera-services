@@ -37,7 +37,7 @@ We can have a case, where we have multiple airdrops for the same fungible token.
 
 ### Models
 
-In order to be able to iterate over all pending airdrops for a specific sender account, we should enrich the account protobuf with 2 new fields:
+In order to be able to iterate over all pending airdrops for a specific sender account, we should enrich the account protobuf with 1 new field:
 
 ```proto
 message Account {
