@@ -119,6 +119,9 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         this.timeReceived = Instant.now();
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
+        if (hashedData.getHash() != null) {
+            setHash(hashedData.getHash());
+        }
     }
 
     /**
