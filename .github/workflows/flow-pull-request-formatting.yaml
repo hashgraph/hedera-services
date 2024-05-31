@@ -18,11 +18,19 @@ name: "PR Formatting"
 on:
   pull_request_target:
     types:
+      - assigned
+      - unassigned
+      - labeled
+      - unlabeled
       - opened
       - reopened
       - edited
+      - converted_to_draft
       - ready_for_review
       - review_requested
+      - review_request_removed
+      - locked
+      - unlocked
       - synchronize
 
 defaults:
@@ -48,6 +56,10 @@ jobs:
     steps:
       - name: Check Milestone
         run: |
+          echo "::group::Event Data"
+          echo "${{ toJSON(github.event) }}" | jq .
+          echo "::endgroup::"
+          
           if [ "${{ github.event.pull_request_target.milestone }}" == "null" ] || [ "${{ github.event.pull_request_target.milestone }}" == "" ]; then
             echo "Milestone is not set. Failing the workflow."
             exit 1
@@ -64,6 +76,10 @@ jobs:
     steps:
       - name: Check Assignee
         run: |
+          echo "::group::Event Data"
+          echo "${{ toJSON(github.event) }}" | jq .
+          echo "::endgroup::"
+          
           if [ "${{ github.event.pull_request_target.assignee }}" == "null" ] || [ "${{ github.event.pull_request_target.assignee }}" == "" ]; then
             echo "Assignee is not set. Failing the workflow."
             exit 1
