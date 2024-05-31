@@ -48,7 +48,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -155,12 +154,11 @@ public final class RecoveryTestUtils {
      */
     public static void writeRandomEventStream(
             final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
-            throws NoSuchAlgorithmException, IOException {
+            throws IOException {
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.ENABLE_EVENT_STREAMING, true)
                 .withValue(EventConfig_.EVENTS_LOG_DIR, destination.toString())
-                .withValue(EventConfig_.EVENT_INTAKE_QUEUE_SIZE, Integer.MAX_VALUE)
                 .withValue(EventConfig_.EVENTS_LOG_PERIOD, secondsPerFile)
                 .getOrCreateConfig();
         final PlatformContext platformContext = TestPlatformContextBuilder.create()

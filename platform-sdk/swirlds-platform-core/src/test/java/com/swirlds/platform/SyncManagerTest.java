@@ -77,7 +77,6 @@ class SyncManagerTest {
             configuration = new TestConfigBuilder()
                     .withValue(ReconnectConfig_.FALLEN_BEHIND_THRESHOLD, "0.25")
                     .withValue(EventConfig_.EVENT_INTAKE_QUEUE_THROTTLE_SIZE, "100")
-                    .withValue(EventConfig_.STALE_EVENT_PREVENTION_THRESHOLD, "10")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);

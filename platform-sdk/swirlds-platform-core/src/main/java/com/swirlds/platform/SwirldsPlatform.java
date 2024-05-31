@@ -53,7 +53,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.metrics.RuntimeMetrics;
@@ -252,7 +251,7 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getTime(),
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
-                platformWiring::flushConsensusRoundHandler,
+                platformWiring::flushTransactionHandler,
                 () -> latestImmutableStateNexus.getState("PCES replay"),
                 () -> isLessThan(blocks.model().getUnhealthyDuration(), replayHealthThreshold));
 
@@ -263,9 +262,6 @@ public class SwirldsPlatform implements Platform {
         swirldStateManager.setInitialState(initialState.getState());
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
-
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext, swirldStateManager, platformWiring.getStatusActionSubmitter(), appVersion);
 
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()
@@ -294,7 +290,6 @@ public class SwirldsPlatform implements Platform {
                 pcesReplayer,
                 stateSignatureCollector,
                 eventWindowManager,
-                consensusRoundHandler,
                 birthRoundMigrationShim,
                 latestCompleteStateNotifier,
                 latestImmutableStateNexus,
