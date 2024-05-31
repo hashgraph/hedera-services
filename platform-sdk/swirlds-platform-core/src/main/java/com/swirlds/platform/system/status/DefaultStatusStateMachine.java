@@ -66,16 +66,19 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
      */
     private Instant currentStatusStartTime;
 
+    private final PlatformStatusMetrics metrics;
+
     /**
      * Constructor
      *
-     * @param context the platform context
+     * @param platformContext the platform context
      */
-    public DefaultStatusStateMachine(@NonNull final PlatformContext context) {
-        this.time = context.getTime();
+    public DefaultStatusStateMachine(@NonNull final PlatformContext platformContext) {
+        this.time = platformContext.getTime();
         this.currentStatusLogic =
-                new StartingUpStatusLogic(context.getConfiguration().getConfigData(PlatformStatusConfig.class));
+                new StartingUpStatusLogic(platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class));
         this.currentStatusStartTime = time.now();
+        this.metrics = new PlatformStatusMetrics(platformContext);
     }
 
     /**
@@ -164,6 +167,7 @@ public class DefaultStatusStateMachine implements StatusStateMachine {
         final PlatformStatus newStatus = currentStatusLogic.getStatus();
         currentStatusStartTime = time.now();
 
+        metrics.setCurrentStatus(newStatus);
         return newStatus;
     }
 
