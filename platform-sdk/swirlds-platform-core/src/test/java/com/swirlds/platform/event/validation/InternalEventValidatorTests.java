@@ -17,7 +17,6 @@
 package com.swirlds.platform.event.validation;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -28,24 +27,16 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,50 +80,6 @@ class InternalEventValidatorTests {
 
         multinodeValidator = new DefaultInternalEventValidator(platformContext, false, intakeEventCounter);
         singleNodeValidator = new DefaultInternalEventValidator(platformContext, true, intakeEventCounter);
-    }
-
-    private static GossipEvent generateEvent(
-            @NonNull final EventDescriptor self,
-            @Nullable final EventDescriptor selfParent,
-            @Nullable final EventDescriptor otherParent,
-            final int totalTransactionBytes) {
-
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[100];
-        for (int index = 0; index < transactions.length; index++) {
-            transactions[index] = mock(ConsensusTransactionImpl.class);
-            when(transactions[index].getSerializedLength()).thenReturn(totalTransactionBytes / transactions.length);
-        }
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getSelfParentHash()).thenReturn(selfParent == null ? null : selfParent.getHash());
-        when(hashedData.getOtherParentHash()).thenReturn(otherParent == null ? null : otherParent.getHash());
-        when(hashedData.getSelfParentGen())
-                .thenReturn(selfParent == null ? GENERATION_UNDEFINED : selfParent.getGeneration());
-        when(hashedData.getOtherParentGen())
-                .thenReturn(otherParent == null ? GENERATION_UNDEFINED : otherParent.getGeneration());
-        when(hashedData.getTransactions()).thenReturn(transactions);
-        when(hashedData.getBirthRound()).thenReturn(self.getBirthRound());
-        when(hashedData.getGeneration()).thenReturn(self.getGeneration());
-        when(hashedData.getSelfParent()).thenReturn(selfParent);
-        // FUTURE WORK: Extend to support multiple other parents.
-        when(hashedData.getOtherParents())
-                .thenReturn(otherParent == null ? Collections.EMPTY_LIST : Collections.singletonList(otherParent));
-
-        final GossipEvent event = mock(GossipEvent.class);
-        when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getSignature()).thenReturn(Bytes.EMPTY);
-        when(event.getGeneration()).thenReturn(self.getGeneration());
-        when(event.getDescriptor()).thenReturn(self);
-
-        return event;
-    }
-
-    private static GossipEvent generateGoodEvent(@NonNull final Random random, final int totalTransactionBytes) {
-        return generateEvent(
-                new EventDescriptor(randomHash(random), new NodeId(0), 7, 1),
-                new EventDescriptor(randomHash(random), new NodeId(0), 5, 1),
-                new EventDescriptor(randomHash(random), new NodeId(1), 6, 1),
-                totalTransactionBytes);
     }
 
     @Test
