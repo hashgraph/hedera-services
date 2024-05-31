@@ -41,3 +41,36 @@ jobs:
         uses: aslafy-z/conventional-pr-title-action@a0b851005a0f82ac983a56ead5a8111c0d8e044a # v3.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  milestone-check:
+    name: Check milestone present
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+    steps:
+      - name: Check Milestone
+        run: |
+          if [ "${{ github.event.pull_request.milestone }}" == "null" ] || [ "${{ github.event.pull_request.milestone }}" == "" ]; then
+            echo "Milestone is not set. Failing the workflow."
+            exit 1
+          fi
+
+      - name: Milestone is set
+        run: |
+          echo "Milestone is: ${{ github.event.pull_request.milestone }} "
+          echo "Milestone is set."
+
+  assignee-check:
+    name: Check Assignee Present
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+
+    steps:
+      - name: Check Assignee
+        run: |
+          if [ "${{ github.event.pull_request.assignee }}" == "null" ] || [ "${{ github.event.pull_request.assignee }}" == ""]; then
+            echo "Assignee is not set. Failing the workflow."
+            exit 1
+          fi
+
+      - name: Assignee is set
+        run: |
+          echo "Assignee is: ${{ github.event.pull_request.assignee }}"
+          echo "Assignee is set."
