@@ -16,25 +16,18 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.addressbook.Node;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileDeleteResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -42,9 +35,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NodesConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,7 +53,7 @@ public class NodeDeleteHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
-        if (transactionBody.nodeId() <= 0 ) {
+        if (transactionBody.nodeId() <= 0) {
             throw new PreCheckException(INVALID_NODE_ID);
         }
     }
@@ -82,7 +73,6 @@ public class NodeDeleteHandler implements TransactionHandler {
 
         Node node = nodeStore.get(nodeId);
         mustExist(node, INVALID_NODE_ID);
-
     }
 
     /**
@@ -129,12 +119,11 @@ public class NodeDeleteHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         nodeStore.put(nodeBuilder.build());
-
     }
 
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        return Fees.FREE;
+        return feeContext.feeCalculator(SubType.DEFAULT).calculate();
     }
 }

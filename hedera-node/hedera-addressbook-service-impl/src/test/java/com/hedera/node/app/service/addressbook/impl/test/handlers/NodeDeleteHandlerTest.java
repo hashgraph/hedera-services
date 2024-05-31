@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
@@ -42,6 +43,7 @@ import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -71,7 +73,6 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Mock
     private ReadableNodeStoreImpl mockStore;
-
 
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
@@ -142,8 +143,12 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @Test
     @DisplayName("check that fees are free for delete node trx")
     public void testCalculateFeesInvocations() {
-        FeeContext feeContext = mock(FeeContext.class);
-        assertThat( subject.calculateFees(feeContext)).isEqualTo(Fees.FREE);
+        final var feeCtx = mock(FeeContext.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(Fees.FREE);
     }
 
     @Test
@@ -203,8 +208,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         PreHandleContext realPreContext =
                 new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
 
-        assertThatCode(() ->subject.preHandle(realPreContext)).doesNotThrowAnyException();
-
+        assertThatCode(() -> subject.preHandle(realPreContext)).doesNotThrowAnyException();
     }
 
     @Test
@@ -283,7 +287,6 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         // expect:
         assertFailsWith(() -> subject.handle(handleContext), ResponseCodeEnum.NODE_DELETED);
     }
-
 
     private TransactionBody newDeleteTxn() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
