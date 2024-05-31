@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -498,7 +499,8 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotUpdateMaxAutomaticAssociations() {
-        return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
+        return propertyPreservingHapiSpec("cannotUpdateMaxAutomaticAssociations")
+                .preserving("contracts.allowAutoAssociations")
                 .given(
                         overriding("contracts.allowAutoAssociations", FALSE_VALUE),
                         newKeyNamed(ADMIN_KEY),
