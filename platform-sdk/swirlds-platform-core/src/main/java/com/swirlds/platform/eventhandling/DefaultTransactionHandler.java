@@ -18,14 +18,14 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.CREATING_SIGNED_STATE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.GETTING_STATE_TO_SIGN;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.HANDLING_CONSENSUS_ROUND;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.WAITING_FOR_PREHANDLE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.CREATING_SIGNED_STATE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.GETTING_STATE_TO_SIGN;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.HANDLING_CONSENSUS_ROUND;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.IDLE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.SETTING_EVENT_CONSENSUS_DATA;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.WAITING_FOR_PREHANDLE;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -53,16 +53,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Applies transactions from consensus rounds to the state
+ * A standard implementation of {@link TransactionHandler}.
  */
-public class ConsensusRoundHandler {
+public class DefaultTransactionHandler implements TransactionHandler {
 
-    private static final Logger logger = LogManager.getLogger(ConsensusRoundHandler.class);
-
-    /**
-     * The name of the thread that handles transactions. For the sake of the app, to allow logging.
-     */
-    public static final String TRANSACTION_HANDLING_THREAD_NAME = "<scheduler consensusRoundHandler>";
+    private static final Logger logger = LogManager.getLogger(DefaultTransactionHandler.class);
 
     /**
      * The class responsible for all interactions with the swirld state
@@ -109,6 +104,11 @@ public class ConsensusRoundHandler {
     private final boolean waitForPrehandle;
 
     /**
+     * Whether this is the first round being handled.
+     */
+    private boolean firstRound = true;
+
+    /**
      * Constructor
      *
      * @param platformContext       contains various platform utilities
@@ -116,7 +116,7 @@ public class ConsensusRoundHandler {
      * @param statusActionSubmitter enables submitting of platform status actions
      * @param softwareVersion       the current version of the software
      */
-    public ConsensusRoundHandler(
+    public DefaultTransactionHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
@@ -146,24 +146,21 @@ public class ConsensusRoundHandler {
     }
 
     /**
-     * This method is called after a restart or a reconnect. It provides the previous round's legacy running event hash,
-     * in case we need it.
-     *
-     * @param runningHashUpdate the update to the running hash
+     * {@inheritDoc}
      */
+    @Override
     public void updateLegacyRunningEventHash(@NonNull final RunningEventHashOverride runningHashUpdate) {
         previousRoundLegacyRunningEventHash = runningHashUpdate.legacyRunningEventHash();
     }
 
     /**
-     * Applies the transactions in the consensus round to the state
-     *
-     * @param consensusRound the consensus round to apply
-     * @return a new signed state, along with the consensus round that caused it to be created. null if no new state was
-     * created
+     * {@inheritDoc}
      */
+    @Override
     @Nullable
     public StateAndRound handleConsensusRound(@NonNull final ConsensusRound consensusRound) {
+        validateThreadName();
+
         // consensus rounds with no events are ignored
         if (consensusRound.isEmpty()) {
             // Future work: the long term goal is for empty rounds to not be ignored here. For now, the way that the
@@ -222,6 +219,24 @@ public class ConsensusRoundHandler {
             return null;
         } finally {
             handlerMetrics.setPhase(IDLE);
+        }
+    }
+
+    /**
+     * Services currently relies on the name of this thread. Do a sanity check that we are running on the correct
+     * thread.
+     */
+    private void validateThreadName() {
+        if (firstRound) {
+            final String threadName = Thread.currentThread().getName();
+            if (!threadName.equals(TRANSACTION_HANDLING_THREAD_NAME)) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "TransactionHandler is running on the wrong thread. Expected: {}, Actual: {}",
+                        TRANSACTION_HANDLING_THREAD_NAME,
+                        threadName);
+            }
+            firstRound = false;
         }
     }
 
@@ -292,12 +307,12 @@ public class ConsensusRoundHandler {
                 platformContext,
                 CryptoStatic::verifySignature,
                 immutableStateCons,
-                "ConsensusRoundHandler.createSignedState()",
+                "TransactionHandler.createSignedState()",
                 freezeRoundReceived,
                 true,
                 consensusRound.isPcesRound());
 
-        final ReservedSignedState reservedSignedState = signedState.reserve("round handler output");
+        final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
         return new StateAndRound(reservedSignedState, consensusRound);
     }
 }
