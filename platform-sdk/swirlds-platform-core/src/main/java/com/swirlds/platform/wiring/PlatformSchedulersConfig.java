@@ -65,11 +65,11 @@ import java.time.Duration;
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventDeduplicator,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventSignatureValidator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
@@ -125,7 +125,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration gossip,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration postHashCollector,
@@ -133,4 +133,4 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration branchDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration branchReporter,
-        @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}
+        @ConfigProperty(defaultValue = "true") boolean hashCollectorEnabled) {}
