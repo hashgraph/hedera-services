@@ -1,0 +1,21 @@
+name: PR Milestone Check
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled, synchronize]
+
+jobs:
+  check_pr_milestone:
+    name: Is milestone valid?
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+
+    steps:
+      - name: Check if milestone is set
+        if: ${{ github.event.pull_request.milestone == null }}
+        run: |
+          echo "Milestone is not set. Failing the workflow."
+          exit 1
+
+      - name: Milestone is set
+        if: ${{ github.event.pull_request.milestone != null }}
+        run: echo "Milestone is set."
