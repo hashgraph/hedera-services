@@ -24,6 +24,7 @@ import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLoggerProvider;
+import com.swirlds.logging.api.extensions.event.LogEventConsumer;
 import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
@@ -76,7 +77,6 @@ public class DefaultLoggingSystem {
         try {
             final Configuration configuration = createConfiguration();
             this.internalLoggingSystem = new LoggingSystem(configuration);
-            this.internalLoggingSystem.installHandlers();
             this.internalLoggingSystem.installProviders();
 
             EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
@@ -166,5 +166,18 @@ public class DefaultLoggingSystem {
      */
     public boolean isInitialized() {
         return initialized.get();
+    }
+
+    public void addMirror(@NonNull final LogEventConsumer other) {
+        this.internalLoggingSystem.addMirror(other);
+    }
+
+    /**
+     * Removes a handler from the logging system.
+     *
+     * @param handler the handler to remove
+     */
+    public void removeMirror(@NonNull final LogEventConsumer handler) {
+        this.internalLoggingSystem.removeMirror(handler);
     }
 }

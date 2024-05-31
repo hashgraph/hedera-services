@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class LoggingSystemConfigTest {
@@ -37,7 +39,8 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.formatTimestamp", "true")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
+        LoggingSystemConfig loggingSystemConfig = LoggingSystemConfigFactory.createLoggingSystemConfig(
+                configuration, LoggingSystemConfigFactory.createLogHandlers(configuration));
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
         assertThat(loggingSystemConfig.isEnabled("", Level.WARN)).isTrue();
@@ -58,8 +61,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.level", "debug")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
@@ -82,8 +87,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.level.com", "info")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
@@ -114,8 +121,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.level.com", "info")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
@@ -146,8 +155,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.level.com", "info")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
@@ -170,8 +181,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.level.com", "info")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
@@ -199,8 +212,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console2.level.com.B", "trace")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(2);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(2);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR)).isTrue();
@@ -240,8 +255,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console.formatTimestamp", "true")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         Marker marker = new Marker("MARKER");
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF, marker)).isTrue();
@@ -288,8 +305,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console2.marker.MARKER3", "enabled")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(2);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(2);
 
         Marker marker = new Marker("MARKER");
         Marker marker2 = new Marker("MARKER2");
@@ -434,8 +453,10 @@ class LoggingSystemConfigTest {
         Marker marker =
                 new Marker("MARKER", new Marker("MARKER2", new Marker("MARKER3", new Marker("MARKER_NOT_PRESENT"))));
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF, marker)).isTrue();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR, marker)).isTrue();
@@ -463,8 +484,10 @@ class LoggingSystemConfigTest {
         Marker marker =
                 new Marker("MARKER", new Marker("MARKER2", new Marker("MARKER3", new Marker("MARKER_NOT_PRESENT"))));
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF, marker)).isTrue();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR, marker)).isTrue();
@@ -492,8 +515,10 @@ class LoggingSystemConfigTest {
         Marker marker =
                 new Marker("MARKER", new Marker("MARKER2", new Marker("MARKER3", new Marker("MARKER_NOT_PRESENT"))));
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(1);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(1);
 
         assertThat(loggingSystemConfig.isEnabled("", Level.OFF, marker)).isFalse();
         assertThat(loggingSystemConfig.isEnabled("", Level.ERROR, marker)).isFalse();
@@ -524,8 +549,10 @@ class LoggingSystemConfigTest {
                 .withValue("logging.handler.console2.marker.MARKER3", "enabled")
                 .build();
 
-        LoggingSystemConfig loggingSystemConfig = new LoggingSystemConfig(configuration);
-        assertThat(loggingSystemConfig.getLogHandlers()).hasSize(2);
+        List<LogHandler> logHandlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        LoggingSystemConfig loggingSystemConfig =
+                LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, logHandlers);
+        assertThat(logHandlers).hasSize(2);
 
         Marker marker = new Marker("MARKER");
         Marker marker2 = new Marker("MARKER2");

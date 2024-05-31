@@ -31,6 +31,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Logger;
 import com.swirlds.logging.api.Loggers;
 import com.swirlds.logging.api.internal.LoggingSystem;
+import com.swirlds.logging.test.fixtures.InMemoryHandlerFactory;
 import com.swirlds.logging.test.fixtures.LoggingMirror;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.logging.test.fixtures.internal.LoggingMirrorImpl;
@@ -54,6 +55,9 @@ import org.junit.jupiter.api.Test;
 @WithSystemOut
 @Tag(TIMING_SENSITIVE)
 public class LoggingSystemStressTest {
+    static {
+        Class<InMemoryHandlerFactory> inMemoryHandlerFactoryClass = InMemoryHandlerFactory.class;
+    }
 
     private static final int TOTAL_RUNNABLE = 100;
     private static final String LOG_FILE = "log-files/logging.log";
@@ -106,7 +110,7 @@ public class LoggingSystemStressTest {
         final LoggingSystem loggingSystem = new LoggingSystem(configuration);
         final LoggingMirrorImpl mirror = new LoggingMirrorImpl();
         loggingSystem.installHandlers();
-        loggingSystem.addHandler(mirror);
+        loggingSystem.addMirror(mirror);
         // A random log name, so it's easier to combine lines after
         final String loggerName = UUID.randomUUID().toString();
         final Logger logger = loggingSystem.getLogger(loggerName);

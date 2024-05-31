@@ -98,7 +98,6 @@ public class BridgedSwirldsLogConfig implements LoggingBenchmarkConfig<LoggingSy
     @NonNull
     private LoggingSystem configure(@NonNull final Configuration configuration) {
         LoggingSystem loggingSystem = new LoggingSystem(configuration);
-        loggingSystem.installHandlers();
         loggingSystem.installProviders();
         return loggingSystem;
     }

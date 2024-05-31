@@ -37,12 +37,12 @@ public class LoggerMirrorExtension implements InvocationInterceptor, ParameterRe
             throws Throwable {
         try (final LoggingMirrorImpl loggingMirror = new LoggingMirrorImpl()) {
             try {
-                DefaultLoggingSystem.getInstance().addHandler(loggingMirror);
+                DefaultLoggingSystem.getInstance().addMirror(loggingMirror);
                 TestInjector.injectInTest(LoggingMirror.class, () -> loggingMirror, extensionContext);
                 TestInjector.injectInTest(LoggingMirrorImpl.class, () -> loggingMirror, extensionContext);
                 invocation.proceed();
             } finally {
-                DefaultLoggingSystem.getInstance().removeHandler(loggingMirror);
+                DefaultLoggingSystem.getInstance().removeMirror(loggingMirror);
             }
         }
     }

@@ -17,8 +17,6 @@
 package com.swirlds.logging.benchmark;
 
 import com.swirlds.logging.benchmark.swirldslog.SwirldsLogBenchmark;
-import org.openjdk.jmh.profile.GCProfiler;
-import org.openjdk.jmh.profile.MemPoolProfiler;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -34,8 +32,8 @@ public class Runner {
                 // .include(Log4J2Benchmark.class.getSimpleName())
                 .param("mode", "ROLLING")
                 .param("loggingType", "FILE")
-                .addProfiler(GCProfiler.class)
-                .addProfiler(MemPoolProfiler.class)
+                // .addProfiler(GCProfiler.class)
+                // .addProfiler(MemPoolProfiler.class)
                 // .addProfiler(PausesProfiler.class)
                 // .addProfiler(StackProfiler.class)
                 // .addProfiler(ClassloaderProfiler.class)

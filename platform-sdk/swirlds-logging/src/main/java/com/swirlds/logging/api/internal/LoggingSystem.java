@@ -30,9 +30,12 @@ import com.swirlds.logging.api.extensions.handler.LogHandlerFactory;
 import com.swirlds.logging.api.extensions.provider.LogProvider;
 import com.swirlds.logging.api.extensions.provider.LogProviderFactory;
 import com.swirlds.logging.api.internal.event.SimpleLogEventFactory;
-import com.swirlds.logging.api.internal.level.HandlerLoggingLevelConfig;
+import com.swirlds.logging.api.internal.level.LoggingSystemConfig;
+import com.swirlds.logging.api.internal.level.LoggingSystemConfigFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +44,7 @@ import java.util.ServiceLoader;
 import java.util.ServiceLoader.Provider;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * The implementation of the logging system.
@@ -77,6 +76,11 @@ public class LoggingSystem implements LogEventConsumer {
     private final List<LogHandler> handlers;
 
     /**
+     * The handlers of the logging system.
+     */
+    private final List<LogHandler> extraHandlers = new ArrayList<>();
+
+    /**
      * The already created loggers of the logging system.
      */
     private final Map<String, LoggerImpl> loggers;
@@ -84,12 +88,14 @@ public class LoggingSystem implements LogEventConsumer {
     /**
      * The level configuration of the logging system that checks if a specific logger is enabled for a specific level.
      */
-    private final AtomicReference<HandlerLoggingLevelConfig> levelConfig;
+    private LoggingSystemConfig levelConfig;
 
     /**
      * The factory that is used to create log events.
      */
     private final LogEventFactory logEventFactory = new SimpleLogEventFactory();
+
+    private final Collection<LogEventConsumer> mirrors = new ArrayList<>();
 
     /**
      * Creates a new logging system.
@@ -98,9 +104,9 @@ public class LoggingSystem implements LogEventConsumer {
      */
     public LoggingSystem(@NonNull final Configuration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
-        this.handlers = new CopyOnWriteArrayList<>();
         this.loggers = new ConcurrentHashMap<>();
-        this.levelConfig = new AtomicReference<>(HandlerLoggingLevelConfig.create(configuration, null));
+        this.handlers = LoggingSystemConfigFactory.createLogHandlers(configuration);
+        this.levelConfig = LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, handlers);
         Runtime.getRuntime().addShutdownHook(new Thread(this::stopAndFinalize)); // makes sure all things get to disk
         BaseExecutorFactory.getInstance() // Add a forced flush for the handlers at regular cadence
                 .scheduleAtFixedRate(this::flushHandlers, FLUSH_FREQUENCY, FLUSH_FREQUENCY, TimeUnit.MILLISECONDS);
@@ -111,7 +117,7 @@ public class LoggingSystem implements LogEventConsumer {
      * Logs to the {@code EMERGENCY_LOGGER} in case of error
      */
     private void flushHandlers() {
-        handlers.forEach(h -> {
+        this.handlers.forEach(h -> {
             try {
                 if (h.isActive()) {
                     h.flush();
@@ -121,7 +127,6 @@ public class LoggingSystem implements LogEventConsumer {
             }
         });
     }
-
     /**
      * Updates the logging system with the given configuration.
      *
@@ -130,8 +135,13 @@ public class LoggingSystem implements LogEventConsumer {
      * handlers are not removed for now.
      */
     public void update(final @NonNull Configuration configuration) {
-        this.levelConfig.set(HandlerLoggingLevelConfig.create(configuration, null));
-        this.handlers.forEach(handler -> handler.update(configuration));
+        // TODO: review if we need to create new handlers with the update method. if so,
+        // we need to make sure that we dont throw away previous existent handlers
+        //  and that we flush removed ones
+        LoggingSystemConfig value = LoggingSystemConfigFactory.createLoggingSystemConfig(configuration, this.handlers);
+        synchronized (this) {
+            this.levelConfig = value;
+        }
     }
 
     /**
@@ -140,11 +150,7 @@ public class LoggingSystem implements LogEventConsumer {
      * @param handler the handler to add
      */
     public void addHandler(@NonNull final LogHandler handler) {
-        if (handler == null) {
-            EMERGENCY_LOGGER.logNPE("handler");
-        } else {
-            handlers.add(handler);
-        }
+        // TODO: Review if this approach keeps making sense
     }
 
     /**
@@ -153,11 +159,8 @@ public class LoggingSystem implements LogEventConsumer {
      * @param handler the handler to remove
      */
     public void removeHandler(@NonNull final LogHandler handler) {
-        if (handler == null) {
-            EMERGENCY_LOGGER.logNPE("handler");
-        } else {
-            handlers.remove(handler);
-        }
+        // TODO: Review if this approach keeps making sense
+
     }
 
     /**
@@ -191,16 +194,10 @@ public class LoggingSystem implements LogEventConsumer {
             EMERGENCY_LOGGER.logNPE("level");
             return true;
         }
-        for (final LogHandler handler : handlers) {
-            if (handler.isEnabled(name, level, marker)) {
-                return true;
-            }
-        }
-
         if (marker == null) { // favor inlining
-            return levelConfig.get().isEnabled(name, level);
+            return levelConfig.isEnabled(name, level);
         } else {
-            return levelConfig.get().isEnabled(name, level, marker);
+            return levelConfig.isEnabled(name, level, marker);
         }
     }
 
@@ -215,26 +212,39 @@ public class LoggingSystem implements LogEventConsumer {
             return;
         }
         try {
-            boolean handled = false;
-            for (LogHandler logHandler : handlers) {
-                if (logHandler.isEnabled(event.loggerName(), event.level(), event.marker())) {
-                    try {
-                        logHandler.handle(event);
-                        handled = true;
-                    } catch (final Throwable throwable) {
-                        EMERGENCY_LOGGER.log(
-                                Level.ERROR,
-                                "Exception in handling log event by logHandler "
-                                        + logHandler.getClass().getName(),
-                                throwable);
-                    }
+            if (handlers.isEmpty() /*ALSO CHECK if the root log level can log this*/) {
+                EMERGENCY_LOGGER.log(event);
+                return;
+            }
+
+            Set<Integer> handlerIndexes = event.marker() != null
+                    ? this.levelConfig.getHandlers(event.loggerName(), event.level(), event.marker())
+                    : this.levelConfig.getHandlers(event.loggerName(), event.level());
+
+            for (Integer logHandlerIndex : handlerIndexes) {
+                LogHandler logHandler = this.handlers.get(logHandlerIndex);
+                try {
+                    logHandler.handle(event);
+                } catch (final Throwable throwable) {
+                    EMERGENCY_LOGGER.log(
+                            Level.ERROR,
+                            "Exception in handling log event by logHandler "
+                                    + logHandler.getClass().getName(),
+                            throwable);
                 }
             }
-            if (!handled && levelConfig.get().isEnabled(event.loggerName(), event.level(), event.marker())) {
-                EMERGENCY_LOGGER.log(event);
-            }
+
         } catch (final Throwable throwable) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Exception in handling log event", throwable);
+        } finally {
+            if (!mirrors.isEmpty())
+                try {
+                    for (LogEventConsumer mirror : mirrors) {
+                        mirror.accept(event);
+                    }
+                } catch (Exception e) {
+                    // ignore
+                }
         }
     }
 
@@ -242,6 +252,8 @@ public class LoggingSystem implements LogEventConsumer {
      * Loads all {@link LogProviderFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
      * system.
      */
+    @Deprecated
+    // TODO: do we still need the providers approach?
     public void installProviders() {
         final ServiceLoader<LogProviderFactory> serviceLoader = ServiceLoader.load(LogProviderFactory.class);
         final List<LogProvider> providers = serviceLoader.stream()
@@ -257,45 +269,10 @@ public class LoggingSystem implements LogEventConsumer {
      * Loads all {@link LogHandlerFactory} instances by SPI / {@link ServiceLoader} and installs them into the logging
      * system.
      */
+    @Deprecated
     public void installHandlers() {
-        final Map<String, LogHandlerFactory> servicesMap = ServiceLoader.load(LogHandlerFactory.class).stream()
-                .map(Provider::get)
-                .collect(Collectors.toUnmodifiableMap(LogHandlerFactory::getTypeName, Function.identity()));
-        final Set<String> handlerNames = configuration
-                .getPropertyNames()
-                .filter(property -> property.startsWith(LOGGING_HANDLER_PREFIX))
-                .map(property -> {
-                    final int index = property.indexOf('.', LOGGING_HANDLER_PREFIX_LENGTH);
-                    return property.substring(LOGGING_HANDLER_PREFIX_LENGTH, index);
-                })
-                .collect(Collectors.toUnmodifiableSet());
+        // TODO this can be replaced with the update method.
 
-        final List<LogHandler> handlers = handlerNames.stream()
-                .map(handlerName -> {
-                    final String handlerType =
-                            configuration.getValue(LOGGING_HANDLER_TYPE.formatted(handlerName), (String) null);
-                    if (handlerType != null) {
-                        final LogHandlerFactory handlerFactory = servicesMap.get(handlerType);
-                        if (handlerFactory != null) {
-                            return handlerFactory.create(handlerName, configuration);
-                        }
-                        EMERGENCY_LOGGER.log(
-                                Level.ERROR,
-                                "No handler type '%s' found for logging handler '%s'"
-                                        .formatted(handlerType, handlerName));
-                        return null;
-                    }
-                    EMERGENCY_LOGGER.log(
-                            Level.ERROR, "No 'type' attribute for logging handler '%s' found".formatted(handlerName));
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .filter(LogHandler::isActive)
-                .toList();
-
-        handlers.forEach(this::addHandler);
-
-        EMERGENCY_LOGGER.log(Level.DEBUG, handlers.size() + " logging handlers installed: " + handlers);
     }
 
     /**
@@ -323,5 +300,27 @@ public class LoggingSystem implements LogEventConsumer {
     @NonNull
     public List<LogHandler> getHandlers() {
         return Collections.unmodifiableList(handlers);
+    }
+
+    public void addMirror(@NonNull final LogEventConsumer other) {
+        if (other == null) {
+            EMERGENCY_LOGGER.logNPE("handler");
+        } else {
+            this.mirrors.add(other);
+        }
+    }
+
+    /**
+     * Removes a handler from the logging system.
+     *
+     * @param handler the handler to remove
+     */
+    public void removeMirror(@NonNull final LogEventConsumer handler) {
+        // TODO: Review if this approach keeps making sense
+        if (handler == null) {
+            EMERGENCY_LOGGER.logNPE("handler");
+        } else {
+            mirrors.remove(handler);
+        }
     }
 }

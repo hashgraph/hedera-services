@@ -45,6 +45,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * In that case all packages and classes under the package {@code com.swirlds.logging.api} will be configured to use the
  * level INFO.
  */
+@Deprecated
+// TODO: should not be used anymore
 public class HandlerLoggingLevelConfig {
 
     private static final String PROPERTY_LOGGING_LEVEL = "logging.level";
