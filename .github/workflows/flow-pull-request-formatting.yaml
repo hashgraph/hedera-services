@@ -38,13 +38,13 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Check PR Title
-        uses: aslafy-z/conventional-pr-title-action@a0b851005a0f82ac983a56ead5a8111c0d8e044a # v3.2.0
+        uses: step-security/conventional-pr-title-action@0eae74515f5a79f8773fa04142dd746df76666ac # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   milestone-check:
-    name: Check milestone present
-    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+    name: Milestone Check
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Check Milestone
         run: |
@@ -59,7 +59,7 @@ jobs:
           echo "Milestone is set."
 
   assignee-check:
-    name: Check Assignee Present
+    name: Assignee Check
     runs-on: [ self-hosted, Linux, medium, ephemeral ]
 
     steps:
