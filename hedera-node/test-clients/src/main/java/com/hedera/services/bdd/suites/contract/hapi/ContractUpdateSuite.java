@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
@@ -498,6 +500,7 @@ public class ContractUpdateSuite {
     final Stream<DynamicTest> cannotUpdateMaxAutomaticAssociations() {
         return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
                 .given(
+                        overriding("contracts.allowAutoAssociations", FALSE_VALUE),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
