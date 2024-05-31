@@ -16,14 +16,6 @@
 
 name: "PR Formatting"
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - edited
-      - ready_for_review
-      - review_requested
-      - synchronize
   pull_request_target:
     types:
       - opened
@@ -46,7 +38,6 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Check PR Title
-        if: ${{ github.event.trigger == 'pull_request_target' }}
         uses: step-security/conventional-pr-title-action@0eae74515f5a79f8773fa04142dd746df76666ac # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,7 +48,7 @@ jobs:
     steps:
       - name: Check Milestone
         run: |
-          if [ "${{ github.event.pull_request.milestone }}" == "null" ] || [ "${{ github.event.pull_request.milestone }}" == "" ]; then
+          if [ "${{ github.event.pull_request_target.milestone }}" == "null" ] || [ "${{ github.event.pull_request_target.milestone }}" == "" ]; then
             echo "Milestone is not set. Failing the workflow."
             exit 1
           fi
@@ -73,7 +64,7 @@ jobs:
     steps:
       - name: Check Assignee
         run: |
-          if [ "${{ github.event.pull_request.assignee }}" == "null" ] || [ "${{ github.event.pull_request.assignee }}" == "" ]; then
+          if [ "${{ github.event.pull_request_target.assignee }}" == "null" ] || [ "${{ github.event.pull_request_target.assignee }}" == "" ]; then
             echo "Assignee is not set. Failing the workflow."
             exit 1
           fi
