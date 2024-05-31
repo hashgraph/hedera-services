@@ -116,12 +116,14 @@ class InternalEventValidatorTests {
         // self parent has invalid generation.
         final GossipEvent invalidSelfParentGeneration = new TestingEventBuilder(random)
                 .setSelfParent(new TestingEventBuilder(random).build())
-                .overrideSelfParentGeneration(GENERATION_UNDEFINED).build();
+                .overrideSelfParentGeneration(GENERATION_UNDEFINED)
+                .build();
 
         // other parent has invalid generation.
         final GossipEvent invalidOtherParentGeneration = new TestingEventBuilder(random)
                 .setOtherParent(new TestingEventBuilder(random).build())
-                .overrideOtherParentGeneration(GENERATION_UNDEFINED).build();
+                .overrideOtherParentGeneration(GENERATION_UNDEFINED)
+                .build();
 
         assertNull(multinodeValidator.validateEvent(invalidSelfParentGeneration));
         assertNull(multinodeValidator.validateEvent(invalidOtherParentGeneration));
@@ -150,36 +152,60 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event must have a birth round greater than or equal to the max of all parent birth rounds.")
     void invalidBirthRound() {
-        final GossipEvent selfParent1 = new TestingEventBuilder(random).setCreatorId(new NodeId(0)).setBirthRound(5).build();
-        final GossipEvent otherParent1 = new TestingEventBuilder(random).setCreatorId(new NodeId(1)).setBirthRound(7).build();
-        final GossipEvent selfParent2 = new TestingEventBuilder(random).setCreatorId(new NodeId(0)).setBirthRound(7).build();
-        final GossipEvent otherParent2 = new TestingEventBuilder(random).setCreatorId(new NodeId(1)).setBirthRound(5).build();
+        final GossipEvent selfParent1 = new TestingEventBuilder(random)
+                .setCreatorId(new NodeId(0))
+                .setBirthRound(5)
+                .build();
+        final GossipEvent otherParent1 = new TestingEventBuilder(random)
+                .setCreatorId(new NodeId(1))
+                .setBirthRound(7)
+                .build();
+        final GossipEvent selfParent2 = new TestingEventBuilder(random)
+                .setCreatorId(new NodeId(0))
+                .setBirthRound(7)
+                .build();
+        final GossipEvent otherParent2 = new TestingEventBuilder(random)
+                .setCreatorId(new NodeId(1))
+                .setBirthRound(5)
+                .build();
 
         for (final InternalEventValidator validator : List.of(multinodeValidator, singleNodeValidator)) {
-            assertNull(validator.validateEvent(new TestingEventBuilder(random).setCreatorId(new NodeId(0))
+            assertNull(validator.validateEvent(new TestingEventBuilder(random)
+                    .setCreatorId(new NodeId(0))
                     .setSelfParent(selfParent1)
                     .setOtherParent(otherParent1)
-                    .setBirthRound(6).build()));
-            assertNull(validator.validateEvent(new TestingEventBuilder(random).setCreatorId(new NodeId(0))
+                    .setBirthRound(6)
+                    .build()));
+            assertNull(validator.validateEvent(new TestingEventBuilder(random)
+                    .setCreatorId(new NodeId(0))
                     .setSelfParent(selfParent2)
                     .setOtherParent(otherParent2)
-                    .setBirthRound(6).build()));
-            assertNull(validator.validateEvent(new TestingEventBuilder(random).setCreatorId(new NodeId(0))
+                    .setBirthRound(6)
+                    .build()));
+            assertNull(validator.validateEvent(new TestingEventBuilder(random)
+                    .setCreatorId(new NodeId(0))
                     .setSelfParent(selfParent1)
                     .setOtherParent(otherParent1)
-                    .setBirthRound(4).build()));
-            assertNull(validator.validateEvent(new TestingEventBuilder(random).setCreatorId(new NodeId(0))
+                    .setBirthRound(4)
+                    .build()));
+            assertNull(validator.validateEvent(new TestingEventBuilder(random)
+                    .setCreatorId(new NodeId(0))
                     .setSelfParent(selfParent2)
                     .setOtherParent(otherParent2)
-                    .setBirthRound(4).build()));
-            assertNotNull(validator.validateEvent(new TestingEventBuilder(random).setCreatorId(new NodeId(0))
+                    .setBirthRound(4)
+                    .build()));
+            assertNotNull(validator.validateEvent(new TestingEventBuilder(random)
+                    .setCreatorId(new NodeId(0))
                     .setSelfParent(selfParent1)
                     .setOtherParent(otherParent1)
-                    .setBirthRound(7).build()));
-            assertNotNull(validator.validateEvent(new TestingEventBuilder(random).setCreatorId(new NodeId(0))
+                    .setBirthRound(7)
+                    .build()));
+            assertNotNull(validator.validateEvent(new TestingEventBuilder(random)
+                    .setCreatorId(new NodeId(0))
                     .setSelfParent(selfParent2)
                     .setOtherParent(otherParent2)
-                    .setBirthRound(7).build()));
+                    .setBirthRound(7)
+                    .build()));
         }
 
         assertEquals(8, exitedIntakePipelineCount.get());

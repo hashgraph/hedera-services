@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
 import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
 import com.hedera.hapi.platform.event.EventConsensusData;
