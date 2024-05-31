@@ -52,7 +52,6 @@ jobs:
 
       - name: Milestone is set
         run: |
-          echo "Milestone is: ${{ github.event.pull_request.milestone }} "
           echo "Milestone is set."
 
   assignee-check:
@@ -69,5 +68,4 @@ jobs:
 
       - name: Assignee is set
         run: |
-          echo "Assignee is: ${{ github.event.pull_request.assignee }}"
           echo "Assignee is set."
