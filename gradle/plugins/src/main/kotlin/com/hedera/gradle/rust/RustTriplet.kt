@@ -6,6 +6,7 @@ enum class RustTriplet(val identifier: String, val operatingSystem: String, val 
     WINDOWS_X64("x86_64-pc-windows-gnu", Os.FAMILY_WINDOWS, "x86_64", "", "dll", "windows"),
     WINDOWS_X86("i686-pc-windows-gnu", Os.FAMILY_WINDOWS, "i686", "", "dll", "windows"),
     LINUX_X64("x86_64-unknown-linux-gnu", Os.FAMILY_UNIX, "x86_64", "lib", "so", "linux"),
+    LINUX_AMD64("x86_64-unknown-linux-gnu", Os.FAMILY_UNIX, "amd64", "lib", "so", "linux"),
     LINUX_X86("i686-unknown-linux-gnu", Os.FAMILY_UNIX, "i686", "lib", "so", "linux"),
     LINUX_AARCH64("aarch64-unknown-linux-gnu", Os.FAMILY_UNIX, "aarch64", "lib", "so", "linux")
 }
