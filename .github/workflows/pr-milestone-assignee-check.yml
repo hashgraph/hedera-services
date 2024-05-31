@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check Milestone
         run: |
-          if [ "${{ github.event.pull_request.milestone }}" == "null" || "${{ github.event.pull_request.milestone }}" == "" ]; then
+          if [ "${{ github.event.pull_request.milestone }}" == "null" ] || [ "${{ github.event.pull_request.milestone }}" == "" ]; then
             echo "Milestone is not set. Failing the workflow."
             exit 1
           fi
@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Check Assignee
         run: |
-          if [ "${{ github.event.pull_request.assignee }}" == "null" || "${{ github.event.pull_request.assignee }}" == ""]; then
+          if [ "${{ github.event.pull_request.assignee }}" == "null" ] || [ "${{ github.event.pull_request.assignee }}" == ""]; then
             echo "Assignee is not set. Failing the workflow."
             exit 1
           fi
