@@ -18,7 +18,6 @@ package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.context.internal.PlatformUncaughtExceptionHandler;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;

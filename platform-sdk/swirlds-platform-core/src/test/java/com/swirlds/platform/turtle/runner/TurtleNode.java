@@ -95,8 +95,13 @@ public class TurtleNode {
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo", "bar", new BasicSoftwareVersion(1), TurtleTestingToolState::new, nodeId)
                 .withModel(model)
+                .withCryptography(platformContext.getCryptography())
+                .withMetrics(platformContext.getMetrics())
+                .withTime(platformContext.getTime())
+                .withFileSystemManager(platformContext.getFileSystemManager())
+                .withRecycleBin(platformContext.getRecycleBin())
+                .withExecutorFactory(platformContext.getExecutorFactory())
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
-                .withPlatformContext(platformContext)
                 .withBootstrapAddressBook(addressBook)
                 .withKeysAndCerts(privateKeys);
 
