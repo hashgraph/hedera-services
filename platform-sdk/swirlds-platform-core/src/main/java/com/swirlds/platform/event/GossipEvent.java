@@ -18,25 +18,36 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements SelfSerializable {
+public class GossipEvent implements Event, SelfSerializable {
+    private static final EventConsensusData NO_CONSENSUS =
+            new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-    private static final int MAX_SIG_LENGTH = 384;
 
     private static final class ClassVersion {
         /**
@@ -49,7 +60,7 @@ public class GossipEvent implements SelfSerializable {
 
     private BaseEventHashedData hashedData;
     /** creator's signature for this event */
-    private byte[] signature;
+    private Bytes signature;
 
     private Instant timeReceived;
 
@@ -72,6 +83,14 @@ public class GossipEvent implements SelfSerializable {
      */
     private NodeId senderId;
 
+    /** The consensus data for this event */
+    private EventConsensusData consensusData = NO_CONSENSUS;
+    /**
+     * The consensus timestamp of this event (if it has reached consensus). This is the same timestamp that is stored in
+     * {@link #consensusData}, but converted to an {@link Instant}.
+     */
+    private Instant consensusTimestamp = null;
+
     /**
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
@@ -85,10 +104,19 @@ public class GossipEvent implements SelfSerializable {
      * @param signature the signature for the event
      */
     public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
+        this(hashedData, Bytes.wrap(signature));
+    }
+
+    /**
+     * @param hashedData   the hashed data for the event
+     * @param signature the signature for the event
+     */
+    public GossipEvent(final BaseEventHashedData hashedData, final Bytes signature) {
         this.hashedData = hashedData;
         this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
+        this.consensusData = NO_CONSENSUS;
     }
 
     /**
@@ -121,7 +149,8 @@ public class GossipEvent implements SelfSerializable {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hashedData, false);
-        out.writeByteArray(signature);
+        out.writeInt((int) signature.length());
+        signature.writeTo(out);
     }
 
     /**
@@ -130,7 +159,8 @@ public class GossipEvent implements SelfSerializable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
-        this.signature = in.readByteArray(MAX_SIG_LENGTH);
+        final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
+        this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
     }
 
@@ -144,7 +174,7 @@ public class GossipEvent implements SelfSerializable {
     /**
      * @return the signature for the event
      */
-    public byte[] getSignature() {
+    public @NonNull Bytes getSignature() {
         return signature;
     }
 
@@ -157,6 +187,28 @@ public class GossipEvent implements SelfSerializable {
         return hashedData.getDescriptor();
     }
 
+    @Override
+    public Iterator<Transaction> transactionIterator() {
+        return Arrays.asList((Transaction[]) hashedData.getTransactions()).iterator();
+    }
+
+    @Override
+    public Instant getTimeCreated() {
+        return hashedData.getTimeCreated();
+    }
+
+    @Nullable
+    @Override
+    public SoftwareVersion getSoftwareVersion() {
+        return hashedData.getSoftwareVersion();
+    }
+
+    @NonNull
+    @Override
+    public NodeId getCreatorId() {
+        return hashedData.getCreatorId();
+    }
+
     /**
      * Get the generation of the event.
      *
@@ -164,6 +216,13 @@ public class GossipEvent implements SelfSerializable {
      */
     public long getGeneration() {
         return hashedData.getGeneration();
+    }
+
+    /**
+     * @return the number of payloads this event contains
+     */
+    public int getPayloadCount() {
+        return hashedData.getTransactions().length;
     }
 
     /**
@@ -201,6 +260,46 @@ public class GossipEvent implements SelfSerializable {
      */
     public void setSenderId(@NonNull final NodeId senderId) {
         this.senderId = senderId;
+    }
+
+    /**
+     * @return this event's consensus data, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public EventConsensusData getConsensusData() {
+        return consensusData;
+    }
+
+    /**
+     * @return the consensus timestamp for this event, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public Instant getConsensusTimestamp() {
+        return consensusTimestamp;
+    }
+
+    /**
+     * @return the consensus order for this event, this will be
+     * {@link com.swirlds.platform.consensus.ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
+     * consensus
+     */
+    public long getConsensusOrder() {
+        return consensusData.consensusOrder();
+    }
+
+    /**
+     * Set the consensus data for this event
+     *
+     * @param consensusData the consensus data for this event
+     */
+    public void setConsensusData(@NonNull final EventConsensusData consensusData) {
+        if (this.consensusData != NO_CONSENSUS) {
+            throw new IllegalStateException("Consensus data already set");
+        }
+        Objects.requireNonNull(consensusData, "consensusData");
+        Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
+        this.consensusData = consensusData;
+        this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
     }
 
     /**
@@ -278,6 +377,9 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public boolean equals(final Object o) {
+        // FUTURE WORK:
+        // this method seems to be exclusively used for testing purposes. if that is the case, it would be better to
+        // have a separate method for testing equality that is only used in the unit tests.
         if (this == o) {
             return true;
         }
@@ -287,7 +389,8 @@ public class GossipEvent implements SelfSerializable {
         }
 
         final GossipEvent that = (GossipEvent) o;
-        return Objects.equals(getHashedData(), that.getHashedData());
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(consensusData, that.consensusData);
     }
 
     /**

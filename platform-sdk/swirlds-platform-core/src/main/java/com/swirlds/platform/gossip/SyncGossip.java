@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gossip;
 
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_UNDEFINED;
 
 import com.swirlds.base.state.Startable;
@@ -44,6 +43,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
@@ -103,6 +103,8 @@ import java.util.function.Supplier;
  * Boilerplate code for gossip.
  */
 public class SyncGossip implements ConnectionTracker, Gossip {
+    public static final String PLATFORM_THREAD_POOL_NAME = "platform-core";
+
     private boolean started = false;
 
     private final PlatformContext platformContext;
@@ -312,7 +314,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             permitCount = syncConfig.syncProtocolPermitCount();
         }
 
-        syncPermitProvider = new SyncPermitProvider(permitCount, intakeEventCounter);
+        syncPermitProvider = new SyncPermitProvider(platformContext, permitCount);
 
         buildSyncProtocolThreads(
                 platformContext,
@@ -350,6 +352,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 syncShadowgraphSynchronizer,
                 fallenBehindManager,
                 syncPermitProvider,
+                intakeEventCounter,
                 gossipHalted::get,
                 () -> intakeQueueSizeSupplier.getAsLong() >= eventConfig.eventIntakeQueueThrottleSize(),
                 Duration.ZERO,
@@ -423,7 +426,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
@@ -455,11 +458,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             throw new IllegalStateException("Gossip not started");
         }
         gossipHalted.set(true);
-        syncPermitProvider.waitForAllSyncsToFinish();
+        syncPermitProvider.waitForAllPermitsToBeReleased();
     }
 
     /**
-     * Resume gossiping. If called when already running then this has no effect.
+     * Resume gossiping. Undoes the effect of {@link #pause()}. Should be called exactly once after each call to
+     * {@link #pause()}.
      */
     private void resume() {
         if (!started) {
@@ -467,6 +471,11 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         }
         intakeEventCounter.reset();
         gossipHalted.set(false);
+
+        // Revoke all permits when we begin gossiping again. Presumably we are behind the pack,
+        // and so we want to avoid talking to too many peers at once until we've had a chance
+        // to properly catch up.
+        syncPermitProvider.revokeAll();
     }
 
     /**
@@ -488,7 +497,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final StandardOutputWire<GossipEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput) {
 
         startInput.bindConsumer(ignored -> start());
         stopInput.bindConsumer(ignored -> stop());
@@ -505,6 +515,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             inOrderLinker.setEventWindow(eventWindow);
             shadowgraph.updateEventWindow(eventWindow);
         });
+
+        systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
 
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()

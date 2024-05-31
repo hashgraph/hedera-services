@@ -205,6 +205,10 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return this;
     }
 
+    public void args(Optional<Object[]> args) {
+        this.args = args;
+    }
+
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.ContractCreate;
@@ -407,16 +411,16 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return abi;
     }
 
+    public Optional<Object[]> getArgs() {
+        return args;
+    }
+
     public String getContract() {
         return contract;
     }
 
     public Optional<Function<Transaction, Transaction>> getFiddler() {
         return fiddler;
-    }
-
-    public Optional<Long> getSubmitDelay() {
-        return submitDelay;
     }
 
     public Optional<Long> getValidDurationSecs() {
@@ -441,5 +445,9 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     public Optional<EnumSet<ResponseCodeEnum>> getPermissiblePrechecks() {
         return permissiblePrechecks;
+    }
+
+    public Optional<Long> getFee() {
+        return fee;
     }
 }

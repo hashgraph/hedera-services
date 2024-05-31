@@ -24,29 +24,46 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeContextImpl;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -231,6 +248,43 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    public void testCalculateFeesHappyPath() {
+        TransactionInfo txnInfo = mock(TransactionInfo.class);
+        FeeManager feeManager = mock(FeeManager.class);
+        FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        ReadableStoreFactory storeFactory = mock(ReadableStoreFactory.class);
+        TransactionBody transactionBody = mock(TransactionBody.class);
+        TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTransactionBody =
+                mock(TokenFeeScheduleUpdateTransactionBody.class);
+        TransactionID transactionID = mock(TransactionID.class);
+
+        List<CustomFee> customFees = new ArrayList<>();
+        customFees.add(withFixedFee(hbarFixedFee));
+        customFees.add(withFractionalFee(fractionalFee));
+        customFees.add(withRoyaltyFee(royaltyFee));
+
+        when(feeManager.createFeeCalculator(any(), any(), any(), anyInt(), anyInt(), any(), any(), anyBoolean(), any()))
+                .thenReturn(feeCalculator);
+        when(txnInfo.txBody()).thenReturn(transactionBody);
+        when(transactionBody.tokenFeeScheduleUpdateOrThrow()).thenReturn(tokenFeeScheduleUpdateTransactionBody);
+        when(tokenFeeScheduleUpdateTransactionBody.customFees()).thenReturn(customFees);
+        when(tokenFeeScheduleUpdateTransactionBody.tokenIdOrThrow()).thenReturn(fungibleTokenId);
+        when(storeFactory.getStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(transactionBody.transactionIDOrThrow()).thenReturn(transactionID);
+        when(transactionID.transactionValidStartOrThrow()).thenReturn(consensusTimestamp);
+        when(txnInfo.signatureMap()).thenReturn(SignatureMap.DEFAULT);
+        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
+
+        final var feeContext = new FeeContextImpl(
+                consensusInstant, txnInfo, payerKey, payerId, feeManager, storeFactory, configuration, null, -1);
+
+        final var calculateFees = subject.calculateFees(feeContext);
+        assertEquals(calculateFees, Fees.FREE);
     }
 
     private void givenTxn() {

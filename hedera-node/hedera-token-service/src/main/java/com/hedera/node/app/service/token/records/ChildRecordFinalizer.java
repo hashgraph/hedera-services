@@ -35,5 +35,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the child record
  */
 public interface ChildRecordFinalizer {
+    /**
+     * This class is used to "finalize" hbar and token transfers for the child transaction record.
+     * It determines the net hbar transfers and token transfers based on the original value from writable state,
+     * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
+     * for the child record.
+     * @param context the context
+     * @param function the functionality
+     */
     void finalizeChildRecord(@NonNull ChildFinalizeContext context, final HederaFunctionality function);
 }

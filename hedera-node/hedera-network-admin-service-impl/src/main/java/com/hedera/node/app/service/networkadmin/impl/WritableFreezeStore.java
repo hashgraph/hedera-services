@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -45,8 +47,8 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     public WritableFreezeStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
-        freezeTimeState = states.getSingleton(FreezeServiceImpl.FREEZE_TIME_KEY);
-        updateFileHash = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
+        freezeTimeState = states.getSingleton(FREEZE_TIME_KEY);
+        updateFileHash = states.getSingleton(UPGRADE_FILE_HASH_KEY);
     }
 
     /**

@@ -46,6 +46,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * All the keys that can be updated on a Token. This provides a way to update token keys.
  */
 public enum TokenKey {
+    /**
+     * The admin key.
+     */
     ADMIN_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -82,155 +85,9 @@ public enum TokenKey {
             return INVALID_ADMIN_KEY;
         }
     },
-
-    WIPE_KEY {
-        @Override
-        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
-            return update.hasWipeKey();
-        }
-
-        @Override
-        public boolean isPresentInitially(Token originalToken) {
-            return originalToken.hasWipeKey();
-        }
-
-        @Override
-        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
-            builder.wipeKey(getNewKeyValue(update.wipeKey()));
-        }
-
-        @Override
-        public Key getFromUpdate(TokenUpdateTransactionBody update) {
-            return update.wipeKey();
-        }
-
-        @Override
-        public Key getFromToken(Token originalToken) {
-            return originalToken.wipeKey();
-        }
-
-        @Override
-        public ResponseCodeEnum tokenHasNoKeyStatus() {
-            return TOKEN_HAS_NO_WIPE_KEY;
-        }
-
-        @Override
-        public ResponseCodeEnum invalidKeyStatus() {
-            return INVALID_WIPE_KEY;
-        }
-    },
-
-    KYC_KEY {
-        @Override
-        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
-            return update.hasKycKey();
-        }
-
-        @Override
-        public boolean isPresentInitially(Token originalToken) {
-            return originalToken.hasKycKey();
-        }
-
-        @Override
-        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
-            builder.kycKey(getNewKeyValue(update.kycKey()));
-        }
-
-        @Override
-        public Key getFromUpdate(TokenUpdateTransactionBody update) {
-            return update.kycKey();
-        }
-
-        @Override
-        public Key getFromToken(Token originalToken) {
-            return originalToken.kycKey();
-        }
-
-        @Override
-        public ResponseCodeEnum tokenHasNoKeyStatus() {
-            return TOKEN_HAS_NO_KYC_KEY;
-        }
-
-        @Override
-        public ResponseCodeEnum invalidKeyStatus() {
-            return INVALID_KYC_KEY;
-        }
-    },
-
-    SUPPLY_KEY {
-        @Override
-        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
-            return update.hasSupplyKey();
-        }
-
-        @Override
-        public boolean isPresentInitially(Token originalToken) {
-            return originalToken.hasSupplyKey();
-        }
-
-        @Override
-        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
-            builder.supplyKey(getNewKeyValue(update.supplyKey()));
-        }
-
-        @Override
-        public Key getFromUpdate(TokenUpdateTransactionBody update) {
-            return update.supplyKey();
-        }
-
-        @Override
-        public Key getFromToken(Token originalToken) {
-            return originalToken.supplyKey();
-        }
-
-        @Override
-        public ResponseCodeEnum tokenHasNoKeyStatus() {
-            return TOKEN_HAS_NO_SUPPLY_KEY;
-        }
-
-        @Override
-        public ResponseCodeEnum invalidKeyStatus() {
-            return INVALID_SUPPLY_KEY;
-        }
-    },
-
-    FREEZE_KEY {
-        @Override
-        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
-            return update.hasFreezeKey();
-        }
-
-        @Override
-        public boolean isPresentInitially(Token originalToken) {
-            return originalToken.hasFreezeKey();
-        }
-
-        @Override
-        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
-            builder.freezeKey(getNewKeyValue(update.freezeKey()));
-        }
-
-        @Override
-        public Key getFromUpdate(TokenUpdateTransactionBody update) {
-            return update.freezeKey();
-        }
-
-        @Override
-        public Key getFromToken(Token originalToken) {
-            return originalToken.freezeKey();
-        }
-
-        @Override
-        public ResponseCodeEnum tokenHasNoKeyStatus() {
-            return TOKEN_HAS_NO_FREEZE_KEY;
-        }
-
-        @Override
-        public ResponseCodeEnum invalidKeyStatus() {
-            return INVALID_FREEZE_KEY;
-        }
-    },
-
+    /**
+     * The fee schedule key.
+     */
     FEE_SCHEDULE_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -267,7 +124,87 @@ public enum TokenKey {
             return INVALID_CUSTOM_FEE_SCHEDULE_KEY;
         }
     },
+    /**
+     * The supply key.
+     */
+    SUPPLY_KEY {
+        @Override
+        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
+            return update.hasSupplyKey();
+        }
 
+        @Override
+        public boolean isPresentInitially(Token originalToken) {
+            return originalToken.hasSupplyKey();
+        }
+
+        @Override
+        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
+            builder.supplyKey(getNewKeyValue(update.supplyKey()));
+        }
+
+        @Override
+        public Key getFromUpdate(TokenUpdateTransactionBody update) {
+            return update.supplyKey();
+        }
+
+        @Override
+        public Key getFromToken(Token originalToken) {
+            return originalToken.supplyKey();
+        }
+
+        @Override
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
+            return TOKEN_HAS_NO_SUPPLY_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_SUPPLY_KEY;
+        }
+    },
+    /**
+     * The wipe key.
+     */
+    WIPE_KEY {
+        @Override
+        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
+            return update.hasWipeKey();
+        }
+
+        @Override
+        public boolean isPresentInitially(Token originalToken) {
+            return originalToken.hasWipeKey();
+        }
+
+        @Override
+        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
+            builder.wipeKey(getNewKeyValue(update.wipeKey()));
+        }
+
+        @Override
+        public Key getFromUpdate(TokenUpdateTransactionBody update) {
+            return update.wipeKey();
+        }
+
+        @Override
+        public Key getFromToken(Token originalToken) {
+            return originalToken.wipeKey();
+        }
+
+        @Override
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
+            return TOKEN_HAS_NO_WIPE_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_WIPE_KEY;
+        }
+    },
+    /**
+     * The pause key.
+     */
     PAUSE_KEY {
         @Override
         public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
@@ -304,7 +241,87 @@ public enum TokenKey {
             return INVALID_PAUSE_KEY;
         }
     },
+    /**
+     * The freeze key.
+     */
+    FREEZE_KEY {
+        @Override
+        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
+            return update.hasFreezeKey();
+        }
 
+        @Override
+        public boolean isPresentInitially(Token originalToken) {
+            return originalToken.hasFreezeKey();
+        }
+
+        @Override
+        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
+            builder.freezeKey(getNewKeyValue(update.freezeKey()));
+        }
+
+        @Override
+        public Key getFromUpdate(TokenUpdateTransactionBody update) {
+            return update.freezeKey();
+        }
+
+        @Override
+        public Key getFromToken(Token originalToken) {
+            return originalToken.freezeKey();
+        }
+
+        @Override
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
+            return TOKEN_HAS_NO_FREEZE_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_FREEZE_KEY;
+        }
+    },
+    /**
+     * The KYC key.
+     */
+    KYC_KEY {
+        @Override
+        public boolean isPresentInUpdate(TokenUpdateTransactionBody update) {
+            return update.hasKycKey();
+        }
+
+        @Override
+        public boolean isPresentInitially(Token originalToken) {
+            return originalToken.hasKycKey();
+        }
+
+        @Override
+        public void setOn(final Token.Builder builder, TokenUpdateTransactionBody update) {
+            builder.kycKey(getNewKeyValue(update.kycKey()));
+        }
+
+        @Override
+        public Key getFromUpdate(TokenUpdateTransactionBody update) {
+            return update.kycKey();
+        }
+
+        @Override
+        public Key getFromToken(Token originalToken) {
+            return originalToken.kycKey();
+        }
+
+        @Override
+        public ResponseCodeEnum tokenHasNoKeyStatus() {
+            return TOKEN_HAS_NO_KYC_KEY;
+        }
+
+        @Override
+        public ResponseCodeEnum invalidKeyStatus() {
+            return INVALID_KYC_KEY;
+        }
+    },
+    /**
+     * The metadata key.
+     */
     METADATA_KEY {
         @Override
         public ResponseCodeEnum invalidKeyStatus() {

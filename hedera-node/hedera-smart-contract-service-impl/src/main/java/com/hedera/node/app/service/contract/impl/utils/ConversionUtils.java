@@ -570,16 +570,22 @@ public class ConversionUtils {
      * @return its 20-byte EVM address
      */
     public static byte[] asEvmAddress(final long num) {
-        final byte[] evmAddress = new byte[20];
-        copyToLeftPaddedByteArray(num, evmAddress);
-        return evmAddress;
+        return copyToLeftPaddedByteArray(num, new byte[20]);
     }
 
-    private static void copyToLeftPaddedByteArray(long value, final byte[] dest) {
+    /**
+     * Given a value and a destination byte array, copies the value to the destination array, left-padded.
+     *
+     * @param value the value
+     * @param dest the destination byte array
+     * @return the destination byte array
+     */
+    public static byte[] copyToLeftPaddedByteArray(long value, final byte[] dest) {
         for (int i = 7, j = dest.length - 1; i >= 0; i--, j--) {
             dest[j] = (byte) (value & 0xffL);
             value >>= 8;
         }
+        return dest;
     }
 
     /**
@@ -726,14 +732,15 @@ public class ConversionUtils {
      * Given a {@link ContractID} return the corresponding Besu {@link Address}
      * Importantly, this method does NOT check for the existence of the contract in the ledger
      *
-     * @param contractId
+     * @param contractId the contract id
      * @return the equivalent Besu address
      */
     public static @NonNull Address contractIDToBesuAddress(final ContractID contractId) {
         if (contractId.hasEvmAddress()) {
-            return pbjToBesuAddress(contractId.evmAddress());
+            return pbjToBesuAddress(contractId.evmAddressOrThrow());
         } else {
-            return asLongZeroAddress(contractId.contractNumOrThrow());
+            // OrElse(0) is needed, as an UNSET contract OneOf has null number
+            return asLongZeroAddress(contractId.contractNumOrElse(0L));
         }
     }
 

@@ -80,6 +80,7 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
                             type,
                             counters.onRamp(),
                             counters.offRamp(),
+                            unhandledTaskCapacity,
                             flushingEnabled,
                             squelchingEnabled,
                             insertionIsBlocking,

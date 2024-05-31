@@ -18,7 +18,6 @@ package com.swirlds.demo.virtualmerkle;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
-import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -109,7 +108,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             if (prevHash != null) {
                 // add Previous Hash
-                out.write(prevHash.getValue());
+                prevHash.getBytes().writeTo(out);
             }
             // add leaf key
             leaf.getKey().serialize(out);
@@ -211,19 +210,19 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
                 // add content to json
                 if (accountsHash != null) {
-                    rootNode.put("accounts", hex(accountsHash.getValue()));
+                    rootNode.put("accounts", accountsHash.toHex());
                 } else {
                     rootNode.put("accounts", "empty");
                 }
 
                 if (scHash != null) {
-                    rootNode.put("sc", hex(scHash.getValue()));
+                    rootNode.put("sc", scHash.toHex());
                 } else {
                     rootNode.put("sc", "empty");
                 }
 
                 if (byteCodeHash != null) {
-                    rootNode.put("byteCode", hex(byteCodeHash.getValue()));
+                    rootNode.put("byteCode", byteCodeHash.toHex());
                 } else {
                     rootNode.put("byteCode", "empty");
                 }

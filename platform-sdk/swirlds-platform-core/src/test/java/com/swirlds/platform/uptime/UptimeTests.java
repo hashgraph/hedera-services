@@ -40,7 +40,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -109,7 +109,8 @@ class UptimeTests {
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
-                snapshot);
+                snapshot,
+                false);
         final Instant consensusTimestamp = events.get(events.size() - 1).getConsensusTimestamp();
         when(snapshot.consensusTimestamp()).thenReturn(consensusTimestamp);
         return round;
@@ -125,7 +126,7 @@ class UptimeTests {
         final FakeTime time = new FakeTime();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                RandomAddressBookBuilder.create(random).withSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker =
@@ -263,7 +264,7 @@ class UptimeTests {
         final FakeTime time = new FakeTime();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(10).build();
+                RandomAddressBookBuilder.create(random).withSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker =
@@ -614,7 +615,7 @@ class UptimeTests {
         final FakeTime time = new FakeTime();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(3).build();
+                RandomAddressBookBuilder.create(random).withSize(3).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker =

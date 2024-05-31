@@ -31,22 +31,21 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PART
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Lock-1 through Lock-8 from HIP-796.
  */
-// @HapiTestSuite
 public class LockSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LockSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 canLockSubsetOfUnlockedTokens(),
                 canLockSubsetOfUnlockedTokensInPartition(),
@@ -63,12 +62,11 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to lock a subset of the currently held unpartitioned
      * unlocked fungible tokens held by a user's account without requiring the user's signature.
      * If an account has `x` unlocked tokens, then the number of tokens that can be additionally
-     * locked is governed by: `0 <= number_of_tokens_to_be_locked <= x`.
+     * locked is governed by: `0 &lt;= number_of_tokens_to_be_locked &lt;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSubsetOfUnlockedTokens() {
+    final Stream<DynamicTest> canLockSubsetOfUnlockedTokens() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
                 .given(fungibleTokenWithFeatures(LOCKING).withRelation(ALICE))
                 .when(lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2))
@@ -92,12 +90,11 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to lock a subset of the currently held unlocked fungible
      * tokens held by a user's account in a partition without requiring the user's signature.
      * If an account has `x` unlocked tokens, then the number of tokens that can be additionally
-     * locked is governed by: `0 <= number_of_tokens_to_be_locked <= x`.
+     * locked is governed by: `0 &lt;= number_of_tokens_to_be_locked &lt;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSubsetOfUnlockedTokensInPartition() {
+    final Stream<DynamicTest> canLockSubsetOfUnlockedTokensInPartition() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokensInPartition")
                 .given(fungibleTokenWithFeatures(LOCKING, PARTITIONING)
                         .withPartition(RED_PARTITION)
@@ -115,12 +112,11 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to unlock a subset of the currently held unpartitioned locked
      * fungible tokens held by a user's account without requiring the user's signature.
      * If an account has `x` locked tokens, then the number of tokens that can be additionally
-     * unlocked is governed by: `0 <= number_of_locked_tokens <= x`.
+     * unlocked is governed by: `0 &lt;= number_of_locked_tokens &lt;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSubsetOfLockedTokens() {
+    final Stream<DynamicTest> canUnlockSubsetOfLockedTokens() {
         return defaultHapiSpec("CanLockSubsetOfUnlockedTokens")
                 .given(fungibleTokenWithFeatures(LOCKING).withRelation(ALICE))
                 .when(lockUnits(ALICE, TOKEN_UNDER_TEST, FUNGIBLE_INITIAL_BALANCE / 2))
@@ -140,12 +136,11 @@ public class LockSuite extends HapiSuite {
      * <p>As a `lock-key` holder, I want to unlock a subset of the currently held locked fungible tokens
      * held by a user's account in a partition without requiring the user's signature.
      * If an account has `x` locked tokens in a partition, then the number of tokens that can be
-     * additionally unlocked is governed by: `0 <= number_of_locked_tokens <= x`.
+     * additionally unlocked is governed by: `0 &lt;= number_of_locked_tokens &lt;= x`.
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSubsetOfLockedTokensInPartition() {
+    final Stream<DynamicTest> canUnlockSubsetOfLockedTokensInPartition() {
         return defaultHapiSpec("CanUnlockSubsetOfLockedTokensInPartition")
                 .given(fungibleTokenWithFeatures(LOCKING)
                         .withPartition(RED_PARTITION)
@@ -171,8 +166,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSpecificNFTSerials() {
+    final Stream<DynamicTest> canLockSpecificNFTSerials() {
         return defaultHapiSpec("CanLockSpecificNFTSerials")
                 .given(nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L)))
                 .when(lockNfts(ALICE, TOKEN_UNDER_TEST, 1L))
@@ -193,8 +187,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canLockSpecificNFTSerialsInPartition() {
+    final Stream<DynamicTest> canLockSpecificNFTSerialsInPartition() {
         return defaultHapiSpec("CanLockSpecificNFTSerialsInPartition")
                 .given(nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
                         .withPartition(RED_PARTITION)
@@ -218,8 +211,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSpecificNFTSerials() {
+    final Stream<DynamicTest> canUnlockSpecificNFTSerials() {
         return defaultHapiSpec("CanUnlockSpecificNFTSerials")
                 .given(nonFungibleTokenWithFeatures(LOCKING).withRelation(ALICE, r -> r.ownedSerialNos(1L, 2L)))
                 .when(lockNfts(ALICE, TOKEN_UNDER_TEST, 1L))
@@ -241,8 +233,7 @@ public class LockSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canUnlockSpecificNFTSerialsInPartition() {
+    final Stream<DynamicTest> canUnlockSpecificNFTSerialsInPartition() {
         return defaultHapiSpec("CanUnlockSpecificNFTSerialsInPartition")
                 .given(nonFungibleTokenWithFeatures(LOCKING, PARTITIONING)
                         .withRelation(ALICE, r -> r.onlyForPartition(RED_PARTITION, pr -> pr.ownedSerialNos(1L, 2L))))

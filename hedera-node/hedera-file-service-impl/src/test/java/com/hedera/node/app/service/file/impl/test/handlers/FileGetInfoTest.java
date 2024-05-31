@@ -228,8 +228,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     private FileInfo getExpectedSystemInfo() {
-        final var upgradeHash =
-                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
@@ -242,8 +241,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     private FileInfo getExpectedUpgradeInfo() {
-        final var upgradeHash =
-                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileUpgradeFileId.fileNum()).build())

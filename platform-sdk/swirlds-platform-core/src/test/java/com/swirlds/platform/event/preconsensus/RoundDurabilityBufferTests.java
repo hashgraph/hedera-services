@@ -81,7 +81,8 @@ class RoundDurabilityBufferTests {
                 keystoneEventImpl,
                 mock(Generations.class),
                 mock(EventWindow.class),
-                mock(ConsensusSnapshot.class));
+                mock(ConsensusSnapshot.class),
+                false);
     }
 
     @Test

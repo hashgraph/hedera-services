@@ -20,8 +20,11 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 
 /**
  * Provides the context for a migration of state from one {@link Schema} version to another.
@@ -97,4 +100,12 @@ public interface MigrationContext {
      */
     @Nullable
     SemanticVersion previousVersion();
+
+    /**
+     * Returns a mutable "scratchpad" that can be used to share values between different services
+     * during a migration.
+     *
+     * @return the shared values map
+     */
+    Map<String, Object> sharedValues();
 }

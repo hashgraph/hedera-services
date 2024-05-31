@@ -19,13 +19,14 @@ package com.swirlds.platform.builder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.Scratchpad;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -50,6 +51,7 @@ import java.util.function.Supplier;
  * components.
  *
  * @param platformContext                        the context for this platform
+ * @param model                                  the wiring model for this platform
  * @param keysAndCerts                           an object holding all the public/private key pairs and the CSPRNG state
  *                                               for this member
  * @param selfId                                 the ID for this node
@@ -57,6 +59,7 @@ import java.util.function.Supplier;
  * @param swirldName                             the name of the swirld being run
  * @param appVersion                             the current version of the running application
  * @param initialState                           the initial state of the platform
+ * @param applicationCallbacks                   the callbacks that the platform will call when certain events happen
  * @param preconsensusEventConsumer              the consumer for preconsensus events, null if publishing this data has
  *                                               not been enabled
  * @param snapshotOverrideConsumer               the consumer for snapshot overrides, null if publishing this data has
@@ -64,7 +67,7 @@ import java.util.function.Supplier;
  * @param intakeEventCounter                     counts events that have been received by gossip but not yet inserted
  *                                               into gossip event storage, per peer
  * @param randomBuilder                          a builder for creating random number generators
- * @param transactionPool                        provides transactions to be added to new events
+ * @param transactionPoolNexus                   provides transactions to be added to new events
  * @param intakeQueueSizeSupplierSupplier        supplies a method which supplies the size of the intake queue. This
  *                                               hack is required due to the lack of a platform health monitor.
  * @param isInFreezePeriodReference              a reference to a predicate that determines if a timestamp is in the
@@ -97,17 +100,19 @@ import java.util.function.Supplier;
  */
 public record PlatformBuildingBlocks(
         @NonNull PlatformContext platformContext,
+        @NonNull WiringModel model,
         @NonNull KeysAndCerts keysAndCerts,
         @NonNull NodeId selfId,
         @NonNull String mainClassName,
         @NonNull String swirldName,
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
+        @NonNull ApplicationCallbacks applicationCallbacks,
         @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,
-        @NonNull TransactionPool transactionPool,
+        @NonNull TransactionPoolNexus transactionPoolNexus,
         @NonNull AtomicReference<LongSupplier> intakeQueueSizeSupplierSupplier,
         @NonNull AtomicReference<Predicate<Instant>> isInFreezePeriodReference,
         @NonNull AtomicReference<Function<String, ReservedSignedState>> latestImmutableStateProviderReference,

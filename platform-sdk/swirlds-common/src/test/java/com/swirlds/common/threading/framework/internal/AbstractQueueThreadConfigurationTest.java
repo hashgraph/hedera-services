@@ -25,9 +25,9 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.PlatformMetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -88,8 +88,8 @@ class AbstractQueueThreadConfigurationTest {
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final PlatformMetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
-        metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
+        final PlatformMetricsFactory factory = new PlatformMetricsFactoryImpl(metricsConfig);
+        metrics = new DefaultPlatformMetrics(null, registry, executor, factory, metricsConfig);
     }
 
     @Test

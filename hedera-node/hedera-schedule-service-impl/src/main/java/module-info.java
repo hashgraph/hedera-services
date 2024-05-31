@@ -7,6 +7,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.state.api;
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.utils;
@@ -14,6 +15,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.config;
     requires com.google.common;
+    requires com.swirlds.platform.core;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
     requires org.apache.logging.log4j;
@@ -22,6 +24,7 @@ module com.hedera.node.app.service.schedule.impl {
     exports com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.schedule.impl.handlers;
     exports com.hedera.node.app.service.schedule.impl.codec;
+    exports com.hedera.node.app.service.schedule.impl.schemas;
 
     provides com.hedera.node.app.service.schedule.ScheduleService with
             com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;

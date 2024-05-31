@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -35,11 +36,17 @@ import java.util.List;
  */
 public record CustomFeeMeta(
         @NonNull TokenID tokenId,
-        @NonNull AccountID treasuryId,
+        @Nullable AccountID treasuryId,
         @NonNull List<CustomFee> customFees,
         @NonNull TokenType tokenType) {
+    /**
+     * Constructs a {@link CustomFeeMeta} instance for the given token id, treasury id, custom fees and token type.
+     * @param token the token for which this is the custom fee metadata
+     * @return the custom fee metadata for the given token
+     */
     public static CustomFeeMeta customFeeMetaFrom(@NonNull final Token token) {
         requireNonNull(token);
-        return new CustomFeeMeta(token.tokenId(), token.treasuryAccountId(), token.customFees(), token.tokenType());
+        return new CustomFeeMeta(
+                token.tokenIdOrThrow(), token.treasuryAccountId(), token.customFees(), token.tokenType());
     }
 }

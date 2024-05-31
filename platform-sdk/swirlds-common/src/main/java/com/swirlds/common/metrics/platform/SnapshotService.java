@@ -16,13 +16,15 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
+import static com.swirlds.common.metrics.platform.DefaultPlatformMetrics.calculateMetricKey;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.metrics.api.snapshot.Snapshot;
+import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +61,8 @@ public class SnapshotService implements Startable {
 
     private static final Logger logger = LogManager.getLogger(SnapshotService.class);
 
-    private final DefaultMetrics globalMetrics;
-    private final Queue<DefaultMetrics> platformMetricsList = new ConcurrentLinkedQueue<>();
+    private final DefaultPlatformMetrics globalMetrics;
+    private final Queue<DefaultPlatformMetrics> platformMetricsList = new ConcurrentLinkedQueue<>();
     private final ScheduledExecutorService executor;
     private final Queue<Consumer<? super SnapshotEvent>> subscribers = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean running = new AtomicBoolean();
@@ -87,13 +89,15 @@ public class SnapshotService implements Startable {
      *
      */
     public SnapshotService(
-            final DefaultMetrics globalMetrics, final ScheduledExecutorService executor, final Duration interval) {
+            final DefaultPlatformMetrics globalMetrics,
+            final ScheduledExecutorService executor,
+            final Duration interval) {
         this(globalMetrics, executor, interval, Time.getCurrent());
     }
 
     // This method is just for testing and will be removed from the public API at some point.
     public SnapshotService(
-            final DefaultMetrics globalMetrics,
+            final DefaultPlatformMetrics globalMetrics,
             final ScheduledExecutorService executor,
             final Duration interval,
             final Time time) {
@@ -113,11 +117,11 @@ public class SnapshotService implements Startable {
      * Add a platform-specific {@link Metrics} to the {@code SnapshotService}
      *
      * @param platformMetrics
-     * 		the {@link DefaultMetric} to add
+     * 		the {@link DefaultPlatformMetrics} to add
      * @throws IllegalArgumentException
      * 		if {@code platformMetrics} is {@code null} or not platform-specific
      */
-    public void addPlatformMetric(final DefaultMetrics platformMetrics) {
+    public void addPlatformMetric(final DefaultPlatformMetrics platformMetrics) {
         Objects.requireNonNull(platformMetrics, "platformMetric must not be null");
         if (!platformMetrics.isPlatformMetrics()) {
             throw new IllegalArgumentException("Trying to add non-platform Metrics");
@@ -131,11 +135,11 @@ public class SnapshotService implements Startable {
      * Remove a platform-specific {@link Metrics} from the {@code SnapshotService}
      *
      * @param platformMetrics
-     * 		the {@link DefaultMetric} to remove
+     * 		the {@link DefaultPlatformMetrics} to remove
      * @throws IllegalArgumentException
      * 		if {@code platformMetrics} is {@code null} or not platform-specific
      */
-    public void removePlatformMetric(final DefaultMetrics platformMetrics) {
+    public void removePlatformMetric(final DefaultPlatformMetrics platformMetrics) {
         Objects.requireNonNull(platformMetrics, "platformMetric must not be null");
         if (!platformMetrics.isPlatformMetrics()) {
             throw new IllegalArgumentException("Trying to remove non-platform Metrics");
@@ -201,7 +205,7 @@ public class SnapshotService implements Startable {
         final long start = time.nanoTime();
 
         final Map<String, Snapshot> globalSnapshots = globalMetrics.getAll().stream()
-                .map(DefaultMetric.class::cast)
+                .map(SnapshotableMetric.class::cast)
                 .map(Snapshot::of)
                 .collect(Collectors.toMap(snapshot -> calculateMetricKey(snapshot.metric()), Function.identity()));
 
@@ -210,10 +214,10 @@ public class SnapshotService implements Startable {
         final SnapshotEvent globalEvent = new SnapshotEvent(null, globalSnapshots.values());
         subscribers.forEach(subscriber -> subscriber.accept(globalEvent));
 
-        for (final DefaultMetrics platformMetrics : platformMetricsList) {
+        for (final DefaultPlatformMetrics platformMetrics : platformMetricsList) {
             final List<Snapshot> platformSnapshots = platformMetrics.getAll().stream()
                     .map(metric -> globalSnapshots.getOrDefault(
-                            calculateMetricKey(metric), Snapshot.of((DefaultMetric) metric)))
+                            calculateMetricKey(metric), Snapshot.of((SnapshotableMetric) metric)))
                     .toList();
 
             logger.trace(() -> String.format(

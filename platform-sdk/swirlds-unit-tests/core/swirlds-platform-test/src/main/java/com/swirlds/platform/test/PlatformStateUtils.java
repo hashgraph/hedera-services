@@ -23,8 +23,8 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -46,14 +46,13 @@ public final class PlatformStateUtils {
     public static PlatformState randomPlatformState(final Random random) {
         final PlatformState platformState = new PlatformState();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator()
-                .setSize(4)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(4)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         platformState.setAddressBook(addressBook);
         platformState.setLegacyRunningEventHash(randomHash(random));
-        platformState.setRunningEventHash(randomHash(random));
         platformState.setRound(random.nextLong());
         platformState.setConsensusTimestamp(randomInstant(random));
 

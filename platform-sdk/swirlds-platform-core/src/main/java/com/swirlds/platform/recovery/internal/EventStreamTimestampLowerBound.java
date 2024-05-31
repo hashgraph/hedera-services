@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -42,7 +42,7 @@ public class EventStreamTimestampLowerBound implements EventStreamLowerBound {
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(ConsensusData consensusData) {
-        return consensusData.getConsensusTimestamp().compareTo(timestamp);
+    public int compareTo(@NonNull final DetailedConsensusEvent consensusEvent) {
+        return consensusEvent.getGossipEvent().getConsensusTimestamp().compareTo(timestamp);
     }
 }

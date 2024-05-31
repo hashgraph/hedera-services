@@ -54,6 +54,7 @@ class SignedStateReserverTest {
                 Mockito.mock(State.class),
                 "create",
                 false,
+                false,
                 false);
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();

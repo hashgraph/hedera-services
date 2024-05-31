@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -25,6 +24,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -64,7 +64,7 @@ public interface HederaLifecycles {
      * @param previousVersion if non-null, the Hedera network version that was previously in use
      */
     void onStateInitialized(
-            @NonNull MerkleHederaState state,
+            @NonNull HederaState state,
             @NonNull Platform platform,
             @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,

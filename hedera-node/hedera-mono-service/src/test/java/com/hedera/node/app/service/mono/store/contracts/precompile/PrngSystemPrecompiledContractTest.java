@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
 import org.apache.tuweni.bytes.Bytes;
@@ -190,7 +189,7 @@ class PrngSystemPrecompiledContractTest {
 
         // and:
         final var effectsTracker = captor.getValue();
-        assertArrayEquals(Arrays.copyOfRange(WELL_KNOWN_HASH.getValue(), 0, 32), effectsTracker.getPseudorandomBytes());
+        assertArrayEquals(WELL_KNOWN_HASH.getBytes().toByteArray(0, 32), effectsTracker.getPseudorandomBytes());
     }
 
     @Test

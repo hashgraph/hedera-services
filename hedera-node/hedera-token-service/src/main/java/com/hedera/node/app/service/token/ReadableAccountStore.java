@@ -73,6 +73,7 @@ public interface ReadableAccountStore {
     /**
      * Returns true if the given account ID exists in state.
      * @param accountID the ID to check
+     * @return true if the account exists in state
      */
     boolean contains(@NonNull final AccountID accountID);
 
@@ -109,6 +110,10 @@ public interface ReadableAccountStore {
         return account == null || !account.smartContract() ? null : account;
     }
 
+    /**
+     * Returns the number of entities in the account state.
+     * @return the size of the account state
+     */
     long sizeOfAccountState();
 
     /**
