@@ -10,12 +10,12 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
 
     steps:
-      - name: Check if milestone is set
+      - name: Check if Assignee is set
         if: ${{ github.event.pull_request.assignee == null }}
         run: |
           echo "Assignee is not set. Failing the workflow."
           exit 1
 
-      - name: Milestone is set
+      - name: Assignee is set
         if: ${{ github.event.pull_request.assignee != null }}
         run: echo "Assignee is set."
