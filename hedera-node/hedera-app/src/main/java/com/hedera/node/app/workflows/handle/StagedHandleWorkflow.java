@@ -1,10 +1,29 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle;
+
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.workflows.handle.flow.HandleComponent;
+import com.hedera.node.app.workflows.handle.flow.modules.HandleComponent;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
@@ -12,15 +31,10 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.inject.Provider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import javax.inject.Provider;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 
 public class StagedHandleWorkflow {
     private static final Logger logger = LogManager.getLogger(StagedHandleWorkflow.class);
@@ -32,7 +46,13 @@ public class StagedHandleWorkflow {
     private final Provider<HandleComponent.Factory> handleProvider;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
 
-    public StagedHandleWorkflow(final CacheWarmer cacheWarmer, final BlockRecordManager blockRecordManager, final ThrottleServiceManager throttleServiceManager, final NetworkInfo networkInfo, final Provider<HandleComponent.Factory> handleProvider, final HandleWorkflowMetrics handleWorkflowMetrics) {
+    public StagedHandleWorkflow(
+            final CacheWarmer cacheWarmer,
+            final BlockRecordManager blockRecordManager,
+            final ThrottleServiceManager throttleServiceManager,
+            final NetworkInfo networkInfo,
+            final Provider<HandleComponent.Factory> handleProvider,
+            final HandleWorkflowMetrics handleWorkflowMetrics) {
         this.cacheWarmer = cacheWarmer;
         this.blockRecordManager = blockRecordManager;
         this.throttleServiceManager = throttleServiceManager;
@@ -115,10 +135,12 @@ public class StagedHandleWorkflow {
         final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var handleComponent = handleProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
+        final var handleComponent =
+                handleProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
         final var recordStream = handleComponent.recordStream().get();
         blockRecordManager.endUserTransaction(recordStream, state);
 
-        handleWorkflowMetrics.updateTransactionDuration(handleComponent.functionality(), (int) (System.nanoTime() - handleStart));
+        handleWorkflowMetrics.updateTransactionDuration(
+                handleComponent.functionality(), (int) (System.nanoTime() - handleStart));
     }
 }

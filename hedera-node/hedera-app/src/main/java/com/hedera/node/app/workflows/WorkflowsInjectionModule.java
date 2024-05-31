@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows;
 
 import com.hedera.node.app.workflows.handle.HandleWorkflowInjectionModule;
-import com.hedera.node.app.workflows.handle.flow.HandleComponent;
+import com.hedera.node.app.workflows.handle.flow.modules.HandleComponent;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowInjectionModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowInjectionModule;

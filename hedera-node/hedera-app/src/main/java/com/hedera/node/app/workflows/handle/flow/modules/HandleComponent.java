@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
-
 import java.time.Instant;
-import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -45,6 +41,8 @@ public interface HandleComponent {
                 @BindsInstance ConsensusTransaction platformTxn,
                 @BindsInstance Instant consensusTime);
     }
+
     HederaFunctionality functionality();
+
     Supplier<Stream<SingleTransactionRecord>> recordStream();
 }

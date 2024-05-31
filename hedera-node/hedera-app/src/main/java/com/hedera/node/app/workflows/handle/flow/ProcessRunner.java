@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle.flow;
+
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -10,13 +28,10 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
-
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import javax.inject.Inject;
 
 @HandleScope
 public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> {
@@ -34,17 +49,18 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
     final ConsensusTransaction platformTxn;
 
     @Inject
-    public ProcessRunner(final SoftwareVersion version,
-                         final InitTrigger initTrigger,
-                         final RecordListBuilder recordListBuilder,
-                         final SkipHandleProcess skipHandleProcess,
-                         final DefaultHandleProcess defaultHandleProcess,
-                         final Instant consensusNow,
-                         final HederaState state,
-                         final PlatformState platformState,
-                         final ConsensusEvent platformEvent,
-                         final NodeInfo creator,
-                         final ConsensusTransaction platformTxn) {
+    public ProcessRunner(
+            final SoftwareVersion version,
+            final InitTrigger initTrigger,
+            final RecordListBuilder recordListBuilder,
+            final SkipHandleProcess skipHandleProcess,
+            final DefaultHandleProcess defaultHandleProcess,
+            final Instant consensusNow,
+            final HederaState state,
+            final PlatformState platformState,
+            final ConsensusEvent platformEvent,
+            final NodeInfo creator,
+            final ConsensusTransaction platformTxn) {
         this.version = version;
         this.initTrigger = initTrigger;
         this.recordListBuilder = recordListBuilder;
@@ -58,14 +74,14 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
         this.platformTxn = platformTxn;
     }
 
-
     @Override
     public Stream<SingleTransactionRecord> get() {
-        if (this.initTrigger != EVENT_STREAM_RECOVERY
-                && version.compareTo(platformEvent.getSoftwareVersion()) > 0) {
-            skipHandleProcess.processUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
+        if (this.initTrigger != EVENT_STREAM_RECOVERY && version.compareTo(platformEvent.getSoftwareVersion()) > 0) {
+            skipHandleProcess.processUserTransaction(
+                    consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
         } else {
-            defaultHandleProcess.processUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
+            defaultHandleProcess.processUserTransaction(
+                    consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
         }
         return recordListBuilder.build().records().stream();
     }

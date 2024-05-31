@@ -67,8 +67,7 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
      * Constructs a new {@link GenesisRecordsConsensusHook}.
      */
     @Inject
-    public GenesisRecordsConsensusHook() {
-    }
+    public GenesisRecordsConsensusHook() {}
 
     /**
      * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,

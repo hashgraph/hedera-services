@@ -1,9 +1,24 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle.flow;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -14,14 +29,12 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class SkipHandleProcess implements HandleProcess {
@@ -32,22 +45,24 @@ public class SkipHandleProcess implements HandleProcess {
     private final ExchangeRateManager exchangeRateManager;
 
     @Inject
-    public SkipHandleProcess(final TransactionChecker transactionChecker,
-                             final HederaRecordCache recordCache,
-                             final ExchangeRateManager exchangeRateManager) {
+    public SkipHandleProcess(
+            final TransactionChecker transactionChecker,
+            final HederaRecordCache recordCache,
+            final ExchangeRateManager exchangeRateManager) {
         this.transactionChecker = transactionChecker;
         this.recordCache = recordCache;
         this.exchangeRateManager = exchangeRateManager;
     }
 
     @Override
-    public void processUserTransaction(@NonNull final Instant consensusNow,
-                                                    @NonNull final HederaState state,
-                                                    @NonNull final PlatformState platformState,
-                                                    @NonNull final ConsensusEvent platformEvent,
-                                                    @NonNull final NodeInfo creator,
-                                                    @NonNull final ConsensusTransaction platformTxn,
-                                                    @NonNull final RecordListBuilder recordListBuilder) {
+    public void processUserTransaction(
+            @NonNull final Instant consensusNow,
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn,
+            @NonNull final RecordListBuilder recordListBuilder) {
         // Reparse the transaction (so we don't need to get the prehandle result)
         final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
         final TransactionInfo transactionInfo;
@@ -55,10 +70,7 @@ public class SkipHandleProcess implements HandleProcess {
             transactionInfo = transactionChecker.parseAndCheck(platformTxn.getApplicationPayload());
         } catch (PreCheckException e) {
             logger.error(
-                    "Bad old transaction (version {}) from creator {}",
-                    platformEvent.getSoftwareVersion(),
-                    creator,
-                    e);
+                    "Bad old transaction (version {}) from creator {}", platformEvent.getSoftwareVersion(), creator, e);
             // We don't care since we're checking a transaction with an older software version. We were going to
             // skip the transaction handling anyway
             return;
@@ -75,6 +87,5 @@ public class SkipHandleProcess implements HandleProcess {
         // Place a BUSY record in the cache
         final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
         recordCache.add(creator.nodeId(), transactionInfo.payerID(), List.of(record));
-
     }
 }

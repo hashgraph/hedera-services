@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
-
-import java.time.Instant;
 
 @Module
 public interface ContextModule {

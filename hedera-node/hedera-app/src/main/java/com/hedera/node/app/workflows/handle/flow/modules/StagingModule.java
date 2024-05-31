@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -24,15 +24,12 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Map;
-import java.util.function.Supplier;
 
 @Module
 public interface StagingModule {
@@ -66,7 +63,7 @@ public interface StagingModule {
 
     @Provides
     @HandleScope
-    static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo){
+    static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo) {
         return txnInfo.functionality();
     }
 }

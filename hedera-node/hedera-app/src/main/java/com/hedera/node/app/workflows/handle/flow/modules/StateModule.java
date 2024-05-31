@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
