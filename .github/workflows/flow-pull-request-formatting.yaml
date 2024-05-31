@@ -55,19 +55,10 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Check Milestone
+        if: ${{ github.event.pull_request.milestone == null }}
         run: |
-          echo "::group::Event Data"
-          echo "${{ toJSON(github.event) }}" | jq .
-          echo "::endgroup::"
-          
-          if [ "${{ github.event.pull_request_target.milestone }}" == "null" ] || [ "${{ github.event.pull_request_target.milestone }}" == "" ]; then
             echo "Milestone is not set. Failing the workflow."
             exit 1
-          fi
-
-      - name: Milestone is set
-        run: |
-          echo "Milestone is set."
 
   assignee-check:
     name: Assignee Check
@@ -75,16 +66,7 @@ jobs:
 
     steps:
       - name: Check Assignee
+        if: ${{ github.event.pull_request.assignees == null || github.event.pull_request.assignees[0] == null }}
         run: |
-          echo "::group::Event Data"
-          echo "${{ toJSON(github.event) }}" | jq .
-          echo "::endgroup::"
-          
-          if [ "${{ github.event.pull_request_target.assignee }}" == "null" ] || [ "${{ github.event.pull_request_target.assignee }}" == "" ]; then
             echo "Assignee is not set. Failing the workflow."
             exit 1
-          fi
-
-      - name: Assignee is set
-        run: |
-          echo "Assignee is set."
