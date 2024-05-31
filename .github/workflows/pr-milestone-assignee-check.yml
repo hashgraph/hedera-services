@@ -1,0 +1,39 @@
+name: PR Milestone/Assignee check
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled, synchronize]
+
+jobs:
+  check_pr_milestone:
+    name: Check milestone present
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    steps:
+      - name: Check Milestone
+        run: |
+          if [ "${{ github.event.pull_request.milestone }}" == "null" ]; then
+            echo "Milestone is not set. Failing the workflow."
+            exit 1
+          fi
+
+      - name: Milestone is set
+        run: |
+          echo "Milestone is: ${{ github.event.pull_request.milestone }}
+          echo "Milestone is set."
+
+  check_pr_assignee:
+    name: Check Assignee Present
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+
+    steps:
+      - name: Check Assignee
+        run: |
+          if [ "${{ github.event.pull_request.assignee }}" == "null" ]; then
+            echo "Assignee is not set. Failing the workflow."
+            exit 1
+          fi
+
+      - name: Assignee is set
+        run: |
+          echo "Assignee is: ${{ github.event.pull_request.assignee }}"
+          echo "Assignee is set."
