@@ -17,6 +17,7 @@
 package com.swirlds.pairings.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collection;
 
 /**
  * Represents a mathematical group used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
@@ -94,13 +95,13 @@ public interface Group {
     GroupElement elementFromHash(byte[] input);
 
     /**
-     * Multiplies a collection of group elements together
+     * Adds a collection of group elements together
      *
      * @param elements the collection of elements to multiply together
-     * @return a new group element which is the product the collection of elements
+     * @return a new group element which is the sum the collection of elements
      */
     @NonNull
-    GroupElement batchMultiply(@NonNull GroupElement elements);
+    GroupElement batchAdd(@NonNull Collection<GroupElement> elements);
 
     /**
      * Creates a group element from its serialized encoding

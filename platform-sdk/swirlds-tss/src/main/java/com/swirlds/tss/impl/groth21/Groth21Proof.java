@@ -20,6 +20,7 @@ import com.swirlds.pairings.api.Field;
 import com.swirlds.pairings.api.FieldElement;
 import com.swirlds.pairings.api.Group;
 import com.swirlds.pairings.api.GroupElement;
+import com.swirlds.pairings.api.GroupElementAggregator;
 import com.swirlds.signaturescheme.api.PairingPublicKey;
 import com.swirlds.tss.api.ShareClaims;
 import com.swirlds.tss.api.TssProof;
@@ -95,13 +96,13 @@ public record Groth21Proof(
         //    });
         //    let Y = inner.mul(rho).add(A).into_affine();
 
-        GroupElement y = publicKeyGroup.zeroElement();
+        final GroupElementAggregator yAggregator = new GroupElementAggregator();
         for (final UnencryptedShare unencryptedShare : unencryptedShares) {
             final TssShareClaim shareClaim = unencryptedShare.shareClaim();
             final GroupElement publicKey = shareClaim.publicKey().keyElement();
             final FieldElement shareId = shareClaim.shareId().idElement();
 
-            y = y.add(publicKey.multiply(x.power(shareId.toBigInteger())));
+            yAggregator.add(publicKey.multiply(x.power(shareId.toBigInteger())));
         }
 
         final FieldElement xPrime = field.elementFromLong(86L); // obviously TODO
@@ -118,7 +119,7 @@ public record Groth21Proof(
 
         final FieldElement z_a = alpha.add(xPrime.multiply(combinedShares));
 
-        return new Groth21Proof(f, a, y, z_r, z_a);
+        return new Groth21Proof(f, a, yAggregator.compute(), z_r, z_a);
     }
 
     /**
@@ -158,15 +159,14 @@ public record Groth21Proof(
         //                .into_affine()
         //            );
 
-        GroupElement output = group.zeroElement();
+        final GroupElementAggregator aggregator = new GroupElementAggregator();
         for (int i = 0; i < groupElements.size(); i++) {
             final GroupElement randomElement = groupElements.get(i);
             // TODO: is this `256` the same as the size of the elgamal cache?
-            output =
-                    output.add(randomElement.multiply(field.elementFromLong(256).power(BigInteger.valueOf(i))));
+            aggregator.add(randomElement.multiply(field.elementFromLong(256).power(BigInteger.valueOf(i))));
         }
 
-        return output;
+        return aggregator.compute();
     }
 
     /**
@@ -226,7 +226,7 @@ public record Groth21Proof(
         //            ).into_affine()
         //        });
 
-        GroupElement foldedCommitment = group.zeroElement();
+        final GroupElementAggregator commitmentAggregator = new GroupElementAggregator();
         for (int coefficientIndex = 0;
                 coefficientIndex < commitment.commitmentCoefficients().size();
                 coefficientIndex++) {
@@ -241,8 +241,10 @@ public record Groth21Proof(
 
             final GroupElement commitmentElement =
                     commitment.commitmentCoefficients().get(coefficientIndex);
-            foldedCommitment = foldedCommitment.add(commitmentElement.multiply(foldedShareIds));
+            commitmentAggregator.add(commitmentElement.multiply(foldedShareIds));
         }
+
+        final GroupElement foldedCommitment = commitmentAggregator.compute();
 
         //    let lhs = inner.mul(&x_prime).add(&proof.A).into_affine();
         //    let rhs = G::generator().mul(&proof.z_a).into_affine();
@@ -267,14 +269,15 @@ public record Groth21Proof(
             collapsedShares.add(collapseGroupElements(shareCiphertext.ciphertextElements()));
         }
 
-        GroupElement sharesLhsInner = group.zeroElement();
+        final GroupElementAggregator sharesLhsAggregator = new GroupElementAggregator();
         for (int i = 0; i < collapsedShares.size(); i++) {
             final GroupElement collapsedShare = collapsedShares.get(i);
             final FieldElement shareId = shareIds.get(i).idElement();
-            sharesLhsInner = sharesLhsInner.add(collapsedShare.multiply(x.power(shareId.toBigInteger())));
+            sharesLhsAggregator.add(collapsedShare.multiply(x.power(shareId.toBigInteger())));
         }
 
-        final GroupElement lhsShares = sharesLhsInner.multiply(xPrime).add(y);
+        final GroupElement lhsShares =
+                sharesLhsAggregator.compute().multiply(xPrime).add(y);
 
         //    let inner = statement.public_keys
         //        .iter()
@@ -283,17 +286,18 @@ public record Groth21Proof(
         //            acc.add(y_i.mul(proof.z_r * x.pow(id_i.into_bigint())).into_affine()).into_affine()
         //        });
 
-        GroupElement shareRhsInner = group.zeroElement();
+        final GroupElementAggregator shareRhsAggregator = new GroupElementAggregator();
         for (int i = 0; i < sharePublicKeys.size(); i++) {
             final GroupElement publicKey = sharePublicKeys.get(i).keyElement();
             final FieldElement shareId = shareIds.get(i).idElement();
-            shareRhsInner = shareRhsInner.add(publicKey.multiply(z_r.multiply(x.power(shareId.toBigInteger()))));
+            shareRhsAggregator.add(publicKey.multiply(z_r.multiply(x.power(shareId.toBigInteger()))));
         }
 
         //    let rhs = inner.add(G::generator().mul(proof.z_a)).into_affine();
         //    if lhs != rhs { return false; }
 
-        final GroupElement rhsShares = shareRhsInner.add(group.getGenerator().multiply(z_a));
+        final GroupElement rhsShares =
+                shareRhsAggregator.compute().add(group.getGenerator().multiply(z_a));
 
         return lhsShares.equals(rhsShares);
     }

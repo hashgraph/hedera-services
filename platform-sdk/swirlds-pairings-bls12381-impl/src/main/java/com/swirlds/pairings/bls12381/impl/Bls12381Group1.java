@@ -21,7 +21,7 @@ import com.swirlds.pairings.api.Group;
 import com.swirlds.pairings.api.GroupElement;
 import com.swirlds.pairings.bls12381.impl.jni.Bls12381Bindings;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * G1 group used in BLS12-381
@@ -99,9 +99,7 @@ public class Bls12381Group1 implements Group {
 
     @NonNull
     @Override
-    public GroupElement batchMultiply(@NonNull final GroupElement groupElement) {
-        List<GroupElement> elements = List.of(groupElement); // TODO: fix
-
+    public GroupElement batchAdd(@NonNull final Collection<GroupElement> elements) {
         if (elements.isEmpty()) {
             throw new IllegalArgumentException("Empty collection is invalid");
         }

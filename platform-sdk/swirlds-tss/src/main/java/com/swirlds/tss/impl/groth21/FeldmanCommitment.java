@@ -19,6 +19,7 @@ package com.swirlds.tss.impl.groth21;
 import com.swirlds.pairings.api.FieldElement;
 import com.swirlds.pairings.api.Group;
 import com.swirlds.pairings.api.GroupElement;
+import com.swirlds.pairings.api.GroupElementAggregator;
 import com.swirlds.tss.api.TssShareId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -65,8 +66,6 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
             throw new IllegalArgumentException("Coefficient commitments must have at least 2 elements");
         }
 
-        final Group group = commitmentCoefficients.getFirst().getGroup();
-
         //         for msg in dkg_messages.iter() {
         //            // compute powers of share_id
         //            let xs = (0..msg.commitment.len()).map(|i| share_id.pow([i as u64])).collect::<Vec<ShareId<G>>>();
@@ -75,15 +74,15 @@ public record FeldmanCommitment(@NonNull List<GroupElement> commitmentCoefficien
         //            dealt_share_pubkeys.push(share_of_share_pubkey);
         //        }
 
-        GroupElement publicKey = group.zeroElement();
+        final GroupElementAggregator aggregator = new GroupElementAggregator();
         for (int i = 0; i < commitmentCoefficients.size(); i++) {
             final GroupElement term = commitmentCoefficients.get(i);
             final FieldElement exponentiatedShareId = shareId.idElement().power(BigInteger.valueOf(i));
 
-            publicKey = publicKey.add(term.multiply(exponentiatedShareId));
+            aggregator.add(term.multiply(exponentiatedShareId));
         }
 
-        return publicKey;
+        return aggregator.compute();
     }
 
     /**

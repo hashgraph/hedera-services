@@ -18,8 +18,8 @@ package com.swirlds.tss.api;
 
 import com.swirlds.pairings.api.Field;
 import com.swirlds.pairings.api.FieldElement;
-import com.swirlds.pairings.api.Group;
 import com.swirlds.pairings.api.GroupElement;
+import com.swirlds.pairings.api.GroupElementAggregator;
 import com.swirlds.signaturescheme.api.PairingPrivateKey;
 import com.swirlds.signaturescheme.api.PairingPublicKey;
 import com.swirlds.signaturescheme.api.PairingSignature;
@@ -251,18 +251,16 @@ public final class TssUtils {
             lagrangeCoefficients.add(computeLagrangeCoefficient(shareIds, i));
         }
 
-        final Group group = elements.getFirst().getGroup();
-
         //         let public_key = λs.iter()
         //            .zip(dealt_share_pubkeys.iter())
         //            .fold(G::zero(), |acc, (&λ_i, &y_i)| { acc + y_i.mul(λ_i) });
 
-        GroupElement sum = group.zeroElement();
+        final GroupElementAggregator aggregator = new GroupElementAggregator();
         for (int i = 0; i < lagrangeCoefficients.size(); i++) {
-            sum = sum.add(elements.get(i).multiply(lagrangeCoefficients.get(i)));
+            aggregator.add(elements.get(i).multiply(lagrangeCoefficients.get(i)));
         }
 
-        return sum;
+        return aggregator.compute();
     }
 
     /**
