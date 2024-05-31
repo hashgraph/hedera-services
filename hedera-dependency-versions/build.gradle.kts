@@ -53,7 +53,7 @@ dependencies.constraints {
     api("com.google.auto.service:auto-service:1.1.1") {
         because("com.google.auto.service.processor")
     }
-    api("com.google.guava:guava:31.1-jre") {
+    api("com.google.guava:guava:33.2.1-jre") {
         because("com.google.common")
     }
     api("com.google.jimfs:jimfs:1.2") {
