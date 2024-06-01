@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import com.swirlds.state.HederaState;
 import dagger.Module;
 import dagger.Provides;
@@ -25,7 +25,7 @@ import dagger.Provides;
 @Module
 public interface StateModule {
     @Provides
-    @HandleScope
+    @PlatformTransactionScope
     static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
         return workingStateAccessor.getHederaState();
     }

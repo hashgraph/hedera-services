@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -35,7 +35,7 @@ import javax.inject.Inject;
 /**
  * The default implementation of {@link SavepointStack}.
  */
-@HandleScope
+@PlatformTransactionScope
 public class SavepointStackImpl implements SavepointStack, HederaState {
 
     private final HederaState root;

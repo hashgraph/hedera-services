@@ -31,7 +31,7 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
@@ -68,7 +68,7 @@ import javax.inject.Inject;
  *
  * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
-@HandleScope
+@PlatformTransactionScope
 public final class RecordListBuilder {
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
     private static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(

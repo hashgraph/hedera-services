@@ -16,15 +16,21 @@
 
 package com.hedera.node.app.workflows.handle.flow.modules;
 
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import dagger.Binds;
 import dagger.Module;
 
 @Module
 public interface ContextModule {
     @Binds
-    @HandleScope
+    @PlatformTransactionScope
     HandleContext bindHandleContext(FlowHandleContext context);
+
+    @Binds
+    @PlatformTransactionScope
+    TokenContext bindTokenContext(TokenContextImpl tokenContext);
 }

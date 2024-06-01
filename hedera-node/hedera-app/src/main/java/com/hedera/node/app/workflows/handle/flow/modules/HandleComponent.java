@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Subcomponent(modules = {StateModule.class, ContextModule.class, StagingModule.class})
-@HandleScope
+@PlatformTransactionScope
 public interface HandleComponent {
     @Subcomponent.Factory
     interface Factory {

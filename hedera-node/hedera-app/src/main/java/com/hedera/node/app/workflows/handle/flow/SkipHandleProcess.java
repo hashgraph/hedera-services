@@ -46,9 +46,9 @@ public class SkipHandleProcess implements HandleProcess {
 
     @Inject
     public SkipHandleProcess(
-            final TransactionChecker transactionChecker,
-            final HederaRecordCache recordCache,
-            final ExchangeRateManager exchangeRateManager) {
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.transactionChecker = transactionChecker;
         this.recordCache = recordCache;
         this.exchangeRateManager = exchangeRateManager;

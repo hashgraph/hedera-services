@@ -108,6 +108,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -1006,9 +1007,6 @@ public class HandleWorkflow {
 
         return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);
     }
-
-    private record ValidationResult(
-            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}
 
     /**
      * Rolls back the stack and sets the status of the transaction in case of a failure.

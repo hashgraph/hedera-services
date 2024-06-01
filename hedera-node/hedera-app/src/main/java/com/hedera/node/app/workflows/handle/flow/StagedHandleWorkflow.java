@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.flow;
 
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
@@ -23,6 +23,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.handle.CacheWarmer;
 import com.hedera.node.app.workflows.handle.flow.modules.HandleComponent;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.swirlds.platform.state.PlatformState;
@@ -65,6 +66,7 @@ public class StagedHandleWorkflow {
      * Handles the next {@link Round}
      *
      * @param state the writable {@link HederaState} that this round will work on
+     * @param platformState
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(
@@ -137,6 +139,7 @@ public class StagedHandleWorkflow {
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var handleComponent =
                 handleProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
+        // This calls ProcessRunner.get() method
         final var recordStream = handleComponent.recordStream().get();
         blockRecordManager.endUserTransaction(recordStream, state);
 

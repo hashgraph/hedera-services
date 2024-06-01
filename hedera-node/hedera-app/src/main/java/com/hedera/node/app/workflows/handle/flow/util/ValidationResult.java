@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra;
+package com.hedera.node.app.workflows.handle.flow.util;
 
-public class PreCheckValidations {}
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public record ValidationResult(
+        @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}

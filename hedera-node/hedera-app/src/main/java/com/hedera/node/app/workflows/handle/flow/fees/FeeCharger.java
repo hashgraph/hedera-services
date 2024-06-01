@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra;
+package com.hedera.node.app.workflows.handle.flow.fees;
 
-import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 
-public class KeyVerificationLogic {
-    private final KeyVerifier keyVerifier;
+public interface FeeCharger {
+    void chargeFees(ValidationResult validationResult, final NodeInfo creator);
 
-    public KeyVerificationLogic(DefaultKeyVerifier defaultKeyVerifier) {
-        this.keyVerifier = defaultKeyVerifier;
+    default void chargeNetworkFees(ValidationResult validationResult, final NodeInfo creator) {
+        // Do nothing
     }
 }

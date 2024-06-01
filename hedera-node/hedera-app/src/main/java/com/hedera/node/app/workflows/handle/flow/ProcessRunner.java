@@ -20,7 +20,7 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -28,12 +28,13 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
-@HandleScope
+@PlatformTransactionScope
 public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> {
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
@@ -50,17 +51,17 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
 
     @Inject
     public ProcessRunner(
-            final SoftwareVersion version,
-            final InitTrigger initTrigger,
-            final RecordListBuilder recordListBuilder,
-            final SkipHandleProcess skipHandleProcess,
-            final DefaultHandleProcess defaultHandleProcess,
-            final Instant consensusNow,
-            final HederaState state,
-            final PlatformState platformState,
-            final ConsensusEvent platformEvent,
-            final NodeInfo creator,
-            final ConsensusTransaction platformTxn) {
+            @NonNull final SoftwareVersion version,
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final SkipHandleProcess skipHandleProcess,
+            @NonNull final DefaultHandleProcess defaultHandleProcess,
+            @NonNull final Instant consensusNow,
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn) {
         this.version = version;
         this.initTrigger = initTrigger;
         this.recordListBuilder = recordListBuilder;

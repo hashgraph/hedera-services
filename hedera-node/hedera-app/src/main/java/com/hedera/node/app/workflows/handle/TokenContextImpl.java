@@ -28,6 +28,7 @@ import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -37,7 +38,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.Consumer;
+import javax.inject.Inject;
 
+@PlatformTransactionScope
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
     private final HederaState state;
@@ -47,6 +50,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final BlockRecordManager blockRecordManager;
     private final boolean isFirstTransaction;
 
+    @Inject
     public TokenContextImpl(
             @NonNull final Configuration configuration,
             @NonNull final HederaState state,
