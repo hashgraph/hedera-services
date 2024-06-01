@@ -36,9 +36,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -92,12 +92,12 @@ class TokenServiceApiImplTest {
             .build();
 
     private final WritableKVState<Bytes, AccountID> aliasesState =
-            new MapWritableKVState<>(TokenServiceImpl.ALIASES_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ALIASES_KEY);
     private final WritableKVState<AccountID, Account> accountState =
-            new MapWritableKVState<>(TokenServiceImpl.ACCOUNTS_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ACCOUNTS_KEY);
     private final WritableStates writableStates = new MapWritableStates(Map.of(
-            TokenServiceImpl.ACCOUNTS_KEY, accountState,
-            TokenServiceImpl.ALIASES_KEY, aliasesState));
+            V0490TokenSchema.ACCOUNTS_KEY, accountState,
+            V0490TokenSchema.ALIASES_KEY, aliasesState));
     private WritableAccountStore accountStore;
 
     @Mock

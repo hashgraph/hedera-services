@@ -25,6 +25,7 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -81,6 +82,11 @@ public class GossipWiring {
      */
     private final BindableInputWire<Duration, Void> systemHealthInput;
 
+    /**
+     * This wire is used to tell gossip the status of the platform.
+     */
+    private final BindableInputWire<PlatformStatus, Void> platformStatusInput;
+
     public GossipWiring(@NonNull final PlatformContext platformContext, @NonNull final WiringModel model) {
         this.model = model;
 
@@ -100,6 +106,7 @@ public class GossipWiring {
         stopInput = scheduler.buildInputWire("stop");
         clearInput = scheduler.buildInputWire("clear");
         systemHealthInput = scheduler.buildInputWire("health info");
+        platformStatusInput = scheduler.buildInputWire("PlatformStatus");
     }
 
     /**
@@ -109,7 +116,15 @@ public class GossipWiring {
      */
     public void bind(@NonNull final Gossip gossip) {
         gossip.bind(
-                model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput, systemHealthInput);
+                model,
+                eventInput,
+                eventWindowInput,
+                eventOutput,
+                startInput,
+                stopInput,
+                clearInput,
+                systemHealthInput,
+                platformStatusInput);
     }
 
     /**
@@ -180,6 +195,16 @@ public class GossipWiring {
     @NonNull
     public InputWire<Duration> getSystemHealthInput() {
         return systemHealthInput;
+    }
+
+    /**
+     * Get the input wire to tell gossip the status of the platform.
+     *
+     * @return the input wire to tell gossip the status of the platform
+     */
+    @NonNull
+    public InputWire<PlatformStatus> getPlatformStatusInput() {
+        return platformStatusInput;
     }
 
     /**

@@ -47,6 +47,11 @@ public class EventMetadata implements Clearable {
     private boolean isJudge;
     /** is this part of the consensus order yet? */
     private boolean isConsensus;
+    /**
+     * a field used to store consensus time while it is still not finalized. depending on the phase of consensus
+     * calculation, this field may or may not store the final consensus time.
+     */
+    private Instant preliminaryConsensusTimestamp;
     /** the local time (not consensus time) at which the event reached consensus */
     private Instant reachedConsTimestamp;
     /** lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01) */
@@ -80,8 +85,6 @@ public class EventMetadata implements Clearable {
      * neg infinity)
      */
     private long roundCreated = ConsensusConstants.ROUND_UNDEFINED;
-    /** is there a consensus that this event is stale (no order, transactions ignored) */
-    private boolean stale;
     /**
      * an array that holds votes for witness elections. the index for each vote matches the index of
      * the witness in the current election
@@ -204,6 +207,22 @@ public class EventMetadata implements Clearable {
      */
     public void setConsensus(final boolean consensus) {
         isConsensus = consensus;
+    }
+
+    /**
+     * @return a field used to store consensus time while it is still not finalized. depending on the
+     *     phase of consensus calculation, this field may or may not store the final consensus time.
+     */
+    public @Nullable Instant getPreliminaryConsensusTimestamp() {
+        return preliminaryConsensusTimestamp;
+    }
+
+    /**
+     * Set the preliminary consensus timestamp
+     * @param preliminaryConsensusTimestamp the preliminary consensus timestamp
+     */
+    public void setPreliminaryConsensusTimestamp(@Nullable final Instant preliminaryConsensusTimestamp) {
+        this.preliminaryConsensusTimestamp = preliminaryConsensusTimestamp;
     }
 
     /**
@@ -366,14 +385,6 @@ public class EventMetadata implements Clearable {
 
     public void setRoundCreated(final long roundCreated) {
         this.roundCreated = roundCreated;
-    }
-
-    public boolean isStale() {
-        return stale;
-    }
-
-    public void setStale(final boolean stale) {
-        this.stale = stale;
     }
 
     /**

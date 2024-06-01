@@ -169,6 +169,7 @@ public final class StartupStateUtils {
                 stateCopy,
                 "StartupStateUtils: copy initial state",
                 false,
+                false,
                 false);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 

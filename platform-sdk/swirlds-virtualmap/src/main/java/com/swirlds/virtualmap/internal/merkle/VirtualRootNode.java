@@ -1316,13 +1316,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
         }
 
+        // There are no remaining changes to be made to the cache, so we can seal it.
+        cache.seal();
+
+        // Make sure the copy is marked as hashed after the cache is sealed, otherwise the chances
+        // are an attempt to merge the cache will fail because the cache hasn't been sealed yet
         setHashPrivate(virtualHash);
 
         final long end = System.currentTimeMillis();
         statistics.recordHash(end - start);
-
-        // There are no remaining changes to be made to the cache, so we can seal it.
-        cache.seal();
     }
 
     /*
