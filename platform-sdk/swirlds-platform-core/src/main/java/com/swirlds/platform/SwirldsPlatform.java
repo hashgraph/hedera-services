@@ -16,29 +16,23 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
-import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.StateInitializer.initializeState;
 import static com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration.migratePcesToBirthRoundMode;
 import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateForBirthRoundMigration;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.InitTrigger.GENESIS;
-import static com.swirlds.platform.system.InitTrigger.RESTART;
-import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -50,7 +44,6 @@ import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -60,11 +53,8 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.event.validation.AddressBookUpdate;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.SyncGossip;
-import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
@@ -84,18 +74,13 @@ import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
-import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -106,7 +91,6 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import java.util.function.LongSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -250,14 +234,9 @@ public class SwirldsPlatform implements Platform {
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
-        final PlatformStatusNexus statusNexus = new DefaultPlatformStatusNexus(platformContext);
-        // Future work: all interaction with platform status should happen over the wiring framework.
-        // Once this is done, these hacky references can be removed.
-        blocks.platformStatusSupplierReference().set(statusNexus::getCurrentStatus);
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
-        final StateSigner stateSigner = new StateSigner(new PlatformSigner(keysAndCerts), statusNexus);
         final Duration replayHealthThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(PcesConfig.class)
@@ -266,23 +245,17 @@ public class SwirldsPlatform implements Platform {
                 platformContext.getTime(),
                 platformWiring.getPcesReplayerEventOutput(),
                 platformWiring::flushIntakePipeline,
-                platformWiring::flushConsensusRoundHandler,
+                platformWiring::flushTransactionHandler,
                 () -> latestImmutableStateNexus.getState("PCES replay"),
                 () -> isLessThan(blocks.model().getUnhealthyDuration(), replayHealthThreshold));
 
-        initializeState(initialState);
-
-        final TransactionConfig transactionConfig =
-                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+        initializeState(this, platformContext, initialState);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = blocks.swirldStateManager();
         swirldStateManager.setInitialState(initialState.getState());
 
         final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
-
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext, swirldStateManager, platformWiring.getStatusActionSubmitter(), appVersion);
 
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()
@@ -308,19 +281,16 @@ public class SwirldsPlatform implements Platform {
 
         platformWiring.bind(
                 builder,
-                stateSigner,
                 pcesReplayer,
                 stateSignatureCollector,
                 eventWindowManager,
-                consensusRoundHandler,
                 birthRoundMigrationShim,
                 latestCompleteStateNotifier,
                 latestImmutableStateNexus,
                 latestCompleteStateNexus,
                 savedStateController,
                 appNotifier,
-                publisher,
-                statusNexus);
+                publisher);
 
         final Hash legacyRunningEventHash =
                 initialState.getState().getPlatformState().getLegacyRunningEventHash() == null
@@ -358,7 +328,7 @@ public class SwirldsPlatform implements Platform {
             initialAncientThreshold = initialState.getState().getPlatformState().getAncientThreshold();
             startingRound = initialState.getRound();
 
-            logSignedStateHash(initialState);
+            platformWiring.sendStateToHashLogger(initialState);
             platformWiring
                     .getSignatureCollectorStateInput()
                     .put(initialState.reserve("loading initial state into sig collector"));
@@ -381,7 +351,17 @@ public class SwirldsPlatform implements Platform {
 
         blocks.getLatestCompleteStateReference()
                 .set(() -> latestCompleteStateNexus.getState("get latest complete state for reconnect"));
-        blocks.loadReconnectStateReference().set(this::loadReconnectState);
+
+        final ReconnectStateLoader reconnectStateLoader = new ReconnectStateLoader(
+                this,
+                platformContext,
+                platformWiring,
+                swirldStateManager,
+                latestImmutableStateNexus,
+                savedStateController,
+                currentAddressBook);
+
+        blocks.loadReconnectStateReference().set(reconnectStateLoader::loadReconnectState);
         blocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
         blocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
     }
@@ -419,152 +399,6 @@ public class SwirldsPlatform implements Platform {
     @NonNull
     public NodeId getSelfId() {
         return selfId;
-    }
-
-    /**
-     * Initialize the state.
-     *
-     * @param signedState the state to initialize
-     */
-    private void initializeState(@NonNull final SignedState signedState) {
-
-        final SoftwareVersion previousSoftwareVersion;
-        final InitTrigger trigger;
-
-        if (signedState.isGenesisState()) {
-            previousSoftwareVersion = NO_VERSION;
-            trigger = GENESIS;
-        } else {
-            previousSoftwareVersion = signedState.getState().getPlatformState().getCreationSoftwareVersion();
-            trigger = RESTART;
-        }
-
-        final State initialState = signedState.getState();
-
-        // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
-        // of that state here. That copy should have caused the hash to be cleared.
-        if (initialState.getHash() != null) {
-            throw new IllegalStateException("Expected initial state to be unhashed");
-        }
-        if (initialState.getSwirldState().getHash() != null) {
-            throw new IllegalStateException("Expected initial swirld state to be unhashed");
-        }
-
-        initialState.getSwirldState().init(this, initialState.getPlatformState(), trigger, previousSoftwareVersion);
-
-        abortAndThrowIfInterrupted(
-                () -> {
-                    try {
-                        MerkleCryptoFactory.getInstance()
-                                .digestTreeAsync(initialState)
-                                .get();
-                    } catch (final ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                },
-                "interrupted while attempting to hash the state");
-
-        // If our hash changes as a result of the new address book then our old signatures may become invalid.
-        signedState.pruneInvalidSignatures();
-
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        logger.info(
-                STARTUP.getMarker(),
-                """
-                        The platform is using the following initial state:
-                        {}""",
-                signedState.getState().getInfoString(stateConfig.debugHashDepth()));
-    }
-
-    /**
-     * Used to load the state received from the sender.
-     *
-     * @param signedState the signed state that was received from the sender
-     */
-    private void loadReconnectState(final SignedState signedState) {
-        // the state was received, so now we load its data into different objects
-        logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
-        logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
-        try {
-            platformWiring.overrideIssDetectorState(signedState.reserve("reconnect state to issDetector"));
-
-            // It's important to call init() before loading the signed state. The loading process makes copies
-            // of the state, and we want to be sure that the first state in the chain of copies has been initialized.
-            final Hash reconnectHash = signedState.getState().getHash();
-            signedState
-                    .getSwirldState()
-                    .init(
-                            this,
-                            signedState.getState().getPlatformState(),
-                            InitTrigger.RECONNECT,
-                            signedState.getState().getPlatformState().getCreationSoftwareVersion());
-            if (!Objects.equals(signedState.getState().getHash(), reconnectHash)) {
-                throw new IllegalStateException(
-                        "State hash is not permitted to change during a reconnect init() call. Previous hash was "
-                                + reconnectHash + ", new hash is "
-                                + signedState.getState().getHash());
-            }
-
-            // Before attempting to load the state, verify that the platform AB matches the state AB.
-            AddressBookUtils.verifyReconnectAddressBooks(getAddressBook(), signedState.getAddressBook());
-
-            swirldStateManager.loadFromSignedState(signedState);
-            // kick off transition to RECONNECT_COMPLETE before beginning to save the reconnect state to disk
-            // this guarantees that the platform statusp will be RECONNECT_COMPLETE before the state is saved
-            platformWiring
-                    .getStatusActionSubmitter()
-                    .submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
-            latestImmutableStateNexus.setState(signedState.reserve("set latest immutable to reconnect state"));
-            savedStateController.reconnectStateReceived(
-                    signedState.reserve("savedStateController.reconnectStateReceived"));
-
-            logSignedStateHash(signedState);
-            // this will send the state to the signature collector which will send it to be written to disk.
-            // in the future, we might not send it to the collector because it already has all the signatures
-            // if this is the case, we must make sure to send it to the writer directly
-            platformWiring
-                    .getSignatureCollectorStateInput()
-                    .put(signedState.reserve("loading reconnect state into sig collector"));
-            platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
-                    signedState.getState().getPlatformState().getSnapshot()));
-
-            platformWiring
-                    .getAddressBookUpdateInput()
-                    .inject(new AddressBookUpdate(
-                            signedState.getState().getPlatformState().getPreviousAddressBook(),
-                            signedState.getState().getPlatformState().getAddressBook()));
-
-            final AncientMode ancientMode = platformContext
-                    .getConfiguration()
-                    .getConfigData(EventConfig.class)
-                    .getAncientMode();
-
-            platformWiring.updateEventWindow(new EventWindow(
-                    signedState.getRound(),
-                    signedState.getState().getPlatformState().getAncientThreshold(),
-                    signedState.getState().getPlatformState().getAncientThreshold(),
-                    ancientMode));
-
-            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
-                    signedState.getState().getPlatformState().getLegacyRunningEventHash(), true);
-            platformWiring.updateRunningHash(runningEventHashOverride);
-            platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
-
-            // Notify any listeners that the reconnect has been completed
-            platformWiring
-                    .getNotifierWiring()
-                    .getInputWire(AppNotifier::sendReconnectCompleteNotification)
-                    .put(new ReconnectCompleteNotification(
-                            signedState.getRound(),
-                            signedState.getConsensusTimestamp(),
-                            signedState.getState().getSwirldState()));
-
-        } catch (final RuntimeException e) {
-            logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : FAILED, reason: {}", e.getMessage());
-            // if the loading fails for whatever reason, we clear all data again in case some of it has been loaded
-            platformWiring.clear();
-            throw e;
-        }
     }
 
     /**
@@ -611,24 +445,6 @@ public class SwirldsPlatform implements Platform {
 
                 platformWiring.getDumpStateToDiskInput().put(request);
                 request.waitForFinished().run();
-            }
-        }
-    }
-
-    /**
-     * Offers the given state to the hash logger
-     * <p>
-     * Future work: this method should be removed, since it is doing the same thing as an advanced transformer
-     *
-     * @param signedState the state to log
-     */
-    private void logSignedStateHash(@NonNull final SignedState signedState) {
-        if (signedState.getState().getHash() != null) {
-            final ReservedSignedState stateReservedForHasher = signedState.reserve("logging state hash");
-
-            final boolean offerResult = platformWiring.getHashLoggerInput().offer(stateReservedForHasher);
-            if (!offerResult) {
-                stateReservedForHasher.close();
             }
         }
     }
@@ -698,9 +514,7 @@ public class SwirldsPlatform implements Platform {
     }
 
     /**
-     * Get the Address Book
-     *
-     * @return AddressBook
+     * {@inheritDoc}
      */
     @Override
     @NonNull

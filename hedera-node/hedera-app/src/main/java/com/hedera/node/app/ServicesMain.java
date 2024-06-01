@@ -17,10 +17,10 @@
 package com.hedera.node.app;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
-import static com.swirlds.platform.builder.PlatformBuilder.buildPlatformContext;
 import static com.swirlds.platform.system.SystemExitCode.CONFIGURATION_ERROR;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
@@ -35,9 +35,9 @@ import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
@@ -126,8 +126,8 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
-     * Launches Services directly, without use of the "app browser" from
-     * {@link com.swirlds.platform.Browser}. The approximate startup sequence is:
+     * Launches Services directly, without use of the "app browser" from {@link com.swirlds.platform.Browser}. The
+     * approximate startup sequence is:
      * <ol>
      *     <li>Scan the classpath for {@link RuntimeConstructable} classes,
      *     registering their no-op constructors as the default factories for their
@@ -189,21 +189,13 @@ public class ServicesMain implements SwirldMain {
 
         final NodeId selfId = ensureSingleNode(nodesToRun, commandLineArgs.localNodesToStart());
 
-        final var config = ConfigurationBuilder.create()
-                .withSource(SystemEnvironmentConfigSource.getInstance())
-                .withSource(SystemPropertiesConfigSource.getInstance());
-
-        SoftwareVersion version = hedera.getSoftwareVersion();
+        final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
-
-        final PlatformContext platformContext =
-                buildPlatformContext(config, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME), selfId);
 
         final PlatformBuilder builder =
                 PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
 
-        builder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
-        builder.withPlatformContext(platformContext);
+        builder.withConfiguration(buildConfiguration());
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -235,9 +227,24 @@ public class ServicesMain implements SwirldMain {
     }
 
     /**
+     * Build the configuration for this node.
+     *
+     * @return the configuration
+     */
+    @NonNull
+    private static Configuration buildConfiguration() {
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance());
+        rethrowIO(() ->
+                BootstrapUtils.setupConfigBuilder(configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+        return configurationBuilder.build();
+    }
+
+    /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun the list of nodes configured to run based on the address book.
+     * @param nodesToRun        the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.

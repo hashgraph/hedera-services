@@ -20,6 +20,8 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.deduplication.EventDeduplicator;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
@@ -28,6 +30,7 @@ import com.swirlds.platform.event.stale.StaleEventDetector;
 import com.swirlds.platform.event.stale.StaleEventDetectorOutput;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.TransactionPool;
@@ -37,7 +40,6 @@ import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusStateMachine;
-import com.swirlds.platform.wiring.components.ConsensusRoundHandlerWiring;
 import com.swirlds.platform.wiring.components.GossipWiring;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,13 +65,15 @@ public class PlatformCoordinator {
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
-    private final ConsensusRoundHandlerWiring consensusRoundHandlerWiring;
+    private final ComponentWiring<TransactionHandler, StateAndRound> transactionHandlerWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring;
     private final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
             staleEventDetectorWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
+    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     /**
      * Constructor
@@ -84,12 +88,14 @@ public class PlatformCoordinator {
      * @param eventCreationManagerWiring             the event creation manager wiring
      * @param applicationTransactionPrehandlerWiring the application transaction prehandler wiring
      * @param stateSignatureCollectorWiring          the system transaction prehandler wiring
-     * @param consensusRoundHandlerWiring            the consensus round handler wiring
+     * @param transactionHandlerWiring               the transaction handler wiring
      * @param roundDurabilityBufferWiring            the round durability buffer wiring
      * @param stateHasherWiring                      the state hasher wiring
      * @param staleEventDetectorWiring               the stale event detector wiring
      * @param transactionPoolWiring                  the transaction pool wiring
      * @param statusStateMachineWiring               the status state machine wiring
+     * @param branchDetectorWiring                   the branch detector wiring
+     * @param branchReporterWiring                   the branch reporter wiring
      */
     public PlatformCoordinator(
             @NonNull final Runnable flushTheEventHasher,
@@ -104,14 +110,16 @@ public class PlatformCoordinator {
             @NonNull
                     final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>
                             stateSignatureCollectorWiring,
-            @NonNull final ConsensusRoundHandlerWiring consensusRoundHandlerWiring,
+            @NonNull final ComponentWiring<TransactionHandler, StateAndRound> transactionHandlerWiring,
             @NonNull final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring,
             @NonNull final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring,
             @NonNull
                     final ComponentWiring<StaleEventDetector, List<RoutableData<StaleEventDetectorOutput>>>
                             staleEventDetectorWiring,
             @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
-            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring) {
+            @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring,
+            @NonNull final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring,
+            @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring) {
 
         this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);
         this.internalEventValidatorWiring = Objects.requireNonNull(internalEventValidatorWiring);
@@ -123,12 +131,14 @@ public class PlatformCoordinator {
         this.eventCreationManagerWiring = Objects.requireNonNull(eventCreationManagerWiring);
         this.applicationTransactionPrehandlerWiring = Objects.requireNonNull(applicationTransactionPrehandlerWiring);
         this.stateSignatureCollectorWiring = Objects.requireNonNull(stateSignatureCollectorWiring);
-        this.consensusRoundHandlerWiring = Objects.requireNonNull(consensusRoundHandlerWiring);
+        this.transactionHandlerWiring = Objects.requireNonNull(transactionHandlerWiring);
         this.roundDurabilityBufferWiring = Objects.requireNonNull(roundDurabilityBufferWiring);
         this.stateHasherWiring = Objects.requireNonNull(stateHasherWiring);
         this.staleEventDetectorWiring = Objects.requireNonNull(staleEventDetectorWiring);
         this.transactionPoolWiring = Objects.requireNonNull(transactionPoolWiring);
         this.statusStateMachineWiring = Objects.requireNonNull(statusStateMachineWiring);
+        this.branchDetectorWiring = Objects.requireNonNull(branchDetectorWiring);
+        this.branchReporterWiring = Objects.requireNonNull(branchReporterWiring);
     }
 
     /**
@@ -176,11 +186,11 @@ public class PlatformCoordinator {
         eventCreationManagerWiring.flush();
         staleEventDetectorWiring.startSquelching();
 
-        // Also squelch the consensus round handler. It isn't strictly necessary to do this to prevent dataflow through
-        // the system, but it prevents the consensus round handler from wasting time handling rounds that don't need to
+        // Also squelch the transaction handler. It isn't strictly necessary to do this to prevent dataflow through
+        // the system, but it prevents the transaction handler from wasting time handling rounds that don't need to
         // be handled.
-        consensusRoundHandlerWiring.startSquelchingRunnable().run();
-        consensusRoundHandlerWiring.flushRunnable().run();
+        transactionHandlerWiring.startSquelching();
+        transactionHandlerWiring.flush();
 
         // Phase 2: flush
         // All cycles have been broken via squelching, so now it's time to flush everything out of the system.
@@ -188,14 +198,16 @@ public class PlatformCoordinator {
         stateHasherWiring.flush();
         stateSignatureCollectorWiring.flush();
         roundDurabilityBufferWiring.flush();
-        consensusRoundHandlerWiring.flushRunnable().run();
+        transactionHandlerWiring.flush();
         staleEventDetectorWiring.flush();
+        branchDetectorWiring.flush();
+        branchReporterWiring.flush();
 
         // Phase 3: stop squelching
         // Once everything has been flushed out of the system, it's safe to stop squelching.
         consensusEngineWiring.stopSquelching();
         eventCreationManagerWiring.stopSquelching();
-        consensusRoundHandlerWiring.stopSquelchingRunnable().run();
+        transactionHandlerWiring.stopSquelching();
         staleEventDetectorWiring.stopSquelching();
 
         // Phase 4: clear
@@ -210,5 +222,7 @@ public class PlatformCoordinator {
         roundDurabilityBufferWiring.getInputWire(RoundDurabilityBuffer::clear).inject(NoInput.getInstance());
         staleEventDetectorWiring.getInputWire(StaleEventDetector::clear).inject(NoInput.getInstance());
         transactionPoolWiring.getInputWire(TransactionPool::clear).inject(NoInput.getInstance());
+        branchDetectorWiring.getInputWire(BranchDetector::clear).inject(NoInput.getInstance());
+        branchReporterWiring.getInputWire(BranchReporter::clear).inject(NoInput.getInstance());
     }
 }

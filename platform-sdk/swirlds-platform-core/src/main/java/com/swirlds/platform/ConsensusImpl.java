@@ -210,6 +210,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private RateLimitedLogger coinRoundLogger;
 
     /**
+     * A flag that signals if we are currently replaying the PCES or not.
+     */
+    private boolean pcesMode = false;
+
+    /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
      * @param platformContext  the platform context containing configuration
@@ -259,6 +264,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         lastConsensusTime = null;
         initJudges = null;
         updateRoundGenerations(rounds.getFameDecidedBelow());
+    }
+
+    /**
+     * Set whether events are currently being sourced from the PCES.
+     *
+     * @param pcesMode true if we are currently replaying the PCES, false otherwise
+     */
+    public void setPcesMode(final boolean pcesMode) {
+        this.pcesMode = pcesMode;
     }
 
     /**
@@ -714,7 +728,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         ConsensusUtils.getHashes(judges),
                         rounds.getMinimumJudgeInfoList(),
                         numConsensus,
-                        lastConsensusTime));
+                        lastConsensusTime),
+                pcesMode);
     }
 
     /**

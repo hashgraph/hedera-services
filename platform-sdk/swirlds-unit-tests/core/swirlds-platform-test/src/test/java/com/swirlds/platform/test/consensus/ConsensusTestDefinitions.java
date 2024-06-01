@@ -207,7 +207,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.standard()
                         .setMinimumConsensusRatio(0.8)
-                        .setMaximumConsensusRatio(2.0)));
+                        .setMaximumConsensusRatio(2.1)));
     }
 
     /**

@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.schemas;
 import static com.hedera.hapi.util.HapiUtils.CONTRACT_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -65,10 +64,10 @@ class V0500TokenSchemaTest {
     private final V0500TokenSchema subject = new V0500TokenSchema();
 
     @Test
-    @DisplayName("throws without shared values")
+    @DisplayName("skips migration without shared values")
     void throwsWithoutSharedValues() {
         given(ctx.sharedValues()).willReturn(sharedValues);
-        assertThatThrownBy(() -> subject.migrate(ctx)).isInstanceOf(NullPointerException.class);
+        assertDoesNotThrow(() -> subject.migrate(ctx));
     }
 
     @Test

@@ -50,7 +50,6 @@ public class HashTests {
         Arrays.fill(nonZeroHashValue, Byte.MAX_VALUE);
 
         final Hash hash = new Hash(DigestType.SHA_384);
-        final ImmutableHash immutableHash = new ImmutableHash(hash);
 
         assertDoesNotThrow((ThrowingSupplier<Hash>) Hash::new);
         assertDoesNotThrow(() -> new Hash(nonZeroHashValue));
