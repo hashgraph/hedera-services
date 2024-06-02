@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera;
+package com.hedera.services.bdd.junit.hedera.subprocess;
 
-import com.hedera.hapi.node.base.AccountID;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.file.Path;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record NodeMetadata(
-        long nodeId,
-        String name,
-        AccountID accountId,
-        String host,
-        int grpcPort,
-        int gossipPort,
-        int tlsGossipPort,
-        int prometheusPort,
-        @Nullable Path workingDir) {
-    public static final int UNKNOWN_PORT = -1;
+/**
+ * Represents the status of a node in the network.
+ *
+ * @param lastAttempt the last attempt to look up the status of the node
+ * @param grpcStatus the last known gRPC status of the node
+ * @param retryCount the number of times the status lookup has been retried
+ */
+public record NodeStatus(@NonNull StatusLookupAttempt lastAttempt, @NonNull GrpcStatus grpcStatus, int retryCount) {
+    public enum GrpcStatus {
+        NA,
+        UP,
+        DOWN
+    }
 }
