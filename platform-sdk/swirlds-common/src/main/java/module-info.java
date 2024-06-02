@@ -163,4 +163,5 @@ module com.swirlds.common {
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
+    requires static com.google.auto.service;
 }
