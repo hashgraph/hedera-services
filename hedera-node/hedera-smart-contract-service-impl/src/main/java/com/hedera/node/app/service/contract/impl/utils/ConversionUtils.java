@@ -684,7 +684,13 @@ public class ConversionUtils {
         }
     }
 
-    private static byte[] explicitAddressOf(@NonNull final Account account) {
+    /**
+     * Given an account, returns its explicit 20-byte address.
+     *
+     * @param account the account
+     * @return the explicit 20-byte address
+     */
+    public static byte[] explicitAddressOf(@NonNull final Account account) {
         requireNonNull(account);
         final var evmAddress = extractEvmAddress(account.alias());
         return evmAddress != null

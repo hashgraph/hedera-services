@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToEthereumCalls;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
@@ -62,6 +63,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -79,7 +81,6 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
@@ -228,9 +229,9 @@ public class HapiSpec implements Runnable, Executable {
     HapiSpecSetup hapiSetup;
     HapiClients hapiClients;
     HapiSpecRegistry hapiRegistry;
-    HapiSpecOperation[] given;
-    HapiSpecOperation[] when;
-    HapiSpecOperation[] then;
+    SpecOperation[] given;
+    SpecOperation[] when;
+    SpecOperation[] then;
     AtomicInteger adhoc = new AtomicInteger(0);
     AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
     ThreadPoolExecutor finalizingExecutor;
@@ -382,7 +383,7 @@ public class HapiSpec implements Runnable, Executable {
         return targetNetworkOrThrow().getRequiredNode(selector).getRecordStreamPath();
     }
 
-    public HederaNetwork targetNetworkOrThrow() {
+    public @NonNull HederaNetwork targetNetworkOrThrow() {
         return requireNonNull(targetNetwork);
     }
 
@@ -414,7 +415,7 @@ public class HapiSpec implements Runnable, Executable {
             return;
         }
 
-        List<HapiSpecOperation> ops = new ArrayList<>();
+        List<SpecOperation> ops = new ArrayList<>();
 
         if (!suitePrefix.endsWith(ETH_SUFFIX)) {
             ops.addAll(Stream.of(given, when, then).flatMap(Arrays::stream).toList());
@@ -423,7 +424,7 @@ public class HapiSpec implements Runnable, Executable {
                 ops.addAll(createEthereumAccountForSpec(this));
             }
             final var adminKey = this.registry().getKey(DEFAULT_CONTRACT_SENDER);
-            ops.addAll(UtilVerbs.convertHapiCallsToEthereumCalls(
+            ops.addAll(convertHapiCallsToEthereumCalls(
                     Stream.of(given, when, then).flatMap(Arrays::stream).toList(),
                     SECP_256K1_SOURCE_KEY,
                     adminKey,
@@ -564,14 +565,14 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     @SuppressWarnings("java:S2629")
-    private void exec(List<HapiSpecOperation> ops) {
+    private void exec(@NonNull List<SpecOperation> ops) {
         if (status == ERROR) {
             log.warn("'{}' failed to initialize, being skipped!", name);
             return;
         }
 
         if (hapiSetup.requiresPersistentEntities()) {
-            List<HapiSpecOperation> creationOps = entities.requiredCreations();
+            List<SpecOperation> creationOps = entities.requiredCreations();
             if (!creationOps.isEmpty()) {
                 if (!quietMode) {
                     log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
@@ -609,7 +610,7 @@ public class HapiSpec implements Runnable, Executable {
             ops = new ArrayList<>(ops);
             ops.add(0, (UtilOp) snapshotOp);
         }
-        for (HapiSpecOperation op : ops) {
+        for (var op : ops) {
             if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
                 continue;
             }
@@ -629,7 +630,7 @@ public class HapiSpec implements Runnable, Executable {
             if (quietMode) {
                 turnLoggingOff(op);
             }
-            Optional<Throwable> error = op.execFor(this);
+            final var error = op.execFor(this);
             Failure asyncFailure = null;
             if (error.isPresent() || (asyncFailure = finishingError.get().orElse(null)) != null) {
                 status = FAILED;
@@ -722,7 +723,7 @@ public class HapiSpec implements Runnable, Executable {
      * @param txn the transaction to auto-schedule
      * @return the sequence of operations that auto-schedules the transaction
      */
-    private HapiSpecOperation autoScheduledSequenceFor(final HapiTxnOp<?> txn) {
+    private SpecOperation autoScheduledSequenceFor(final HapiTxnOp<?> txn) {
         // For the signatures to have the expected semantics, we must
         // incorporate any signature control overrides into this spec
         final var sigControlOverrides = txn.setKeyControlOverrides(this);
@@ -747,7 +748,7 @@ public class HapiSpec implements Runnable, Executable {
         final var indices = createAndSignIndicesGiven(numKeys, numSignTxns);
         // One slot for the ScheduleCreate, one for each ScheduleSign,
         // one for the GetScheduleInfo, and one for the GetTxnRecord
-        final var orderedOps = new HapiSpecOperation[1 + numSignTxns + 2];
+        final var orderedOps = new SpecOperation[1 + numSignTxns + 2];
         final var num = NEXT_AUTO_SCHEDULE_NUM.getAndIncrement();
         final var schedule = "autoScheduled" + num;
         final var creation = "autoScheduleCreation" + num;
@@ -1101,15 +1102,15 @@ public class HapiSpec implements Runnable, Executable {
                         new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
 
-    public static Stream<DynamicTest> hapiTest(@NonNull final HapiSpecOperation... ops) {
+    public static Stream<DynamicTest> hapiTest(@NonNull final SpecOperation... ops) {
         return Stream.of(DynamicTest.dynamicTest(
                 AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
                         SPEC_NAME.get(),
                         false,
                         HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
-                        new HapiSpecOperation[0],
-                        new HapiSpecOperation[0],
+                        new SpecOperation[0],
+                        new SpecOperation[0],
                         ops,
                         List.of(),
                         new SnapshotMatchMode[0]))));
@@ -1135,13 +1136,13 @@ public class HapiSpec implements Runnable, Executable {
         spec.addOverrideProperties(Map.of("nodes", specNodes));
     }
 
-    public HapiSpec(String name, HapiSpecOperation[] ops) {
+    public HapiSpec(String name, SpecOperation[] ops) {
         this(
                 name,
                 false,
                 setupFrom(HapiSpecSetup.getDefaultPropertySource()),
-                new HapiSpecOperation[0],
-                new HapiSpecOperation[0],
+                new SpecOperation[0],
+                new SpecOperation[0],
                 ops,
                 List.of(),
                 new SnapshotMatchMode[0]);
@@ -1153,9 +1154,9 @@ public class HapiSpec implements Runnable, Executable {
             String name,
             boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
-            HapiSpecOperation[] given,
-            HapiSpecOperation[] when,
-            HapiSpecOperation[] then,
+            SpecOperation[] given,
+            SpecOperation[] when,
+            SpecOperation[] then,
             List<String> propertiesToPreserve,
             SnapshotMatchMode[] snapshotMatchModes) {
         this.snapshotMatchModes = snapshotMatchModes;
@@ -1190,17 +1191,17 @@ public class HapiSpec implements Runnable, Executable {
 
         @FunctionalInterface
         interface Given {
-            When given(HapiSpecOperation... ops);
+            When given(SpecOperation... ops);
         }
 
         @FunctionalInterface
         interface When {
-            Then when(HapiSpecOperation... ops);
+            Then when(SpecOperation... ops);
         }
 
         @FunctionalInterface
         interface Then {
-            Stream<DynamicTest> then(HapiSpecOperation... ops);
+            Stream<DynamicTest> then(SpecOperation... ops);
         }
     }
 
