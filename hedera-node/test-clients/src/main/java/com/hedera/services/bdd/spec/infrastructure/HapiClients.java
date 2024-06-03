@@ -19,7 +19,8 @@ package com.hedera.services.bdd.spec.infrastructure;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
@@ -55,12 +56,11 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HapiApiClients {
-    static final Logger log = LogManager.getLogger(HapiApiClients.class);
+public class HapiClients {
+    static final Logger log = LogManager.getLogger(HapiClients.class);
     // The deadline for the server to respond to a blocking unary call
     private static final long DEADLINE_SECS = 30L;
 
-    private final AccountID defaultNode;
     private final List<NodeConnectInfo> nodes;
     /**
      * Id of node-{host, port} pairs to use for non-workflow operations
@@ -143,7 +143,7 @@ public class HapiApiClients {
         stubSequences.putIfAbsent(channelUri, new AtomicInteger());
     }
 
-    private HapiApiClients(final List<NodeConnectInfo> nodes, final AccountID defaultNode) {
+    private HapiClients(final List<NodeConnectInfo> nodes) {
         this.nodes = nodes;
         stubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
         tlsStubIds = nodes.stream().collect(Collectors.toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
@@ -151,11 +151,18 @@ public class HapiApiClients {
             ensureChannelStubsInPool(node, false);
             ensureChannelStubsInPool(node, true);
         });
-        this.defaultNode = defaultNode;
     }
 
-    public static HapiApiClients clientsFor(HapiSpecSetup setup) {
-        return new HapiApiClients(setup.nodes(), setup.defaultNode());
+    public static HapiClients clientsFor(HapiSpecSetup setup) {
+        return new HapiClients(setup.nodes());
+    }
+
+    public static HapiClients clientsFor(@NonNull final HederaNetwork network) {
+        requireNonNull(network);
+        return new HapiClients(network.nodes().stream()
+                .map(HederaNode::hapiSpecInfo)
+                .map(NodeConnectInfo::new)
+                .toList());
     }
 
     public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {
@@ -235,8 +242,7 @@ public class HapiApiClients {
         for (int i = 0; i < nodes.size(); i++) {
             helper.add(String.format("node%d", i), nodes.get(i).toString());
         }
-        return helper.add("default", HapiPropertySource.asAccountString(defaultNode))
-                .toString();
+        return helper.toString();
     }
 
     public static synchronized void rebuildChannels() {

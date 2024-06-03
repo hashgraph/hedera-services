@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.system.status;
+package com.hedera.services.bdd.junit.hedera;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 /**
- * A nexus for holding the current platform status, and providing thread-safe access to it.
+ * Enumerates the possible targets for system functionality (i.e. the
+ * {@link HederaFunctionality#SystemDelete} and {@link HederaFunctionality#SystemUndelete}
+ * functionalities).
  */
-public interface PlatformStatusNexus {
+public enum SystemFunctionalityTarget {
     /**
-     * Get the current status
-     *
-     * @return the current status
+     * There is no applicable target.
      */
-    @NonNull
-    PlatformStatus getCurrentStatus();
-
+    NA,
     /**
-     * Set a new status
-     *
-     * @param status the new status
+     * The target is a file.
      */
-    void setCurrentStatus(@NonNull final PlatformStatus status);
+    FILE,
+    /**
+     * The target is a contract.
+     */
+    CONTRACT
 }
