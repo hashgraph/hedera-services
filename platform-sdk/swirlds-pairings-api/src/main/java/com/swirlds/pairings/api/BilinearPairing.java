@@ -65,7 +65,7 @@ public interface BilinearPairing {
     Group getGroup2();
 
     /**
-     * Returns G1 if input is G2, and vice versa.
+     * Returns G₁ if input is G₂, and vice versa.
      *
      * @param group the group to get the "other group" of
      * @return the other group
