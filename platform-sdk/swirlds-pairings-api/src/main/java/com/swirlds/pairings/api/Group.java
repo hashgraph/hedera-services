@@ -74,7 +74,7 @@ public interface Group {
      * @return the new group element
      */
     @NonNull
-    GroupElement randomElement(byte[] seed);
+    GroupElement randomElement(@NonNull byte[] seed);
 
     /**
      * Hashes an unbounded length input to a group element
@@ -83,7 +83,7 @@ public interface Group {
      * @return the new group element
      */
     @NonNull
-    GroupElement elementFromHash(byte[] input);
+    GroupElement elementFromHash(@NonNull byte[] input);
 
     /**
      * Adds a collection of group elements together
@@ -101,7 +101,7 @@ public interface Group {
      * @return the new group element, or null if construction failed
      */
     @NonNull
-    GroupElement elementFromBytes(byte[] bytes);
+    GroupElement elementFromBytes(@NonNull byte[] bytes);
 
     /**
      * Gets the size in bytes of a compressed group element

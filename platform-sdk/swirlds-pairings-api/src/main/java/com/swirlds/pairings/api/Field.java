@@ -60,7 +60,7 @@ public interface Field {
      * @return the new field element
      */
     @NonNull
-    FieldElement randomElement(byte[] seed);
+    FieldElement randomElement(@NonNull byte[] seed);
 
     /**
      * Creates a field element from its serialized encoding
@@ -69,7 +69,7 @@ public interface Field {
      * @return the new field element
      */
     @NonNull
-    FieldElement elementFromBytes(byte[] bytes);
+    FieldElement elementFromBytes(@NonNull byte[] bytes);
 
     /**
      * Gets the size in bytes of an element
