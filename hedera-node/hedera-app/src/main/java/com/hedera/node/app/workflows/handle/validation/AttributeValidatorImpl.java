@@ -134,7 +134,7 @@ public class AttributeValidatorImpl implements AttributeValidator {
         }
     }
 
-    private static boolean containsZeroByte(@NonNull final byte[] bytes) {
+    public static boolean containsZeroByte(@NonNull final byte[] bytes) {
         for (final byte b : bytes) {
             if (b == 0) {
                 return true;
