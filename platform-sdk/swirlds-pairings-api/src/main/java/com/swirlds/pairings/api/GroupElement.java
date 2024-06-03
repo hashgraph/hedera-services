@@ -56,6 +56,7 @@ public interface GroupElement {
      *
      * @return the element's group
      */
+    @NonNull
     Group getGroup();
 
     /**

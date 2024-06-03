@@ -47,6 +47,7 @@ public interface FieldElement {
      *
      * @return the field
      */
+    @NonNull
     Field getField();
 
     /**
@@ -90,6 +91,7 @@ public interface FieldElement {
      *
      * @return the field element as a BigInteger
      */
+    @NonNull
     BigInteger toBigInteger();
 
     /**

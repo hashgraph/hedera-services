@@ -36,6 +36,7 @@ public interface Field {
      * @param random the source of randomness
      * @return the random field element
      */
+    @NonNull
     default FieldElement randomElement(@NonNull final Random random) {
         final byte[] seed = new byte[getSeedSize()];
         random.nextBytes(seed);

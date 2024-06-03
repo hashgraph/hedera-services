@@ -16,6 +16,8 @@
 
 package com.swirlds.pairings.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * An enumeration of supported pairing curves.
  */
@@ -49,6 +51,7 @@ public enum Curve {
      * @param curveId the curve id
      * @return the curve
      */
+    @NonNull
     public static Curve fromId(final byte curveId) {
         for (final Curve curve : values()) {
             if (curve.id == curveId) {

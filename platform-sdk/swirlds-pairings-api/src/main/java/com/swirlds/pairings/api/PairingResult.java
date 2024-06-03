@@ -16,6 +16,8 @@
 
 package com.swirlds.pairings.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * This class represents the result of the pairing operation between two elements
  */
@@ -25,6 +27,7 @@ public interface PairingResult {
      *
      * @return the first input element
      */
+    @NonNull
     GroupElement getInputElement1();
 
     /**
@@ -32,6 +35,7 @@ public interface PairingResult {
      *
      * @return the second input element
      */
+    @NonNull
     GroupElement getInputElement2();
 
     /**
@@ -42,5 +46,6 @@ public interface PairingResult {
      *
      * @return the bytes of the pairing result
      */
+    @NonNull
     byte[] getPairingBytes();
 }

@@ -38,6 +38,7 @@ public interface Group {
      *
      * @return the opposite group
      */
+    @NonNull
     default Group getOppositeGroup() {
         return getPairing().getOtherGroup(this);
     }
