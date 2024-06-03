@@ -450,7 +450,7 @@ public class Hip17UnhappyTokensSuite {
                                 .autoRenewPeriod(2L)
                                 .expiry(Instant.now().getEpochSecond() + 5L)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(NFTautoRemoved, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint")
+                        mintToken(NFTautoRemoved, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)))
                                 .payingWith(GENESIS))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(TOKEN_TREASURY, GENESIS, ONE_HUNDRED_HBARS - 10))

@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -123,11 +122,6 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
                 spec.registry().removeContractChoice(contract);
             }
         }
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::deleteContract;
     }
 
     @Override
