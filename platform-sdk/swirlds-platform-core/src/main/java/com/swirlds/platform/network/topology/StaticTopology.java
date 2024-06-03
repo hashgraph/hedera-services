@@ -61,7 +61,6 @@ public class StaticTopology implements NetworkTopology {
         return nodeIds.contains(nodeId) && nodeId.id() < selfId.id();
     }
 
-
     /**
      * {@inheritDoc}
      */
