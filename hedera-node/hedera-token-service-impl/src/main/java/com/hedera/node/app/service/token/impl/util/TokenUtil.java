@@ -23,7 +23,7 @@ public class TokenUtil {
      */
     public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
 
-    public TokenUtil() {
+    private TokenUtil() {
         throw new UnsupportedOperationException("Utility class only");
     }
 }
