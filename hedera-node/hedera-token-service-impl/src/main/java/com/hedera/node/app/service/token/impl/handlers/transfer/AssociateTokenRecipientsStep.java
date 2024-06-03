@@ -171,11 +171,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
         if (tokenRel == null && account.maxAutoAssociations() != 0) {
-            if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
-                validateFalse(
-                        account.usedAutoAssociations() >= account.maxAutoAssociations(),
-                        NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-            }
+            boolean validAssociations = hasUnlimitedAutoAssociations(account, entitiesConfig)
+                    || account.usedAutoAssociations() < account.maxAutoAssociations();
+            validateTrue(validAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);

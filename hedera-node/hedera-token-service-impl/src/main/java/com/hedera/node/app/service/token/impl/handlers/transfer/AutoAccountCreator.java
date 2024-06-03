@@ -67,11 +67,11 @@ public class AutoAccountCreator {
     /**
      * Creates an account for the given alias.
      *
-     * @param alias                  the alias to create the account for
-     * @param maxAutoAssociations   the maxAutoAssociations to set on the account
+     * @param alias                      the alias to create the account for
+     * @param requiredAutoAssociations   the requiredAutoAssociations to set on the account
      * @return the account ID of the created account
      */
-    public AccountID create(@NonNull final Bytes alias, int maxAutoAssociations) {
+    public AccountID create(@NonNull final Bytes alias, int requiredAutoAssociations) {
         requireNonNull(alias);
 
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
@@ -87,7 +87,7 @@ public class AutoAccountCreator {
         final var entitiesConfig = handleContext.configuration().getConfigData(EntitiesConfig.class);
         final int autoAssociations = entitiesConfig.unlimitedAutoAssociationsEnabled()
                 ? UNLIMITED_AUTOMATIC_ASSOCIATIONS
-                : maxAutoAssociations;
+                : requiredAutoAssociations;
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
             memo = LAZY_MEMO;
