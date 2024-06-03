@@ -124,6 +124,9 @@ An update into the `feeSchedule` file would be needed to specify that.
     - Handle:
         - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
         - Check if the sender has sufficient amount or has enough approved allowance of the tokens being claimed to fulfill the airdrop
+        - Check if the token is not frozen, paused, or deleted
+          - If the token is frozen or paused the claim transaction should fail
+          - For deleted tokens, the claim transaction should fail, but also we should remove the pending airdrop from state
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
             - If token association between each `receiver_id` and `token_reference` does not exist, we need to create it; future rents for token association slot should be paid by `receiver_id`
@@ -158,6 +161,8 @@ All of the expected behaviour described below should be present only if the new 
     - the tokens being claimed should be transferred to the `receiver_id` account
     - the pending airdrop should be removed from state
     - the transaction record should contain the transferred tokens in `tokenTransferLists` field
+- Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed and the token in the pending airdrop is frozen or paused then the `TokenClaimAirdrop` should fail without modifying the pending airdrop state
+- Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed and the token in the pending airdrop is deleted then the `TokenClaimAirdrop` should fail and the pending airdrop should be removed from state
 - Given a successful `TokenClaimAirdrop` transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value
 - Given successful `TokenClaimAirdrop` when another `TokenClaimAirdrop` for the same airdrop is performed then the second `TokenClaimAirdrop` should fail
 - `TokenClaimAirdrop` transaction with no pending airdrops entries should fail
