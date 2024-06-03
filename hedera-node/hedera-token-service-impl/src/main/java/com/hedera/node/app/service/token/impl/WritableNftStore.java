@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TokensConfig;
@@ -56,7 +57,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        this.nftState = states.get(TokenServiceImpl.NFTS_KEY);
+        this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
         final var storeMetrics = storeMetricsService.get(StoreType.NFT, maxCapacity);

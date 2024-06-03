@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.ids;
 
-import static com.hedera.node.app.ids.EntityIdService.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.common.EntityNumber;

@@ -28,6 +28,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.EventMetadata;
+import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -61,12 +62,6 @@ public class EventImpl extends EventMetadata
                 RunningHashable,
                 StreamAligned,
                 Timestamped {
-    /**
-     * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
-     * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a
-     * multiple of 10)
-     */
-    public static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
 
     /** The base event information, including some gossip specific information */
     private GossipEvent baseEvent;
@@ -101,7 +96,16 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), null, null);
     }
 
-    public EventImpl(
+    /**
+     * Create an instance based on the given {@link DetailedConsensusEvent}
+     * @param detailedConsensusEvent the detailed consensus event to build from
+     */
+    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) {
+        Objects.requireNonNull(detailedConsensusEvent);
+        buildFromConsensusEvent(detailedConsensusEvent);
+    }
+
+    private EventImpl(
             final GossipEvent baseEvent,
             final ConsensusData consensusData,
             final EventImpl selfParent,
@@ -116,16 +120,7 @@ public class EventImpl extends EventMetadata
         this.consensusData = consensusData;
 
         setDefaultValues();
-
         findSystemTransactions();
-    }
-
-    /**
-     * Create an instance based on the given {@link DetailedConsensusEvent}
-     * @param detailedConsensusEvent the detailed consensus event to build from
-     */
-    public EventImpl(final DetailedConsensusEvent detailedConsensusEvent) {
-        buildFromConsensusEvent(detailedConsensusEvent);
     }
 
     /**
@@ -133,40 +128,6 @@ public class EventImpl extends EventMetadata
      */
     private void setDefaultValues() {
         runningHash = new RunningHash();
-    }
-
-    /**
-     * Returns the timestamp of the last transaction in this event. If this event has no transaction, then the timestamp
-     * of the event will be returned
-     *
-     * @return timestamp of the last transaction
-     */
-    public Instant getLastTransTime() {
-        if (getTransactions() == null) {
-            return null;
-        }
-        // this is a special case. if an event has 0 or 1 transactions, the timestamp of the last transaction can be
-        // considered to be the same, equivalent to the timestamp of the event
-        if (getTransactions().length <= 1) {
-            return getConsensusTimestamp();
-        }
-        return getTransactionTime(getTransactions().length - 1);
-    }
-
-    /**
-     * Returns the timestamp of the transaction with given index in this event
-     *
-     * @param transactionIndex index of the transaction in this event
-     * @return timestamp of the given index transaction
-     */
-    public Instant getTransactionTime(final int transactionIndex) {
-        if (getConsensusTimestamp() == null || getTransactions() == null) {
-            return null;
-        }
-        if (transactionIndex >= getTransactions().length) {
-            throw new IllegalArgumentException("Event does not have a transaction with index:" + transactionIndex);
-        }
-        return getConsensusTimestamp().plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
     }
 
     /**
@@ -217,7 +178,8 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        DetailedConsensusEvent.serialize(out, baseEvent, consensusData);
+        DetailedConsensusEvent.serialize(
+                out, baseEvent, consensusData.getRoundReceived(), consensusData.isLastInRoundReceived());
     }
 
     /**
@@ -237,12 +199,14 @@ public class EventImpl extends EventMetadata
      */
     void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
         baseEvent = consensusEvent.getGossipEvent();
-        consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
         super.clear();
 
         setDefaultValues();
         findSystemTransactions();
+        consensusData = new ConsensusData();
+        consensusData.setRoundReceived(consensusEvent.getRoundReceived());
+        consensusData.setLastInRoundReceived(consensusEvent.isLastInRoundReceived());
     }
 
     /**
@@ -302,8 +266,7 @@ public class EventImpl extends EventMetadata
         }
 
         for (int i = 0; i < transactions.length; i++) {
-            final Instant transConsTime = getConsensusTimestamp().plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
-            transactions[i].setConsensusTimestamp(transConsTime);
+            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(baseEvent, i));
         }
     }
 
@@ -389,14 +352,6 @@ public class EventImpl extends EventMetadata
         return baseEvent.getHashedData().getTransactions();
     }
 
-    public int getNumTransactions() {
-        if (baseEvent.getHashedData().getTransactions() == null) {
-            return 0;
-        } else {
-            return baseEvent.getHashedData().getTransactions().length;
-        }
-    }
-
     public boolean isCreatedBy(final NodeId id) {
         return Objects.equals(getCreatorId(), id);
     }
@@ -405,16 +360,12 @@ public class EventImpl extends EventMetadata
     // ConsensusData
     //////////////////////////////////////////
 
-    public void setConsensusTimestamp(final Instant consensusTimestamp) {
-        consensusData.setConsensusTimestamp(consensusTimestamp);
-    }
-
+    /**
+     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
+     */
+    @Deprecated(forRemoval = true)
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
-    }
-
-    public void setConsensusOrder(final long consensusOrder) {
-        consensusData.setConsensusOrder(consensusOrder);
     }
 
     /**
@@ -429,6 +380,10 @@ public class EventImpl extends EventMetadata
         return consensusData.isLastInRoundReceived();
     }
 
+    /**
+     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
+     */
+    @Deprecated(forRemoval = true)
     public void setLastInRoundReceived(final boolean lastInRoundReceived) {
         consensusData.setLastInRoundReceived(lastInRoundReceived);
     }
@@ -443,7 +398,7 @@ public class EventImpl extends EventMetadata
      * @return the consensus timestamp of this event
      */
     public Instant getConsensusTimestamp() {
-        return consensusData.getConsensusTimestamp();
+        return baseEvent.getConsensusTimestamp();
     }
 
     /**
@@ -496,7 +451,7 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public long getConsensusOrder() {
-        return consensusData.getConsensusOrder();
+        return baseEvent.getConsensusOrder();
     }
 
     /**
@@ -543,16 +498,5 @@ public class EventImpl extends EventMetadata
     @Override
     public void setHash(final Hash hash) {
         this.hash = hash;
-    }
-
-    /**
-     * Get a mnemonic string representing this event. Event should be hashed prior to this being called. Useful for
-     * debugging.
-     */
-    public String toMnemonic() {
-        if (getHash() == null) {
-            return "unhashed-event";
-        }
-        return getHash().toMnemonic();
     }
 }

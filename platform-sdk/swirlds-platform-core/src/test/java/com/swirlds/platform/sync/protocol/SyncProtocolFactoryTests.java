@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.sync.protocol;
 
-import static com.swirlds.platform.gossip.SyncPermitProvider.PermitRequestResult.PERMIT_ACQUIRED;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +34,7 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
-import com.swirlds.platform.gossip.SyncPermitProvider;
+import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -43,9 +43,7 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.SyncProtocolFactory;
-import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
-import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -67,17 +65,36 @@ class SyncProtocolFactoryTests {
     private SyncMetrics syncMetrics;
     private FakeTime time;
     private PlatformContext platformContext;
-    private PlatformStatusNexus statusNexus;
+
+    /**
+     * Counts the number of currently available sync permits in the permit provider.
+     *
+     * @param permitProvider the permit provider to measure
+     * @return the number of available permits
+     */
+    private static int countAvailablePermits(@NonNull final SyncPermitProvider permitProvider) {
+        int count = 0;
+        while (permitProvider.acquire()) {
+            count++;
+        }
+        for (int i = 0; i < count; i++) {
+            permitProvider.release();
+        }
+        return count;
+    }
 
     @BeforeEach
     void setup() {
         peerId = new NodeId(1);
         shadowGraphSynchronizer = mock(ShadowgraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
-        permitProvider = new SyncPermitProvider(2, mock(IntakeEventCounter.class));
+
+        time = new FakeTime();
+        platformContext = TestPlatformContextBuilder.create().withTime(time).build();
+
+        permitProvider = new SyncPermitProvider(platformContext, 2);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
-        time = new FakeTime();
 
         // Set reasonable defaults. Special cases to be configured in individual tests
 
@@ -85,11 +102,6 @@ class SyncProtocolFactoryTests {
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
         // only peer with ID 1 is needed for fallen behind
         Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
-
-        platformContext = TestPlatformContextBuilder.create().withTime(time).build();
-
-        statusNexus = new DefaultPlatformStatusNexus(platformContext);
-        statusNexus.setCurrentStatus(PlatformStatus.ACTIVE);
     }
 
     @Test
@@ -100,76 +112,77 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertTrue(syncProtocolFactory.build(peerId).shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
     }
 
     @Test
     @DisplayName("Protocol won't initiate connection if cooldown isn't complete")
     void initiateCooldown() {
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // no time has passed since the previous protocol
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // tick part of the way through the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // tick past the end of the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
     }
 
     @Test
     @DisplayName("Protocol doesn't initiate if platform has the wrong status")
     void incorrectStatusToInitiate() {
-        statusNexus.setCurrentStatus(PlatformStatus.BEHIND);
-
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> BEHIND);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -180,21 +193,22 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         // obtain the only existing permits, so none are available to the protocol
-        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
-        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
-        assertEquals(0, permitProvider.getNumAvailable());
+        permitProvider.acquire();
+        permitProvider.acquire();
+        assertEquals(0, countAvailablePermits(permitProvider));
 
         assertFalse(protocol.shouldInitiate());
-        assertEquals(0, permitProvider.getNumAvailable());
+        assertEquals(0, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -205,16 +219,17 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> true,
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -228,16 +243,17 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -250,16 +266,17 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -271,128 +288,132 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(new NodeId(6));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
     }
 
     @Test
     @DisplayName("Protocol should accept connection")
     void shouldAccept() {
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         // obtain 1 of the permits, but 1 will still be available to accept
-        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
-        assertEquals(1, permitProvider.getNumAvailable());
+        permitProvider.acquire();
+        assertEquals(1, countAvailablePermits(permitProvider));
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.shouldAccept());
-        assertEquals(0, permitProvider.getNumAvailable());
+        assertEquals(0, countAvailablePermits(permitProvider));
     }
 
     @Test
     @DisplayName("Protocol won't accept connection if cooldown isn't complete")
     void acceptCooldown() {
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 Duration.ofMillis(100),
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldAccept());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // no time has passed since the previous protocol
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // tick part of the way through the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // tick past the end of the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertTrue(protocol.shouldAccept());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
     }
 
     @Test
     @DisplayName("Protocol doesn't accept if platform has the wrong status")
     void incorrectStatusToAccept() {
-        statusNexus.setCurrentStatus(PlatformStatus.BEHIND);
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> BEHIND);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
     @DisplayName("Protocol doesn't accept without a permit")
     void noPermitAvailableToAccept() {
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
 
         // waste both available permits
-        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
-        assertSame(PERMIT_ACQUIRED, permitProvider.tryAcquire(peerId));
+        permitProvider.acquire();
+        permitProvider.acquire();
 
-        assertEquals(0, permitProvider.getNumAvailable());
+        assertEquals(0, countAvailablePermits(permitProvider));
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertFalse(protocol.shouldAccept());
-        assertEquals(0, permitProvider.getNumAvailable());
+        assertEquals(0, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -403,16 +424,17 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> true,
                 () -> true,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -426,16 +448,17 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -446,18 +469,19 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertTrue(protocol.shouldAccept());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
         protocol.acceptFailed();
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -468,18 +492,19 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
         protocol.initiateFailed();
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -490,18 +515,19 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         protocol.shouldInitiate();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -512,18 +538,19 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -535,24 +562,25 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException
         Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
                 .thenThrow(new ParallelExecutionException(mock(Throwable.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -564,24 +592,25 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
         Mockito.when(shadowGraphSynchronizer.synchronize(any(), any()))
                 .thenThrow(new ParallelExecutionException(new IOException()));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
 
         assertThrows(IOException.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -592,23 +621,24 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         // mock synchronize to throw a SyncException
         Mockito.when(shadowGraphSynchronizer.synchronize(any(), any())).thenThrow(new SyncException(""));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, countAvailablePermits(permitProvider));
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, countAvailablePermits(permitProvider));
     }
 
     @Test
@@ -619,11 +649,12 @@ class SyncProtocolFactoryTests {
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
+                mock(IntakeEventCounter.class),
                 () -> false,
                 () -> false,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus::getCurrentStatus);
+                () -> ACTIVE);
         final Protocol protocol = syncProtocolFactory.build(peerId);
 
         assertTrue(protocol.acceptOnSimultaneousInitiate());

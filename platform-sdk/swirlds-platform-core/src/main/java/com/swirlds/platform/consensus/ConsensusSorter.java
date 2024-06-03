@@ -44,7 +44,7 @@ public class ConsensusSorter implements Comparator<EventImpl> {
         int c;
 
         // sort by consensus timestamp
-        c = (e1.getConsensusTimestamp().compareTo(e2.getConsensusTimestamp()));
+        c = (e1.getPreliminaryConsensusTimestamp().compareTo(e2.getPreliminaryConsensusTimestamp()));
         if (c != 0) {
             return c;
         }

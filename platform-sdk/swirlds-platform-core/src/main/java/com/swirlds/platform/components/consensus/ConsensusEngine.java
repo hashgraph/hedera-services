@@ -22,6 +22,7 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -29,6 +30,15 @@ import java.util.List;
  * Responsible for adding events to {@link Consensus}.
  */
 public interface ConsensusEngine {
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    @InputWireLabel("PlatformStatus")
+    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+
     /**
      * Add an event to the hashgraph
      *

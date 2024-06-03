@@ -18,5 +18,5 @@ module com.swirlds.cli {
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.logging;
     requires io.github.classgraph;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
@@ -40,23 +41,18 @@ import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
@@ -96,7 +92,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     // For many of our tests we need to have metrics available, and an easy way to test the metrics
     // are being set appropriately.
     /** Used as a dependency to the {@link Metrics} system. */
-    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
@@ -169,11 +165,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public AppTestBase() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        this.metrics = new DefaultMetrics(
+        this.metrics = new DefaultPlatformMetrics(
                 nodeSelfId,
                 new MetricKeyRegistry(),
                 METRIC_EXECUTOR,
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 
@@ -361,7 +357,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var initialState = new FakeHederaState();
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
-                svc.registerSchemas(reg, hederaSoftwareVersion.getServicesVersion());
+                svc.registerSchemas(reg);
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
             workingStateAccessor.setHederaState(initialState);
@@ -406,53 +402,5 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 }
             };
         }
-    }
-
-    private static final class FakePlatform implements Platform {
-        private final NodeId selfNodeId;
-        private final AddressBook addressBook;
-
-        private FakePlatform(long selfNodeId, AddressBook addressBook) {
-            this.selfNodeId = new NodeId(selfNodeId);
-            this.addressBook = addressBook;
-        }
-
-        @Override
-        public PlatformContext getContext() {
-            return null;
-        }
-
-        @Override
-        public NotificationEngine getNotificationEngine() {
-            return null;
-        }
-
-        @Override
-        public Signature sign(byte[] bytes) {
-            return null;
-        }
-
-        @Override
-        public AddressBook getAddressBook() {
-            return addressBook;
-        }
-
-        @Override
-        public NodeId getSelfId() {
-            return selfNodeId;
-        }
-
-        @Override
-        public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull String s) {
-            return null;
-        }
-
-        @Override
-        public boolean createTransaction(@NonNull byte[] bytes) {
-            return false;
-        }
-
-        @Override
-        public void start() {}
     }
 }

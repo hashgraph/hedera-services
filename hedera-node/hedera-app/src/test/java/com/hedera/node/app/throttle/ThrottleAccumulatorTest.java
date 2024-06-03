@@ -28,7 +28,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.pbj.runtime.ProtoTestTools.getThreadLocalDataBuffer;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -95,7 +95,8 @@ class ConsistencyTestingToolRoundTests {
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
-                mockSnapshot);
+                mockSnapshot,
+                false);
     }
 
     @Test

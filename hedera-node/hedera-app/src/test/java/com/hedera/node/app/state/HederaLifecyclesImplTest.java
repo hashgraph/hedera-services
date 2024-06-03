@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.swirlds.platform.test.fixtures.addressbook.AddresBookUtils.createPretendBookFrom;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

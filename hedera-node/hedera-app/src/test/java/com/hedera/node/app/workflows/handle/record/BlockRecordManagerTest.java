@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.NAME;
-import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.records.RecordTestData.BLOCK_NUM;
 import static com.hedera.node.app.records.RecordTestData.ENDING_RUNNING_HASH;
 import static com.hedera.node.app.records.RecordTestData.SIGNER;
@@ -27,6 +25,8 @@ import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_O
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
 import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
 import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -45,6 +45,7 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerConcurrent;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
@@ -442,8 +443,8 @@ final class BlockRecordManagerTest extends AppTestBase {
             @Override
             public ReadableStates getReadableStates(@NonNull final String serviceName) {
                 return new MapReadableStates(Map.of(
-                        BlockRecordService.BLOCK_INFO_STATE_KEY,
-                        new ReadableSingletonStateBase<>(BlockRecordService.BLOCK_INFO_STATE_KEY, () -> blockInfo),
+                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
+                        new ReadableSingletonStateBase<>(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, () -> blockInfo),
                         RUNNING_HASHES_STATE_KEY,
                         new ReadableSingletonStateBase<>(RUNNING_HASHES_STATE_KEY, () -> RunningHashes.DEFAULT)));
             }

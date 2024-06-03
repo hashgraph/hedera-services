@@ -49,4 +49,10 @@ public class FileSignatureWaiversImpl implements FileSignatureWaivers {
         return authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_UPDATE, fileUpdateTxn)
                 == SystemPrivilege.AUTHORIZED;
     }
+
+    @Override
+    public boolean areFileAppendSignaturesWaived(final TransactionBody fileAppendTxn, final AccountID payer) {
+        return authorizer.hasPrivilegedAuthorization(payer, HederaFunctionality.FILE_APPEND, fileAppendTxn)
+                == SystemPrivilege.AUTHORIZED;
+    }
 }
