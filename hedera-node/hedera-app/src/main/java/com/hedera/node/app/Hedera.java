@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.records.impl.BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
@@ -59,7 +58,7 @@ import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
-import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -144,7 +143,7 @@ public final class Hedera implements SwirldMain {
     /**
      * The registry of all known services
      */
-    private final ServicesRegistryImpl servicesRegistry;
+    private final ServicesRegistry servicesRegistry;
     /**
      * The current version of THIS software
      */
@@ -201,9 +200,18 @@ public final class Hedera implements SwirldMain {
      * improve testability and reuse. (For example, the {@link BootstrapConfigProviderImpl}.)
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
+     * @param registry the registry to register services with. This is optional and can be null.
+     *                         If null, a new instance of {@link ServicesRegistry} will be created.
+     *                         This is useful for testing.
      */
-    public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
+    public Hedera(
+            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final ServicesRegistry registry) {
         requireNonNull(constructableRegistry);
+        // FUTURE : We need to extract OrderedServiceMigrator and ServicesRegistry into its own class
+        requireNonNull(registry);
+
+        this.servicesRegistry = registry;
+        this.genesisRecordsBuilder = registry.getGenesisRecords();
 
         // Print welcome message
         logger.info(
@@ -235,13 +243,29 @@ public final class Hedera implements SwirldMain {
 
         // Create a records generator for any synthetic records that need to be CREATED
         this.recordsGenerator = new SyntheticRecordsGenerator();
-        // Create a records builder for any genesis records that need to be RECORDED
-        this.genesisRecordsBuilder = new GenesisRecordsConsensusHook();
-
         // Create all the service implementations
+        // This is done so early and not right before we create OrderedServiceMigrator because we need to register
+        // the services with the ConstructableRegistry before we can call OrderedServiceMigrator
         logger.info("Registering services");
-        // FUTURE: Use the service loader framework to load these services!
-        this.servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordsBuilder);
+        registerServices(servicesRegistry);
+
+        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
+        // constructor to make sure it has the config and other info it needs to be created correctly.
+        try {
+            logger.debug("Register MerkleHederaState with ConstructableRegistry");
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
+        } catch (final ConstructableRegistryException e) {
+            logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Register all the services with the {@link ServicesRegistry}.
+     * @param servicesRegistry the registry to register the services with
+     */
+    private void registerServices(@NonNull ServicesRegistry servicesRegistry) {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
@@ -262,17 +286,6 @@ public final class Hedera implements SwirldMain {
                         new CongestionThrottleService(),
                         new NetworkServiceImpl())
                 .forEach(servicesRegistry::register);
-
-        // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor OTHER THAN the default
-        // constructor to make sure it has the config and other info it needs to be created correctly.
-        try {
-            logger.debug("Register MerkleHederaState with ConstructableRegistry");
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
-        } catch (final ConstructableRegistryException e) {
-            logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
-            throw new RuntimeException(e);
-        }
     }
 
     /**
@@ -364,24 +377,8 @@ public final class Hedera implements SwirldMain {
         configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logConfiguration();
 
-        // Determine if we need to create synthetic records for system entities
-        final var blockRecordState = state.getReadableStates(BlockRecordService.NAME);
-        boolean createSynthRecords = false;
-        // In fact this will never be true - c.f. https://github.com/hashgraph/hedera-services/issues/13536
-        if (!blockRecordState.isEmpty()) {
-            final var blockInfo = blockRecordState
-                    .<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY)
-                    .get();
-            if (isDefaultConsTimeOfLastHandledTxn(blockInfo)) {
-                createSynthRecords = true;
-            }
-        } else {
-            createSynthRecords = true;
-        }
-        if (createSynthRecords) {
-            recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
-        }
-
+        recordsGenerator.createRecords(configProvider.getConfiguration(), genesisRecordsBuilder);
+        // This only sets static fields from mono service state in v0490 Schemas
         MonoMigrationUtils.maybeMigrateFrom(state, trigger, metrics);
 
         // This is the *FIRST* time in the initialization sequence that we have access to the platform. Grab it!
@@ -423,6 +420,7 @@ public final class Hedera implements SwirldMain {
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
+
         try {
             switch (trigger) {
                 case GENESIS -> genesis(state, platformState, metrics);
