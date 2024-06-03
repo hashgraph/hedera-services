@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.info;
 
-import static com.hedera.node.app.spi.HapiUtils.parseAccount;
+import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

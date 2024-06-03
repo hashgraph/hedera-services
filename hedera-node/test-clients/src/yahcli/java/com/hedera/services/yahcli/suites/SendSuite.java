@@ -25,8 +25,10 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SendSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SendSuite.class);
@@ -57,11 +59,11 @@ public class SendSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(doSend());
     }
 
-    private HapiSpec doSend() {
+    final Stream<DynamicTest> doSend() {
         var transfer = denomination == null
                 ? (HapiTxnOp<?>) TxnVerbs.cryptoTransfer(
                                 HapiCryptoTransfer.tinyBarsFromTo(HapiSuite.DEFAULT_PAYER, beneficiary, unitsToSend))

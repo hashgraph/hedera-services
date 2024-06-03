@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.staking.StakingSuite.STAKING_REWARD_RATE;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.IOException;
@@ -44,8 +43,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A helper suite that,
@@ -139,11 +140,11 @@ public class StartStaking extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(startStakingAndExportCreatedStakers());
     }
 
-    final HapiSpec startStakingAndExportCreatedStakers() {
+    final Stream<DynamicTest> startStakingAndExportCreatedStakers() {
         final var baseStakerName = "baseStaker";
         return customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(Map.of(

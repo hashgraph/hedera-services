@@ -18,7 +18,7 @@ import me.champeau.jmh.JMHTask
 
 plugins {
     id("com.hedera.gradle.platform")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.benchmark")
 }
 
 jmhModuleInfo {
@@ -31,7 +31,7 @@ jmhModuleInfo {
     requires("com.swirlds.fchashmap")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.virtualmap")
-    requires("com.swirlds.platform")
+    requires("com.swirlds.platform.core")
     requires("jmh.core")
     requires("org.apache.logging.log4j")
     requiresStatic("com.github.spotbugs.annotations")

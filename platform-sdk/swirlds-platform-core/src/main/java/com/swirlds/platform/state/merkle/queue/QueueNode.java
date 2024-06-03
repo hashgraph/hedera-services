@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
+import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.state.merkle.StateUtils;
@@ -40,6 +41,7 @@ import java.util.Iterator;
  *
  * @param <E> The element type
  */
+@DebugIterationEndpoint
 public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
     private static final long CLASS_ID = 0x990FF87AD2691DCL;
     public static final int CLASS_VERSION = 1;

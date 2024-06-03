@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import com.swirlds.common.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -30,6 +29,5 @@ public interface SignedStateSentinel {
      *
      * @param now the current time
      */
-    @InputWireLabel("heartbeat")
     void checkSignedStates(@NonNull final Instant now);
 }

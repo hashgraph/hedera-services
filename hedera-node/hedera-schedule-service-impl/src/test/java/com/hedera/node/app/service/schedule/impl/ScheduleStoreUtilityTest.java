@@ -19,6 +19,7 @@ package com.hedera.node.app.service.schedule.impl;
 import static org.assertj.core.api.BDDAssertions.assertThat;
 
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -62,12 +63,19 @@ class ScheduleStoreUtilityTest extends ScheduleTestBase {
         testSchedule.scheduledTransaction(createAlternateScheduled());
         hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
         assertThat(hashValue).isNotEqualTo(origHashValue);
+        testSchedule.scheduledTransaction((SchedulableTransactionBody) null);
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.scheduledTransaction(scheduleInState.scheduledTransaction());
         hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
         assertThat(hashValue).isEqualTo(origHashValue);
 
         // change the memo and verify that hash changes
         testSchedule.memo(ODD_MEMO);
+        hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
+        assertThat(hashValue).isNotEqualTo(origHashValue);
+        //noinspection DataFlowIssue
+        testSchedule.memo(null);
         hashValue = ScheduleStoreUtility.calculateBytesHash(testSchedule.build());
         assertThat(hashValue).isNotEqualTo(origHashValue);
         testSchedule.memo(scheduleInState.memo());

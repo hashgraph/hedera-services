@@ -24,7 +24,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -40,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Manages all interactions with the state object required by {@link SwirldState}.
  */
-public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSignedState {
+public class SwirldStateManager implements FreezePeriodChecker {
 
     /**
      * Stats relevant to SwirldState operations.
@@ -159,10 +158,11 @@ public class SwirldStateManager implements FreezePeriodChecker, LoadableFromSign
     }
 
     /**
-     * {@inheritDoc}
+     * Loads all necessary data from the {@code reservedSignedState}.
+     *
+     * @param signedState the signed state to load
      */
-    @Override
-    public void loadFromSignedState(final SignedState signedState) {
+    public void loadFromSignedState(@NonNull final SignedState signedState) {
         final State state = signedState.getState();
 
         state.throwIfDestroyed("state must not be destroyed");

@@ -26,6 +26,14 @@ import java.util.List;
 
 /** An interface for classes that calculate consensus of events */
 public interface Consensus extends GraphGenerations, RoundNumberProvider {
+
+    /**
+     * Set the flag to signal whether we are currently replaying the PCES (preconsensus event stream) or not.
+     *
+     * @param pcesMode true if we are currently replaying the PCES, false otherwise
+     */
+    void setPcesMode(final boolean pcesMode);
+
     /**
      * Adds an event to the consensus object. This should be the only public method that modifies the state of the
      * object.

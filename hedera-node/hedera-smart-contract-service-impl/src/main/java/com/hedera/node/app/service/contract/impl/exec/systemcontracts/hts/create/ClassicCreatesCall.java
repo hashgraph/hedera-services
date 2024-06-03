@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.creat
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -179,9 +178,6 @@ public class ClassicCreatesCall extends AbstractCall {
         final var treasuryAccount = nativeOperations().getAccount(op.treasuryOrThrow());
         if (treasuryAccount == null) {
             return INVALID_ACCOUNT_ID;
-        }
-        if (op.autoRenewAccount() == null) {
-            return INVALID_EXPIRATION_TIME;
         }
         return OK;
     }

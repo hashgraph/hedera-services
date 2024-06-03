@@ -98,7 +98,7 @@ public interface SystemContractOperations {
      * @param isViewCall
      * @return
      */
-    Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall);
+    Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall);
 
     /**
      * Returns the {@link ExchangeRate} for the current consensus time.  This will enable the translation from hbars

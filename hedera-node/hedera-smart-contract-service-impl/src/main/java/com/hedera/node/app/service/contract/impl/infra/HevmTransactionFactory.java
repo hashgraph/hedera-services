@@ -59,6 +59,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
@@ -86,6 +87,7 @@ public class HevmTransactionFactory {
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
     private final HederaConfig hederaConfig;
+    private final FeatureFlags featureFlags;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
@@ -103,6 +105,7 @@ public class HevmTransactionFactory {
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final HederaConfig hederaConfig,
+            @NonNull final FeatureFlags featureFlags,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
@@ -114,6 +117,7 @@ public class HevmTransactionFactory {
             @NonNull @InitialState final TokenServiceApi tokenServiceApi,
             @NonNull final EthTxSigsCache ethereumSignatures,
             @NonNull final HederaEvmContext hederaEvmContext) {
+        this.featureFlags = featureFlags;
         this.hydratedEthTxData = hydratedEthTxData;
         this.gasCalculator = requireNonNull(gasCalculator);
         this.fileStore = requireNonNull(fileStore);
@@ -296,8 +300,10 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
 
         final var contract = accountStore.getContractById(body.contractIDOrThrow());
-        if (contract != null && !contractsConfig.evmAllowCallsToNonContractAccounts()) {
-            validateFalse(contract.deleted(), CONTRACT_DELETED);
+        if (contract != null) {
+            final var contractNum = contract.accountIdOrThrow().accountNumOrThrow();
+            final var mayNotExist = featureFlags.isAllowCallsToNonContractAccountsEnabled(contractsConfig, contractNum);
+            validateTrue(mayNotExist || !contract.deleted(), CONTRACT_DELETED);
         }
     }
 

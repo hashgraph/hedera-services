@@ -121,8 +121,10 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
         return createVirtualMap(
                 label,
                 md.onDiskKeySerializerClassId(),
+                md.onDiskKeyClassId(),
                 md.stateDefinition().keyCodec(),
                 md.onDiskValueSerializerClassId(),
+                md.onDiskValueClassId(),
                 md.stateDefinition().valueCodec());
     }
 

@@ -31,26 +31,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(TOKEN)
-public class TokenUpdateNftsSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenUpdateNftsSuite.class);
+public class TokenUpdateNftsSuite {
     private static String TOKEN_TREASURY = "treasury";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungible";
     private static final String SUPPLY_KEY = "supplyKey";
@@ -59,22 +57,8 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     private static final String WIPE_KEY = "wipeKey";
     private static final String NFT_TEST_METADATA = " test metadata";
 
-    public static void main(String... args) {
-        new TokenUpdateNftsSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(updateMetadataOfNfts(), failsIfTokenHasNoMetadataKey(), updateSingleNftFeeChargedAsExpected());
-    }
-
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
                         newKeyNamed("multiKey"),
@@ -93,7 +77,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    private HapiSpec failsIfTokenHasNoMetadataKey() {
+    final Stream<DynamicTest> failsIfTokenHasNoMetadataKey() {
         return defaultHapiSpec("failsIfTokenHasNoMetadataKey")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -115,7 +99,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateMetadataOfNfts() {
+    final Stream<DynamicTest> updateMetadataOfNfts() {
         return defaultHapiSpec("updateMetadataOfNfts")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -157,7 +141,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateSingleNftFeeChargedAsExpected() {
+    final Stream<DynamicTest> updateSingleNftFeeChargedAsExpected() {
         final var expectedNftUpdatePriceUsd = 0.001;
         final var nftUpdateTxn = "nftUpdateTxn";
 
@@ -195,7 +179,7 @@ public class TokenUpdateNftsSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateMultipleNftsFeeChargedAsExpected() {
+    final Stream<DynamicTest> updateMultipleNftsFeeChargedAsExpected() {
         final var expectedNftUpdatePriceUsd = 0.005;
         final var nftUpdateTxn = "nftUpdateTxn";
 
@@ -230,10 +214,5 @@ public class TokenUpdateNftsSuite extends HapiSuite {
                         .fee(10 * ONE_HBAR)
                         .via(nftUpdateTxn))
                 .then(validateChargedUsdWithin(nftUpdateTxn, expectedNftUpdatePriceUsd, 0.01));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

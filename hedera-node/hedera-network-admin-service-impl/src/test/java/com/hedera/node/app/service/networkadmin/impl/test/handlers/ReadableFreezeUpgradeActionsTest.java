@@ -19,8 +19,13 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
@@ -33,13 +38,19 @@ import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -67,7 +78,7 @@ class ReadableFreezeUpgradeActionsTest {
     private File zipOutputDir; // temp directory to place marker files and output of zip extraction
 
     @Mock
-    private WritableFreezeStore freezeStore;
+    private WritableFreezeStore writableFreezeStore;
 
     @Mock
     private NetworkAdminConfig adminServiceConfig;
@@ -86,9 +97,9 @@ class ReadableFreezeUpgradeActionsTest {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
-        final Executor freezeExectuor = new ForkJoinPool(
+        final Executor freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
-        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor, upgradeFileStore);
+        subject = new FreezeUpgradeActions(adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -151,11 +162,77 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(NOW_FROZEN_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
-        given(freezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
+        given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
 
         subject.externalizeFreezeIfUpgradePending();
 
         assertMarkerCreated(NOW_FROZEN_MARKER, null);
+    }
+
+    @Test
+    void testCatchUpOnMissedSideEffects() throws IOException {
+        PlatformState platformState = createMockPlatformState();
+        LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
+        Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
+        platformState.setFreezeTime(checkpoint);
+        platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
+        given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
+
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
+        assertThat(subject.isFreezeScheduled(platformState)).isTrue();
+
+        rmIfPresent(NOW_FROZEN_MARKER);
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+
+        Bytes expectedContent = Bytes.wrap("expected");
+        given(upgradeFileStore.getFull(any())).willReturn(expectedContent);
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+    }
+
+    @Test
+    void invokeMissedUpgradePrepException() {
+        PlatformState platformState = createMockPlatformState();
+        given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
+        subject.isPreparedFileHashValidGiven(null, null);
+        assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+        given(writableFreezeStore.updateFileHash()).willReturn(null);
+        assertThatNoException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
+    }
+
+    @Test
+    void validatePreparedFileHashGiven() {
+        given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
+        byte[] curSpecialFileHash = new BigInteger("e04fd020ea3a6910a2d808002b30309d", 16).toByteArray();
+        byte[] hashFromTxnBody =
+                requireNonNull(writableFreezeStore.updateFileHash()).toByteArray();
+        assertThat(subject.isPreparedFileHashValidGiven(curSpecialFileHash, hashFromTxnBody))
+                .isFalse();
+    }
+
+    @Test
+    void testIfFreezeIsScheduled() {
+        PlatformState platformState = createMockPlatformState();
+        LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
+        Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
+
+        platformState.setFreezeTime(checkpoint);
+        platformState.setLastFrozenTime(checkpoint.minusMillis(10000));
+        assertThatNoException().isThrownBy(() -> subject.isFreezeScheduled(platformState));
+        assertThat(subject.isFreezeScheduled(platformState)).isTrue();
+
+        platformState.setFreezeTime(null);
+        platformState.setLastFrozenTime(checkpoint.plusSeconds(2));
+        assertThat(subject.isFreezeScheduled(platformState)).isFalse();
+
+        platformState.setFreezeTime(checkpoint);
+        platformState.setLastFrozenTime(checkpoint);
+        assertThat(subject.isFreezeScheduled(platformState)).isFalse();
+    }
+
+    private PlatformState createMockPlatformState() {
+        final PlatformState platformState = new PlatformState();
+        platformState.setAddressBook(mock(AddressBook.class));
+        return platformState;
     }
 
     private void rmIfPresent(final String file) {

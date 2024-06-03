@@ -34,33 +34,31 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.*;
+import static com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite.ALICE;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
 @SuppressWarnings("java:S1192")
-public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ContractMintHTSV1SecurityModelSuite.class);
-
+public class ContractBurnHTSV2SecurityModelSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String TOKEN_TREASURY = "treasury";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
@@ -109,38 +107,8 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     private static final String ADMIN_KEY = "ADMIN_KEY";
     private static final String SUPPLY_KEY = "SUPPLY_KEY";
 
-    public static void main(final String... args) {
-        new ContractBurnHTSV2SecurityModelSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> positiveSpecs() {
-        return List.of(V2Security004FungibleTokenBurnPositive(), V2Security005NonFungibleTokenBurnPositive());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of(
-                V2Security004FungibleTokenBurnNegative(),
-                V2Security004NonFungibleTokenBurnNegative(),
-                V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall(),
-                V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall(),
-                V2SecurityBurnTokenWithFullPrefixAndPartialPrefixKeys(),
-                V2SecurityHscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer(),
-                V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits(),
-                V2SecurityHscsPrec011BurnAfterNestedMint(),
-                V2SecurityHscsPrec005TokenBurnOfNft());
-    }
-
     @HapiTest
-    final HapiSpec V2Security004FungibleTokenBurnPositive() {
+    final Stream<DynamicTest> V2Security004FungibleTokenBurnPositive() {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -240,7 +208,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security005NonFungibleTokenBurnPositive() {
+    final Stream<DynamicTest> V2Security005NonFungibleTokenBurnPositive() {
         final var amountToBurn = 1L;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[] {1L};
@@ -319,7 +287,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security004FungibleTokenBurnNegative() {
+    final Stream<DynamicTest> V2Security004FungibleTokenBurnNegative() {
         final var initialAmount = 20L;
         final var amountToBurn = 5L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -420,7 +388,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security004NonFungibleTokenBurnNegative() {
+    final Stream<DynamicTest> V2Security004NonFungibleTokenBurnNegative() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
         final var serialNumber1 = new long[] {1L};
 
@@ -526,7 +494,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final Stream<DynamicTest> V2Security039NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var serialNumber1 = new long[] {1L};
         return defaultHapiSpec("V2Security035NonFungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(
@@ -615,7 +583,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
+    final Stream<DynamicTest> V2Security039FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall() {
         final var initialAmount = 20L;
         return defaultHapiSpec("V2Security035FungibleTokenWithDelegateContractKeyCanNotBurnFromDelegatecall")
                 .given(
@@ -693,7 +661,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2SecurityBurnTokenWithFullPrefixAndPartialPrefixKeys() {
+    final Stream<DynamicTest> V2SecurityBurnTokenWithFullPrefixAndPartialPrefixKeys() {
         final var firstBurnTxn = "firstBurnTxn";
         final var secondBurnTxn = "secondBurnTxn";
         final var amount = 99L;
@@ -772,7 +740,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2SecurityHscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer() {
+    final Stream<DynamicTest> V2SecurityHscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer() {
         final var bob = "bob";
         final var feeCollector = "feeCollector";
         final var tokenWithHbarFee = "tokenWithHbarFee";
@@ -857,7 +825,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits() {
+    final Stream<DynamicTest> V2SecurityHscsPrec004TokenBurnOfFungibleTokenUnits() {
         final var gasUsed = 14085L;
         final var CREATION_TX = "CREATION_TX";
         final var MULTI_KEY = "MULTI_KEY";
@@ -941,7 +909,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2SecurityHscsPrec011BurnAfterNestedMint() {
+    final Stream<DynamicTest> V2SecurityHscsPrec011BurnAfterNestedMint() {
         final var innerContract = "MintToken";
         final var outerContract = "NestedBurn";
         final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
@@ -1021,7 +989,7 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec V2SecurityHscsPrec005TokenBurnOfNft() {
+    final Stream<DynamicTest> V2SecurityHscsPrec005TokenBurnOfNft() {
         final var gasUsed = 14085;
         final var CREATION_TX = "CREATION_TX";
         return defaultHapiSpec("V2SecurityHscsPrec005TokenBurnOfNft")
@@ -1075,10 +1043,5 @@ public class ContractBurnHTSV2SecurityModelSuite extends HapiSuite {
                                                 .gasUsed(gasUsed))
                                         .newTotalSupply(1)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

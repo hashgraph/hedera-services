@@ -96,7 +96,7 @@ class HtsSystemContractTest {
     @Test
     void returnsResultFromImpliedCall() {
         givenValidCallAttempt();
-        frameUtils.when(() -> callTypeOf(frame)).thenReturn(FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT);
+        frameUtils.when(() -> callTypeOf(frame)).thenReturn(FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT);
 
         final var pricedResult = gasOnly(successResult(ByteBuffer.allocate(1), 123L), SUCCESS, true);
         given(call.execute(frame)).willReturn(pricedResult);
@@ -107,7 +107,7 @@ class HtsSystemContractTest {
 
     @Test
     void invalidCallAttemptHaltsAndConsumesRemainingGas() {
-        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame))
+        given(attemptFactory.createCallAttemptFrom(Bytes.EMPTY, FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT, frame))
                 .willThrow(RuntimeException.class);
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(validInput, frame);
@@ -117,7 +117,7 @@ class HtsSystemContractTest {
     @Test
     void internalErrorAttemptHaltsAndConsumesRemainingGas() {
         givenValidCallAttempt();
-        frameUtils.when(() -> callTypeOf(frame)).thenReturn(FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT);
+        frameUtils.when(() -> callTypeOf(frame)).thenReturn(FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT);
         given(call.execute(frame)).willThrow(RuntimeException.class);
 
         final var expected = haltResult(ExceptionalHaltReason.PRECOMPILE_ERROR, frame.getRemainingGas());
@@ -137,7 +137,7 @@ class HtsSystemContractTest {
         frameUtils.when(() -> proxyUpdaterFor(frame)).thenReturn(updater);
         lenient().when(updater.enhancement()).thenReturn(enhancement);
         lenient().when(enhancement.systemOperations()).thenReturn(systemOperations);
-        given(attemptFactory.createCallAttemptFrom(validInput, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame))
+        given(attemptFactory.createCallAttemptFrom(validInput, FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT, frame))
                 .willReturn(attempt);
         given(attempt.asExecutableCall()).willReturn(call);
     }

@@ -17,8 +17,8 @@
 plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
-    id("com.hedera.hashgraph.java-test-fixtures")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.benchmark")
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }

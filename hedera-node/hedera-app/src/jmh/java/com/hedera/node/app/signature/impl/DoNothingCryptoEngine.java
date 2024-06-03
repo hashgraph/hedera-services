@@ -43,13 +43,13 @@ public class DoNothingCryptoEngine implements Cryptography {
     }
 
     @Override
-    public Hash getNullHash(DigestType digestType) {
+    public byte[] digestBytesSync(final byte[] message, final DigestType digestType) {
         return null;
     }
 
     @Override
-    public void verifyAsync(List<TransactionSignature> list) {
-        // fake crypto engine does nothing
+    public Hash getNullHash(DigestType digestType) {
+        return null;
     }
 
     @Override

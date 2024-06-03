@@ -19,13 +19,14 @@ package com.swirlds.platform.builder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.Scratchpad;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -50,6 +51,7 @@ import java.util.function.Supplier;
  * components.
  *
  * @param platformContext                        the context for this platform
+ * @param model                                  the wiring model for this platform
  * @param keysAndCerts                           an object holding all the public/private key pairs and the CSPRNG state
  *                                               for this member
  * @param selfId                                 the ID for this node
@@ -98,6 +100,7 @@ import java.util.function.Supplier;
  */
 public record PlatformBuildingBlocks(
         @NonNull PlatformContext platformContext,
+        @NonNull WiringModel model,
         @NonNull KeysAndCerts keysAndCerts,
         @NonNull NodeId selfId,
         @NonNull String mainClassName,

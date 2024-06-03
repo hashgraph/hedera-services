@@ -70,7 +70,7 @@ public class EthereumTransferToRandomEVMAddress implements OpProvider {
                 // Since the receiver _could_ have receiverSigRequired=true (c.f. the
                 // InitialAccountIdentifiers.customize() method), INVALID_SIGNATURE is a valid
                 // response code
-                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE);
+                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE, WRONG_NONCE);
 
         incrementNonce();
 

@@ -53,7 +53,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -245,8 +244,7 @@ class TipsetEventCreatorTests {
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
 
-        final EventImpl eventImpl =
-                new EventImpl(new GossipEvent(event, new byte[0]), new ConsensusData(), selfParent, otherParent);
+        final EventImpl eventImpl = new EventImpl(new GossipEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
 
         return eventImpl;

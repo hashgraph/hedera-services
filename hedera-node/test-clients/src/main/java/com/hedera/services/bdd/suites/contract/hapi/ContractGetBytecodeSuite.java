@@ -31,55 +31,37 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
+import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.MEMO;
 
 import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractGetBytecodeSuite extends HapiSuite {
+public class ContractGetBytecodeSuite {
 
     private static final Logger log = LogManager.getLogger(ContractGetBytecodeSuite.class);
     private static final String NON_EXISTING_CONTRACT =
             HapiSpecSetup.getDefaultInstance().invalidContractName();
 
-    public static void main(String... args) {
-        new ContractGetBytecodeSuite().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(getByteCodeWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    public HapiSpec idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var contract = "Multipurpose";
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
@@ -90,7 +72,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getByteCodeWorks() {
+    final Stream<DynamicTest> getByteCodeWorks() {
         final var contract = "EmptyConstructor";
         final var canonicalUsdFee = 0.05;
         final var canonicalQueryFeeAtActiveRate = new AtomicLong();
@@ -136,7 +118,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractFromCostAnswer() {
+    final Stream<DynamicTest> invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
@@ -145,7 +127,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidContractFromAnswerOnly() {
+    final Stream<DynamicTest> invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()

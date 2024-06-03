@@ -25,6 +25,7 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.wiring.WiringConfig;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -85,7 +86,8 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 ThreadConfig.class,
                 TransactionConfig.class,
                 UptimeConfig.class,
-                VirtualMapConfig.class);
+                VirtualMapConfig.class,
+                WiringConfig.class);
     }
 
     @NonNull

@@ -99,7 +99,7 @@ class StateProofTests {
         for (final NodeId nodeId : nodes) {
             final Address address = addressBook.getAddress(nodeId);
             weight += address.getWeight();
-            signatures.put(nodeId, signatureBuilder.fakeSign(hash.getValue(), address.getSigPublicKey()));
+            signatures.put(nodeId, signatureBuilder.fakeSign(hash.copyToByteArray(), address.getSigPublicKey()));
 
             if (threshold.isSatisfiedBy(weight, addressBook.getTotalWeight())) {
                 break;
@@ -479,7 +479,8 @@ class StateProofTests {
         for (int index = 0; index < 6; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             final Address address = addressBook.getAddress(nodeId);
-            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            final Signature signature =
+                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
             signatures.put(nodeId, signature);
         }
 
@@ -491,7 +492,8 @@ class StateProofTests {
         // Adding the zero weight signature should not change the result.
         final NodeId nodeId = addressBook.getNodeId(9);
         final Address address = addressBook.getAddress(nodeId);
-        final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+        final Signature signature =
+                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
         signatures.put(nodeId, signature);
 
         final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
@@ -501,7 +503,8 @@ class StateProofTests {
 
         final NodeId nodeId2 = addressBook.getNodeId(8);
         final Address address2 = addressBook.getAddress(nodeId2);
-        final Signature signature2 = signatureBuilder.fakeSign(root.getHash().getValue(), address2.getSigPublicKey());
+        final Signature signature2 =
+                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address2.getSigPublicKey());
         signatures.put(nodeId2, signature2);
 
         final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
@@ -535,7 +538,8 @@ class StateProofTests {
         for (int index = 0; index < 6; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             final Address address = addressBook.getAddress(nodeId);
-            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            final Signature signature =
+                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
             signatures.put(nodeId, signature);
         }
 
@@ -557,7 +561,8 @@ class StateProofTests {
 
         final NodeId nodeId2 = addressBook.getNodeId(7);
         final Address address2 = addressBook.getAddress(nodeId2);
-        final Signature signature2 = signatureBuilder.fakeSign(root.getHash().getValue(), address2.getSigPublicKey());
+        final Signature signature2 =
+                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address2.getSigPublicKey());
         signatures.put(nodeId2, signature2);
 
         final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
@@ -602,7 +607,8 @@ class StateProofTests {
         for (int index = 0; index < 6; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             final Address address = addressBook.getAddress(nodeId);
-            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            final Signature signature =
+                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
             signatures.put(nodeId, signature);
         }
 
@@ -633,7 +639,8 @@ class StateProofTests {
 
         final NodeId nodeId2 = addressBook.getNodeId(7);
         final Address address2 = addressBook.getAddress(nodeId2);
-        final Signature signature2 = signatureBuilder.fakeSign(root.getHash().getValue(), address2.getSigPublicKey());
+        final Signature signature2 =
+                signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address2.getSigPublicKey());
         signatures.put(nodeId2, signature2);
 
         final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
@@ -667,7 +674,8 @@ class StateProofTests {
         for (int index = 0; index < 7; index++) {
             final NodeId nodeId = addressBook.getNodeId(index);
             final Address address = addressBook.getAddress(nodeId);
-            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            final Signature signature =
+                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
             signatures.put(nodeId, signature);
         }
 
@@ -725,7 +733,8 @@ class StateProofTests {
 
             final NodeId nextId = addressBook.getNodeId(index);
             final Address address = addressBook.getAddress(nextId);
-            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            final Signature signature =
+                    signatureBuilder.fakeSign(root.getHash().copyToByteArray(), address.getSigPublicKey());
             signatures.put(nextId, signature);
 
             int weight = index + 1;

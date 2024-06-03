@@ -95,9 +95,7 @@ Private: 91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
 The _test-clients/_ directory in this repo contains a large number of
 end-to-end tests that Hedera engineering uses to validate the behavior of
 Hedera Services. Many of these tests are written in the style of a BDD
-specification. For example, browse to
-`com.hedera.services.bdd.suites.crypto.HelloWorldSpec`, which makes some minimal
-assertions about the effects of a crypto transfer.
+specification. 
 
 Run `HelloWorldSpec#main` with an IntelliJ configuration whose working
 directory is the _test-clients/_ directory of your clone of this repo:

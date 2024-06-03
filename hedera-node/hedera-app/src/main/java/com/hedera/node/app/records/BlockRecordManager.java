@@ -89,7 +89,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * be called after the user transaction has been committed to state and is 100% done. It must include the record of
      * the user transaction along with all preceding child transactions and any child or transactions after. System
      * transactions are treated as though they were user transactions, calling
-     * {@link #startUserTransaction(Instant, HederaState, PlatformState)}  and {@link #endUserTransaction(Stream, HederaState)}.
+     * {@link #startUserTransaction(Instant, HederaState, PlatformState)} and this method.
      *
      * @param recordStreamItems Stream of records produced while handling the user transaction
      * @param state             The state to read {@link BlockInfo} from

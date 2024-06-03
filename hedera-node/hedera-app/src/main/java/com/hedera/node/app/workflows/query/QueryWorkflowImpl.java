@@ -38,11 +38,11 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -196,7 +196,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 TransactionBody txBody;
                 AccountID payerID = null;
                 if (paymentRequired) {
-                    allegedPayment = queryHeader.paymentOrThrow();
+                    allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                     final var configuration = configProvider.getConfiguration();
 
                     // 3.i Ingest checks
@@ -291,7 +291,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
         } else {
             response = DEFAULT_UNSUPPORTED_RESPONSE;
-            logger.warn("Received a query for an unknown functionality");
         }
 
         try {

@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
+import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
@@ -84,10 +85,14 @@ class OnDiskTest extends MerkleTestBase {
                 DigestType.SHA_384,
                 (short) 1,
                 new OnDiskKeySerializer<>(
-                        onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF),
+                        onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        AccountID.PROTOBUF),
                 (short) 1,
                 new OnDiskValueSerializer<>(
-                        onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), Account.PROTOBUF));
+                        onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                        Account.PROTOBUF));
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
@@ -158,7 +163,8 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class));
+        final var r = new MerkleSchemaRegistry(
+                registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

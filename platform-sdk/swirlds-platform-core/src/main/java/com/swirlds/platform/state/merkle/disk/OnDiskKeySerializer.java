@@ -54,18 +54,21 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
     // Serializer version
     private static final int VERSION = 1;
 
-    private final long classId;
+    private final long serializerClassId;
+    private final long keyClassId;
     private final Codec<K> codec;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public OnDiskKeySerializer() {
-        classId = CLASS_ID; // BAD!!
+        serializerClassId = CLASS_ID; // BAD!!
+        keyClassId = 0; // invalid class id
         codec = null;
     }
 
-    public OnDiskKeySerializer(long classId, @Nullable final Codec<K> codec) {
-        this.classId = classId;
+    public OnDiskKeySerializer(long serializerClassId, long keyClassId, @Nullable final Codec<K> codec) {
+        this.serializerClassId = serializerClassId;
+        this.keyClassId = keyClassId;
         this.codec = codec;
     }
 
@@ -73,7 +76,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
 
     @Override
     public long getClassId() {
-        return classId;
+        return serializerClassId;
     }
 
     @Override
@@ -150,7 +153,7 @@ public final class OnDiskKeySerializer<K> implements KeySerializer<OnDiskKey<K>>
         try {
             final K k = codec.parse(in);
             Objects.requireNonNull(k);
-            return new OnDiskKey<>(classId, codec, k);
+            return new OnDiskKey<>(keyClassId, codec, k);
         } catch (final ParseException e) {
             throw new RuntimeException(e);
         }

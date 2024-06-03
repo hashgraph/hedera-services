@@ -175,8 +175,8 @@ class RandotronTests {
         final Hash hash2 = random2.nextHash();
         assertNotEquals(hash1, hash2);
 
-        assertEquals(48, hash1.getValue().length);
-        assertEquals(48, hash2.getValue().length);
+        assertEquals(48, hash1.getBytes().length());
+        assertEquals(48, hash2.getBytes().length());
         assertEquals(DigestType.SHA_384, hash1.getDigestType());
         assertEquals(DigestType.SHA_384, hash2.getDigestType());
     }
@@ -189,8 +189,8 @@ class RandotronTests {
 
         assertEquals(hash1, hash2);
 
-        assertEquals(48, hash1.getValue().length);
-        assertEquals(48, hash2.getValue().length);
+        assertEquals(48, hash1.getBytes().length());
+        assertEquals(48, hash2.getBytes().length());
         assertEquals(DigestType.SHA_384, hash1.getDigestType());
         assertEquals(DigestType.SHA_384, hash2.getDigestType());
     }

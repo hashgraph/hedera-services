@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -109,25 +110,26 @@ class RandomAddressBookBuilderTests {
             final PublicKey signaturePublicKey = address.getSigPublicKey();
             final KeysAndCerts privateKeys = builderA.getPrivateKeys(id);
 
-            final byte[] data = randotron.nextByteArray(64);
-            final com.swirlds.common.crypto.Signature signature = new PlatformSigner(privateKeys).sign(data);
+            final byte[] dataArray = randotron.nextByteArray(64);
+            final Bytes dataBytes = Bytes.wrap(dataArray);
+            final com.swirlds.common.crypto.Signature signature = new PlatformSigner(privateKeys).sign(dataArray);
 
-            assertTrue(CryptoStatic.verifySignature(data, signature.getSignatureBytes(), signaturePublicKey));
+            assertTrue(CryptoStatic.verifySignature(dataBytes, signature.getBytes(), signaturePublicKey));
 
             // Sanity check: validating using the wrong public key should fail
             final NodeId wrongId = addressBookA.getNodeId((i + 1) % size);
             final Address wrongAddress = addressBookA.getAddress(wrongId);
             final PublicKey wrongPublicKey = wrongAddress.getSigPublicKey();
-            assertFalse(CryptoStatic.verifySignature(data, signature.getSignatureBytes(), wrongPublicKey));
+            assertFalse(CryptoStatic.verifySignature(dataBytes, signature.getBytes(), wrongPublicKey));
 
             // Sanity check: validating against the wrong data should fail
-            final byte[] wrongData = randotron.nextByteArray(64);
-            assertFalse(CryptoStatic.verifySignature(wrongData, signature.getSignatureBytes(), signaturePublicKey));
+            final Bytes wrongData = randotron.nextHashBytes();
+            assertFalse(CryptoStatic.verifySignature(wrongData, signature.getBytes(), signaturePublicKey));
 
             // Sanity check: validating with a modified signature should fail
-            final byte[] modifiedSignature = signature.getSignatureBytes().clone();
+            final byte[] modifiedSignature = signature.getBytes().toByteArray();
             modifiedSignature[0] = (byte) ~modifiedSignature[0];
-            assertFalse(CryptoStatic.verifySignature(data, modifiedSignature, signaturePublicKey));
+            assertFalse(CryptoStatic.verifySignature(dataBytes, Bytes.wrap(modifiedSignature), signaturePublicKey));
         }
     }
 }

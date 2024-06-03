@@ -123,12 +123,25 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return;
         }
 
+        final var evmPrecompile = precompiles.get(codeAddress);
         // Check to see if the code address is a system account and possibly halt
         if (addressChecks.isSystemAccount(codeAddress)) {
-            doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
+            doHaltIfInvalidSystemCall(frame, tracer);
             if (alreadyHalted(frame)) {
                 return;
             }
+
+            if (evmPrecompile == null) {
+                handleNonExtantSystemAccount(frame, tracer);
+
+                return;
+            }
+        }
+
+        // Handle evm precompiles
+        if (evmPrecompile != null) {
+            doExecutePrecompile(evmPrecompile, frame, tracer);
+            return;
         }
 
         // Transfer value to the contract if required and possibly halt
@@ -137,13 +150,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (alreadyHalted(frame)) {
                 return;
             }
-        }
-
-        // Handle evm precompiles
-        final var evmPrecompile = precompiles.get(codeAddress);
-        if (evmPrecompile != null) {
-            doExecutePrecompile(evmPrecompile, frame, tracer);
-            return;
         }
 
         // For mono-service fidelity, we need to consider called contracts
@@ -160,6 +166,13 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
 
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
         return featureFlags.isImplicitCreationEnabled(config);
+    }
+
+    private void handleNonExtantSystemAccount(
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
+        frame.clearGasRemaining();
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
     private void doExecutePrecompile(
@@ -250,14 +263,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     private void doHaltIfInvalidSystemCall(
-            @NonNull final Address codeAddress,
-            @NonNull final MessageFrame frame,
-            @NonNull final OperationTracer operationTracer) {
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
         if (transfersValue(frame)) {
             doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
-        } else if (precompiles.get(codeAddress) == null) {
-            final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
-            finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) operationTracer);
         }
     }
 
@@ -273,10 +281,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final ExceptionalHaltReason reason,
             @NonNull final OperationTracer tracer) {
         doHalt(frame, reason, tracer, ForLazyCreation.NO);
-    }
-
-    private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
-        doHalt(frame, reason, null, ForLazyCreation.NO);
     }
 
     private void doHalt(

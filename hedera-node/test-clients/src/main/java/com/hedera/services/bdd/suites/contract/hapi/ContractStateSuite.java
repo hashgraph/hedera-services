@@ -18,49 +18,53 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateAnyLogAfter;
 import static java.lang.Integer.MAX_VALUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ContractStateSuite extends HapiSuite {
+public class ContractStateSuite {
     private static final String CONTRACT = "StateContract";
     private static final SplittableRandom RANDOM = new SplittableRandom(1_234_567L);
-    private static final Logger LOG = LogManager.getLogger(ContractStateSuite.class);
 
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(stateChangesSpec());
+    @HapiTest
+    @DisplayName("inserting new slots after a net-zero usage change doesn't cause IterableStorageManager ERROR logs")
+    final Stream<DynamicTest> netZeroSlotUsageUpdateLogsNoErrors() {
+        final var contract = "ThreeSlots";
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract),
+                // Use slot 'b' only
+                contractCall(contract, "setAB", BigInteger.ZERO, BigInteger.ONE),
+                // Clear slot 'b', use slot 'a' (net-zero slot usage but first key impact)
+                contractCall(contract, "setAB", BigInteger.ONE, BigInteger.ZERO),
+                // And now use slot 'c' (will trigger ERROR log unless first key is 'a')
+                contractCall(contract, "setC", BigInteger.ONE),
+                // Ensure there are still no problems in the logs
+                validateAnyLogAfter(Duration.ofMillis(250)));
     }
 
     @HapiTest
-    HapiSpec stateChangesSpec() {
+    final Stream<DynamicTest> stateChangesSpec() {
         final var iterations = 2;
         final var integralTypes = Map.ofEntries(
                 Map.entry("Uint8", 0x01),

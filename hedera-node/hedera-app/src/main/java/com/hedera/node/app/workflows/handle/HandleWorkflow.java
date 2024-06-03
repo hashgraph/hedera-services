@@ -30,8 +30,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
@@ -46,6 +46,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -63,6 +64,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -80,7 +82,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -121,7 +122,9 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
@@ -173,6 +176,9 @@ public class HandleWorkflow {
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final StoreMetricsService storeMetricsService;
+    private final TransactionChecker transactionChecker;
+    private final InitTrigger initTrigger;
+    private final SoftwareVersion softwareVersion;
 
     @Inject
     public HandleWorkflow(
@@ -200,7 +206,10 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final SoftwareVersion softwareVersion) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -230,6 +239,9 @@ public class HandleWorkflow {
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
         this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
+        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
+        this.initTrigger = requireNonNull(initTrigger, "initTrigger must not be null");
+        this.softwareVersion = requireNonNull(softwareVersion, "softwareVersion must not be null");
     }
 
     /**
@@ -317,15 +329,50 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
+
+        // First, check if the transaction is submitted with a version prior to the deployed version. If so, set the
+        // status on the receipt to BUSY and return
+        if (this.initTrigger != EVENT_STREAM_RECOVERY
+                && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
+            // Reparse the transaction (so we don't need to get the prehandle result)
+            final TransactionInfo transactionInfo;
+            try {
+                transactionInfo = transactionChecker.parseAndCheck(platformTxn.getApplicationPayload());
+            } catch (PreCheckException e) {
+                logger.error(
+                        "Bad old transaction (version {}) from creator {}",
+                        platformEvent.getSoftwareVersion(),
+                        creator,
+                        e);
+                // We don't care since we're checking a transaction with an older software version. We were going to
+                // skip the transaction handling anyway
+                return;
+            }
+
+            // Initialize record builder list
+            recordBuilder
+                    .transaction(transactionInfo.transaction())
+                    .transactionBytes(transactionInfo.signedBytes())
+                    .transactionID(transactionInfo.transactionID())
+                    .exchangeRate(exchangeRateManager.exchangeRates())
+                    .memo(transactionInfo.txBody().memo());
+
+            // Place a BUSY record in the cache
+            final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
+            recordCache.add(creator.nodeId(), transactionInfo.payerID(), List.of(record));
+
+            return;
+        }
+
+        // (FUTURE) We actually want to consider exporting synthetic transactions on every
         // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
-        // Setup record builder list
+        // Start the user transaction
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordListBuilder = new RecordListBuilder(consensusNow);
-        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();
@@ -610,7 +657,7 @@ public class HandleWorkflow {
         } catch (final Exception e) {
             logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
             if (transactionInfo == null) {
-                final var baseData = extractTransactionBaseData(platformTxn.getContents());
+                final var baseData = extractTransactionBaseData(platformTxn.getApplicationPayload());
                 if (baseData.transaction() == null) {
                     // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
                     logger.error("Failed to parse transaction from creator: {}", creator);
@@ -1034,15 +1081,15 @@ public class HandleWorkflow {
             @Nullable TransactionBody txBody,
             @Nullable AccountID payer) {}
 
-    private TransactionBaseData extractTransactionBaseData(@Nullable final byte[] contents) {
+    private TransactionBaseData extractTransactionBaseData(@NonNull final Bytes content) {
         // This method is only called if something fatal happened. We do a best effort approach to extract the
         // type of the transaction, the TransactionBody and the payer if not known.
-        if (contents == null || contents.length == 0) {
+        if (content.length() == 0) {
             return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
         }
 
         HederaFunctionality function = NONE;
-        Bytes transactionBytes = Bytes.wrap(contents);
+        Bytes transactionBytes = content;
         Transaction transaction = null;
         TransactionBody txBody = null;
         AccountID payer = null;

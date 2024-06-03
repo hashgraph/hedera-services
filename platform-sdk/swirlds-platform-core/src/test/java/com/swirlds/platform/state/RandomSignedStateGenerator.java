@@ -61,7 +61,6 @@ public class RandomSignedStateGenerator {
     private State state;
     private Long round;
     private Hash legacyRunningEventHash;
-    private Hash runningEventHash;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
@@ -75,6 +74,7 @@ public class RandomSignedStateGenerator {
     private ConsensusSnapshot consensusSnapshot;
     private SignatureVerifier signatureVerifier;
     private boolean deleteOnBackgroundThread;
+    private boolean pcesRound;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -139,13 +139,6 @@ public class RandomSignedStateGenerator {
             legacyRunningEventHashInstance = legacyRunningEventHash;
         }
 
-        final Hash runningEventHashInstance;
-        if (runningEventHash == null) {
-            runningEventHashInstance = randomHash(random);
-        } else {
-            runningEventHashInstance = runningEventHash;
-        }
-
         final Instant consensusTimestampInstance;
         if (consensusTimestamp == null) {
             consensusTimestampInstance = RandomUtils.randomInstant(random);
@@ -169,7 +162,7 @@ public class RandomSignedStateGenerator {
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
+            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
         } else {
             softwareVersionInstance = softwareVersion;
         }
@@ -192,7 +185,6 @@ public class RandomSignedStateGenerator {
 
         platformState.setRound(roundInstance);
         platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
-        platformState.setRunningEventHash(runningEventHashInstance);
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
@@ -216,7 +208,8 @@ public class RandomSignedStateGenerator {
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
                 freezeStateInstance,
-                deleteOnBackgroundThread);
+                deleteOnBackgroundThread,
+                pcesRound);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {
@@ -312,17 +305,6 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setLegacyRunningEventHash(final Hash legacyRunningEventHash) {
         this.legacyRunningEventHash = legacyRunningEventHash;
-        return this;
-    }
-
-    /**
-     * Set the running hash of all events that have been applied to this state since the last freeze.
-     *
-     * @return this object
-     */
-    @NonNull
-    public RandomSignedStateGenerator setRunningEventHash(final Hash runningEventHash) {
-        this.runningEventHash = runningEventHash;
         return this;
     }
 
@@ -448,6 +430,18 @@ public class RandomSignedStateGenerator {
     @NonNull
     public RandomSignedStateGenerator setSignatureVerifier(@NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = signatureVerifier;
+        return this;
+    }
+
+    /**
+     * Set if this state was generated during a PCES round.
+     *
+     * @param pcesRound true if this state was generated during a PCES round
+     * @return this object
+     */
+    @NonNull
+    public RandomSignedStateGenerator setPcesRound(final boolean pcesRound) {
+        this.pcesRound = pcesRound;
         return this;
     }
 }

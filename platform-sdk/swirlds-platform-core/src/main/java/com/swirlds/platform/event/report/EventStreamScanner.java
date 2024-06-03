@@ -28,7 +28,6 @@ import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
 import com.swirlds.platform.recovery.internal.MultiFileRunningHashIterator;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -88,12 +87,11 @@ public class EventStreamScanner {
      * we gather all the data from a single chunk of time.
      */
     private void reportGranularData(final DetailedConsensusEvent lastEventInPeriod) {
-        final long granularRoundCount = lastEventInPeriod.getConsensusData().getRoundReceived()
-                - granularFirstEvent.getConsensusData().getRoundReceived();
+        final long granularRoundCount = lastEventInPeriod.getRoundReceived() - granularFirstEvent.getRoundReceived();
 
         granularInfo.add(new EventStreamInfo(
-                granularFirstEvent.getConsensusData().getConsensusTimestamp(),
-                lastEventInPeriod.getConsensusData().getConsensusTimestamp(),
+                granularFirstEvent.getGossipEvent().getConsensusTimestamp(),
+                lastEventInPeriod.getGossipEvent().getConsensusTimestamp(),
                 granularRoundCount,
                 granularEventCount,
                 granularTransactionCount,
@@ -126,8 +124,7 @@ public class EventStreamScanner {
     private void collectEventData(final DetailedConsensusEvent mostRecentEvent) {
         eventCount++;
         granularEventCount++;
-        for (final ConsensusTransactionImpl transaction :
-                mostRecentEvent.getBaseEventHashedData().getTransactions()) {
+        mostRecentEvent.getGossipEvent().transactionIterator().forEachRemaining(transaction -> {
             transactionCount++;
             granularTransactionCount++;
             if (transaction.isSystem()) {
@@ -137,7 +134,7 @@ public class EventStreamScanner {
                 applicationTransactionCount++;
                 granularApplicationTransactionCount++;
             }
-        }
+        });
     }
 
     /**
@@ -149,8 +146,8 @@ public class EventStreamScanner {
         if (enableProgressReport && eventCount % PROGRESS_INTERVAL == 0) {
             // This is intended to be used in a terminal with a human in the loop, intentionally not logged.
             final Duration consensusTimeProcessed = Duration.between(
-                    firstEvent.getConsensusData().getConsensusTimestamp(),
-                    mostRecentEvent.getConsensusData().getConsensusTimestamp());
+                    firstEvent.getGossipEvent().getConsensusTimestamp(),
+                    mostRecentEvent.getGossipEvent().getConsensusTimestamp());
 
             final UnitFormatter formatter = TimeUnit.UNIT_MILLISECONDS
                     .buildFormatter()
@@ -182,8 +179,8 @@ public class EventStreamScanner {
             mostRecentEvent = eventIterator.next();
 
             final Duration elapsedGranularTime = Duration.between(
-                    granularFirstEvent.getConsensusData().getConsensusTimestamp(),
-                    mostRecentEvent.getConsensusData().getConsensusTimestamp());
+                    granularFirstEvent.getGossipEvent().getConsensusTimestamp(),
+                    mostRecentEvent.getGossipEvent().getConsensusTimestamp());
             if (previousEvent != null && isGreaterThan(elapsedGranularTime, reportPeriod)) {
                 // The previous granular period has ended. Start a new period.
                 reportGranularData(previousEvent);
@@ -202,14 +199,13 @@ public class EventStreamScanner {
             writeConsoleSummary(firstEvent, mostRecentEvent);
         }
 
-        final long rounds = mostRecentEvent.getConsensusData().getRoundReceived()
-                - firstEvent.getConsensusData().getRoundReceived();
+        final long rounds = mostRecentEvent.getRoundReceived() - firstEvent.getRoundReceived();
 
         return new EventStreamReport(
                 granularInfo,
                 new EventStreamInfo(
-                        firstEvent.getConsensusData().getConsensusTimestamp(),
-                        mostRecentEvent.getConsensusData().getConsensusTimestamp(),
+                        firstEvent.getGossipEvent().getConsensusTimestamp(),
+                        mostRecentEvent.getGossipEvent().getConsensusTimestamp(),
                         rounds,
                         eventCount,
                         transactionCount,

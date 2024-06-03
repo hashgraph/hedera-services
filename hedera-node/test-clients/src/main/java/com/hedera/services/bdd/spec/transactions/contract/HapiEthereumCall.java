@@ -151,7 +151,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.fiddler = contractCall.getFiddler();
         this.memo = contractCall.getMemo();
         this.fee = contractCall.getFee();
-        this.submitDelay = contractCall.getSubmitDelay();
         this.validDurationSecs = contractCall.getValidDurationSeconds();
         this.customTxnId = contractCall.getCustomTxnId();
         this.node = contractCall.getNode();

@@ -17,7 +17,7 @@
 plugins {
     id("com.hedera.gradle.services")
     id("com.hedera.gradle.services-publish")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.java-test-fixtures")
 }
 
 description = "Hedera Token Service API"

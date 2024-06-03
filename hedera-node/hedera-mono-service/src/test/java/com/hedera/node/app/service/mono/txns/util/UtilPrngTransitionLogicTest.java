@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.txns.util;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -124,7 +125,7 @@ class UtilPrngTransitionLogicTest {
 
         subject.doStateTransition();
 
-        assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
+        assertArrayEquals(aFullHash.copyToByteArray(), tracker.getPseudorandomBytes());
         assertEquals(48, tracker.getPseudorandomBytes().length);
         assertEquals(-1, tracker.getPseudorandomNumber());
     }
@@ -179,7 +180,7 @@ class UtilPrngTransitionLogicTest {
 
         subject.doStateTransition();
 
-        assertEquals(aFullHash.getValue(), tracker.getPseudorandomBytes());
+        assertArrayEquals(aFullHash.copyToByteArray(), tracker.getPseudorandomBytes());
         assertEquals(48, tracker.getPseudorandomBytes().length);
         assertEquals(-1, tracker.getPseudorandomNumber());
     }

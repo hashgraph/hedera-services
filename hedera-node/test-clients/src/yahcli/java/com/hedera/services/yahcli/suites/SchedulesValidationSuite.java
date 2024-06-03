@@ -31,8 +31,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SchedulesValidationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SchedulesValidationSuite.class);
@@ -44,13 +46,11 @@ public class SchedulesValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            validateScheduling(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(validateScheduling());
     }
 
-    private HapiSpec validateScheduling() {
+    final Stream<DynamicTest> validateScheduling() {
         String inSpecSchedule = "forImmediateExecution";
         AtomicLong seqNo = new AtomicLong();
 

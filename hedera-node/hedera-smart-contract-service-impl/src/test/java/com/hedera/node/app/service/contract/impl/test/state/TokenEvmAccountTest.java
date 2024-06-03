@@ -128,4 +128,9 @@ class TokenEvmAccountTest {
         assertThrows(UnsupportedOperationException.class, subject::clearStorage);
         assertThrows(UnsupportedOperationException.class, subject::getUpdatedStorage);
     }
+
+    @Test
+    void neverRegularAccount() {
+        assertFalse(subject.isRegularAccount());
+    }
 }

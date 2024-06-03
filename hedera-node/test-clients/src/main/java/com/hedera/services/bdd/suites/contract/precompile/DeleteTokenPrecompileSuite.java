@@ -44,6 +44,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -54,24 +57,17 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class DeleteTokenPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(DeleteTokenPrecompileSuite.class);
-
+public class DeleteTokenPrecompileSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     public static final String DELETE_TOKEN_CONTRACT = "DeleteTokenContract";
     public static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
@@ -82,22 +78,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     public static final String THRESHOLD_KEY = "ThreshKey";
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
-    public static void main(String... args) {
-        new DeleteTokenPrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(deleteFungibleToken(), deleteNftToken());
-    }
-
     @HapiTest
-    final HapiSpec deleteFungibleToken() {
+    final Stream<DynamicTest> deleteFungibleToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
@@ -157,7 +139,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec deleteNftToken() {
+    final Stream<DynamicTest> deleteNftToken() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";
@@ -210,10 +192,5 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .contractCallResult(htsPrecompileResult()
                                                 .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

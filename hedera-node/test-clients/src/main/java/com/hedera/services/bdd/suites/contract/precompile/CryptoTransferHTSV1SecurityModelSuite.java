@@ -65,7 +65,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -76,8 +75,10 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
@@ -132,7 +133,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 nonNestedCryptoTransferForFungibleToken(),
                 activeContractInFrameIsVerifiedWithoutNeedForSignature(),
@@ -141,7 +142,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
-    final HapiSpec nonNestedCryptoTransferForFungibleToken() {
+    final Stream<DynamicTest> nonNestedCryptoTransferForFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return propertyPreservingHapiSpec("nonNestedCryptoTransferForFungibleToken")
@@ -216,7 +217,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(FUNGIBLE_TOKEN, RECEIVER, 50))));
     }
 
-    final HapiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
+    final Stream<DynamicTest> activeContractInFrameIsVerifiedWithoutNeedForSignature() {
         final var revertedFungibleTransferTxn = "revertedFungibleTransferTxn";
         final var successfulFungibleTransferTxn = "successfulFungibleTransferTxn";
         final var revertedNftTransferTxn = "revertedNftTransferTxn";
@@ -390,7 +391,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                                                 .including(NFT_TOKEN, CONTRACT, RECEIVER, 2L))));
     }
 
-    final HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
+    final Stream<DynamicTest> cryptoTransferNFTsWithCustomFeesMixedScenario() {
         final var SPENDER_SIGNATURE = "spenderSignature";
         return propertyPreservingHapiSpec("cryptoTransferNFTsWithCustomFeesMixedScenario")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
@@ -532,7 +533,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
+    final Stream<DynamicTest> hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
         return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithApproveForAll")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
@@ -692,7 +693,7 @@ public class CryptoTransferHTSV1SecurityModelSuite extends HapiSuite {
                 .then();
     }
 
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    final Stream<DynamicTest> hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         return propertyPreservingHapiSpec("hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(

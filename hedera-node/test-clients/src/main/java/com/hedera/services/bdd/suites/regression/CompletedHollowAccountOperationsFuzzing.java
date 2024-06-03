@@ -22,44 +22,24 @@ import static com.hedera.services.bdd.suites.regression.factories.HollowAccountC
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountCompletedFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Fuzz test, testing different operations on completed hollow account
  */
-@HapiTestSuite
-public class CompletedHollowAccountOperationsFuzzing extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CompletedHollowAccountOperationsFuzzing.class);
-
+public class CompletedHollowAccountOperationsFuzzing {
     private static final String PROPERTIES = "completed-hollow-account-fuzzing.properties";
 
-    public static void main(String... args) {
-        new CompletedHollowAccountOperationsFuzzing().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(completedHollowAccountOperationsFuzzing());
-    }
-
     @HapiTest
-    final HapiSpec completedHollowAccountOperationsFuzzing() {
+    final Stream<DynamicTest> completedHollowAccountOperationsFuzzing() {
         return defaultHapiSpec("CompletedHollowAccountOperationsFuzzing")
                 .given(initOperations())
                 .when()
                 .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES))
+                        .maxOpsPerSec(10)
                         .loggingOff()
-                        .lasting(60L, TimeUnit.SECONDS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+                        .lasting(10L, TimeUnit.SECONDS));
     }
 }

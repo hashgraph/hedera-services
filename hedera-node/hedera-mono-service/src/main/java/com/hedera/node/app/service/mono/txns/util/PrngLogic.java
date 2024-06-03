@@ -27,12 +27,13 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
 public class PrngLogic {
@@ -89,7 +90,7 @@ public class PrngLogic {
         try {
             // Use n-3 running hash instead of n-1 running hash for processing transactions quickly
             nMinus3RunningHash = runningHashLeafSupplier.get().nMinusThreeRunningHash();
-            if (nMinus3RunningHash == null || Arrays.equals(nMinus3RunningHash.getValue(), new byte[48])) {
+            if (nMinus3RunningHash == null || Objects.equals(nMinus3RunningHash.getBytes(), Bytes.wrap(new byte[48]))) {
                 log.info("No n-3 record running hash available to generate random number");
                 return MISSING_BYTES;
             }

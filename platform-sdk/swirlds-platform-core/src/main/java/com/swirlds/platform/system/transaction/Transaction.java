@@ -30,23 +30,8 @@ import java.util.concurrent.locks.ReadWriteLock;
  * objects. The list of signatures features controlled mutability with a thread-safe and atomic implementation. The
  * transaction internally uses a {@link ReadWriteLock} to provide atomic reads and writes to the underlying list of
  * signatures.
- * <p>
- * The contents provided by this class via {@link #getContents()} must never be mutated. Providing the direct (mutable)
- * reference improves performance by eliminating the need to create copies.
- * </p>
  */
 public sealed interface Transaction extends SerializableWithKnownLength permits ConsensusTransaction {
-
-    /**
-     * Returns a direct (mutable) reference to the transaction contents/payload. Care must be
-     * taken to never modify the array returned by this accessor. Modifying the array will result in undefined
-     * behaviors.
-     *
-     * @return a direct reference to the transaction content/payload
-     * @deprecated this method will be removed once the migration to protobuf is complete. Use {@link #getPayload()} instead
-     */
-    @Deprecated
-    byte[] getContents();
 
     /**
      * Returns the payload as a PBJ record

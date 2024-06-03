@@ -22,6 +22,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.utility.NoOpRecycleBin;
 import com.swirlds.common.metrics.PlatformMetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
@@ -48,7 +49,8 @@ class DefaultPlatformContextTest {
                 CryptographyHolder.get(),
                 Time.getCurrent(),
                 ExecutorFactory.create("test", new PlatformUncaughtExceptionHandler()),
-                new TestFileSystemManager(Path.of("/tmp/test")));
+                new TestFileSystemManager(Path.of("/tmp/test")),
+                new NoOpRecycleBin());
 
         // then
         assertNotNull(context.getConfiguration(), "Configuration must not be null");

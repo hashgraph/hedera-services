@@ -28,41 +28,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoCornerCasesSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
+public class CryptoCornerCasesSuite {
     private static final String NEW_PAYEE = "newPayee";
-
-    public static void main(String... args) {
-        new CryptoCornerCasesSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                invalidNodeAccount(),
-                invalidTransactionBody(),
-                invalidTransactionPayerAccountNotFound(),
-                invalidTransactionMemoTooLong(),
-                invalidTransactionDuration(),
-                invalidTransactionStartTime());
-    }
 
     private static Transaction removeTransactionBody(Transaction txn) {
         return txn.toBuilder()
@@ -71,7 +50,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionBody() {
+    final Stream<DynamicTest> invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -93,7 +72,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidNodeAccount() {
+    final Stream<DynamicTest> invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
@@ -108,7 +87,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionDuration() {
+    final Stream<DynamicTest> invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -124,7 +103,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionMemoTooLong() {
+    final Stream<DynamicTest> invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
@@ -144,7 +123,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionPayerAccountNotFound() {
+    final Stream<DynamicTest> invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -160,7 +139,7 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec invalidTransactionStartTime() {
+    final Stream<DynamicTest> invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()
@@ -168,10 +147,5 @@ public class CryptoCornerCasesSuite extends HapiSuite {
                         .balance(10000L)
                         .withTxnTransform(CryptoCornerCasesSuite::replaceTxnStartTtime)
                         .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }
