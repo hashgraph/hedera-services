@@ -95,7 +95,7 @@ public interface LifecycleTest {
     }
 
     /**
-     * Returns an operation that builds a fake upgrade ZIP, uploads it to file {@code 0.0.150),
+     * Returns an operation that builds a fake upgrade ZIP, uploads it to file {@code 0.0.150},
      * issues a {@code PREPARE_UPGRADE}, and awaits writing of the <i>execute_immediate.mf</i>.
      * @return the operation
      */
