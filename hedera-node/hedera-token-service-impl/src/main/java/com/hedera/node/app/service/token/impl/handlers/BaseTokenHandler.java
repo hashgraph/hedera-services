@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
+import static com.hedera.node.app.service.token.impl.util.TokenUtil.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -467,16 +468,18 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Determines if the given account has unlimited auto-associations.
+     * Checks if the given account has unlimited auto-associations enabled.
      *
-     * @param account         the account to check, must not be null
-     * @param entitiesConfig  the configuration settings to check against, must not be null
-     * @return                {@code true} if unlimited auto-associations are enabled and the account's
-     * max auto-associations is set to -1 otherwise {@code false}
-     * @throws NullPointerException if the account or entitiesConfig is null
+     * @param account        the account to check; must not be null
+     * @param entitiesConfig the configuration settings to check against; must not be null
+     * @return               {@code true} if unlimited auto-associations is enabled and the account's
+     *                       max auto-associations is set to {@code UNLIMITED_AUTOMATIC_ASSOCIATIONS},
+     *                       otherwise {@code false}
+     * @throws NullPointerException if either {@code account} or {@code entitiesConfig} is null
      */
     public static boolean hasUnlimitedAutoAssociations(
             @NonNull final Account account, @NonNull EntitiesConfig entitiesConfig) {
-        return entitiesConfig.unlimitedAutoAssociationsEnabled() && account.maxAutoAssociations() == -1;
+        return entitiesConfig.unlimitedAutoAssociationsEnabled()
+                && account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS;
     }
 }

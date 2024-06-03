@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationL
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
+import static com.hedera.node.app.service.token.impl.util.TokenUtil.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -84,7 +85,9 @@ public class AutoAccountCreator {
 
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         final var entitiesConfig = handleContext.configuration().getConfigData(EntitiesConfig.class);
-        final int autoAssociations = entitiesConfig.unlimitedAutoAssociationsEnabled() ? -1 : maxAutoAssociations;
+        final int autoAssociations = entitiesConfig.unlimitedAutoAssociationsEnabled()
+                ? UNLIMITED_AUTOMATIC_ASSOCIATIONS
+                : maxAutoAssociations;
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
             memo = LAZY_MEMO;
