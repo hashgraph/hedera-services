@@ -93,7 +93,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -120,7 +120,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * The default implementation of {@link HandleContext}.
  */
-@HandleScope
+@HandleContextScope
 public class HandleContextImpl implements HandleContext, FeeContext {
 
     private static final Logger logger = LogManager.getLogger(HandleContextImpl.class);

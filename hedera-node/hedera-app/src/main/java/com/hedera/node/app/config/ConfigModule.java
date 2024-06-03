@@ -19,10 +19,12 @@ package com.hedera.node.app.config;
 import com.hedera.node.config.ConfigProvider;
 import dagger.Binds;
 import dagger.Module;
+import javax.inject.Singleton;
 
 @Module
 public interface ConfigModule {
 
     @Binds
+    @Singleton
     ConfigProvider configProvider(ConfigProviderImpl configProviderImpl);
 }

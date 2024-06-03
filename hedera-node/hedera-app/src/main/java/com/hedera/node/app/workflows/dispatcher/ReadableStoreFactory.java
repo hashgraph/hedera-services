@@ -50,7 +50,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
  */
-@PlatformTransactionScope
+@UserTransactionScope
 public class ReadableStoreFactory {
     private static final Logger logger = LogManager.getLogger(ReadableStoreFactory.class);
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,

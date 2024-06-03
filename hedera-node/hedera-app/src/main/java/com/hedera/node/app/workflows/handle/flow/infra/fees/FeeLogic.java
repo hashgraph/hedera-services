@@ -26,7 +26,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
 import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -34,7 +34,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import javax.inject.Inject;
 
-@PlatformTransactionScope
+@UserTransactionScope
 public class FeeLogic {
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);

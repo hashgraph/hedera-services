@@ -53,6 +53,7 @@ import com.hedera.node.app.workflows.handle.flow.infra.HollowAccountFinalizer;
 import com.hedera.node.app.workflows.handle.flow.infra.ThrottleLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.fees.FeeLogic;
 import com.hedera.node.app.workflows.handle.flow.modules.HandleContextComponent;
+import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -61,7 +62,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -139,14 +139,14 @@ public class DefaultHandleProcess implements HandleProcess {
     }
 
     @Override
-    public void processUserTransaction(
-            @NonNull final Instant consensusNow,
-            @NonNull final HederaState state,
-            @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent platformEvent,
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final RecordListBuilder recordListBuilder) {
+    public void processUserTransaction(UserTransactionComponent userTxn) {
+        final Instant consensusNow = userTxn.consensusNow();
+        final HederaState state = userTxn.state();
+        final PlatformState platformState = userTxn.platformState();
+        final NodeInfo creator = userTxn.creator();
+        final ConsensusTransaction platformTxn = userTxn.platformTxn();
+        final RecordListBuilder recordListBuilder = userTxn.recordListBuilder();
+
         // (FUTURE) We actually want to consider exporting synthetic transactions on every
         // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();

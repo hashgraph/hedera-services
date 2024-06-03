@@ -18,36 +18,29 @@ package com.hedera.node.app.workflows.handle.flow;
 
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
-@PlatformTransactionScope
+@UserTransactionScope
 public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> {
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
     private final RecordListBuilder recordListBuilder;
     private final SkipHandleProcess skipHandleProcess;
     private final DefaultHandleProcess defaultHandleProcess;
-
-    final Instant consensusNow;
-    final HederaState state;
-    final PlatformState platformState;
-    final ConsensusEvent platformEvent;
-    final NodeInfo creator;
-    final ConsensusTransaction platformTxn;
+    private final GenesisHandleProcess genesisHandleProcess;
+    final UserTransactionComponent userTxn;
+    private final BlockRecordManager blockRecordManager;
 
     @Inject
     public ProcessRunner(
@@ -56,38 +49,34 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SkipHandleProcess skipHandleProcess,
             @NonNull final DefaultHandleProcess defaultHandleProcess,
-            @NonNull final Instant consensusNow,
-            @NonNull final HederaState state,
-            @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent platformEvent,
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn) {
+            final GenesisHandleProcess genesisHandleProcess,
+            @NonNull final UserTransactionComponent userTxn,
+            final BlockRecordManager blockRecordManager) {
         this.version = version;
         this.initTrigger = initTrigger;
         this.recordListBuilder = recordListBuilder;
         this.skipHandleProcess = skipHandleProcess;
         this.defaultHandleProcess = defaultHandleProcess;
-        this.consensusNow = consensusNow;
-        this.state = state;
-        this.platformState = platformState;
-        this.platformEvent = platformEvent;
-        this.creator = creator;
-        this.platformTxn = platformTxn;
+        this.genesisHandleProcess = genesisHandleProcess;
+        this.userTxn = userTxn;
+        this.blockRecordManager = blockRecordManager;
     }
 
     @Override
     public Stream<SingleTransactionRecord> get() {
         if (isOlderSoftwareEvent()) {
-            skipHandleProcess.processUserTransaction(
-                    consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
+            skipHandleProcess.processUserTransaction(userTxn);
         } else {
-            defaultHandleProcess.processUserTransaction(
-                    consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
+            if (blockRecordManager.consTimeOfLastHandledTxn().equals(Instant.EPOCH)) {
+                genesisHandleProcess.processUserTransaction(userTxn);
+            }
+            defaultHandleProcess.processUserTransaction(userTxn);
         }
         return recordListBuilder.build().records().stream();
     }
 
     private boolean isOlderSoftwareEvent() {
-        return this.initTrigger != EVENT_STREAM_RECOVERY && version.compareTo(platformEvent.getSoftwareVersion()) > 0;
+        return this.initTrigger != EVENT_STREAM_RECOVERY
+                && version.compareTo(userTxn.platformEvent().getSoftwareVersion()) > 0;
     }
 }

@@ -16,17 +16,25 @@
 
 package com.hedera.node.app.workflows.handle.flow.modules;
 
-import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
-import com.swirlds.state.HederaState;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.config.api.Configuration;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Module
-public interface StateModule {
+public interface ActiveConfigModule {
     @Provides
     @UserTransactionScope
-    static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
-        return workingStateAccessor.getHederaState();
+    static Configuration provideConfiguration(@NonNull ConfigProvider configProvider) {
+        return configProvider.getConfiguration();
+    }
+
+    @Provides
+    @UserTransactionScope
+    static HederaConfig provideHederaConfig(@NonNull Configuration configuration) {
+        return configuration.getConfigData(HederaConfig.class);
     }
 }

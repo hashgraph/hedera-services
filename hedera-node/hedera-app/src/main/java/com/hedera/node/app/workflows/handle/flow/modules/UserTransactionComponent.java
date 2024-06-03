@@ -17,24 +17,32 @@
 package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.HederaState;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 import java.time.Instant;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@Subcomponent(modules = {StateModule.class, ContextModule.class, StagingModule.class})
-@PlatformTransactionScope
-public interface HandleComponent {
+@Subcomponent(modules = {StateModule.class, ActiveConfigModule.class, ContextModule.class, StagingModule.class})
+@UserTransactionScope
+public interface UserTransactionComponent {
     @Subcomponent.Factory
     interface Factory {
-        HandleComponent create(
+        UserTransactionComponent create(
                 @BindsInstance PlatformState platformState,
                 @BindsInstance ConsensusEvent platformEvent,
                 @BindsInstance NodeInfo creator,
@@ -45,4 +53,30 @@ public interface HandleComponent {
     HederaFunctionality functionality();
 
     Supplier<Stream<SingleTransactionRecord>> recordStream();
+
+    Instant consensusNow();
+
+    HederaState state();
+
+    PlatformState platformState();
+
+    ConsensusEvent platformEvent();
+
+    NodeInfo creator();
+
+    ConsensusTransaction platformTxn();
+
+    RecordListBuilder recordListBuilder();
+
+    TransactionInfo txnInfo();
+
+    TokenContext tokenContext();
+
+    SavepointStackImpl savepointStack();
+
+    SingleTransactionRecordBuilderImpl recordBuilder();
+
+    PreHandleResult preHandleResult();
+
+    ReadableStoreFactory readableStoreFactory();
 }

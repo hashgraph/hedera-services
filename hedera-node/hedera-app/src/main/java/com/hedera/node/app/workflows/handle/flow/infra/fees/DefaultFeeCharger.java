@@ -20,13 +20,13 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
 import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@PlatformTransactionScope
+@UserTransactionScope
 public class DefaultFeeCharger implements FeeCharger {
     private static final Logger logger = LogManager.getLogger(DefaultFeeCharger.class);
 

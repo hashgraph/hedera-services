@@ -16,45 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.flow.modules;
 
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
 import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 @Module
 public interface ContextModule {
     @Binds
-    @PlatformTransactionScope
+    @UserTransactionScope
     TokenContext bindTokenContext(TokenContextImpl tokenContext);
-
-    @Provides
-    @PlatformTransactionScope
-    static TokenContext provideTokenContext(
-            @NonNull Configuration configuration,
-            @NonNull StoreMetricsService storeMetricsService,
-            @NonNull SavepointStackImpl stack,
-            @NonNull RecordListBuilder recordListBuilder,
-            @NonNull BlockRecordManager blockRecordManager,
-            @NonNull HederaState state) {
-        final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
-        final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
-        return new TokenContextImpl(
-                configuration,
-                state,
-                storeMetricsService,
-                stack,
-                recordListBuilder,
-                blockRecordManager,
-                isFirstTransaction);
-    }
 }

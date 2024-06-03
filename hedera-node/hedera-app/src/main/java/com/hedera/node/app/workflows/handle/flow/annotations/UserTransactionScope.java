@@ -33,4 +33,4 @@ import javax.inject.Scope;
 @Retention(RUNTIME)
 @Documented
 @Scope
-public @interface HandleScope {}
+public @interface UserTransactionScope {}

@@ -18,18 +18,11 @@ package com.hedera.node.app.workflows.handle.flow;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.state.HederaState;
+import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -55,37 +48,18 @@ public class SkipHandleProcess implements HandleProcess {
     }
 
     @Override
-    public void processUserTransaction(
-            @NonNull final Instant consensusNow,
-            @NonNull final HederaState state,
-            @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent platformEvent,
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final RecordListBuilder recordListBuilder) {
-        // Reparse the transaction (so we don't need to get the prehandle result)
-        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
-        final TransactionInfo transactionInfo;
-        try {
-            transactionInfo = transactionChecker.parseAndCheck(platformTxn.getApplicationPayload());
-        } catch (PreCheckException e) {
-            logger.error(
-                    "Bad old transaction (version {}) from creator {}", platformEvent.getSoftwareVersion(), creator, e);
-            // We don't care since we're checking a transaction with an older software version. We were going to
-            // skip the transaction handling anyway
-            return;
-        }
-
-        // Initialize record builder list
-        recordBuilder
+    public void processUserTransaction(UserTransactionComponent userTxn) {
+        final TransactionInfo transactionInfo = userTxn.txnInfo();
+        // Initialize record builder list and place a BUSY record in the cache
+        final var parentRecord = userTxn.recordListBuilder()
+                .userTransactionRecordBuilder()
                 .transaction(transactionInfo.transaction())
                 .transactionBytes(transactionInfo.signedBytes())
                 .transactionID(transactionInfo.transactionID())
                 .exchangeRate(exchangeRateManager.exchangeRates())
-                .memo(transactionInfo.txBody().memo());
+                .memo(transactionInfo.txBody().memo())
+                .status(ResponseCodeEnum.BUSY);
 
-        // Place a BUSY record in the cache
-        final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
-        recordCache.add(creator.nodeId(), transactionInfo.payerID(), List.of(record));
+        recordCache.add(userTxn.creator().nodeId(), transactionInfo.payerID(), List.of(parentRecord.build()));
     }
 }

@@ -18,13 +18,13 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
 import dagger.Binds;
 import dagger.Module;
 
 @Module
 public interface HandleContextModule {
     @Binds
-    @HandleScope
+    @HandleContextScope
     HandleContext bindHandleContext(HandleContextImpl context);
 }

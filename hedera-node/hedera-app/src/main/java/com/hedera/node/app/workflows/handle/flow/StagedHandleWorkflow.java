@@ -24,7 +24,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.CacheWarmer;
-import com.hedera.node.app.workflows.handle.flow.modules.HandleComponent;
+import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
@@ -44,7 +44,7 @@ public class StagedHandleWorkflow {
     private final BlockRecordManager blockRecordManager;
     private final ThrottleServiceManager throttleServiceManager;
     private final NetworkInfo networkInfo;
-    private final Provider<HandleComponent.Factory> handleProvider;
+    private final Provider<UserTransactionComponent.Factory> userTxnProvider;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
 
     public StagedHandleWorkflow(
@@ -52,13 +52,13 @@ public class StagedHandleWorkflow {
             final BlockRecordManager blockRecordManager,
             final ThrottleServiceManager throttleServiceManager,
             final NetworkInfo networkInfo,
-            final Provider<HandleComponent.Factory> handleProvider,
+            final Provider<UserTransactionComponent.Factory> handleProvider,
             final HandleWorkflowMetrics handleWorkflowMetrics) {
         this.cacheWarmer = cacheWarmer;
         this.blockRecordManager = blockRecordManager;
         this.throttleServiceManager = throttleServiceManager;
         this.networkInfo = networkInfo;
-        this.handleProvider = handleProvider;
+        this.userTxnProvider = handleProvider;
         this.handleWorkflowMetrics = handleWorkflowMetrics;
     }
 
@@ -137,13 +137,13 @@ public class StagedHandleWorkflow {
         final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var handleComponent =
-                handleProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
-        // This calls ProcessRunner.get() method
-        final var recordStream = handleComponent.recordStream().get();
+        final var userTxn =
+                userTxnProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
+
+        final var recordStream = userTxn.recordStream().get();
         blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
-                handleComponent.functionality(), (int) (System.nanoTime() - handleStart));
+                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
 }

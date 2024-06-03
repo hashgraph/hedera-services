@@ -28,9 +28,10 @@ import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
-import com.hedera.node.app.workflows.handle.flow.annotations.PlatformTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -44,7 +45,7 @@ import java.util.Map;
 @Module
 public interface StagingModule {
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static PreHandleResult providePreHandleResult(
             @NonNull NodeInfo creator,
             @NonNull ConsensusTransaction platformTxn,
@@ -53,37 +54,44 @@ public interface StagingModule {
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static TransactionInfo provideTransactionInfo(@NonNull PreHandleResult preHandleResult) {
         return preHandleResult.txInfo();
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static Map<Key, SignatureVerificationFuture> provideKeyVerifications(@NonNull PreHandleResult preHandleResult) {
         return preHandleResult.getVerificationResults();
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static int provideLegacyFeeCalcNetworkVpt(@NonNull TransactionInfo txnInfo) {
         return txnInfo.signatureMap().sigPair().size();
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static int provideSignatureMapSize(@NonNull TransactionInfo txnInfo) {
         return SignatureMap.PROTOBUF.measureRecord(txnInfo.signatureMap());
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo) {
         return txnInfo.functionality();
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
+    static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
+            @NonNull RecordListBuilder recordListBuilder) {
+        return recordListBuilder.userTransactionRecordBuilder();
+    }
+
+    @Provides
+    @UserTransactionScope
     static Bytes transactionBytes(@NonNull TransactionInfo txnInfo) {
         final var txn = txnInfo.transaction();
         if (txnInfo.transaction().signedTransactionBytes().length() > 0) {
@@ -95,13 +103,12 @@ public interface StagingModule {
     }
 
     @Provides
-    @PlatformTransactionScope
+    @UserTransactionScope
     static FeeAccumulator provideFeeAccumulator(
             @NonNull SavepointStackImpl stack,
             @NonNull Configuration configuration,
             @NonNull StoreMetricsService storeMetricsService,
-            @NonNull RecordListBuilder recordListBuilder) {
-        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
+            @NonNull SingleTransactionRecordBuilderImpl recordBuilder) {
         final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
