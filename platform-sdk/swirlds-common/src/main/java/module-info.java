@@ -61,6 +61,7 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
+    exports com.swirlds.common.wiring;
     exports com.swirlds.common.wiring.component;
     exports com.swirlds.common.wiring.counters;
     exports com.swirlds.common.wiring.model;
@@ -145,6 +146,7 @@ module com.swirlds.common {
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.logging;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.metrics.impl;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.hedera.pbj.runtime;
@@ -160,5 +162,5 @@ module com.swirlds.common {
     requires org.apache.logging.log4j.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.nativelib.secp256k1;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

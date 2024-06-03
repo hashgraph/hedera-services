@@ -1756,6 +1756,8 @@ class ModelTests {
 
         inputA.bindConsumer(x -> {});
 
+        model.start();
         assertFalse(model.checkForUnboundInputWires());
+        model.stop();
     }
 }

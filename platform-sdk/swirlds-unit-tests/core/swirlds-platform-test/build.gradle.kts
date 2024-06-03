@@ -21,7 +21,6 @@ plugins {
 
 testModuleInfo {
     requires("com.hedera.pbj.runtime")
-    requires("com.hedera.node.hapi")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")
     requires("awaitility")

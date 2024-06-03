@@ -3,5 +3,5 @@ module com.swirlds.fcqueue {
 
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.metrics.api;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

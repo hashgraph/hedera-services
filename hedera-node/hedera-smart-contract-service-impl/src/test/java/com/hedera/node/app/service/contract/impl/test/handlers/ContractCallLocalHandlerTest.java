@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCallHandlerTest.INTRINSIC_GAS_FOR_0_ARG_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -49,8 +51,11 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.util.function.Function;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -103,7 +108,15 @@ class ContractCallLocalHandlerTest {
     @Mock
     private FeeCalculator feeCalculator;
 
-    private final ContractCallLocalHandler subject = new ContractCallLocalHandler(() -> factory);
+    @Mock
+    private GasCalculator gasCalculator;
+
+    private ContractCallLocalHandler subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new ContractCallLocalHandler(() -> factory, gasCalculator);
+    }
 
     @Test
     void extractHeaderTest() {
@@ -133,6 +146,7 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(contractCallLocalQuery.functionParameters()).willReturn(Bytes.EMPTY);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
         givenAllowCallsToNonContractAccountOffConfig();
@@ -170,6 +184,7 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(null);
+        given(contractCallLocalQuery.functionParameters()).willReturn(Bytes.EMPTY);
         givenDefaultConfig();
 
         // when:
@@ -182,10 +197,35 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(contractCallLocalQuery.functionParameters()).willReturn(Bytes.EMPTY);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(null);
         given(context.createStore(ReadableTokenStore.class)).willReturn(tokenStore);
         given(tokenStore.get(any())).willReturn(null);
+        givenAllowCallsToNonContractAccountOffConfig();
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateFailsIfGasIsLessThanIntrinsic() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.gas()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1);
+        givenAllowCallsToNonContractAccountOffConfig();
+
+        // when:
+        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
+    }
+
+    @Test
+    void validateFailsIfGasIsMoreThanMax() {
+        // given
+        given(context.query()).willReturn(query);
+        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
+        given(contractCallLocalQuery.gas()).willReturn(MAX_GAS_LIMIT + 1);
         givenAllowCallsToNonContractAccountOffConfig();
 
         // when:
@@ -198,6 +238,7 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.contractID()).willReturn(contractID);
+        given(contractCallLocalQuery.functionParameters()).willReturn(Bytes.EMPTY);
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
         givenAllowCallsToNonContractAccountOffConfig();

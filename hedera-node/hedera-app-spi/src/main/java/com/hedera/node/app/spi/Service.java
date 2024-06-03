@@ -18,7 +18,6 @@ package com.hedera.node.app.spi;
 
 import static java.util.Collections.emptySet;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,6 +28,23 @@ import java.util.Set;
  * crypto-service, token-service etc.,
  */
 public interface Service {
+    /**
+     * A sort value for the service, used to determine the order in which service
+     * schemas are migrated.
+     *
+     * <p><b>(FUTURE)</b> This order should actually depend on the migration
+     * software version, because nothing prevents service {@code A} from needing
+     * to precede service {@code B} in version {@code N}; while at the same time
+     * {@code B} needing to precede {@code A} in version {@code N+1}. But this
+     * will require a significant restructuring in {@code hedera-app} and does
+     * not provide any current value, so we defer that work.
+     *
+     * @return the migrationOrder value
+     */
+    default int migrationOrder() {
+        return 0;
+    }
+
     /**
      * Returns the name of the service. This name must be unique for each service deployed on the
      * application.
@@ -53,9 +69,8 @@ public interface Service {
      * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
      *
      * @param registry the registry to register the schemas with
-     * @param version the current services version
      */
-    default void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
+    default void registerSchemas(@NonNull final SchemaRegistry registry) {
         // No-op
     }
 }

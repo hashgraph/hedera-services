@@ -16,30 +16,21 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.hedera.live.NodeStatus;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Waits for the selected node or nodes specified by the {@link NodeSelector} to
  * reach the specified status within the given timeout.
  */
 public class WaitForStatusOp extends AbstractLifecycleOp {
-    private static final Logger log = LogManager.getLogger(WaitForStatusOp.class);
-
     private final Duration timeout;
     private final PlatformStatus status;
 
@@ -54,18 +45,7 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     // assertion in production code
     @SuppressWarnings("java:S5960")
     public void run(@NonNull final HederaNode node) {
-        final AtomicReference<NodeStatus> lastStatus = new AtomicReference<>();
-        log.info("Waiting for node '{}' to be {} within {}", node.getName(), status, timeout);
-        try {
-            node.statusFuture(status, lastStatus::set).get(timeout.toMillis(), MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            Assertions.fail("Node '" + node.getName() + "' did not reach status " + status + " within " + timeout
-                    + "\n  Last status: " + lastStatus.get() + "\n  Cause: " + e.getMessage());
-        }
-        log.info("Node '{}' is {}", node.getName(), status);
+        awaitStatus(node, status, timeout);
     }
 
     @Override

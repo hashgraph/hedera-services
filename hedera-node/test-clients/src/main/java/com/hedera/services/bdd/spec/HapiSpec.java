@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PENDING;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.setupFrom;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
+import static com.hedera.services.bdd.spec.infrastructure.HapiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
@@ -65,11 +65,12 @@ import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -100,6 +101,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -132,6 +134,7 @@ import org.junit.jupiter.api.function.Executable;
 public class HapiSpec implements Runnable, Executable {
     private static final String CI_CHECK_NAME_SYSTEM_PROPERTY = "ci.check.name";
     private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
+    private static final Duration NETWORK_ACTIVE_TIMEOUT = Duration.ofSeconds(300);
 
     /**
      * The name of the DynamicTest that executes the HapiSpec as written,
@@ -223,7 +226,7 @@ public class HapiSpec implements Runnable, Executable {
     FeeCalculator feeCalculator;
     FeesAndRatesProvider ratesProvider;
     HapiSpecSetup hapiSetup;
-    HapiApiClients hapiClients;
+    HapiClients hapiClients;
     HapiSpecRegistry hapiRegistry;
     HapiSpecOperation[] given;
     HapiSpecOperation[] when;
@@ -398,7 +401,7 @@ public class HapiSpec implements Runnable, Executable {
     @Override
     public void execute() throws Throwable {
         // Only JUnit will use execute(), and in that case the target network must be set
-        requireNonNull(targetNetwork).waitForReady();
+        requireNonNull(targetNetwork).awaitReady(NETWORK_ACTIVE_TIMEOUT);
         run();
         if (failure != null) {
             throw failure.cause;
@@ -508,6 +511,9 @@ public class HapiSpec implements Runnable, Executable {
 
     private boolean init() {
         hapiClients = clientsFor(hapiSetup);
+        if (targetNetwork == null) {
+            targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), hapiClients);
+        }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
             if (sharedStates != null) {
@@ -939,10 +945,6 @@ public class HapiSpec implements Runnable, Executable {
         return hapiSetup;
     }
 
-    public HapiApiClients clients() {
-        return hapiClients;
-    }
-
     public FeesAndRatesProvider ratesProvider() {
         return ratesProvider;
     }
@@ -956,10 +958,6 @@ public class HapiSpec implements Runnable, Executable {
     private static String defaultNodeAccount;
     private static Map<String, String> otherOverrides;
     private static boolean runningInCi = false;
-
-    public static boolean isRunningInCi() {
-        return runningInCi;
-    }
 
     public static void runInCiMode(
             String nodes,
@@ -1132,9 +1130,8 @@ public class HapiSpec implements Runnable, Executable {
     public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {
         spec.setTargetNetwork(targetNetwork);
         spec.setTargetNetworkType(targetNetwork.type());
-        final var specNodes = targetNetwork.nodes().stream()
-                .map(HederaNode::hapiSpecIdentifier)
-                .collect(joining(","));
+        final var specNodes =
+                targetNetwork.nodes().stream().map(HederaNode::hapiSpecInfo).collect(joining(","));
         spec.addOverrideProperties(Map.of("nodes", specNodes));
     }
 

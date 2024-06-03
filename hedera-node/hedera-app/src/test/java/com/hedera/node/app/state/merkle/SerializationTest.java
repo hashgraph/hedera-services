@@ -46,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -223,7 +224,8 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleHederaState loadeMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var newRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -240,7 +242,8 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class));
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         loadedTree.migrate(1);
 
         return loadedTree;
@@ -249,11 +252,18 @@ class SerializationTest extends MerkleTestBase {
     private MerkleHederaState createMerkleHederaState(Schema schemaV1) {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(lifecycles);
-        final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var originalRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
-                originalTree, null, v1, config, networkInfo, mock(Metrics.class), mock(WritableEntityIdStore.class));
+                originalTree,
+                null,
+                v1,
+                config,
+                networkInfo,
+                mock(Metrics.class),
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         return originalTree;
     }
 

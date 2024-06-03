@@ -20,7 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Comparator;
 import java.util.Set;
 import javax.inject.Singleton;
 
@@ -35,10 +37,20 @@ public interface ServicesRegistry {
      * @param service The service that was registered
      * @param registry The schema registry for the service
      */
-    record Registration(@NonNull Service service, @NonNull SchemaRegistry registry) {
+    record Registration(@NonNull Service service, @NonNull SchemaRegistry registry)
+            implements Comparable<Registration> {
+        private static final Comparator<Registration> COMPARATOR = Comparator.<Registration>comparingInt(
+                        r -> r.service().migrationOrder())
+                .thenComparing(r -> r.service().getServiceName());
+
         public Registration {
             requireNonNull(service);
             requireNonNull(registry);
+        }
+
+        @Override
+        public int compareTo(@NonNull final Registration that) {
+            return COMPARATOR.compare(this, that);
         }
     }
 
@@ -49,4 +61,17 @@ public interface ServicesRegistry {
      */
     @NonNull
     Set<Registration> registrations();
+
+    /**
+     * Gets the genesis records builder.
+     * @return The genesis records builder
+     */
+    @NonNull
+    GenesisRecordsBuilder getGenesisRecords();
+
+    /**
+     * Register a service with the registry.
+     * @param service The service to register
+     */
+    void register(@NonNull final Service service);
 }

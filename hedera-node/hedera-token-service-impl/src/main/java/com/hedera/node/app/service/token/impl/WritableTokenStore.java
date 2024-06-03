@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TokensConfig;
@@ -56,7 +57,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
+        this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.TOKEN, maxCapacity);

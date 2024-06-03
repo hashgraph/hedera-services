@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.junit;
 
-import com.hedera.services.bdd.junit.hedera.HederaNetwork;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -39,18 +38,16 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     }
 
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
-        private static final Duration SHARED_NETWORK_STARTUP_TIMEOUT = Duration.ofSeconds(300);
-
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            final var sharedNetwork = HederaNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE);
-            sharedNetwork.startWithin(SHARED_NETWORK_STARTUP_TIMEOUT);
+            SubProcessNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE)
+                    .start();
         }
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
-            HapiApiClients.tearDown();
-            HederaNetwork.SHARED_NETWORK.get().terminate();
+            HapiClients.tearDown();
+            SubProcessNetwork.SHARED_NETWORK.get().terminate();
         }
     }
 }

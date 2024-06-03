@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.networkadmin.NetworkService;
-import com.hedera.node.app.service.networkadmin.impl.schemas.InitialModServiceNetworkSchema;
+import com.hedera.node.app.service.networkadmin.impl.schemas.V0490NetworkSchema;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -28,13 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link NetworkService} {@link Service}.
  */
 public final class NetworkServiceImpl implements NetworkService {
-
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        registry.register(networkSchema(version));
-    }
-
-    private Schema networkSchema(@NonNull final SemanticVersion version) {
-        return new InitialModServiceNetworkSchema(version);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490NetworkSchema());
     }
 }
