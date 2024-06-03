@@ -228,3 +228,9 @@ dependencies.constraints {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
 }
+
+dependencies.constraints {
+    // required to merge 'javax.annotation-api' into 'com.google.code.findbugs:jsr305'
+    // to have all annotations on the classpath available at compile time
+    api("javax.annotation:javax.annotation-api:1.3.2")
+}
