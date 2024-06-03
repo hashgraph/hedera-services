@@ -53,10 +53,13 @@ tasks.register("cleanRustBuild") {
     notCompatibleWithConfigurationCache("not compatible with Rust")
     var dir = layout.buildDirectory.dir("rust").get().asFile.path
     doLast {
-        exec {
-            environment("CARGO_TARGET_DIR", dir)
-            executable(RustHelper.rustCommand(false))
-            args("clean")
+        var command = RustHelper.rustCommand(false);
+        if(command!=null){
+            exec {
+                environment("CARGO_TARGET_DIR", dir)
+                executable(command)
+                args("clean")
+            }
         }
     }
 }
