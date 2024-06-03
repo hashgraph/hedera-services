@@ -72,6 +72,7 @@ public class Bls12381BilinearPairing implements BilinearPairing {
         return Bls12381Group2.getInstance();
     }
 
+    @NonNull
     @Override
     public Group getOtherGroup(@NonNull final Group group) {
         if (group.equals(getGroup1())) {

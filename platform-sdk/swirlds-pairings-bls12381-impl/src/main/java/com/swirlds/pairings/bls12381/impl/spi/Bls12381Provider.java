@@ -21,7 +21,7 @@ import com.swirlds.pairings.api.Curve;
 import com.swirlds.pairings.bls12381.impl.Bls12381BilinearPairing;
 import com.swirlds.pairings.spi.BilinearPairingProvider;
 
-/**
+/*
  * An implementation of {@link BilinearPairingProvider} which returns an instance of {@link Bls12381BilinearPairing}
  */
 public class Bls12381Provider implements BilinearPairingProvider {
@@ -31,7 +31,7 @@ public class Bls12381Provider implements BilinearPairingProvider {
      */
     @Override
     public Curve curve() {
-        return Curve.BLS_12_381;
+        return Curve.BLS12_381;
     }
 
     @Override

@@ -32,6 +32,7 @@ public record Bls12381PairingResult(@NonNull GroupElement element1, @NonNull Gro
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public GroupElement getInputElement1() {
         return element1;
@@ -40,6 +41,7 @@ public record Bls12381PairingResult(@NonNull GroupElement element1, @NonNull Gro
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public GroupElement getInputElement2() {
         return element2;
@@ -48,6 +50,7 @@ public record Bls12381PairingResult(@NonNull GroupElement element1, @NonNull Gro
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public byte[] getPairingBytes() {
         throw new UnsupportedOperationException("Pairing result serialization is not supported");

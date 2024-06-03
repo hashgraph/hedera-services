@@ -66,11 +66,13 @@ public class Bls12381Group2Element implements GroupElement {
     }
 
     /** {@inheritDoc} */
+    @NonNull
     @Override
     public Group getGroup() {
         return GROUP;
     }
 
+    @NonNull
     @Override
     public byte[] toBytes() {
         return groupElement;

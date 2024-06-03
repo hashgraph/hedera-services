@@ -79,7 +79,7 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement randomElement(final byte[] seed) {
+    public GroupElement randomElement(@NonNull final byte[] seed) {
         if (seed.length != SEED_SIZE) {
             throw new IllegalArgumentException(String.format("seed must be %d bytes in length", SEED_SIZE));
         }
@@ -96,7 +96,7 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement elementFromHash(final byte[] input) {
+    public GroupElement elementFromHash(@NonNull final byte[] input) {
         return randomElement(computeSha256(input));
     }
 
@@ -131,7 +131,7 @@ public class Bls12381Group2 implements Group {
 
     @NonNull
     @Override
-    public GroupElement elementFromBytes(final byte[] inputBytes) {
+    public GroupElement elementFromBytes(@NonNull final byte[] inputBytes) {
         return new Bls12381Group2Element(inputBytes);
     }
 

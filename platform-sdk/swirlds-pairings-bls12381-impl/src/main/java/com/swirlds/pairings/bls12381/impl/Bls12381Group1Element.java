@@ -74,6 +74,7 @@ public class Bls12381Group1Element implements GroupElement {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public byte[] toBytes() {
         return groupElement;
@@ -82,6 +83,7 @@ public class Bls12381Group1Element implements GroupElement {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Group getGroup() {
         return GROUP;
@@ -159,6 +161,7 @@ public class Bls12381Group1Element implements GroupElement {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Bls12381Group1Element copy() {
         return new Bls12381Group1Element(this);

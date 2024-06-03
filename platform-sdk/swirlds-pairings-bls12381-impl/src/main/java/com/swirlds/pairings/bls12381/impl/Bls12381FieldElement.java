@@ -46,7 +46,7 @@ public class Bls12381FieldElement implements FieldElement {
     }
 
     @Override
-    public boolean isSameField(FieldElement otherElement) {
+    public boolean isSameField(@NonNull FieldElement otherElement) {
         return FieldElement.super.isSameField(otherElement);
     }
 
@@ -55,6 +55,7 @@ public class Bls12381FieldElement implements FieldElement {
         return FieldElement.super.size();
     }
 
+    @NonNull
     @Override
     public Field getField() {
         return FIELD;
@@ -128,6 +129,7 @@ public class Bls12381FieldElement implements FieldElement {
         return new Bls12381FieldElement(output);
     }
 
+    @NonNull
     @Override
     public BigInteger toBigInteger() {
         return null;

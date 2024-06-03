@@ -63,7 +63,7 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement randomElement(final byte[] seed) {
+    public FieldElement randomElement(@NonNull final byte[] seed) {
         if (seed.length != SEED_SIZE) {
             throw new IllegalArgumentException(String.format("seed must be %s bytes in length", SEED_SIZE));
         }
@@ -80,7 +80,7 @@ public class Bls12381Field implements Field {
 
     @NonNull
     @Override
-    public FieldElement elementFromBytes(final byte[] bytes) {
+    public FieldElement elementFromBytes(@NonNull final byte[] bytes) {
         return new Bls12381FieldElement(bytes);
     }
 
