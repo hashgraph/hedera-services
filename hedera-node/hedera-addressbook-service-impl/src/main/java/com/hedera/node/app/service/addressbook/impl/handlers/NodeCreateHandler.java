@@ -44,7 +44,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.data.NodesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -135,7 +134,18 @@ public class NodeCreateHandler implements TransactionHandler {
         final var raw = description.getBytes(StandardCharsets.UTF_8);
         final var maxUtf8Bytes = nodesConfig.nodeMaxDescriptionUtf8Bytes();
         validateFalse(raw.length > maxUtf8Bytes, INVALID_NODE_DESCRIPTION);
-        validateFalse(AttributeValidatorImpl.containsZeroByte(raw), INVALID_NODE_DESCRIPTION);
+        validateFalse(containsZeroByte(raw), INVALID_NODE_DESCRIPTION);
+    }
+
+    private boolean containsZeroByte(@NonNull final byte[] bytes) {
+        boolean ret = false;
+        for (final byte b : bytes) {
+            if (b == 0) {
+                ret = true;
+                break;
+            }
+        }
+        return ret;
     }
 
     private void validateGossipEndpoint(
