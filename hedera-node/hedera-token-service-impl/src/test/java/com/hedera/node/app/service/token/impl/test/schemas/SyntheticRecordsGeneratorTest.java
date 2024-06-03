@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.worfklows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;

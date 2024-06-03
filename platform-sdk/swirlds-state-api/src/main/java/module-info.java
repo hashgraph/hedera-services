@@ -7,6 +7,6 @@ module com.swirlds.state.api {
 
     requires transitive com.swirlds.config.api;
     requires transitive com.hedera.node.hapi;
-    requires com.hedera.pbj.runtime;
+    requires transitive com.hedera.pbj.runtime;
     requires static transitive com.github.spotbugs.annotations;
 }

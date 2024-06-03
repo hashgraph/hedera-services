@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Set;
