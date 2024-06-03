@@ -34,7 +34,7 @@ public interface Group {
     /**
      * Returns the opposite group of this group
      * <p>
-     * If this group is G1, then the opposite group is G2, and vice versa.
+     * If this group is G₁, then the opposite group is G₂, and vice versa.
      *
      * @return the opposite group
      */
