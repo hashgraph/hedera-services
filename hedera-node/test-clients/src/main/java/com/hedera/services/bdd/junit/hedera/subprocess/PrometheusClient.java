@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera.live;
+package com.hedera.services.bdd.junit.hedera.subprocess;
 
-import static com.hedera.services.bdd.junit.hedera.live.StatusLookupAttempt.newPrometheusAttempt;
+import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttempt.newPrometheusAttempt;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;

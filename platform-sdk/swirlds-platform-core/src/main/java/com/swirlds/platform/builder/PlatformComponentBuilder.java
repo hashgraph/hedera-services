@@ -63,7 +63,9 @@ import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
@@ -149,6 +151,7 @@ public class PlatformComponentBuilder {
     private BranchDetector branchDetector;
     private BranchReporter branchReporter;
     private StateSigner stateSigner;
+    private TransactionHandler transactionHandler;
 
     private boolean metricsDocumentationEnabled = true;
 
@@ -1032,7 +1035,6 @@ public class PlatformComponentBuilder {
                     blocks.swirldStateManager(),
                     () -> blocks.getLatestCompleteStateReference().get().get(),
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
-                    () -> blocks.platformStatusSupplierReference().get().get(),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
                     blocks.intakeEventCounter());
@@ -1231,5 +1233,41 @@ public class PlatformComponentBuilder {
             stateSigner = new DefaultStateSigner(new PlatformSigner(blocks.keysAndCerts()));
         }
         return stateSigner;
+    }
+
+    /**
+     * Provide a transaction handler in place of the platform's default transaction handler.
+     *
+     * @param transactionHandler the transaction handler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionHandler(@NonNull final TransactionHandler transactionHandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionHandler != null) {
+            throw new IllegalStateException("Transaction handler has already been set");
+        }
+        this.transactionHandler = Objects.requireNonNull(transactionHandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction handler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionHandler(TransactionHandler)}, that handler will be used. If this method is called more
+     * than once, only the first call will build the transaction handler. Otherwise, the default handler will be created
+     * and returned.
+     *
+     * @return the transaction handler
+     */
+    @NonNull
+    public TransactionHandler buildTransactionHandler() {
+        if (transactionHandler == null) {
+            transactionHandler = new DefaultTransactionHandler(
+                    blocks.platformContext(),
+                    blocks.swirldStateManager(),
+                    blocks.statusActionSubmitterReference().get(),
+                    blocks.appVersion());
+        }
+        return transactionHandler;
     }
 }
