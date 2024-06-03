@@ -27,6 +27,7 @@ testModuleInfo {
     requires("com.hedera.node.app.service.addressbook.impl")
     requires("com.hedera.node.app.service.mono")
     requires("com.hedera.node.app.service.mono.test.fixtures")
+    requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.google.protobuf")
     requires("com.swirlds.platform.core.test.fixtures")

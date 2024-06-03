@@ -184,6 +184,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
         assertDoesNotThrow(() -> subject.preHandle(context));
     }
+
     @Test
     void failsWhenMaxNodesExceeds() {
         final var txn = new NodeCreateBuilder().withAccountId(accountId).build();
@@ -466,7 +467,6 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.FQDN_SIZE_TOO_LARGE, msg.getStatus());
     }
-
 
     @Test
     void failsWhenGossipCaCertificateEmptu() {

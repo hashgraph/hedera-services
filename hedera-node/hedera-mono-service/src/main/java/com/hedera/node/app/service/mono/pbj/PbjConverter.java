@@ -1349,7 +1349,8 @@ public final class PbjConverter {
                     .MAX_NODE_HAVE_BEEN_CREATED;
             case IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
-            case GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
+            case GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
             case FQDN_SIZE_TOO_LARGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
             case INVALID_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ENDPOINT;
 
