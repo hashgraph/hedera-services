@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -76,7 +75,6 @@ public class ContractBurnHTSSuite {
         return defaultHapiSpec("burnFungibleV1andV2WithZeroAndNegativeValues", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -87,7 +85,6 @@ public class ContractBurnHTSSuite {
                                 .exposingAddressTo(tokenAddress::set),
                         uploadInitCode(MULTIVERSION_BURN_CONTRACT),
                         contractCreate(MULTIVERSION_BURN_CONTRACT)
-                                .payingWith(ALICE)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))
                 .when(
@@ -98,13 +95,11 @@ public class ContractBurnHTSSuite {
                                         tokenAddress.get(),
                                         BigInteger.ZERO,
                                         new long[0])
-                                .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
                                         MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
-                                .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .logged()
@@ -116,7 +111,6 @@ public class ContractBurnHTSSuite {
                                         tokenAddress.get(),
                                         new BigInteger("FFFFFFFFFFFFFF00", 16),
                                         new long[0])
-                                .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -126,7 +120,6 @@ public class ContractBurnHTSSuite {
                                         tokenAddress.get(),
                                         -1L,
                                         new long[0])
-                                .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .logged()
@@ -143,7 +136,6 @@ public class ContractBurnHTSSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ALICE).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -156,7 +148,6 @@ public class ContractBurnHTSSuite {
                         mintToken(TOKEN, List.of(copyFromUtf8(SECOND))),
                         uploadInitCode(MULTIVERSION_BURN_CONTRACT),
                         contractCreate(MULTIVERSION_BURN_CONTRACT)
-                                .payingWith(ALICE)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))
                 .when(
@@ -167,7 +158,6 @@ public class ContractBurnHTSSuite {
                                         tokenAddress.get(),
                                         new BigInteger("FFFFFFFFFFFFFF00", 16),
                                         new long[] {1L})
-                                .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
@@ -177,7 +167,6 @@ public class ContractBurnHTSSuite {
                                         tokenAddress.get(),
                                         -1L,
                                         new long[] {1L})
-                                .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .logged()

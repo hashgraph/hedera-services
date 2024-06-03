@@ -21,6 +21,12 @@ plugins {
     id("com.google.protobuf")
 }
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-static,-cast")
+}
+
 application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
 
 testModuleInfo {
@@ -44,5 +50,3 @@ tasks.withType<ProtobufExtract>().configureEach {
         enabled = false
     }
 }
-
-tasks.withType<Javadoc>().configureEach { enabled = false }

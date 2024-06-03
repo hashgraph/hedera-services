@@ -3,5 +3,5 @@ module com.swirlds.metrics.impl {
 
     requires transitive com.swirlds.metrics.api;
     requires com.swirlds.base;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

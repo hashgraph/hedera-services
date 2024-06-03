@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asFileId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -28,11 +29,9 @@ import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
@@ -66,6 +65,11 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
     }
 
     @Override
+    protected SystemFunctionalityTarget systemFunctionalityTarget() {
+        return file.isPresent() ? SystemFunctionalityTarget.FILE : SystemFunctionalityTarget.CONTRACT;
+    }
+
+    @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (file.isPresent() && contract.isPresent()) {
             Assertions.fail("Ambiguous SystemDelete---both file and contract present!");
@@ -79,15 +83,6 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
                             contract.ifPresent(n -> b.setContractID(asContractId(n, spec)));
                         });
         return b -> b.setSystemDelete(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        if (file.isPresent()) {
-            return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::systemDelete;
-        } else {
-            return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::systemDelete;
-        }
     }
 
     @Override
