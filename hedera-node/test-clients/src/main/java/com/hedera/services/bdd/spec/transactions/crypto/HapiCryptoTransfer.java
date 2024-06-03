@@ -17,10 +17,7 @@
 package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.throwIfNotEcdsa;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
@@ -57,19 +54,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -130,8 +115,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     private static boolean transferToKey = false;
 
     private Optional<Pair<String[], Long>> appendedPartitionFromTo = Optional.empty();
+    private Optional<Pair<String[], Long>> appendedNFTPartitionFromTo = Optional.empty();
 
     private Optional<Pair<String[], Long>> appendedPartitionFromTowithSign = Optional.empty();
+
+    private long[] serialNums;
 
     @Override
     public HederaFunctionality type() {
@@ -248,6 +236,18 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                 Pair.of(new String[] {fromAccount, fromPartitionToken, toAccount, toPartitionToken}, amount));
     }
 
+    public HapiCryptoTransfer(
+            final String account,
+            final String fromPartitionToken,
+            final String toPartitionToken,
+            final long... serialNos) {
+        this.token = fromPartitionToken;
+        this.PARTITION_TOKEN_OPERATION_MODE = "PartitionNFTMoveWithoutUserSignature";
+        this.appendedNFTPartitionFromTo =
+                Optional.of(Pair.of(new String[] {account, fromPartitionToken, toPartitionToken}, null));
+        this.serialNums = serialNos;
+    }
+
     public HapiCryptoTransfer dontFullyAggregateTokenTransfers() {
         this.fullyAggregateTokenTransfers = false;
         return this;
@@ -269,7 +269,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
             return hbarOnlyVariableDefaultSigners();
         } else if (this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithoutUserSignature"
-                || this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithUserSignature") {
+                || this.PARTITION_TOKEN_OPERATION_MODE == "PartitionMoveWithUserSignature"
+                || this.PARTITION_TOKEN_OPERATION_MODE == "PartitionNFTMoveWithoutUserSignature") {
             return partitionMoveSignatures();
         } else {
             return tokenAwareVariableDefaultSigners();
@@ -525,6 +526,25 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         b.addTokenTransfers(appendUnits);
     }
 
+    private void NonFungibleTokenPartitionMove(final CryptoTransferTransactionBody.Builder b, final HapiSpec spec) {
+        final var extra = appendedNFTPartitionFromTo.get();
+        final var involved = extra.getLeft();
+        final var fromAccount = TxnUtils.asId(involved[0], spec);
+        final var fromPartitionToken = TxnUtils.asTokenId(involved[1], spec);
+        final var toAccount = fromAccount;
+        final var toPartitionToken = TxnUtils.asTokenId(involved[2], spec);
+        final var reduceUnits = TokenTransferList.newBuilder().setToken(fromPartitionToken);
+        final var appendUnits = TokenTransferList.newBuilder().setToken(toPartitionToken);
+        for (long serialNum : serialNums) {
+            reduceUnits.addTransfers(
+                    AccountAmount.newBuilder().setAccountID(fromAccount).setAmount(-serialNum));
+            b.addTokenTransfers(reduceUnits);
+            appendUnits.addTransfers(
+                    AccountAmount.newBuilder().setAccountID(toAccount).setAmount(+serialNum));
+            b.addTokenTransfers(appendUnits);
+        }
+    }
+
     private void misconfigureIfRequested(final CryptoTransferTransactionBody.Builder b, final HapiSpec spec) {
         if (tokenWithEmptyTransferAmounts.isPresent()) {
             final var empty = tokenWithEmptyTransferAmounts.get();
@@ -550,6 +570,10 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
         if (appendedPartitionFromTo.isPresent() || appendedPartitionFromTowithSign.isPresent()) {
             FungibleTokenPartitionMove(b, spec);
+        }
+
+        if (appendedNFTPartitionFromTo.isPresent()) {
+            NonFungibleTokenPartitionMove(b, spec);
         }
 
         if (breakNetZeroTokenChangeInvariant && b.getTokenTransfersCount() > 0) {
