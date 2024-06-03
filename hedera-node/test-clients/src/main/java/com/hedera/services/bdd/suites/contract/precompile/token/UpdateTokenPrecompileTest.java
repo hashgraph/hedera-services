@@ -18,10 +18,13 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -34,8 +37,13 @@ public class UpdateTokenPrecompileTest {
     @ContractSpec(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
     static SpecContract updateTokenInfoContract;
 
+    @FungibleTokenSpec(name = "immutableToken", keys = SUPPLY_KEY)
+    static SpecFungibleToken immutableToken;
+
     @HapiTest
     public Stream<DynamicTest> updateNftTreasuryWithAndWithoutAdminKey() {
-        return hapiTest(updateTokenInfoContract.getInfo().andAssert(HapiQueryOp::logged));
+        return hapiTest(
+                updateTokenInfoContract.getInfo().andAssert(HapiQueryOp::logged),
+                immutableToken.getInfo().andAssert(HapiQueryOp::logged));
     }
 }

@@ -22,6 +22,7 @@ import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,10 +32,10 @@ import java.util.Optional;
  * it can be executed.
  */
 public abstract class AbstractSpecOperation implements SpecOperation {
-    protected final List<SpecEntity> entities;
+    protected final List<SpecEntity> requiredEntities;
 
-    protected AbstractSpecOperation(@NonNull final List<SpecEntity> entities) {
-        this.entities = requireNonNull(entities);
+    protected AbstractSpecOperation(@NonNull final List<SpecEntity> requiredEntities) {
+        this.requiredEntities = closureOf(requireNonNull(requiredEntities));
     }
 
     protected abstract @NonNull SpecOperation computeDelegate(@NonNull final HapiSpec spec);
@@ -51,8 +52,30 @@ public abstract class AbstractSpecOperation implements SpecOperation {
     @Override
     public Optional<Throwable> execFor(@NonNull final HapiSpec spec) {
         requireNonNull(spec);
-        entities.forEach(entity -> entity.registerOrCreateWith(spec));
+        requiredEntities.forEach(entity -> entity.registerOrCreateWith(spec));
         final var delegate = computeDelegate(spec);
         return delegate.execFor(spec);
+    }
+
+    /**
+     * Returns the closure of the given direct requirements, including all transitive prerequisites.
+     * The returned list may contain duplicates, but this doesn't matter for our purposes.
+     *
+     * <p>We also do not attempt to achieve a topological sort of the requirements; once again
+     * there is no likely scenario where this would be necessary, as specs will only use a handful of
+     * entities.
+     *
+     * @param directRequirements the direct requirements
+     * @return the closure of the direct requirements
+     */
+    private List<SpecEntity> closureOf(@NonNull final List<SpecEntity> directRequirements) {
+        final List<SpecEntity> allRequirements = new ArrayList<>();
+        directRequirements.forEach(entity -> addRequisites(allRequirements, entity));
+        return allRequirements;
+    }
+
+    private void addRequisites(@NonNull final List<SpecEntity> allRequirements, @NonNull final SpecEntity entity) {
+        entity.prerequisiteEntities().forEach(prerequisite -> addRequisites(allRequirements, prerequisite));
+        allRequirements.add(entity);
     }
 }

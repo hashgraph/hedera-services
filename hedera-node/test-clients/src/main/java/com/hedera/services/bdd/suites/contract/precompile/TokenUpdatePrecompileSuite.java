@@ -131,6 +131,22 @@ public class TokenUpdatePrecompileSuite {
     private static final long SUPPLY_KEY_TYPE = 16L;
     private static final KeyShape KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
 
+    /**
+     * A test that,
+     *  (1) Creates an original and new token treasury
+     *  (2) Creates an asset account
+     *  (3) Creates the tokenUpdate contract
+     *  (4) Creates an immutable non-fungible token with the original treasury
+     *  (5) Creates a mutable non-fungible token with the original treasury and a pause key
+     *  (6) Mints a NFT for both tokens
+     *  (7) Associates the new treasury to the mutable token
+     *  (8) Creates a new 1/2 threshold key authorizing the contract
+     *  (9) Creates a new threshold key authorizing the contract
+     *  (10) Updates keys on the new treasury, the asset account, and the mutable token to the new threshold key
+     *  (11) Tries and fails to update the treasury on the immutable token
+     *  (12) Tries and succeeds to update the treasury on the mutable token
+     * @return
+     */
     @HapiTest
     public Stream<DynamicTest> updateNftTreasuryWithAndWithoutAdminKey() {
         final var newTokenTreasury = "newTokenTreasury";

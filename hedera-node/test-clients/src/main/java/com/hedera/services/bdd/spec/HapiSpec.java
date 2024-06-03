@@ -1116,6 +1116,20 @@ public class HapiSpec implements Runnable, Executable {
                         new SnapshotMatchMode[0]))));
     }
 
+    public static DynamicTest namedHapiTest(String name, @NonNull final SpecOperation... ops) {
+        return DynamicTest.dynamicTest(
+                name,
+                targeted(new HapiSpec(
+                        name,
+                        false,
+                        HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
+                        new SpecOperation[0],
+                        new SpecOperation[0],
+                        ops,
+                        List.of(),
+                        new SnapshotMatchMode[0])));
+    }
+
     private static HapiSpec targeted(@NonNull final HapiSpec spec) {
         final var targetNetwork = TARGET_NETWORK.get();
         if (targetNetwork != null) {

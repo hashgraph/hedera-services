@@ -21,10 +21,16 @@ import static org.junit.platform.commons.support.AnnotationSupport.findAnnotated
 
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.List;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -58,16 +64,34 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
 
     @Override
     public void beforeAll(@NonNull final ExtensionContext context) throws Exception {
+        // Inject spec contracts into static fields annotated with @ContractSpec
         for (final var field : findAnnotatedFields(
                 context.getRequiredTestClass(), ContractSpec.class, f -> isStatic(f.getModifiers()))) {
-            final var specContract = contractFrom(field.getAnnotation(ContractSpec.class));
-            injectValueIntoField(field, specContract);
+            final var contract = contractFrom(field.getAnnotation(ContractSpec.class));
+            injectValueIntoField(field, contract);
+        }
+
+        // Inject spec fungible tokens into static fields annotated with @ContractSpec
+        for (final var field : findAnnotatedFields(
+                context.getRequiredTestClass(), FungibleTokenSpec.class, f -> isStatic(f.getModifiers()))) {
+            final var token = fungibleTokenFrom(field.getAnnotation(FungibleTokenSpec.class));
+            injectValueIntoField(field, token);
         }
     }
 
     private SpecContract contractFrom(@NonNull final ContractSpec annotation) {
         final var name = annotation.name().isBlank() ? annotation.contract() : annotation.name();
         return new SpecContract(name, annotation.contract(), annotation.creationGas());
+    }
+
+    private SpecFungibleToken fungibleTokenFrom(@NonNull final FungibleTokenSpec annotation) {
+        final var token = new SpecFungibleToken(annotation.name());
+        customizeToken(token, annotation.keys());
+        return token;
+    }
+
+    private void customizeToken(@NonNull final SpecToken token, @NonNull final SpecTokenKey[] keys) {
+        token.setKeys(EnumSet.copyOf(List.of(keys)));
     }
 
     private void injectValueIntoField(@NonNull final Field field, @NonNull final Object value)

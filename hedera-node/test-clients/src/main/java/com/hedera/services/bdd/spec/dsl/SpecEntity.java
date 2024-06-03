@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.dsl;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -24,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -81,4 +83,13 @@ public interface SpecEntity {
      * Locks the entity's model, preventing further modification.
      */
     void lock();
+
+    /**
+     * Returns a list of entities that must be created before this entity can be created.
+     *
+     * @return the prerequisite entities
+     */
+    default List<SpecEntity> prerequisiteEntities() {
+        return emptyList();
+    }
 }

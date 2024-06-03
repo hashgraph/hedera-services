@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,23 +41,48 @@ public record KeyMetadata(
         Key protoKey,
         com.hedera.hapi.node.base.Key pbjKey,
         Map<String, PrivateKey> privateKeyMap,
-        SigControl sigControl) {
+        SigControl sigControl,
+        Registration registration) {
+
+    public interface Registration {
+        void save(HapiSpecRegistry registry, String name, Key key);
+    }
+
+    private static final Registration DEFAULT_REGISTRATION = HapiSpecRegistry::saveKey;
+
     /**
-     * Constructs a {@link KeyMetadata} instance from the given protoc key and {@link HapiSpec}.
+     * Constructs a {@link KeyMetadata} instance from the given protoc key and {@link HapiSpec}
+     * with the default registration.
      *
      * @param protoKey the protoc key
      * @param spec the HapiSpec
      * @return the key metadata
      */
     public static KeyMetadata from(@NonNull final Key protoKey, @NonNull final HapiSpec spec) {
+        return from(protoKey, spec, DEFAULT_REGISTRATION);
+    }
+
+    /**
+     * Constructs a {@link KeyMetadata} instance from the given protoc key, {@link HapiSpec}, and
+     * registration function.
+     *
+     * @param protoKey the protoc key
+     * @param spec the HapiSpec
+     * @param registration the registration function
+     * @return the key metadata
+     */
+    public static KeyMetadata from(
+            @NonNull final Key protoKey, @NonNull final HapiSpec spec, @NonNull final Registration registration) {
         requireNonNull(spec);
         requireNonNull(protoKey);
+        requireNonNull(registration);
         final var pbjKey = toPbj(protoKey);
         return new KeyMetadata(
                 protoKey,
                 pbjKey,
                 spec.keys().privateKeyMapFor(pbjKey),
-                spec.keys().controlFor(protoKey));
+                spec.keys().controlFor(protoKey),
+                registration);
     }
 
     /**
@@ -68,7 +94,7 @@ public record KeyMetadata(
     public void registerAs(@NonNull final String name, @NonNull final HapiSpec spec) {
         requireNonNull(spec);
         requireNonNull(name);
-        spec.registry().saveKey(name, protoKey);
+        registration.save(spec.registry(), name, protoKey);
         spec.keys().setControl(protoKey, sigControl);
         spec.keys().addPrivateKeyMap(privateKeyMap);
     }
