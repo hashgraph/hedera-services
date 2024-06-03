@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.hexedEvmAddressOf;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.summarizeStakingInfo;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -50,7 +51,6 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -114,7 +114,7 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         return context.feeCalculator().legacyCalculate(sigValueObj -> {
             final var contract = contractFrom(context);
             if (contract == null) {
-                return FeeData.getDefaultInstance();
+                return CONSTANT_FEE_DATA;
             } else {
                 return ContractGetInfoUsage.newEstimate(fromPbj(context.query()))
                         .givenCurrentKey(fromPbj(contract.keyOrThrow()))

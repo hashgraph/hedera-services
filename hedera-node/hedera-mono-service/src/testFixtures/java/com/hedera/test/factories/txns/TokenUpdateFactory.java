@@ -21,6 +21,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_REPL
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenKeyValidation;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -32,6 +33,7 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
     private Optional<AccountID> newTreasury = Optional.empty();
     private Optional<AccountID> newAutoRenew = Optional.empty();
     private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
+    private TokenKeyValidation keyVerificationMode = TokenKeyValidation.FULL_VALIDATION;
 
     private TokenUpdateFactory() {}
 
@@ -41,6 +43,11 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
 
     public TokenUpdateFactory updating(final TokenID id) {
         this.id = id;
+        return this;
+    }
+
+    public TokenUpdateFactory notValidatingRoleKeySignatures() {
+        this.keyVerificationMode = TokenKeyValidation.NO_VALIDATION;
         return this;
     }
 
@@ -106,8 +113,9 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
         if (replaceWipe) {
             op.setWipeKey(TOKEN_REPLACE_KT.asKey());
         }
-        newAutoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
+        newAutoRenew.ifPresent(op::setAutoRenewAccount);
         newTreasury.ifPresent(op::setTreasury);
+        op.setKeyVerificationMode(keyVerificationMode);
         txn.setTokenUpdate(op);
     }
 }

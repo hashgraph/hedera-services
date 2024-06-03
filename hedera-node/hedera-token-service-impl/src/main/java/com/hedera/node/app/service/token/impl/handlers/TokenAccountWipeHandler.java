@@ -80,6 +80,10 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     @NonNull
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the {@link TokenSupplyChangeOpsValidator} to use
+     */
     @Inject
     public TokenAccountWipeHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = validator;

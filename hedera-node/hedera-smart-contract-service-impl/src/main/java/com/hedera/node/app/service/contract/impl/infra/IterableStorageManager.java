@@ -77,7 +77,11 @@ public class IterableStorageManager {
         // Adjust the storage linked lists for each contract
         allAccesses.forEach(contractAccesses -> contractAccesses.accesses().forEach(access -> {
             if (access.isUpdate()) {
-                final var firstContractKey = contractFirstKeyOf(enhancement, contractAccesses.contractID());
+                final var contractId = contractAccesses.contractID();
+                // If we have already changed the head pointer for this contract,
+                // use that; otherwise, get the contract's head pointer from state
+                final var firstContractKey =
+                        firstKeys.computeIfAbsent(contractId, cid -> contractFirstKeyOf(enhancement, contractId));
 
                 // Only certain access types can change the head slot in a contract's storage linked list
                 final var newFirstContractKey =

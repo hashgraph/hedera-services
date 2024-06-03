@@ -15,9 +15,10 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.java-test-fixtures")
 }
 
 description = "Hedera Application - Implementation"
@@ -38,7 +39,7 @@ testModuleInfo {
     requires("com.hedera.node.config.test.fixtures")
     requires("com.google.jimfs")
     requires("com.swirlds.config.extensions.test.fixtures")
-    requires("io.github.classgraph")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("org.assertj.core")
     requires("org.hamcrest")
     requires("org.junit.jupiter.api")
@@ -56,11 +57,12 @@ itestModuleInfo {
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config")
     requires("com.hedera.node.config.test.fixtures")
-    requires("com.hedera.node.hapi")
     requires("com.github.spotbugs.annotations")
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.hedera.node.hapi")
     requires("com.swirlds.metrics.api")
     requires("grpc.netty")
     requires("grpc.stub")
@@ -102,6 +104,7 @@ xtestModuleInfo {
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.metrics.api")
     requires("com.swirlds.platform.core")
+    requires("com.swirlds.state.api")
     requires("dagger")
     requires("headlong")
     requires("javax.inject")

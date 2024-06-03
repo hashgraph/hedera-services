@@ -42,8 +42,10 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
@@ -79,9 +81,9 @@ import org.bouncycastle.util.encoders.DecoderException;
  *
  * <p>
  * The {@link EnhancedKeyStoreLoader} class is a replacement for the now deprecated
- * {@link CryptoStatic#loadKeysAndCerts(AddressBook, Path, char[])} method. This new implementation adds support
- * for loading industry standard PEM formatted PKCS #8 private keys and X.509 certificates. The legacy key stores are
- * still supported, but are no longer the preferred format.
+ * {@link CryptoStatic#loadKeysAndCerts(AddressBook, Path, char[])} method. This new implementation adds support for
+ * loading industry standard PEM formatted PKCS #8 private keys and X.509 certificates. The legacy key stores are still
+ * supported, but are no longer the preferred format.
  *
  * <p>
  * This implementation will attempt to load the private key stores in the following order:
@@ -235,13 +237,15 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Creates a new {@link EnhancedKeyStoreLoader} instance using the provided {@code addressBook} and {@code configuration}.
+     * Creates a new {@link EnhancedKeyStoreLoader} instance using the provided {@code addressBook} and
+     * {@code configuration}.
      *
      * @param addressBook   the address book to use for loading the key stores.
      * @param configuration the configuration to use for loading the key stores.
      * @return a new {@link EnhancedKeyStoreLoader} instance.
      * @throws NullPointerException     if {@code addressBook} or {@code configuration} is {@code null}.
-     * @throws IllegalArgumentException if the value from the configuration element {@code crypto.keystorePassword} is {@code null} or blank.
+     * @throws IllegalArgumentException if the value from the configuration element {@code crypto.keystorePassword} is
+     *                                  {@code null} or blank.
      */
     @NonNull
     public static EnhancedKeyStoreLoader using(
@@ -301,6 +305,46 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
+     * Iterates over the local nodes and creates the agreement key and certificate for each if they do not exist.  This
+     * method should be called after {@link #scan()} and before {@link #verify()} in order to generate any missing
+     * agreement keys for local nodes to pass verification.
+     *
+     * @return this {@link EnhancedKeyStoreLoader} instance.
+     * @throws NoSuchAlgorithmException if the algorithm required to generate the key pair is not available.
+     * @throws NoSuchProviderException  if the security provider required to generate the key pair is not available.
+     * @throws KeyGeneratingException   if an error occurred while generating the agreement key pair.
+     */
+    public EnhancedKeyStoreLoader generateIfNecessary()
+            throws NoSuchAlgorithmException, NoSuchProviderException, KeyGeneratingException {
+
+        for (final NodeId node : localNodes) {
+            if (!agrPrivateKeys.containsKey(node)) {
+                // Generate a new agreement key since it does not exist
+                final KeyPair agrKeyPair = KeysAndCerts.generateAgreementKeyPair();
+                agrPrivateKeys.put(node, agrKeyPair.getPrivate());
+
+                // recover signing key pair to be root of trust on agreement certificate
+                final PrivateKey privateSigningKey = sigPrivateKeys.get(node);
+                final X509Certificate signingCert = (X509Certificate) sigCertificates.get(node);
+                final PublicKey publicSigningKey = signingCert.getPublicKey();
+                final KeyPair signingKeyPair = new KeyPair(publicSigningKey, privateSigningKey);
+
+                // generate the agreement certificate
+                final String dnA = CryptoStatic.distinguishedName(KeyCertPurpose.AGREEMENT.storeName(
+                        nameToAlias(addressBook.getAddress(node).getSelfName())));
+                final X509Certificate agrCert = CryptoStatic.generateCertificate(
+                        dnA,
+                        agrKeyPair,
+                        signingCert.getSubjectX500Principal().getName(),
+                        signingKeyPair,
+                        SecureRandom.getInstanceStrong());
+                agrCertificates.put(node, agrCert);
+            }
+        }
+        return this;
+    }
+
+    /**
      * Verifies the presence of all required keys based on the address book provided during initialization.
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
@@ -316,7 +360,8 @@ public class EnhancedKeyStoreLoader {
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded.
-     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not
+     *                              initialized.
      * @throws NullPointerException if {@code validatingBook} is {@code null}.
      */
     @NonNull
@@ -367,7 +412,8 @@ public class EnhancedKeyStoreLoader {
      * supplied address book.
      *
      * @return the map of all keys and certificates per {@link NodeId}.
-     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not
+     *                             initialized.
      * @throws KeyLoadingException if one or more of the required keys were not loaded or are not of the correct type.
      */
     @NonNull
@@ -380,7 +426,8 @@ public class EnhancedKeyStoreLoader {
      * supplied address book.
      *
      * @return the map of all keys and certificates per {@link NodeId}.
-     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not
+     *                              initialized.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded or are not of the correct type.
      * @throws NullPointerException if {@code validatingBook} is {@code null}.
      */
@@ -436,7 +483,8 @@ public class EnhancedKeyStoreLoader {
      * Injects the public keys for all nodes into the address book provided during initialization.
      *
      * @return this {@link EnhancedKeyStoreLoader} instance.
-     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not
+     *                             initialized.
      * @throws KeyLoadingException if one or more of the required keys were not loaded or are not of the correct type.
      */
     @NonNull
@@ -449,7 +497,8 @@ public class EnhancedKeyStoreLoader {
      *
      * @param validatingBook the address book into which the public keys should be injected.
      * @return this {@link EnhancedKeyStoreLoader} instance.
-     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not
+     *                              initialized.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded or are not of the correct type.
      * @throws NullPointerException if {@code validatingBook} is {@code null}.
      */
@@ -466,7 +515,8 @@ public class EnhancedKeyStoreLoader {
      * provided during initialization.
      *
      * @return the {@link PublicStores} instance containing the public keys for all nodes.
-     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not
+     *                             initialized.
      * @throws KeyLoadingException if one or more of the required keys were not loaded or are not of the correct type.
      */
     @NonNull
@@ -480,7 +530,8 @@ public class EnhancedKeyStoreLoader {
      *
      * @param validatingBook the address book to use for loading the public keys.
      * @return the {@link PublicStores} instance containing the public keys for all nodes in the supplied address book.
-     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not
+     *                              initialized.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded or are not of the correct type.
      * @throws NullPointerException if {@code validatingBook} is {@code null}.
      */
@@ -517,7 +568,8 @@ public class EnhancedKeyStoreLoader {
      *
      * @return the legacy public key store fully loaded; otherwise, an empty key store.
      * @throws KeyLoadingException if the legacy public key store cannot be loaded or is empty.
-     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException   if an error occurred while parsing the key store or the key store is not
+     *                             initialized.
      */
     @NonNull
     private KeyStore resolveLegacyPublicStore() throws KeyLoadingException, KeyStoreException {
@@ -807,7 +859,8 @@ public class EnhancedKeyStoreLoader {
      *
      * @param nodeAlias the alias of the node for which the private key store should be loaded.
      * @param purpose   the {@link KeyCertPurpose} for which the private key store should be loaded.
-     * @return the {@link Path} to the enhanced private key store for the specified {@code nodeAlias} and {@code purpose}.
+     * @return the {@link Path} to the enhanced private key store for the specified {@code nodeAlias} and
+     * {@code purpose}.
      * @throws NullPointerException if {@code nodeAlias} or {@code purpose} is {@code null}.
      */
     @NonNull
@@ -818,7 +871,8 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Utility method for resolving the {@link Path} to the legacy private key store for the specified {@code nodeAlias}.
+     * Utility method for resolving the {@link Path} to the legacy private key store for the specified
+     * {@code nodeAlias}.
      *
      * @param nodeAlias the alias of the node for which the private key store should be loaded.
      * @return the {@link Path} to the legacy private key store for the specified {@code nodeAlias}.
@@ -831,12 +885,13 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Utility method for resolving the {@link Path} to the enhanced certificate store for the specified {@code nodeAlias}
-     * and {@code purpose}.
+     * Utility method for resolving the {@link Path} to the enhanced certificate store for the specified
+     * {@code nodeAlias} and {@code purpose}.
      *
      * @param nodeAlias the alias of the node for which the certificate store should be loaded.
      * @param purpose   the {@link KeyCertPurpose} for which the certificate store should be loaded.
-     * @return the {@link Path} to the enhanced certificate store for the specified {@code nodeAlias} and {@code purpose}.
+     * @return the {@link Path} to the enhanced certificate store for the specified {@code nodeAlias} and
+     * {@code purpose}.
      * @throws NullPointerException if {@code nodeAlias} or {@code purpose} is {@code null}.
      */
     @NonNull
@@ -904,8 +959,8 @@ public class EnhancedKeyStoreLoader {
      * @param entryType the {@link Class} instance of the requested entry type.
      * @param <T>       the type of entry to load from the key store.
      * @return the requested entry of the specified {@code entryType}.
-     * @throws KeyLoadingException  if an error occurred while attempting to extract the requested entry or entry is
-     *                              an unsupported type.
+     * @throws KeyLoadingException  if an error occurred while attempting to extract the requested entry or entry is an
+     *                              unsupported type.
      * @throws NullPointerException if {@code entry} or {@code entryType} is {@code null}.
      */
     @NonNull
@@ -1028,7 +1083,8 @@ public class EnhancedKeyStoreLoader {
     }
 
     /**
-     * Utility method for determining if the specified {@code entry} is compatible with the specified {@code entryType}.
+     * Utility method for determining if the specified {@code entry} is compatible with the specified
+     * {@code entryType}.
      *
      * @param entry     the entry loaded from the store.
      * @param entryType the {@link Class} instance of the requested entry type.
@@ -1055,7 +1111,9 @@ public class EnhancedKeyStoreLoader {
         } else if (entryType.isAssignableFrom(KeyPair.class)
                 && (entry instanceof PEMKeyPair || entry instanceof PEMEncryptedKeyPair)) {
             return true;
-        } else return entryType.isAssignableFrom(Certificate.class) && entry instanceof X509CertificateHolder;
+        } else {
+            return entryType.isAssignableFrom(Certificate.class) && entry instanceof X509CertificateHolder;
+        }
     }
 
     /**
@@ -1063,7 +1121,8 @@ public class EnhancedKeyStoreLoader {
      *
      * @param addressBook the address book to iterate over.
      * @param function    the function to apply to each entry in the address book.
-     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not initialized.
+     * @throws KeyStoreException    if an error occurred while parsing the key store or the key store is not
+     *                              initialized.
      * @throws KeyLoadingException  if one or more of the required keys were not loaded or are not of the correct type.
      * @throws NullPointerException if {@code addressBook} or {@code function} is {@code null}.
      */

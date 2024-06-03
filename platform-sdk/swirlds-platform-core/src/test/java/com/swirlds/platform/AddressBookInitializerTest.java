@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.AddressBookConfig_;
@@ -45,7 +46,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -54,6 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
@@ -69,9 +71,10 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("Force the use of the config address book")
     void forceUseOfConfigAddressBook() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final AddressBook configAddressBook = getRandomAddressBook();
-        final SignedState signedState = getMockSignedState7WeightRandomAddressBook();
+        final AddressBook configAddressBook = getRandomAddressBook(randotron);
+        final SignedState signedState = getMockSignedState7WeightRandomAddressBook(randotron);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
                 getMockSoftwareVersion(2),
@@ -97,8 +100,9 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("Genesis. Config.txt Initializes Address Book.")
     void noStateLoadedFromDisk() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final AddressBook configAddressBook = getRandomAddressBook();
+        final AddressBook configAddressBook = getRandomAddressBook(randotron);
         // initial state has no address books set.
         final SignedState signedState = getMockSignedState(10, null, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
@@ -123,8 +127,9 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("No state loaded from disk. Genesis State set 0 weight.")
     void noStateLoadedFromDiskGenesisStateSetZeroWeight() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final AddressBook configAddressBook = getRandomAddressBook();
+        final AddressBook configAddressBook = getRandomAddressBook(randotron);
         // genesis state address book is set to null to test the code path where it may be null.
         final SignedState signedState = getMockSignedState(10, null, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
@@ -149,8 +154,9 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("No state loaded from disk. Genesis State modifies address book entries.")
     void noStateLoadedFromDiskGenesisStateChangedAddressBook() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final AddressBook configAddressBook = getRandomAddressBook();
+        final AddressBook configAddressBook = getRandomAddressBook(randotron);
         final SignedState signedState = getMockSignedState(7, configAddressBook, null, true);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
@@ -176,9 +182,11 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("Current software version is equal to state software version.")
     void currentVersionEqualsStateVersion() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
         // start state with previous address book
-        final SignedState signedState = getMockSignedState(2, getRandomAddressBook(), getRandomAddressBook(), false);
+        final SignedState signedState =
+                getMockSignedState(2, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
@@ -206,8 +214,10 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("Version upgrade, SwirldState set 0 weight.")
     void versionUpgradeSwirldStateZeroWeight() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final SignedState signedState = getMockSignedState(0, getRandomAddressBook(), getRandomAddressBook(), false);
+        final SignedState signedState =
+                getMockSignedState(0, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 10);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
@@ -234,8 +244,10 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("Version upgrade, Swirld State modified the address book.")
     void versionUpgradeSwirldStateModifiedAddressBook() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final SignedState signedState = getMockSignedState(2, getRandomAddressBook(), getRandomAddressBook(), false);
+        final SignedState signedState =
+                getMockSignedState(2, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 3);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
@@ -262,8 +274,9 @@ class AddressBookInitializerTest {
     @Test
     @DisplayName("Version upgrade, Swirld State updates weight successfully.")
     void versionUpgradeSwirldStateWeightUpdateWorks() throws IOException {
+        final Randotron randotron = Randotron.create();
         clearTestDirectory();
-        final SignedState signedState = getMockSignedState7WeightRandomAddressBook();
+        final SignedState signedState = getMockSignedState7WeightRandomAddressBook(randotron);
         final AddressBook configAddressBook = copyWithWeightChanges(signedState.getAddressBook(), 5);
         final AddressBookInitializer initializer = new AddressBookInitializer(
                 new NodeId(0),
@@ -336,8 +349,8 @@ class AddressBookInitializerTest {
      *
      * @return The mock SignedState.
      */
-    private SignedState getMockSignedState7WeightRandomAddressBook() {
-        return getMockSignedState(7, getRandomAddressBook(), getRandomAddressBook(), false);
+    private SignedState getMockSignedState7WeightRandomAddressBook(@NonNull final Randotron randotron) {
+        return getMockSignedState(7, getRandomAddressBook(randotron), getRandomAddressBook(randotron), false);
     }
 
     /**
@@ -422,11 +435,8 @@ class AddressBookInitializerTest {
      * @return the address book created.
      */
     @NonNull
-    private AddressBook getRandomAddressBook() {
-        return new RandomAddressBookGenerator()
-                .setSize(5)
-                .setCustomWeightGenerator(i -> i.id())
-                .build();
+    private AddressBook getRandomAddressBook(@NonNull final Random random) {
+        return RandomAddressBookBuilder.create(random).withSize(5).build();
     }
 
     /**

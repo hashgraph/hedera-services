@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
@@ -31,7 +32,7 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -52,10 +53,10 @@ public class EmergencySignedStateValidatorTests {
 
     @BeforeEach
     void setup() {
-        addressBook = new RandomAddressBookGenerator()
-                .setSize(NUM_NODES)
-                .setAverageWeight(WEIGHT_PER_NODE)
-                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+        addressBook = RandomAddressBookBuilder.create(Randotron.create())
+                .withSize(NUM_NODES)
+                .withAverageWeight(WEIGHT_PER_NODE)
+                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                 .build();
     }
 

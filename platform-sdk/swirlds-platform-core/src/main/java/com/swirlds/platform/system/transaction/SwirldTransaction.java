@@ -16,20 +16,17 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.config.TransactionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * A container for an application transaction that contains extra information.
@@ -39,6 +36,9 @@ import java.util.HashMap;
  * application as one after it does reach consensus.
  */
 public class SwirldTransaction extends ConsensusTransactionImpl implements Comparable<SwirldTransaction> {
+    /** ensures that payload is never null even when constructed with the no-args constructor */
+    private static final OneOf<PayloadOneOfType> DEFAULT_PAYLOAD =
+            new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.EMPTY);
     /** class identifier for the purposes of serialization */
     public static final long CLASS_ID = 0x9ff79186f4c4db97L;
     /** current class version */
@@ -46,10 +46,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
 
     private static final String CONTENT_ERROR = "content is null or length is 0";
 
-    /** The content (payload) of the transaction */
-    private byte[] contents;
     /** The data stored as protobuf */
-    private OneOf<PayloadOneOfType> payload;
+    private OneOf<PayloadOneOfType> payload = DEFAULT_PAYLOAD;
 
     public SwirldTransaction() {}
 
@@ -65,8 +63,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
         if (contents == null || contents.length == 0) {
             throw new IllegalArgumentException(CONTENT_ERROR);
         }
-        this.contents = contents.clone();
-        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(this.contents));
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(contents.clone()));
     }
 
     /**
@@ -74,7 +71,9 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeByteArray(contents);
+        final Bytes bytes = getBytes();
+        out.writeInt((int) bytes.length()); // array length
+        bytes.writeTo(out);
     }
 
     /**
@@ -83,38 +82,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
-        this.contents = in.readByteArray(transactionConfig.transactionMaxBytes());
-        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(this.contents));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public byte[] getContents() {
-        return contents;
-    }
-
-    /**
-     * Returns the size of the transaction content/payload.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @return the length of the transaction content
-     */
-    public int getLength() {
-        return (contents != null) ? contents.length : 0;
-    }
-
-    /**
-     * Returns the size of the transaction content/payload.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @return the length of the transaction content
-     */
-    public int size() {
-        return getLength();
+        final byte[] contents = in.readByteArray(transactionConfig.transactionMaxBytes());
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(contents));
     }
 
     /**
@@ -145,7 +114,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public int hashCode() {
-        return Arrays.hashCode(contents);
+        return getBytes().hashCode();
     }
 
     /**
@@ -186,11 +155,10 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof SwirldTransaction)) {
+        if (!(obj instanceof final SwirldTransaction that)) {
             return false;
         }
-        final SwirldTransaction that = (SwirldTransaction) obj;
-        return Arrays.equals(contents, that.contents);
+        return Objects.equals(payload, that.payload);
     }
 
     /**
@@ -244,7 +212,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
             throw new IllegalArgumentException();
         }
 
-        return Arrays.compare(contents, that.contents);
+        return this.getBytes().compareTo(that.getBytes());
     }
 
     /**
@@ -252,7 +220,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this).append("contents", contents).toString();
+        return "payload: " + getBytes().toHex();
     }
 
     /**
@@ -276,7 +244,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public int getSerializedLength() {
-        return getArraySerializedLength(contents);
+        return Integer.BYTES // add the the size of array length field
+                + getSize(); // add the size of the array
     }
 
     /**
@@ -284,7 +253,11 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public int getSize() {
-        return contents == null ? 0 : contents.length;
+        return (int) getBytes().length();
+    }
+
+    private Bytes getBytes() {
+        return payload.as();
     }
 
     @Override

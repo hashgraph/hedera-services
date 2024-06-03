@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HALT_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCallHandlerTest.INTRINSIC_GAS_FOR_0_ARG_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -43,6 +46,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.List;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,11 +71,14 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private ContractCreateRecordBuilder recordBuilder;
 
+    @Mock
+    private GasCalculator gasCalculator;
+
     private ContractCreateHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractCreateHandler(() -> factory);
+        subject = new ContractCreateHandler(() -> factory, gasCalculator);
     }
 
     @Test
@@ -173,6 +180,20 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         // meta.requiredNonPayerKeys());
     }
 
+    @Test
+    @DisplayName("validate checks in pureChecks()")
+    void validatePureChecks() {
+        // check at least intrinsic gas
+        final var txn1 = contractCreateTransactionWithInsufficientGas();
+        given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), true))
+                .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn1));
+
+        // check does not exceed max gas
+        final var txn2 = contractCreateTransactionWithAboveMaxGas();
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
+    }
+
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
         final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
@@ -192,6 +213,24 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCreateInstance(createTxnBody)
+                .build();
+    }
+
+    private TransactionBody contractCreateTransactionWithInsufficientGas() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCreateInstance(
+                        ContractCreateTransactionBody.newBuilder().gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1))
+                .build();
+    }
+
+    private TransactionBody contractCreateTransactionWithAboveMaxGas() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCreateInstance(
+                        ContractCreateTransactionBody.newBuilder().gas(MAX_GAS_LIMIT + 1))
                 .build();
     }
 }

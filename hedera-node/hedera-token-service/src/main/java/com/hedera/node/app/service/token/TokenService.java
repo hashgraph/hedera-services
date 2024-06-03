@@ -29,7 +29,9 @@ import java.util.Set;
  * Service</a>.
  */
 public interface TokenService extends Service {
-
+    /**
+     * The name of the service
+     */
     String NAME = "TokenService";
 
     @NonNull

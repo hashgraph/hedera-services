@@ -60,6 +60,10 @@ import javax.inject.Singleton;
 public class TokenCreateValidator {
     private final TokenAttributesValidator tokenAttributesValidator;
 
+    /**
+     * Default constructor for injection
+     * @param tokenAttributesValidator token attributes validator
+     */
     @Inject
     public TokenCreateValidator(@NonNull final TokenAttributesValidator tokenAttributesValidator) {
         this.tokenAttributesValidator = tokenAttributesValidator;

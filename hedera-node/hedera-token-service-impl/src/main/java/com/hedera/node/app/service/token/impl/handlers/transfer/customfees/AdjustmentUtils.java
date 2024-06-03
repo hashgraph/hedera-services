@@ -33,7 +33,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Utility class for custom fee adjustments.
+ */
 public class AdjustmentUtils {
+    /**
+     * Factory for creating adjustments map for a given token.
+     */
     public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY =
             ignore -> new LinkedHashMap<>();
 
@@ -188,6 +194,15 @@ public class AdjustmentUtils {
         return credits;
     }
 
+    /**
+     * Represents the exchanged value between accounts. It can be hbar or fungible token adjustments.
+     * It is used to track the credits that can be used to deduct the custom royalty fees for an NFT transfer.
+     * If there are no fungible units to the receiver, and if there is a fallback fee on NFT then receiver
+     * should pay the fallback fee
+     * @param account The account ID of the receiver
+     * @param tokenId The token ID of the fungible token
+     * @param amount The amount exchanged
+     */
     public record ExchangedValue(AccountID account, TokenID tokenId, long amount) {}
 
     /**
@@ -208,10 +223,23 @@ public class AdjustmentUtils {
         }
     }
 
+    /**
+     * Adds two longs and throws an exception if the result overflows.
+     * @param a The first long
+     * @param b The second long
+     * @return The sum of the two longs
+     */
     public static long addExactOrThrow(final long a, final long b) {
         return addExactOrThrowReason(a, b, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
     }
 
+    /**
+     * Adds two longs and throws an exception if the result overflows.
+     * @param a The first long
+     * @param b The second long
+     * @param failureReason The reason for the failure
+     * @return The sum of the two longs
+     */
     public static long addExactOrThrowReason(
             final long a, final long b, @NonNull final ResponseCodeEnum failureReason) {
         try {

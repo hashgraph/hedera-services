@@ -25,7 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 
 public enum TokenUpdateScenarios implements TxnHandlingScenario {
-    UPDATE_WITH_NO_KEYS_AFFECTED {
+    UPDATE_WITH_NO_FIELDS_CHANGED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -90,7 +90,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_SUPPLY_KEYED_TOKEN {
+    UPDATE_WITH_SUPPLY_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -98,10 +98,11 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_SUPPLY)
                     .replacingSupply()
+                    .notValidatingRoleKeySignatures()
                     .get());
         }
     },
-    UPDATE_WITH_KYC_KEYED_TOKEN {
+    UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -112,7 +113,19 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
                     .get());
         }
     },
-    UPDATE_WITH_FREEZE_KEYED_TOKEN {
+    UPDATE_WITH_KYC_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
+        @Override
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
+                    .updating(KNOWN_TOKEN_WITH_KYC)
+                    .replacingKyc()
+                    .notValidatingRoleKeySignatures()
+                    .get());
+        }
+    },
+    UPDATE_WITH_FREEZE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -120,10 +133,11 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_FREEZE)
                     .replacingFreeze()
+                    .notValidatingRoleKeySignatures()
                     .get());
         }
     },
-    UPDATE_WITH_WIPE_KEYED_TOKEN {
+    UPDATE_WITH_WIPE_KEYED_TOKEN_REPLACEMENT_KEY_NOT_REQUIRED {
         @Override
         public PlatformTxnAccessor platformTxn()
                 throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
@@ -131,6 +145,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_WIPE)
                     .replacingWipe()
+                    .notValidatingRoleKeySignatures()
                     .get());
         }
     },

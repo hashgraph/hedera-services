@@ -171,7 +171,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
             return false;
         }
 
-        if (event.getUnhashedData() == null) {
+        if (event.getSignature() == null) {
             // do not log the event itself, since toString would throw a NullPointerException
             nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null unhashed data");
             nullUnhashedDataAccumulator.update(1);

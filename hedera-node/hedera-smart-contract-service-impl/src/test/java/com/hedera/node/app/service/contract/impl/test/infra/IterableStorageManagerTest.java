@@ -258,6 +258,53 @@ class IterableStorageManagerTest {
     }
 
     @Test
+    void multipleInsertsUseLatestHeadPointer() {
+        final var accesses = List.of(new StorageAccesses(
+                CONTRACT_1,
+                List.of(
+                        StorageAccess.newWrite(UInt256.valueOf(2L), UInt256.ZERO, UInt256.MAX_VALUE),
+                        StorageAccess.newWrite(UInt256.valueOf(3L), UInt256.ZERO, UInt256.MAX_VALUE))));
+
+        final var sizeChanges = List.of(new StorageSizeChange(CONTRACT_1, 0, 2));
+
+        given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
+        given(hederaNativeOperations.getAccount(CONTRACT_1)).willReturn(account);
+        given(account.firstContractStorageKey()).willReturn(BYTES_1);
+        given(enhancement.operations()).willReturn(hederaOperations);
+        given(store.getSlotValueForModify(new SlotKey(CONTRACT_1, BYTES_1)))
+                .willReturn(new SlotValue(tuweniToPbjBytes(UInt256.ONE), Bytes.EMPTY, Bytes.EMPTY));
+        given(store.getSlotValueForModify(new SlotKey(CONTRACT_1, BYTES_2)))
+                .willReturn(new SlotValue(tuweniToPbjBytes(UInt256.ONE), Bytes.EMPTY, BYTES_1));
+
+        // Should insert into the head of the existing storage list
+        subject.persistChanges(enhancement, accesses, sizeChanges, store);
+
+        // The first insert (BYTES_2)
+        verify(store)
+                .putSlot(
+                        new SlotKey(CONTRACT_1, BYTES_2),
+                        new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_1));
+        verify(store)
+                .putSlot(
+                        new SlotKey(CONTRACT_1, BYTES_1),
+                        new SlotValue(tuweniToPbjBytes(UInt256.ONE), BYTES_2, Bytes.EMPTY));
+        // The second insert (BYTES_3)
+        verify(store)
+                .putSlot(
+                        new SlotKey(CONTRACT_1, BYTES_3),
+                        new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_2));
+        verify(store)
+                .putSlot(
+                        new SlotKey(CONTRACT_1, BYTES_2),
+                        new SlotValue(tuweniToPbjBytes(UInt256.ONE), BYTES_3, BYTES_1));
+
+        // The new first key is BYTES_3
+        verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_3, 2);
+        verifyNoMoreInteractions(store);
+        verifyNoMoreInteractions(hederaOperations);
+    }
+
+    @Test
     void insertSlotIntoExistingStorage() {
         final var accesses = List.of(new StorageAccesses(
                 CONTRACT_1, List.of(StorageAccess.newWrite(UInt256.valueOf(2L), UInt256.ZERO, UInt256.MAX_VALUE))));

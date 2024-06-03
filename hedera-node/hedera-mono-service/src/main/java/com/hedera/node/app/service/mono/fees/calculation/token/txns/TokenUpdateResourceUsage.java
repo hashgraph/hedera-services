@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.mono.fees.calculation.token.queries.GetTokenInfoResourceUsage.ifPresent;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
@@ -111,7 +112,7 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
             }
             return estimate.get();
         } else {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         }
     }
 }

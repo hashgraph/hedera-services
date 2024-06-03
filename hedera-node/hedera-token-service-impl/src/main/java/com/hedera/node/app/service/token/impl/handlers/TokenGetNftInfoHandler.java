@@ -52,6 +52,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGetNftInfoHandler extends PaidQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGetNftInfoHandler() {
         // Exists for injection

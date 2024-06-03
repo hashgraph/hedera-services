@@ -247,6 +247,8 @@ public class AddressBookUtils {
                 internalPort,
                 externalHostname,
                 externalPort,
+                null,
+                null,
                 memoToUse);
     }
 

@@ -19,7 +19,6 @@ package com.swirlds.platform.components;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.components.appcomm.CompleteStateNotificationWithCleanup;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -36,14 +35,6 @@ public interface AppNotifier {
      */
     @InputWireLabel("state written notification")
     void sendStateWrittenToDiskNotification(@NonNull final StateWriteToDiskCompleteNotification notification);
-
-    /**
-     * Send a notification to the app that the state has been loaded from disk.
-     *
-     * @param notification the notification
-     */
-    @InputWireLabel("state loaded notification")
-    void sendStateLoadedFromDiskNotification(@NonNull final StateLoadedFromDiskNotification notification);
 
     /**
      * Send a notification to the app that a reconnect has completed.

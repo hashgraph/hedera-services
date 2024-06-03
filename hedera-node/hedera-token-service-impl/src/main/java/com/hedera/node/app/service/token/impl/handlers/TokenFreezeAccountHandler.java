@@ -53,6 +53,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenFreezeAccountHandler implements TransactionHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenFreezeAccountHandler() {
         // Exists for injection

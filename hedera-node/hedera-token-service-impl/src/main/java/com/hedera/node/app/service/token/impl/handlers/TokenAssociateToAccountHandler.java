@@ -68,7 +68,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAssociateToAccountHandler extends BaseTokenHandler implements TransactionHandler {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenAssociateToAccountHandler() {
         // Exists for injection

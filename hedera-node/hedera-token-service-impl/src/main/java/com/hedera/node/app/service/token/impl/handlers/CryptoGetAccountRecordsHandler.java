@@ -52,6 +52,10 @@ import javax.inject.Singleton;
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
     private final RecordCache recordCache;
 
+    /**
+     * Default constructor for injection.
+     * @param recordCache the record cache to use to get the records
+     */
     @Inject
     public CryptoGetAccountRecordsHandler(@NonNull final RecordCache recordCache) {
         // Exists for injection
@@ -117,9 +121,8 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
         final var query = queryContext.query();
         final var accountStore = queryContext.createStore(ReadableAccountStore.class);
         final var op = query.cryptoGetAccountRecordsOrThrow();
-        final var accountId = op.accountIDOrThrow();
+        final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
         final var account = accountStore.getAccountById(accountId);
-
         final var records = recordCache.getRecords(accountId);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetAccountRecordsResourceUsage(
                         null, new CryptoFeeBuilder())

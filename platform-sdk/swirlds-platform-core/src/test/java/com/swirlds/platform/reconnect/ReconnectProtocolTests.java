@@ -174,7 +174,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
 
         assertEquals(
@@ -217,7 +217,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
 
         assertEquals(
@@ -251,7 +251,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
 
         // the ReconnectController must be running in order to provide permits
@@ -302,7 +302,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration,
                 Time.getCurrent());
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
@@ -323,7 +323,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration,
                 Time.getCurrent());
 
@@ -368,7 +368,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
         final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
         assertTrue(protocol.shouldInitiate());
@@ -412,7 +412,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
 
         final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
@@ -450,7 +450,7 @@ class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
         final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
         assertFalse(protocol.shouldAccept());
@@ -483,7 +483,7 @@ class ReconnectProtocolTests {
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
-                inactiveStatusGetter,
+                inactiveStatusGetter::getCurrentStatus,
                 configuration);
         final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
         assertFalse(protocol.shouldAccept());
@@ -509,7 +509,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 mock(FallenBehindManager.class),
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
         final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
         assertTrue(protocol.shouldAccept());
@@ -555,7 +555,7 @@ class ReconnectProtocolTests {
                 reconnectController,
                 mock(SignedStateValidator.class),
                 mock(FallenBehindManager.class),
-                activeStatusGetter,
+                activeStatusGetter::getCurrentStatus,
                 configuration);
         final Protocol protocol = reconnectProtocolFactory.build(new NodeId(0));
         assertFalse(protocol.shouldAccept());

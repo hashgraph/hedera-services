@@ -21,13 +21,14 @@ import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.schemas.InitialModServiceConsensusSchema;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ConsensusService} {@link Service}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
     public static final long RUNNING_HASH_VERSION = 3L;

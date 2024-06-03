@@ -41,8 +41,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_PAUSED;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -65,7 +65,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Class for retrieving objects in a certain context, e.g. during a {@code handler.handle(...)} call.
+ * Class for retrieving objects in a certain context. For example, during a {@code handler.handle(...)} call.
  * This allows compartmentalizing common validation logic without requiring store implementations to
  * throw inappropriately-contextual exceptions, and also abstracts duplicated business logic out of
  * multiple handlers.
@@ -76,8 +76,17 @@ public class TokenHandlerHelper {
         throw new UnsupportedOperationException("Utility class only");
     }
 
+    /**
+     * Enum to determine the type of account ID, aliased or not aliased
+     */
     public enum AccountIDType {
+        /**
+         * Account ID is aliased
+         */
         ALIASED_ID,
+        /**
+         * Account ID is not aliased
+         */
         NOT_ALIASED_ID
     }
 
@@ -91,6 +100,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @throws HandleException if any of the account conditions are not met
+     * @return the account if it exists and is usable
      */
     @NonNull
     public static Account getIfUsable(
@@ -117,6 +127,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @throws HandleException if any of the account conditions are not met
+     * @return the account if it exists and is usable
      */
     @NonNull
     public static Account getIfUsableForAliasedId(
@@ -136,7 +147,9 @@ public class TokenHandlerHelper {
      * @param accountId the ID of the account to get
      * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
+     * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @throws HandleException if any of the account conditions are not met
+     * @return the account if it exists and is usable
      */
     @NonNull
     public static Account getIfUsableForAutoRenew(
@@ -161,7 +174,9 @@ public class TokenHandlerHelper {
      * @param accountId the ID of the account to get
      * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
+     * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @throws HandleException if any of the account conditions are not met
+     * @return the account if it exists and is usable
      */
     @NonNull
     public static Account getIfUsableWithTreasury(
@@ -178,6 +193,16 @@ public class TokenHandlerHelper {
                 AccountIDType.NOT_ALIASED_ID);
     }
 
+    /**
+     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * @param accountId the ID of the account to get
+     * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
+     * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
+     * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
+     * @param errorOnAccountDeleted the {@link ResponseCodeEnum} to use if the account is deleted
+     * @param accountIDType the type of account ID
+     * @return the account if it exists and is usable
+     */
     @NonNull
     public static Account getIfUsable(
             @NonNull final AccountID accountId,
@@ -211,11 +236,27 @@ public class TokenHandlerHelper {
         return acct;
     }
 
+    /**
+     * Enum to determine the type of validations to be performed on the token. If the token is allowed to be paused
+     * or not
+     */
     public enum TokenValidations {
+        /**
+         * Token should not be paused
+         */
         REQUIRE_NOT_PAUSED,
+        /**
+         * Token can be paused
+         */
         PERMIT_PAUSED
     }
 
+    /**
+     * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid
+     * @param tokenId the ID of the token to get
+     * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
+     * @return the token if it exists and is usable
+     */
     public static Token getIfUsable(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
         return getIfUsable(tokenId, tokenStore, REQUIRE_NOT_PAUSED);
     }
@@ -227,6 +268,7 @@ public class TokenHandlerHelper {
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
      * @param tokenValidations whether validate paused token status
      * @throws HandleException if any of the token conditions are not met
+     * @return the token if it exists and is usable
      */
     @NonNull
     public static Token getIfUsable(
@@ -253,6 +295,7 @@ public class TokenHandlerHelper {
      * @param tokenId the ID of the token
      * @param tokenRelStore the {@link ReadableTokenRelationStore} to use for token relation retrieval
      * @throws HandleException if any of the token relation conditions are not met
+     * @return the token relation if it exists and is usable
      */
     @NonNull
     public static TokenRelation getIfUsable(
@@ -271,6 +314,12 @@ public class TokenHandlerHelper {
         return tokenRel;
     }
 
+    /**
+     * Returns the token relation if it exists and is usable
+     * @param key the key to check
+     * @param responseCode the response code to throw if the key is empty
+     * @throws PreCheckException if the key is empty
+     */
     public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         if (EMPTY_KEY_LIST.equals(key)) {

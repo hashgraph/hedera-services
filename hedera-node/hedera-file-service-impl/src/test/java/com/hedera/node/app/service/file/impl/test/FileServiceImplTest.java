@@ -16,17 +16,24 @@
 
 package com.hedera.node.app.service.file.impl.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.ConfigProvider;
+import java.lang.reflect.Field;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,10 +64,26 @@ class FileServiceImplTest {
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
-        assertEquals(11, statesToCreate.size());
+        assertThat(11).isEqualTo(statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(FileServiceImpl.BLOBS_KEY, iter.next());
+        assertThat(FileServiceImpl.BLOBS_KEY).isEqualTo(iter.next());
+    }
+
+    @Test
+    void testSetFs() throws NoSuchFieldException, IllegalAccessException {
+        FileServiceImpl fileService = new FileServiceImpl(configProvider);
+        fileService.registerSchemas(registry, TestSchema.CURRENT_VERSION);
+        Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> mockSupplier = mock(Supplier.class);
+        InitialModFileGenesisSchema mockInitialFileSchema = mock(InitialModFileGenesisSchema.class);
+
+        Field field = FileServiceImpl.class.getDeclaredField("initialFileSchema");
+        field.setAccessible(true);
+        field.set(fileService, mockInitialFileSchema);
+
+        fileService.setFs(mockSupplier);
+
+        verify(mockInitialFileSchema).setFs(mockSupplier);
     }
 
     private FileService subject() {

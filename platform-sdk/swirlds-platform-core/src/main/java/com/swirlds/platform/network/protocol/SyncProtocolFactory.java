@@ -23,11 +23,12 @@ import com.swirlds.platform.gossip.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * Implementation of a factory for sync protocol
@@ -42,20 +43,20 @@ public class SyncProtocolFactory implements ProtocolFactory {
     private final BooleanSupplier intakeIsTooFull;
     private final Duration sleepAfterSync;
     private final SyncMetrics syncMetrics;
-    private final PlatformStatusNexus statusNexus;
+    private final Supplier<PlatformStatus> platformStatusSupplier;
 
     /**
      * Constructs a new sync protocol
      *
-     * @param platformContext     the platform context
-     * @param synchronizer        the shadow graph synchronizer, responsible for actually doing the sync
-     * @param fallenBehindManager manager to determine whether this node has fallen behind
-     * @param permitProvider      provides permits to sync
-     * @param gossipHalted        returns true if gossip is halted, false otherwise
-     * @param intakeIsTooFull     returns true if the intake queue is too full to continue syncing, false otherwise
-     * @param sleepAfterSync      the amount of time to sleep after a sync
-     * @param syncMetrics         metrics tracking syncing
-     * @param statusNexus         provides the current platform status
+     * @param platformContext        the platform context
+     * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
+     * @param fallenBehindManager    manager to determine whether this node has fallen behind
+     * @param permitProvider         provides permits to sync
+     * @param gossipHalted           returns true if gossip is halted, false otherwise
+     * @param intakeIsTooFull        returns true if the intake queue is too full to continue syncing, false otherwise
+     * @param sleepAfterSync         the amount of time to sleep after a sync
+     * @param syncMetrics            metrics tracking syncing
+     * @param platformStatusSupplier provides the current platform status
      */
     public SyncProtocolFactory(
             @NonNull final PlatformContext platformContext,
@@ -66,7 +67,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
             @NonNull final BooleanSupplier intakeIsTooFull,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final PlatformStatusNexus statusNexus) {
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.synchronizer = Objects.requireNonNull(synchronizer);
@@ -76,7 +77,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
         this.intakeIsTooFull = Objects.requireNonNull(intakeIsTooFull);
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
-        this.statusNexus = Objects.requireNonNull(statusNexus);
+        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
     }
 
     /**
@@ -95,6 +96,6 @@ public class SyncProtocolFactory implements ProtocolFactory {
                 intakeIsTooFull,
                 sleepAfterSync,
                 syncMetrics,
-                statusNexus);
+                platformStatusSupplier);
     }
 }

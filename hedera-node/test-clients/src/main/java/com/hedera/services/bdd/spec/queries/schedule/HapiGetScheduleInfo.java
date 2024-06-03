@@ -256,7 +256,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getScheduleInfoQuery(spec, payment, true);
+        Query query = maybeModified(getScheduleInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls).getScheduleInfo(query);
         return costFrom(response);

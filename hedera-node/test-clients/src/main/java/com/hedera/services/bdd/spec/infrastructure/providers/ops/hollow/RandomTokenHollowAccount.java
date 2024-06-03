@@ -47,7 +47,6 @@ public class RandomTokenHollowAccount extends RandomToken {
 
         int id = opNo.getAndIncrement();
         HapiTokenCreate op = tokenCreate(my("token" + id))
-                .advertisingCreation()
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(INVALID_SIGNATURE)
                 .signedBy(signers);

@@ -34,7 +34,6 @@ import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.ConsensusMetricsImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -122,7 +121,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
         final EventWindow eventWindow =
                 new EventWindow(snapshot.round(), ancientThreshold, ancientThreshold, ancientMode);
 
-        linker.clear(NoInput.getInstance());
+        linker.clear();
         linker.setEventWindow(eventWindow);
         consensus.loadSnapshot(snapshot);
     }

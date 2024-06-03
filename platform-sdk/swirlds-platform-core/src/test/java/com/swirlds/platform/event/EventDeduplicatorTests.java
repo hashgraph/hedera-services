@@ -195,12 +195,12 @@ class EventDeduplicatorTests {
                         emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
-                final GossipEvent duplicateEvent = submittedEvents.get(random.nextInt(submittedEvents.size()));
-
-                // randomize the signature
-                // this modifies the event in place (since we don't have a copy constructor), but that doesn't matter
-                ByteBuffer.wrap(duplicateEvent.getUnhashedData().getSignature())
-                        .put(randomSignatureBytes(random).toByteArray());
+                final GossipEvent duplicateEvent = new GossipEvent(
+                        submittedEvents
+                                .get(random.nextInt(submittedEvents.size()))
+                                .getHashedData(),
+                        randomSignatureBytes(random) // randomize the signature
+                        );
 
                 if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
                     if (duplicateEvent.getDescriptor().getBirthRound() < minimumRoundNonAncient) {

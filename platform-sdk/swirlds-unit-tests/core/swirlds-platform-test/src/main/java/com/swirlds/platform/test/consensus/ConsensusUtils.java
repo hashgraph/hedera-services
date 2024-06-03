@@ -44,7 +44,7 @@ public abstract class ConsensusUtils {
                             == address.getNodeId().id())
                     .toList();
             eventsByCreator.forEach(e -> {
-                final IndexedEvent indexedEvent = new IndexedEvent(e.getHashedData(), e.getUnhashedData(), null, null);
+                final IndexedEvent indexedEvent = new IndexedEvent(e);
                 source.setLatestEvent(random, indexedEvent);
             });
             final Instant creatorMax = eventsByCreator.stream()

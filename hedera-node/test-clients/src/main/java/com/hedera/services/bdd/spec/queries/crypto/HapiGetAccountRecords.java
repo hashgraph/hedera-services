@@ -171,7 +171,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getRecordsQuery(spec, payment, true);
+        Query query = maybeModified(getRecordsQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountRecords(query);
         return costFrom(response);

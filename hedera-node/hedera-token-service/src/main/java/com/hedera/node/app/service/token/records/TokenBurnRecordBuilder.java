@@ -34,6 +34,7 @@ public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
     /**
      * Sets the new total supply of a token
      * @param newTotalSupply the new total supply of a token
+     * @return this builder
      */
     @NonNull
     TokenBurnRecordBuilder newTotalSupply(final long newTotalSupply);
@@ -41,6 +42,7 @@ public interface TokenBurnRecordBuilder extends TokenBaseRecordBuilder {
     /**
      * Sets the list of serial numbers burned
      * @param serialNumbers list of serial numbers burned
+     * @return this builder
      */
     @NonNull
     TokenBurnRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers);

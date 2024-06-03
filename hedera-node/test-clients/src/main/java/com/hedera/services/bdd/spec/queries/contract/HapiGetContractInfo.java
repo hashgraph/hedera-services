@@ -67,6 +67,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private Optional<String> contractInfoPath = Optional.empty();
     private Optional<String> validateDirPath = Optional.empty();
     private Optional<String> registryEntry = Optional.empty();
+    private Optional<String> saveEVMAddressToRegistry = Optional.empty();
     private List<String> absentRelationships = new ArrayList<>();
     private List<ExpectedTokenRel> relationships = new ArrayList<>();
     private Optional<ContractInfoAsserts> expectations = Optional.empty();
@@ -101,6 +102,11 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     public HapiGetContractInfo saveToRegistry(String registryEntry) {
         this.registryEntry = Optional.of(registryEntry);
+        return this;
+    }
+
+    public HapiGetContractInfo saveEVMAddressToRegistry(String registryEntry) {
+        this.saveEVMAddressToRegistry = Optional.of(registryEntry);
         return this;
     }
 
@@ -177,6 +183,18 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     }
 
     @Override
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
+        ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
+
+        if (saveEVMAddressToRegistry.isPresent()) {
+            spec.registry()
+                    .saveEVMAddress(
+                            String.valueOf(actualInfo.getContractID().getContractNum()),
+                            actualInfo.getContractAccountID());
+        }
+    }
+
+    @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = maybeModified(getContractInfoQuery(spec, payment, false), spec);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
@@ -198,7 +216,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractInfoQuery(spec, payment, true);
+        Query query = maybeModified(getContractInfoQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         return costFrom(response);

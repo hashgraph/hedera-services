@@ -197,7 +197,7 @@ class VirtualMerkleLeafHasherTest {
         final ByteBuffer bb = ByteBuffer.allocate(10000);
 
         if (hash != null) {
-            bb.put(hash.getValue());
+            hash.getBytes().writeTo(bb);
         }
 
         // key serializaion

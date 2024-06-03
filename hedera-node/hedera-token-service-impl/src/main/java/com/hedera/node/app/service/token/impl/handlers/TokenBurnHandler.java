@@ -72,6 +72,10 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     @NonNull
     private final TokenSupplyChangeOpsValidator validator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the {@link TokenSupplyChangeOpsValidator} to use
+     */
     @Inject
     public TokenBurnHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
         this.validator = requireNonNull(validator);

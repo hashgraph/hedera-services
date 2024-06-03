@@ -19,22 +19,26 @@ package com.hedera.node.app.service.token.impl.codec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Networking Staking Translator from merkle network context to network staking rewards.
+ */
 public final class NetworkingStakingTranslator {
 
     private NetworkingStakingTranslator() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    @NonNull
     /**
-     * Converts a Part of {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext} to {@link NetworkStakingRewards}.
-     * @param merkleNetworkContext the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
-     * @return the {@link NetworkStakingRewards} converted from the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
+     * Converts a Part of {@link MerkleNetworkContext} to {@link NetworkStakingRewards}.
+     * @param merkleNetworkContext the {@link MerkleNetworkContext} from which to convert
+     * @return the {@link NetworkStakingRewards} converted from the {@link MerkleNetworkContext}
      */
+    @NonNull
     public static NetworkStakingRewards networkStakingRewardsFromMerkleNetworkContext(
-            @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext) {
+            @NonNull final MerkleNetworkContext merkleNetworkContext) {
         requireNonNull(merkleNetworkContext);
         return NetworkStakingRewards.newBuilder()
                 .stakingRewardsActivated(merkleNetworkContext.areRewardsActivated())

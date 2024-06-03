@@ -31,14 +31,14 @@ public class ImmutableHash extends Hash {
      * {@inheritDoc}
      */
     public ImmutableHash(final byte[] value) {
-        super(value, DigestType.SHA_384, true, true);
+        super(Arrays.copyOf(value, value.length), DigestType.SHA_384);
     }
 
     /**
      * {@inheritDoc}
      */
     public ImmutableHash(final byte[] value, final DigestType digestType) {
-        super(value, digestType, true, true);
+        super(Arrays.copyOf(value, value.length), digestType);
     }
 
     /**
@@ -53,7 +53,6 @@ public class ImmutableHash extends Hash {
      */
     @Override
     public byte[] getValue() {
-        final byte[] value = super.getValue();
-        return Arrays.copyOf(value, value.length);
+        return copyToByteArray();
     }
 }

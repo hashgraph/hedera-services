@@ -26,6 +26,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getQueryFeeDataMatri
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getStateProofSize;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
@@ -66,7 +67,7 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 
     public FeeData usageGivenTypeAndTopic(@Nullable final MerkleTopic topic, final ResponseType responseType) {
         if (topic == null) {
-            return FeeData.getDefaultInstance();
+            return CONSTANT_FEE_DATA;
         }
 
         final long bpr = BASIC_QUERY_RES_HEADER

@@ -109,17 +109,20 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
     @Override
     public void invoke(
             @NonNull final BufferedData requestBuffer, @NonNull final StreamObserver<BufferedData> responseObserver) {
+        // Track the number of times this method has been called
+        callsReceivedCounter.increment();
+        callsReceivedSpeedometer.cycle();
+
+        // Fail-fast if the request is too large (Note that the request buffer is sized to allow exactly
+        // 1 more byte than MAX_MESSAGE_SIZE, so we can detect this case).
+        if (requestBuffer.length() > MAX_MESSAGE_SIZE) {
+            callsFailedCounter.increment();
+            final var exception = new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
+            responseObserver.onError(exception);
+            return;
+        }
+
         try {
-            // Track the number of times this method has been called
-            callsReceivedCounter.increment();
-            callsReceivedSpeedometer.cycle();
-
-            // Fail-fast if the request is too large (Note that the request buffer is sized to allow exactly
-            // 1 more byte than MAX_MESSAGE_SIZE, so we can detect this case).
-            if (requestBuffer.length() > MAX_MESSAGE_SIZE) {
-                throw new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
-            }
-
             // Prepare the response buffer
             final var responseBuffer = BUFFER_THREAD_LOCAL.get();
             responseBuffer.reset();

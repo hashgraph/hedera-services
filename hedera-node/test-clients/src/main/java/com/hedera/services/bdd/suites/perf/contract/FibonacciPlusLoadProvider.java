@@ -66,9 +66,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
+/**
+ * (FUTURE) Integrate this test to CI in some form.
+ */
 public class FibonacciPlusLoadProvider extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(FibonacciPlusLoadProvider.class);
@@ -153,11 +158,11 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(justDoOne(), addFibNums());
     }
 
-    final HapiSpec addFibNums() {
+    final Stream<DynamicTest> addFibNums() {
         return defaultHapiSpec("AddFibNums")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, SUITE_PROPS_PREFIX),
@@ -355,7 +360,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         gasUsed.addAndGet(gas);
     }
 
-    final HapiSpec justDoOne() {
+    final Stream<DynamicTest> justDoOne() {
         final var civilian = "civilian";
         final int[] firstTargets = {19, 24};
         final int[] secondTargets = {30, 31};

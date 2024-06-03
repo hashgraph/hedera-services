@@ -30,6 +30,9 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class CryptoServiceDefinition implements RpcServiceDefinition {
+    /**
+     * The singleton instance of this class
+     */
     public static final CryptoServiceDefinition INSTANCE = new CryptoServiceDefinition();
 
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(

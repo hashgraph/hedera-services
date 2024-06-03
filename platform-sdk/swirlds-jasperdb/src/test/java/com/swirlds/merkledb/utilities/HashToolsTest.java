@@ -32,7 +32,7 @@ class HashToolsTest {
 
         final ByteBuffer buffer = HashTools.hashToByteBuffer(hash);
 
-        assertArrayEquals(hash.getValue(), buffer.array(), "Hash digest should match created buffer");
+        assertArrayEquals(hash.copyToByteArray(), buffer.array(), "Hash digest should match created buffer");
     }
 
     @Test
@@ -42,7 +42,7 @@ class HashToolsTest {
 
         HashTools.hashToByteBuffer(hash, buffer);
 
-        assertArrayEquals(hash.getValue(), buffer.array(), "Hash digest should matched filled buffer");
+        assertArrayEquals(hash.copyToByteArray(), buffer.array(), "Hash digest should matched filled buffer");
     }
 
     @Test

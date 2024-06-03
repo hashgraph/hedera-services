@@ -55,7 +55,13 @@ public interface OpProvider {
     };
 
     ResponseCodeEnum[] STANDARD_PERMISSIBLE_OUTCOMES = {
-        SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, INSUFFICIENT_TX_FEE, INVALID_SIGNATURE
+        SUCCESS,
+        LIVE_HASH_NOT_FOUND,
+        INSUFFICIENT_PAYER_BALANCE,
+        UNKNOWN,
+        INSUFFICIENT_TX_FEE,
+        INVALID_SIGNATURE,
+        PAYER_ACCOUNT_DELETED
     };
 
     default List<HapiSpecOperation> suggestedInitializers() {

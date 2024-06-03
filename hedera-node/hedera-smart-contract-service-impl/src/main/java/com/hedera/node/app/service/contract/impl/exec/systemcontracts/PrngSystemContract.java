@@ -102,7 +102,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
                     PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION)),
                     gasRequirement,
                     null);
-        } catch (NullPointerException e) {
+        } catch (Exception e) {
             // Log a warning as this error will be caused by insufficient entropy
             log.warn("Internal precompile failure", e);
             createFailedRecord(frame, FAIL_INVALID, contractID);

@@ -23,6 +23,8 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusNexus;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -59,7 +61,7 @@ public class StateSigner {
      * @param reservedSignedState the state to sign
      * @return a {@link StateSignaturePayload} containing the signature, or null if the state should not be signed
      */
-    public @Nullable StateSignaturePayload signState(@NonNull final ReservedSignedState reservedSignedState) {
+    public @Nullable ConsensusTransactionImpl signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
             if (statusNexus.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
                 // the only time we don't want to submit signatures is during PCES replay
@@ -71,11 +73,12 @@ public class StateSigner {
             final Bytes signature = signer.signImmutable(stateHash);
             Objects.requireNonNull(signature);
 
-            return StateSignaturePayload.newBuilder()
+            final StateSignaturePayload payload = StateSignaturePayload.newBuilder()
                     .round(reservedSignedState.get().getRound())
                     .signature(signature)
                     .hash(stateHash.getBytes())
                     .build();
+            return new StateSignatureTransaction(payload);
         }
     }
 }

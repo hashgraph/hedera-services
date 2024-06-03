@@ -252,7 +252,7 @@ public class Account extends HederaEvmAccount {
     public void dissociateUsing(final List<Dissociation> dissociations, final OptionValidator validator) {
         for (final var dissociation : dissociations) {
             validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
-            dissociation.updateModelRelsSubjectTo(validator);
+            dissociation.updateModelRelsSubjectTo();
             final var pastRel = dissociation.dissociatingAccountRel();
             if (pastRel.isAutomaticAssociation()) {
                 decrementUsedAutomaticAssociations();

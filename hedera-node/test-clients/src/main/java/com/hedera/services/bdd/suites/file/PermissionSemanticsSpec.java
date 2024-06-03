@@ -33,50 +33,31 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_DETAILS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class PermissionSemanticsSpec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(PermissionSemanticsSpec.class);
+public class PermissionSemanticsSpec {
     public static final String NEVER_TO_BE_USED = "neverToBeUsed";
     public static final String CIVILIAN = "civilian";
     public static final String ETERNAL = "eternal";
     public static final String WACL = "wacl";
 
-    public static void main(String... args) {
-        new PermissionSemanticsSpec().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                allowsDeleteWithOneTopLevelSig(),
-                supportsImmutableFiles(),
-                addressBookAdminExemptFromFeesGivenAuthorizedOps());
-    }
-
     @HapiTest
-    final HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
+    final Stream<DynamicTest> addressBookAdminExemptFromFeesGivenAuthorizedOps() {
         long amount = 100 * 100_000_000L;
         AtomicReference<byte[]> origContents = new AtomicReference<>();
         return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps")
@@ -100,7 +81,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec supportsImmutableFiles() {
+    final Stream<DynamicTest> supportsImmutableFiles() {
         long extensionSecs = 666L;
         AtomicLong approxExpiry = new AtomicLong();
 
@@ -142,7 +123,7 @@ public class PermissionSemanticsSpec extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec allowsDeleteWithOneTopLevelSig() {
+    final Stream<DynamicTest> allowsDeleteWithOneTopLevelSig() {
         KeyShape wacl = KeyShape.listOf(KeyShape.SIMPLE, KeyShape.listOf(2));
 
         var deleteSig = wacl.signedWith(sigs(ON, sigs(OFF, OFF)));
@@ -169,10 +150,5 @@ public class PermissionSemanticsSpec extends HapiSuite {
                                 .sigControl(ControlForKey.forKey(WACL, failedDeleteSig))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         fileDelete("tbd").signedBy(GENESIS, WACL).sigControl(ControlForKey.forKey(WACL, deleteSig)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

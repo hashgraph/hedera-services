@@ -132,8 +132,6 @@ public class Shadowgraph implements Clearable {
         this.metrics = new ShadowgraphMetrics(platformContext);
         this.numberOfNodes = addressBook.getSize();
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
-        oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         tips = new HashSet<>();
         hashToShadowEvent = new HashMap<>();
         indicatorToShadowEvent = new HashMap<>();
@@ -145,7 +143,7 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow the starting event window
      */
-    public synchronized void startWithEventWindow(@NonNull final EventWindow eventWindow) {
+    private void startWithEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = eventWindow;
         oldestUnexpiredIndicator = eventWindow.getExpiredThreshold();
         logger.info(
@@ -158,7 +156,7 @@ public class Shadowgraph implements Clearable {
      * Reset the shadowgraph manager to its constructed state.
      */
     public synchronized void clear() {
-        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
+        eventWindow = null;
         oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         disconnectShadowEvents();
         tips.clear();
@@ -352,6 +350,11 @@ public class Shadowgraph implements Clearable {
      * @param eventWindow describes the current window of non-expired events
      */
     public synchronized void updateEventWindow(@NonNull final EventWindow eventWindow) {
+        if (this.eventWindow == null) {
+            startWithEventWindow(eventWindow);
+            return;
+        }
+
         final long expiredThreshold = eventWindow.getExpiredThreshold();
 
         if (expiredThreshold < eventWindow.getExpiredThreshold()) {
@@ -508,6 +511,10 @@ public class Shadowgraph implements Clearable {
      * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
      */
     public synchronized boolean addEvent(@NonNull final EventImpl e) throws ShadowgraphInsertionException {
+        if (eventWindow == null) {
+            throw new IllegalStateException("Initial event window not set");
+        }
+
         Objects.requireNonNull(e);
         try {
             final InsertableStatus status = insertable(e);

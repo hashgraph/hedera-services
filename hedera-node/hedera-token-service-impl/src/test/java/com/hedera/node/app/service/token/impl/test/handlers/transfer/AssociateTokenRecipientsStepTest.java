@@ -34,7 +34,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextI
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +41,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Unit tests for {@link AssociateTokenRecipientsStep}.
+ */
 @ExtendWith(MockitoExtension.class)
 public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -103,23 +105,11 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
     }
 
-    public static AccountAmount adjustFrom(AccountID account, long amount) {
+    private AccountAmount adjustFrom(AccountID account, long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 
-    public static AccountAmount adjustFromWithAllowance(AccountID account, long amount) {
-        return AccountAmount.newBuilder()
-                .accountID(account)
-                .amount(amount)
-                .isApproval(true)
-                .build();
-    }
-
-    public static AccountID asAccountWithAlias(String alias) {
-        return AccountID.newBuilder().alias(Bytes.wrap(alias)).build();
-    }
-
-    public static NftTransfer nftTransferWith(AccountID from, AccountID to, long serialNo) {
+    private NftTransfer nftTransferWith(AccountID from, AccountID to, long serialNo) {
         return NftTransfer.newBuilder()
                 .senderAccountID(from)
                 .receiverAccountID(to)

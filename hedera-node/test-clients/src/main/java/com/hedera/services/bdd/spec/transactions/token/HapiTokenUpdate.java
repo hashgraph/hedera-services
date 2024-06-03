@@ -87,9 +87,23 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<Supplier<Key>> newSupplyKeySupplier = Optional.empty();
     private Optional<Function<HapiSpec, String>> newSymbolFn = Optional.empty();
     private Optional<Function<HapiSpec, String>> newNameFn = Optional.empty();
-    private boolean useImproperEmptyKey = false;
-    private boolean useEmptyAdminKeyList = false;
+    private boolean useEmptyAdminKey = false;
+    private boolean useEmptyWipeKey = false;
+    private boolean useEmptyKycKey = false;
+    private boolean useEmptySupplyKey = false;
+    private boolean useEmptyFreezeKey = false;
+    private boolean useEmptyFeeScheduleKey = false;
+    private boolean useEmptyMetadataKey = false;
+    private boolean useEmptyPauseKey = false;
+    private boolean useInvalidAdminKey = false;
+    private boolean useInvalidWipeKey = false;
+    private boolean useInvalidKycKey = false;
+    private boolean useInvalidSupplyKey = false;
+    private boolean useInvalidFreezeKey = false;
     private boolean useInvalidFeeScheduleKey = false;
+    private boolean useInvalidMetadataKey = false;
+    private boolean useInvalidPauseKey = false;
+    private boolean noKeyValidation = false;
     private Optional<String> contractKeyName = Optional.empty();
     private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
 
@@ -219,18 +233,88 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
-    public HapiTokenUpdate improperlyEmptyingAdminKey() {
-        useImproperEmptyKey = true;
+    public HapiTokenUpdate properlyEmptyingAdminKey() {
+        useEmptyAdminKey = true;
         return this;
     }
 
-    public HapiTokenUpdate properlyEmptyingAdminKey() {
-        useEmptyAdminKeyList = true;
+    public HapiTokenUpdate properlyEmptyingWipeKey() {
+        useEmptyWipeKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingKycKey() {
+        useEmptyKycKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingSupplyKey() {
+        useEmptySupplyKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingFreezeKey() {
+        useEmptyFreezeKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingPauseKey() {
+        useEmptyPauseKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingFeeScheduleKey() {
+        useEmptyFeeScheduleKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingMetadataKey() {
+        useEmptyMetadataKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidAdminKey() {
+        useInvalidAdminKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidWipeKey() {
+        useInvalidWipeKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidKycKey() {
+        useInvalidKycKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidSupplyKey() {
+        useInvalidSupplyKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidFreezeKey() {
+        useInvalidFreezeKey = true;
         return this;
     }
 
     public HapiTokenUpdate usingInvalidFeeScheduleKey() {
         useInvalidFeeScheduleKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidMetadataKey() {
+        useInvalidMetadataKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidPauseKey() {
+        useInvalidPauseKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate applyNoValidationToKeys() {
+        noKeyValidation = true;
         return this;
     }
 
@@ -306,31 +390,79 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             newName.ifPresent(b::setName);
                             newMemo.ifPresent(s -> b.setMemo(
                                     StringValue.newBuilder().setValue(s).build()));
-                            if (useImproperEmptyKey) {
-                                b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
-                            } else if (useEmptyAdminKeyList) {
+                            if (useInvalidAdminKey) {
+                                b.setAdminKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyAdminKey) {
                                 b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
                                 newAdminKey.ifPresent(
                                         a -> b.setAdminKey(spec.registry().getKey(a)));
                             }
                             newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
-                            newSupplyKey.ifPresent(
-                                    k -> b.setSupplyKey(spec.registry().getKey(k)));
+                            if (useInvalidSupplyKey) {
+                                b.setSupplyKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptySupplyKey) {
+                                b.setSupplyKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newSupplyKey.ifPresent(
+                                        k -> b.setSupplyKey(spec.registry().getKey(k)));
+                            }
                             newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
-                            newWipeKey.ifPresent(
-                                    k -> b.setWipeKey(spec.registry().getKey(k)));
-                            newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+                            if (useInvalidWipeKey) {
+                                b.setWipeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyWipeKey) {
+                                b.setWipeKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newWipeKey.ifPresent(
+                                        k -> b.setWipeKey(spec.registry().getKey(k)));
+                            }
+                            if (useInvalidKycKey) {
+                                b.setKycKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyKycKey) {
+                                b.setKycKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newKycKey.ifPresent(
+                                        k -> b.setKycKey(spec.registry().getKey(k)));
+                            }
                             if (useInvalidFeeScheduleKey) {
-                                b.setFeeScheduleKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+                                b.setFeeScheduleKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyFeeScheduleKey) {
+                                b.setFeeScheduleKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
                                 newFeeScheduleKey.ifPresent(
                                         k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
                             }
-                            newFreezeKey.ifPresent(
-                                    k -> b.setFreezeKey(spec.registry().getKey(k)));
-                            newPauseKey.ifPresent(
-                                    k -> b.setPauseKey(spec.registry().getKey(k)));
+                            if (useInvalidFreezeKey) {
+                                b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyFreezeKey) {
+                                b.setFreezeKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newFreezeKey.ifPresent(
+                                        k -> b.setFreezeKey(spec.registry().getKey(k)));
+                            }
+                            if (useInvalidPauseKey) {
+                                b.setPauseKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyPauseKey) {
+                                b.setPauseKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newPauseKey.ifPresent(
+                                        k -> b.setPauseKey(spec.registry().getKey(k)));
+                            }
+                            if (useInvalidMetadataKey) {
+                                b.setMetadataKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                            } else if (useEmptyMetadataKey) {
+                                b.setMetadataKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newMetadataKey.ifPresent(
+                                        k -> b.setMetadataKey(spec.registry().getKey(k)));
+                            }
+                            if (newMetadata.isPresent()) {
+                                var metadataValue = BytesValue.newBuilder()
+                                        .setValue(ByteString.copyFrom(
+                                                newMetadata.orElseThrow().getBytes()))
+                                        .build();
+                                b.setMetadata(metadataValue);
+                            }
                             if (autoRenewAccount.isPresent()) {
                                 var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
                                 b.setAutoRenewAccount(autoRenewId);
@@ -339,6 +471,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                     Timestamp.newBuilder().setSeconds(t).build()));
                             autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(
                                     Duration.newBuilder().setSeconds(secs).build()));
+                            if (noKeyValidation) {
+                                b.setKeyVerificationMode(TokenKeyValidation.NO_VALIDATION);
+                            } else {
+                                b.setKeyVerificationMode(TokenKeyValidation.FULL_VALIDATION);
+                            }
                             // We often want to use an existing contract to control the keys of various types (supply,
                             // freeze etc.)
                             // of a token, and in this case we need to use a Key{contractID=0.0.X} as the key; so for
@@ -361,15 +498,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                                 "Unexpected tokenKeyType: " + tokenKeyType);
                                     }
                                 }
-                            }
-                            newMetadataKey.ifPresent(
-                                    k -> b.setMetadataKey(spec.registry().getKey(k)));
-                            if (newMetadata.isPresent()) {
-                                var metadataValue = BytesValue.newBuilder()
-                                        .setValue(ByteString.copyFrom(
-                                                newMetadata.orElseThrow().getBytes()))
-                                        .build();
-                                b.setMetadata(metadataValue);
                             }
                         });
         return b -> b.setTokenUpdate(opBody);
@@ -396,8 +524,29 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
             return;
         }
         var registry = spec.registry();
-        if (useEmptyAdminKeyList) {
+        if (useEmptyAdminKey) {
             registry.forgetAdminKey(token);
+        }
+        if (useEmptyKycKey) {
+            registry.forgetKycKey(token);
+        }
+        if (useEmptyWipeKey) {
+            registry.forgetWipeKey(token);
+        }
+        if (useEmptySupplyKey) {
+            registry.forgetSupplyKey(token);
+        }
+        if (useEmptyFreezeKey) {
+            registry.forgetFreezeKey(token);
+        }
+        if (useEmptyFeeScheduleKey) {
+            registry.forgetFeeScheduleKey(token);
+        }
+        if (useEmptyPauseKey) {
+            registry.forgetPauseKey(token);
+        }
+        if (useEmptyMetadataKey) {
+            registry.forgetMetadataKey(token);
         }
         newMemo.ifPresent(m -> registry.saveMemo(token, m));
         newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));
@@ -409,6 +558,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
         newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
         newPauseKey.ifPresent(n -> registry.savePauseKey(token, registry.getKey(n)));
+        newMetadataKey.ifPresent(n -> registry.saveMetadataKey(token, registry.getKey(n)));
+        newMetadata.ifPresent(n -> registry.saveMetadata(token, n));
     }
 
     @Override

@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 
 /**
  * An event with the same behavior as a standard event but with the addition of some debugging
@@ -34,12 +33,12 @@ public class IndexedEvent extends EventImpl {
 
     public IndexedEvent() {}
 
-    public IndexedEvent(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        super(baseEventHashedData, baseEventUnhashedData, selfParent, otherParent);
+    public IndexedEvent(final GossipEvent gossipEvent) {
+        super(gossipEvent);
+    }
+
+    public IndexedEvent(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
+        super(gossipEvent, selfParent, otherParent);
     }
 
     /**

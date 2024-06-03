@@ -38,9 +38,9 @@ import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMSc
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledSecondValue;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledTransaction;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.base.utility.Pair;
+import com.swirlds.platform.state.merkle.disk.OnDiskKey;
+import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;

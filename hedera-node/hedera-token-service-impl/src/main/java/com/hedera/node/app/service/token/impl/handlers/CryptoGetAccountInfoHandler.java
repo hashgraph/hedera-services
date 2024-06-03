@@ -65,6 +65,10 @@ import javax.inject.Singleton;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private final CryptoOpsUsage cryptoOpsUsage;
 
+    /**
+     * Default constructor for injection.
+     * @param cryptoOpsUsage the usage of the crypto operations for calculating fees
+     */
     @Inject
     public CryptoGetAccountInfoHandler(final CryptoOpsUsage cryptoOpsUsage) {
         this.cryptoOpsUsage = cryptoOpsUsage;

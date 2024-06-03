@@ -34,13 +34,17 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Provides validation for token fields like token type,  token supply type, token symbol etc.,.
+ * Provides validation for token fields like token type,  token supply type, token symbol etc.,
  * It is used in pureChecks for token creation.
  */
 @Singleton
 public class CryptoCreateValidator {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
-    public CryptoCreateValidator() { // Exists for injection
+    public CryptoCreateValidator() {
+        // Exists for injection
     }
 
     /**
@@ -82,11 +86,12 @@ public class CryptoCreateValidator {
         }
     }
 
-    /** check if the number of auto associations is too many
+    /** Check if the number of auto associations is too many.
      * @param n number to check
      * @param ledgerConfig LedgerConfig
      * @param entitiesConfig EntitiesConfig
      * @param tokensConfig TokensConfig
+     * @return true the given number is greater than the max number of auto associations
      */
     public boolean tooManyAutoAssociations(
             final int n,

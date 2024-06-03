@@ -48,8 +48,14 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakingRewardsHelper {
     private static final Logger log = LogManager.getLogger(StakingRewardsHelper.class);
+    /**
+     * The maximum pending rewards that can be paid out in a single staking period, which is 50B hbar.
+     */
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakingRewardsHelper() {
         // Exists for Dagger injection

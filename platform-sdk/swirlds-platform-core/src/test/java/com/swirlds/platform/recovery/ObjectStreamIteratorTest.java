@@ -104,8 +104,7 @@ class ObjectStreamIteratorTest {
                 } else if (object instanceof DetailedConsensusEvent event) {
 
                     // Convert to event impl to allow comparison
-                    final EventImpl e = new EventImpl(
-                            event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                    final EventImpl e = new EventImpl(event);
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
@@ -176,8 +175,7 @@ class ObjectStreamIteratorTest {
                 } else if (object instanceof DetailedConsensusEvent event) {
 
                     // Convert to event impl to allow comparison
-                    final EventImpl e = new EventImpl(
-                            event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                    final EventImpl e = new EventImpl(event);
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
@@ -235,8 +233,7 @@ class ObjectStreamIteratorTest {
                 } else if (object instanceof DetailedConsensusEvent event) {
 
                     // Convert to event impl to allow comparison
-                    final EventImpl e = new EventImpl(
-                            event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                    final EventImpl e = new EventImpl(event);
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {

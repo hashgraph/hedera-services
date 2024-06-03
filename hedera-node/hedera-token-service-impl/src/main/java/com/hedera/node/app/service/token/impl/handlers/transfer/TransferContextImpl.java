@@ -60,10 +60,20 @@ public class TransferContextImpl implements TransferContext {
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * @param context The context to use.
+     */
     public TransferContextImpl(final HandleContext context) {
         this(context, true);
     }
 
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * @param context The context to use.
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
+     *                                                                      on auto creation custom fee payments.
+     */
     public TransferContextImpl(
             final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
@@ -135,6 +145,11 @@ public class TransferContextImpl implements TransferContext {
         return numLazyCreations;
     }
 
+    /**
+     * Check if the given alias is of EVM address size.
+     * @param alias The alias to check.
+     * @return {@code true} if the alias is of EVM address size, {@code false} otherwise.
+     */
     public static boolean isOfEvmAddressSize(final Bytes alias) {
         return alias.length() == EVM_ADDRESS_SIZE;
     }
@@ -144,6 +159,10 @@ public class TransferContextImpl implements TransferContext {
         automaticAssociations.add(newAssociation);
     }
 
+    /**
+     * Get the automatic associations.
+     * @return The automatic associations.
+     */
     public List<TokenAssociation> getAutomaticAssociations() {
         return automaticAssociations;
     }

@@ -21,8 +21,14 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Fake Node Stake Update Record Builder
+ */
 public class FakeNodeStakeUpdateRecordBuilder {
-
+    /**
+     * Constructs a {@link FakeNodeStakeUpdateRecordBuilder} instance.
+     * @return a {@link FakeNodeStakeUpdateRecordBuilder} instance
+     */
     public NodeStakeUpdateRecordBuilder create() {
         return new NodeStakeUpdateRecordBuilder() {
             private String memo;

@@ -175,4 +175,13 @@ class ProxyEvmAccountTest {
         given(hederaState.isContract(ACCOUNT_ID)).willReturn(true);
         assertTrue(subject.isContract());
     }
+
+    @Test
+    void testRegularAccount() {
+        given(hederaState.isContract(ACCOUNT_ID)).willReturn(true);
+        assertFalse(subject.isRegularAccount());
+
+        given(hederaState.isContract(ACCOUNT_ID)).willReturn(false);
+        assertTrue(subject.isRegularAccount());
+    }
 }

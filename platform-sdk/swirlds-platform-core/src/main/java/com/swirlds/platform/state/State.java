@@ -237,12 +237,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
                 .addRow("Legacy running event hash:", hashEventsCons)
                 .addRow("Legacy running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Running Event Hash: ", platformState.getRunningEventHash())
-                .addRow(
-                        "Running Event Mnemonic: ",
-                        platformState.getRunningEventHash() == null
-                                ? "null"
-                                : platformState.getRunningEventHash().toMnemonic())
                 .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
                 .addRow("Creation version:", platformState.getCreationSoftwareVersion())
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())

@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.spec.transactions.crypto;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.evmAddressFromSecp256k1Key;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -44,6 +46,8 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -94,6 +98,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Consumer<Address> addressObserver;
     private boolean fuzzingIdentifiers = false;
     private boolean setEvmAddressAliasFromKey = false;
+    private Optional<ShardID> shardId = Optional.empty();
+    private Optional<RealmID> realmId = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -229,6 +235,16 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
+    public HapiCryptoCreate shardId(final ShardID shardID) {
+        this.shardId = Optional.of(shardID);
+        return this;
+    }
+
+    public HapiCryptoCreate realmId(final RealmID realmID) {
+        this.realmId = Optional.of(realmID);
+        return this;
+    }
+
     public HapiCryptoCreate evmAddress(final ByteString evmAddress) {
         this.evmAddress = Optional.of(evmAddress);
         return this;
@@ -291,7 +307,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                             autoRenewDurationSecs.ifPresent(s -> b.setAutoRenewPeriod(
                                     Duration.newBuilder().setSeconds(s).build()));
                             maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
-
+                            shardId.ifPresent(b::setShardID);
+                            realmId.ifPresent(b::setRealmID);
                             if (stakedAccountId.isPresent()) {
                                 b.setStakedAccountId(asId(stakedAccountId.get(), spec));
                             } else if (stakedNodeId.isPresent()) {
@@ -334,7 +351,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         Optional.ofNullable(addressObserver)
                 .ifPresent(obs -> evmAddress.ifPresentOrElse(
                         address -> obs.accept(HapiParserUtil.asHeadlongAddress(address.toByteArray())),
-                        () -> obs.accept(HapiParserUtil.evmAddressFromSecp256k1Key(key))));
+                        () -> obs.accept(
+                                key.hasECDSASecp256K1()
+                                        ? evmAddressFromSecp256k1Key(key)
+                                        : idAsHeadlongAddress(lastReceipt.getAccountID()))));
 
         if (advertiseCreation) {
             final String banner = "\n\n"

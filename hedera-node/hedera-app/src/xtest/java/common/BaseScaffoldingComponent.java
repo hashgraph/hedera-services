@@ -22,10 +22,11 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -40,6 +41,8 @@ public interface BaseScaffoldingComponent {
     WorkingStateAccessor workingStateAccessor();
 
     Function<TransactionBody, HandleContext> txnContextFactory();
+
+    Function<TransactionBody, PreHandleContext> txnPreHandleContextFactory();
 
     BiFunction<Query, AccountID, QueryContext> queryContextFactory();
 

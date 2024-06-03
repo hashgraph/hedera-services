@@ -18,9 +18,9 @@ package com.hedera.node.app.service.file;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -57,7 +57,7 @@ public interface ReadableUpgradeFileStore {
     /**
      * Gets the full contents of the file from state.
      * @return The full contents of the file.
-     * @throws IOException
+     * @throws IOException if the file cannot be read.
      */
     Bytes getFull(final FileID fileID) throws IOException;
 }

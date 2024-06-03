@@ -73,8 +73,7 @@ public class RandomTokenTransfer implements OpProvider {
             op = cryptoTransfer(moving(1, token).between(ignore -> rel.getLeft(), spec -> spec.registry()
                             .getTreasury(token)))
                     .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
-                    .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes))
-                    .showingResolvedStatus();
+                    .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         }
 
         return Optional.of(op);

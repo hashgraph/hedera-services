@@ -25,6 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
@@ -47,6 +49,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.test.utils.KeyUtils.A_KEY_LIST;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -62,6 +65,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenKeyValidation;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
@@ -84,13 +88,14 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,6 +107,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    private PreHandleContext preHandleContext;
 
     @Mock(strictness = LENIENT)
     private ConfigProvider configProvider;
@@ -122,7 +130,6 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private ExpiryValidator expiryValidator;
     private AttributeValidator attributeValidator;
     private TokenUpdateHandler subject;
-    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
 
     @BeforeEach
     public void setUp() {
@@ -244,11 +251,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsForInvalidMetaDataKey() {
-        setUpTxnContext();
         txn = new TokenUpdateBuilder().withMetadataKey(Key.DEFAULT).build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
     }
 
@@ -269,12 +274,146 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey((Key) null)
                 .build();
         writableTokenStore.put(copyToken);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(preHandleContext.createStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         txn = new TokenUpdateBuilder().build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        given(preHandleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(TOKEN_IS_IMMUTABLE));
+    }
+
+    @Test
+    void invalidKeysForTokenFails() {
+        final Key invalidAllZeros = Key.newBuilder()
+                .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
+                .build();
+        txn = new TokenUpdateBuilder().withAdminKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ADMIN_KEY));
+
+        txn = new TokenUpdateBuilder().withFreezeKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_FREEZE_KEY));
+
+        txn = new TokenUpdateBuilder().withKycKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_KYC_KEY));
+
+        txn = new TokenUpdateBuilder().withWipeKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_WIPE_KEY));
+
+        txn = new TokenUpdateBuilder().withSupplyKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_SUPPLY_KEY));
+
+        txn = new TokenUpdateBuilder().withPauseKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_PAUSE_KEY));
+
+        txn = new TokenUpdateBuilder().withFeeScheduleKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
+
+        txn = new TokenUpdateBuilder().withMetadataKey(invalidAllZeros).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_METADATA_KEY));
+    }
+
+    @Test
+    void invalidKeysForTokenSucceedsIfNoValidationIsApplied() {
+        final var copyToken = writableTokenStore
+                .get(fungibleTokenId)
+                .copyBuilder()
+                .adminKey(Key.DEFAULT)
+                .wipeKey(Key.DEFAULT)
+                .kycKey(Key.DEFAULT)
+                .supplyKey(Key.DEFAULT)
+                .freezeKey(Key.DEFAULT)
+                .feeScheduleKey(Key.DEFAULT)
+                .pauseKey(Key.DEFAULT)
+                .metadataKey(Key.DEFAULT)
+                .build();
+        writableTokenStore.put(copyToken);
+
+        given(handleContext.writableStore((WritableTokenStore.class))).willReturn(writableTokenStore);
+
+        final Key invalidAllZeros = Key.newBuilder()
+                .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
+                .build();
+        txn = new TokenUpdateBuilder()
+                .withKeyVerification(TokenKeyValidation.NO_VALIDATION)
+                .withAdminKey(invalidAllZeros)
+                .withFreezeKey(invalidAllZeros)
+                .withKycKey(invalidAllZeros)
+                .withWipeKey(invalidAllZeros)
+                .withSupplyKey(invalidAllZeros)
+                .withPauseKey(invalidAllZeros)
+                .withFeeScheduleKey(invalidAllZeros)
+                .withMetadataKey(invalidAllZeros)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var modifiedToken = writableTokenStore.get(fungibleTokenId);
+        assertThat(modifiedToken.adminKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.freezeKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.kycKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.wipeKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.supplyKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.pauseKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.feeScheduleKey()).isEqualTo(invalidAllZeros);
+        assertThat(modifiedToken.metadataKey()).isEqualTo(invalidAllZeros);
+    }
+
+    // previous to HIP-540 this should fail because the assumption was
+    // if an admin key is not set, the token is immutable
+    // after the HIP we expect other keys to be able to update themselves as well
+    @Test
+    void validTokenKeysSucceedsEvenIfAdminKeyIsNotSet() {
+        final var copyToken = writableTokenStore
+                .get(fungibleTokenId)
+                .copyBuilder()
+                .adminKey((Key) null)
+                .wipeKey(Key.DEFAULT)
+                .kycKey(Key.DEFAULT)
+                .supplyKey(Key.DEFAULT)
+                .freezeKey(Key.DEFAULT)
+                .feeScheduleKey(Key.DEFAULT)
+                .pauseKey(Key.DEFAULT)
+                .metadataKey(Key.DEFAULT)
+                .build();
+        writableTokenStore.put(copyToken);
+        given(handleContext.writableStore((WritableTokenStore.class))).willReturn(writableTokenStore);
+
+        txn = new TokenUpdateBuilder()
+                .withFreezeKey(A_KEY_LIST)
+                .withKycKey(A_KEY_LIST)
+                .withWipeKey(A_KEY_LIST)
+                .withSupplyKey(A_KEY_LIST)
+                .withPauseKey(A_KEY_LIST)
+                .withFeeScheduleKey(A_KEY_LIST)
+                .withMetadataKey(A_KEY_LIST)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var modifiedToken = writableTokenStore.get(fungibleTokenId);
+        assertThat(modifiedToken.freezeKey()).isEqualTo(A_KEY_LIST);
+        assertThat(modifiedToken.kycKey()).isEqualTo(A_KEY_LIST);
+        assertThat(modifiedToken.wipeKey()).isEqualTo(A_KEY_LIST);
+        assertThat(modifiedToken.supplyKey()).isEqualTo(A_KEY_LIST);
+        assertThat(modifiedToken.pauseKey()).isEqualTo(A_KEY_LIST);
+        assertThat(modifiedToken.feeScheduleKey()).isEqualTo(A_KEY_LIST);
+        assertThat(modifiedToken.metadataKey()).isEqualTo(A_KEY_LIST);
     }
 
     @Test
@@ -911,33 +1050,28 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesUpdatingKeys() {
         txn = new TokenUpdateBuilder().withAdminKey(Key.DEFAULT).build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(Key.DEFAULT).build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(Key.DEFAULT).build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(Key.DEFAULT).build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(Key.DEFAULT).build();
-        given(handleContext.body()).willReturn(txn);
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
     }
 
@@ -959,6 +1093,40 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CURRENT_TREASURY_STILL_OWNS_NFTS));
+    }
+
+    @Test
+    void validateZeroTreasuryNotUpdatedForContractCalls() {
+        // We don't set transaction ID so we simulate a contract call
+        txn = TransactionBody.newBuilder()
+                .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                        .token(fungibleTokenId)
+                        .treasury(zeroAccountId)
+                        .name("TestTokenUpdateDoesNotUpdateZeroTreasury")
+                        .build())
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var token = writableTokenState.get(fungibleTokenId);
+        assertThat(token.treasuryAccountId()).isEqualTo(fungibleToken.treasuryAccountId());
+        assertThat(token.treasuryAccountId()).isNotEqualTo(zeroAccountId);
+        assertThat(token.name()).isEqualTo("TestTokenUpdateDoesNotUpdateZeroTreasury");
+    }
+
+    @Test
+    void validateZeroTreasuryIsUpdatedForHapiCalls() {
+        txn = new TokenUpdateBuilder()
+                .withToken(fungibleTokenId)
+                .withTreasury(zeroAccountId)
+                .withName("TestTokenUpdateDoesUpdateZeroTreasury")
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var token = writableTokenState.get(fungibleTokenId);
+        assertThat(token.treasuryAccountId()).isEqualTo(zeroAccountId);
+        assertThat(token.name()).isEqualTo("TestTokenUpdateDoesUpdateZeroTreasury");
     }
 
     /* --------------------------------- Helpers --------------------------------- */
@@ -983,6 +1151,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         private long autoRenewPeriod = autoRenewSecs;
         private String memo = "test token1";
         private String metadata = "test metadata";
+        private TokenKeyValidation keyVerification = TokenKeyValidation.FULL_VALIDATION;
         TokenID tokenId = fungibleTokenId;
 
         private TokenUpdateBuilder() {}
@@ -1004,6 +1173,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                     .metadata(Bytes.wrap(metadata))
                     .feeScheduleKey(feeScheduleKey)
                     .pauseKey(pauseKey)
+                    .keyVerificationMode(keyVerification)
                     .autoRenewAccount(autoRenewAccount)
                     .expiry(expiry)
                     .memo(memo);
@@ -1104,6 +1274,11 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         public TokenUpdateBuilder wthFreezeKey(final Key key) {
             this.freezeKey = key;
+            return this;
+        }
+
+        public TokenUpdateBuilder withKeyVerification(final TokenKeyValidation keyVerification) {
+            this.keyVerification = keyVerification;
             return this;
         }
     }

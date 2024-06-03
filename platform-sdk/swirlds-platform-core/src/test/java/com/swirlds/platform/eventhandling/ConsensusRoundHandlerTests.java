@@ -16,13 +16,8 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -38,26 +33,20 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -211,57 +200,5 @@ class ConsensusRoundHandlerTests {
         verify(platformState)
                 .setLegacyRunningEventHash(
                         events.getLast().getRunningHash().getFutureHash().getAndRethrow());
-    }
-
-    @Test
-    void runningEventHashInserted() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-
-        final State state = new State();
-        final PlatformState platformState = new PlatformState();
-        state.setPlatformState(platformState);
-
-        final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
-        when(swirldStateManager.getConsensusState()).thenReturn(state);
-        when(swirldStateManager.getStateForSigning()).thenReturn(state);
-
-        final ConsensusRoundHandler consensusRoundHandler = new ConsensusRoundHandler(
-                platformContext, swirldStateManager, mock(StatusActionSubmitter.class), mock(SoftwareVersion.class));
-
-        final EventImpl keystoneEvent = buildEvent();
-        final List<EventImpl> events = List.of(buildEvent(), buildEvent(), buildEvent());
-
-        final ConsensusSnapshot consensusSnapshot = mock(ConsensusSnapshot.class);
-        when(consensusSnapshot.consensusTimestamp()).thenReturn(randomInstant(random));
-
-        final ConsensusRound consensusRound = new ConsensusRound(
-                mock(AddressBook.class),
-                events,
-                keystoneEvent,
-                mock(Generations.class),
-                mock(EventWindow.class),
-                consensusSnapshot);
-
-        // Call handle on a background thread. We expect the thread to block until the running event hash has been set.
-        final AtomicBoolean completed = new AtomicBoolean(false);
-        final Thread thread = new Thread(() -> {
-            consensusRoundHandler.handleConsensusRound(consensusRound);
-            completed.set(true);
-        });
-        thread.start();
-
-        // The thread should become blocked. Sleep for a little while to make sure it doesn't try to do things
-        // before the running event hash is set.
-        MILLISECONDS.sleep(200);
-        assertFalse(completed.get());
-
-        final Hash runningHash = randomHash(random);
-        consensusRound.setRunningEventHash(runningHash);
-
-        assertEventuallyTrue(completed::get, Duration.ofSeconds(1), "handling should have completed");
-        assertEquals(runningHash, platformState.getRunningEventHash());
-
-        thread.join();
     }
 }

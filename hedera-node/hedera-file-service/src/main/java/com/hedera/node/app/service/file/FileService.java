@@ -30,6 +30,9 @@ import java.util.Set;
  */
 public interface FileService extends Service {
 
+    /**
+     * The name of the service
+     */
     String NAME = "FileService";
 
     @NonNull

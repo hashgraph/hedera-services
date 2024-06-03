@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+plugins { id("com.hedera.gradle.application") }
 
 mainModuleInfo {
     runtimeOnly("com.swirlds.platform.core")

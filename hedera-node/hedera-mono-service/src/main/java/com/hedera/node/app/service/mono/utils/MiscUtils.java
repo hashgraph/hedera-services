@@ -775,12 +775,15 @@ public final class MiscUtils {
             case ContractCall -> txn.getContractCall().getGas();
             case EthereumTransaction -> getEthData != null
                     ? getEthData.get().gasLimit()
-                    : EthTxData.populateEthTxData(txn.getEthereumTransaction()
-                                    .getEthereumData()
-                                    .toByteArray())
-                            .gasLimit();
+                    : getGasLimitFromEthTxData(txn);
             default -> 0L;
         };
+    }
+
+    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
+        final var ethTxData = EthTxData.populateEthTxData(
+                txn.getEthereumTransaction().getEthereumData().toByteArray());
+        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 
     /**

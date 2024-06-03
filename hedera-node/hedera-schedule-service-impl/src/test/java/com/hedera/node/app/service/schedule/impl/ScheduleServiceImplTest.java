@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import static org.mockito.Mockito.mock;
+
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.Schema;
@@ -23,6 +27,7 @@ import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import java.util.List;
 import java.util.Set;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,5 +66,23 @@ class ScheduleServiceImplTest {
         BDDAssertions.assertThat(statesList.get(0)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
         BDDAssertions.assertThat(statesList.get(1)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
         BDDAssertions.assertThat(statesList.get(2)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
+    }
+
+    @Test
+    void triesToSetStateWithoutRegisteredScheduleSchema() {
+        final ScheduleServiceImpl subject = new ScheduleServiceImpl();
+        final var input = mock(MerkleScheduledTransactions.class);
+        Assertions.assertThatThrownBy(() -> subject.setFs(input)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void stateSettersDontThrow() {
+        final ScheduleServiceImpl subject = new ScheduleServiceImpl();
+        final var registry = mock(SchemaRegistry.class);
+        // registerSchemas(...) is required to instantiate the schedule schema
+        subject.registerSchemas(registry, SemanticVersion.DEFAULT);
+
+        // Verify that the following doesn't throw an exception
+        subject.setFs(mock(MerkleScheduledTransactions.class));
     }
 }

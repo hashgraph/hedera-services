@@ -37,7 +37,6 @@ import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,14 +51,11 @@ class DissociationTest {
     private static final Id accountId = new Id(1, 2, 3);
     private static final Id tokenId = new Id(2, 3, 4);
     private static final Id treasuryId = new Id(3, 4, 5);
-    private static final Id veryAncientTreasuryId = new Id(0, 0, 3);
     private static final Account account = new Account(accountId);
     private static final Account treasury = new Account(treasuryId);
-    private static final Account ancientTreasury = new Account(veryAncientTreasuryId);
     private final Token token = new Token(tokenId);
     private final TokenRelationship dissociatingAccountRel = new TokenRelationship(token, account);
     private final TokenRelationship dissociatedTokenTreasuryRel = new TokenRelationship(token, treasury);
-    private final TokenRelationship ancientTokenTreasuryRel = new TokenRelationship(token, ancientTreasury);
 
     {
         token.setTreasury(treasury);
@@ -70,9 +66,6 @@ class DissociationTest {
 
     @Mock
     private TypedTokenStore tokenStore;
-
-    @Mock
-    private OptionValidator validator;
 
     @Test
     void loadsExpectedRelsForExtantToken() {
@@ -131,7 +124,7 @@ class DissociationTest {
         final List<TokenRelationship> changed = new ArrayList<>();
         token.markAutoRemoved();
 
-        subject.updateModelRelsSubjectTo(validator);
+        subject.updateModelRelsSubjectTo();
         subject.addUpdatedModelRelsTo(changed);
 
         assertEquals(1, changed.size());
@@ -145,7 +138,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_IS_TREASURY);
+        assertFailsWith(() -> subject.updateModelRelsSubjectTo(), ACCOUNT_IS_TREASURY);
     }
 
     @Test
@@ -154,7 +147,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_FROZEN_FOR_TOKEN);
+        assertFailsWith(() -> subject.updateModelRelsSubjectTo(), ACCOUNT_FROZEN_FOR_TOKEN);
     }
 
     @Test
@@ -162,7 +155,7 @@ class DissociationTest {
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
         final List<TokenRelationship> accum = new ArrayList<>();
 
-        subject.updateModelRelsSubjectTo(validator);
+        subject.updateModelRelsSubjectTo();
         subject.addUpdatedModelRelsTo(accum);
 
         assertEquals(1, accum.size());
@@ -174,11 +167,10 @@ class DissociationTest {
     void requiresZeroBalanceWhenDissociatingFromActiveToken() {
         final long balance = 1_234L;
         dissociatingAccountRel.initBalance(balance);
-        given(validator.isAfterConsensusSecond(tokenExpiry)).willReturn(true);
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+        assertFailsWith(() -> subject.updateModelRelsSubjectTo(), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
     }
 
     @Test
@@ -189,47 +181,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_STILL_OWNS_NFTS);
-    }
-
-    @Test
-    void autoTransfersBalanceBackToTreasuryForExpiredToken() {
-        final long balance = 1_234L;
-        dissociatingAccountRel.initBalance(balance);
-        dissociatedTokenTreasuryRel.initBalance(balance);
-        final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
-        final List<TokenRelationship> accum = new ArrayList<>();
-
-        subject.updateModelRelsSubjectTo(validator);
-        subject.addUpdatedModelRelsTo(accum);
-
-        assertEquals(2, accum.size());
-        assertEquals(token, subject.dissociatingToken());
-        assertEquals(account, subject.dissociatingAccount());
-        assertEquals(dissociatingAccountRel.getBalanceChange(), -balance);
-        assertSame(dissociatingAccountRel, accum.get(0));
-        assertTrue(dissociatingAccountRel.isDestroyed());
-        assertSame(dissociatedTokenTreasuryRel, accum.get(1));
-        assertEquals(dissociatedTokenTreasuryRel.getBalanceChange(), +balance);
-    }
-
-    @Test
-    void autoTransfersBalanceBackToTreasuryRespectingIdOrdering() {
-        final long balance = 1_234L;
-        dissociatingAccountRel.initBalance(balance);
-        ancientTokenTreasuryRel.initBalance(balance);
-        final var subject = new Dissociation(dissociatingAccountRel, ancientTokenTreasuryRel);
-        final List<TokenRelationship> accum = new ArrayList<>();
-
-        subject.updateModelRelsSubjectTo(validator);
-        subject.addUpdatedModelRelsTo(accum);
-
-        assertEquals(2, accum.size());
-        assertEquals(dissociatingAccountRel.getBalanceChange(), -balance);
-        assertSame(dissociatingAccountRel, accum.get(1));
-        assertTrue(dissociatingAccountRel.isDestroyed());
-        assertSame(ancientTokenTreasuryRel, accum.get(0));
-        assertEquals(ancientTokenTreasuryRel.getBalanceChange(), +balance);
+        assertFailsWith(() -> subject.updateModelRelsSubjectTo(), ACCOUNT_STILL_OWNS_NFTS);
     }
 
     @Test
@@ -242,7 +194,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        subject.updateModelRelsSubjectTo(validator);
+        subject.updateModelRelsSubjectTo();
         subject.addUpdatedModelRelsTo(accum);
 
         assertEquals(1, accum.size());
@@ -262,7 +214,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
-        subject.updateModelRelsSubjectTo(validator);
+        subject.updateModelRelsSubjectTo();
         subject.addUpdatedModelRelsTo(accum);
 
         assertEquals(1, accum.size());
@@ -283,7 +235,7 @@ class DissociationTest {
 
         final var subject = new Dissociation(dissociatingAccountRel, null);
 
-        subject.updateModelRelsSubjectTo(validator);
+        subject.updateModelRelsSubjectTo();
         subject.addUpdatedModelRelsTo(accum);
 
         assertEquals(1, accum.size());

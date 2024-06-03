@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -82,7 +83,7 @@ class HandleSystemContractOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HandleSystemContractOperations(context);
+        subject = new HandleSystemContractOperations(context, A_SECP256K1_KEY);
     }
 
     @Test
@@ -97,7 +98,7 @@ class HandleSystemContractOperationsTest {
         given(passed.passed()).willReturn(true);
         given(context.verificationFor(AN_ED25519_KEY)).willReturn(passed);
         given(context.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
-        doCallRealMethod().when(strategy).asSignatureTestIn(context);
+        doCallRealMethod().when(strategy).asSignatureTestIn(context, A_SECP256K1_KEY);
 
         subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferRecordBuilder.class);
 
@@ -194,7 +195,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void syntheticTransactionForHtsCallTest() {
-        assertNotNull(subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true));
+        assertNotNull(subject.syntheticTransactionForNativeCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 
     @Test

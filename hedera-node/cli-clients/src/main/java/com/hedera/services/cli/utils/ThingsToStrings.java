@@ -199,7 +199,7 @@ public class ThingsToStrings {
         if (jkey.isEmpty()) return "";
         try {
             final var ser = jkey.serialize();
-            final var hash = CryptographyHolder.get().digestSync(ser).getValue();
+            final var hash = CryptographyHolder.get().digestBytesSync(ser);
             return toStringOfByteArray(hash);
 
         } catch (final IOException ex) {
@@ -216,7 +216,7 @@ public class ThingsToStrings {
 
         try {
             final var ser = jkey.serialize();
-            final var hash = CryptographyHolder.get().digestSync(ser).getValue();
+            final var hash = CryptographyHolder.get().digestBytesSync(ser);
             toStringOfByteArray(sb, hash);
         } catch (final IOException ex) {
             sb.append("**EXCEPTION SERIALIZING JKEY**");

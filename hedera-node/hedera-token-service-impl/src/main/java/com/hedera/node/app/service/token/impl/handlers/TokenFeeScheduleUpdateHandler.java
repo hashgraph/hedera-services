@@ -62,6 +62,10 @@ import javax.inject.Singleton;
 public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     private final CustomFeesValidator customFeesValidator;
 
+    /**
+     * Default constructor for injection.
+     * @param customFeesValidator the custom fees validator
+     */
     @Inject
     public TokenFeeScheduleUpdateHandler(@NonNull final CustomFeesValidator customFeesValidator) {
         requireNonNull(customFeesValidator);

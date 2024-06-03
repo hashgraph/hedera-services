@@ -18,6 +18,7 @@ package com.swirlds.platform.state.nexus;
 
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.StateConfig;
@@ -26,7 +27,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 
 /**
  * The default implementation of {@link LatestCompleteStateNexus}.
@@ -43,13 +43,12 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
     /**
      * Create a new nexus that holds the latest complete signed state.
      *
-     * @param stateConfig the state configuration
-     * @param metrics     the metrics object to update
+     * @param platformContext the platform context
      */
-    public DefaultLatestCompleteStateNexus(@NonNull final StateConfig stateConfig, @NonNull final Metrics metrics) {
-        this.stateConfig = Objects.requireNonNull(stateConfig);
-        Objects.requireNonNull(metrics);
+    public DefaultLatestCompleteStateNexus(@NonNull final PlatformContext platformContext) {
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
+        final Metrics metrics = platformContext.getMetrics();
         final RunningAverageMetric avgRoundSupermajority = metrics.getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
         metrics.addUpdater(() -> avgRoundSupermajority.update(getRound()));
     }

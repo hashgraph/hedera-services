@@ -169,6 +169,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
@@ -182,6 +183,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -258,9 +260,9 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         var specs = Stream.of(
-                        Optional.of(recordPayerBalance(startingBalance::set)),
+                        ofNullable(recordPayerBalance(startingBalance::set)),
                         ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),
                         ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
                         ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
@@ -277,8 +279,11 @@ public class ValidationScenarios extends HapiSuite {
                         ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
                         ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
                 .flatMap(Optional::stream)
-                .collect(toList());
-        System.out.println(specs.stream().map(HapiSpec::getName).collect(toList()));
+                .toList();
+        System.out.println(specs.stream()
+                .flatMap(Function.identity())
+                .map(test -> ((HapiSpec) test.getExecutable()).getName())
+                .toList());
         return specs;
     }
 
@@ -288,7 +293,7 @@ public class ValidationScenarios extends HapiSuite {
         return needScenarioPayer.stream().noneMatch(params.getScenarios()::contains);
     }
 
-    private static HapiSpec ensureBytecode() {
+    private static Stream<DynamicTest> ensureBytecode() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -326,7 +331,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec feeSnapshots() {
+    private static Stream<DynamicTest> feeSnapshots() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -528,7 +533,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec updatePaymentCsv() {
+    private static Stream<DynamicTest> updatePaymentCsv() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -625,7 +630,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec doJustTransfers() {
+    private static Stream<DynamicTest> doJustTransfers() {
         try {
             int numNodes = targetNetwork().getNodes().size();
             return customHapiSpec("DoJustTransfers")
@@ -663,7 +668,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec sysFilesUp() {
+    private static Stream<DynamicTest> sysFilesUp() {
         ensureScenarios();
         if (scenarios.getSysFilesUp() == null) {
             scenarios.setSysFilesUp(new SysFilesUpScenario());
@@ -719,7 +724,7 @@ public class ValidationScenarios extends HapiSuite {
                 "%s_ACCOUNT%d_PASSPHRASE", params.getTargetNetwork().toUpperCase(), accountNum);
     }
 
-    private static HapiSpec sysFilesDown() {
+    private static Stream<DynamicTest> sysFilesDown() {
         ensureScenarios();
         if (scenarios.getSysFilesDown() == null) {
             scenarios.setSysFilesDown(new SysFilesDownScenario());
@@ -814,7 +819,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec getSystemKeys() {
+    private static Stream<DynamicTest> getSystemKeys() {
         final long[] accounts = {2, 50, 55, 56, 57, 58};
         final long[] files = {101, 102, 111, 112, 121, 122};
         try {
@@ -852,7 +857,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec recordPayerBalance(LongConsumer learner) {
+    private static Stream<DynamicTest> recordPayerBalance(LongConsumer learner) {
         try {
             return customHapiSpec("RecordPayerBalance")
                     .withProperties(Map.of(
@@ -885,7 +890,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec ensureScenarioPayer() {
+    private static Stream<DynamicTest> ensureScenarioPayer() {
         try {
             ensureScenarios();
             long minStartingBalance = targetNetwork().getEnsureScenarioPayerHbars() * TINYBARS_PER_HBAR;
@@ -918,19 +923,13 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec versionsScenario() {
+    private static Stream<DynamicTest> versionsScenario() {
         try {
             ensureScenarios();
             if (scenarios.getVersions() == null) {
                 scenarios.setVersions(new VersionInfoScenario());
             }
             var versions = scenarios.getVersions();
-            int[] hapiProto = Arrays.stream(versions.getHapiProtoSemVer().split("[.]"))
-                    .mapToInt(Integer::parseInt)
-                    .toArray();
-            int[] services = Arrays.stream(versions.getServicesSemVer().split("[.]"))
-                    .mapToInt(Integer::parseInt)
-                    .toArray();
             return customHapiSpec("VersionsScenario")
                     .withProperties(Map.of(
                             NODES,
@@ -958,7 +957,7 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec cryptoScenario() {
+    private static Stream<DynamicTest> cryptoScenario() {
         try {
             ensureScenarios();
             if (scenarios.getCrypto() == null) {
@@ -1107,7 +1106,7 @@ public class ValidationScenarios extends HapiSuite {
         });
     }
 
-    private static HapiSpec fileScenario() {
+    private static Stream<DynamicTest> fileScenario() {
         try {
             ensureScenarios();
             if (scenarios.getFile() == null) {
@@ -1262,7 +1261,7 @@ public class ValidationScenarios extends HapiSuite {
         });
     }
 
-    private static HapiSpec contractScenario() {
+    private static Stream<DynamicTest> contractScenario() {
         try {
             ensureScenarios();
             if (scenarios.getContract() == null) {
@@ -1467,7 +1466,7 @@ public class ValidationScenarios extends HapiSuite {
                 .orElse(-1L);
     }
 
-    private static HapiSpec consensusScenario() {
+    private static Stream<DynamicTest> consensusScenario() {
         try {
             ensureScenarios();
             if (scenarios.getConsensus() == null) {
@@ -1520,13 +1519,12 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
-    private static HapiSpec stakingScenario() {
+    private static Stream<DynamicTest> stakingScenario() {
         try {
             ensureScenarios();
             if (scenarios.getStaking() == null) {
                 scenarios.setStaking(new StakingScenario());
             }
-            var staking = scenarios.getStaking();
 
             return customHapiSpec("StakingScenario")
                     .withProperties(Map.of(

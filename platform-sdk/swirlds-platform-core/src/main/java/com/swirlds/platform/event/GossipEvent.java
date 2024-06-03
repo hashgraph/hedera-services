@@ -18,30 +18,33 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
+import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements SelfSerializable {
+public class GossipEvent implements Event, SelfSerializable {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
-    private static final int MAX_SIG_LENGTH = 384;
 
     private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int REMOVED_ROUND = 2;
         /**
          * Event serialization changes
          *
@@ -50,9 +53,10 @@ public class GossipEvent implements SelfSerializable {
         public static final int BIRTH_ROUND = 3;
     }
 
-    private int serializedVersion = ClassVersion.BIRTH_ROUND;
     private BaseEventHashedData hashedData;
-    private BaseEventUnhashedData unhashedData;
+    /** creator's signature for this event */
+    private Bytes signature;
+
     private Instant timeReceived;
 
     /**
@@ -84,11 +88,19 @@ public class GossipEvent implements SelfSerializable {
 
     /**
      * @param hashedData   the hashed data for the event
-     * @param unhashedData the unhashed data for the event
+     * @param signature the signature for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
+        this(hashedData, Bytes.wrap(signature));
+    }
+
+    /**
+     * @param hashedData   the hashed data for the event
+     * @param signature the signature for the event
+     */
+    public GossipEvent(final BaseEventHashedData hashedData, final Bytes signature) {
         this.hashedData = hashedData;
-        this.unhashedData = unhashedData;
+        this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
     }
@@ -122,13 +134,9 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
-            out.writeSerializable(hashedData, false);
-            out.writeSerializable(unhashedData, false);
-        } else {
-            out.writeSerializable(hashedData, false);
-            out.writeByteArray(unhashedData.getSignature());
-        }
+        out.writeSerializable(hashedData, false);
+        out.writeInt((int) signature.length());
+        signature.writeTo(out);
     }
 
     /**
@@ -136,15 +144,9 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        serializedVersion = version;
-        if (version < ClassVersion.BIRTH_ROUND) {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            unhashedData = in.readSerializable(false, BaseEventUnhashedData::new);
-        } else {
-            hashedData = in.readSerializable(false, BaseEventHashedData::new);
-            final byte[] signature = in.readByteArray(MAX_SIG_LENGTH);
-            unhashedData = new BaseEventUnhashedData(signature);
-        }
+        hashedData = in.readSerializable(false, BaseEventHashedData::new);
+        final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
+        this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
     }
 
@@ -156,10 +158,10 @@ public class GossipEvent implements SelfSerializable {
     }
 
     /**
-     * Get the unhashed data for the event.
+     * @return the signature for the event
      */
-    public BaseEventUnhashedData getUnhashedData() {
-        return unhashedData;
+    public @NonNull Bytes getSignature() {
+        return signature;
     }
 
     /**
@@ -171,6 +173,28 @@ public class GossipEvent implements SelfSerializable {
         return hashedData.getDescriptor();
     }
 
+    @Override
+    public Iterator<Transaction> transactionIterator() {
+        return Arrays.asList((Transaction[]) hashedData.getTransactions()).iterator();
+    }
+
+    @Override
+    public Instant getTimeCreated() {
+        return hashedData.getTimeCreated();
+    }
+
+    @Nullable
+    @Override
+    public SoftwareVersion getSoftwareVersion() {
+        return hashedData.getSoftwareVersion();
+    }
+
+    @NonNull
+    @Override
+    public NodeId getCreatorId() {
+        return hashedData.getCreatorId();
+    }
+
     /**
      * Get the generation of the event.
      *
@@ -178,6 +202,13 @@ public class GossipEvent implements SelfSerializable {
      */
     public long getGeneration() {
         return hashedData.getGeneration();
+    }
+
+    /**
+     * @return the number of payloads this event contains
+     */
+    public int getPayloadCount() {
+        return hashedData.getTransactions().length;
     }
 
     /**
@@ -244,12 +275,12 @@ public class GossipEvent implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return serializedVersion;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.REMOVED_ROUND;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     /**

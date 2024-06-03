@@ -105,7 +105,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
 
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getAccountNftInfosQuery(spec, payment, true);
+        Query query = maybeModified(getAccountNftInfosQuery(spec, payment, true), spec);
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getAccountNftInfos(query);
         return costFrom(response);

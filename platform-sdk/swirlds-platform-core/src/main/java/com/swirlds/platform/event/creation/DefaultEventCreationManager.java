@@ -31,7 +31,7 @@ import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
 import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
-import com.swirlds.platform.eventhandling.TransactionPool;
+import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,13 +65,13 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * Constructor.
      *
      * @param platformContext      the platform context
-     * @param transactionPool      provides transactions to be added to new events
+     * @param transactionPoolNexus provides transactions to be added to new events
      * @param eventIntakeQueueSize supplies the size of the event intake queue
      * @param creator              creates events
      */
     public DefaultEventCreationManager(
             @NonNull final PlatformContext platformContext,
-            @NonNull final TransactionPool transactionPool,
+            @NonNull final TransactionPoolNexus transactionPoolNexus,
             @NonNull final LongSupplier eventIntakeQueueSize,
             @NonNull final EventCreator creator) {
 
@@ -80,7 +80,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
         this.eventCreationRules = AggregateEventCreationRules.of(
                 new MaximumRateRule(platformContext),
                 new BackpressureRule(platformContext, eventIntakeQueueSize),
-                new PlatformStatusRule(this::getPlatformStatus, transactionPool));
+                new PlatformStatusRule(this::getPlatformStatus, transactionPoolNexus));
 
         phase = new PhaseTimerBuilder<>(
                         platformContext, platformContext.getTime(), "platform", EventCreationStatus.class)

@@ -56,6 +56,10 @@ import javax.inject.Singleton;
 public class TokenUpdateNftsHandler implements TransactionHandler {
     private final TokenAttributesValidator validator;
 
+    /**
+     * Create a new {@link TokenUpdateNftsHandler} instance.
+     * @param validator The {@link TokenAttributesValidator} to use.
+     */
     @Inject
     public TokenUpdateNftsHandler(@NonNull final TokenAttributesValidator validator) {
         this.validator = validator;

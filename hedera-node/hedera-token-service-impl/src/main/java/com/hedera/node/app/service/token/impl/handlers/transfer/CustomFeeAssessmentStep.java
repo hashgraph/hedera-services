@@ -76,10 +76,13 @@ public class CustomFeeAssessmentStep {
     private final CryptoTransferTransactionBody op;
     private final CustomFeeAssessor customFeeAssessor;
     private int levelNum = 0;
-    private int totalBalanceChanges = 0;
     private static final int MAX_PLAUSIBLE_LEVEL_NUM = 10;
     private static final Logger log = LogManager.getLogger(CustomFeeAssessmentStep.class);
 
+    /**
+     * Constructs a {@link CustomFeeAssessmentStep} for the given transaction body.
+     * @param op the transaction body
+     */
     public CustomFeeAssessmentStep(@NonNull final CryptoTransferTransactionBody op) {
         this.op = op;
         final var fixedFeeAssessor = new CustomFixedFeeAssessor();

@@ -19,7 +19,7 @@ package com.hedera.node.app.spi.records;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.node.app.spi.HapiUtils.TIMESTAMP_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.TIMESTAMP_COMPARATOR;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;

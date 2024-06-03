@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.contract.impl.test.exec.v030;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -43,10 +45,9 @@ class Version030FeatureFlagsTest {
     void everythingIsDisabled() {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(stack.isEmpty()).willReturn(true);
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
         assertFalse(subject.isImplicitCreationEnabled(frame));
-        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(config, null));
+        assertFalse(subject.isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null));
     }
 
     @Test

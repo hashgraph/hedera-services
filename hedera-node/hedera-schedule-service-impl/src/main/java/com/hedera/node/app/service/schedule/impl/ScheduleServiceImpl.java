@@ -20,12 +20,13 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.InitialModServiceScheduleSchema;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ScheduleService} {@link Service}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {
     public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";

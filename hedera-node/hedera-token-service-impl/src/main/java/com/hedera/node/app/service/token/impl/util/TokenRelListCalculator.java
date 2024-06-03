@@ -44,6 +44,10 @@ public class TokenRelListCalculator {
 
     private final ReadableTokenRelationStore tokenRelStore;
 
+    /**
+     * Constructs a new {@link TokenRelListCalculator} object
+     * @param tokenRelStore the token relation store to use for fetching token relations
+     */
     public TokenRelListCalculator(@NonNull final ReadableTokenRelationStore tokenRelStore) {
         this.tokenRelStore = requireNonNull(tokenRelStore);
     }

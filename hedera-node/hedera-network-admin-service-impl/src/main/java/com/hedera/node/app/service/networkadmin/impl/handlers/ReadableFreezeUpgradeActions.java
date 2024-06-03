@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
@@ -31,11 +32,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -94,7 +93,7 @@ public class ReadableFreezeUpgradeActions {
 
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
-        final Path artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());
+        final Path artifactsDirPath = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
         final var filePath = artifactsDirPath.resolve(file);
         try {
             if (!artifactsDirPath.toFile().exists()) {
@@ -122,6 +121,62 @@ public class ReadableFreezeUpgradeActions {
     public void catchUpOnMissedSideEffects(final PlatformState platformState) {
         catchUpOnMissedFreezeScheduling(platformState);
         catchUpOnMissedUpgradePrep();
+    }
+
+    public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
+        return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
+    }
+
+    public CompletableFuture<Void> extractTelemetryUpgrade(
+            @NonNull final Bytes archiveData, @Nullable final Timestamp now) {
+        requireNonNull(archiveData);
+        return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
+    }
+
+    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData) {
+        requireNonNull(archiveData);
+        return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
+    }
+
+    public boolean isFreezeScheduled(final PlatformState platformState) {
+        requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
+        final var freezeTime = platformState.getFreezeTime();
+        return freezeTime != null && !freezeTime.equals(platformState.getLastFrozenTime());
+    }
+
+    /* -------- Internal Methods */
+    private CompletableFuture<Void> extractNow(
+            @NonNull final Bytes archiveData,
+            @NonNull final String desc,
+            @NonNull final String marker,
+            @Nullable final Timestamp now) {
+        requireNonNull(archiveData);
+        requireNonNull(desc);
+        requireNonNull(marker);
+
+        final long size = archiveData.length();
+        final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
+        requireNonNull(artifactsLoc);
+        log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
+        // we spin off a separate thread to avoid blocking handleTransaction
+        // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
+        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
+    }
+
+    private void extractAndReplaceArtifacts(
+            Path artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
+        try {
+            FileUtils.cleanDirectory(artifactsLoc.toFile());
+            UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
+            log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
+            writeSecondMarker(marker, now);
+        } catch (final IOException e) {
+            // catch and log instead of throwing because upgrade process looks at the presence or absence
+            // of marker files to determine whether to proceed with the upgrade
+            // if second marker is present, that means the zip file was successfully extracted
+            log.error("Failed to unzip archive for NMT consumption", e);
+            log.error(MANUAL_REMEDIATION_ALERT);
+        }
     }
 
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
@@ -162,62 +217,6 @@ public class ReadableFreezeUpgradeActions {
         } catch (final IOException e) {
             log.error(
                     "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
-            log.error(MANUAL_REMEDIATION_ALERT);
-        }
-    }
-
-    public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
-        return Arrays.equals(curSpecialFilesHash, hashFromTxnBody);
-    }
-
-    public CompletableFuture<Void> extractTelemetryUpgrade(
-            @NonNull final Bytes archiveData, @Nullable final Timestamp now) {
-        requireNonNull(archiveData);
-        return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
-    }
-
-    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData) {
-        requireNonNull(archiveData);
-        return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
-    }
-
-    public boolean isFreezeScheduled(final PlatformState platformState) {
-        requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
-        final var freezeTime = platformState.getFreezeTime();
-        return freezeTime != null && !freezeTime.equals(platformState.getLastFrozenTime());
-    }
-
-    /* -------- Internal Methods */
-    private CompletableFuture<Void> extractNow(
-            @NonNull final Bytes archiveData,
-            @NonNull final String desc,
-            @NonNull final String marker,
-            @Nullable final Timestamp now) {
-        requireNonNull(archiveData);
-        requireNonNull(desc);
-        requireNonNull(marker);
-
-        final long size = archiveData.length();
-        final String artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
-        requireNonNull(artifactsLoc);
-        log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
-        // we spin off a separate thread to avoid blocking handleTransaction
-        // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
-    }
-
-    private void extractAndReplaceArtifacts(
-            String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
-        try {
-            FileUtils.cleanDirectory(new File(artifactsLoc));
-            UnzipUtility.unzip(archiveData.toByteArray(), Paths.get(artifactsLoc));
-            log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            writeSecondMarker(marker, now);
-        } catch (final IOException e) {
-            // catch and log instead of throwing because upgrade process looks at the presence or absence
-            // of marker files to determine whether to proceed with the upgrade
-            // if second marker is present, that means the zip file was successfully extracted
-            log.error("Failed to unzip archive for NMT consumption", e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }

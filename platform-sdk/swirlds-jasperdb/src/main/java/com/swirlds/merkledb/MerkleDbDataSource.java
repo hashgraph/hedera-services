@@ -283,11 +283,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             hashStoreRam = null;
         }
 
-        statisticsUpdater = new MerkleDbStatisticsUpdater(this);
+        statisticsUpdater = new MerkleDbStatisticsUpdater(database.getConfig(), tableName);
 
         final Runnable updateTotalStatsFunction = () -> {
-            statisticsUpdater.updateStoreFileStats();
-            statisticsUpdater.updateOffHeapStats();
+            statisticsUpdater.updateStoreFileStats(this);
+            statisticsUpdater.updateOffHeapStats(this);
         };
 
         // internal node hashes store, on disk
@@ -539,9 +539,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // Report total size on disk as sum of all store files. All metadata and other helper files
             // are considered small enough to be ignored. If/when we decide to use on-disk long lists
             // for indices, they should be added here
-            statisticsUpdater.updateStoreFileStats();
+            statisticsUpdater.updateStoreFileStats(this);
             // update off-heap stats
-            statisticsUpdater.updateOffHeapStats();
+            statisticsUpdater.updateOffHeapStats(this);
         }
     }
 

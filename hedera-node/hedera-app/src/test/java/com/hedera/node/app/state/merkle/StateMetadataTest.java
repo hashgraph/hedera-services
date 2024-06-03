@@ -22,26 +22,17 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import java.util.stream.Stream;
+import com.swirlds.platform.state.merkle.StateUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StateMetadataTest extends MerkleTestBase {
 
     private Schema schema;
     private StateDefinition<Long, String> def;
-
-    public static Stream<Arguments> illegalServiceNames() {
-        return StateUtilsTest.illegalIdentifiers();
-    }
-
-    public static Stream<Arguments> legalServiceNames() {
-        return StateUtilsTest.legalIdentifiers();
-    }
 
     @BeforeEach
     void setUp() {
@@ -93,7 +84,8 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("inMemoryValueClassId is as expected")
     void inMemoryValueClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "InMemoryValue");
+        final var expected = computeClassId(md, "InMemoryValue");
+
         assertThat(expected).isEqualTo(md.inMemoryValueClassId());
     }
 
@@ -101,7 +93,7 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("onDiskKeyClassId is as expected")
     void onDiskKeyClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "OnDiskKey");
+        final var expected = computeClassId(md, "OnDiskKey");
         assertThat(expected).isEqualTo(md.onDiskKeyClassId());
     }
 
@@ -109,7 +101,7 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("onDiskValueClassId is as expected")
     void onDiskValueClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "OnDiskValue");
+        final var expected = computeClassId(md, "OnDiskValue");
         assertThat(expected).isEqualTo(md.onDiskValueClassId());
     }
 
@@ -117,7 +109,7 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("onDiskKeySerializerClassId is as expected")
     void onDiskKeySerializerClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "OnDiskKeySerializer");
+        final var expected = computeClassId(md, "OnDiskKeySerializer");
         assertThat(expected).isEqualTo(md.onDiskKeySerializerClassId());
     }
 
@@ -125,7 +117,12 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("onDiskValueSerializerClassId is as expected")
     void onDiskValueSerializerClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "OnDiskValueSerializer");
+        final var expected = computeClassId(md, "OnDiskValueSerializer");
         assertThat(expected).isEqualTo(md.onDiskValueSerializerClassId());
+    }
+
+    private long computeClassId(StateMetadata<Long, String> md, String suffix) {
+        return StateUtils.computeClassId(
+                md.serviceName(), md.stateDefinition().stateKey(), md.schema().getVersion(), suffix);
     }
 }

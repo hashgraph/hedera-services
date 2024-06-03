@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -47,9 +48,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -81,6 +84,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<ByteString> inlineInitcode = Optional.empty();
+    private boolean convertableToEthCreate = true;
 
     @Nullable
     private BiConsumer<HapiSpec, ContractCreateTransactionBody.Builder> spec;
@@ -201,6 +205,10 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return this;
     }
 
+    public void args(Optional<Object[]> args) {
+        this.args = args;
+    }
+
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.ContractCreate;
@@ -223,6 +231,15 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 
     public HapiContractCreate declinedReward(boolean isDeclined) {
         isDeclinedReward = isDeclined;
+        return this;
+    }
+
+    public boolean isConvertableToEthCreate() {
+        return convertableToEthCreate;
+    }
+
+    public HapiContractCreate refusingEthConversion() {
+        convertableToEthCreate = false;
         return this;
     }
 
@@ -380,5 +397,57 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
+    }
+
+    public boolean getDeferStatusResolution() {
+        return deferStatusResolution;
+    }
+
+    public String getTxnName() {
+        return txnName;
+    }
+
+    public Optional<String> getAbi() {
+        return abi;
+    }
+
+    public Optional<Object[]> getArgs() {
+        return args;
+    }
+
+    public String getContract() {
+        return contract;
+    }
+
+    public Optional<Function<Transaction, Transaction>> getFiddler() {
+        return fiddler;
+    }
+
+    public Optional<Long> getValidDurationSecs() {
+        return validDurationSecs;
+    }
+
+    public Optional<String> getCustomTxnId() {
+        return customTxnId;
+    }
+
+    public Optional<AccountID> getNode() {
+        return node;
+    }
+
+    public OptionalDouble getUsdFee() {
+        return usdFee;
+    }
+
+    public Optional<Integer> getRetryLimits() {
+        return retryLimits;
+    }
+
+    public Optional<EnumSet<ResponseCodeEnum>> getPermissiblePrechecks() {
+        return permissiblePrechecks;
+    }
+
+    public Optional<Long> getFee() {
+        return fee;
     }
 }

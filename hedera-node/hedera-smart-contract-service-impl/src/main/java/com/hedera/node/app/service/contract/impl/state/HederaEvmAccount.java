@@ -39,6 +39,13 @@ public interface HederaEvmAccount extends MutableAccount {
     boolean isTokenFacade();
 
     /**
+     * Returns whether this account is a regular account.
+     *
+     * @return whether this account is regular account
+     */
+    boolean isRegularAccount();
+
+    /**
      * Returns the Hedera account id for this account.
      *
      * @return the Hedera account id

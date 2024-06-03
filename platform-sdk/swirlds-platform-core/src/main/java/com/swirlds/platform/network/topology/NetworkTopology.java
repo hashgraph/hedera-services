@@ -17,7 +17,6 @@
 package com.swirlds.platform.network.topology;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.network.RandomGraph;
 import java.util.Set;
 
 /**
@@ -46,9 +45,4 @@ public interface NetworkTopology {
      * @return a Set of all peers this node should be connected to
      */
     Set<NodeId> getNeighbors();
-
-    /**
-     * @return the underlying graph on which this topology is based on
-     */
-    RandomGraph getConnectionGraph();
 }

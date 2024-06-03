@@ -114,7 +114,8 @@ public class FrameBuilder {
         if (transaction.isCreate()) {
             return finishedAsCreate(to, builder, transaction);
         } else {
-            return finishedAsCall(to, worldUpdater, builder, transaction, featureFlags, config);
+            return finishedAsCall(
+                    to, worldUpdater, builder, transaction, featureFlags, config.getConfigData(ContractsConfig.class));
         }
     }
 
@@ -155,7 +156,7 @@ public class FrameBuilder {
             @NonNull final MessageFrame.Builder builder,
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final FeatureFlags featureFlags,
-            @NonNull final Configuration config) {
+            @NonNull final ContractsConfig config) {
         Code code = CodeV0.EMPTY_CODE;
         final var contractId = transaction.contractIdOrThrow();
 
@@ -182,7 +183,7 @@ public class FrameBuilder {
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final ContractID contractId,
-            @NonNull final Configuration config,
+            @NonNull final ContractsConfig config,
             @NonNull final FeatureFlags featureFlags) {
         requireNonNull(transaction);
         requireNonNull(worldUpdater);
@@ -202,7 +203,7 @@ public class FrameBuilder {
     }
 
     private boolean contractMustBePresent(
-            @NonNull final Configuration config,
+            @NonNull final ContractsConfig config,
             @NonNull final FeatureFlags featureFlags,
             @NonNull final ContractID contractID) {
         final var possiblyGrandFatheredEntityNumOf = contractID.hasContractNum() ? contractID.contractNum() : null;
@@ -210,7 +211,7 @@ public class FrameBuilder {
     }
 
     private boolean emptyCodePossiblyAllowed(
-            @NonNull final Configuration config,
+            @NonNull final ContractsConfig config,
             @NonNull final FeatureFlags featureFlags,
             @NonNull final ContractID contractId,
             @NonNull final HederaEvmTransaction transaction,

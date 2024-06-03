@@ -37,6 +37,8 @@ public final class Randotron extends Random {
      * @return a new instance of Randotron
      */
     public static Randotron create() {
+        final long seed = new Random().nextLong();
+        System.out.println("Random seed: " + seed + "L");
         return new Randotron(new Random().nextLong());
     }
 
@@ -60,7 +62,16 @@ public final class Randotron extends Random {
     private Randotron(final long seed) {
         super(seed);
         this.seed = seed;
-        System.out.println("Random seed: " + seed + "L");
+    }
+
+    /**
+     * Get a copy of this Randotron with the same starting seed. The copy will have the same state as this Randotron at
+     * the moment it was first created (not the current state!).
+     *
+     * @return a copy of this Randotron
+     */
+    public Randotron copyAndReset() {
+        return new Randotron(seed);
     }
 
     /**
@@ -70,7 +81,7 @@ public final class Randotron extends Random {
      * @return a random string
      */
     @NonNull
-    public String randomString(final int length) {
+    public String nextString(final int length) {
         final int LEFT_LIMIT = 48; // numeral '0'
         final int RIGHT_LIMIT = 122; // letter 'z'
 
@@ -87,7 +98,7 @@ public final class Randotron extends Random {
      * @return a random IP address
      */
     @NonNull
-    public String randomIp() {
+    public String nextIp() {
         return this.nextInt(256) + "." + this.nextInt(256) + "." + this.nextInt(256) + "." + this.nextInt(256);
     }
 
@@ -97,7 +108,7 @@ public final class Randotron extends Random {
      * @param maxValue the upper bound, the returned value will be smaller than this
      * @return the random long
      */
-    public long randomPositiveLong(final long maxValue) {
+    public long nextPositiveLong(final long maxValue) {
         return this.longs(1, 1, maxValue).findFirst().orElseThrow();
     }
 
@@ -106,8 +117,27 @@ public final class Randotron extends Random {
      *
      * @return the random long
      */
-    public long randomPositiveLong() {
-        return randomPositiveLong(Long.MAX_VALUE);
+    public long nextPositiveLong() {
+        return nextPositiveLong(Long.MAX_VALUE);
+    }
+
+    /**
+     * Generates a random positive int that is smaller than the supplied value
+     *
+     * @param maxValue the upper bound, the returned value will be smaller than this
+     * @return the random int
+     */
+    public int nextPositiveInt(final int maxValue) {
+        return this.ints(1, 1, maxValue).findFirst().orElseThrow();
+    }
+
+    /**
+     * Generates a random positive int
+     *
+     * @return the random int
+     */
+    public int nextPositiveInt() {
+        return nextPositiveInt(Integer.MAX_VALUE);
     }
 
     /**
@@ -116,8 +146,8 @@ public final class Randotron extends Random {
      * @return a random hash
      */
     @NonNull
-    public Hash randomHash() {
-        return new Hash(randomByteArray(DigestType.SHA_384.digestLength()), DigestType.SHA_384);
+    public Hash nextHash() {
+        return new Hash(nextByteArray(DigestType.SHA_384.digestLength()), DigestType.SHA_384);
     }
 
     /**
@@ -126,8 +156,8 @@ public final class Randotron extends Random {
      * @return random Bytes
      */
     @NonNull
-    public Bytes randomHashBytes() {
-        return Bytes.wrap(randomByteArray(DigestType.SHA_384.digestLength()));
+    public Bytes nextHashBytes() {
+        return Bytes.wrap(nextByteArray(DigestType.SHA_384.digestLength()));
     }
 
     /**
@@ -136,8 +166,8 @@ public final class Randotron extends Random {
      * @return a random signature
      */
     @NonNull
-    public Signature randomSignature() {
-        return new Signature(SignatureType.RSA, randomByteArray(SignatureType.RSA.signatureLength()));
+    public Signature nextSignature() {
+        return new Signature(SignatureType.RSA, nextByteArray(SignatureType.RSA.signatureLength()));
     }
 
     /**
@@ -146,8 +176,8 @@ public final class Randotron extends Random {
      * @return random signature bytes
      */
     @NonNull
-    public Bytes randomSignatureBytes() {
-        return Bytes.wrap(randomByteArray(SignatureType.RSA.signatureLength()));
+    public Bytes nextSignatureBytes() {
+        return Bytes.wrap(nextByteArray(SignatureType.RSA.signatureLength()));
     }
 
     /**
@@ -157,7 +187,7 @@ public final class Randotron extends Random {
      * @return a random byte array
      */
     @NonNull
-    public byte[] randomByteArray(final int size) {
+    public byte[] nextByteArray(final int size) {
         final byte[] bytes = new byte[size];
         this.nextBytes(bytes);
         return bytes;
@@ -169,8 +199,8 @@ public final class Randotron extends Random {
      * @return a random instant
      */
     @NonNull
-    public Instant randomInstant() {
-        return Instant.ofEpochMilli(randomPositiveLong(2000000000000L));
+    public Instant nextInstant() {
+        return Instant.ofEpochMilli(nextPositiveLong(2000000000000L));
     }
 
     /**
@@ -179,7 +209,7 @@ public final class Randotron extends Random {
      * @param trueProbability the probability of the boolean being true
      * @return a random boolean
      */
-    public boolean randomBooleanWithProbability(final double trueProbability) {
+    public boolean nextBoolean(final double trueProbability) {
         if (trueProbability < 0 || trueProbability > 1) {
             throw new IllegalArgumentException("Probability must be between 0 and 1");
         }

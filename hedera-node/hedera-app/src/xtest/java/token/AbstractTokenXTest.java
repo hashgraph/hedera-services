@@ -16,19 +16,14 @@
 
 package token;
 
-import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Fraction;
-import com.hedera.hapi.node.base.NftTransfer;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransactionID;
+import static contract.XTestConstants.AN_ED25519_KEY;
+
+import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
-import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.hapi.node.transaction.RoyaltyFee;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.*;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -122,6 +117,19 @@ public abstract class AbstractTokenXTest extends AbstractXTest {
                 .build();
     }
 
+    protected final TransactionBody tokenUpdate(
+            final TokenID tokenID, List<Consumer<TokenUpdateTransactionBody.Builder>> methods) {
+        final var b = TokenUpdateTransactionBody.newBuilder();
+        b.token(tokenID);
+        for (final var method : methods) {
+            method.accept(b);
+        }
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(DEFAULT_PAYER_ID))
+                .tokenUpdate(b)
+                .build();
+    }
+
     protected final TransactionBody nftMint(@NonNull final Bytes metadata, @NonNull final String token) {
         return nftMint(metadata, idOfNamedToken(token));
     }
@@ -143,6 +151,7 @@ public abstract class AbstractTokenXTest extends AbstractXTest {
                 Account.newBuilder()
                         .accountId(DEFAULT_PAYER_ID)
                         .tinybarBalance(Long.MAX_VALUE / 2)
+                        .key(AN_ED25519_KEY)
                         .build());
         return accounts;
     }

@@ -23,9 +23,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -35,7 +35,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class WipeTranslator extends AbstractHtsCallTranslator {
+public class WipeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function WIPE_FUNGIBLE_V1 =
             new Function("wipeTokenAccount(address,address,uint32)", ReturnTypes.INT);
@@ -65,7 +65,7 @@ public class WipeTranslator extends AbstractHtsCallTranslator {
      * {@inheritDoc}
      */
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var body = bodyForClassic(attempt);
         final var isFungibleWipe = body.tokenWipeOrThrow().serialNumbers().isEmpty();
         return new DispatchForResponseCodeHtsCall(

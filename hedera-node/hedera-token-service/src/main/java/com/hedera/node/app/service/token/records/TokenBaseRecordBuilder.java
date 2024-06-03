@@ -26,6 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface TokenBaseRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Sets the {@link TokenType} of the token the recorded transaction created or modified.
+     * @param tokenType the token type
+     * @return this builder
      */
     TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType);
 }

@@ -20,8 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -29,9 +27,10 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -54,7 +53,6 @@ import org.apache.logging.log4j.Logger;
  * </ul>
  */
 abstract class AbstractInOrderLinker implements InOrderLinker {
-    private static final Logger logger = LogManager.getLogger(AbstractInOrderLinker.class);
 
     /**
      * The initial capacity of the {@link #parentDescriptorMap} and {@link #parentHashMap}
@@ -98,6 +96,12 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param platformContext the platform context
      */
     public AbstractInOrderLinker(@NonNull final PlatformContext platformContext) {
+        // We use a non-static logger here so that we can scope the logger to the concrete
+        // implementation of this class, not to the abstract class. Once instantiated, a
+        // linker has the same life span as a node, so it is not inefficient to
+        // have a non-static logger.
+        final Logger logger = LogManager.getLogger(this.getClass());
+
         this.missingParentLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.generationMismatchLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
         this.birthRoundMismatchLogger = new RateLimitedLogger(logger, platformContext.getTime(), MINIMUM_LOG_PERIOD);
@@ -165,10 +169,9 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
 
     /**
      * Clear the internal state of this linker.
-     *
-     * @param ignored ignored trigger object
      */
-    public void clear(@NonNull final NoInput ignored) {
+    @Override
+    public void clear() {
         parentDescriptorMap.clear();
         parentHashMap.clear();
     }
@@ -265,6 +268,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
 
     /**
      * This method is called when this data structure stops tracking an event because it has become ancient.
+     *
      * @param event the event that has become ancient
      */
     protected void eventHasBecomeAncient(@NonNull final EventImpl event) {

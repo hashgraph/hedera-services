@@ -48,7 +48,7 @@ import java.nio.file.Path;
  *     <li>{@code append} - Determines whether to append to an existing file or overwrite it.</li>
  *     <li>{@code formatTimestamp} - If set to true, epoch values are formatted as human-readable strings.</li>
  *     <li>{@code file-rolling.maxFileSize} - Maximum size of the file for size-based rolling.</li>
- *     <li>{@code file-rolling.maxRollover} - Maximum number of files used for rolling.</li>
+ *     <li>{@code file-rolling.maxFiles} - Maximum number of files used for rolling.</li>
  * </ul>
  */
 public class FileHandler extends AbstractLogHandler {

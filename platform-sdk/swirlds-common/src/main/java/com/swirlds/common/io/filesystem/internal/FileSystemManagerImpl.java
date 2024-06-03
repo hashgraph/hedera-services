@@ -25,13 +25,10 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 /**
  * Manages the file system operations and organizes file creation within a specified root directory.
@@ -41,14 +38,12 @@ import java.util.function.Function;
  * <pre>
  * root
  * ├── USER
- * ├── TMP
- * └── BIN
+ * └── TMP
  * </pre>
  * The name of the directories can be provided by configuration
  * <p>
  * If the root directory already exists, it is used. Otherwise, it is created. Similarly, if the 'USER' directory
- * already exists, it is used; otherwise, it is created. The 'TMP' directory is always recreated, while the 'BIN'
- * directory is created if it doesn't exist.
+ * already exists, it is used; otherwise, it is created. The 'TMP' directory is always recreated.
  * <p>
  * All {@link Path}s provided by this class are handled within the same filesystem as indicated by the
  * {@code rootLocation} parameter.
@@ -62,9 +57,39 @@ public class FileSystemManagerImpl implements FileSystemManager {
     private final Path rootPath;
     private final Path tempPath;
     private final Path savedPath;
-    private final Path recycleBinPath;
-    private final RecycleBin bin;
     private final AtomicLong tmpFileNameIndex = new AtomicLong(0);
+    /**
+     * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
+     * path in the {@link Configuration} class using
+     * {@code FileSystemManagerConfig} record
+     *
+     * @param rootLocation      the location to be used as root path. It should not exist.
+     * @param dataDirName       the name of the user data file directory
+     * @param tmpDirName        the name of the tmp file directory
+     * @param recycleBin       for building the recycle bin.
+     * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
+     */
+    FileSystemManagerImpl(
+            @NonNull final String rootLocation,
+            final String dataDirName,
+            final String tmpDirName,
+            @NonNull final RecycleBin recycleBin) {
+        this.rootPath = Path.of(rootLocation).normalize();
+        if (!exists(rootPath)) {
+            rethrowIO(() -> Files.createDirectories(rootPath));
+        }
+
+        this.tempPath = rootPath.resolve(tmpDirName);
+        this.savedPath = rootPath.resolve(dataDirName);
+
+        if (!exists(savedPath)) {
+            rethrowIO(() -> Files.createDirectory(savedPath));
+        }
+        if (exists(tempPath)) {
+            rethrowIO(() -> FileUtils.deleteDirectory(tempPath));
+        }
+        rethrowIO(() -> Files.createDirectory(tempPath));
+    }
 
     /**
      * Creates a {@link FileSystemManager} and a {@link com.swirlds.common.io.utility.RecycleBin} by searching {@code root}
@@ -74,16 +99,10 @@ public class FileSystemManagerImpl implements FileSystemManager {
      * @param rootLocation      the location to be used as root path. It should not exist.
      * @param dataDirName       the name of the user data file directory
      * @param tmpDirName        the name of the tmp file directory
-     * @param recycleBinDirName the name of the recycle bin directory
-     * @param binSupplier       for building the recycle bin.
      * @throws UncheckedIOException if the dir structure to rootLocation cannot be created
      */
-    FileSystemManagerImpl(
-            @NonNull final String rootLocation,
-            final String dataDirName,
-            final String tmpDirName,
-            final String recycleBinDirName,
-            @NonNull final Function<Path, RecycleBin> binSupplier) {
+    public FileSystemManagerImpl(
+            @NonNull final String rootLocation, @NonNull final String dataDirName, @NonNull final String tmpDirName) {
         this.rootPath = Path.of(rootLocation).normalize();
         if (!exists(rootPath)) {
             rethrowIO(() -> Files.createDirectories(rootPath));
@@ -91,7 +110,6 @@ public class FileSystemManagerImpl implements FileSystemManager {
 
         this.tempPath = rootPath.resolve(tmpDirName);
         this.savedPath = rootPath.resolve(dataDirName);
-        this.recycleBinPath = rootPath.resolve(recycleBinDirName);
 
         if (!exists(savedPath)) {
             rethrowIO(() -> Files.createDirectory(savedPath));
@@ -100,18 +118,6 @@ public class FileSystemManagerImpl implements FileSystemManager {
             rethrowIO(() -> FileUtils.deleteDirectory(tempPath));
         }
         rethrowIO(() -> Files.createDirectory(tempPath));
-
-        // FUTURE-WORK: --MIGRATION-- Remove this logic after the fs manager was deployed.
-        // Moves files in the old location of the recycle bin to the new one
-        final Path oldRecyclePath = savedPath.resolve("swirlds-recycle-bin");
-        if (!exists(recycleBinPath) && exists(oldRecyclePath)) {
-            rethrowIO(() -> Files.move(oldRecyclePath, recycleBinPath, StandardCopyOption.ATOMIC_MOVE));
-        }
-
-        if (!exists(recycleBinPath)) {
-            rethrowIO(() -> Files.createDirectory(recycleBinPath));
-        }
-        this.bin = binSupplier.apply(recycleBinPath);
     }
 
     /**
@@ -152,19 +158,6 @@ public class FileSystemManagerImpl implements FileSystemManager {
     }
 
     /**
-     * Remove the file or directory tree at the specified absolute path. A best effort attempt is made to relocate the
-     * file or directory tree to a temporary location where it may persist for an amount of time. No guarantee on the
-     * amount of time the file or directory tree will persist is provided.
-     *
-     * @param absolutePath the path to recycle
-     * @throws IllegalArgumentException if the path is "above" the root directory (e.g. recycle("../../foo")
-     */
-    @Override
-    public void recycle(@NonNull final Path absolutePath) throws IOException {
-        bin.recycle(requireValidSubPathOf(rootPath, absolutePath));
-    }
-
-    /**
      * Checks that the specified {@code path} reference is "below" {@code parent} and is not {@code parent} itself.
      * throws IllegalArgumentException if this condition is not true.
      *
@@ -182,21 +175,5 @@ public class FileSystemManagerImpl implements FileSystemManager {
                     "Requested path is cannot be converted to valid relative path inside of:" + parent);
         }
         return path;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void stop() {
-        bin.stop();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start() {
-        bin.start();
     }
 }

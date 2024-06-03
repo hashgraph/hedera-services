@@ -36,22 +36,21 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PART
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * A suite for user stories Association-1 through Association-7 from HIP-796.
  */
-// @HapiTestSuite
 public class PartitionAssociationsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PartitionAssociationsSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 associateWithPartitionedTokenAutomatically(),
                 associateWithPartitionAndToken(),
@@ -70,8 +69,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec associateWithPartitionedTokenAutomatically() {
+    final Stream<DynamicTest> associateWithPartitionedTokenAutomatically() {
         return defaultHapiSpec("AssociateWithPartitionedTokenAutomatically")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING)
                         .withPartition(BLUE_PARTITION, p -> p.assignedSerialNos(2L)))
@@ -93,8 +91,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec associateWithPartitionAndToken() {
+    final Stream<DynamicTest> associateWithPartitionAndToken() {
         return defaultHapiSpec("AssociateWithPartitionAndToken")
                 .given(
                         cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
@@ -122,8 +119,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec autoAssociateSiblingPartitions() {
+    final Stream<DynamicTest> autoAssociateSiblingPartitions() {
         return defaultHapiSpec("AutoAssociateSiblingPartitions")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .withPartitions(RED_PARTITION)
@@ -152,8 +148,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec autoAssociateChildPartitions() {
+    final Stream<DynamicTest> autoAssociateChildPartitions() {
         return defaultHapiSpec("AutoAssociateChildPartitions")
                 .given(
                         cryptoCreate(CIVILIAN_PAYER).balance(ONE_HUNDRED_HBARS),
@@ -183,8 +178,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec disassociateEmptyPartition() {
+    final Stream<DynamicTest> disassociateEmptyPartition() {
         return defaultHapiSpec("DisassociateEmptyPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -211,8 +205,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec doNotAllowDisassociateWithNonEmptyPartition() {
+    final Stream<DynamicTest> doNotAllowDisassociateWithNonEmptyPartition() {
         return defaultHapiSpec("DoNotAllowDisassociateWithNonEmptyPartition")
                 .given(
                         fungibleTokenWithFeatures(PARTITIONING)
@@ -247,8 +240,7 @@ public class PartitionAssociationsSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    final HapiSpec ensurePartitionsRemovedBeforeTokenDisassociation() {
+    final Stream<DynamicTest> ensurePartitionsRemovedBeforeTokenDisassociation() {
         return defaultHapiSpec("EnsurePartitionsRemovedBeforeTokenDisassociation")
                 .given(fungibleTokenWithFeatures(PARTITIONING)
                         .withPartitions(RED_PARTITION)

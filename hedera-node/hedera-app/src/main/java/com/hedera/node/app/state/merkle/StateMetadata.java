@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.swirlds.platform.state.merkle.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

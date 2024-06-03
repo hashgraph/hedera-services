@@ -19,11 +19,12 @@ package com.hedera.services.bdd.suites.freeze;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class FreezeIntellijNetwork extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeIntellijNetwork.class);
@@ -33,13 +34,11 @@ public class FreezeIntellijNetwork extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            justFreeze(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(justFreeze());
     }
 
-    final HapiSpec justFreeze() {
+    final Stream<DynamicTest> justFreeze() {
         return defaultHapiSpec("JustFreeze")
                 .given()
                 .when()

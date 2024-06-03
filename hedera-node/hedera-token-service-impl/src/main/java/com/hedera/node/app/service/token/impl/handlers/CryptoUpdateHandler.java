@@ -88,6 +88,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     private final StakingValidator stakingValidator;
     private final NetworkInfo networkInfo;
 
+    /**
+     * Default constructor for injection.
+     * @param waivers the {@link CryptoSignatureWaivers} to use for checking signature waivers
+     * @param stakingValidator the {@link StakingValidator} to use for staking validation
+     * @param networkInfo the {@link NetworkInfo} to use for network information
+     */
     @Inject
     public CryptoUpdateHandler(
             @NonNull final CryptoSignatureWaivers waivers,

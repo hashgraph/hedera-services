@@ -18,6 +18,8 @@ package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
@@ -30,22 +32,24 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -56,22 +60,26 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.eventhandling.TransactionPool;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.RandomBuilder;
+import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -79,17 +87,21 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Builds a {@link SwirldsPlatform} instance.
  */
 public final class PlatformBuilder {
+
+    private static final Logger logger = LogManager.getLogger(PlatformBuilder.class);
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
@@ -101,6 +113,16 @@ public final class PlatformBuilder {
     private ConfigurationBuilder configurationBuilder;
 
     /**
+     * An address book that is used to bootstrap the system. Traditionally read from config.txt.
+     */
+    private AddressBook bootstrapAddressBook;
+
+    /**
+     * This node's cryptographic keys.
+     */
+    private KeysAndCerts keysAndCerts;
+
+    /**
      * The path to the configuration file (i.e. the file with the address book).
      */
     private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
@@ -110,8 +132,19 @@ public final class PlatformBuilder {
      */
     private Path settingsPath;
 
+    /**
+     * The wiring model to use for this platform.
+     */
+    private WiringModel model;
+
+    /**
+     * The source of non-cryptographic randomness for this platform.
+     */
+    private RandomBuilder randomBuilder;
+
     private Consumer<GossipEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
+    private Consumer<GossipEvent> staleEventConsumer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -309,6 +342,75 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Register a callback that is called when a stale self event is detected (i.e. an event that will never reach
+     * consensus). Depending on the use case, it may be a good idea to resubmit the transactions in the stale event.
+     * <p>
+     * Stale event detection is guaranteed to catch all stale self events as long as the node remains online. However,
+     * if the node restarts or reconnects, any event that went stale "in the gap" may not be detected.
+     *
+     * @param staleEventConsumer the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<GossipEvent> staleEventConsumer) {
+        throwIfAlreadyUsed();
+        this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
+        return this;
+    }
+
+    /**
+     * Provide the address book to use for bootstrapping the system. If not provided then the address book is read from
+     * the config.txt file.
+     *
+     * @param bootstrapAddressBook the address book to use for bootstrapping
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withBootstrapAddressBook(@NonNull final AddressBook bootstrapAddressBook) {
+        throwIfAlreadyUsed();
+        this.bootstrapAddressBook = Objects.requireNonNull(bootstrapAddressBook);
+        return this;
+    }
+
+    /**
+     * Provide the cryptographic keys to use for this node.
+     *
+     * @param keysAndCerts the cryptographic keys to use
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withKeysAndCerts(@NonNull final KeysAndCerts keysAndCerts) {
+        throwIfAlreadyUsed();
+        this.keysAndCerts = Objects.requireNonNull(keysAndCerts);
+        return this;
+    }
+
+    /**
+     * Provide the wiring model to use for this platform.
+     *
+     * @param model the wiring model to use
+     * @return this
+     */
+    public PlatformBuilder withModel(@NonNull final WiringModel model) {
+        throwIfAlreadyUsed();
+        this.model = Objects.requireNonNull(model);
+        return this;
+    }
+
+    /**
+     * Provide the source of non-cryptographic randomness for this platform.
+     *
+     * @param randomBuilder the source of non-cryptographic randomness
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withRandomBuilder(@NonNull final RandomBuilder randomBuilder) {
+        throwIfAlreadyUsed();
+        this.randomBuilder = Objects.requireNonNull(randomBuilder);
+        return this;
+    }
+
+    /**
      * Build the configuration for the node.
      *
      * @param configurationBuilder used to build configuration
@@ -359,7 +461,7 @@ public final class PlatformBuilder {
 
         final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
 
-        final Cryptography cryptography = CryptographyFactory.create(configuration);
+        final Cryptography cryptography = CryptographyFactory.create();
         final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
 
         // For backwards compatibility with the old static access pattern.
@@ -368,8 +470,13 @@ public final class PlatformBuilder {
 
         setupGlobalMetrics(configuration);
         final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        final FileSystemManager fileSystemManager = FileSystemManager.create(configuration);
 
-        return new DefaultPlatformContext(configuration, metrics, cryptography, Time.getCurrent());
+        final Time time = Time.getCurrent();
+        final RecycleBin recycleBin =
+                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+
+        return PlatformContext.create(configuration, time, metrics, cryptography, fileSystemManager, recycleBin);
     }
 
     /**
@@ -390,7 +497,6 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformComponentBuilder buildComponentBuilder() {
-
         throwIfAlreadyUsed();
         used = true;
 
@@ -408,19 +514,17 @@ public final class PlatformBuilder {
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
-        final AddressBook configAddressBook = loadConfigAddressBook();
+        final AddressBook boostrapAddressBook =
+                this.bootstrapAddressBook == null ? loadConfigAddressBook() : this.bootstrapAddressBook;
 
         checkNodesToRun(List.of(selfId));
 
-        final Map<NodeId, KeysAndCerts> keysAndCerts = initNodeSecurity(configAddressBook, configuration);
+        final KeysAndCerts keysAndCerts = this.keysAndCerts == null
+                ? initNodeSecurity(boostrapAddressBook, configuration).get(selfId)
+                : this.keysAndCerts;
 
         // the AddressBook is not changed after this point, so we calculate the hash now
-        platformContext.getCryptography().digestSync(configAddressBook);
-
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        final EmergencyRecoveryManager emergencyRecoveryManager =
-                new EmergencyRecoveryManager(stateConfig, basicConfig.getEmergencyRecoveryFileLoadDir());
+        platformContext.getCryptography().digestSync(boostrapAddressBook);
 
         final ReservedSignedState initialState = getInitialState(
                 platformContext,
@@ -429,8 +533,7 @@ public final class PlatformBuilder {
                 appName,
                 swirldName,
                 selfId,
-                configAddressBook,
-                emergencyRecoveryManager);
+                boostrapAddressBook);
 
         final boolean softwareUpgrade = detectSoftwareUpgrade(softwareVersion, initialState.get());
 
@@ -440,7 +543,7 @@ public final class PlatformBuilder {
                 softwareVersion,
                 softwareUpgrade,
                 initialState.get(),
-                configAddressBook.copy(),
+                boostrapAddressBook.copy(),
                 platformContext);
 
         if (addressBookInitializer.hasAddressBookChanged()) {
@@ -498,24 +601,68 @@ public final class PlatformBuilder {
             throw new UncheckedIOException(e);
         }
 
+        final Scratchpad<IssScratchpad> issScratchpad =
+                Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
+        issScratchpad.logContents();
+
+        final ApplicationCallbacks callbacks =
+                new ApplicationCallbacks(preconsensusEventConsumer, snapshotOverrideConsumer, staleEventConsumer);
+
+        final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
+        final SwirldStateManager swirldStateManager = new SwirldStateManager(
+                platformContext,
+                initialState.get().getAddressBook(),
+                selfId,
+                x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
+                softwareVersion);
+
+        if (model == null) {
+            final PlatformSchedulersConfig schedulersConfig =
+                    platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
+
+            final int coreCount = Runtime.getRuntime().availableProcessors();
+            final int parallelism = (int) Math.max(
+                    1, schedulersConfig.defaultPoolMultiplier() * coreCount + schedulersConfig.defaultPoolConstant());
+            final ForkJoinPool defaultPool =
+                    platformContext.getExecutorFactory().createForkJoinPool(parallelism);
+            logger.info(STARTUP.getMarker(), "Default platform pool parallelism: {}", parallelism);
+
+            model = WiringModelBuilder.create(platformContext)
+                    .withDefaultPool(defaultPool)
+                    .build();
+        }
+
+        if (randomBuilder == null) {
+            randomBuilder = new RandomBuilder();
+        }
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
-                keysAndCerts.get(selfId),
+                model,
+                keysAndCerts,
                 selfId,
                 appName,
                 swirldName,
                 softwareVersion,
                 initialState,
-                emergencyRecoveryManager,
+                callbacks,
                 preconsensusEventConsumer,
                 snapshotOverrideConsumer,
                 intakeEventCounter,
-                new RandomBuilder(),
-                new TransactionPool(platformContext),
+                randomBuilder,
+                new TransactionPoolNexus(platformContext),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 initialPcesFiles,
+                issScratchpad,
+                NotificationEngine.buildEngine(getStaticThreadManager()),
+                new AtomicReference<>(),
+                statusActionSubmitterAtomicReference,
+                swirldStateManager,
+                new AtomicReference<>(),
+                new AtomicReference<>(),
+                new AtomicReference<>(),
                 firstPlatform);
 
         return new PlatformComponentBuilder(buildingBlocks);

@@ -42,15 +42,16 @@ import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModel
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
 
@@ -73,19 +74,19 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(erc20(), erc721());
     }
 
-    List<HapiSpec> erc20() {
+    List<Stream<DynamicTest>> erc20() {
         return List.of(transferErc20TokenAliasedSender());
     }
 
-    List<HapiSpec> erc721() {
+    List<Stream<DynamicTest>> erc721() {
         return List.of();
     }
 
-    final HapiSpec transferErc20TokenAliasedSender() {
+    final Stream<DynamicTest> transferErc20TokenAliasedSender() {
         final var aliasedTransferTxn = "aliasedTransferTxn";
         final var addLiquidityTxn = "addLiquidityTxn";
         final var create2Txn = "create2Txn";

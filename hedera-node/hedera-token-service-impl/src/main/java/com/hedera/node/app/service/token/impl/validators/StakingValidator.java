@@ -35,6 +35,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakingValidator {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakingValidator() {
         // Dagger2
@@ -50,6 +53,7 @@ public class StakingValidator {
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
+     * @param networkInfo            network info
      */
     public void validateStakedIdForCreation(
             final boolean isStakingEnabled,
@@ -83,6 +87,7 @@ public class StakingValidator {
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
+     * @param networkInfo            network info
      */
     public void validateStakedIdForUpdate(
             final boolean isStakingEnabled,

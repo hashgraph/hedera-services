@@ -44,6 +44,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * (FUTURE) Integrate this operation to CI in some form.
+ */
 public class RecordStreamVerification extends UtilOp {
     private static final Logger log = LogManager.getLogger(RecordStreamVerification.class);
 

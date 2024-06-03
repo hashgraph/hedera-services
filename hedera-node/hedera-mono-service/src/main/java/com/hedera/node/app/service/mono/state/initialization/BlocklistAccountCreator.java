@@ -294,6 +294,7 @@ public class BlocklistAccountCreator {
     }
 
     /**
+     * Represents a record containing the EVM address and memo of a blocked account.
      * @param evmAddress the EVM address of the blocked account
      * @param memo      the memo of the blocked account
      */

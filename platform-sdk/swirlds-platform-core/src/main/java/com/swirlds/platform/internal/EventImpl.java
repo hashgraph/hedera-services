@@ -21,7 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.io.OptionalSelfSerializable;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -31,11 +31,9 @@ import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.events.EventSerializationOptions;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -59,7 +57,7 @@ public class EventImpl extends EventMetadata
         implements Comparable<EventImpl>,
                 ConsensusEvent,
                 SerializableHashable,
-                OptionalSelfSerializable<EventSerializationOptions>,
+                SelfSerializable,
                 RunningHashable,
                 StreamAligned,
                 Timestamped {
@@ -95,36 +93,12 @@ public class EventImpl extends EventMetadata
 
     public EventImpl() {}
 
-    public EventImpl(final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), null, null);
-    }
-
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData) {
-        this(baseEventHashedData, baseEventUnhashedData, consensusData, null, null);
-    }
-
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), selfParent, otherParent);
-    }
-
     public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
         this(gossipEvent, new ConsensusData(), selfParent, otherParent);
     }
 
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(new GossipEvent(baseEventHashedData, baseEventUnhashedData), consensusData, selfParent, otherParent);
+    public EventImpl(@NonNull final GossipEvent gossipEvent) {
+        this(gossipEvent, new ConsensusData(), null, null);
     }
 
     public EventImpl(
@@ -135,7 +109,7 @@ public class EventImpl extends EventMetadata
         super(selfParent, otherParent);
         Objects.requireNonNull(baseEvent, "baseEvent");
         Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
-        Objects.requireNonNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");
+        Objects.requireNonNull(baseEvent.getSignature(), "signature");
         Objects.requireNonNull(consensusData, "consensusData");
 
         this.baseEvent = baseEvent;
@@ -144,6 +118,14 @@ public class EventImpl extends EventMetadata
         setDefaultValues();
 
         findSystemTransactions();
+    }
+
+    /**
+     * Create an instance based on the given {@link DetailedConsensusEvent}
+     * @param detailedConsensusEvent the detailed consensus event to build from
+     */
+    public EventImpl(final DetailedConsensusEvent detailedConsensusEvent) {
+        buildFromConsensusEvent(detailedConsensusEvent);
     }
 
     /**
@@ -235,17 +217,7 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, EventSerializationOptions.FULL);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
-            throws IOException {
-        DetailedConsensusEvent.serialize(
-                out, baseEvent.getHashedData(), baseEvent.getUnhashedData(), consensusData, option);
+        DetailedConsensusEvent.serialize(out, baseEvent, consensusData);
     }
 
     /**
@@ -264,7 +236,7 @@ public class EventImpl extends EventMetadata
      * @param consensusEvent the consensus event to build from
      */
     void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
-        baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getBaseEventUnhashedData());
+        baseEvent = consensusEvent.getGossipEvent();
         consensusData = consensusEvent.getConsensusData();
         // clears metadata in case there is any
         super.clear();
@@ -376,13 +348,6 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * @return The part of a base event which is not hashed
-     */
-    public BaseEventUnhashedData getUnhashedData() {
-        return baseEvent.getUnhashedData();
-    }
-
-    /**
      * @return Consensus data calculated for an event
      */
     public ConsensusData getConsensusData() {
@@ -434,14 +399,6 @@ public class EventImpl extends EventMetadata
 
     public boolean isCreatedBy(final NodeId id) {
         return Objects.equals(getCreatorId(), id);
-    }
-
-    //////////////////////////////////////////
-    // BaseEventUnhashedData
-    //////////////////////////////////////////
-
-    public byte[] getSignature() {
-        return baseEvent.getUnhashedData().getSignature();
     }
 
     //////////////////////////////////////////

@@ -15,19 +15,20 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.hapi")
-    id("com.hedera.hashgraph.evm-maven-publish")
-    @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.protobuf")
+    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.java-test-fixtures")
+    alias(libs.plugins.pbj)
 }
 
 description = "Hedera API"
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
-    branchOrTag = "v0.50.0-release"
-    // As long as the 'branchOrTag' above is not stable, run always:
-    outputs.upToDateWhen { false }
+    // uncomment below to use a specific tag
+    //    tag = "v0.50.0-release"
+    // uncomment below to use a specific branch
+    branch = "main"
 }
 
 sourceSets {
