@@ -132,7 +132,7 @@ An update into the `feeSchedule` file would be needed to specify that.
             - Then we should transfer the claimed tokens to each `receiver_id`
               - Reuse any existing logic from `CryptoTransferHandler`, extracting common code into a separate class
               - We must skip the assessment of custom fees
-        - Token transfers and associations should be externalized using the `tokenTransferLists` and `automatic_token_associations` fields in the transaction record
+        - Token transfers should be externalized using the `tokenTransferLists` field in the transaction record
     - Fees calculation
 - Update throttle definitions to include the new `TokenClaimAirdrop` transaction type
   - Throttle definitions are specified in `throttles.json` files
@@ -157,7 +157,8 @@ All of the expected behaviour described below should be present only if the new 
     - the tokens being claimed should be automatically associated with the `receiver_id` account
     - the tokens being claimed should be transferred to the `receiver_id` account
     - the pending airdrop should be removed from state
-- Given a successful `TokenClaimAirdrop`  transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value
+    - the transaction record should contain the transferred tokens in `tokenTransferLists` field
+- Given a successful `TokenClaimAirdrop` transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value
 - Given successful `TokenClaimAirdrop` when another `TokenClaimAirdrop` for the same airdrop is performed then the second `TokenClaimAirdrop` should fail
 - `TokenClaimAirdrop` transaction with no pending airdrops entries should fail
 - `TokenClaimAirdrop` transaction with more than 10 pending airdrops entries should fail
