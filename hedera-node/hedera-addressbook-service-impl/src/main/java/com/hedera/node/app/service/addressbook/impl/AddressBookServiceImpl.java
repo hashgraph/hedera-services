@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.metrics;
+package com.hedera.node.app.service.addressbook.impl;
 
-import com.swirlds.state.spi.metrics.StoreMetrics;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.schemas.V050AddressBookSchema;
+import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface StoreMetricsService {
+/**
+ * Standard implementation of the {@link AddressBookService} {@link Service}.
+ */
+public final class AddressBookServiceImpl implements AddressBookService {
+    public static final String NODES_KEY = "NODES";
 
-    enum StoreType {
-        TOPIC,
-        ACCOUNT,
-        NFT,
-        TOKEN,
-        TOKEN_RELATION,
-        FILE,
-        SLOT_STORAGE,
-        CONTRACT,
-        SCHEDULE,
-        NODE
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        registry.register(new V050AddressBookSchema());
     }
-
-    StoreMetrics get(@NonNull StoreType storeType, long capacity);
 }

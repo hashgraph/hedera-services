@@ -319,6 +319,10 @@ public final class PbjConverter {
             case NetworkGetExecutionTime -> HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
             case NONE -> HederaFunctionality.NONE;
             case NodeStakeUpdate -> HederaFunctionality.NODE_STAKE_UPDATE;
+            case NodeCreate -> HederaFunctionality.NODE_CREATE;
+            case NodeUpdate -> HederaFunctionality.NODE_UPDATE;
+            case NodeDelete -> HederaFunctionality.NODE_DELETE;
+            case NodeGetInfo -> HederaFunctionality.NODE_GET_INFO;
             case ScheduleCreate -> HederaFunctionality.SCHEDULE_CREATE;
             case ScheduleDelete -> HederaFunctionality.SCHEDULE_DELETE;
             case ScheduleGetInfo -> HederaFunctionality.SCHEDULE_GET_INFO;
@@ -411,6 +415,10 @@ public final class PbjConverter {
                     .NetworkGetExecutionTime;
             case NONE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
             case NODE_STAKE_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
+            case NODE_CREATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeCreate;
+            case NODE_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
+            case NODE_DELETE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeDelete;
+            case NODE_GET_INFO -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeGetInfo;
             case SCHEDULE_CREATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
             case SCHEDULE_DELETE -> com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
             case SCHEDULE_GET_INFO -> com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -773,6 +781,14 @@ public final class PbjConverter {
             case TOKEN_HAS_NO_METADATA_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
             case MISSING_SERIAL_NUMBERS -> ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case TOKEN_HAS_NO_ADMIN_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
+            case NODE_DELETED -> ResponseCodeEnum.NODE_DELETED;
+            case INVALID_NODE_ID -> ResponseCodeEnum.INVALID_NODE_ID;
+            case INVALID_GOSSIP_ENDPOINT -> ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
+            case INVALID_NODE_ACCOUNT_ID -> ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
+            case INVALID_NODE_DESCRIPTION -> ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
+            case INVALID_SERVICE_ENDPOINT -> ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
+            case INVALID_GOSSIP_CAE_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+            case INVALID_GRPC_CERTIFICATE -> ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
             case MAX_NODE_HAVE_BEEN_CREATED -> ResponseCodeEnum.MAX_NODE_HAVE_BEEN_CREATED;
             case IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT -> ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
@@ -1315,6 +1331,18 @@ public final class PbjConverter {
             case MISSING_TOKEN_METADATA -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_METADATA;
             case MISSING_SERIAL_NUMBERS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
             case TOKEN_HAS_NO_ADMIN_KEY -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_ADMIN_KEY;
+            case NODE_DELETED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
+            case INVALID_NODE_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
+            case INVALID_GOSSIP_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
+            case INVALID_NODE_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
+            case INVALID_NODE_DESCRIPTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_NODE_DESCRIPTION;
+            case INVALID_SERVICE_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_SERVICE_ENDPOINT;
+            case INVALID_GOSSIP_CAE_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_GOSSIP_CAE_CERTIFICATE;
+            case INVALID_GRPC_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .INVALID_MAX_AUTO_ASSOCIATIONS;
             case MAX_NODE_HAVE_BEEN_CREATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum

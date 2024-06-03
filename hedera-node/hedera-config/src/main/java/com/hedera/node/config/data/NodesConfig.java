@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.metrics;
+package com.hedera.node.config.data;
 
-import com.swirlds.state.spi.metrics.StoreMetrics;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.config.NetworkProperty;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-public interface StoreMetricsService {
-
-    enum StoreType {
-        TOPIC,
-        ACCOUNT,
-        NFT,
-        TOKEN,
-        TOKEN_RELATION,
-        FILE,
-        SLOT_STORAGE,
-        CONTRACT,
-        SCHEDULE,
-        NODE
-    }
-
-    StoreMetrics get(@NonNull StoreType storeType, long capacity);
-}
+@ConfigData("nodes")
+public record NodesConfig(@ConfigProperty(defaultValue = "1000") @NetworkProperty long maxNumber) {}
