@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 public class V050AddressBookSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V050AddressBookSchema.class);
 
-    private static final long MAX_NODES = 1_000L;
+    private static final long MAX_NODES = 100L;
 
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(50).patch(0).build();
