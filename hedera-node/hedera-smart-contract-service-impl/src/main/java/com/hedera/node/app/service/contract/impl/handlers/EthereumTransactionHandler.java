@@ -20,10 +20,8 @@ import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -103,7 +101,6 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var ethTxData = populateEthTxData(
                 requireNonNull(txn.ethereumTransactionOrThrow().ethereumData()).toByteArray());
         validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
-        validateTruePreCheck(ethTxData.gasLimit() <= MAX_GAS_LIMIT, MAX_GAS_LIMIT_EXCEEDED);
         final byte[] callData = ethTxData.hasCallData() ? ethTxData.callData() : new byte[0];
         final var intrinsicGas =
                 gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);

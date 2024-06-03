@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
@@ -290,13 +289,6 @@ class EthereumTransactionHandlerTest {
             given(ethTxDataReturned.gasLimit()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1);
             given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
                     .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
-            assertThrows(PreCheckException.class, () -> subject.pureChecks(ethTxWithTx()));
-        }
-
-        // check less than max gas
-        try (MockedStatic<EthTxData> ethTxData = Mockito.mockStatic(EthTxData.class)) {
-            ethTxData.when(() -> EthTxData.populateEthTxData(any())).thenReturn(ethTxDataReturned);
-            given(ethTxDataReturned.gasLimit()).willReturn(MAX_GAS_LIMIT + 1);
             assertThrows(PreCheckException.class, () -> subject.pureChecks(ethTxWithTx()));
         }
     }
