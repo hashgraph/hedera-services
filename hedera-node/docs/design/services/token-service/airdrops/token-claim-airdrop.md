@@ -126,7 +126,7 @@ An update into the `feeSchedule` file would be needed to specify that.
         - Check if the sender has sufficient amount or has enough approved allowance of the tokens being claimed to fulfill the airdrop
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
-            - We need to create a token association between each `receiver_id` and `token_reference`, future rents for token association slot should be paid by `receiver_id`
+            - If token association between each `receiver_id` and `token_reference` does not exist, we need to create it; future rents for token association slot should be paid by `receiver_id`
               - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
               - The token association is free at this point because the sender already paid for it when submitting the `TokenAirdrop` transaction
             - Then we should transfer the claimed tokens to each `receiver_id`
