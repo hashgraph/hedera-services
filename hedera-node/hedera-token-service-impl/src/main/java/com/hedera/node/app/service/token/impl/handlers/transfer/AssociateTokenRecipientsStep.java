@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,9 +168,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 getIfUsableForAliasedId(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         final var config = handleContext.configuration();
+        final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        if (tokenRel == null && (account.maxAutoAssociations() > 0 || account.maxAutoAssociations() == -1)) {
-            if (account.maxAutoAssociations() != -1) {
+        if (tokenRel == null && account.maxAutoAssociations() != 0) {
+            if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
                 validateFalse(
                         account.usedAutoAssociations() >= account.maxAutoAssociations(),
                         NO_REMAINING_AUTOMATIC_ASSOCIATIONS);

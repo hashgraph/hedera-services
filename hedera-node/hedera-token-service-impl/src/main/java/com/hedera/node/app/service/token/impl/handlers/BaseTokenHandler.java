@@ -337,7 +337,8 @@ public class BaseTokenHandler {
         final var maxAutoAssociations = account.maxAutoAssociations();
         final var usedAutoAssociations = account.usedAutoAssociations();
 
-        if (!entitiesConfig.unlimitedAutoAssociationsEnabled() || account.maxAutoAssociations() != -1) {
+        // only validate remaining associations if unlimitedAutoAssociations is disabled for the account
+        if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
             validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
         }
         // Create new token relation and commit to store
@@ -463,5 +464,19 @@ public class BaseTokenHandler {
                 .tokenId(tokenId)
                 .accountId(accountId)
                 .build();
+    }
+
+    /**
+     * Determines if the given account has unlimited auto-associations.
+     *
+     * @param account         the account to check, must not be null
+     * @param entitiesConfig  the configuration settings to check against, must not be null
+     * @return                {@code true} if unlimited auto-associations are enabled and the account's
+     * max auto-associations is set to -1 otherwise {@code false}
+     * @throws NullPointerException if the account or entitiesConfig is null
+     */
+    public static boolean hasUnlimitedAutoAssociations(
+            @NonNull final Account account, @NonNull EntitiesConfig entitiesConfig) {
+        return entitiesConfig.unlimitedAutoAssociationsEnabled() && account.maxAutoAssociations() == -1;
     }
 }

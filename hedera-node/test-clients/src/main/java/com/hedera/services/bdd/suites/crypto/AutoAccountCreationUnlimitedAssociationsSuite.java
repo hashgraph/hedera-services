@@ -96,6 +96,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     private static final String CIVILIAN = "somebody";
     private static final String SPONSOR = "autoCreateSponsor";
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS = 39291826L;
+    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final String HBAR_XFER = "hbarXfer";
     private static final String FT_XFER = "ftXfer";
     private static final String NFT_XFER = "nftXfer";
@@ -160,6 +161,66 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                         .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
                                         .memo(AUTO_MEMO)
                                         .maxAutoAssociations(-1))
+                                .logged()));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationsDisabled() {
+        final var creationTime = new AtomicLong();
+        final long transferFee = 185030L;
+        return propertyPreservingHapiSpec(
+                        "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        newKeyNamed(VALID_ALIAS),
+                        cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
+                        cryptoCreate(PAYER).balance(10 * ONE_HBAR),
+                        cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(cryptoTransfer(
+                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                        .via(TRANSFER_TXN)
+                        .payingWith(PAYER))
+                .then(
+                        getReceipt(TRANSFER_TXN).andAnyChildReceipts().hasChildAutoAccountCreations(1),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAccountInfo(SPONSOR)
+                                .has(accountWith()
+                                        .balance((INITIAL_BALANCE * ONE_HBAR) - ONE_HUNDRED_HBARS)
+                                        .noAlias()),
+                        childRecordsCheck(
+                                TRANSFER_TXN,
+                                SUCCESS,
+                                recordWith().status(SUCCESS).fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE)),
+                        assertionsHold((spec, opLog) -> {
+                            final var lookup = getTxnRecord(TRANSFER_TXN)
+                                    .andAllChildRecords()
+                                    .hasNonStakingChildRecordCount(1)
+                                    .hasNoAliasInChildRecord(0)
+                                    .logged();
+                            allRunFor(spec, lookup);
+                            final var sponsor = spec.registry().getAccountID(SPONSOR);
+                            final var payer = spec.registry().getAccountID(PAYER);
+                            final var parent = lookup.getResponseRecord();
+                            var child = lookup.getChildRecord(0);
+                            if (isEndOfStakingPeriodRecord(child)) {
+                                child = lookup.getChildRecord(1);
+                            }
+                            assertAliasBalanceAndFeeInChildRecord(
+                                    parent, child, sponsor, payer, ONE_HUNDRED_HBARS + ONE_HBAR, transferFee);
+                            creationTime.set(child.getConsensusTimestamp().getSeconds());
+                        }),
+                        sourcing(() -> getAliasedAccountInfo(VALID_ALIAS)
+                                .has(accountWith()
+                                        .key(VALID_ALIAS)
+                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS + ONE_HBAR, 0, 0)
+                                        .alias(VALID_ALIAS)
+                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                        .receiverSigReq(false)
+                                        .expiry(creationTime.get() + THREE_MONTHS_IN_SECONDS, 0)
+                                        .memo(AUTO_MEMO)
+                                        .maxAutoAssociations(0))
                                 .logged()));
     }
 

@@ -166,7 +166,6 @@ public class AutoAccountCreationSuite {
     public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
-    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS = 39291826L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
     private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
 
