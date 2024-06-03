@@ -65,9 +65,8 @@ public class NodeDeleteHandler implements TransactionHandler {
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         final ReadableNodeStore nodeStore = context.createStore(ReadableNodeStore.class);
         final long nodeId = requireNonNull(transactionBody.nodeId());
-        final var nodesConfig = context.configuration().getConfigData(NodesConfig.class);
 
-        if (nodeId <= 0 || nodeId > nodesConfig.maxNumber()) {
+        if (nodeId <= 0) {
             throw new PreCheckException(INVALID_NODE_ID);
         }
 
@@ -87,9 +86,8 @@ public class NodeDeleteHandler implements TransactionHandler {
 
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
-        final var nodesConfig = context.configuration().getConfigData(NodesConfig.class);
 
-        if (nodeId <= 0 || nodeId > nodesConfig.maxNumber()) {
+        if (nodeId <= 0) {
             throw new HandleException(INVALID_NODE_ID);
         }
 

@@ -169,12 +169,6 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         assertThatThrownBy(() -> subject.preHandle(preHandleContext)).isInstanceOf(PreCheckException.class);
         msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
         assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
-
-        given(transactionBody.nodeId()).willReturn(101L);
-
-        assertThatThrownBy(() -> subject.preHandle(preHandleContext)).isInstanceOf(PreCheckException.class);
-        msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
