@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -363,7 +364,7 @@ public class AutoAccountCreationSuite {
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         // The expected fee to transfer four serial numbers of two token types to a receiver with
@@ -372,8 +373,10 @@ public class AutoAccountCreationSuite {
         final var approxTransferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
-        return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE_VALUE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
