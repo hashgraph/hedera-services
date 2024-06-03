@@ -54,7 +54,7 @@ pcli diagram \
     -g 'Transaction Handling:Transaction Handler,LatestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Branch Detection:BranchDetector,BranchReporter' \
-    -g 'Miscellaneous:Mystery Input,RunningEventHashOverride,HealthMonitor,SignedStateSentinel,StatusStateMachine,PlatformStatusNexus,Heartbeat,❔,🏥,❤️,💨,🚦' \
+    -g 'Miscellaneous:Mystery Input,RunningEventHashOverride,HealthMonitor,SignedStateSentinel,StatusStateMachine,Heartbeat,❔,🏥,❤️,💨,🚦' \
     -c 'Orphan Buffer' \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \

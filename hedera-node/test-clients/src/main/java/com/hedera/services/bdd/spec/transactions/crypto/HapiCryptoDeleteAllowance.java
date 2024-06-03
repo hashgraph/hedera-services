@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
@@ -35,7 +34,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -110,18 +108,6 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::deleteAllowances;
-    }
-
-    @Override
-    protected void updateStateOf(HapiSpec spec) {
-        if (actualStatus != SUCCESS) {
-            return;
-        }
     }
 
     @Override

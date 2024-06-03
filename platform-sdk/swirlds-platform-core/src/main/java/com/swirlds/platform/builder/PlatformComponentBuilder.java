@@ -1038,7 +1038,6 @@ public class PlatformComponentBuilder {
                     blocks.swirldStateManager(),
                     () -> blocks.getLatestCompleteStateReference().get().get(),
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
-                    () -> blocks.platformStatusSupplierReference().get().get(),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
                     blocks.intakeEventCounter());

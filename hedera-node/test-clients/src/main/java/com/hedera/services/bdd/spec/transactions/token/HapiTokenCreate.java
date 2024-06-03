@@ -56,7 +56,6 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -404,11 +403,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
         autoRenewAccount.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
         return signers;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createToken;
     }
 
     @Override
