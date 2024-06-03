@@ -249,6 +249,7 @@ public class HandleWorkflow {
      * Handles the next {@link Round}
      *
      * @param state the writable {@link HederaState} that this round will work on
+     * @param platformState the {@link PlatformState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(
@@ -537,13 +538,13 @@ public class HandleWorkflow {
                         }
                     }
                 } catch (final HandleException ex) {
-                    final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
+                    final var identifier = validationResult.status() == NODE_DUE_DILIGENCE_FAILURE
                             ? "node " + creator.nodeId()
                             : "account " + payer;
                     logger.error(
                             "Unable to charge {} a penalty after {} happened. Cause of the failed charge:",
                             identifier,
-                            validationResult.responseCodeEnum,
+                            validationResult.responseCodeEnum(),
                             ex);
                 }
             } else {

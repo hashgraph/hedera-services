@@ -44,9 +44,9 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.infra.CronHandlerLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.HandleValidations;
 import com.hedera.node.app.workflows.handle.flow.infra.HollowAccountFinalizer;
@@ -79,7 +79,6 @@ public class DefaultHandleProcess implements HandleProcess {
     private final BlockRecordManager blockRecordManager;
     private final PreHandleResult preHandleResult;
     private final CronHandlerLogic cronProcesses;
-    private final HandleContextImpl handleContext;
     private final ExchangeRateManager exchangeRateManager;
     private final HandleValidations validator;
     private final FeeLogic feeLogic;
@@ -95,13 +94,13 @@ public class DefaultHandleProcess implements HandleProcess {
     private final PlatformStateUpdateFacility platformStateUpdateFacility;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ParentRecordFinalizer transactionFinalizer;
+    private final TokenContextImpl tokenContext;
 
     @Inject
     public DefaultHandleProcess(
             final BlockRecordManager blockRecordManager,
             final PreHandleResult preHandleResult,
             final CronHandlerLogic cronProcesses,
-            final HandleContextImpl handleContext,
             final ExchangeRateManager exchangeRateManager,
             final HandleValidations validator,
             final FeeLogic feeLogic,
@@ -116,11 +115,11 @@ public class DefaultHandleProcess implements HandleProcess {
             final SystemFileUpdateFacility systemFileUpdateFacility,
             final PlatformStateUpdateFacility platformStateUpdateFacility,
             final HandleWorkflowMetrics handleWorkflowMetrics,
-            final ParentRecordFinalizer transactionFinalizer) {
+            final ParentRecordFinalizer transactionFinalizer,
+            final TokenContextImpl tokenContext) {
         this.blockRecordManager = blockRecordManager;
         this.preHandleResult = preHandleResult;
         this.cronProcesses = cronProcesses;
-        this.handleContext = handleContext;
         this.exchangeRateManager = exchangeRateManager;
         this.validator = validator;
         this.feeLogic = feeLogic;
@@ -136,6 +135,7 @@ public class DefaultHandleProcess implements HandleProcess {
         this.platformStateUpdateFacility = platformStateUpdateFacility;
         this.handleWorkflowMetrics = handleWorkflowMetrics;
         this.transactionFinalizer = transactionFinalizer;
+        this.tokenContext = tokenContext;
     }
 
     @Override
@@ -252,7 +252,11 @@ public class DefaultHandleProcess implements HandleProcess {
         throttleLogic.manageThrottleSnapshotsAndCapacity();
         try {
             transactionFinalizer.finalizeParentRecord(
-                    payer, functionality, extraRewardReceivers(txBody, functionality, recordBuilder), prePaidRewards);
+                    payer,
+                    tokenContext,
+                    functionality,
+                    extraRewardReceivers(txBody, functionality, recordBuilder),
+                    prePaidRewards);
         } catch (final Exception e) {
             logger.error(
                     "Possibly CATASTROPHIC error: failed to finalize parent record for transaction {}",

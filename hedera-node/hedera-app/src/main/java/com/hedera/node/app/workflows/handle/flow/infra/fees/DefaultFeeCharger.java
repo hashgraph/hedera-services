@@ -48,7 +48,6 @@ public class DefaultFeeCharger implements FeeCharger {
             logger.error(
                     "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
                     payer,
-                    e,
                     chargeException);
         }
     }
