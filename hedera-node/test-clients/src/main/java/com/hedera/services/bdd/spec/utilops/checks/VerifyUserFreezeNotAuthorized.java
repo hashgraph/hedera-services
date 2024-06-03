@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.spec.utilops.checks;
 
+import static com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget.NA;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -56,8 +58,7 @@ public class VerifyUserFreezeNotAuthorized extends UtilOp {
                         .build()
                         .toByteString())
                 .build();
-        final var response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).addLiveHash(txn);
+        final var response = spec.targetNetworkOrThrow().submit(txn, Freeze, NA, targetNodeFor(spec));
         assertEquals(NOT_SUPPORTED, response.getNodeTransactionPrecheckCode());
         return false;
     }

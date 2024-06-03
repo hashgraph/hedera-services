@@ -23,41 +23,29 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * The default implementation of {@link PlatformStatusNexus}.
- * <p>
- * Future work: usages of this interface should be replaced by consuming the status updates from
- * {@link StatusStateMachine}
+ * Encapsulates metrics for the platform status.
  */
-public class DefaultPlatformStatusNexus implements PlatformStatusNexus {
-    private final AtomicReference<PlatformStatus> currentStatus;
+public class PlatformStatusMetrics {
+
+    private final AtomicReference<PlatformStatus> currentStatus = new AtomicReference<>(PlatformStatus.STARTING_UP);
 
     /**
      * Constructor
      *
      * @param platformContext the platform context
      */
-    public DefaultPlatformStatusNexus(@NonNull final PlatformContext platformContext) {
-        this.currentStatus = new AtomicReference<>(PlatformStatus.STARTING_UP);
-
+    public PlatformStatusMetrics(@NonNull final PlatformContext platformContext) {
         platformContext
                 .getMetrics()
                 .getOrCreate(StatConstructor.createEnumStat(
-                        "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), this::getCurrentStatus));
+                        "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentStatus::get));
     }
 
     /**
-     * {@inheritDoc}
+     * Set the current status.
+     *
+     * @param status the new status
      */
-    @NonNull
-    @Override
-    public PlatformStatus getCurrentStatus() {
-        return currentStatus.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void setCurrentStatus(@NonNull final PlatformStatus status) {
         currentStatus.set(status);
     }

@@ -29,7 +29,9 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -84,7 +86,10 @@ public class ServicesMain implements SwirldMain {
             delegate = new MonoServicesMain();
         } else {
             logger.info("One or more workflows enabled, using Hedera");
-            delegate = new Hedera(ConstructableRegistry.getInstance());
+            final var constructableRegistry = ConstructableRegistry.getInstance();
+            final var servicesRegistry =
+                    new ServicesRegistryImpl(constructableRegistry, new GenesisRecordsConsensusHook());
+            delegate = new Hedera(constructableRegistry, servicesRegistry);
         }
     }
 
@@ -155,9 +160,11 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final var registry = ConstructableRegistry.getInstance();
+        final var constructableRegistry = ConstructableRegistry.getInstance();
+        final var genesisRecordBuilder = new GenesisRecordsConsensusHook();
+        final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordBuilder);
 
-        final Hedera hedera = new Hedera(registry);
+        final Hedera hedera = new Hedera(constructableRegistry, servicesRegistry);
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
