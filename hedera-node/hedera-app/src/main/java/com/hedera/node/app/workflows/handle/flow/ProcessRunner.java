@@ -77,7 +77,7 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
 
     @Override
     public Stream<SingleTransactionRecord> get() {
-        if (this.initTrigger != EVENT_STREAM_RECOVERY && version.compareTo(platformEvent.getSoftwareVersion()) > 0) {
+        if (isOlderSoftwareEvent()) {
             skipHandleProcess.processUserTransaction(
                     consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
         } else {
@@ -85,5 +85,9 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
                     consensusNow, state, platformState, platformEvent, creator, platformTxn, recordListBuilder);
         }
         return recordListBuilder.build().records().stream();
+    }
+
+    private boolean isOlderSoftwareEvent() {
+        return this.initTrigger != EVENT_STREAM_RECOVERY && version.compareTo(platformEvent.getSoftwareVersion()) > 0;
     }
 }

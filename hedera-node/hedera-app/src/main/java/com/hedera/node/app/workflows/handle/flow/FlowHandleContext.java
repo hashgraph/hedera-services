@@ -21,13 +21,21 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -41,9 +49,20 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
+import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.annotations.HandleScope;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -54,18 +73,35 @@ import javax.inject.Inject;
 /**
  * The HandleContext Implementation
  */
+@HandleScope
 public class FlowHandleContext implements HandleContext {
-    private final PreHandleLogic preHandleLogic;
-    //    private final Provider<HandleComponent.Factory> handleComponentProvider;
-
-    /**
-     * Constructor
-     * @param preHandleLogic
-     */
     @Inject
-    public FlowHandleContext(PreHandleLogic preHandleLogic) {
-        this.preHandleLogic = preHandleLogic;
-    }
+    public FlowHandleContext(
+            TransactionInfo transactionInfo,
+            final int signatureMapSize,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final TransactionCategory category,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration configuration,
+            @NonNull final KeyVerifier verifier,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final TransactionChecker checker,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final BlockRecordInfo blockRecordInfo,
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final FeeManager feeManager,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final Instant userTransactionConsensusTime,
+            @NonNull final Authorizer authorizer,
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final ChildRecordFinalizer childRecordFinalizer,
+            @NonNull final ParentRecordFinalizer parentRecordFinalizer,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final PlatformState platformState,
+            @NonNull final StoreMetricsService storeMetricsService) {}
 
     @NonNull
     @Override

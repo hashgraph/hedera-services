@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.fees;
+package com.hedera.node.app.workflows.handle.flow.infra.fees;
 
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 
 public interface FeeCharger {
-    void chargeFees(ValidationResult validationResult, final NodeInfo creator);
+    void chargeFees(ValidationResult validationResult, final NodeInfo creator, Fees fees);
 
-    default void chargeNetworkFees(ValidationResult validationResult, final NodeInfo creator) {
-        // Do nothing
+    default boolean chargeNetworkFees(long networkFee) {
+        return true;
     }
 }

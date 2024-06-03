@@ -35,8 +35,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class CronProcessingLogic {
-    private static final Logger logger = LogManager.getLogger(CronProcessingLogic.class);
+public class CronHandlerLogic {
+    private static final Logger logger = LogManager.getLogger(CronHandlerLogic.class);
 
     private final GenesisRecordsConsensusHook genesisRecordsConsensusHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
@@ -49,7 +49,7 @@ public class CronProcessingLogic {
     private final StoreMetricsService storeMetricsService;
 
     @Inject
-    public CronProcessingLogic(
+    public CronHandlerLogic(
             final GenesisRecordsConsensusHook genesisRecordsConsensusHook,
             final StakingPeriodTimeHook stakingPeriodTimeHook,
             final ScheduleExpirationHook scheduleExpirationHook,

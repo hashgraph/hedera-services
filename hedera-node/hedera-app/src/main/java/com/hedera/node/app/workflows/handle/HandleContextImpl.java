@@ -119,6 +119,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * The default implementation of {@link HandleContext}.
  */
+@HandleScope
 public class HandleContextImpl implements HandleContext, FeeContext {
 
     private static final Logger logger = LogManager.getLogger(HandleContextImpl.class);
