@@ -21,8 +21,6 @@ import static com.swirlds.wiring.model.diagram.HyperlinkBuilder.platformCoreHype
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.wiring.components.StateAndRound;
 import com.swirlds.wiring.model.WiringModel;
 import com.swirlds.wiring.schedulers.TaskScheduler;
 import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
@@ -33,22 +31,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>
  * This class is being phased out. Do not add additional schedulers to this class!
  *
- * @param pcesReplayerScheduler                     the scheduler for the pces replayer
- * @param consensusRoundHandlerScheduler            the scheduler for the consensus round handler
- * @param runningHashUpdateScheduler                the scheduler for the running hash updater
- * @param latestCompleteStateNotifierScheduler      the scheduler for the latest complete state notifier
+ * @param pcesReplayerScheduler                the scheduler for the pces replayer
+ * @param runningHashUpdateScheduler           the scheduler for the running hash updater
+ * @param latestCompleteStateNotifierScheduler the scheduler for the latest complete state notifier
  */
 public record PlatformSchedulers(
         @NonNull TaskScheduler<NoInput> pcesReplayerScheduler,
-        @NonNull TaskScheduler<StateAndRound> consensusRoundHandlerScheduler,
         @NonNull TaskScheduler<RunningEventHashOverride> runningHashUpdateScheduler,
         @NonNull TaskScheduler<Void> latestCompleteStateNotifierScheduler) {
 
     /**
      * Instantiate the schedulers for the platform, for the given wiring model
      *
-     * @param context              the platform context
-     * @param model                the wiring model
+     * @param context the platform context
+     * @param model   the wiring model
      * @return the instantiated platform schedulers
      */
     public static PlatformSchedulers create(@NonNull final PlatformContext context, @NonNull final WiringModel model) {
@@ -59,18 +55,6 @@ public record PlatformSchedulers(
                 model.schedulerBuilder("pcesReplayer")
                         .withType(TaskSchedulerType.DIRECT)
                         .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
-                        .build()
-                        .cast(),
-                // the literal "consensusRoundHandler" is used by the app to log on the transaction handling thread.
-                // Do not modify, unless you also change the TRANSACTION_HANDLING_THREAD_NAME constant
-                model.schedulerBuilder("consensusRoundHandler")
-                        .withType(config.consensusRoundHandlerSchedulerType())
-                        .withUnhandledTaskCapacity(config.consensusRoundHandlerUnhandledCapacity())
-                        .withUnhandledTaskMetricEnabled(true)
-                        .withBusyFractionMetricsEnabled(true)
-                        .withFlushingEnabled(true)
-                        .withSquelchingEnabled(true)
-                        .withHyperlink(platformCoreHyperlink(ConsensusRoundHandler.class))
                         .build()
                         .cast(),
                 model.schedulerBuilder("RunningEventHashOverride")

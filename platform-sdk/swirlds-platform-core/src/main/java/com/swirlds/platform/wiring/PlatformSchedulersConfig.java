@@ -19,7 +19,6 @@ package com.swirlds.platform.wiring;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.swirlds.wiring.schedulers.builders.TaskSchedulerType;
 import java.time.Duration;
 
 /**
@@ -38,8 +37,7 @@ import java.time.Duration;
  * @param pcesSequencer                          configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler       configuration for the application transaction prehandler scheduler
  * @param stateSignatureCollector                configuration for the state signature collector scheduler
- * @param consensusRoundHandlerSchedulerType     the consensus round handler scheduler type
- * @param consensusRoundHandlerUnhandledCapacity number of unhandled tasks allowed for the consensus round handler
+ * @param transactionHandler                     configuration for the transaction handler scheduler
  * @param issDetector                            configuration for the ISS detector scheduler
  * @param issHandler                             configuration for the ISS handler scheduler
  * @param hashLogger                             configuration for the hash logger scheduler
@@ -55,7 +53,6 @@ import java.time.Duration;
  * @param signedStateSentinelHeartbeatPeriod     the frequency that heartbeats should be sent to the signed state
  *                                               sentinel
  * @param statusStateMachine                     configuration for the status state machine scheduler
- * @param platformStatusNexus                    configuration for the status nexus scheduler
  * @param staleEventDetector                     configuration for the stale event detector scheduler
  * @param transactionResubmitter                 configuration for the transaction resubmitter scheduler
  * @param transactionPool                        configuration for the transaction pool scheduler
@@ -94,8 +91,10 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration applicationTransactionPrehandler,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateSignatureCollector,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
-        @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
+        @ConfigProperty(
+                        defaultValue =
+                                "SEQUENTIAL_THREAD CAPACITY(5) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                TaskSchedulerConfiguration transactionHandler,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration issDetector,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration issHandler,
@@ -119,10 +118,10 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration staleEventDetector,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionResubmitter,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration transactionResubmitter,
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration gossip,

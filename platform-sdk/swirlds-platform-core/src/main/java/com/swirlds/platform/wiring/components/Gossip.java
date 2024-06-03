@@ -18,6 +18,7 @@ package com.swirlds.platform.wiring.components;
 
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.wiring.model.WiringModel;
 import com.swirlds.wiring.wires.input.BindableInputWire;
@@ -33,15 +34,16 @@ public interface Gossip {
     /**
      * Bind the input wires to the gossip implementation.
      *
-     * @param model             the wiring model for this node
-     * @param eventInput        the input wire for events, events sent here should be gossiped to the network
-     * @param eventWindowInput  the input wire for the current event window
-     * @param eventOutput       the output wire for events received from peers during gossip
-     * @param startInput        used to tell gossip to start
-     * @param stopInput         used to tell gossip to stop
-     * @param clearInput        used to tell gossip to clear its internal state
-     * @param systemHealthInput used to tell gossip the health of the system, carries the duration that the system has
-     *                          been in an unhealthy state
+     * @param model               the wiring model for this node
+     * @param eventInput          the input wire for events, events sent here should be gossiped to the network
+     * @param eventWindowInput    the input wire for the current event window
+     * @param eventOutput         the output wire for events received from peers during gossip
+     * @param startInput          used to tell gossip to start
+     * @param stopInput           used to tell gossip to stop
+     * @param clearInput          used to tell gossip to clear its internal state
+     * @param systemHealthInput   used to tell gossip the health of the system, carries the duration that the system has
+     *                            been in an unhealthy state
+     * @param platformStatusInput used to tell gossip the status of the platform
      */
     void bind(
             @NonNull WiringModel model,
@@ -51,5 +53,6 @@ public interface Gossip {
             @NonNull BindableInputWire<NoInput, Void> startInput,
             @NonNull BindableInputWire<NoInput, Void> stopInput,
             @NonNull BindableInputWire<NoInput, Void> clearInput,
-            @NonNull BindableInputWire<Duration, Void> systemHealthInput);
+            @NonNull BindableInputWire<Duration, Void> systemHealthInput,
+            @NonNull BindableInputWire<PlatformStatus, Void> platformStatusInput);
 }

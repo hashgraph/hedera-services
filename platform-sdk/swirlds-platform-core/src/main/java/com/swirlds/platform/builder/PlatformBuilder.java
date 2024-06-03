@@ -19,12 +19,14 @@ package com.swirlds.platform.builder;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
@@ -32,6 +34,8 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
@@ -48,7 +52,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -81,9 +84,9 @@ import com.swirlds.wiring.WiringConfig;
 import com.swirlds.wiring.model.WiringModel;
 import com.swirlds.wiring.model.WiringModelBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -109,8 +112,16 @@ public final class PlatformBuilder {
     private final NodeId selfId;
     private final String swirldName;
 
-    private PlatformContext platformContext;
-    private ConfigurationBuilder configurationBuilder;
+    private Configuration configuration;
+    private Cryptography cryptography;
+    private Metrics metrics;
+    private Time time;
+    private FileSystemManager fileSystemManager;
+    private RecycleBin recycleBin;
+    private ExecutorFactory executorFactory;
+
+    private static final UncaughtExceptionHandler DEFAULT_UNCAUGHT_EXCEPTION_HANDLER =
+            (t, e) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception on thread {}: {}", t, e);
 
     /**
      * An address book that is used to bootstrap the system. Traditionally read from config.txt.
@@ -126,11 +137,6 @@ public final class PlatformBuilder {
      * The path to the configuration file (i.e. the file with the address book).
      */
     private Path configPath = getAbsolutePath(DEFAULT_CONFIG_FILE_NAME);
-
-    /**
-     * The path to the settings file (i.e. the path used to instantiate {@link Configuration}).
-     */
-    private Path settingsPath;
 
     /**
      * The wiring model to use for this platform.
@@ -198,80 +204,91 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Set the platform context to use. If not provided then one is generated when the platform is built.
+     * Provide a configuration to use for the platform. If not provided then default configuration is used.
+     * <p>
+     * Note that any configuration provided here must have the platform configuration properly registered.
      *
-     * @param platformContext the platform context to use
+     * @param configuration the configuration to use
      * @return this
-     * @throws IllegalStateException if {@link #withConfigurationBuilder(ConfigurationBuilder)} has been called or if
-     *                               {@link #withSettingsPath(Path)} has been called
      */
     @NonNull
-    public PlatformBuilder withPlatformContext(@NonNull final PlatformContext platformContext) {
-        throwIfAlreadyUsed();
-        if (configurationBuilder != null) {
-            throw new IllegalStateException("Cannot set the platform context after the config builder has been set. "
-                    + "This method should not be called if withConfigurationBuilder() has been called.");
-        }
-        if (settingsPath != null) {
-            throw new IllegalStateException("Cannot set the platform context after the settings path has been set. "
-                    + "This method should not be called if withSettingsPath() has been called.");
-        }
-        this.platformContext = Objects.requireNonNull(platformContext);
-
+    public PlatformBuilder withConfiguration(@NonNull final Configuration configuration) {
+        this.configuration = Objects.requireNonNull(configuration);
+        checkConfiguration(configuration);
         return this;
     }
 
     /**
-     * Set the configuration builder to use. If not provided then one is generated when the platform is built.
+     * Provide the cryptography to use for this platform. If not provided then the default cryptography is used.
      *
-     * @param configurationBuilder the configuration builder to use
+     * @param cryptography the cryptography to use
      * @return this
-     * @throws IllegalStateException if {@link #withPlatformContext(PlatformContext)} has been called
      */
     @NonNull
-    public PlatformBuilder withConfigurationBuilder(@Nullable final ConfigurationBuilder configurationBuilder) {
-        throwIfAlreadyUsed();
-        if (platformContext != null) {
-            throw new IllegalStateException("Cannot set the config builder after the platform context has been "
-                    + "created. This method should not be called if withPlatformContext() has been called.");
-        }
-        this.configurationBuilder = Objects.requireNonNull(configurationBuilder);
-
+    public PlatformBuilder withCryptography(@NonNull final Cryptography cryptography) {
+        this.cryptography = Objects.requireNonNull(cryptography);
         return this;
     }
 
     /**
-     * Set the path to the settings file (i.e. the file used to instantiate {@link Configuration}). Traditionally named
-     * {@link PlatformBuildConstants#DEFAULT_SETTINGS_FILE_NAME}.
+     * Provide the metrics to use for this platform. If not provided then default metrics are created.
      *
-     * @param path the path to the settings file
+     * @param metrics the metrics to use
      * @return this
-     * @throws IllegalStateException if {@link #withPlatformContext(PlatformContext)} has been called
      */
     @NonNull
-    public PlatformBuilder withSettingsPath(@NonNull final Path path) {
-        throwIfAlreadyUsed();
-        if (platformContext != null) {
-            throw new IllegalStateException("Cannot set the settings path after the platform context has been created. "
-                    + "This method should not be called if withPlatformContext() has been called.");
-        }
-
-        this.settingsPath = getAbsolutePath(Objects.requireNonNull(path));
+    public PlatformBuilder withMetrics(@NonNull final Metrics metrics) {
+        this.metrics = Objects.requireNonNull(metrics);
         return this;
     }
 
     /**
-     * The path to the config file (i.e. the file with the address book. Traditionally named
-     * {@link PlatformBuildConstants#DEFAULT_CONFIG_FILE_NAME}.
+     * Provide the time to use for this platform. If not provided then the default wall clock time is used.
      *
-     * @param path the path to the config file
+     * @param time the time to use
      * @return this
      */
     @NonNull
-    public PlatformBuilder withConfigPath(@NonNull final Path path) {
-        throwIfAlreadyUsed();
-        Objects.requireNonNull(path);
-        this.configPath = getAbsolutePath(path);
+    public PlatformBuilder withTime(@NonNull final Time time) {
+        this.time = Objects.requireNonNull(time);
+        return this;
+    }
+
+    /**
+     * Provide the file system manager to use for this platform. If not provided then the default file system manager is
+     * used.
+     *
+     * @param fileSystemManager the file system manager to use
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withFileSystemManager(@NonNull final FileSystemManager fileSystemManager) {
+        this.fileSystemManager = Objects.requireNonNull(fileSystemManager);
+        return this;
+    }
+
+    /**
+     * Provide the recycle bin to use for this platform. If not provided then the default recycle bin is used.
+     *
+     * @param recycleBin the recycle bin to use
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withRecycleBin(@NonNull final RecycleBin recycleBin) {
+        this.recycleBin = Objects.requireNonNull(recycleBin);
+        return this;
+    }
+
+    /**
+     * Provide the executor factory to use for this platform. If not provided then the default executor factory is
+     * used.
+     *
+     * @param executorFactory the executor factory to use
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withExecutorFactory(@NonNull final ExecutorFactory executorFactory) {
+        this.executorFactory = Objects.requireNonNull(executorFactory);
         return this;
     }
 
@@ -411,28 +428,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Build the configuration for the node.
-     *
-     * @param configurationBuilder used to build configuration
-     * @param settingsPath         the path to the settings file
-     * @return the configuration
-     */
-    @NonNull
-    private static Configuration buildConfiguration(
-            @NonNull final ConfigurationBuilder configurationBuilder, @NonNull final Path settingsPath) {
-
-        Objects.requireNonNull(configurationBuilder);
-        Objects.requireNonNull(settingsPath);
-
-        rethrowIO(() -> BootstrapUtils.setupConfigBuilder(configurationBuilder, settingsPath));
-
-        final Configuration configuration = configurationBuilder.build();
-        PlatformConfigUtils.checkConfiguration(configuration);
-
-        return configuration;
-    }
-
-    /**
      * Parse the address book from the config.txt file.
      *
      * @return the address book
@@ -442,41 +437,6 @@ public final class PlatformBuilder {
         final LegacyConfigProperties legacyConfig = LegacyConfigPropertiesLoader.loadConfigFile(configPath);
         legacyConfig.appConfig().ifPresent(c -> ParameterProvider.getInstance().setParameters(c.params()));
         return legacyConfig.getAddressBook();
-    }
-
-    /**
-     * Build a platform context that is compatible with the platform.
-     *
-     * @param configurationBuilder used to build configuration, can be pre-configured for application specific
-     *                             configuration needs
-     * @param settingsPath         the path to the settings file
-     * @param selfId               the ID of this node
-     * @return a new platform context
-     */
-    @NonNull
-    public static PlatformContext buildPlatformContext(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @NonNull final Path settingsPath,
-            @NonNull final NodeId selfId) {
-
-        final Configuration configuration = buildConfiguration(configurationBuilder, settingsPath);
-
-        final Cryptography cryptography = CryptographyFactory.create();
-        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
-
-        // For backwards compatibility with the old static access pattern.
-        CryptographyHolder.set(cryptography);
-        MerkleCryptoFactory.set(merkleCryptography);
-
-        setupGlobalMetrics(configuration);
-        final Metrics metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        final FileSystemManager fileSystemManager = FileSystemManager.create(configuration);
-
-        final Time time = Time.getCurrent();
-        final RecycleBin recycleBin =
-                RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
-
-        return PlatformContext.create(configuration, time, metrics, cryptography, fileSystemManager, recycleBin);
     }
 
     /**
@@ -500,17 +460,45 @@ public final class PlatformBuilder {
         throwIfAlreadyUsed();
         used = true;
 
-        if (platformContext == null) {
-            if (configurationBuilder == null) {
-                configurationBuilder = ConfigurationBuilder.create();
-            }
-            if (settingsPath == null) {
-                settingsPath = getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME);
-            }
-            platformContext = buildPlatformContext(configurationBuilder, settingsPath, selfId);
+        if (configuration == null) {
+            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
+            rethrowIO(() -> BootstrapUtils.setupConfigBuilder(
+                    configurationBuilder, getAbsolutePath(DEFAULT_SETTINGS_FILE_NAME)));
+            configuration = configurationBuilder.build();
+            checkConfiguration(configuration);
         }
 
-        final Configuration configuration = platformContext.getConfiguration();
+        if (time == null) {
+            time = Time.getCurrent();
+        }
+
+        if (metrics == null) {
+            setupGlobalMetrics(configuration);
+            metrics = getMetricsProvider().createPlatformMetrics(selfId);
+        }
+
+        if (cryptography == null) {
+            cryptography = CryptographyFactory.create();
+        }
+        final MerkleCryptography merkleCryptography = MerkleCryptographyFactory.create(configuration, cryptography);
+        CryptographyHolder.set(cryptography);
+        MerkleCryptoFactory.set(merkleCryptography);
+
+        if (fileSystemManager == null) {
+            fileSystemManager = FileSystemManager.create(configuration);
+        }
+
+        if (recycleBin == null) {
+            recycleBin = RecycleBin.create(
+                    metrics, configuration, getStaticThreadManager(), time, fileSystemManager, selfId);
+        }
+
+        if (executorFactory == null) {
+            executorFactory = ExecutorFactory.create("platform", null, DEFAULT_UNCAUGHT_EXCEPTION_HANDLER);
+        }
+
+        final PlatformContext platformContext = new DefaultPlatformContext(
+                configuration, metrics, cryptography, time, executorFactory, fileSystemManager, recycleBin);
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
@@ -663,7 +651,6 @@ public final class PlatformBuilder {
                 initialPcesFiles,
                 issScratchpad,
                 NotificationEngine.buildEngine(getStaticThreadManager()),
-                new AtomicReference<>(),
                 statusActionSubmitterAtomicReference,
                 swirldStateManager,
                 new AtomicReference<>(),

@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.services.bdd.junit.hedera.live.NodeStatus;
+import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,6 +27,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public interface HederaNode {
+    /**
+     * Gets the hostname of the node.
+     *
+     * @return the hostname of the node
+     */
+    String getHost();
+
     /**
      * Gets the port number of the gRPC service.
      *
@@ -103,16 +110,6 @@ public interface HederaNode {
             @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver);
 
     /**
-     * Returns a future that resolves when the node has the given status.
-     *
-     * @param status the status to wait for
-     * @return a future that resolves when the node has the given status
-     */
-    default CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status) {
-        return statusFuture(status, null);
-    }
-
-    /**
      * Returns a future that resolves when the node has stopped.
      *
      * @return a future that resolves when the node has stopped
@@ -120,7 +117,7 @@ public interface HederaNode {
     CompletableFuture<Void> stopFuture();
 
     /**
-     * Returns the string that would identify this node as a target
+     * Returns the string that would summarize this node as a target
      * server in a {@link HapiSpec} that is submitting transactions
      * and sending queries via gRPC.
      *
@@ -131,7 +128,7 @@ public interface HederaNode {
      *
      * @return this node's HAPI spec identifier
      */
-    default String hapiSpecIdentifier() {
-        return "127.0.0.1:" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
+    default String hapiSpecInfo() {
+        return getHost() + ":" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }
