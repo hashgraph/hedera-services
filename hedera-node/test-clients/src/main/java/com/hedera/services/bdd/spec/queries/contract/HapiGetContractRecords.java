@@ -35,9 +35,10 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -108,9 +109,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractRecordsQuery(spec, payment, false), spec);
-        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         List<TransactionRecord> records =
                 response.getContractGetRecordsResponse().getRecordsList();
         if (verboseLoggingOn) {
@@ -131,12 +130,15 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractRecordsQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getContractRecordsQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getContractRecordsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
@@ -196,7 +198,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         return prefix.map(d -> d + "/" + spec.getName()).get();
     }
 
-    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records) throws Throwable {
+    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records) {
         String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;

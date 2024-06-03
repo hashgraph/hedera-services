@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.util.List;
@@ -124,11 +123,6 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
                         });
         preAppendCb.ifPresent(cb -> cb.accept(fid));
         return b -> b.setFileAppend(opBody);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::appendContent;
     }
 
     @Override

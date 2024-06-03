@@ -43,7 +43,6 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -116,11 +115,6 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
             return registry.hasFeeScheduleKey(token) ? registry.getFeeScheduleKey(token) : Key.getDefaultInstance();
         });
         return signers;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateTokenFeeSchedule;
     }
 
     @Override
