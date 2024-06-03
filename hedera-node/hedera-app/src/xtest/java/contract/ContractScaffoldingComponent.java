@@ -16,6 +16,7 @@
 
 package contract;
 
+import com.hedera.node.app.service.contract.impl.exec.processors.HasTranslatorsModule;
 import com.hedera.node.app.service.contract.impl.exec.processors.HtsTranslatorsModule;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -27,6 +28,7 @@ import common.BaseScaffoldingModule;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.util.List;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
@@ -34,7 +36,13 @@ import javax.inject.Singleton;
  * {@link com.hedera.node.app.service.contract.ContractService} handlers.
  */
 @Singleton
-@Component(modules = {HandlersInjectionModule.class, BaseScaffoldingModule.class, HtsTranslatorsModule.class})
+@Component(
+        modules = {
+            HandlersInjectionModule.class,
+            BaseScaffoldingModule.class,
+            HtsTranslatorsModule.class,
+            HasTranslatorsModule.class
+        })
 public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
     @Component.Factory
     interface Factory {
@@ -44,5 +52,9 @@ public interface ContractScaffoldingComponent extends BaseScaffoldingComponent {
                 @BindsInstance StoreMetricsService storeMetricsService);
     }
 
-    List<CallTranslator> callTranslators();
+    @Named("HtsTranslators")
+    List<CallTranslator> callHtsTranslators();
+
+    @Named("HasTranslators")
+    List<CallTranslator> callHasTranslators();
 }

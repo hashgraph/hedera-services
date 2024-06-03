@@ -29,9 +29,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.support.validators.AccountNumTokenNum;
+import com.hedera.services.bdd.junit.support.validators.utils.AccountClassifier;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -39,8 +38,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * Tests to validate that token balances are correct after token transfers occur.
@@ -116,7 +117,7 @@ public class TokenBalanceValidation extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(validateTokenBalances());
     }
 
@@ -164,7 +165,7 @@ public class TokenBalanceValidation extends HapiSuite {
      * Create HAPI queries to check whether token balances match what's given in <code>expectedTokenBalances</code>
      * @return HAPI queries to execute
      */
-    final HapiSpec validateTokenBalances() {
+    final Stream<DynamicTest> validateTokenBalances() {
         return defaultHapiSpec("ValidateTokenBalances")
                 .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
                 .when()

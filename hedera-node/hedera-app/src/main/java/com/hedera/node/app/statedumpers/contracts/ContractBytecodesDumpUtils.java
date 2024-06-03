@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.statedumpers.contracts.Contracts;
 import com.hedera.node.app.service.mono.statedumpers.contracts.Validity;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
+import com.swirlds.platform.state.merkle.disk.OnDiskKey;
+import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
@@ -100,7 +100,8 @@ public class ContractBytecodesDumpUtils {
             final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts,
             final StateMetadata<AccountID, Account> stateMetadata) {
         final var isDeleted = accounts.get(new OnDiskKey<>(
-                        stateMetadata,
+                        stateMetadata.onDiskKeyClassId(),
+                        stateMetadata.stateDefinition().keyCodec(),
                         AccountID.newBuilder()
                                 .accountNum(id.getKey().contractNum())
                                 .build()))

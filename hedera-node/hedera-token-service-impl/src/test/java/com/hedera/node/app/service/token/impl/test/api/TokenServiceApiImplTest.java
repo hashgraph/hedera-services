@@ -36,22 +36,22 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -92,12 +92,12 @@ class TokenServiceApiImplTest {
             .build();
 
     private final WritableKVState<Bytes, AccountID> aliasesState =
-            new MapWritableKVState<>(TokenServiceImpl.ALIASES_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ALIASES_KEY);
     private final WritableKVState<AccountID, Account> accountState =
-            new MapWritableKVState<>(TokenServiceImpl.ACCOUNTS_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ACCOUNTS_KEY);
     private final WritableStates writableStates = new MapWritableStates(Map.of(
-            TokenServiceImpl.ACCOUNTS_KEY, accountState,
-            TokenServiceImpl.ALIASES_KEY, aliasesState));
+            V0490TokenSchema.ACCOUNTS_KEY, accountState,
+            V0490TokenSchema.ALIASES_KEY, aliasesState));
     private WritableAccountStore accountStore;
 
     @Mock

@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.fees;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -26,50 +28,37 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CongestionPricingSuite extends HapiSuite {
+public class CongestionPricingSuite {
     private static final Logger log = LogManager.getLogger(CongestionPricingSuite.class);
 
     private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
-    private static final String ACTIVE_PROFILE_PROPERTY = "hedera.profiles.active";
-    private static final String defaultCongestionMultipliers =
-            HapiSpecSetup.getDefaultNodeProps().get(FEES_PERCENT_CONGESTION_MULTIPLIERS);
     private static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
-    private static final String defaultMinCongestionPeriod =
-            HapiSpecSetup.getDefaultNodeProps().get(FEES_MIN_CONGESTION_PERIOD);
     private static final String CIVILIAN_ACCOUNT = "civilian";
     private static final String SECOND_ACCOUNT = "second";
     private static final String FEE_MONITOR_ACCOUNT = "feeMonitor";
 
-    public static void main(String... args) {
-        new CongestionPricingSuite().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {canUpdateMultipliersDynamically(), canUpdateMultipliersDynamically2()});
-    }
-
-    @HapiTest
-    final HapiSpec canUpdateMultipliersDynamically() {
+    @LeakyHapiTest({PROPERTY_OVERRIDES, THROTTLE_OVERRIDES})
+    final Stream<DynamicTest> canUpdateMultipliersDynamically() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         var contract = "Multipurpose";
@@ -77,17 +66,20 @@ public class CongestionPricingSuite extends HapiSuite {
 
         AtomicLong normalPrice = new AtomicLong();
         AtomicLong sevenXPrice = new AtomicLong();
+        // Send enough gas with each transaction to keep the throttle over the
+        // 1% of 15M = 150_000 congestion limit
+        final var gasToOffer = 200_000L;
 
         return propertyPreservingHapiSpec("CanUpdateMultipliersDynamically")
-                .preserving(ACTIVE_PROFILE_PROPERTY)
+                .preserving(FEES_PERCENT_CONGESTION_MULTIPLIERS, FEES_MIN_CONGESTION_PERIOD)
                 .given(
-                        overriding(ACTIVE_PROFILE_PROPERTY, "DEV"),
                         cryptoCreate(CIVILIAN_ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         contractCall(contract)
                                 .payingWith(CIVILIAN_ACCOUNT)
                                 .fee(ONE_HUNDRED_HBARS)
+                                .gas(gasToOffer)
                                 .sending(ONE_HBAR)
                                 .via("cheapCall"),
                         getTxnRecord("cheapCall")
@@ -97,14 +89,11 @@ public class CongestionPricingSuite extends HapiSuite {
                                 })
                                 .logged())
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of(
-                                        FEES_PERCENT_CONGESTION_MULTIPLIERS,
-                                        "1,7x",
-                                        FEES_MIN_CONGESTION_PERIOD,
-                                        tmpMinCongestionPeriod)),
+                        overridingTwo(
+                                FEES_PERCENT_CONGESTION_MULTIPLIERS,
+                                "1,7x",
+                                FEES_MIN_CONGESTION_PERIOD,
+                                tmpMinCongestionPeriod),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .contents(artificialLimits.toByteArray()),
@@ -115,6 +104,7 @@ public class CongestionPricingSuite extends HapiSuite {
                                     uncheckedSubmit(contractCall(contract)
                                                     .signedBy(CIVILIAN_ACCOUNT)
                                                     .fee(ONE_HUNDRED_HBARS)
+                                                    .gas(gasToOffer)
                                                     .sending(ONE_HBAR)
                                                     .txnId("uncheckedTxn" + i))
                                             .payingWith(GENESIS),
@@ -125,6 +115,7 @@ public class CongestionPricingSuite extends HapiSuite {
                         contractCall(contract)
                                 .payingWith(CIVILIAN_ACCOUNT)
                                 .fee(ONE_HUNDRED_HBARS)
+                                .gas(gasToOffer)
                                 .sending(ONE_HBAR)
                                 .via("pricyCall"))
                 .then(
@@ -139,14 +130,6 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .contents(defaultThrottles.toByteArray()),
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of(
-                                        FEES_PERCENT_CONGESTION_MULTIPLIERS, defaultCongestionMultipliers,
-                                        FEES_MIN_CONGESTION_PERIOD, defaultMinCongestionPeriod)),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-                                .payingWith(GENESIS),
 
                         /* Check for error after resetting settings. */
                         withOpContext((spec, opLog) -> Assertions.assertEquals(
@@ -156,8 +139,8 @@ public class CongestionPricingSuite extends HapiSuite {
                                 "~7x multiplier should be in affect!")));
     }
 
-    @HapiTest
-    final HapiSpec canUpdateMultipliersDynamically2() {
+    @LeakyHapiTest({PROPERTY_OVERRIDES, THROTTLE_OVERRIDES})
+    final Stream<DynamicTest> canUpdateMultipliersDynamically2() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriod = "1";
@@ -166,30 +149,26 @@ public class CongestionPricingSuite extends HapiSuite {
         AtomicLong sevenXPrice = new AtomicLong();
 
         return propertyPreservingHapiSpec("CanUpdateMultipliersDynamically2")
-                .preserving(ACTIVE_PROFILE_PROPERTY)
+                .preserving(FEES_PERCENT_CONGESTION_MULTIPLIERS, FEES_MIN_CONGESTION_PERIOD)
                 .given(
-                        overriding(ACTIVE_PROFILE_PROPERTY, "DEV"),
                         cryptoCreate(CIVILIAN_ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         cryptoCreate(SECOND_ACCOUNT).payingWith(GENESIS).balance(ONE_HBAR),
                         cryptoCreate(FEE_MONITOR_ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(CIVILIAN_ACCOUNT, SECOND_ACCOUNT, 5L))
                                 .payingWith(FEE_MONITOR_ACCOUNT)
                                 .via("cheapCall"),
-                        getAccountInfo(FEE_MONITOR_ACCOUNT)
-                                .exposingBalance(balance -> {
-                                    log.info("Normal fee is {}", ONE_MILLION_HBARS - balance);
-                                    normalPrice.set(ONE_MILLION_HBARS - balance);
+                        getTxnRecord("cheapCall")
+                                .providingFeeTo(normalFee -> {
+                                    log.info("Normal fee is {}", normalFee);
+                                    normalPrice.set(normalFee);
                                 })
                                 .logged())
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of(
-                                        FEES_PERCENT_CONGESTION_MULTIPLIERS,
-                                        "1,7x",
-                                        FEES_MIN_CONGESTION_PERIOD,
-                                        tmpMinCongestionPeriod)),
+                        overridingTwo(
+                                FEES_PERCENT_CONGESTION_MULTIPLIERS,
+                                "1,7x",
+                                FEES_MIN_CONGESTION_PERIOD,
+                                tmpMinCongestionPeriod),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .contents(artificialLimits.toByteArray()),
@@ -210,37 +189,21 @@ public class CongestionPricingSuite extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .via("pricyCall"))
                 .then(
-                        getAccountInfo(FEE_MONITOR_ACCOUNT)
-                                .exposingBalance(balance -> {
-                                    log.info("Congestion fee is {}", ONE_MILLION_HBARS - normalPrice.get() - balance);
-                                    sevenXPrice.set(ONE_MILLION_HBARS - normalPrice.get() - balance);
-                                })
-                                .logged(),
+                        getTxnRecord("pricyCall").payingWith(GENESIS).providingFeeTo(congestionFee -> {
+                            log.info("Congestion fee is {}", congestionFee);
+                            sevenXPrice.set(congestionFee);
+                        }),
 
                         /* Make sure the multiplier is reset before the next spec runs */
                         fileUpdate(THROTTLE_DEFS)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .contents(defaultThrottles.toByteArray()),
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of(
-                                        FEES_PERCENT_CONGESTION_MULTIPLIERS, defaultCongestionMultipliers,
-                                        FEES_MIN_CONGESTION_PERIOD, defaultMinCongestionPeriod)),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-                                .payingWith(GENESIS),
-
                         /* Check for error after resetting settings. */
                         withOpContext((spec, opLog) -> Assertions.assertEquals(
                                 7.0,
                                 (1.0 * sevenXPrice.get()) / normalPrice.get(),
                                 0.1,
                                 "~7x multiplier should be in affect!")));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

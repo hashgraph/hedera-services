@@ -55,6 +55,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
          * Added the new running event hash algorithm.
          */
         public static final int RUNNING_EVENT_HASH = 3;
+        /**
+         * Removed the running event hash algorithm.
+         */
+        public static final int REMOVED_EVENT_HASH = 4;
     }
 
     /**
@@ -80,13 +84,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * stream is retired.
      */
     private Hash legacyRunningEventHash;
-
-    /**
-     * The running event hash of all events that have been applied to this state since the beginning of time (or, for
-     * networks that were around prior to the introduction of this running hash, since the introduction of the running
-     * event hash).
-     */
-    private Hash runningEventHash;
 
     /**
      * the consensus timestamp for this signed state
@@ -164,7 +161,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
         this.legacyRunningEventHash = that.legacyRunningEventHash;
-        this.runningEventHash = that.runningEventHash;
         this.consensusTimestamp = that.consensusTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
@@ -223,7 +219,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(firstVersionInBirthRoundMode, true);
         out.writeLong(lastRoundBeforeBirthRoundMode);
         out.writeLong(lowestJudgeGenerationBeforeBirthRoundMode);
-        out.writeSerializable(runningEventHash, false);
     }
 
     /**
@@ -248,8 +243,8 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
             lastRoundBeforeBirthRoundMode = in.readLong();
             lowestJudgeGenerationBeforeBirthRoundMode = in.readLong();
         }
-        if (version >= ClassVersion.RUNNING_EVENT_HASH) {
-            runningEventHash = in.readSerializable(false, Hash::new);
+        if (version == ClassVersion.RUNNING_EVENT_HASH) {
+            in.readSerializable(false, Hash::new);
         }
     }
 
@@ -258,7 +253,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.RUNNING_EVENT_HASH;
+        return ClassVersion.REMOVED_EVENT_HASH;
     }
 
     /**
@@ -357,26 +352,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
         this.legacyRunningEventHash = legacyRunningEventHash;
-    }
-
-    /**
-     * Get the running hash of all events that have been applied to this state since the beginning of time (or if
-     * this network has been around since before this feature was added, the running event hash since that time).
-     *
-     * @return a running hash of events
-     */
-    @Nullable
-    public Hash getRunningEventHash() {
-        return runningEventHash;
-    }
-
-    /**
-     * Set the running hash of all events that have been applied to this state since the beginning of time.
-     *
-     * @param runningEventHash a running hash of events
-     */
-    public void setRunningEventHash(@NonNull final Hash runningEventHash) {
-        this.runningEventHash = Objects.requireNonNull(runningEventHash);
     }
 
     /**

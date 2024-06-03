@@ -27,8 +27,10 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class RekeySuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RekeySuite.class);
@@ -49,11 +51,11 @@ public class RekeySuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(rekey());
     }
 
-    private HapiSpec rekey() {
+    final Stream<DynamicTest> rekey() {
         final var replKey = "replKey";
         final var newKeyLoc = replTarget.endsWith(".pem") ? replTarget : replTarget.replace(".pem", ".words");
         final var newKeyPass = TxnUtils.randomAlphaNumeric(12);

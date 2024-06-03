@@ -172,7 +172,7 @@ public class RoundElections {
         // if this creator forked, then the judge is the "unique" famous witness, which is the one
         // with minimum hash
         // (where "minimum" is the lexicographically-least signed byte array)
-        if (Utilities.arrayCompare(e1.getBaseHash().getValue(), e2.getBaseHash().getValue()) < 0) {
+        if (Utilities.arrayCompare(e1.getBaseHash().getBytes(), e2.getBaseHash().getBytes()) < 0) {
             return e1;
         }
         return e2;

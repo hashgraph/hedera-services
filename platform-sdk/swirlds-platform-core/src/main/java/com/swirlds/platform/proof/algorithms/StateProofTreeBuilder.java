@@ -216,7 +216,7 @@ public final class StateProofTreeBuilder {
 
             if (child == null) {
                 // If the child is null, append the null hash.
-                byteSegments.add(cryptography.getNullHash().getValue());
+                byteSegments.add(cryptography.getNullHash().copyToByteArray());
             } else if (nodeRoutes.contains(child.getRoute())) {
                 // If the child is in the node list, then we add its state proof node.
 
@@ -231,7 +231,7 @@ public final class StateProofTreeBuilder {
                 selfChildren.add(children.pop());
             } else {
                 // If the child is not in the node list, we append its hash.
-                byteSegments.add(child.getHash().getValue());
+                byteSegments.add(child.getHash().copyToByteArray());
             }
         }
 

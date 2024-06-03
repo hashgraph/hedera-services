@@ -107,7 +107,9 @@ Legend of the symbols used in the tables below:
 | 0x3E8 → ♾️                           |                     ✅                      | ✅ - if account exists and has receiverSigRequired = false<br/>✅ - if (account exists) and (account has receiverSigRequired = true) and (account is sender)<br/>❌ - some failing scenarios described above |
 | beneficiary same as contract address | ✅ burns the eth and destructs the contract | ❌ - fails with SELF_DESTRUCT_TO_SELF                                                                                                                                                                       |
 
-### Call operations (CallOp, DelegateCallOp, CallCodeOp, StaticCallOp)
+### Call operations that do not transfer value (CallOp, DelegateCallOp, CallCodeOp, StaticCallOp)
+
+_Please note that the expected behavior described in this section is valid if there is no `value` passed. If there is `value`, this falls in the next section ("Transfer and send operations")._
 
 1. For address 0x0:
    - **Ethereum:** success with no op. There is no contract on this address. It is often associated with token burn & mint/genesis events and used as a generic null address.
@@ -132,9 +134,7 @@ Legend of the symbols used in the tables below:
      - success, if the address is a contract, and we are using the correct ABI;
      - success with no op, if there is no contract;
      - fail, if the address is a contract, and we are **not** using the correct ABI.
-   - **Hedera:** success with no op.
-
-_Please note that the expected behavior above is valid considering there is no `value` passed. If there is `value`, this falls in the next section ("Transfer and send operations")._
+   - **Hedera:** success with no op. (with all gas consumed)
 
 | Address                            | Calls in Ethereum (ABI)                                                                                                                                                            | Calls in Hedera (ABI)                                                                                        |
 |------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|

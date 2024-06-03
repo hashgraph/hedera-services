@@ -18,13 +18,10 @@ package com.swirlds.common.crypto;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,11 +70,7 @@ public final class CryptographyHolder {
         // w.r.t. not setting up cryptography correctly.
         logger.error(EXCEPTION.getMarker(), "CryptographyHolder not initialized, using default config");
 
-        final Configuration defaultConfiguration = ConfigurationBuilder.create()
-                .withConfigDataType(CryptoConfig.class)
-                .build();
-
-        cryptography = CryptographyFactory.create(defaultConfiguration);
+        cryptography = CryptographyFactory.create();
     }
 
     /**

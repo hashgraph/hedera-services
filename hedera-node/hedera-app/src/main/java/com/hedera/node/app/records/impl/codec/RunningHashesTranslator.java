@@ -19,7 +19,6 @@ package com.hedera.node.app.records.impl.codec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public final class RunningHashesTranslator {
@@ -37,14 +36,13 @@ public final class RunningHashesTranslator {
             @NonNull final com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf recordsRunningHashLeaf) {
         requireNonNull(recordsRunningHashLeaf);
         return new RunningHashes.Builder()
-                .runningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getRunningHash().getHash().getValue()))
-                .nMinus1RunningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getNMinus1RunningHash().getHash().getValue()))
-                .nMinus2RunningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getNMinus2RunningHash().getHash().getValue()))
-                .nMinus3RunningHash(Bytes.wrap(
-                        recordsRunningHashLeaf.getNMinus3RunningHash().getHash().getValue()))
+                .runningHash(recordsRunningHashLeaf.getRunningHash().getHash().getBytes())
+                .nMinus1RunningHash(
+                        recordsRunningHashLeaf.getNMinus1RunningHash().getHash().getBytes())
+                .nMinus2RunningHash(
+                        recordsRunningHashLeaf.getNMinus2RunningHash().getHash().getBytes())
+                .nMinus3RunningHash(
+                        recordsRunningHashLeaf.getNMinus3RunningHash().getHash().getBytes())
                 .build();
     }
 }

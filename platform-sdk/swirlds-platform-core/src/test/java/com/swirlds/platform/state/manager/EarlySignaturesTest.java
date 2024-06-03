@@ -21,6 +21,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.config.StateConfig;
@@ -29,7 +31,7 @@ import com.swirlds.platform.state.StateSignatureCollectorTester;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,9 +48,9 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
 
     private final int roundAgeToSign = 3;
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
+    private final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+            .withSize(4)
+            .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
             .build();
 
     /**
@@ -77,9 +79,14 @@ public class EarlySignaturesTest extends AbstractStateSignatureCollectorTest {
     @DisplayName("Early Signatures Test")
     void earlySignaturesTest() throws InterruptedException {
         final int count = 100;
-        final StateConfig stateConfig = buildStateConfig();
-        final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(stateConfig)
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(buildStateConfig())
+                .build();
+        final int futureSignatures = platformContext
+                .getConfiguration()
+                .getConfigData(StateConfig.class)
+                .maxAgeOfFutureStateSignatures();
+        final StateSignatureCollectorTester manager = new StateSignatureCollectorBuilder(platformContext)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

@@ -16,6 +16,8 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
+
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.TraceableWiringModel;
@@ -79,6 +81,15 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     public long getUnprocessedTaskCount() {
         return onRamp.getCount();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getCapacity() {
+        // Direct schedulers have no concept of capacity.
+        return UNLIMITED_CAPACITY;
     }
 
     /**

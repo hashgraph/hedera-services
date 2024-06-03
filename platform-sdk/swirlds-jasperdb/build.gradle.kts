@@ -15,10 +15,10 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.java-test-fixtures")
 }
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
@@ -26,6 +26,7 @@ mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 jmhModuleInfo { requires("jmh.core") }
 
 testModuleInfo {
+    requires("com.google.common")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.apache.commons.lang3")

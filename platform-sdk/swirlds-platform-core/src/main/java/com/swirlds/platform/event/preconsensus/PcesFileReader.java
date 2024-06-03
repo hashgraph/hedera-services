@@ -21,7 +21,7 @@ import static com.swirlds.platform.event.preconsensus.PcesUtilities.compactPreco
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.fileSanityChecks;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.platform.event.AncientMode;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -88,7 +88,7 @@ public class PcesFileReader {
             compactSpanOfLastFile(files);
         }
 
-        resolveDiscontinuities(databaseDirectory, files, platformContext.getFileSystemManager(), startingRound);
+        resolveDiscontinuities(databaseDirectory, files, platformContext.getRecycleBin(), startingRound);
 
         return files;
     }
@@ -157,14 +157,14 @@ public class PcesFileReader {
      *
      * @param databaseDirectory the directory where PCES files are stored
      * @param files             the files that have been read from disk
-     * @param fileSystemManager the fileSystemManager
+     * @param recycleBin the recycleBin
      * @param startingRound     the round the system is starting from
      * @throws IOException if there is an error deleting files
      */
     private static void resolveDiscontinuities(
             @NonNull final Path databaseDirectory,
             @NonNull final PcesFileTracker files,
-            final FileSystemManager fileSystemManager,
+            @NonNull final RecycleBin recycleBin,
             final long startingRound)
             throws IOException {
 
@@ -201,7 +201,7 @@ public class PcesFileReader {
 
         // Delete files in reverse order so that if we crash we don't leave gaps in the sequence number if we crash.
         while (files.getFileCount() > firstIndexToDelete) {
-            files.removeLastFile().deleteFile(databaseDirectory, fileSystemManager);
+            files.removeLastFile().deleteFile(databaseDirectory, recycleBin);
         }
     }
 }

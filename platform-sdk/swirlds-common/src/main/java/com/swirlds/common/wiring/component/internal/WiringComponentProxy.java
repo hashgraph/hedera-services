@@ -35,6 +35,13 @@ public class WiringComponentProxy implements InvocationHandler {
     @Override
     public Object invoke(@NonNull final Object proxy, @NonNull final Method method, @NonNull final Object[] args)
             throws Throwable {
+
+        if (method.getName().equals("toString")) {
+            // Handle this specially, the debugger likes to call toString()
+            // on the proxy which disrupts normal behavior when debugging.
+            return "WiringComponentProxy";
+        }
+
         mostRecentlyInvokedMethod = Objects.requireNonNull(method);
         return null;
     }

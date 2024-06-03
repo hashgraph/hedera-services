@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
 description = "Hedera Services API Utilities"
 

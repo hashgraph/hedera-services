@@ -65,6 +65,18 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -72,6 +84,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -82,24 +95,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.AccountCreationDetails;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class HelloWorldEthereumSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
+public class HelloWorldEthereumSuite {
     public static final long depositAmount = 20_000L;
 
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
@@ -108,43 +116,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
     private static final String DEPOSIT = "deposit";
 
-    public static void main(String... args) {
-        new HelloWorldEthereumSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return allOf(ethereumCalls(), ethereumCreates());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    List<HapiSpec> ethereumCalls() {
-        return List.of(
-                depositSuccess(),
-                badRelayClient(),
-                topLevelBurnToZeroAddressReverts(),
-                topLevelLazyCreateOfMirrorAddressReverts(),
-                topLevelSendToReceiverSigRequiredAccountReverts(),
-                internalBurnToZeroAddressReverts(),
-                ethereumCallWithCalldataBiggerThanMaxSucceeds(),
-                createWithSelfDestructInConstructorHasSaneRecord(),
-                canCreateTokenWithCryptoAdminKeyOnlyIfHasTopLevelSig());
-    }
-
-    List<HapiSpec> ethereumCreates() {
-        return List.of(
-                smallContractCreate(),
-                contractCreateWithConstructorArgs(),
-                bigContractCreate(),
-                doesNotCreateChildRecordIfEthereumContractCreateFails());
-    }
-
     @HapiTest
-    HapiSpec canCreateTokenWithCryptoAdminKeyOnlyIfHasTopLevelSig() {
+    final Stream<DynamicTest> canCreateTokenWithCryptoAdminKeyOnlyIfHasTopLevelSig() {
         final var cryptoKey = "cryptoKey";
         final var thresholdKey = "thresholdKey";
         final String contract = "TestTokenCreateContract";
@@ -230,7 +203,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec badRelayClient() {
+    final Stream<DynamicTest> badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
         final var exploitContract = "BadRelayClient";
@@ -303,7 +276,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec depositSuccess() {
+    final Stream<DynamicTest> depositSuccess() {
         return defaultHapiSpec("depositSuccess", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -372,7 +345,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
+    final Stream<DynamicTest> ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec(
                         "ethereumCallWithCalldataBiggerThanMaxSucceeds",
@@ -414,7 +387,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
+    final Stream<DynamicTest> createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
         // Does nested creates, which appear in reversed order from mono-service
@@ -441,7 +414,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec smallContractCreate() {
+    final Stream<DynamicTest> smallContractCreate() {
         return defaultHapiSpec("smallContractCreate", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -485,7 +458,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec doesNotCreateChildRecordIfEthereumContractCreateFails() {
+    final Stream<DynamicTest> doesNotCreateChildRecordIfEthereumContractCreateFails() {
         final Long insufficientGasAllowance = 1L;
         return defaultHapiSpec(
                         "doesNotCreateChildRecordIfEthereumContractCreateFails", NONDETERMINISTIC_FUNCTION_PARAMETERS)
@@ -509,7 +482,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec idVariantsTreatedAsExpected() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec(
                         "idVariantsTreatedAsExpected",
@@ -534,7 +507,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec bigContractCreate() {
+    final Stream<DynamicTest> bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("bigContractCreate", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
@@ -580,7 +553,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec contractCreateWithConstructorArgs() {
+    final Stream<DynamicTest> contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec(
                         "contractCreateWithConstructorArgs",
@@ -639,7 +612,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     private static final String SEND_TO = "sendTo";
 
     @HapiTest
-    HapiSpec topLevelBurnToZeroAddressReverts() {
+    final Stream<DynamicTest> topLevelBurnToZeroAddressReverts() {
         final var ethBurnAddress = new byte[20];
         return defaultHapiSpec("topLevelBurnToZeroAddressReverts", NONDETERMINISTIC_ETHEREUM_DATA)
                 .given(
@@ -658,7 +631,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
+    final Stream<DynamicTest> topLevelLazyCreateOfMirrorAddressReverts() {
         final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
         return defaultHapiSpec(
                         "topLevelLazyCreateOfMirrorAddressReverts",
@@ -681,7 +654,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
+    final Stream<DynamicTest> topLevelSendToReceiverSigRequiredAccountReverts() {
         final var receiverSigAccount = "receiverSigAccount";
         final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
         final var preCallBalance = "preCallBalance";
@@ -710,11 +683,8 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec internalBurnToZeroAddressReverts() {
-        return defaultHapiSpec(
-                        "internalBurnToZeroAddressReverts",
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
+    final Stream<DynamicTest> internalBurnToZeroAddressReverts() {
+        return defaultHapiSpec("internalBurnToZeroAddressReverts", FULLY_NONDETERMINISTIC)
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
@@ -729,11 +699,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         .maxPriorityGas(2L)
                         .gasLimit(1_000_000L)
                         .sending(depositAmount)
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+                        .hasKnownStatus(INVALID_FEE_SUBMITTED));
     }
 }

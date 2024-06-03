@@ -1095,6 +1095,40 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(CURRENT_TREASURY_STILL_OWNS_NFTS));
     }
 
+    @Test
+    void validateZeroTreasuryNotUpdatedForContractCalls() {
+        // We don't set transaction ID so we simulate a contract call
+        txn = TransactionBody.newBuilder()
+                .tokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                        .token(fungibleTokenId)
+                        .treasury(zeroAccountId)
+                        .name("TestTokenUpdateDoesNotUpdateZeroTreasury")
+                        .build())
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var token = writableTokenState.get(fungibleTokenId);
+        assertThat(token.treasuryAccountId()).isEqualTo(fungibleToken.treasuryAccountId());
+        assertThat(token.treasuryAccountId()).isNotEqualTo(zeroAccountId);
+        assertThat(token.name()).isEqualTo("TestTokenUpdateDoesNotUpdateZeroTreasury");
+    }
+
+    @Test
+    void validateZeroTreasuryIsUpdatedForHapiCalls() {
+        txn = new TokenUpdateBuilder()
+                .withToken(fungibleTokenId)
+                .withTreasury(zeroAccountId)
+                .withName("TestTokenUpdateDoesUpdateZeroTreasury")
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var token = writableTokenState.get(fungibleTokenId);
+        assertThat(token.treasuryAccountId()).isEqualTo(zeroAccountId);
+        assertThat(token.name()).isEqualTo("TestTokenUpdateDoesUpdateZeroTreasury");
+    }
+
     /* --------------------------------- Helpers --------------------------------- */
     /**
      * A builder for {@link com.hedera.hapi.node.transaction.TransactionBody} instances.

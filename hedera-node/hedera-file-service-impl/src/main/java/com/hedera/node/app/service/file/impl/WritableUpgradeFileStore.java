@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.service.file.impl;
 
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.UPGRADE_DATA_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Predicate;

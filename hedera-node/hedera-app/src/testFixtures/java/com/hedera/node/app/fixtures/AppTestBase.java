@@ -30,16 +30,11 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
@@ -49,9 +44,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -64,6 +59,11 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.platform.test.fixtures.state.TestBase;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -169,11 +169,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public AppTestBase() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        this.metrics = new DefaultMetrics(
+        this.metrics = new DefaultPlatformMetrics(
                 nodeSelfId,
                 new MetricKeyRegistry(),
                 METRIC_EXECUTOR,
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 
@@ -361,7 +361,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var initialState = new FakeHederaState();
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
-                svc.registerSchemas(reg, hederaSoftwareVersion.getServicesVersion());
+                svc.registerSchemas(reg);
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
             workingStateAccessor.setHederaState(initialState);

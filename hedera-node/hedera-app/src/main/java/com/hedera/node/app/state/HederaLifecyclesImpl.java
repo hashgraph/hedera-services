@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -29,20 +29,21 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.HederaLifecycles;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.merkle.disk.OnDiskKey;
+import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.state.HederaState;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -112,7 +113,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onStateInitialized(
-            @NonNull final MerkleHederaState state,
+            @NonNull final HederaState state,
             @NonNull final Platform platform,
             @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,

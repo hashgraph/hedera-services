@@ -253,13 +253,13 @@ module com.hedera.node.app.service.mono {
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
-    requires transitive com.hedera.node.app.service.evm;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.evm;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
@@ -268,6 +268,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
+    requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive grpc.netty;

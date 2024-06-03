@@ -38,7 +38,7 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,7 +87,7 @@ class SimulatedGossipTests {
                 TestPlatformContextBuilder.create().withTime(time).build();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(randotron).setSize(networkSize).build();
+                RandomAddressBookBuilder.create(randotron).withSize(networkSize).build();
 
         // We can safely choose large numbers because time is simulated
         final Duration averageDelay = Duration.ofMillis(randotron.nextInt(1, 1_000_000));
@@ -130,6 +130,8 @@ class SimulatedGossipTests {
                             eventOutputWire,
                             mock(BindableInputWire.class),
                             mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
                             mock(BindableInputWire.class));
         }
 
@@ -151,8 +153,7 @@ class SimulatedGossipTests {
             final GossipEvent event = eventsToGossip.get(eventIndex);
 
             for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-                if (event.getHashedData().getCreatorId().equals(nodeId)
-                        || randotron.randomBooleanWithProbability(0.1)) {
+                if (event.getHashedData().getCreatorId().equals(nodeId) || randotron.nextBoolean(0.1)) {
                     eventSubmitters.get(nodeId).accept(event);
 
                     // When a node sends out an event, add it to the list of events that node knows about.
@@ -160,7 +161,7 @@ class SimulatedGossipTests {
                 }
             }
 
-            if (randotron.randomBooleanWithProbability(0.1)) {
+            if (randotron.nextBoolean(0.1)) {
                 time.tick(averageDelay.dividedBy(10));
                 network.tick(time.now());
             }

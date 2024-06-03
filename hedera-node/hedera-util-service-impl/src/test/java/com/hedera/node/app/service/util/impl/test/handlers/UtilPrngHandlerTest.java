@@ -21,8 +21,12 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,7 +35,8 @@ import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fixtures.TestBase;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeAccumulator;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -41,6 +46,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.test.fixtures.state.TestBase;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,6 +141,26 @@ class UtilPrngHandlerTest {
 
         assertThat(recordBuilder.entropyNumber).isZero();
         assertThat(recordBuilder.entropyBytes).isEqualTo(hash);
+    }
+
+    @Test
+    void calculateFeesHappyPath() {
+        givenTxnWithoutRange();
+        final var body = TransactionBody.newBuilder().utilPrng(txn).build();
+
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(body);
+
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        subject.calculateFees(feeCtx);
+
+        verify(feeCalc).addBytesPerTransaction(0);
     }
 
     @ParameterizedTest
@@ -299,6 +325,18 @@ class UtilPrngHandlerTest {
 
         assertThat(recordBuilder.entropyNumber).isZero();
         assertThat(recordBuilder.entropyBytes).isEqualTo(Bytes.wrap(new byte[48]));
+    }
+
+    @Test
+    void verifyModThrowException() {
+        assertThatThrownBy(() -> UtilPrngHandler.mod(0, 0)).isInstanceOf(ArithmeticException.class);
+    }
+
+    @Test
+    void verifyModHappyPath() {
+        assertThatCode(() -> UtilPrngHandler.mod(2, 4)).doesNotThrowAnyException();
+
+        assertThat(UtilPrngHandler.mod(2, 4)).isEqualTo(2);
     }
 
     private void givenTxnWithRange(int range) {

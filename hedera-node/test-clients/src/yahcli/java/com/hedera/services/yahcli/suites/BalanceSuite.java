@@ -25,8 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class BalanceSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(BalanceSuite.class);
@@ -44,13 +46,13 @@ public class BalanceSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        List<HapiSpec> specToRun = new ArrayList<>();
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        List<Stream<DynamicTest>> specToRun = new ArrayList<>();
         accounts.forEach(s -> specToRun.add(getBalance(s)));
         return specToRun;
     }
 
-    private HapiSpec getBalance(String accountID) {
+    final Stream<DynamicTest> getBalance(String accountID) {
         return HapiSpec.customHapiSpec("getBalance")
                 .withProperties(specConfig)
                 .given()

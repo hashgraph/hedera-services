@@ -406,7 +406,7 @@ class MerkleStakingInfoTest {
 
         assertNotNull(subject.getHistoryHash());
         assertArrayEquals(rewardSumHistoryHash, subject.getHistoryHash());
-        assertArrayEquals(expected, actual.getValue());
+        assertArrayEquals(expected, actual.copyToByteArray());
     }
 
     @Test

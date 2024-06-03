@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,17 +37,17 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.test.fixtures.state.MapReadableStates;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -126,7 +126,7 @@ public final class TestStoreFactory {
     public static ReadableTokenRelationStore newReadableStoreWithTokenRels(final TokenRelation... tokenRels) {
         final var wrappedState = newTokenRelStateFromTokenRels(tokenRels);
         return new ReadableTokenRelationStoreImpl(
-                new MapReadableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappedState)));
+                new MapReadableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappedState)));
     }
 
     private static MapWritableKVState<EntityIDPair, TokenRelation> newTokenRelStateFromTokenRels(
@@ -152,7 +152,7 @@ public final class TestStoreFactory {
     public static WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
         final var wrappingState = newTokenRelStateFromTokenRels(tokenRels);
         return new WritableTokenRelationStore(
-                new MapWritableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState)),
+                new MapWritableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappingState)),
                 CONFIGURATION,
                 mock(StoreMetricsService.class));
     }
@@ -164,7 +164,7 @@ public final class TestStoreFactory {
      */
     public static ReadableNftStore newReadableStoreWithNfts(Nft... nfts) {
         final var wrappingState = newNftStateFromNfts(nfts);
-        return new ReadableNftStoreImpl(new MapReadableStates(Map.of(TokenServiceImpl.NFTS_KEY, wrappingState)));
+        return new ReadableNftStoreImpl(new MapReadableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)));
     }
 
     /**
@@ -175,7 +175,7 @@ public final class TestStoreFactory {
     public static WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
         final var wrappingState = newNftStateFromNfts(nfts);
         return new WritableNftStore(
-                new MapWritableStates(Map.of(TokenServiceImpl.NFTS_KEY, wrappingState)),
+                new MapWritableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)),
                 CONFIGURATION,
                 mock(StoreMetricsService.class));
     }
@@ -195,6 +195,6 @@ public final class TestStoreFactory {
             backingMap.put(nft.nftId(), nft);
         }
 
-        return new MapWritableKVState<>(TokenServiceImpl.NFTS_KEY, backingMap);
+        return new MapWritableKVState<>(V0490TokenSchema.NFTS_KEY, backingMap);
     }
 }

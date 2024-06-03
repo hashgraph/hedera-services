@@ -63,7 +63,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -326,11 +326,10 @@ class EmergencyReconnectTests {
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
-        return new RandomAddressBookGenerator(random)
-                .setSize(numNodes)
-                .setAverageWeight(100L)
-                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+        return RandomAddressBookBuilder.create(random)
+                .withSize(numNodes)
+                .withAverageWeight(100L)
+                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                 .build();
     }
 

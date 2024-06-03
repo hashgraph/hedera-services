@@ -31,13 +31,13 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -54,6 +54,8 @@ import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
+    public static final String DEFAULT_ID_SENTINEL = "<DEFAULT_ID>";
+
     protected List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
@@ -84,8 +86,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     private HapiContractCall() {}
 
     public HapiContractCall(String contract) {
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
+        this.abi = Optional.of(FALLBACK_ABI);
+        this.params = Optional.of(new Object[0]);
         this.contract = contract;
     }
 
@@ -95,8 +97,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     public HapiContractCall(String abi, String contract, Object... params) {
-        this.abi = abi;
-        this.params = params;
+        this.abi = Optional.of(abi);
+        this.params = Optional.of(params);
         this.contract = contract;
     }
 
@@ -159,6 +161,12 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         return convertableToEthCall;
     }
 
+    // To convert to Eth call, the key must be SECP256K1
+    public boolean isKeySECP256K1(HapiSpec spec) {
+        var key = spec.registry().getKey(privateKeyRef);
+        return key == null || key.hasECDSASecp256K1();
+    }
+
     public Consumer<Object[]> getResultObserver() {
         return resultObserver;
     }
@@ -168,11 +176,15 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     public String getAbi() {
-        return abi;
+        return abi.orElse(null);
     }
 
     public Object[] getParams() {
-        return params;
+        return params.orElse(null);
+    }
+
+    public void setParams(Object[] params) {
+        this.params = Optional.of(params);
     }
 
     public String getTxnName() {
@@ -206,10 +218,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     public Optional<Long> getFee() {
         return fee;
-    }
-
-    public Optional<Long> getSubmitDelay() {
-        return submitDelay;
     }
 
     public Optional<Long> getValidDurationSeconds() {
@@ -253,11 +261,6 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;
-    }
-
-    @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         final var ans = spec.fees()
                 .forActivityBasedOp(
@@ -273,17 +276,17 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         if (details.isPresent()) {
             ActionableContractCall actionable = spec.registry().getActionableCall(details.get());
             contract = actionable.getContract();
-            abi = actionable.getDetails().getAbi();
-            params = actionable.getDetails().getExampleArgs();
+            abi = Optional.of(actionable.getDetails().getAbi());
+            params = Optional.of(actionable.getDetails().getExampleArgs());
         } else {
-            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = Optional.of(hapiApiSpecFunction.apply(spec)));
         }
 
         final byte[] callData;
         if (tupleFn == null) {
             callData = initializeCallData();
         } else {
-            final var abiFunction = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+            final var abiFunction = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
             final var inputTuple = tupleFn.apply(spec);
             callData = abiFunction.encodeCall(inputTuple).array();
         }
@@ -292,7 +295,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
                 .<ContractCallTransactionBody, ContractCallTransactionBody.Builder>body(
                         ContractCallTransactionBody.class, builder -> {
                             if (contract != null) {
-                                if (!tryAsHexedAddressIfLenMatches) {
+                                if (DEFAULT_ID_SENTINEL.equals(contract)) {
+                                    builder.setContractID(ContractID.getDefaultInstance());
+                                } else if (!tryAsHexedAddressIfLenMatches) {
                                     builder.setContractID(spec.registry().getContractId(contract));
                                 } else {
                                     builder.setContractID(TxnUtils.asContractId(contract, spec));
@@ -312,7 +317,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         }
         if (resultObserver != null) {
             doObservedLookup(spec, txnSubmitted, txnRecord -> {
-                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi.orElse(null));
                 final var result = function.decodeReturn(txnRecord
                         .getContractCallResult()
                         .getContractCallResult()
@@ -357,6 +362,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
+        return super.toStringHelper()
+                .add("contract", contract)
+                .add("abi", abi)
+                .add("params", Arrays.toString(params.orElse(null)));
     }
 }

@@ -17,6 +17,7 @@
 package com.swirlds.common.crypto;
 
 import com.swirlds.common.io.SelfSerializable;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 public interface Cryptography {
@@ -66,7 +67,14 @@ public interface Cryptography {
      * @return the cryptographic hash for the {@link SelfSerializable} object
      * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
-    Hash digestSync(final SelfSerializable serializable, final DigestType digestType);
+    default Hash digestSync(final SelfSerializable serializable, final DigestType digestType) {
+        return new Hash(digestBytesSync(serializable, digestType), digestType);
+    }
+
+    /**
+     * Same as {@link #digestSync(SelfSerializable, DigestType)} with raw bytes returned instead of a Hash object
+     */
+    byte[] digestBytesSync(@NonNull final SelfSerializable serializable, @NonNull final DigestType digestType);
 
     /**
      * Same as {@link #digestSync(SerializableHashable, DigestType)} with DigestType set to SHA_384
@@ -98,6 +106,24 @@ public interface Cryptography {
     Hash digestSync(final SerializableHashable serializableHashable, final DigestType digestType, boolean setHash);
 
     /**
+     * Same as {@link #digestBytesSync(byte[], DigestType)} with DigestType set to {@link DigestType#SHA_384}
+     */
+    default byte[] digestBytesSync(@NonNull final byte[] message) {
+        return digestBytesSync(message, DEFAULT_DIGEST_TYPE);
+    }
+
+    /**
+     * Computes a cryptographic hash (message digest) for the given message.
+     *
+     * @param message    the message contents to be hashed
+     * @param digestType the type of digest used to compute the hash
+     * @return the cryptographic hash for the given message contents
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
+     */
+    @NonNull
+    byte[] digestBytesSync(@NonNull final byte[] message, @NonNull final DigestType digestType);
+
+    /**
      * @return the hash for a null value. Uses SHA_384.
      */
     default Hash getNullHash() {
@@ -109,24 +135,6 @@ public interface Cryptography {
      * @return the hash for a null value.
      */
     Hash getNullHash(final DigestType digestType);
-
-    /**
-     * Verifies the given digital signatures for authenticity. The result of the verification will be returned by the
-     * {@link TransactionSignature#getSignatureStatus()} method once the future (available via
-     * {@link TransactionSignature#getFuture()}) has been completed.
-     * <p>
-     * Note: This implementation is non-blocking and returns almost immediately.
-     * <p>
-     * Starting in version 0.43 and onwards, the {@link SignatureType#ECDSA_SECP256K1} signature algorithm requires the
-     * payload to be a KECCAK-256 hash of the original message. Verification will fail if the message is not 32 bytes in
-     * length and the output of 256-bit hashing function.
-     *
-     * @param signatures a list of signatures to be verified
-     * @deprecated use {@link #verifySync(List)} instead, asynchronous verification is a feature that is scheduled for
-     * removal
-     */
-    @Deprecated(forRemoval = true)
-    void verifyAsync(final List<TransactionSignature> signatures);
 
     /**
      * Verifies the given digital signature for authenticity. The result of the verification will be returned by the

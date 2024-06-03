@@ -200,7 +200,7 @@ public class CustomFractionalFeeAssessor {
      * @param fractionalFee the fractional fee
      * @return the amount owned to be paid as fractional custom fee
      */
-    private long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
+    public long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
         final var numerator = fractionalFee.fractionalAmountOrThrow().numerator();
         final var denominator = fractionalFee.fractionalAmountOrThrow().denominator();
         var nominalFee = 0L;

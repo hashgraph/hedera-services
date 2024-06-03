@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -32,11 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -45,12 +49,16 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -58,7 +66,10 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -191,6 +202,20 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 payerId, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_DELEGATING_SPENDER);
+    }
+
+    @Test
+    void tokenAllowanceFailsIfOwnerHasAlias() throws PreCheckException {
+        final var tokenAllowance = TokenAllowance.newBuilder()
+                .tokenId(fungibleTokenId)
+                .owner(AccountID.newBuilder()
+                        .alias(Bytes.wrap(new byte[] {0, 1, 2}))
+                        .build())
+                .build();
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, true, Collections.emptyList(), List.of(tokenAllowance), Collections.emptyList());
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ALLOWANCE_OWNER_ID);
     }
 
     @Test
@@ -503,6 +528,43 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    void validateInvalidNftSpender() {
+        // NftAllowance with no spender
+        final var invalidNftAllowance =
+                NftAllowance.newBuilder().tokenId(nonFungibleTokenId).build();
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, Collections.emptyList(), Collections.emptyList(), List.of(invalidNftAllowance));
+
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+    }
+
+    @Test
+    void validateInvalidTokenAllowanceAmount() {
+        // TokenAllowance with invalid allowance amount
+        final var invalidTokenAllowance = TokenAllowance.newBuilder()
+                .tokenId(fungibleTokenId)
+                .spender(spenderId)
+                .amount(-1)
+                .build();
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, Collections.emptyList(), List.of(invalidTokenAllowance), Collections.emptyList());
+
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), NEGATIVE_ALLOWANCE_AMOUNT);
+    }
+
+    @Test
+    void validateValidNftAllowance() throws PreCheckException {
+        final var validNftAllowance = NftAllowance.newBuilder()
+                .spender(spenderId)
+                .tokenId(nonFungibleTokenId)
+                .build();
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId, false, Collections.emptyList(), Collections.emptyList(), List.of(validNftAllowance));
+
+        subject.pureChecks(txn); // No exception thrown
+    }
+
+    @Test
     void existingAllowancesDeletedWithAmountZero() {
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,
@@ -522,6 +584,79 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedOwner.cryptoAllowances()).isEmpty();
         assertThat(modifiedOwner.tokenAllowances()).isEmpty();
     }
+
+    @Test
+    void handlePayerAccountNotFound() {
+        given(handleContext.payer()).willReturn(AccountID.DEFAULT);
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_PAYER_ACCOUNT_ID));
+    }
+
+    @Test
+    void calculateFeesHappyPath() {
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId,
+                Timestamp.newBuilder().seconds(account.expirationSecond() - 1).build(),
+                false,
+                List.of(cryptoAllowance),
+                List.of(tokenAllowance),
+                List.of(nftAllowance));
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+        given(feeCtx.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(feeCtx.payer()).willReturn(payerId);
+
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.addRamByteSeconds(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        subject.calculateFees(feeCtx);
+
+        verify(feeCalc).addBytesPerTransaction(128);
+        verify(feeCalc).addRamByteSeconds(112);
+    }
+
+    @Test
+    void calculateFeesAccountNotFound() {
+        final var txn = cryptoApproveAllowanceTransaction(
+                payerId,
+                Timestamp.newBuilder().seconds(account.expirationSecond() - 1).build(),
+                false,
+                List.of(cryptoAllowance),
+                List.of(tokenAllowance),
+                List.of(nftAllowance));
+        final var feeCtx = mock(FeeContext.class);
+        given(feeCtx.body()).willReturn(txn);
+        given(feeCtx.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(feeCtx.payer())
+                .willReturn(AccountID.newBuilder().accountNum(Long.MAX_VALUE).build());
+
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.addRamByteSeconds(anyLong())).willReturn(feeCalc);
+        // The fees wouldn't be free in this scenario, but we don't care about the actual return
+        // value here since we're using a mock calculator
+        given(feeCalc.calculate()).willReturn(Fees.FREE);
+
+        subject.calculateFees(feeCtx);
+
+        verify(feeCalc).addBytesPerTransaction(128);
+        verify(feeCalc).addRamByteSeconds(0);
+    }
+
+    @Test
+    void updateSpenderWithEmptySerialNumsDoesntUpdate() {
+        subject.updateSpender(
+                writableTokenStore, writableNftStore, ownerAccount, spenderId, nonFungibleTokenId, List.of());
+        assertThat(writableTokenStore.modifiedTokens()).isEmpty();
+    }
+
     //
     //    @Test
     //    void failsToUpdateSpenderIfWrongOwner() {
@@ -558,7 +693,18 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
             final List<CryptoAllowance> cryptoAllowance,
             final List<TokenAllowance> tokenAllowance,
             final List<NftAllowance> nftAllowance) {
-        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
+        return cryptoApproveAllowanceTransaction(
+                id, consensusTimestamp, isWithDelegatingSpender, cryptoAllowance, tokenAllowance, nftAllowance);
+    }
+
+    private TransactionBody cryptoApproveAllowanceTransaction(
+            final AccountID id,
+            final Timestamp validStart,
+            final boolean isWithDelegatingSpender,
+            final List<CryptoAllowance> cryptoAllowance,
+            final List<TokenAllowance> tokenAllowance,
+            final List<NftAllowance> nftAllowance) {
+        final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(validStart);
         final var allowanceTxnBody = CryptoApproveAllowanceTransactionBody.newBuilder()
                 .cryptoAllowances(cryptoAllowance)
                 .tokenAllowances(tokenAllowance)

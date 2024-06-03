@@ -22,7 +22,6 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
-import java.util.Arrays;
 
 /**
  * Utility methods for testing signature verification.
@@ -34,7 +33,7 @@ public class SignatureVerificationTestUtils {
      * invalid signature for any other key/hash.
      */
     public static Signature buildFakeSignature(@NonNull final PublicKey key, @NonNull final Hash hash) {
-        return new Signature(SignatureType.RSA, concat(key.getEncoded(), hash.getValue()));
+        return new Signature(SignatureType.RSA, concat(key, hash.getBytes()).toByteArray());
     }
 
     /**
@@ -42,20 +41,19 @@ public class SignatureVerificationTestUtils {
      * invalid signature for any other key/hash.
      */
     public static Bytes buildFakeSignatureBytes(@NonNull final PublicKey key, @NonNull final Hash hash) {
-        return Bytes.wrap(concat(key.getEncoded(), hash.getValue()));
+        return concat(key, hash.getBytes());
     }
 
     /**
      * A {@link com.swirlds.platform.crypto.SignatureVerifier} to be used when using signatures built by {@link #buildFakeSignature(PublicKey, Hash)}
      */
     public static boolean verifySignature(
-            @NonNull final byte[] data, @NonNull final byte[] signature, @NonNull final PublicKey publicKey) {
-        return Arrays.equals(concat(publicKey.getEncoded(), data), signature);
+            @NonNull final Bytes data, @NonNull final Bytes signature, @NonNull final PublicKey publicKey) {
+        return concat(publicKey, data).equals(signature);
     }
 
-    private static byte[] concat(@NonNull final byte[] first, @NonNull final byte[] second) {
-        final byte[] result = Arrays.copyOf(first, first.length + second.length);
-        System.arraycopy(second, 0, result, first.length, second.length);
-        return result;
+    private static Bytes concat(@NonNull final PublicKey key, @NonNull final Bytes bytes) {
+        final Bytes keyEncoded = Bytes.wrap(key.getEncoded());
+        return keyEncoded.append(bytes);
     }
 }

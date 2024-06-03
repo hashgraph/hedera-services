@@ -38,11 +38,11 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -51,7 +51,6 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
@@ -64,6 +63,7 @@ import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -196,7 +196,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 TransactionBody txBody;
                 AccountID payerID = null;
                 if (paymentRequired) {
-                    allegedPayment = queryHeader.paymentOrThrow();
+                    allegedPayment = queryHeader.paymentOrElse(Transaction.DEFAULT);
                     final var configuration = configProvider.getConfiguration();
 
                     // 3.i Ingest checks
@@ -291,7 +291,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
         } else {
             response = DEFAULT_UNSUPPORTED_RESPONSE;
-            logger.warn("Received a query for an unknown functionality");
         }
 
         try {

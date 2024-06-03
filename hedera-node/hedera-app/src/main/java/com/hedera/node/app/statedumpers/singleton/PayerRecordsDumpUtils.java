@@ -25,7 +25,7 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMPayerRecord;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
-import com.hedera.node.app.state.merkle.queue.QueueNode;
+import com.swirlds.platform.state.merkle.queue.QueueNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;

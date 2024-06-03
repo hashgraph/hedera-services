@@ -19,25 +19,26 @@ package com.hedera.node.app.fixtures.state;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
@@ -78,6 +79,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             final var previousStates = new EmptyReadableStates();
             final var writableStates = new MapWritableStates(writables);
             schema.migrate(new MigrationContext() {
+                private final Map<String, Object> sharedValues = new HashMap<>();
+
                 @Override
                 public void copyAndReleaseOnDiskState(String stateKey) {
                     // No-op
@@ -120,6 +123,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 @Override
                 public long newEntityNum() {
                     return 0;
+                }
+
+                @Override
+                public Map<String, Object> sharedValues() {
+                    return sharedValues;
                 }
             });
 

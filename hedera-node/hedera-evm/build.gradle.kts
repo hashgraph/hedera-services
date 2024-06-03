@@ -15,11 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.evm-maven-publish")
+    id("com.hedera.gradle.evm")
+    id("com.hedera.gradle.evm-publish")
 }
-
-group = "com.hedera.evm"
 
 description = "Hedera EVM - API"
 
@@ -29,13 +27,4 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
-}
-
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            groupId = "com.hedera.evm"
-            artifactId = "hedera-evm"
-        }
-    }
 }

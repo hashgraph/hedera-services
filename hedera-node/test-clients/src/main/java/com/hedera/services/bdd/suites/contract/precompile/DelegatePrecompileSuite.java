@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -54,27 +55,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class DelegatePrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(DelegatePrecompileSuite.class);
-
+public class DelegatePrecompileSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final KeyShape SIMPLE_AND_DELEGATE_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
@@ -90,22 +84,8 @@ public class DelegatePrecompileSuite extends HapiSuite {
     private static final String DELEGATE_BURN_CALL_WITH_DELEGATE_CONTRACT_KEY_TXN =
             "delegateBurnCallWithDelegateContractKeyTxn";
 
-    public static void main(String... args) {
-        new DelegatePrecompileSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
-    }
-
     @HapiTest
-    final HapiSpec delegateCallForTransfer() {
+    final Stream<DynamicTest> delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -128,7 +108,9 @@ public class DelegatePrecompileSuite extends HapiSuite {
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(RECEIVER).exposingCreatedIdTo(receiverID::set),
                         uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
-                        contractCreate(NESTED_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(NESTED_CONTRACT).refusingEthConversion(),
                         tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -137,7 +119,12 @@ public class DelegatePrecompileSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCreate(
-                                OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                                        OUTER_CONTRACT,
+                                        asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec)))
+                                // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon
+                                // tokenAssociate,
+                                // since we have CONTRACT_ID key
+                                .refusingEthConversion(),
                         tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
                         newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME)
                                 .shape(SIMPLE_AND_DELEGATE_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
@@ -166,7 +153,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec delegateCallForBurn() {
+    final Stream<DynamicTest> delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -219,7 +206,7 @@ public class DelegatePrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec delegateCallForMint() {
+    final Stream<DynamicTest> delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -269,10 +256,5 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                 changingFungibleBalances().including(VANILLA_TOKEN, TOKEN_TREASURY, 1))
                                         .newTotalSupply(51)),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 51));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

@@ -87,6 +87,7 @@ jobs:
       gradle-cache-username: ${{ secrets.GRADLE_CACHE_USERNAME }}
       gradle-cache-password: ${{ secrets.GRADLE_CACHE_PASSWORD }}
       codacy-project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   eet-tests:
     name: E2E Tests

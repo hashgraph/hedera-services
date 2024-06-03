@@ -63,7 +63,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.wipe.WipeTranslator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.state.ReadableKVState;
+import com.swirlds.state.spi.ReadableKVState;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;

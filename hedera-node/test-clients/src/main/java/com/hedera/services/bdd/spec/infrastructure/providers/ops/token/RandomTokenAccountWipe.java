@@ -43,7 +43,6 @@ public class RandomTokenAccountWipe implements OpProvider {
         this.customOutcomes = customOutcomes;
     }
 
-    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(TOKEN_HAS_NO_WIPE_KEY);
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
             TOKEN_WAS_DELETED,
             ACCOUNT_FROZEN_FOR_TOKEN,

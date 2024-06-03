@@ -170,7 +170,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             @NonNull final Metrics metrics,
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
-        final var baseName = serviceName.replace('.', ':') + ":" + methodName;
+        final String baseName = calculateBaseName();
         final var name = String.format(nameTemplate, baseName);
         final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc));
@@ -188,9 +188,13 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             @NonNull final Metrics metrics,
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
-        final var baseName = serviceName.replace('.', ':') + ":" + methodName;
+        final String baseName = calculateBaseName();
         final var name = String.format(nameTemplate, baseName);
         final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new SpeedometerMetric.Config("app", name).withDescription(desc));
+    }
+
+    private String calculateBaseName() {
+        return serviceName.substring("proto.".length()).replace('.', ':') + ":" + methodName;
     }
 }

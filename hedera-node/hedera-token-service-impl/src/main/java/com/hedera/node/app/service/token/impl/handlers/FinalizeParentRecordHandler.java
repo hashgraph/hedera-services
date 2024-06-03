@@ -29,10 +29,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -94,7 +92,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
-        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         if (stakingConfig.isEnabled()) {
@@ -127,22 +124,21 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
         // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = functionality == HederaFunctionality.CRYPTO_TRANSFER;
-        final var tokenChanges = tokenRelChangesFrom(
-                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
-        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
-
-        if (nftChanges.isEmpty()) {
-            final var nonFungibleTokenChanges = tokenRelChangesFrom(
-                    writableTokenRelStore, readableTokenStore, TokenType.NON_FUNGIBLE_UNIQUE, !isCryptoTransfer);
-            nonFungibleTokenChanges.forEach(tokenChanges::putIfAbsent);
-        }
+        // get all the token relation changes for fungible and non-fungible tokens
+        final var tokenRelChanges = tokenRelChangesFrom(writableTokenRelStore, !isCryptoTransfer);
+        // get all the NFT changes. Go through the nft changes and see if there are any token relation changes
+        // for the sender and receiver of the NFTs. If there are, then reduce the balance change for that relation
+        // by 1 for receiver and increment the balance change for sender by 1. This is to ensure that the NFT
+        // transfer is not double counted in the token relation changes and the NFT changes. Also we don't need to
+        // represent the changes for Mint or Wipe of NFTs in the token relation changes.
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, tokenRelChanges);
 
         if (context.hasChildRecords()) {
             // All the above changes maps are mutable
-            deductChangesFromChildRecords(context, tokenChanges, nftChanges, hbarChanges);
+            deductChangesFromChildRecords(context, tokenRelChanges, nftChanges, hbarChanges);
             // In the current system a parent transaction that has child transactions cannot
             // *itself* cause any net fungible or NFT transfers; fail fast if that happens
-            validateTrue(tokenChanges.isEmpty(), FAIL_INVALID);
+            validateTrue(tokenRelChanges.isEmpty(), FAIL_INVALID);
             validateTrue(nftChanges.isEmpty(), FAIL_INVALID);
         }
         if (!hbarChanges.isEmpty()) {
@@ -151,9 +147,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                     .accountAmounts(asAccountAmounts(hbarChanges))
                     .build());
         }
-        final var hasTokenTransferLists = !tokenChanges.isEmpty() || !nftChanges.isEmpty();
+        final var hasTokenTransferLists = !tokenRelChanges.isEmpty() || !nftChanges.isEmpty();
         if (hasTokenTransferLists) {
-            final var tokenTransferLists = asTokenTransferListFrom(tokenChanges, !isCryptoTransfer);
+            final var tokenTransferLists = asTokenTransferListFrom(tokenRelChanges, !isCryptoTransfer);
             final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
             tokenTransferLists.addAll(nftTokenTransferLists);
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);

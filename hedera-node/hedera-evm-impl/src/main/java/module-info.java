@@ -1,3 +1,3 @@
-module com.hedera.node.app.service.evm.impl {
-    requires transitive com.hedera.node.app.service.evm;
+module com.hedera.evm.impl {
+    requires transitive com.hedera.evm;
 }

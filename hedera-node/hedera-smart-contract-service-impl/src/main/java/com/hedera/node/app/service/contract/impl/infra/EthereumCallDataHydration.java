@@ -74,15 +74,23 @@ public class EthereumCallDataHydration {
             if (callDataFile.deleted()) {
                 return failureFrom(FILE_DELETED);
             }
+
+            // Bytes.fromHex() doesn't appreciate a leading '0x' but we supported it in mono-service
+            final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
+            final var contents = callDataFile.contents();
+            final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
+            final var len = contents.length() - offset;
             final byte[] callData;
             try {
-                callData = Hex.decode(callDataFile.contents().toByteArray());
+                callData = Hex.decode(contents.getBytes(offset, len).toByteArray());
             } catch (final DecoderException ignore) {
                 return failureFrom(INVALID_FILE_ID);
             }
+
             if (callData.length == 0) {
                 return failureFrom(CONTRACT_FILE_EMPTY);
             }
+
             return successFrom(ethTxData.replaceCallData(callData));
         } else {
             return successFrom(ethTxData);

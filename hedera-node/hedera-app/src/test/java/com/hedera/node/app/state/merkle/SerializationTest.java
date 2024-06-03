@@ -17,21 +17,14 @@
 package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableQueueState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -39,15 +32,28 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.sources.SimpleConfigSource;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
+import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
+import com.swirlds.state.spi.*;
+import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.config.VirtualMapConfig_;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -65,10 +71,14 @@ class SerializationTest extends MerkleTestBase {
         setupConstructableRegistry();
 
         this.dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
-        this.config = mock(Configuration.class);
+        this.config = new TestConfigBuilder()
+                .withSource(new SimpleConfigSource()
+                        .withValue(VirtualMapConfig_.FLUSH_INTERVAL, 1 + "")
+                        .withValue(VirtualMapConfig_.COPY_FLUSH_THRESHOLD, 1 + ""))
+                .withConfigDataType(VirtualMapConfig.class)
+                .withConfigDataType(HederaConfig.class)
+                .getOrCreateConfig();
         this.networkInfo = mock(NetworkInfo.class);
-        final var hederaConfig = mock(HederaConfig.class);
-        lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
 
     Schema createV1Schema() {
@@ -96,7 +106,8 @@ class SerializationTest extends MerkleTestBase {
                 fruit.put(F_KEY, FIG);
                 fruit.put(G_KEY, GRAPE);
 
-                final WritableKVState<String, String> animals = newStates.get(ANIMAL_STATE_KEY);
+                final OnDiskWritableKVState<String, String> animals =
+                        (OnDiskWritableKVState<String, String>) (OnDiskWritableKVState) newStates.get(ANIMAL_STATE_KEY);
                 animals.put(A_KEY, AARDVARK);
                 animals.put(B_KEY, BEAR);
                 animals.put(C_KEY, CUTTLEFISH);
@@ -104,6 +115,7 @@ class SerializationTest extends MerkleTestBase {
                 animals.put(E_KEY, EMU);
                 animals.put(F_KEY, FOX);
                 animals.put(G_KEY, GOOSE);
+                animals.commit();
 
                 final WritableSingletonState<String> country = newStates.getSingleton(COUNTRY_STATE_KEY);
                 country.put(CHAD);
@@ -120,27 +132,100 @@ class SerializationTest extends MerkleTestBase {
         };
     }
 
+    private void forceFlush(ReadableKVState<?, ?> state) {
+        if (state instanceof OnDiskReadableKVState<?, ?>) {
+            try {
+                Field vmField = OnDiskReadableKVState.class.getDeclaredField("virtualMap");
+                vmField.setAccessible(true);
+                VirtualMap<?, ?> vm = (VirtualMap<?, ?>) vmField.get(state);
+
+                final VirtualRootNode<?, ?> root = vm.getRight();
+                if (!vm.isEmpty()) {
+                    root.enableFlush();
+                    vm.release();
+                    root.waitUntilFlushed();
+                }
+            } catch (IllegalAccessException | NoSuchFieldException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     /**
      * In this test scenario, we have a genesis setup where we create FRUIT and ANIMALS and COUNTRY,
      * save them to disk, and then load them back in, and verify everything was loaded correctly.
+     * <br/>
+     * This tests has two modes: one where we force flush the VMs to disk and one where we don't.
+     * When it forces disk flush, it makes sure that the data gets to the datasource from cache and persisted in the table.
+     * When the flush is not forced, the data remains in cache which has its own serialization mechanism
      */
-    @Test
-    void simpleReadAndWrite() throws IOException, ConstructableRegistryException {
-        // Given a merkle tree with some fruit and animals and country
-        final var v1 = version(1, 0, 0);
-        final var originalTree = new MerkleHederaState(lifecycles);
-        final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void simpleReadAndWrite(boolean forceFlush) throws IOException, ConstructableRegistryException {
         final var schemaV1 = createV1Schema();
-        originalRegistry.register(schemaV1);
-        originalRegistry.migrate(
-                originalTree, null, v1, config, networkInfo, mock(Metrics.class), mock(WritableEntityIdStore.class));
+        final var originalTree = createMerkleHederaState(schemaV1);
 
         // When we serialize it to bytes and deserialize it back into a tree
-        originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
-        CRYPTO.digestTreeSync(originalTree);
-        final var serializedBytes = writeTree(originalTree, dir);
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        MerkleHederaState copy = originalTree.copy(); // make a copy to make VM flushable
+        final byte[] serializedBytes;
+        if (forceFlush) {
+            // Force flush the VMs to disk to test serialization and deserialization
+            forceFlush(originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY));
+            copy.copy(); // make a fast copy because we can only write to disk an immutable copy
+            CRYPTO.digestTreeSync(copy);
+            serializedBytes = writeTree(copy, dir);
+        } else {
+            CRYPTO.digestTreeSync(copy);
+            serializedBytes = writeTree(originalTree, dir);
+        }
+
+        final MerkleHederaState loadedTree = loadeMerkleTree(schemaV1, serializedBytes);
+
+        assertTree(loadedTree);
+    }
+
+    /**
+     * This test scenario is trickier, and it's designed to reproduce <a href="https://github.com/hashgraph/hedera-services/issues/13335">#13335: OnDiskKeySerializer uses wrong classId for OnDiskKey.</a>
+     * This issue can be reproduced only if at first it gets flushed to disk, then it gets loaded back in, and this time it remains in cache.
+     * After it gets saved to disk again, and then loaded back in, it results in ClassCastException due to incorrect classId.
+     */
+    @Test
+    void dualReadAndWrite() throws IOException, ConstructableRegistryException {
+        final var schemaV1 = createV1Schema();
+        final var originalTree = createMerkleHederaState(schemaV1);
+
+        MerkleHederaState copy = originalTree.copy(); // make a copy to make VM flushable
+        ;
+
+        forceFlush(originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY));
+        copy.copy(); // make a fast copy because we can only write to disk an immutable copy
+        CRYPTO.digestTreeSync(copy);
+        final byte[] serializedBytes = writeTree(copy, dir);
+
+        MerkleHederaState loadedTree = loadeMerkleTree(schemaV1, serializedBytes);
+        ((OnDiskReadableKVState) originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY)).reset();
+        populateVmCache(loadedTree);
+
+        loadedTree.copy(); // make a copy to store it to disk
+
+        CRYPTO.digestTreeSync(loadedTree);
+        // refreshing the dir
+        dir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
+        final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
+
+        // let's load it again and see if it works
+        MerkleHederaState loadedTreeWithCache = loadeMerkleTree(schemaV1, serializedBytesWithCache);
+        ((OnDiskReadableKVState)
+                        loadedTreeWithCache.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY))
+                .reset();
+
+        assertTree(loadedTreeWithCache);
+    }
+
+    private MerkleHederaState loadeMerkleTree(Schema schemaV1, byte[] serializedBytes)
+            throws ConstructableRegistryException, IOException {
+        final var newRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -157,10 +242,44 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class));
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         loadedTree.migrate(1);
 
-        // Then, we should be able to see all our original states again
+        return loadedTree;
+    }
+
+    private MerkleHederaState createMerkleHederaState(Schema schemaV1) {
+        final var v1 = version(1, 0, 0);
+        final var originalTree = new MerkleHederaState(lifecycles);
+        final var originalRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
+        originalRegistry.register(schemaV1);
+        originalRegistry.migrate(
+                originalTree,
+                null,
+                v1,
+                config,
+                networkInfo,
+                mock(Metrics.class),
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
+        return originalTree;
+    }
+
+    private static void populateVmCache(MerkleHederaState loadedTree) {
+        final var states = loadedTree.getWritableStates(FIRST_SERVICE);
+        final WritableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
+        assertThat(animalState.getForModify(A_KEY)).isEqualTo(AARDVARK);
+        assertThat(animalState.getForModify(B_KEY)).isEqualTo(BEAR);
+        assertThat(animalState.getForModify(C_KEY)).isEqualTo(CUTTLEFISH);
+        assertThat(animalState.getForModify(D_KEY)).isEqualTo(DOG);
+        assertThat(animalState.getForModify(E_KEY)).isEqualTo(EMU);
+        assertThat(animalState.getForModify(F_KEY)).isEqualTo(FOX);
+        assertThat(animalState.getForModify(G_KEY)).isEqualTo(GOOSE);
+    }
+
+    private static void assertTree(MerkleHederaState loadedTree) {
         final var states = loadedTree.getReadableStates(FIRST_SERVICE);
         final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
         assertThat(fruitState.get(A_KEY)).isEqualTo(APPLE);

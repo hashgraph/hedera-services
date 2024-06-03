@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -34,6 +35,7 @@ import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -80,6 +82,7 @@ class ExchangeRateSystemContractTest {
 
     @Test
     void convertsPositiveNumberToTinybarsAsExpected() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
         givenRate(someRate);
 
         final var someInput = tinycentsInput(someTinycentAmount);
@@ -90,6 +93,7 @@ class ExchangeRateSystemContractTest {
 
     @Test
     void convertsPositiveNumberToTinycentsAsExpected() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
         givenRate(someRate);
 
         final var positiveInput = tinybarsInput(someTinybarAmount);
@@ -100,6 +104,7 @@ class ExchangeRateSystemContractTest {
 
     @Test
     void convertsZeroToTinybarsAsExpected() {
+        given(frame.getValue()).willReturn(Wei.ZERO);
         givenRate(someRate);
 
         final var zeroInput = tinycentsInput(0);
@@ -116,6 +121,17 @@ class ExchangeRateSystemContractTest {
         final var result = subject.computeFully(underflowInput, frame);
         assertThat(result.output()).isEqualTo(Bytes.EMPTY);
         assertThat(result.result().getHaltReason().get()).isEqualTo(ExceptionalHaltReason.INVALID_OPERATION);
+    }
+
+    @Test
+    void valueShouldNotBeSentToThePrecompile() {
+        given(frame.getValue()).willReturn(Wei.MAX_WEI);
+
+        final var zeroInput = tinycentsInput(0);
+        final var result = subject.computeFully(zeroInput, frame);
+
+        assertThat(result.output()).isEqualTo(Bytes.EMPTY);
+        assertThat(result.result().getHaltReason().get()).isEqualTo(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
     }
 
     @Test

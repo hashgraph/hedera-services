@@ -53,7 +53,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Return
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.state.ReadableKVState;
+import com.swirlds.state.spi.ReadableKVState;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;

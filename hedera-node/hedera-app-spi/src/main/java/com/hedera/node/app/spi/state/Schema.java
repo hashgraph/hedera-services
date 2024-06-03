@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.spi.state;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;

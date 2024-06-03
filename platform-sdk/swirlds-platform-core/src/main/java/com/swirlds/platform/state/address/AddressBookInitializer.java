@@ -255,11 +255,11 @@ public class AddressBookInitializer {
                         configAddressBook.getAddress(address.getNodeId()).getSigCert();
                 final X509Certificate agreeCert =
                         configAddressBook.getAddress(address.getNodeId()).getAgreeCert();
-                if (sigCert != null && agreeCert != null) {
+                if (sigCert != null) {
                     stateAddressBook.add(address.copySetSigCert(sigCert).copySetAgreeCert(agreeCert));
                 } else {
                     logger.warn(
-                            "Signing and Agreement certificates were not found in the config address book for node {}",
+                            "Signing certificate was not found in the config address book for node {}",
                             address.getNodeId());
                 }
             }

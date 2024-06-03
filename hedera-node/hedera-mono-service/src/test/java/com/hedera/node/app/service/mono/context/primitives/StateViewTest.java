@@ -1280,8 +1280,7 @@ class StateViewTest {
     @Test
     void specialFileMemoIsHexedHash() {
         FileID file150 = asFile("0.0.150");
-        final var expectedMemo =
-                CommonUtils.hex(CryptographyHolder.get().digestSync(data).getValue());
+        final var expectedMemo = CryptographyHolder.get().digestSync(data).toHex();
 
         given(specialFiles.get(file150)).willReturn(data);
         given(specialFiles.contains(file150)).willReturn(true);

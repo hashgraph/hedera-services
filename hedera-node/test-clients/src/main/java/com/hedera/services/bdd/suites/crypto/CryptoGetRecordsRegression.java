@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -36,49 +37,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AssertUtils;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoGetRecordsRegression extends HapiSuite {
-    static final Logger log = LogManager.getLogger(CryptoGetRecordsRegression.class);
+public class CryptoGetRecordsRegression {
     private static final String LOW_THRESH_PAYER = "lowThreshPayer";
     private static final String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
     private static final String ACCOUNT_1 = "account1";
     private static final String PAYER = "payer";
 
-    public static void main(String... args) {
-        new CryptoGetRecordsRegression().runSuiteSync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            failsForDeletedAccount(),
-            failsForMissingAccount(),
-            failsForInvalidTrxBody(),
-            failsForInsufficientPayment(),
-            failsForMalformedPayment(),
-            failsForUnfundablePayment(),
-            succeedsNormally(),
-            getAccountRecords_testForDuplicates()
-        });
-    }
-
     @HapiTest
-    final HapiSpec succeedsNormally() {
+    final Stream<DynamicTest> succeedsNormally() {
         String memo = "Dim galleries, dusky corridors got past...";
 
         return defaultHapiSpec("SucceedsNormally")
@@ -97,7 +69,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsForMissingAccount() {
+    final Stream<DynamicTest> failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
                 .when()
@@ -107,7 +79,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsForMalformedPayment() {
+    final Stream<DynamicTest> failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
@@ -115,7 +87,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsForUnfundablePayment() {
+    final Stream<DynamicTest> failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
@@ -127,7 +99,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsForInsufficientPayment() {
+    final Stream<DynamicTest> failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given(cryptoCreate(PAYER))
                 .when()
@@ -138,7 +110,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsForInvalidTrxBody() {
+    final Stream<DynamicTest> failsForInvalidTrxBody() {
         return defaultHapiSpec("failsForInvalidTrxBody")
                 .given()
                 .when()
@@ -148,7 +120,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec failsForDeletedAccount() {
+    final Stream<DynamicTest> failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate(ACCOUNT_TO_BE_DELETED))
                 .when(cryptoDelete(ACCOUNT_TO_BE_DELETED).transfer(GENESIS))
@@ -160,7 +132,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getAccountRecords_testForDuplicates() {
+    final Stream<DynamicTest> getAccountRecords_testForDuplicates() {
         return defaultHapiSpec("testForDuplicateAccountRecords")
                 .given(
                         cryptoCreate(ACCOUNT_1).balance(5000000000000L).sendThreshold(1L),

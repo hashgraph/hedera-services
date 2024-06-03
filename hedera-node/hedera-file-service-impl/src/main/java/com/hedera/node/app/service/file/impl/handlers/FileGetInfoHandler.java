@@ -165,8 +165,7 @@ public class FileGetInfoHandler extends FileQueryBase {
                 // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
                 final var contents = upgradeFileStore.getFull(fileID).toByteArray();
                 contentSize = contents.length;
-                final var upgradeHash =
-                        hex(CryptographyHolder.get().digestSync(contents).getValue());
+                final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
                 meta = new FileMetadata(
                         file.fileId(),
                         Timestamp.newBuilder().seconds(file.expirationSecond()).build(),

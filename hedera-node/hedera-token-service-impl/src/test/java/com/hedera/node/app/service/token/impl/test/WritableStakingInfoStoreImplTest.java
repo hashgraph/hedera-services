@@ -20,11 +20,11 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +45,7 @@ public class WritableStakingInfoStoreImplTest {
     @BeforeEach
     void setUp() {
         final var wrappedState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(
-                        TokenServiceImpl.STAKING_INFO_KEY)
+                        V0490TokenSchema.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()
@@ -56,7 +56,7 @@ public class WritableStakingInfoStoreImplTest {
                                 .build())
                 .build();
         subject = new WritableStakingInfoStore(
-                new MapWritableStates(Map.of(TokenServiceImpl.STAKING_INFO_KEY, wrappedState)));
+                new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, wrappedState)));
     }
 
     @SuppressWarnings("DataFlowIssue")

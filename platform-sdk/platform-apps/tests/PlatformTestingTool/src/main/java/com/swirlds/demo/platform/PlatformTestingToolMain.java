@@ -78,7 +78,6 @@ import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
-import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -672,9 +671,6 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         initAppStat();
 
-        // register RestartCompleteListener
-        registerStateLoadedFromDiskCompleteListener(currentConfig);
-
         registerAccountBalanceExportListener();
 
         if (waitForSaveStateDuringFreeze) {
@@ -974,21 +970,6 @@ public class PlatformTestingToolMain implements SwirldMain {
             final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpirationQueue();
         }
-    }
-
-    /**
-     * once restart is completed, rebuild ExpectedMap based on actual MerkleMaps
-     */
-    private void registerStateLoadedFromDiskCompleteListener(final SuperConfig currentConfig) {
-        // register RestartCompleteListener
-        platform.getNotificationEngine().register(StateLoadedFromDiskCompleteListener.class, (notification) -> {
-            logger.info(
-                    LOGM_DEMO_INFO,
-                    "Notification Received: StateLoadedFromDisk Finished. sequence: {}",
-                    notification.getSequence());
-            ExpectedMapUtils.buildExpectedMapAfterStateLoad(platform, currentConfig);
-            rebuildExpirationQueue(platform);
-        });
     }
 
     /**

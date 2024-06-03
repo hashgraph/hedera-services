@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.file.impl.test.schemas;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -26,19 +25,19 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,7 +53,7 @@ final class FileSchemaTest {
     void setUp() {
         configProvider = new BootstrapConfigProviderImpl();
         newStates = MapWritableStates.builder()
-                .state(MapWritableKVState.builder(FileServiceImpl.BLOBS_KEY).build())
+                .state(MapWritableKVState.builder(V0490FileSchema.BLOBS_KEY).build())
                 .build();
     }
 
@@ -63,7 +62,7 @@ final class FileSchemaTest {
     void emptyFilesCreatedForUpdateFiles() {
         // Given a file GenesisSchema, and a configuration setting for the range that is unique, so we can make
         // sure to verify that the code in question is using the config values, (and same for key and expiry)
-        final var schema = new InitialModFileGenesisSchema(CURRENT_VERSION, configProvider);
+        final var schema = new V0490FileSchema(configProvider);
         final var expiry = 1000;
         final var keyString = "0123456789012345678901234567890123456789012345678901234567890123";
         final var key = Key.newBuilder().ed25519(Bytes.wrap(unhex(keyString))).build();
@@ -81,10 +80,11 @@ final class FileSchemaTest {
                 networkInfo,
                 new GenesisRecordsConsensusHook(),
                 mock(WritableEntityIdStore.class),
-                null));
+                null,
+                new HashMap<>()));
 
         // Then the new state has empty bytes for files 151-158 and proper values
-        final var files = newStates.<FileID, File>get(FileServiceImpl.BLOBS_KEY);
+        final var files = newStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
         for (int i = 151; i <= 158; i++) {
             final var fileID = FileID.newBuilder().fileNum(i).build();
             final var file = files.get(fileID);

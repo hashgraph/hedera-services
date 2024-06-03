@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.conventions") }
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+}
 
 description = "Default Hedera Token Service Implementation"
 
@@ -27,6 +30,7 @@ testModuleInfo {
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.hedera.node.app.service.token.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.assertj.core")
     requires("org.hamcrest")
@@ -35,5 +39,6 @@ testModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+    requires("com.swirlds.merkledb")
     requires("com.google.protobuf")
 }

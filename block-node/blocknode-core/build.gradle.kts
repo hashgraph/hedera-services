@@ -14,4 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.blocknode.conventions") }
+plugins {
+    id("com.hedera.gradle.blocknode")
+    id("com.hedera.gradle.blocknode-publish")
+}

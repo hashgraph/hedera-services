@@ -102,7 +102,7 @@ class HtsCallFactoryTest extends CallTestBase {
 
         final var input = bytesForRedirect(
                 BALANCE_OF.encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS)), FUNGIBLE_TOKEN_ID);
-        final var attempt = subject.createCallAttemptFrom(input, FrameUtils.CallType.DIRECT_OR_TOKEN_REDIRECT, frame);
+        final var attempt = subject.createCallAttemptFrom(input, FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT, frame);
         final var call = Objects.requireNonNull(attempt.asExecutableCall());
 
         assertInstanceOf(BalanceOfCall.class, call);
