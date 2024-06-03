@@ -58,24 +58,15 @@ public class StaticTopology implements NetworkTopology {
      */
     @Override
     public boolean shouldConnectToMe(final NodeId nodeId) {
-        return isNeighbor(nodeId) && nodeId.id() < selfId.id();
+        return nodeIds.contains(nodeId) && nodeId.id() < selfId.id();
     }
 
-    /**
-     * Queries the topology on whether this node is my neighbor
-     *
-     * @param nodeId the ID of the node being queried
-     * @return true if this node is my neighbor, false if not
-     */
-    private boolean isNeighbor(final NodeId nodeId) {
-        return nodeIds.contains(nodeId);
-    }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean shouldConnectTo(final NodeId nodeId) {
-        return isNeighbor(nodeId) && nodeId.id() > selfId.id();
+        return nodeIds.contains(nodeId) && nodeId.id() > selfId.id();
     }
 }
