@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.dsl.operations.transactions;
+package com.hedera.services.bdd.spec.dsl.operations.queries;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 

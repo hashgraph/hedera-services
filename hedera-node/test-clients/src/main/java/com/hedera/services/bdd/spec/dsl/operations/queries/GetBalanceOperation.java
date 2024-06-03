@@ -14,41 +14,40 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.dsl.operations.transactions;
+package com.hedera.services.bdd.spec.dsl.operations.queries;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
-import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public class GetTokenInfoOperation extends AbstractSpecOperation implements SpecOperation {
-    private final SpecToken target;
+public class GetBalanceOperation extends AbstractSpecOperation implements SpecOperation {
+    private final SpecAccount target;
 
     @Nullable
-    private Consumer<HapiGetTokenInfo> assertions = null;
+    private Consumer<HapiGetAccountBalance> assertions = null;
 
-    public GetTokenInfoOperation(@NonNull final SpecToken target) {
+    public GetBalanceOperation(@NonNull final SpecAccount target) {
         super(List.of(target));
         this.target = target;
     }
 
-    public GetTokenInfoOperation andAssert(@NonNull final Consumer<HapiGetTokenInfo> assertions) {
+    public GetBalanceOperation andAssert(@NonNull final Consumer<HapiGetAccountBalance> assertions) {
         this.assertions = assertions;
         return this;
     }
 
-    @NonNull
     @Override
-    protected SpecOperation computeDelegate(@NonNull HapiSpec spec) {
-        final var op = getTokenInfo(target.name());
+    protected @NonNull SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
+        final var op = getAccountBalance(target.name());
         Optional.ofNullable(assertions).ifPresent(a -> a.accept(op));
         return op;
     }

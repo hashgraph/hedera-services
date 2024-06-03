@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static java.util.Objects.requireNonNull;
 
@@ -27,11 +28,14 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
-import com.hedera.services.bdd.spec.dsl.operations.transactions.GetBalanceOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * Represents a Hedera account that may exist on one or more target networks and be
@@ -64,6 +68,28 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     public DeleteAccountOperation deleteWithTransfer(@NonNull final SpecAccount beneficiary) {
         requireNonNull(beneficiary);
         return new DeleteAccountOperation(this, beneficiary);
+    }
+
+    /**
+     * Returns an operation to associate the account with the given tokens.
+     *
+     * @param tokens the tokens to associate
+     * @return the operation
+     */
+    public AssociateTokensOperation associateTokens(@NonNull final SpecToken... tokens) {
+        requireNonNull(tokens);
+        return new AssociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to authorize the given contract to act on behalf of this account.
+     *
+     * @param contract the contract to authorize
+     * @return the operation
+     */
+    public AuthorizeContractOperation authorizeContract(@NonNull final SpecContract contract) {
+        requireNonNull(contract);
+        return new AuthorizeContractOperation(this, contract);
     }
 
     /**
@@ -123,7 +149,7 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
                                 AccountID.newBuilder().accountNum(newAccountNum).build())
                         .key(keyMetadata.pbjKey())
                         .build(),
-                siblingSpec -> {
+                atMostOnce(siblingSpec -> {
                     keyMetadata.registerAs(name, siblingSpec);
                     siblingSpec
                             .registry()
@@ -135,6 +161,6 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
                     if (creation.model().receiverSigRequired()) {
                         siblingSpec.registry().saveSigRequirement(name, Boolean.TRUE);
                     }
-                });
+                }));
     }
 }

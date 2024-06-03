@@ -18,14 +18,16 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
-import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -37,13 +39,26 @@ public class UpdateTokenPrecompileTest {
     @ContractSpec(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
     static SpecContract updateTokenInfoContract;
 
-    @FungibleTokenSpec(name = "immutableToken", keys = SUPPLY_KEY)
-    static SpecFungibleToken immutableToken;
-
     @HapiTest
-    public Stream<DynamicTest> updateNftTreasuryWithAndWithoutAdminKey() {
+    @DisplayName("can only update mutable token treasury once authorized")
+    public Stream<DynamicTest> canUpdateMutableTokenTreasuryOnceAuthorized(
+            @AccountSpec final SpecAccount newTreasury,
+            @NonFungibleTokenSpec(numPreMints = 1) final SpecNonFungibleToken mutableToken) {
         return hapiTest(
-                updateTokenInfoContract.getInfo().andAssert(HapiQueryOp::logged),
-                immutableToken.getInfo().andAssert(HapiQueryOp::logged));
+                // First confirm we CANNOT update the treasury without authorization
+                updateTokenInfoContract
+                        .call("updateTokenTreasury", mutableToken, newTreasury)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_SIGNATURE)),
+
+                // So authorize the contract to manage both the token and the new treasury
+                newTreasury.authorizeContract(updateTokenInfoContract),
+                mutableToken.authorizeContract(updateTokenInfoContract),
+                // Also need to associate the token with the new treasury
+                newTreasury.associateTokens(mutableToken),
+
+                // Now do a contract-managed treasury update
+                updateTokenInfoContract.call("updateTokenTreasury", mutableToken, newTreasury),
+                // And verify a treasury-owned NFT has the new treasury as its owner
+                mutableToken.serialNo(1).assertOwnerIs(newTreasury));
     }
 }

@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PBJ_IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PROTO_IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedAddresses;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
@@ -31,7 +32,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
-import com.hedera.services.bdd.spec.dsl.operations.transactions.GetContractInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
@@ -70,8 +72,24 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> imp
         return builder;
     }
 
+    /**
+     * Returns an operation that retrieves the contract information.
+     *
+     * @return the operation
+     */
     public GetContractInfoOperation getInfo() {
         return new GetContractInfoOperation(this);
+    }
+
+    /**
+     * Returns an operation that calls a function on the contract.
+     *
+     * @param function the function name
+     * @param parameters the function parameters
+     * @return the operation
+     */
+    public CallContractOperation call(@NonNull final String function, @NonNull final Object... parameters) {
+        return new CallContractOperation(this, function, parameters);
     }
 
     /**
@@ -126,7 +144,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> imp
                                 .build())
                         .key(maybeKeyMetadata.map(KeyMetadata::pbjKey).orElse(PBJ_IMMUTABILITY_SENTINEL_KEY))
                         .build(),
-                siblingSpec -> {
+                atMostOnce(siblingSpec -> {
                     maybeKeyMetadata.ifPresentOrElse(
                             keyMetadata -> keyMetadata.registerAs(name, siblingSpec),
                             () -> siblingSpec.registry().saveKey(name, PROTO_IMMUTABILITY_SENTINEL_KEY));
@@ -145,6 +163,6 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> imp
                                             .setContractNum(newContractNum)
                                             .build());
                     siblingSpec.registry().saveContractInfo(name, contractCreate.infoOfCreatedContractOrThrow());
-                });
+                }));
     }
 }

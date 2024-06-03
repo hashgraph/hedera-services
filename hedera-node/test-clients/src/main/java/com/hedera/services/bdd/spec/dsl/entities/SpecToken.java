@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.SIMPLE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static java.util.Objects.requireNonNull;
@@ -29,7 +30,8 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
-import com.hedera.services.bdd.spec.dsl.operations.transactions.GetTokenInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetTokenInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -46,6 +48,8 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     public static final String DEFAULT_TREASURY_NAME_SUFFIX = "Treasury";
 
     protected final Token.Builder builder = Token.newBuilder();
+
+    private long initialSupply = 0;
 
     @Nullable
     private SpecAccount autoRenewAccount;
@@ -124,6 +128,20 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
         this.keys = requireNonNull(keys);
     }
 
+    /**
+     * Returns an operation to authorize the given contract to act on behalf of this token.
+     *
+     * @param contract the contract to authorize
+     * @return the operation
+     */
+    public AuthorizeContractOperation authorizeContract(@NonNull final SpecContract contract) {
+        requireNonNull(contract);
+        return new AuthorizeContractOperation(this, contract);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Address addressOn(@NonNull HederaNetwork network) {
         requireNonNull(network);
@@ -145,7 +163,8 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
         final var op = tokenCreate(name)
                 .tokenType(com.hederahashgraph.api.proto.java.TokenType.forNumber(
                         model.tokenType().protoOrdinal()))
-                .treasury(requireNonNull(treasuryAccount).name());
+                .treasury(requireNonNull(treasuryAccount).name())
+                .initialSupply(initialSupply);
         if (autoRenewAccount != null) {
             op.autoRenewAccount(autoRenewAccount.name());
         }
@@ -168,7 +187,7 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
                         .copyBuilder()
                         .tokenId(TokenID.newBuilder().tokenNum(newTokenNum).build())
                         .build(),
-                siblingSpec -> {
+                atMostOnce(siblingSpec -> {
                     allKeyMetadata.forEach(keyMetadata -> keyMetadata.registerAs(name, siblingSpec));
                     siblingSpec
                             .registry()
@@ -185,7 +204,7 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
                                     ContractID.newBuilder()
                                             .setContractNum(newTokenNum)
                                             .build());
-                });
+                }));
     }
 
     private void generateKeyAndCustomizeOp(

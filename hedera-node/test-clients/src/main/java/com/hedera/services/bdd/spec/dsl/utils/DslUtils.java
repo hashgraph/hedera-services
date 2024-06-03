@@ -20,9 +20,13 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
+import com.hedera.services.bdd.spec.dsl.SpecEntityRegistrar;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class DslUtils {
     private DslUtils() {
@@ -53,5 +57,14 @@ public class DslUtils {
                     }
                 })
                 .toArray(Object[]::new);
+    }
+
+    public static SpecEntityRegistrar atMostOnce(@NonNull final SpecEntityRegistrar registrar) {
+        final Set<HapiSpec> specs = new LinkedHashSet<>();
+        return spec -> {
+            if (specs.add(spec)) {
+                registrar.registerWith(spec);
+            }
+        };
     }
 }

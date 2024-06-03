@@ -507,6 +507,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+        signers.add(spec -> spec.registry().getAdminKey(token));
         newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
         newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
         autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));

@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.handleExec;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.SpecOperation;
@@ -115,6 +117,7 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
         // Throws if the creation op fails
         handleExec(spec, creation.op);
         final var result = resultForSuccessful(creation, spec);
+        allRunFor(spec, postSuccessOps());
         networkEntities.add(new NetworkEntity<>(network.name(), result));
         return result.registrar;
     }
@@ -160,4 +163,13 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
      * @return the registrar
      */
     protected abstract Result<M> resultForSuccessful(@NonNull Creation<O, M> creation, @NonNull HapiSpec spec);
+
+    /**
+     * Supplies a list of operations to be executed after a successful creation.
+     *
+     * @return the list of operations
+     */
+    protected List<SpecOperation> postSuccessOps() {
+        return emptyList();
+    }
 }
