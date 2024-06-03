@@ -49,6 +49,7 @@ public class GroupElementAggregator {
      *
      * @return the aggregate of the elements
      */
+    @NonNull
     public GroupElement compute() {
         if (elements.isEmpty()) {
             throw new IllegalStateException("No elements to aggregate");

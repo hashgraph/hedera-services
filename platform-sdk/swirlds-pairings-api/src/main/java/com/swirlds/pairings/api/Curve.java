@@ -16,23 +16,44 @@
 
 package com.swirlds.pairings.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+/**
+ * An enumeration of supported pairing curves.
+ */
 public enum Curve {
-    BLS_12_381((byte) 0),
-    BLS_24_477((byte) 1),
-    BLS_48_581((byte) 2);
+    ALT_BN128((byte) 0),
+    BLS12_381((byte) 1);
 
-    final byte id;
+    private final byte id;
 
-    Curve(byte id) {
+    /**
+     * Create a new curve with the given id.
+     *
+     * @param id the curve id
+     */
+    Curve(final byte id) {
         this.id = id;
     }
 
+    /**
+     * Get the curve id byte.
+     *
+     * @return the curve id byte
+     */
     public byte getId() {
         return id;
     }
 
-    public static Curve fromId(byte curveId) {
-        for (Curve curve : values()) {
+    /**
+     * Get the curve from the curve id.
+     *
+     * @param curveId the curve id
+     * @return the curve
+     */
+    @NonNull
+    public static Curve fromId(final byte curveId) {
+        for (final Curve curve : values()) {
             if (curve.id == curveId) {
                 return curve;
             }

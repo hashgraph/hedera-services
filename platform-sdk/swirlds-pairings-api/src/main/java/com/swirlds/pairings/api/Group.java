@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
 /**
- * Represents a mathematical group used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
+ * Represents a mathematical group used in a pairing-based cryptography system.
  *
  * <p>A group in this context is a set of elements combined with an operation that satisfies
  * the group properties: closure, associativity, identity, and invertibility. When the group
@@ -32,12 +32,13 @@ import java.util.Collection;
  */
 public interface Group {
     /**
-     * Returns the opposite group of the element
+     * Returns the opposite group of this group
      * <p>
-     * If the group of this element is G1, then the opposite group is G2, and vice versa.
+     * If this group is G1, then the opposite group is G2, and vice versa.
      *
-     * @return the opposite group of the element
+     * @return the opposite group
      */
+    @NonNull
     default Group getOppositeGroup() {
         return getPairing().getOtherGroup(this);
     }
@@ -67,7 +68,7 @@ public interface Group {
     GroupElement zeroElement();
 
     /**
-     * Creates a group element from a seed (32 bytes)
+     * Creates a group element from a seed
      *
      * @param seed the seed to generate the element from
      * @return the new group element
@@ -76,19 +77,9 @@ public interface Group {
     GroupElement randomElement(byte[] seed);
 
     /**
-     * Creates a group element from a seed (32 bytes)
-     *
-     * @return the new group element
-     */
-    @NonNull
-    default GroupElement randomElement() { // remvoe this method
-        return randomElement(new byte[32]);
-    }
-
-    /**
      * Hashes an unbounded length input to a group element
      *
-     * @param input the input to be hashes
+     * @param input the input to be hashed
      * @return the new group element
      */
     @NonNull
@@ -97,7 +88,7 @@ public interface Group {
     /**
      * Adds a collection of group elements together
      *
-     * @param elements the collection of elements to multiply together
+     * @param elements the collection of elements to add together
      * @return a new group element which is the sum the collection of elements
      */
     @NonNull

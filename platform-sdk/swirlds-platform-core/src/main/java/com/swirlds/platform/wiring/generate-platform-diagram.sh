@@ -9,9 +9,9 @@ SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 # Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
 
 pcli diagram \
-    -l 'TransactionPrehandler:futures:consensusRoundHandler' \
+    -l 'TransactionPrehandler:futures:TransactionHandler' \
     -l 'EventCreationManager:get transactions:TransactionPool' \
-    -l 'ConsensusEventStream:future hash:consensusRoundHandler' \
+    -l 'ConsensusEventStream:future hash:TransactionHandler' \
     -s 'eventWindowManager:event window:🌀' \
     -s 'Heartbeat:heartbeat:❤️' \
     -s 'TransactionPrehandler:futures:🔮' \
@@ -47,11 +47,11 @@ pcli diagram \
     -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,Stale Event Detector,Transaction Resubmitter,⚰️,♻️' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
     -g 'PCES Replay:pcesReplayer,✅' \
-    -g 'Consensus Round Handler:consensusRoundHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
+    -g 'Transaction Handler:TransactionHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
     -g 'State Hasher:StateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:StateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
-    -g 'Transaction Handling:Consensus Round Handler,latestImmutableStateNexus' \
+    -g 'Transaction Handling:Transaction Handler,latestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Branch Detection:BranchDetector,BranchReporter' \
     -g 'Miscellaneous:Mystery Input,RunningEventHashOverride,HealthMonitor,SignedStateSentinel,StatusStateMachine,PlatformStatusNexus,Heartbeat,❔,🏥,❤️,💨,🚦' \
@@ -59,7 +59,7 @@ pcli diagram \
     -c 'Consensus Engine' \
     -c 'State Signature Collector' \
     -c 'State Snapshot Manager' \
-    -c 'Consensus Round Handler' \
+    -c 'Transaction Handler' \
     -c 'State Hasher' \
     -c 'ISS Detector' \
     -c 'Round Durability Buffer' \

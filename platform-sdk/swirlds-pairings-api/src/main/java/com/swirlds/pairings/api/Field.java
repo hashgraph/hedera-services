@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
 
 /**
- * Represents a finite field used in the Boneh-Lynn-Shacham (BLS) cryptographic scheme.
+ * Represents a finite field used in a pairing-based cryptography scheme.
  * <p>A finite field, often denoted as 𝔽q, where (q) is a prime power, is a field with a finite number of elements.</p>
  *
  * <p>This is a factory interface, responsible for creating {@link FieldElement} which are scalars belonging to the
@@ -36,6 +36,7 @@ public interface Field {
      * @param random the source of randomness
      * @return the random field element
      */
+    @NonNull
     default FieldElement randomElement(@NonNull final Random random) {
         final byte[] seed = new byte[getSeedSize()];
         random.nextBytes(seed);
@@ -53,7 +54,7 @@ public interface Field {
     FieldElement elementFromLong(long inputLong);
 
     /**
-     * Creates a field element from a seed (32 bytes)
+     * Creates a field element from a seed
      *
      * @param seed a seed to use to generate randomness
      * @return the new field element
@@ -65,7 +66,7 @@ public interface Field {
      * Creates a field element from its serialized encoding
      *
      * @param bytes serialized form
-     * @return the new field element, or null if construction fails
+     * @return the new field element
      */
     @NonNull
     FieldElement elementFromBytes(byte[] bytes);
@@ -84,6 +85,11 @@ public interface Field {
      */
     int getSeedSize();
 
+    /**
+     * Get the pairing that this field is used in
+     *
+     * @return the pairing
+     */
     @NonNull
     BilinearPairing getPairing();
 }

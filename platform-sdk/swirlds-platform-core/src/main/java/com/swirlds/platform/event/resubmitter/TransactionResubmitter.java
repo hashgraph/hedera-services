@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.event.stale;
+package com.swirlds.platform.event.resubmitter;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,4 +37,13 @@ public interface TransactionResubmitter {
     @InputWireLabel("stale events")
     @NonNull
     List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull GossipEvent event);
+
+    /**
+     * Update the current event window. The transaction resubmitter may use this information to decide which
+     * transactions are worth resubmitting.
+     *
+     * @param eventWindow the new event window
+     */
+    @InputWireLabel("event window")
+    void updateEventWindow(@NonNull final EventWindow eventWindow);
 }

@@ -70,6 +70,7 @@ public interface BilinearPairing {
      * @param group the group to get the "other group" of
      * @return the other group
      */
+    @NonNull
     Group getOtherGroup(@NonNull Group group);
 
     /**
