@@ -43,7 +43,6 @@ import javax.swing.SpinnerNumberModel;
 
 public class TestGuiSource {
     private final GraphGenerator<?> graphGenerator;
-    private final TestIntake intake;
     private final HashgraphGuiSource guiSource;
     private ConsensusSnapshot savedSnapshot;
     private final GuiEventStorage eventStorage;
@@ -53,18 +52,16 @@ public class TestGuiSource {
      *
      * @param platformContext the platform context
      * @param seed            the seed
-     * @param addressBook     the address book for this node
+     * @param numNodes        the number of nodes
      */
     public TestGuiSource(
-            @NonNull final PlatformContext platformContext, final long seed, @NonNull final AddressBook addressBook) {
+            @NonNull final PlatformContext platformContext, final long seed, @NonNull final int numNodes) {
 
-        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(addressBook.getSize()));
+        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(numNodes));
         graphGenerator.reset();
 
-        intake = new TestIntake(platformContext, graphGenerator.getAddressBook());
-
-        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
-        guiSource = new StandardGuiSource(addressBook, eventStorage);
+        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), graphGenerator.getAddressBook());
+        guiSource = new StandardGuiSource(graphGenerator.getAddressBook(), eventStorage);
     }
 
     public TestGuiSource(
@@ -73,7 +70,6 @@ public class TestGuiSource {
             @NonNull final GraphGenerator<?> graphGenerator,
             @NonNull final TestIntake intake) {
         this.graphGenerator = graphGenerator;
-        this.intake = intake;
 
         eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
         guiSource = new StandardGuiSource(addressBook, eventStorage);
@@ -85,14 +81,12 @@ public class TestGuiSource {
 
     public void generateEvents(final int numEvents) {
         final List<IndexedEvent> events = graphGenerator.generateEvents(numEvents);
-        intake.addEvents(events);
         for (final IndexedEvent event : events) {
             eventStorage.handlePreconsensusEvent(event.getBaseEvent());
         }
     }
 
     public @NonNull JPanel controls() {
-
         // Fame decided below
         final JLabel fameDecidedBelow = new JLabel("N/A");
         final Runnable updateFameDecidedBelow = () -> fameDecidedBelow.setText(
@@ -111,7 +105,6 @@ public class TestGuiSource {
         nextEvent.addActionListener(e -> {
             final List<IndexedEvent> events = graphGenerator.generateEvents(
                     numEvents.getValue() instanceof Integer value ? value : defaultNumEvents);
-            intake.addEvents(events);
             for (final IndexedEvent event : events) {
                 eventStorage.handlePreconsensusEvent(event.getBaseEvent());
             }
@@ -122,14 +115,13 @@ public class TestGuiSource {
         final JButton reset = new JButton("Reset");
         reset.addActionListener(e -> {
             graphGenerator.reset();
-            intake.reset();
             eventStorage.handleSnapshotOverride(GENESIS_SNAPSHOT);
             updateFameDecidedBelow.run();
         });
         // snapshots
         final JButton printLastSnapshot = new JButton("Print last snapshot");
         printLastSnapshot.addActionListener(e -> {
-            final ConsensusRound round = intake.getConsensusRounds().peekLast();
+            final ConsensusRound round = eventStorage.getLastConsensusRound();
             if (round == null) {
                 System.out.println("No consensus rounds");
             } else {
@@ -138,7 +130,7 @@ public class TestGuiSource {
         });
         final JButton saveLastSnapshot = new JButton("Save last snapshot");
         saveLastSnapshot.addActionListener(e -> {
-            final ConsensusRound round = intake.getConsensusRounds().peekLast();
+            final ConsensusRound round = eventStorage.getLastConsensusRound();
             if (round == null) {
                 System.out.println("No consensus rounds");
             } else {
@@ -151,8 +143,7 @@ public class TestGuiSource {
                 System.out.println("No saved snapshot");
                 return;
             }
-            intake.reset();
-            intake.loadSnapshot(savedSnapshot);
+            //eventStorage.clearState();
             eventStorage.handleSnapshotOverride(savedSnapshot);
         });
 

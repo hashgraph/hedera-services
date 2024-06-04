@@ -25,10 +25,12 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
+import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -47,6 +49,7 @@ public class GuiEventStorage {
     private final Consensus consensus;
     private final SimpleLinker linker;
     private final Configuration configuration;
+    private ConsensusRound lastConsensusRound;
 
     /**
      * Constructor
@@ -80,7 +83,8 @@ public class GuiEventStorage {
     public synchronized void handlePreconsensusEvent(@NonNull final GossipEvent event) {
         maxGeneration = Math.max(maxGeneration, event.getGeneration());
 
-        final EventImpl eventImpl = linker.linkEvent(event);
+        // since the gui will modify the event, we need to copy it
+        final EventImpl eventImpl = linker.linkEvent(event.copyGossipedData());
         if (eventImpl == null) {
             return;
         }
@@ -90,6 +94,7 @@ public class GuiEventStorage {
         if (rounds.isEmpty()) {
             return;
         }
+        lastConsensusRound = rounds.getLast();
 
         linker.setNonAncientThreshold(rounds.getLast().getEventWindow().getAncientThreshold());
     }
@@ -105,6 +110,12 @@ public class GuiEventStorage {
         linker.clear();
         linker.setNonAncientThreshold(snapshot.getMinimumGenerationNonAncient(
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient()));
+        lastConsensusRound = null;
+    }
+
+    public synchronized void clearState(){
+        consensus.loadSnapshot(SyntheticSnapshot.GENESIS_SNAPSHOT);
+        linker.clear();
     }
 
     /**
@@ -122,5 +133,9 @@ public class GuiEventStorage {
     @NonNull
     public synchronized List<EventImpl> getNonAncientEvents() {
         return linker.getNonAncientEvents();
+    }
+
+    public ConsensusRound getLastConsensusRound() {
+        return lastConsensusRound;
     }
 }
