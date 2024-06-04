@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -79,4 +80,6 @@ public interface UserTransactionComponent {
     PreHandleResult preHandleResult();
 
     ReadableStoreFactory readableStoreFactory();
+
+    KeyVerifier keyVerifier();
 }

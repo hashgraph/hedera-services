@@ -19,35 +19,34 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchValidationResult;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 
-@Subcomponent(modules = {})
+@Subcomponent(modules = {DispatchModule.class})
 @HandleContextScope
-public interface SRPHandleContextComponent {
+public interface DispatchComponent {
     @Subcomponent.Factory
     interface Factory {
-        SRPHandleContextComponent create(
-                @BindsInstance TransactionBody txnBody,
-                @BindsInstance HederaFunctionality functionality,
-                @BindsInstance int signatureMapSize,
-                @BindsInstance AccountID payer,
+        DispatchComponent create(
+                @BindsInstance TransactionInfo txnInfo,
                 @BindsInstance Key payerkey,
                 @BindsInstance HandleContext.TransactionCategory txnCategory,
                 @BindsInstance SingleTransactionRecordBuilderImpl recordBuilder,
                 @BindsInstance SavepointStackImpl stack,
-                @BindsInstance KeyVerifier keyVerifier);
+                @BindsInstance KeyVerifier keyVerifier,
+                @BindsInstance AccountID topLevelPayer,
+                @BindsInstance ResponseCodeEnum pureChecksResult,
+                @BindsInstance DispatchValidationResult txnBody,);
     }
 
-    FlowHandleContext handleContext();
-
-    FeeAccumulator feeAccumulator();
+    HandleContext handleContext();
 }

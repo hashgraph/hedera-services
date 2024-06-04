@@ -584,7 +584,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @NonNull
-    public <T> T doDispatchPrecedingTransaction(
+    private <T> T doDispatchPrecedingTransaction(
             @NonNull final AccountID syntheticPayer,
             @NonNull final TransactionBody txBody,
             @NonNull final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory,
@@ -653,7 +653,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
-
+    @Override
     public @NonNull Map<AccountID, Long> dispatchPaidRewards() {
         return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }

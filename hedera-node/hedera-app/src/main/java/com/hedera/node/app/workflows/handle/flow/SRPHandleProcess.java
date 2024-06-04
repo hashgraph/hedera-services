@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.future.ScheduleServiceCronLogic;
-import com.hedera.node.app.workflows.handle.flow.infra.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.infra.records.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
+import com.hedera.node.app.workflows.handle.flow.modules.DispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,6 +40,7 @@ public class SRPHandleProcess implements HandleProcess {
     private final ScheduleServiceCronLogic scheduleServiceCronLogic;
     private final UserRecordInitializer userRecordInitializer;
     private final UserTxnLogger userTxnLogger;
+    private final Provider<DispatchComponent.Factory> dispatchProvider;
 
     @Inject
     public SRPHandleProcess(
@@ -43,12 +48,14 @@ public class SRPHandleProcess implements HandleProcess {
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
             final UserRecordInitializer userRecordInitializer,
-            final UserTxnLogger userTxnLogger) {
+            final UserTxnLogger userTxnLogger,
+            final Provider<DispatchComponent.Factory> dispatchProvider) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
         this.userRecordInitializer = userRecordInitializer;
         this.userTxnLogger = userTxnLogger;
+        this.dispatchProvider = dispatchProvider;
     }
 
     @Override
@@ -58,6 +65,20 @@ public class SRPHandleProcess implements HandleProcess {
         scheduleServiceCronLogic.expireSchedules(blockRecordManager.consTimeOfLastHandledTxn(), userTxn);
         userRecordInitializer.initializeUserRecord(userTxn.recordBuilder(), userTxn.txnInfo());
         userTxnLogger.logUserTxn(userTxn);
+
+//        final var handleContext = dispatchProvider
+//                .get()
+//                .create(
+//                        userTxn.txnInfo().txBody(),
+//                        userTxn.functionality(),
+//                        SignatureMap.PROTOBUF.measureRecord(userTxn.txnInfo().signatureMap()),
+//                        userTxn.txnInfo().payerID(),
+//                        userTxn.preHandleResult().payerKey(),
+//                        HandleContext.TransactionCategory.USER,
+//                        userTxn.recordBuilder(),
+//                        userTxn.savepointStack(),
+//                        userTxn.keyVerifier(),
+//                        userTxn.txnInfo().payerID()).handleContext();
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {

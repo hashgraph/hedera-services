@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
-import dagger.Binds;
-import dagger.Module;
+import static java.util.Objects.requireNonNull;
 
-@Module
-public interface HandleContextModule {
-    @Binds
-    @HandleContextScope
-    HandleContext bindHandleContext(HandleContextImpl context);
+import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.spi.fees.Fees;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public record DispatchValidationResult(@NonNull Key key, @NonNull Fees fees) {
+    public DispatchValidationResult {
+        requireNonNull(key);
+    }
 }

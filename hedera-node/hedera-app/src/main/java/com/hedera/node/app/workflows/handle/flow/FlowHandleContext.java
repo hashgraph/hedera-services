@@ -48,6 +48,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 
@@ -334,6 +335,12 @@ public class FlowHandleContext implements HandleContext {
     @Nullable
     @Override
     public Instant freezeTime() {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public Map<AccountID, Long> dispatchPaidRewards() {
         return null;
     }
 }

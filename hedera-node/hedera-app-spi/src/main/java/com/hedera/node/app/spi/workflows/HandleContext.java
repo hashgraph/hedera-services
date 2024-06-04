@@ -45,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -402,6 +403,7 @@ public interface HandleContext {
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
+    // Only used in tests
     default <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
@@ -766,4 +768,7 @@ public interface HandleContext {
      */
     @Nullable
     Instant freezeTime();
+
+    @NonNull
+    Map<AccountID, Long> dispatchPaidRewards();
 }
