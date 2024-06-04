@@ -174,6 +174,7 @@ public final class Hedera implements SwirldMain {
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
     private final SyntheticRecordsGenerator recordsGenerator;
+    private Metrics metrics;
 
     /**
      * The application name from the platform's perspective. This is currently locked in at the old main class name and
@@ -373,7 +374,7 @@ public final class Hedera implements SwirldMain {
         // file in state, created by the file service migration, will match what we have here, so we don't have to worry
         // about re-loading config after migration.
         logger.info("Initializing configuration with trigger {}", trigger);
-        final var metrics = platform.getContext().getMetrics();
+        this.metrics = platform.getContext().getMetrics();
         configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logConfiguration();
 
@@ -903,6 +904,7 @@ public final class Hedera implements SwirldMain {
                 .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                 .instantSource(InstantSource.system())
                 .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
+                .metrics(metrics)
                 .build();
 
         daggerApp.workingStateAccessor().setHederaState(state);

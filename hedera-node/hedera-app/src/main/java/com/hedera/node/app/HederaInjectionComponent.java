@@ -55,6 +55,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
@@ -178,6 +179,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder softwareVersion(SoftwareVersion softwareVersion);
+
+        @BindsInstance
+        Builder metrics(Metrics metrics);
 
         HederaInjectionComponent build();
     }

@@ -33,14 +33,18 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
@@ -192,10 +196,20 @@ public class ServicesMain implements SwirldMain {
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
-        final PlatformBuilder builder =
+        final PlatformBuilder platformBuilder =
                 PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
 
-        builder.withConfiguration(buildConfiguration());
+        platformBuilder.withPreviousSoftwareVersionClassId(0x6f2b1bc2df8cbd0bL /* SerializableSemVers.CLASS_ID */);
+
+        // Add additional configuration to the platform
+        final Configuration configuration = buildConfiguration();
+        platformBuilder.withConfiguration(configuration);
+
+        final Metrics metrics = new DefaultMetricsProvider(configuration).createPlatformMetrics(selfId);
+        platformBuilder.withMetrics(metrics);
+
+        platformBuilder.withCryptography(CryptographyFactory.create());
+        platformBuilder.withTime(Time.getCurrent());
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -220,7 +234,7 @@ public class ServicesMain implements SwirldMain {
         // whose object graph roots include the Ingest, PreHandle, Handle, and Query workflows;
         // as well as other infrastructure components that need to be initialized or accessed
         // at specific points in the Swirlds application lifecycle.
-        final Platform platform = builder.build();
+        final Platform platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
