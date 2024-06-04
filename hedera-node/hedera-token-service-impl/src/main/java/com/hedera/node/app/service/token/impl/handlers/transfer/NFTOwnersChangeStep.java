@@ -39,8 +39,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
-import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -71,12 +69,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = handleContext.expiryValidator();
 
-        var tokenPausedValidation = transferContext.allowFreezeAndPausedTokenTransfer()
-                ? TokenValidations.PERMIT_PAUSED
-                : TokenValidations.REQUIRE_NOT_PAUSED;
-        var tokenRelFrozenValidation = transferContext.allowFreezeAndPausedTokenTransfer()
-                ? TokenRelValidations.PERMIT_FROZEN
-                : TokenRelValidations.REQUIRE_NOT_FROZEN;
+        var tokenPausedValidation = transferContext.tokenValidations();
+        var tokenRelFrozenValidation = transferContext.tokenRelValidations();
 
         for (var xfers : tokenTransferLists) {
             final var tokenId = xfers.token();

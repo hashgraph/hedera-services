@@ -40,7 +40,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
-import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -83,13 +82,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         final Map<EntityIDPair, Long> allowanceTransfers = new LinkedHashMap<>();
 
-        var tokenPausedValidation = transferContext.allowFreezeAndPausedTokenTransfer()
-                ? TokenValidations.PERMIT_PAUSED
-                : TokenValidations.REQUIRE_NOT_PAUSED;
-
-        var tokenRelFrozenValidation = transferContext.allowFreezeAndPausedTokenTransfer()
-                ? TokenRelValidations.PERMIT_FROZEN
-                : TokenRelValidations.REQUIRE_NOT_FROZEN;
+        var tokenPausedValidation = transferContext.tokenValidations();
+        var tokenRelFrozenValidation = transferContext.tokenRelValidations();
 
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.

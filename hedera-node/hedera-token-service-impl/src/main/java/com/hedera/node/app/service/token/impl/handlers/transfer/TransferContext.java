@@ -19,6 +19,8 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -118,11 +120,16 @@ public interface TransferContext {
     boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
 
     /**
-     * Determines if this transfer can bypass checks for a paused token or frozen account.
-     * Valid only for TokenReject transfers.
-     * @return true if the transfer can override the checks; otherwise, false
+     * Determines the validation requirements for the token-account relationships in this transfer.
+     * We permit FROZEN relationship for TokenReject transfers.
      */
-    boolean allowFreezeAndPausedTokenTransfer();
+    TokenRelValidations tokenRelValidations();
+
+    /**
+     * Determines the validation requirements for the token-account relationships in this transfer.
+     * We permit Paused relationship for TokenReject transfers.
+     */
+    TokenValidations tokenValidations();
 
     /**
      * Validates hbar allowances for the top-level operation in this transfer context.

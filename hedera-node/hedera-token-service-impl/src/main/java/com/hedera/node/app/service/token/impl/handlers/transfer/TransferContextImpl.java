@@ -30,6 +30,8 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -59,14 +61,15 @@ public class TransferContextImpl implements TransferContext {
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
-    private final boolean allowFreezeAndPausedTokenTransfer;
+    private final TokenRelValidations tokenRelValidations;
+    private final TokenValidations tokenValidations;
 
     /**
      * Create a new {@link TransferContextImpl} instance.
      * @param context The context to use.
      */
     public TransferContextImpl(final HandleContext context) {
-        this(context, true, false);
+        this(context, true, TokenRelValidations.REQUIRE_NOT_FROZEN, TokenValidations.REQUIRE_NOT_PAUSED);
     }
 
     /**
@@ -75,12 +78,14 @@ public class TransferContextImpl implements TransferContext {
      * @param context The context to use.
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
      * on auto creation custom fee payments.
-     * @param allowFreezeAndPausedTokenTransfer Whether to override paused token and frozen account checks.
+     * @param tokenRelValidations The token <-> account relationship validations to use.
+     * @param tokenValidations The token validations to use.
      */
     public TransferContextImpl(
             final HandleContext context,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments,
-            boolean allowFreezeAndPausedTokenTransfer) {
+            final TokenRelValidations tokenRelValidations,
+            final TokenValidations tokenValidations) {
         this.context = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
@@ -89,7 +94,8 @@ public class TransferContextImpl implements TransferContext {
         this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
                 enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
-        this.allowFreezeAndPausedTokenTransfer = allowFreezeAndPausedTokenTransfer;
+        this.tokenRelValidations = tokenRelValidations;
+        this.tokenValidations = tokenValidations;
     }
 
     @Override
@@ -187,8 +193,13 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public boolean allowFreezeAndPausedTokenTransfer() {
-        return allowFreezeAndPausedTokenTransfer;
+    public TokenRelValidations tokenRelValidations() {
+        return tokenRelValidations;
+    }
+
+    @Override
+    public TokenValidations tokenValidations() {
+        return tokenValidations;
     }
 
     @Override
