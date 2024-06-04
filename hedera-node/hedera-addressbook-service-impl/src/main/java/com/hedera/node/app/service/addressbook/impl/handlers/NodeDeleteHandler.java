@@ -53,7 +53,9 @@ public class NodeDeleteHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
-        if (transactionBody.nodeId() <= 0) {
+        final long nodeId = transactionBody.nodeId();
+
+        if (nodeId <= 0 || nodeId > Long.MAX_VALUE) {
             throw new PreCheckException(INVALID_NODE_ID);
         }
     }
@@ -64,9 +66,9 @@ public class NodeDeleteHandler implements TransactionHandler {
 
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         final ReadableNodeStore nodeStore = context.createStore(ReadableNodeStore.class);
-        final long nodeId = requireNonNull(transactionBody.nodeId());
+        final long nodeId = transactionBody.nodeId();
 
-        if (nodeId <= 0) {
+        if (nodeId <= 0 || nodeId > Long.MAX_VALUE) {
             throw new PreCheckException(INVALID_NODE_ID);
         }
 
@@ -87,7 +89,7 @@ public class NodeDeleteHandler implements TransactionHandler {
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
 
-        if (nodeId <= 0) {
+        if (nodeId <= 0 || nodeId > Long.MAX_VALUE) {
             throw new HandleException(INVALID_NODE_ID);
         }
 
@@ -103,7 +105,7 @@ public class NodeDeleteHandler implements TransactionHandler {
             throw new HandleException(NODE_DELETED);
         }
 
-        /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
+        /* Copy all the fields from existing, and mark deleted flag  */
         final var nodeBuilder = new Node.Builder()
                 .nodeId(node.nodeId())
                 .accountId(node.accountId())
@@ -114,7 +116,7 @@ public class NodeDeleteHandler implements TransactionHandler {
                 .weight(node.weight())
                 .deleted(true);
 
-        /* --- Put the modified file. It will be in underlying state's modifications map.
+        /* --- Put the modified node. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         nodeStore.put(nodeBuilder.build());
     }
