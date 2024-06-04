@@ -16,16 +16,11 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODE_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -34,11 +29,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
+import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -46,9 +41,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.NodesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -57,9 +49,16 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NodeCreateHandler implements TransactionHandler {
+    private final AddressBookValidator addressBookValidator;
+
+    /**
+     * Constructs a {@link NodeCreateHandler} with the given {@link AddressBookValidator}.
+     * @param addressBookValidator the validator for the crypto create transaction
+     */
     @Inject
-    public NodeCreateHandler() {
-        // Exists for injection
+    public NodeCreateHandler(@NonNull final AddressBookValidator addressBookValidator) {
+        this.addressBookValidator =
+                requireNonNull(addressBookValidator, "The supplied argument 'addressBookValidator' must not be null");
     }
 
     @Override
@@ -85,7 +84,7 @@ public class NodeCreateHandler implements TransactionHandler {
     }
 
     /**
-     * Given the appropriate context, creates a new topic.
+     * Given the appropriate context, creates a new node.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -103,9 +102,9 @@ public class NodeCreateHandler implements TransactionHandler {
         final var nodeBuilder = new Node.Builder();
 
         validateFalse(nodeStore.sizeOfState() >= nodeConfig.maxNumber(), MAX_NODE_HAVE_BEEN_CREATED);
-        validateDescription(op.description(), nodeConfig);
-        validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
-        validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
+        addressBookValidator.validateDescription(op.description(), nodeConfig);
+        addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
+        addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
         validateFalse(op.gossipCaCertificate().length() == 0, INVALID_GOSSIP_CAE_CERTIFICATE);
 
         nodeBuilder
@@ -125,64 +124,5 @@ public class NodeCreateHandler implements TransactionHandler {
         final var recordBuilder = handleContext.recordBuilder(NodeCreateRecordBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
-    }
-
-    private void validateDescription(@Nullable final String description, @NonNull final NodesConfig nodesConfig) {
-        if (description == null || description.isEmpty()) {
-            return;
-        }
-        final var raw = description.getBytes(StandardCharsets.UTF_8);
-        final var maxUtf8Bytes = nodesConfig.nodeMaxDescriptionUtf8Bytes();
-        validateFalse(raw.length > maxUtf8Bytes, INVALID_NODE_DESCRIPTION);
-        validateFalse(containsZeroByte(raw), INVALID_NODE_DESCRIPTION);
-    }
-
-    private boolean containsZeroByte(@NonNull final byte[] bytes) {
-        boolean ret = false;
-        for (final byte b : bytes) {
-            if (b == 0) {
-                ret = true;
-                break;
-            }
-        }
-        return ret;
-    }
-
-    private void validateGossipEndpoint(
-            @Nullable final List<ServiceEndpoint> endpointLst, @NonNull final NodesConfig nodesConfig) {
-        validateFalse(endpointLst == null || endpointLst.isEmpty(), INVALID_GOSSIP_ENDPOINT);
-        validateFalse(endpointLst.size() > nodesConfig.maxGossipEndpoint(), INVALID_GOSSIP_ENDPOINT);
-        // for phase 2: The first in the list is used as the Internal IP address in config.txt,
-        // the second in the list is used as the External IP address in config.txt
-        validateFalse(endpointLst.size() < 2, INVALID_GOSSIP_ENDPOINT);
-
-        for (final var endpoint : endpointLst) {
-            validateFalse(
-                    nodesConfig.gossipFqdnRestricted() && !endpoint.domainName().isEmpty(),
-                    GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN);
-            validateEndpoint(endpoint, nodesConfig);
-        }
-    }
-
-    private void validateServiceEndpoint(
-            @Nullable final List<ServiceEndpoint> endpointLst, @NonNull final NodesConfig nodesConfig) {
-        validateFalse(endpointLst == null || endpointLst.isEmpty(), INVALID_SERVICE_ENDPOINT);
-        validateFalse(endpointLst.size() > nodesConfig.maxServiceEndpoint(), INVALID_SERVICE_ENDPOINT);
-        for (final var endpoint : endpointLst) {
-            validateEndpoint(endpoint, nodesConfig);
-        }
-    }
-
-    private void validateEndpoint(@NonNull final ServiceEndpoint endpoint, @NonNull final NodesConfig nodesConfig) {
-        validateFalse(endpoint.port() == 0, INVALID_ENDPOINT);
-        validateFalse(
-                endpoint.ipAddressV4().length() == 0
-                        && endpoint.domainName().trim().isEmpty(),
-                INVALID_ENDPOINT);
-        validateFalse(
-                endpoint.ipAddressV4().length() != 0
-                        && !endpoint.domainName().trim().isEmpty(),
-                IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT);
-        validateFalse(endpoint.domainName().trim().length() > nodesConfig.maxFqdnSize(), FQDN_SIZE_TOO_LARGE);
     }
 }
