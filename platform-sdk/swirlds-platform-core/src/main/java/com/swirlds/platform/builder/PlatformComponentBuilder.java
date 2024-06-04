@@ -1025,7 +1025,6 @@ public class PlatformComponentBuilder {
         if (gossip == null) {
             gossip = new SyncGossip(
                     blocks.platformContext(),
-                    blocks.randomBuilder().buildNonCryptographicRandom(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
                     blocks.initialAddressBook(),
@@ -1035,7 +1034,6 @@ public class PlatformComponentBuilder {
                     blocks.swirldStateManager(),
                     () -> blocks.getLatestCompleteStateReference().get().get(),
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
-                    () -> blocks.platformStatusSupplierReference().get().get(),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
                     blocks.intakeEventCounter());

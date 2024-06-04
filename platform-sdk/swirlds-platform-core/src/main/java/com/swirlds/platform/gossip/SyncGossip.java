@@ -93,8 +93,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -137,7 +137,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     private final ReconnectMetrics reconnectMetrics;
 
     protected final StatusActionSubmitter statusActionSubmitter;
-    protected final Supplier<PlatformStatus> platformStatusSupplier;
+    protected final AtomicReference<PlatformStatus> currentPlatformStatus =
+            new AtomicReference<>(PlatformStatus.STARTING_UP);
 
     private final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -154,7 +155,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
-     * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
@@ -164,7 +164,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
      * @param statusActionSubmitter         submits status actions
-     * @param platformStatusSupplier        provides the current platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
@@ -172,7 +171,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
@@ -182,7 +180,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final Supplier<ReservedSignedState> latestCompleteState,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final IntakeEventCounter intakeEventCounter) {
@@ -195,14 +192,13 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         shadowgraph = new Shadowgraph(platformContext, addressBook, intakeEventCounter);
 
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+
+        topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
@@ -232,7 +228,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = new FallenBehindManagerImpl(
                 addressBook,
                 selfId,
-                topology.getConnectionGraph(),
+                topology,
                 statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
@@ -324,7 +320,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 intakeQueueSizeSupplier,
                 latestCompleteState,
                 syncMetrics,
-                platformStatusSupplier,
+                currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
                 reconnectConfig,
@@ -498,7 +494,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
             @NonNull final BindableInputWire<NoInput, Void> clearInput,
-            @NonNull final BindableInputWire<Duration, Void> systemHealthInput) {
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput,
+            @NonNull final BindableInputWire<PlatformStatus, Void> platformStatusInput) {
 
         startInput.bindConsumer(ignored -> start());
         stopInput.bindConsumer(ignored -> stop());
@@ -517,6 +514,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         });
 
         systemHealthInput.bindConsumer(syncPermitProvider::reportUnhealthyDuration);
+        platformStatusInput.bindConsumer(currentPlatformStatus::set);
 
         final boolean useOldStyleIntakeQueue = platformContext
                 .getConfiguration()

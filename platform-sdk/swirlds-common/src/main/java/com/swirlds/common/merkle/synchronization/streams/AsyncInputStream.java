@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +60,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
 
     private final SerializableDataInputStream inputStream;
 
-    private final AtomicInteger anticipatedMessages;
+    private final AtomicLong anticipatedMessages;
     private final BlockingQueue<SelfSerializable> receivedMessages;
 
     /**
@@ -99,7 +99,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
         this.messageFactory = Objects.requireNonNull(messageFactory, "messageFactory must not be null");
         this.pollTimeout = config.asyncStreamTimeout();
-        this.anticipatedMessages = new AtomicInteger(0);
+        this.anticipatedMessages = new AtomicLong(0L);
         this.receivedMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.finishedLatch = new CountDownLatch(1);
         this.alive = true;
@@ -136,10 +136,10 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
         T message = null;
         try {
             while (isAlive() && !Thread.currentThread().isInterrupted()) {
-                final int previous =
-                        anticipatedMessages.getAndUpdate((final int value) -> value == 0 ? 0 : (value - 1));
+                final long previous =
+                        anticipatedMessages.getAndUpdate((final long value) -> value == 0L ? 0L : (value - 1L));
 
-                if (previous == 0) {
+                if (previous == 0L) {
                     MILLISECONDS.sleep(1);
                     continue;
                 }

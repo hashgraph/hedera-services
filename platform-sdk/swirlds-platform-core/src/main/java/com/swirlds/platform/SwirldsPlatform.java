@@ -80,8 +80,6 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
-import com.swirlds.platform.system.status.DefaultPlatformStatusNexus;
-import com.swirlds.platform.system.status.PlatformStatusNexus;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -236,10 +234,6 @@ public class SwirldsPlatform implements Platform {
 
         final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
 
-        final PlatformStatusNexus statusNexus = new DefaultPlatformStatusNexus(platformContext);
-        // Future work: all interaction with platform status should happen over the wiring framework.
-        // Once this is done, these hacky references can be removed.
-        blocks.platformStatusSupplierReference().set(statusNexus::getCurrentStatus);
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
@@ -296,8 +290,7 @@ public class SwirldsPlatform implements Platform {
                 latestCompleteStateNexus,
                 savedStateController,
                 appNotifier,
-                publisher,
-                statusNexus);
+                publisher);
 
         final Hash legacyRunningEventHash =
                 initialState.getState().getPlatformState().getLegacyRunningEventHash() == null

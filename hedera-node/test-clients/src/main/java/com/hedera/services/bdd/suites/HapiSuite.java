@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -265,7 +265,7 @@ public abstract class HapiSuite {
         finalSpecs = specs;
         summarizeResults(getResultsLogger());
         if (tearDownClientsAfter) {
-            HapiApiClients.tearDown();
+            HapiClients.tearDown();
         }
         return finalOutcomeFor(finalSpecs);
     }
