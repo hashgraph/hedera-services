@@ -192,11 +192,17 @@ public class TransferContextImpl implements TransferContext {
         return enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public TokenRelValidations tokenRelValidations() {
         return tokenRelValidations;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public TokenValidations tokenValidations() {
         return tokenValidations;
