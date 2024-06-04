@@ -34,7 +34,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * @param scheduleToDelete The ID of a schedule to be deleted.
      * @param consensusTime    The current consensus time
      * @return the schedule
-     * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state,     or the ID
+     * @throws IllegalStateException if the {@link ScheduleID} to be deleted is not present in this state, or the ID
      *                               value has a mismatched realm or shard for this node.
      */
     Schedule delete(@Nullable final ScheduleID scheduleToDelete, @NonNull final Instant consensusTime);
