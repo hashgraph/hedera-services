@@ -30,7 +30,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class ChildTxnFactory {
-
     @Inject
     public ChildTxnFactory() {}
 

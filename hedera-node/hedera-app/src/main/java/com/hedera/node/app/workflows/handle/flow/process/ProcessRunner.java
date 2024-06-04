@@ -20,8 +20,8 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
-import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
-@UserTransactionScope
+@UserTxnScope
 public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> {
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;

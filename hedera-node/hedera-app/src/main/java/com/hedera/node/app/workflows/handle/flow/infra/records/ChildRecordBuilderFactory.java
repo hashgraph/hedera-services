@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.infra.records;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.config.api.Configuration;
@@ -32,37 +33,37 @@ import javax.inject.Singleton;
 
 @Singleton
 public class ChildRecordBuilderFactory {
+    private final ChildRecordInitializer childRecordInitializer;
+
     @Inject
-    public ChildRecordBuilderFactory() {}
+    public ChildRecordBuilderFactory(final ChildRecordInitializer childRecordInitializer) {
+        this.childRecordInitializer = childRecordInitializer;
+    }
 
     public SingleTransactionRecordBuilderImpl recordBuilderFor(
+            TransactionInfo txnInfo,
             final RecordListBuilder recordListBuilder,
             final Configuration configuration,
             HandleContext.TransactionCategory childCategory,
             SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable final ExternalizedRecordCustomizer customizer) {
+        final SingleTransactionRecordBuilderImpl recordBuilder;
         if (childCategory == PRECEDING) {
-            switch (reversingBehavior) {
-                case REMOVABLE:
-                    return recordListBuilder.addRemovablePreceding(configuration);
-                case REVERSIBLE:
-                    return recordListBuilder.addReversiblePreceding(configuration);
-                default:
-                    return recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);
-            }
+            recordBuilder = switch (reversingBehavior) {
+                case REMOVABLE -> recordListBuilder.addRemovablePreceding(configuration);
+                case REVERSIBLE -> recordListBuilder.addReversiblePreceding(configuration);
+                default -> recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);};
         } else if (childCategory == CHILD) {
-            switch (reversingBehavior) {
-                case REMOVABLE:
-                    return recordListBuilder.addRemovableChildWithExternalizationCustomizer(
-                            configuration, requireNonNull(customizer));
-                case REVERSIBLE:
-                    return recordListBuilder.addChild(configuration, childCategory);
-                default:
-                    throw new IllegalArgumentException("Unsupported reversing behavior: " + reversingBehavior
-                            + " for child category: " + childCategory);
-            }
+            recordBuilder = switch (reversingBehavior) {
+                case REMOVABLE -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(
+                        configuration, requireNonNull(customizer));
+                case REVERSIBLE -> recordListBuilder.addChild(configuration, childCategory);
+                default -> throw new IllegalArgumentException("Unsupported reversing behavior: " + reversingBehavior
+                        + " for child category: " + childCategory);};
         } else {
-            return recordListBuilder.addChild(configuration, childCategory);
+            recordBuilder = recordListBuilder.addChild(configuration, childCategory);
         }
+        childRecordInitializer.initializeUserRecord(recordBuilder, txnInfo);
+        return recordBuilder;
     }
 }

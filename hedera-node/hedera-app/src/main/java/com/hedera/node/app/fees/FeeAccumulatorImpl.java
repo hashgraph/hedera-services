@@ -23,14 +23,12 @@ import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 /**
  * Default implementation of {@link FeeAccumulator}.
  */
-@HandleContextScope
 public class FeeAccumulatorImpl implements FeeAccumulator {
     private final TokenServiceApi tokenApi;
     private final FeeRecordBuilder recordBuilder;

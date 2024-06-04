@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow;
 
-import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
-import com.swirlds.state.HederaState;
-import dagger.Module;
-import dagger.Provides;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 
-@Module
-public interface StateModule {
-    @Provides
-    @UserTxnScope
-    static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
-        return workingStateAccessor.getHederaState();
-    }
-}
+public record DueDiligenceInfo(AccountID creator, ResponseCodeEnum dueDiligenceStatus) {}

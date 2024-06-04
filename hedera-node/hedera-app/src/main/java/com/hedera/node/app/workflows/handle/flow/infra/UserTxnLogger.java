@@ -20,7 +20,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 
-import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

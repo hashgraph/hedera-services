@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow;
 
-import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
-import com.swirlds.state.HederaState;
-import dagger.Module;
-import dagger.Provides;
+import com.hedera.node.app.workflows.handle.flow.annotations.DispatchScope;
 
-@Module
-public interface StateModule {
-    @Provides
-    @UserTxnScope
-    static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
-        return workingStateAccessor.getHederaState();
-    }
+@DispatchScope
+public class SharedHandleFlow {
+
+    public SharedHandleFlow() {}
 }

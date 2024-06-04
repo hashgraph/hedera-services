@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.DispatchScope;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,7 +32,7 @@ import javax.inject.Inject;
 /**
  * A factory for creating service APIs based on the {@link SavepointStackImpl} for the current transaction.
  */
-@HandleContextScope
+@DispatchScope
 public class ServiceApiFactory {
     private final SavepointStackImpl stack;
     private final Configuration configuration;

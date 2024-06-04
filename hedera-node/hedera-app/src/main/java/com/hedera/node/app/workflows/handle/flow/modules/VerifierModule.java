@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.data.HederaConfig;
 import dagger.Module;
@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 @Module
 public interface VerifierModule {
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static KeyVerifier provideKeyVerifier(
             @NonNull HederaConfig hederaConfig, TransactionInfo txnInfo, PreHandleResult preHandleResult) {
         return new DefaultKeyVerifier(

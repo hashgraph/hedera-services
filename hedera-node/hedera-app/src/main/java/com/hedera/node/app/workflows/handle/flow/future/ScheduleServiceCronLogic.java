@@ -21,7 +21,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
-import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;

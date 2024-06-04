@@ -22,10 +22,12 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -41,7 +43,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,8 +56,7 @@ import javax.inject.Inject;
 /**
  * The HandleContext Implementation
  */
-@HandleContextScope
-public class FlowHandleContext implements HandleContext {
+public class FlowHandleContext implements HandleContext, FeeContext {
     @Inject
     public FlowHandleContext() {}
 
@@ -88,6 +88,17 @@ public class FlowHandleContext implements HandleContext {
     @Override
     public Configuration configuration() {
         return null;
+    }
+
+    @Nullable
+    @Override
+    public Authorizer authorizer() {
+        return null;
+    }
+
+    @Override
+    public int numTxnSignatures() {
+        return 0;
     }
 
     @NonNull

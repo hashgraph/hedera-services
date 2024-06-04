@@ -26,8 +26,8 @@ import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,22 +40,28 @@ import java.util.Objects;
  */
 public class ChildFeeContextImpl implements FeeContext {
     private final FeeManager feeManager;
-    private final HandleContextImpl context;
+    private final HandleContext context;
     private final TransactionBody body;
     private final AccountID payerId;
     private final boolean computeFeesAsInternalDispatch;
+    private final Authorizer authorizer;
+    private final int numTxnSignatures;
 
     public ChildFeeContextImpl(
             @NonNull final FeeManager feeManager,
-            @NonNull final HandleContextImpl context,
+            @NonNull final HandleContext context,
             @NonNull final TransactionBody body,
             @NonNull final AccountID payerId,
-            final boolean computeFeesAsInternalDispatch) {
+            final boolean computeFeesAsInternalDispatch,
+            final Authorizer authorizer,
+            final int numTxnSignatures) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
         this.payerId = Objects.requireNonNull(payerId);
         this.computeFeesAsInternalDispatch = computeFeesAsInternalDispatch;
+        this.authorizer = authorizer;
+        this.numTxnSignatures = numTxnSignatures;
     }
 
     @Override
@@ -100,11 +106,11 @@ public class ChildFeeContextImpl implements FeeContext {
 
     @Override
     public @Nullable Authorizer authorizer() {
-        return context.authorizer();
+        return authorizer;
     }
 
     @Override
     public int numTxnSignatures() {
-        return context.numTxnSignatures();
+        return numTxnSignatures;
     }
 }

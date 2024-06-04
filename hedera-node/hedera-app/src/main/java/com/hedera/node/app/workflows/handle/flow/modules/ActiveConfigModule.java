@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.modules;
 
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
@@ -27,13 +27,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 @Module
 public interface ActiveConfigModule {
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static Configuration provideConfiguration(@NonNull ConfigProvider configProvider) {
         return configProvider.getConfiguration();
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static HederaConfig provideHederaConfig(@NonNull Configuration configuration) {
         return configuration.getConfigData(HederaConfig.class);
     }

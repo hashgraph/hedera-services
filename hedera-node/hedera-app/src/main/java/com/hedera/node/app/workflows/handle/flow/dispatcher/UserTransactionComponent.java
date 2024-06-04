@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.modules.ActiveConfigModule;
+import com.hedera.node.app.workflows.handle.flow.modules.ContextModule;
+import com.hedera.node.app.workflows.handle.flow.modules.StagingModule;
+import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -38,8 +41,15 @@ import java.time.Instant;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@Subcomponent(modules = {StateModule.class, ActiveConfigModule.class, ContextModule.class, StagingModule.class})
-@UserTransactionScope
+@Subcomponent(
+        modules = {
+            StateModule.class,
+            ActiveConfigModule.class,
+            ContextModule.class,
+            StagingModule.class,
+            UserDispatchModule.class
+        })
+@UserTxnScope
 public interface UserTransactionComponent {
     @Subcomponent.Factory
     interface Factory {
@@ -80,6 +90,4 @@ public interface UserTransactionComponent {
     PreHandleResult preHandleResult();
 
     ReadableStoreFactory readableStoreFactory();
-
-    KeyVerifier keyVerifier();
 }

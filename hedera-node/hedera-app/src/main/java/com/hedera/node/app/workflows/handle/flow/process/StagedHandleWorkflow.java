@@ -24,7 +24,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.CacheWarmer;
-import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;

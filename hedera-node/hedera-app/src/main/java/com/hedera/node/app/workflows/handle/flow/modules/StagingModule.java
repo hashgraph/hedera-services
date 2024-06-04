@@ -28,7 +28,7 @@ import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTransactionScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -45,7 +45,7 @@ import java.util.Map;
 @Module
 public interface StagingModule {
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static PreHandleResult providePreHandleResult(
             @NonNull NodeInfo creator,
             @NonNull ConsensusTransaction platformTxn,
@@ -54,44 +54,44 @@ public interface StagingModule {
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static TransactionInfo provideTransactionInfo(@NonNull PreHandleResult preHandleResult) {
         return preHandleResult.txInfo();
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static Map<Key, SignatureVerificationFuture> provideKeyVerifications(@NonNull PreHandleResult preHandleResult) {
         return preHandleResult.getVerificationResults();
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static int provideLegacyFeeCalcNetworkVpt(@NonNull TransactionInfo txnInfo) {
         return txnInfo.signatureMap().sigPair().size();
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static int provideSignatureMapSize(@NonNull TransactionInfo txnInfo) {
         return SignatureMap.PROTOBUF.measureRecord(txnInfo.signatureMap());
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo) {
         return txnInfo.functionality();
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
             @NonNull RecordListBuilder recordListBuilder) {
         return recordListBuilder.userTransactionRecordBuilder();
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static Bytes transactionBytes(@NonNull TransactionInfo txnInfo) {
         final var txn = txnInfo.transaction();
         if (txnInfo.transaction().signedTransactionBytes().length() > 0) {
@@ -103,7 +103,7 @@ public interface StagingModule {
     }
 
     @Provides
-    @UserTransactionScope
+    @UserTxnScope
     static FeeAccumulator provideFeeAccumulator(
             @NonNull SavepointStackImpl stack,
             @NonNull Configuration configuration,

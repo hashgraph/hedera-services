@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
-import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
-import com.swirlds.state.HederaState;
-import dagger.Module;
-import dagger.Provides;
+import dagger.Subcomponent;
 
-@Module
-public interface StateModule {
-    @Provides
-    @UserTxnScope
-    static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
-        return workingStateAccessor.getHederaState();
+@Subcomponent()
+@UserTxnScope
+public interface UserDispatchComponent extends Dispatch {
+    @Subcomponent.Factory
+    interface Factory {
+        UserDispatchComponent create();
     }
 }
