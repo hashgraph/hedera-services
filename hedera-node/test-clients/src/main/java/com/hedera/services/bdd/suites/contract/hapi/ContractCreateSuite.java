@@ -362,12 +362,10 @@ public class ContractCreateSuite {
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         contractCreate(createContract)
                                 .refusingEthConversion()
-                                .via("createWithExplicitZero")
                                 .maxAutomaticTokenAssociations(0)
                                 .hasKnownStatus(SUCCESS),
                         contractCreate(multiPurpose)
                                 .refusingEthConversion()
-                                .via("createWithExplicit")
                                 .maxAutomaticTokenAssociations(3)
                                 .hasKnownStatus(SUCCESS),
                         contractCreate(slotUserContract)
@@ -382,13 +380,13 @@ public class ContractCreateSuite {
                         getContractInfo(initCreateContract)
                                 .has(contractWith().maxAutoAssociations(0))
                                 .logged(),
-                        assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
                         getContractInfo(multiPurpose)
                                 .has(contractWith().maxAutoAssociations(3))
                                 .logged(),
                         getContractInfo(slotUserContract)
                                 .has(contractWith().maxAutoAssociations(5))
                                 .logged(),
+                        assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
                         assertCreationMaxAssociations("constructorCreate", 1, 5),
                         assertCreationViaCallMaxAssociations("createViaCall", 0, 0));
     }

@@ -1341,12 +1341,8 @@ public class UtilVerbs {
      */
     public static CustomSpecAssert assertCreationMaxAssociations(
             final String txn, final int creationNum, final int maxAutoAssociations) {
-        return assertionsHold((spec, opLog) -> {
-            final var op = getTxnRecord(txn);
-            allRunFor(spec, op);
-            final var creationResult = op.getResponseRecord().getContractCreateResult();
-            validateMaxAutoAssociationsValue(creationNum, maxAutoAssociations, spec, creationResult);
-        });
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCreateResult);
     }
 
     /**
@@ -1360,27 +1356,28 @@ public class UtilVerbs {
      */
     public static CustomSpecAssert assertCreationViaCallMaxAssociations(
             final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCallResult);
+    }
+
+    private static CustomSpecAssert assertCreationMaxAssociationsCommon(
+            final String txn,
+            final int creationNum,
+            final int maxAutoAssociations,
+            final Function<TransactionRecord, ContractFunctionResult> resultExtractor) {
         return assertionsHold((spec, opLog) -> {
             final var op = getTxnRecord(txn);
             allRunFor(spec, op);
-            final var creationResult = op.getResponseRecord().getContractCallResult();
-            validateMaxAutoAssociationsValue(creationNum, maxAutoAssociations, spec, creationResult);
+            final var creationResult = resultExtractor.apply(op.getResponseRecord());
+            final var createdIds = creationResult.getCreatedContractIDsList().stream()
+                    .sorted(Comparator.comparing(ContractID::getContractNum))
+                    .toList();
+            final var accDetails = getContractInfo(CommonUtils.hex(
+                            asEvmAddress(createdIds.get(creationNum).getContractNum())))
+                    .has(contractWith().maxAutoAssociations(maxAutoAssociations))
+                    .logged();
+            allRunFor(spec, accDetails);
         });
-    }
-
-    private static void validateMaxAutoAssociationsValue(
-            final int creationNum,
-            final int maxAutoAssociations,
-            final HapiSpec spec,
-            final ContractFunctionResult creationResult) {
-        final var createdIds = creationResult.getCreatedContractIDsList().stream()
-                .sorted(Comparator.comparing(ContractID::getContractNum))
-                .toList();
-        final var accDetails = getContractInfo(
-                        CommonUtils.hex(asEvmAddress(createdIds.get(creationNum).getContractNum())))
-                .has(contractWith().maxAutoAssociations(maxAutoAssociations))
-                .logged();
-        allRunFor(spec, accDetails);
     }
 
     @SuppressWarnings("java:S5960")
