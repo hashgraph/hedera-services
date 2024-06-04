@@ -1025,7 +1025,6 @@ public class PlatformComponentBuilder {
         if (gossip == null) {
             gossip = new SyncGossip(
                     blocks.platformContext(),
-                    blocks.randomBuilder().buildNonCryptographicRandom(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
                     blocks.initialAddressBook(),
