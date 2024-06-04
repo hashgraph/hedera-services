@@ -86,8 +86,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
                 .build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .nodeGetInfo(
-                        NodeGetInfoResponse.newBuilder().header(responseHeader))
+                .nodeGetInfo(NodeGetInfoResponse.newBuilder().header(responseHeader))
                 .build();
         assertEquals(expectedResponse, response);
     }
@@ -127,9 +126,10 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("Node Id is needed during validate")
-    void validatesQueryIfInvalidNode(){
+    void validatesQueryIfInvalidNode() {
         readableNodeState.reset();
-        final var state = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+        final var state =
+                MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(state);
         final var store = new ReadableNodeStoreImpl(readableStates);
 
@@ -149,7 +149,8 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     @DisplayName("Node Id in transaction is needed during validate")
     void validatesQueryIfInvalidNodeInTrans() throws Throwable {
         readableNodeState.reset();
-        final var state = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+        final var state =
+                MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(state);
         final var store = new ReadableNodeStoreImpl(readableStates);
 
@@ -192,26 +193,26 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
         assertEquals(expectedInfo, nodeInfoResponse.nodeInfo());
     }
 
-//    @Test
-//    @DisplayName("failed response is correctly handled in findResponse")
-//    void getsResponseIfFailedResponse() {
-//        final var responseHeader = ResponseHeader.newBuilder()
-//                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
-//                .build();
-//
-//        final var query = createGeNodeInfoQuery(nodeId.number());
-//        when(context.query()).thenReturn(query);
-//        when(context.createStore(ReadableNodeStore.class)).thenReturn(readableStore);
-//
-//        final var config =
-//                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
-//        given(context.configuration()).willReturn(config);
-//
-//        final var response = subject.findResponse(context, responseHeader);
-//        final var op = response.nodeGetInfoOrThrow();
-//        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
-//        assertNull(op.nodeInfo());
-//    }
+    //    @Test
+    //    @DisplayName("failed response is correctly handled in findResponse")
+    //    void getsResponseIfFailedResponse() {
+    //        final var responseHeader = ResponseHeader.newBuilder()
+    //                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
+    //                .build();
+    //
+    //        final var query = createGeNodeInfoQuery(nodeId.number());
+    //        when(context.query()).thenReturn(query);
+    //        when(context.createStore(ReadableNodeStore.class)).thenReturn(readableStore);
+    //
+    //        final var config =
+    //                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
+    //        given(context.configuration()).willReturn(config);
+    //
+    //        final var response = subject.findResponse(context, responseHeader);
+    //        final var op = response.nodeGetInfoOrThrow();
+    //        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
+    //        assertNull(op.nodeInfo());
+    //    }
 
     @Test
     @DisplayName("OK response is correctly handled in findResponse")
@@ -237,8 +238,8 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     }
 
     private NodeInfo getExpectedInfo(boolean deleted) {
-        return  NodeInfo.newBuilder().
-                nodeId(nodeId.number())
+        return NodeInfo.newBuilder()
+                .nodeId(nodeId.number())
                 .accountId(payerId)
                 .description(description)
                 .gossipEndpoint((List<ServiceEndpoint>) null)
