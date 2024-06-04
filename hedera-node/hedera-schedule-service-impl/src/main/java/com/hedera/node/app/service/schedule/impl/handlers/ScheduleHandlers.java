@@ -37,7 +37,7 @@ public class ScheduleHandlers {
     private final ScheduleSignHandler scheduleSignHandler;
 
     /**
-     * Instantiates a new Schedule handlers.
+     * Instantiates a new Schedule handler.
      *
      * @param scheduleCreateHandler  the schedule create handler
      * @param scheduleDeleteHandler  the schedule delete handler
