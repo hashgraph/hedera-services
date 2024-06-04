@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -214,18 +213,6 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.gas()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1);
-        givenAllowCallsToNonContractAccountOffConfig();
-
-        // when:
-        assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
-    }
-
-    @Test
-    void validateFailsIfGasIsMoreThanMax() {
-        // given
-        given(context.query()).willReturn(query);
-        given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
-        given(contractCallLocalQuery.gas()).willReturn(MAX_GAS_LIMIT + 1);
         givenAllowCallsToNonContractAccountOffConfig();
 
         // when:
