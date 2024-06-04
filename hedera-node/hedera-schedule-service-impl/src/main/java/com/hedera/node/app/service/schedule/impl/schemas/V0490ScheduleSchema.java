@@ -65,7 +65,7 @@ public final class V0490ScheduleSchema extends Schema {
     private static MerkleScheduledTransactions fs;
 
     /**
-     * Instantiates a new V0490 schedule schema. The version is set to 0.49.0.
+     * Instantiates a new V0490 (version 0.49.0) schedule schema.
      */
     public V0490ScheduleSchema() {
         super(VERSION);
