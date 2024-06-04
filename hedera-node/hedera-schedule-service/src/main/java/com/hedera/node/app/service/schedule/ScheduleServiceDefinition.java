@@ -34,7 +34,7 @@ import java.util.Set;
 @SuppressWarnings("java:S6548")
 public final class ScheduleServiceDefinition implements RpcServiceDefinition {
     /**
-     * The constant ScheduleServiceDefinition INSTANCE.
+     * The global singleton ScheduleServiceDefinition INSTANCE.
      */
     public static final ScheduleServiceDefinition INSTANCE = new ScheduleServiceDefinition();
 

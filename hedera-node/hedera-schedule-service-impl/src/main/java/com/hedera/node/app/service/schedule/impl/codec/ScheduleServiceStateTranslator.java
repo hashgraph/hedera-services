@@ -173,7 +173,7 @@ public final class ScheduleServiceStateTranslator {
     }
 
     /**
-     * Migrates the state of the schedule service from the scheduleId to the schedule virtual value
+     * Converts a {@link Schedule} object to a {@link ScheduleVirtualValue}
      * *
      * @param schedule the schedule
      * @return the schedule virtual value
