@@ -55,7 +55,7 @@ public final class ScheduleServiceStateTranslator {
      *
      * @param virtualValue the virtual value
      * @return the schedule
-     * @throws ParseException the parse exception
+     * @throws ParseException if there is an error parsing the TransactionBody message
      */
     public static Schedule convertScheduleVirtualValueToSchedule(
             @NonNull final com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue virtualValue)

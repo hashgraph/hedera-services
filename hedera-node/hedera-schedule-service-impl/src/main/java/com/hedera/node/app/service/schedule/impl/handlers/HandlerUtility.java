@@ -265,7 +265,7 @@ public final class HandlerUtility {
      * @param newEntityNumber     the new entity number
      * @param finalSignatories    the final signatories for the schedule
      * @return the schedule
-     * @throws HandleException the handle exception
+     * @throws HandleException if the transaction is not handled successfully.
      */
     @NonNull
     static Schedule completeProvisionalSchedule(
