@@ -55,7 +55,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -542,11 +541,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
         final var feeData = AdapterUtils.feeDataFrom(accumulator);
         return feeData.toBuilder().setSubType(xferUsageMeta.getSubType()).build();
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoTransfer;
     }
 
     @Override
