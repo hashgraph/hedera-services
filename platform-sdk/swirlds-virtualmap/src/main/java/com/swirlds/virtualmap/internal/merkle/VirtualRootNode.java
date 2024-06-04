@@ -941,7 +941,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     state.setLastLeafPath(INVALID_PATH);
                 } else {
                     // We removed the second to last leaf, so the first & last leaf paths are now the same.
-                    state.setLastLeafPath(FIRST_LEFT_PATH);
+                   state.setLastLeafPath(FIRST_LEFT_PATH);
+                    final VirtualLeafRecord<K, V> leaf = records.findLeafRecord(1, true);
+                    cache.putLeaf(leaf);
                 }
             } else {
                 final long lastLeafSibling = getSiblingPath(lastLeafPath);
