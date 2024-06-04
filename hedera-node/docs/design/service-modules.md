@@ -70,7 +70,7 @@ pattern that defines the entry point directly as a static method in the service 
 package com.hedera.node.app.service.foo;
 
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.util;
 
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,7 +52,7 @@ public interface UtilService extends RpcService {
      */
     @NonNull
     static UtilService getInstance() {
-        return ServiceFactory.loadService(UtilService.class, ServiceLoader.load(UtilService.class));
+        return RpcServiceFactory.loadService(UtilService.class, ServiceLoader.load(UtilService.class));
     }
 
     @Override

@@ -27,9 +27,9 @@ import java.util.ServiceLoader;
  * module system the {@link ServiceLoader} instance can not be created in the factory. It must be
  * created in the module that add "uses" information for the module to the {@code module-info.java}.
  */
-public final class ServiceFactory {
+public final class RpcServiceFactory {
 
-    private ServiceFactory() {}
+    private RpcServiceFactory() {}
 
     /**
      * This method returns a service instance of the given service that is provided by the Java SPI.
