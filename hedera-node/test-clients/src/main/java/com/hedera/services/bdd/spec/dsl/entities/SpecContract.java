@@ -16,10 +16,11 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PBJ_IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PROTO_IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedAddresses;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTypes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
@@ -27,12 +28,16 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
@@ -43,7 +48,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Represents a Hedera account that may exist on one or more target networks and be
  * registered with more than one {@link HapiSpec} if desired.
  */
-public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> implements SpecEntity {
+public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
+        implements SpecEntity, EvmAddressableEntity {
     private static final int MAX_INLINE_INITCODE_SIZE = 4096;
 
     private final long creationGas;
@@ -73,6 +79,16 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> imp
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Address addressOn(@NonNull final HederaNetwork network) {
+        requireNonNull(network);
+        final var networkContract = contractOrThrow(network);
+        return headlongAddressOf(networkContract);
+    }
+
+    /**
      * Returns an operation that retrieves the contract information.
      *
      * @return the operation
@@ -93,12 +109,33 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> imp
     }
 
     /**
+     * Returns an operation that static calls a function on the contract.
+     *
+     * @param function the function name
+     * @param parameters the function parameters
+     * @return the operation
+     */
+    public StaticCallContractOperation staticCall(@NonNull final String function, @NonNull final Object... parameters) {
+        return new StaticCallContractOperation(this, function, parameters);
+    }
+
+    /**
      * Sets the constructor arguments for the contract's creation call.
      *
      * @param args the arguments
      */
     public void setConstructorArgs(@NonNull final Object... args) {
         this.constructorArgs = args;
+    }
+
+    /**
+     * Gets the contract model for the given network, or throws if it doesn't exist.
+     *
+     * @param network the network
+     * @return the contract model
+     */
+    public Account contractOrThrow(@NonNull final HederaNetwork network) {
+        return modelOrThrow(network);
     }
 
     /**
@@ -109,7 +146,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account> imp
         final var model = builder.build();
         final var initcode = getInitcodeOf(contractName);
         final SpecOperation op;
-        constructorArgs = withSubstitutedAddresses(spec.targetNetworkOrThrow(), constructorArgs);
+        constructorArgs = withSubstitutedTypes(spec.targetNetworkOrThrow(), constructorArgs);
         if (initcode.size() < MAX_INLINE_INITCODE_SIZE) {
             op = contractCreate(name, constructorArgs).inlineInitCode(initcode);
         } else {

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.SIMPLE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -54,7 +55,6 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     @Nullable
     private SpecAccount autoRenewAccount;
 
-    @Nullable
     private SpecAccount treasuryAccount;
 
     @Nullable
@@ -63,6 +63,7 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     public SpecToken(@NonNull final String name, @NonNull final TokenType tokenType) {
         super(name);
         builder.tokenType(tokenType);
+        treasuryAccount = new SpecAccount(name + DEFAULT_TREASURY_NAME_SUFFIX);
     }
 
     /**
@@ -80,9 +81,6 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     @Override
     public List<SpecEntity> prerequisiteEntities() {
         final List<SpecEntity> prerequisites = new ArrayList<>();
-        if (treasuryAccount == null) {
-            treasuryAccount = new SpecAccount(name + DEFAULT_TREASURY_NAME_SUFFIX);
-        }
         prerequisites.add(treasuryAccount);
         if (autoRenewAccount != null) {
             prerequisites.add(autoRenewAccount);
@@ -129,14 +127,32 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     }
 
     /**
-     * Returns an operation to authorize the given contract to act on behalf of this token.
+     * Gets the treasury account.
      *
-     * @param contract the contract to authorize
+     * @return the treasury account
+     */
+    public SpecAccount treasury() {
+        return treasuryAccount;
+    }
+
+    /**
+     * Returns an operation to authorize the given contracts to act on behalf of this token.
+     *
+     * @param contracts the contracts to authorize
      * @return the operation
      */
-    public AuthorizeContractOperation authorizeContract(@NonNull final SpecContract contract) {
-        requireNonNull(contract);
-        return new AuthorizeContractOperation(this, contract);
+    public AuthorizeContractOperation authorizeContracts(@NonNull final SpecContract... contracts) {
+        requireNonNull(contracts);
+        return new AuthorizeContractOperation(this, contracts);
+    }
+
+    /**
+     * Sets the treasury account.
+     *
+     * @param treasuryAccount the treasury account
+     */
+    public void setTreasury(@NonNull final SpecAccount treasuryAccount) {
+        this.treasuryAccount = requireNonNull(treasuryAccount);
     }
 
     /**
@@ -159,19 +175,18 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
      */
     @Override
     protected Creation<HapiTokenCreate, Token> newCreation(@NonNull final HapiSpec spec) {
-        final var model = builder.build();
         final var op = tokenCreate(name)
                 .tokenType(com.hederahashgraph.api.proto.java.TokenType.forNumber(
-                        model.tokenType().protoOrdinal()))
+                        builder.build().tokenType().protoOrdinal()))
                 .treasury(requireNonNull(treasuryAccount).name())
                 .initialSupply(initialSupply);
         if (autoRenewAccount != null) {
             op.autoRenewAccount(autoRenewAccount.name());
         }
         if (keys != null) {
-            keys.forEach(key -> generateKeyAndCustomizeOp(key, spec, op));
+            keys.forEach(key -> generateKeyInContext(key, spec, op));
         }
-        return new Creation<>(op, model);
+        return new Creation<>(op, builder.build());
     }
 
     /**
@@ -207,20 +222,44 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
                 }));
     }
 
-    private void generateKeyAndCustomizeOp(
+    private void generateKeyInContext(
             @NonNull final SpecTokenKey tokenKey, @NonNull final HapiSpec spec, @NonNull final HapiTokenCreate op) {
         final var key = spec.keys().generate(spec, SIMPLE);
         final var keyName = name + "_" + tokenKey;
         spec.registry().saveKey(keyName, key);
         switch (tokenKey) {
-            case ADMIN_KEY -> op.adminKey(keyName);
-            case KYC_KEY -> op.kycKey(keyName);
-            case FREEZE_KEY -> op.freezeKey(keyName);
-            case WIPE_KEY -> op.wipeKey(keyName);
-            case SUPPLY_KEY -> op.supplyKey(keyName);
-            case FEE_SCHEDULE_KEY -> op.feeScheduleKey(keyName);
-            case PAUSE_KEY -> op.pauseKey(keyName);
-            case METADATA_KEY -> op.metadataKey(keyName);
+            case ADMIN_KEY -> {
+                op.adminKey(keyName);
+                builder.adminKey(toPbj(key));
+            }
+            case KYC_KEY -> {
+                op.kycKey(keyName);
+                builder.kycKey(toPbj(key));
+            }
+            case FREEZE_KEY -> {
+                op.freezeKey(keyName);
+                builder.freezeKey(toPbj(key));
+            }
+            case WIPE_KEY -> {
+                op.wipeKey(keyName);
+                builder.wipeKey(toPbj(key));
+            }
+            case SUPPLY_KEY -> {
+                op.supplyKey(keyName);
+                builder.supplyKey(toPbj(key));
+            }
+            case FEE_SCHEDULE_KEY -> {
+                op.feeScheduleKey(keyName);
+                builder.feeScheduleKey(toPbj(key));
+            }
+            case PAUSE_KEY -> {
+                op.pauseKey(keyName);
+                builder.pauseKey(toPbj(key));
+            }
+            case METADATA_KEY -> {
+                op.metadataKey(keyName);
+                builder.metadataKey(toPbj(key));
+            }
         }
     }
 }

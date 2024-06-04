@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.dsl.operations.transactions;
+package com.hedera.services.bdd.spec.dsl.operations.queries;
 
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.allRequiredCallEntities;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTypes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
-import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Represents a call to a smart contract.
+ * Represents a static call to a smart contract.
  */
-public class CallContractOperation extends AbstractSpecTransaction<CallContractOperation, HapiContractCall>
+public class StaticCallContractOperation extends AbstractSpecQuery<StaticCallContractOperation, HapiContractCallLocal>
         implements SpecOperation {
     private final SpecContract target;
     private final String function;
     private final Object[] parameters;
 
-    public CallContractOperation(
+    public StaticCallContractOperation(
             @NonNull final SpecContract target, @NonNull final String function, @NonNull final Object... parameters) {
         super(allRequiredCallEntities(target, parameters));
         this.target = requireNonNull(target);
@@ -46,15 +46,18 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
 
     @NonNull
     @Override
-    protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
-        final var op =
-                contractCall(target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters));
+    protected SpecOperation computeDelegate(@NonNull HapiSpec spec) {
+        final var op = contractCallLocal(
+                target.name(), function, withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters));
         maybeAssertions().ifPresent(a -> a.accept(op));
         return op;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected CallContractOperation self() {
+    protected StaticCallContractOperation self() {
         return this;
     }
 }

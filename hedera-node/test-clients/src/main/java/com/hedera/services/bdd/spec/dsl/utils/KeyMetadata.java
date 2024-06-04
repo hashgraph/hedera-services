@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.dsl.utils;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static java.util.Objects.requireNonNull;
 
@@ -24,6 +25,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PrivateKey;
 import java.util.Map;
 
@@ -63,6 +65,19 @@ public record KeyMetadata(
     }
 
     /**
+     * Constructs a {@link KeyMetadata} instance from the given PBJ key and {@link HapiSpec}
+     * with the default registration.
+     *
+     * @param pbjKey the protoc key
+     * @param spec the HapiSpec
+     * @return the key metadata
+     */
+    public static KeyMetadata from(@NonNull final com.hedera.hapi.node.base.Key pbjKey, @NonNull final HapiSpec spec) {
+        requireNonNull(pbjKey);
+        return from(null, pbjKey, spec, DEFAULT_REGISTRATION);
+    }
+
+    /**
      * Constructs a {@link KeyMetadata} instance from the given protoc key, {@link HapiSpec}, and
      * registration function.
      *
@@ -73,10 +88,19 @@ public record KeyMetadata(
      */
     public static KeyMetadata from(
             @NonNull final Key protoKey, @NonNull final HapiSpec spec, @NonNull final Registration registration) {
-        requireNonNull(spec);
         requireNonNull(protoKey);
+        return from(protoKey, null, spec, registration);
+    }
+
+    private static KeyMetadata from(
+            @Nullable final Key maybeProtoKey,
+            @Nullable final com.hedera.hapi.node.base.Key maybePbjKey,
+            @NonNull final HapiSpec spec,
+            @NonNull final Registration registration) {
+        requireNonNull(spec);
         requireNonNull(registration);
-        final var pbjKey = toPbj(protoKey);
+        final var pbjKey = maybePbjKey != null ? maybePbjKey : toPbj(requireNonNull(maybeProtoKey));
+        final var protoKey = maybeProtoKey != null ? maybeProtoKey : fromPbj(requireNonNull(maybePbjKey));
         return new KeyMetadata(
                 protoKey,
                 pbjKey,

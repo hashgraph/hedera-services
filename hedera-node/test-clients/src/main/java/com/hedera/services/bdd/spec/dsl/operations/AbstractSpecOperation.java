@@ -38,7 +38,22 @@ public abstract class AbstractSpecOperation implements SpecOperation {
         this.requiredEntities = closureOf(requireNonNull(requiredEntities));
     }
 
+    /**
+     * Computes the delegate operation for the given {@link HapiSpec}.
+     *
+     * @param spec the {@link HapiSpec} to compute the delegate operation for
+     * @return the delegate operation
+     */
     protected abstract @NonNull SpecOperation computeDelegate(@NonNull final HapiSpec spec);
+
+    /**
+     * Hook to be called when the operation is successful.
+     *
+     * @param spec the {@link HapiSpec} the operation was successful for
+     */
+    protected void onSuccess(@NonNull final HapiSpec spec) {
+        // No-op
+    }
 
     /**
      * {@inheritDoc}
@@ -54,7 +69,11 @@ public abstract class AbstractSpecOperation implements SpecOperation {
         requireNonNull(spec);
         requiredEntities.forEach(entity -> entity.registerOrCreateWith(spec));
         final var delegate = computeDelegate(spec);
-        return delegate.execFor(spec);
+        final var maybeFailure = delegate.execFor(spec);
+        if (maybeFailure.isEmpty()) {
+            onSuccess(spec);
+        }
+        return maybeFailure;
     }
 
     /**

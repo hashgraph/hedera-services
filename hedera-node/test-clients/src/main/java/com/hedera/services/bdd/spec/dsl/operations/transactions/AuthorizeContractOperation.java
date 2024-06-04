@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.dsl.operations.transactions;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -23,6 +24,8 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -33,21 +36,31 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Authorizes a contract to act on behalf of an entity.
  */
 public class AuthorizeContractOperation extends AbstractSpecOperation implements SpecOperation {
-    private static final KeyShape MANAGED_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
-
+    private final String managedKeyName;
     private final SpecEntity target;
-    private final SpecContract contract;
+    private final SpecContract[] contracts;
 
-    public AuthorizeContractOperation(@NonNull final SpecEntity target, @NonNull final SpecContract contract) {
-        super(List.of(target, contract));
+    // non-standard ArrayList initializer
+    @SuppressWarnings({"java:S3599", "java:S1171"})
+    public AuthorizeContractOperation(@NonNull final SpecEntity target, @NonNull final SpecContract... contracts) {
+        super(new ArrayList<>() {
+            {
+                add(target);
+                addAll(List.of(contracts));
+            }
+        });
         this.target = target;
-        this.contract = contract;
+        this.contracts = requireNonNull(contracts);
+        this.managedKeyName = target.name() + "_"
+                + Arrays.stream(contracts).map(SpecContract::name).collect(joining("|")) + "ManagedKey";
     }
 
     /**
@@ -56,14 +69,44 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
-        final var newKeyControl = MANAGED_KEY_SHAPE.signedWith(sigs(ED25519_ON, contract.name()));
-        final var key = spec.keys().generateSubjectTo(spec, newKeyControl, DEFAULT_KEY_GEN);
-        final var newKeyName = target.name() + "_" + contract.name() + "ManagedKey";
-        spec.registry().saveKey(newKeyName, key);
+        final var controller = managedKeyShape().signedWith(sigControl());
+        final var key = spec.keys().generateSubjectTo(spec, controller, DEFAULT_KEY_GEN);
+        spec.registry().saveKey(managedKeyName, key);
         return switch (target) {
-            case SpecAccount account -> cryptoUpdate(account.name()).key(newKeyName);
-            case SpecToken token -> tokenUpdate(token.name()).adminKey(newKeyName);
-            default -> throw new IllegalStateException("Cannot authorize contract for " + target);
+            case SpecAccount account -> cryptoUpdate(account.name()).key(managedKeyName);
+            case SpecToken token -> tokenUpdate(token.name()).adminKey(managedKeyName);
+            default -> throw new IllegalStateException("Cannot authorize contracts for " + target);
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onSuccess(@NonNull final HapiSpec spec) {
+        switch (target) {
+            case SpecAccount account -> account.updateKeyFrom(
+                    toPbj(spec.registry().getKey(managedKeyName)), spec);
+            case SpecToken token -> {
+                // TODO - update the admin key
+            }
+            default -> throw new IllegalStateException("Cannot authorize contract for " + target);
+        }
+    }
+
+    private KeyShape managedKeyShape() {
+        final var shapes = new KeyShape[contracts.length + 1];
+        Arrays.fill(shapes, CONTRACT);
+        shapes[0] = ED25519;
+        return KeyShape.threshOf(1, shapes);
+    }
+
+    private Object sigControl() {
+        final var controls = new Object[contracts.length + 1];
+        controls[0] = ED25519_ON;
+        for (var i = 0; i < contracts.length; i++) {
+            controls[i + 1] = contracts[i].name();
+        }
+        return sigs(controls);
     }
 }

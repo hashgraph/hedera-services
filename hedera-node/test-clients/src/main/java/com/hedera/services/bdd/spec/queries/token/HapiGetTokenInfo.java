@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.token;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static java.util.stream.Collectors.toCollection;
@@ -83,8 +84,20 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<String> expectedSymbol = Optional.empty();
     private Optional<String> expectedName = Optional.empty();
     private Optional<String> expectedTreasury = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitAdminKey;
+
     private Optional<String> expectedAdminKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitKycKey;
+
     private Optional<String> expectedKycKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitFreezeKey;
+
     private Optional<String> expectedFreezeKey = Optional.empty();
     private Optional<String> expectedSupplyKey = Optional.empty();
     private Optional<String> expectedWipeKey = Optional.empty();
@@ -240,8 +253,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasFreezeKey(com.hedera.hapi.node.base.Key key) {
+        explicitFreezeKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasAdminKey(String name) {
         expectedAdminKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasAdminKey(com.hedera.hapi.node.base.Key key) {
+        explicitAdminKey = key;
         return this;
     }
 
@@ -274,6 +297,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     public HapiGetTokenInfo hasPauseStatus(TokenPauseStatus status) {
         expectedPauseStatus = Optional.of(status);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasKycKey(com.hedera.hapi.node.base.Key key) {
+        explicitKycKey = key;
         return this;
     }
 
@@ -474,6 +502,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getFreezeKey());
         } else if (invalidFreezeKey) {
             assertForAllZerosInvalidKey(actualInfo.getFreezeKey());
+        } else if (explicitFreezeKey != null) {
+            Assertions.assertEquals(fromPbj(explicitFreezeKey), actualInfo.getFreezeKey(), "Wrong token freeze key!");
         } else {
             assertFor(
                     actualInfo.getFreezeKey(),
@@ -487,6 +517,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getAdminKey());
         } else if (invalidAdminKey) {
             assertForAllZerosInvalidKey(actualInfo.getAdminKey());
+        } else if (explicitAdminKey != null) {
+            Assertions.assertEquals(fromPbj(explicitAdminKey), actualInfo.getAdminKey(), "Wrong token admin key!");
         } else {
             assertFor(
                     actualInfo.getAdminKey(),
@@ -513,6 +545,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getKycKey());
         } else if (invalidKycKey) {
             assertForAllZerosInvalidKey(actualInfo.getKycKey());
+        } else if (explicitKycKey != null) {
+            Assertions.assertEquals(fromPbj(explicitKycKey), actualInfo.getKycKey(), "Wrong token KYC key!");
         } else {
             assertFor(
                     actualInfo.getKycKey(),

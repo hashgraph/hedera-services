@@ -145,6 +145,7 @@ public class TokenUpdatePrecompileSuite {
      *  (10) Updates keys on the new treasury, the asset account, and the mutable token to the new threshold key
      *  (11) Tries and fails to update the treasury on the immutable token
      *  (12) Tries and succeeds to update the treasury on the mutable token
+     *  (13) Checks a treasury-owned NFT has the new treasury as its owner
      * @return
      */
     @HapiTest

@@ -20,15 +20,21 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.handleExec;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntityRegistrar;
+import com.hedera.services.bdd.spec.dsl.operations.deferred.DoWithModelOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,17 +64,18 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
     protected record Result<R extends Record>(R model, SpecEntityRegistrar registrar) {}
 
     /**
-     * Represents an entity created on a network.
-     *
-     * @param networkName the network name
-     * @param result the successful result
-     * @param <E> the type of the model
+     * Indicates whether the entity is locked.
      */
-    private record NetworkEntity<E extends Record>(String networkName, Result<E> result) {}
-
     private volatile boolean locked = false;
-    private final List<NetworkEntity<M>> networkEntities = new ArrayList<>();
+    /**
+     * The name of the entity.
+     */
     protected final String name;
+    /**
+     * A map of network names to atomic references to futures that will contain the results
+     * of entity creations on the target networks.
+     */
+    private final Map<String, AtomicReference<CompletableFuture<Result<M>>>> results = new ConcurrentHashMap<>();
 
     protected AbstractSpecEntity(@NonNull final String name) {
         this.name = requireNonNull(name);
@@ -95,12 +102,9 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
      */
     @Override
     public @Nullable SpecEntityRegistrar registrarFor(@NonNull final HederaNetwork network) {
-        for (final var entity : networkEntities) {
-            if (entity.networkName.equals(network.name())) {
-                return entity.result.registrar;
-            }
-        }
-        return null;
+        final var maybeResultFuture = results.computeIfAbsent(network.name(), k -> new AtomicReference<>())
+                .get();
+        return (maybeResultFuture != null) ? maybeResultFuture.join().registrar() : null;
     }
 
     /**
@@ -109,17 +113,19 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
     @Override
     public SpecEntityRegistrar createWith(@NonNull final HapiSpec spec) {
         final var network = spec.targetNetworkOrThrow();
-        if (registrarFor(network) != null) {
-            throw new IllegalArgumentException(
-                    "Entity '" + name + "' already exists on network '" + network.name() + "'");
+        final var resultFutureRef = requireNonNull(results.get(network.name()));
+        final CompletableFuture<Result<M>> resultFuture = supplyAsync(() -> {
+            final var creation = newCreation(spec);
+            // Throws if the creation op fails
+            handleExec(spec, creation.op());
+            final var result = resultForSuccessful(creation, spec);
+            allRunFor(spec, postSuccessOps());
+            return result;
+        });
+        if (!resultFutureRef.compareAndSet(null, resultFuture)) {
+            resultFuture.cancel(true);
         }
-        final var creation = newCreation(spec);
-        // Throws if the creation op fails
-        handleExec(spec, creation.op);
-        final var result = resultForSuccessful(creation, spec);
-        allRunFor(spec, postSuccessOps());
-        networkEntities.add(new NetworkEntity<>(network.name(), result));
-        return result.registrar;
+        return resultFutureRef.get().join().registrar();
     }
 
     /**
@@ -137,14 +143,21 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
      * @param network the network
      * @return the model
      */
-    protected M modelOrThrow(@NonNull final HederaNetwork network) {
+    public M modelOrThrow(@NonNull final HederaNetwork network) {
         requireNonNull(network);
-        for (final var entity : networkEntities) {
-            if (entity.networkName.equals(network.name())) {
-                return entity.result.model;
-            }
-        }
-        throw new IllegalArgumentException("No entity exists on network '" + network.name() + "'");
+        return requireNonNull(requireNonNull(results.get(network.name())).get())
+                .join()
+                .model();
+    }
+
+    /**
+     * Executes a deferred operation on the model.
+     *
+     * @param function the function that computes the operation
+     * @return the deferred operation
+     */
+    public DoWithModelOperation<M> doWith(@NonNull final Function<M, SpecOperation> function) {
+        return new DoWithModelOperation<>(this, function);
     }
 
     /**
@@ -171,5 +184,17 @@ public abstract class AbstractSpecEntity<O extends SpecOperation, M extends Reco
      */
     protected List<SpecOperation> postSuccessOps() {
         return emptyList();
+    }
+
+    /**
+     * Replaces the result of a creation operation on a network.
+     *
+     * @param network the network
+     * @param result the result
+     */
+    protected void replaceResult(@NonNull final HederaNetwork network, @NonNull final Result<M> result) {
+        requireNonNull(network);
+        requireNonNull(result);
+        requireNonNull(results.get(network.name())).set(CompletableFuture.completedFuture(result));
     }
 }

@@ -17,12 +17,15 @@
 package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -111,6 +114,9 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         return modelOrThrow(network);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Address addressOn(@NonNull final HederaNetwork network) {
         requireNonNull(network);
@@ -121,6 +127,20 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     @Override
     public String toString() {
         return "SpecAccount{" + "name='" + name + '\'' + '}';
+    }
+
+    /**
+     * Updates the key of the account on the given network.
+     *
+     * @param key the new key
+     * @param spec the active spec targeting the network
+     */
+    public void updateKeyFrom(@NonNull final Key key, @NonNull final HapiSpec spec) {
+        requireNonNull(key);
+        requireNonNull(spec);
+        final var network = spec.targetNetworkOrThrow();
+        final var networkAccount = accountOrThrow(network);
+        replaceResult(network, resultFor(networkAccount.copyBuilder().key(key).build(), spec));
     }
 
     /**
@@ -139,28 +159,31 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     @Override
     protected Result<Account> resultForSuccessful(
             @NonNull final Creation<HapiCryptoCreate, Account> creation, @NonNull final HapiSpec spec) {
-        final var newAccountNum = creation.op().numOfCreatedAccount();
-        final var protoKey = creation.op().getKey();
-        final var keyMetadata = KeyMetadata.from(protoKey, spec);
-        return new Result<>(
+        return resultFor(
                 creation.model()
                         .copyBuilder()
-                        .accountId(
-                                AccountID.newBuilder().accountNum(newAccountNum).build())
-                        .key(keyMetadata.pbjKey())
+                        .accountId(AccountID.newBuilder()
+                                .accountNum(creation.op().numOfCreatedAccount())
+                                .build())
+                        .key(toPbj(creation.op().getKey()))
                         .build(),
-                atMostOnce(siblingSpec -> {
-                    keyMetadata.registerAs(name, siblingSpec);
-                    siblingSpec
-                            .registry()
-                            .saveAccountId(
-                                    name,
-                                    com.hederahashgraph.api.proto.java.AccountID.newBuilder()
-                                            .setAccountNum(newAccountNum)
-                                            .build());
-                    if (creation.model().receiverSigRequired()) {
-                        siblingSpec.registry().saveSigRequirement(name, Boolean.TRUE);
-                    }
-                }));
+                spec);
+    }
+
+    private Result<Account> resultFor(@NonNull final Account model, @NonNull final HapiSpec spec) {
+        final var keyMetadata = KeyMetadata.from(fromPbj(model.keyOrThrow()), spec);
+        return new Result<>(model, atMostOnce(siblingSpec -> {
+            keyMetadata.registerAs(name, siblingSpec);
+            siblingSpec
+                    .registry()
+                    .saveAccountId(
+                            name,
+                            com.hederahashgraph.api.proto.java.AccountID.newBuilder()
+                                    .setAccountNum(model.accountIdOrThrow().accountNumOrThrow())
+                                    .build());
+            if (model.receiverSigRequired()) {
+                siblingSpec.registry().saveSigRequirement(name, Boolean.TRUE);
+            }
+        }));
     }
 }
