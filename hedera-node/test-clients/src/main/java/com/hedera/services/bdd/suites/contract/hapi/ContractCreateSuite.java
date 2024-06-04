@@ -52,14 +52,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitEthereumTransaction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCreationMaxAssociations;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCreationViaCallMaxAssociations;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -80,6 +85,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -99,6 +105,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -134,11 +141,13 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractCreateSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
+    private static final String ALICE = "alice";
 
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
@@ -149,6 +158,13 @@ public class ContractCreateSuite {
             "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
     private static final String DEPLOYER = "DeployerContract";
+    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
+    public static final String ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED =
+            "entities.unlimitedAutoAssociationsEnabled";
+    public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
+
+    private static final String FUNGIBLE_TOKEN = "fungible";
+    private static final String MULTI_KEY = "multiKey";
 
     @HapiTest
     final Stream<DynamicTest> createDeterministicDeployer() {
@@ -269,7 +285,7 @@ public class ContractCreateSuite {
     @HapiTest
     final Stream<DynamicTest> cannotSendToNonExistentAccount() {
         final var contract = "Multipurpose";
-        Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
+        final Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
         return defaultHapiSpec("CannotSendToNonExistentAccount", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(contract))
@@ -311,6 +327,70 @@ public class ContractCreateSuite {
                         getContractInfo(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .has(contractWith().immutableContractKey(EMPTY_CONSTRUCTOR_CONTRACT))
                                 .logged());
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> contractCreationsHaveValidAssociations() {
+        final var initCreateContract = "ParentChildTransfer";
+        final var slotUserContract = "SlotUser";
+        final var multiPurpose = "MultiPurpose";
+        final var createContract = "CreateTrivial";
+        return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
+                .preserving(
+                        CONTRACTS_ALLOW_AUTO_ASSOCIATIONS,
+                        ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
+                        LEDGER_MAX_AUTO_ASSOCIATIONS)
+                .given(
+                        overridingThree(
+                                CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE,
+                                ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE,
+                                LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(1000)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        uploadInitCode(initCreateContract, createContract, multiPurpose, slotUserContract))
+                .when(
+                        contractCreate(initCreateContract)
+                                .refusingEthConversion()
+                                .via("constructorWithoutExplicitAssociations")
+                                .hasKnownStatus(SUCCESS),
+                        cryptoTransfer(moving(100, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, initCreateContract))
+                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        contractCreate(createContract)
+                                .refusingEthConversion()
+                                .via("createWithExplicitZero")
+                                .maxAutomaticTokenAssociations(0)
+                                .hasKnownStatus(SUCCESS),
+                        contractCreate(multiPurpose)
+                                .refusingEthConversion()
+                                .via("createWithExplicit")
+                                .maxAutomaticTokenAssociations(3)
+                                .hasKnownStatus(SUCCESS),
+                        contractCreate(slotUserContract)
+                                .refusingEthConversion()
+                                .via("constructorCreate")
+                                .maxAutomaticTokenAssociations(5)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(createContract, "create")
+                                .via("createViaCall")
+                                .hasKnownStatus(SUCCESS))
+                .then(
+                        getContractInfo(initCreateContract)
+                                .has(contractWith().maxAutoAssociations(0))
+                                .logged(),
+                        assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
+                        getContractInfo(multiPurpose)
+                                .has(contractWith().maxAutoAssociations(3))
+                                .logged(),
+                        getContractInfo(slotUserContract)
+                                .has(contractWith().maxAutoAssociations(5))
+                                .logged(),
+                        assertCreationMaxAssociations("constructorCreate", 1, 5),
+                        assertCreationViaCallMaxAssociations("createViaCall", 0, 0));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -569,10 +649,10 @@ public class ContractCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotCreateTooLargeContract() {
-        ByteString contents;
+        final ByteString contents;
         try {
             contents = ByteString.copyFrom(Files.readAllBytes(Path.of(bytecodePath("CryptoKitties"))));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
         final var FILE_KEY = "fileKey";
@@ -726,11 +806,11 @@ public class ContractCreateSuite {
         final var contract1 = "EmptyOne";
         final var contract2 = "EmptyTwo";
         return propertyPreservingHapiSpec("contractCreateShouldChargeTheSame")
-                .preserving("contracts.allowAutoAssociations")
+                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)
                 .given(
                         uploadInitCode(contract1),
                         uploadInitCode(contract2),
-                        overriding("contracts.allowAutoAssociations", TRUE_VALUE))
+                        overriding(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE))
                 .when(
                         contractCreate(contract1)
                                 .via(contract1)
@@ -861,10 +941,10 @@ public class ContractCreateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
         return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
-                .preserving("contracts.allowAutoAssociations")
+                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)
                 .given(
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                        overriding("contracts.allowAutoAssociations", FALSE_VALUE))
+                        overriding(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, FALSE_VALUE))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .maxAutomaticTokenAssociations(10)
