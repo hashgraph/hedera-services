@@ -28,7 +28,8 @@ import java.time.Instant;
 public interface WritableScheduleStore extends ReadableScheduleStore {
 
     /**
-     * Delete a given schedule from this state. Given the ID of a schedule and a consensus time, delete that ID from
+     * Delete a given schedule from this state.
+     * Given the ID of a schedule and a consensus time, delete that ID from
      * this state as of the consensus time {@link Instant} provided.
      *
      * @param scheduleToDelete The ID of a schedule to be deleted.
@@ -42,15 +43,16 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     /**
      * Given the ID of a schedule, return a mutable reference to the schedule in this state.
      *
-     * @param idToFind - the id to find
+     * @param idToFind The ID to find
      * @return the Schedule to modify
      */
     Schedule getForModify(final ScheduleID idToFind);
 
     /**
-     * Add a schedule to this state. If the schedule already exists it will be replaced.
+     * Add a schedule to this state.
+     * If the schedule already exists it will be replaced.
      *
-     * @param scheduleToAdd - the schedule to add
+     * @param scheduleToAdd The schedule to add
      */
     void put(Schedule scheduleToAdd);
 

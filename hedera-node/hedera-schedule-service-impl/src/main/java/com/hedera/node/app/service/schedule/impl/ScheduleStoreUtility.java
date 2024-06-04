@@ -45,8 +45,6 @@ public final class ScheduleStoreUtility {
      * @param scheduleToHash the schedule to hash
      * @return the bytes
      */
-    // @todo('7773') This requires rebuilding the equality virtual map on migration,
-    //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
     @SuppressWarnings("UnstableApiUsage")
     public static Bytes calculateBytesHash(@NonNull final Schedule scheduleToHash) {
         Objects.requireNonNull(scheduleToHash);
@@ -89,13 +87,20 @@ public final class ScheduleStoreUtility {
     }
 
     /**
-     * Add or replace schedule list.
-     * If the schedule list already present, the schedule is added to the list.
-     * If the schedule is already present in the list, it is replaced with the new schedule.
+     * Adds a {@link Schedule} to a {@link ScheduleList}, replacing it if it already exists.
      *
-     * @param schedule     the schedule
-     * @param scheduleList the schedule list
-     * @return the schedule list
+     * <p>This method checks if the provided {@code Schedule} is already present in the {@code ScheduleList}.
+     * If it is, the existing {@code Schedule} is replaced with the new one. If it isn't, the {@code Schedule}
+     * is added to the list. This allows for updating entries within a {@code ScheduleList} without needing to
+     * manually manage duplicates or replacements.
+     *
+     * @param schedule The {@link Schedule} to add or replace in the {@code ScheduleList}. Must not be {@code null},
+     *     unless the {@code ScheduleList} is also {@code null}.
+     * @param scheduleList The {@link ScheduleList} to which the {@code Schedule} will be added or replaced. May be
+     *     {@code null}, in which case a new {@link ScheduleList} containing only the provided
+     *     {@code Schedule} is returned.
+     * @return A new {@link ScheduleList} containing the {@code Schedule} either added or replacing an existing one.
+     *     Never returns {@code null}.
      */
     static ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
         if (scheduleList == null) {

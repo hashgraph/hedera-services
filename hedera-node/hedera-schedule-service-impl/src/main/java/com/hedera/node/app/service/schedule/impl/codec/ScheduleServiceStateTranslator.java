@@ -44,7 +44,10 @@ import java.util.Optional;
 
 /**
  * Utility class used for conversion of schedule virtual values to schedules.
+ * @deprecated Since there should not be anymore ScheduleVirtualValue objects in state,
+ * this class should no longer be required and will be removed in a future release
  */
+@Deprecated(forRemoval = true)
 public final class ScheduleServiceStateTranslator {
     private static final int ED25519_KEY_LENGTH = 32;
 
@@ -156,7 +159,7 @@ public final class ScheduleServiceStateTranslator {
      * Migrates the state of the schedule service from the scheduleId to the schedule virtual value
      * using the readableStore and the ScheduleId.
      *
-     * @param scheduleID            the schedule id
+     * @param scheduleID the schedule id
      * @param readableScheduleStore the readable schedule store
      * @return the schedule virtual value
      */

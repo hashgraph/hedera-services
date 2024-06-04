@@ -61,9 +61,9 @@ abstract class AbstractScheduleHandler {
     /**
      * A simple record to return both "deemed valid" signatories and remaining primitive keys that must sign.
      *
-     * @param updatedSignatories    a Set of "deemed valid" signatories, possibly updated with new entries
+     * @param updatedSignatories a Set of "deemed valid" signatories, possibly updated with new entries
      * @param remainingRequiredKeys A Set of Key entries that have not yet signed the scheduled transaction, but
-     *                              must sign that transaction before it can be executed.
+     *     must sign that transaction before it can be executed.
      */
     protected static record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
 
@@ -71,7 +71,7 @@ abstract class AbstractScheduleHandler {
      * Gets the set of all the keys required to sign a transaction.
      *
      * @param scheduleInState the schedule in state
-     * @param context    the Prehandle context
+     * @param context the Prehandle context
      * @return the set of keys required to sign the transaction
      * @throws PreCheckException if the transaction cannot be handled successfully due to a validation failure of the
      * dispatcher related to signer requirements or other pre-validation criteria.
