@@ -26,9 +26,8 @@ import com.hedera.node.app.workflows.handle.flow.annotations.HandleContextScope;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * A factory for creating service APIs based on the {@link SavepointStackImpl} for the current transaction.
@@ -41,6 +40,7 @@ public class ServiceApiFactory {
 
     private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER =
             Map.of(TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER);
+
     @Inject
     public ServiceApiFactory(
             @NonNull final SavepointStackImpl stack,

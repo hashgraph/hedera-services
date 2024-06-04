@@ -19,6 +19,4 @@ package com.hedera.node.app.workflows.handle.flow.dispatcher;
 import javax.inject.Singleton;
 
 @Singleton
-public class DispatchTxnValidator {
-
-}
+public class DispatchTxnValidator {}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow;
+package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.workflows.handle.flow.modules.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.flow.infra.records;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.infra.records.DispatchRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import javax.inject.Inject;

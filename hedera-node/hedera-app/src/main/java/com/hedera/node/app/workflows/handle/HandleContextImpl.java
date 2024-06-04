@@ -653,6 +653,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
+
     @Override
     public @NonNull Map<AccountID, Long> dispatchPaidRewards() {
         return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;

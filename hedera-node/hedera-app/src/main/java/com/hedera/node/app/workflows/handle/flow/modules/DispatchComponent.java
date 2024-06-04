@@ -17,10 +17,8 @@
 package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -45,7 +43,7 @@ public interface DispatchComponent {
                 @BindsInstance KeyVerifier keyVerifier,
                 @BindsInstance AccountID topLevelPayer,
                 @BindsInstance ResponseCodeEnum pureChecksResult,
-                @BindsInstance DispatchValidationResult txnBody,);
+                @BindsInstance DispatchValidationResult txnBody);
     }
 
     HandleContext handleContext();

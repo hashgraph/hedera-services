@@ -43,8 +43,8 @@ public interface DispatchModule {
 
     @Provides
     @HandleContextScope
-    static FeeAccumulator provideFeeAccumulator(ServiceApiFactory factory,
-                                                SingleTransactionRecordBuilderImpl recordBuilder) {
+    static FeeAccumulator provideFeeAccumulator(
+            ServiceApiFactory factory, SingleTransactionRecordBuilderImpl recordBuilder) {
         return new FeeAccumulatorImpl(factory.getApi(TokenServiceApi.class), recordBuilder);
     }
 }
