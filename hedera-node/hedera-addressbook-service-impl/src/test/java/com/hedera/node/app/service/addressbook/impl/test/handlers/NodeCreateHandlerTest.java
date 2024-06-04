@@ -253,7 +253,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT, msg.getStatus());
+        assertEquals(ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
     }
 
     @Test

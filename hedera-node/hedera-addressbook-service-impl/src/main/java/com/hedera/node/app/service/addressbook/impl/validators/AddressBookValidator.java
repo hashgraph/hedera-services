@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
@@ -80,7 +81,7 @@ public class AddressBookValidator {
     public void validateGossipEndpoint(
             @Nullable final List<ServiceEndpoint> endpointList, @NonNull final NodesConfig nodesConfig) {
         validateFalse(endpointList == null || endpointList.isEmpty(), INVALID_GOSSIP_ENDPOINT);
-        validateFalse(endpointList.size() > nodesConfig.maxGossipEndpoint(), INVALID_GOSSIP_ENDPOINT);
+        validateFalse(endpointList.size() > nodesConfig.maxGossipEndpoint(), GOSSIP_ENDPOINTS_EXCEEDED_LIMIT);
         // for phase 2: The first in the list is used as the Internal IP address in config.txt,
         // the second in the list is used as the External IP address in config.txt
         validateFalse(endpointList.size() < 2, INVALID_GOSSIP_ENDPOINT);
