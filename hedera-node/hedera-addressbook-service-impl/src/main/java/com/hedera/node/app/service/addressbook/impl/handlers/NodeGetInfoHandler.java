@@ -17,30 +17,20 @@
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeGetInfoQuery;
 import com.hedera.hapi.node.addressbook.NodeGetInfoResponse;
 import com.hedera.hapi.node.addressbook.NodeInfo;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
-import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
-import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileInfoResourceUsage;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -81,10 +71,9 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         requireNonNull(context);
         final var query = context.query();
         final var nodeStore = context.createStore(ReadableNodeStore.class);
-        final var config = context.configuration().getConfigData(NodesConfig.class);
         final NodeGetInfoQuery op = query.nodeGetInfoOrThrow();
         final long nodeId = op.nodeId();
-        if (nodeId > 0 && nodeId <= config.maxNumber()) {
+        if (nodeId > 0 && nodeId <= Long.MAX_VALUE) {
             // The node must exist
             final var node = nodeStore.get(nodeId);
             mustExist(node, INVALID_NODE_ID);
