@@ -28,11 +28,9 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -58,6 +56,7 @@ public class AddressBookTestBase {
     protected final byte[] grpcCertificateHash = "grpcCertificateHash".getBytes();
     protected final byte[] gossipCaCertificate = "gossipCaCertificate".getBytes();
     protected final EntityNumber nodeId = EntityNumber.newBuilder().number(1L).build();
+    protected final EntityNumber nodeId2 = EntityNumber.newBuilder().number(3L).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
 
@@ -121,6 +120,13 @@ public class AddressBookTestBase {
         writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
     }
 
+    protected void refreshStoresWithMoreNodeInWritable() {
+        writableNodeState = writableNodeStateWithMoreKeys();
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+    }
+
     @NonNull
     protected MapWritableKVState<EntityNumber, Node> emptyWritableNodeState() {
         return MapWritableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
@@ -130,6 +136,14 @@ public class AddressBookTestBase {
     protected MapWritableKVState<EntityNumber, Node> writableNodeStateWithOneKey() {
         return MapWritableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(nodeId, node)
+                .build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<EntityNumber, Node> writableNodeStateWithMoreKeys() {
+        return MapWritableKVState.<EntityNumber, Node>builder(NODES_KEY)
+                .value(nodeId, node)
+                .value(nodeId2, mock(Node.class))
                 .build();
     }
 
@@ -169,12 +183,5 @@ public class AddressBookTestBase {
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
                 .build();
-    }
-
-    static Key mockPayerLookup(Key key, AccountID accountId, ReadableAccountStore accountStore) {
-        final var account = mock(Account.class);
-        given(accountStore.getAccountById(accountId)).willReturn(account);
-        given(account.key()).willReturn(key);
-        return key;
     }
 }
