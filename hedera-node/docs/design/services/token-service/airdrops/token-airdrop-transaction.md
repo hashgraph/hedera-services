@@ -159,7 +159,8 @@ If the airdrop transaction fees from the list above are covered by a separate pa
     - Handle:
         - Any additional validation depending on config or state i.e. semantics checks
         - Check that the airdrop sender account is a valid account. That is an existing account, which is not deleted or expired.
-        - In the case where an account is a spender and has allowances for a given token, check that the spender has enough allowance balance to cover the airdrop amount
+        - In the case where an account is a spender and has allowances for a given token, check that the spender has enough allowance balance to cover the airdrop amount.
+        - In the case where a recipient associated themselves to a token after a pending airdrop with this token was sent to them, a consequent airdrop should be directly transferred to the recipient and the first pending airdrop should remain in the pending state.
         - Check that the token being airdropped, does not contain a custom fee, which needs to be covered by the recipient. This includes `fractionalFees` with `net_of_transfers=false` and `royaltyFees`, including `fallbackRoyaltyFees`.
         - Such transactions should be reverted and rejected.
         - The business logic for sending pending airdrops:
@@ -203,6 +204,7 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 * Verify that an airdrop with a token and a missing recipient pointed by its `evm_address` alias, works correctly by lazy-creating the recipient with `maxAutoAssociations=-1` and the token is directly transferred to it
 * Verify that an airdrop with a token from a token owner with enough balance and existing recipient with `maxAutoAssociations` equal to a positive number and there are no free `autoAssociations` slots works correctly and the airdrop lends in the pending state
 * Verify that an airdrop with a token from a spender with enough allowance and existing recipient with `maxAutoAssociations` equal to a positive number and there are no free `autoAssociations` slots works correctly and the airdrop lends in the pending state
+* Verify that when sending 2 consequent airdrops to a recipient, which associated themselves to the token after the first airdrop, the second airdrop is directly transferred to the recipient and the first airdrop remains in pending state
 * Verify that an airdrop with a missing TokenID fails
 * Verify that an airdrop with an NFT and non-existing serial number fails
 * Verify that an airdrop with wrong input data (e.g. negative amount, negative serial number or missing mandatory field) fails
