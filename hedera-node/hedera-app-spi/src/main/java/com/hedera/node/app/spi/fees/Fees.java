@@ -66,6 +66,10 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
         return new Fees(nodeFee, networkFee, 0);
     }
 
+    public Fees onlyServiceComponent() {
+        return new Fees(0, 0, serviceFee);
+    }
+
     /**
      * Computes and returns the total fee, which is the sum of the node, network, and service fees.
      * @return the total fee. Will be non-negative.
