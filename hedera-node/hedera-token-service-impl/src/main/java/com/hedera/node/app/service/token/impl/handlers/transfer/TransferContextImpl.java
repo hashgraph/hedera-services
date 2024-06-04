@@ -78,7 +78,7 @@ public class TransferContextImpl implements TransferContext {
      * @param context The context to use.
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
      * on auto creation custom fee payments.
-     * @param tokenRelValidations The token <-> account relationship validations to use.
+     * @param tokenRelValidations The token-account relationship validations to use.
      * @param tokenValidations The token validations to use.
      */
     public TransferContextImpl(
