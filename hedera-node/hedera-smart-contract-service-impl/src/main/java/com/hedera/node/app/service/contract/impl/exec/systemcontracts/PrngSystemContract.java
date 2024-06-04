@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOfZeroValueTraceable;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -148,9 +147,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
                     .gasUsed(gasRequirement)
                     .functionParameters(tuweniToPbjBytes(frame.getInputData()))
                     .errorMessage(null)
-                    // (FUTURE) Replace with PRNG contract address, c.f. issue
-                    // https://github.com/hashgraph/hedera-services/issues/10552
-                    .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                    .contractID(contractID)
                     .senderId(senderId)
                     .gas(frame.getRemainingGas())
                     .build();
