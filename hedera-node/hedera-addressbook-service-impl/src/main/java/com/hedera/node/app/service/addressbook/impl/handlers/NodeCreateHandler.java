@@ -83,12 +83,6 @@ public class NodeCreateHandler implements TransactionHandler {
         validateTruePreCheck(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
     }
 
-    /**
-     * Given the appropriate context, creates a new node.
-     *
-     * @param handleContext the {@link HandleContext} for the active transaction
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
