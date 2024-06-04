@@ -187,7 +187,7 @@ public final class V0490ScheduleSchema extends Schema {
     /**
      * Used to migrate the state to the new schema. It is not thread safe and is set to null after migration.
      *
-     * @param fs the fs
+     * @param fs the state to migrate from
      */
     public static void setFs(@Nullable final MerkleScheduledTransactions fs) {
         V0490ScheduleSchema.fs = fs;

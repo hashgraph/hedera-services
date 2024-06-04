@@ -73,7 +73,8 @@ abstract class AbstractScheduleHandler {
      * @param scheduleInState the schedule in state
      * @param context    the Prehandle context
      * @return the set of keys required to sign the transaction
-     * @throws PreCheckException the pre check exception
+     * @throws PreCheckException if the transaction cannot be handled successfully due to a validation failure of the
+     * dispatcher related to signer requirements or other pre-validation criteria.
      */
     @NonNull
     protected Set<Key> allKeysForTransaction(
@@ -93,7 +94,7 @@ abstract class AbstractScheduleHandler {
      * @param scheduleInState the schedule in state
      * @param context         the Prehandle context
      * @return the schedule keys result containing the updated signatories and the remaining required keys
-     * @throws HandleException the handle exception
+     * @throws HandleException if any validation check fails when getting the keys for the transaction
      */
     @NonNull
     protected ScheduleKeysResult allKeysForTransaction(
