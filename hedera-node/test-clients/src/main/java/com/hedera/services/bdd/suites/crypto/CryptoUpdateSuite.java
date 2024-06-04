@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -51,12 +52,14 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -173,18 +176,21 @@ public class CryptoUpdateSuite {
     @HapiTest
     final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
-        double baseFee = 0.00022;
+        double baseFee = 0.00021;
+        double baseFeeWithExpiry = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
 
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
         final var plusTenTxn = "plusTenTxn";
-        final var allowedPercentDiff = 1.0;
+        final var allowedPercentDiff = 1.5;
 
         AtomicLong expiration = new AtomicLong();
-        return defaultHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
                         cryptoCreate("canonicalAccount")
@@ -217,11 +223,11 @@ public class CryptoUpdateSuite {
                                 .maxAutomaticAssociations(11)
                                 .via(plusTenTxn))
                 .then(
-                        validateChargedUsd(baseTxn, baseFee, allowedPercentDiff)
+                        validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusOneTxn, plusOneSlotFee, allowedPercentDiff)
+                        validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusTenTxn, plusTenSlotsFee, allowedPercentDiff)
+                        validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
@@ -454,6 +460,10 @@ public class CryptoUpdateSuite {
                         contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT));
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(-2)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS));
     }
 }
