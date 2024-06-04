@@ -32,7 +32,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class AddressBookValidator {
     /**
      * Default constructor for injection.
@@ -72,18 +74,18 @@ public class AddressBookValidator {
     /**
      * Validates the gossip endpoint.
      *
-     * @param endpointLst The list of GossipEndpoint to validate
+     * @param endpointList The list of GossipEndpoint to validate
      * @param nodesConfig The nodes configuration
      */
     public void validateGossipEndpoint(
-            @Nullable final List<ServiceEndpoint> endpointLst, @NonNull final NodesConfig nodesConfig) {
-        validateFalse(endpointLst == null || endpointLst.isEmpty(), INVALID_GOSSIP_ENDPOINT);
-        validateFalse(endpointLst.size() > nodesConfig.maxGossipEndpoint(), INVALID_GOSSIP_ENDPOINT);
+            @Nullable final List<ServiceEndpoint> endpointList, @NonNull final NodesConfig nodesConfig) {
+        validateFalse(endpointList == null || endpointList.isEmpty(), INVALID_GOSSIP_ENDPOINT);
+        validateFalse(endpointList.size() > nodesConfig.maxGossipEndpoint(), INVALID_GOSSIP_ENDPOINT);
         // for phase 2: The first in the list is used as the Internal IP address in config.txt,
         // the second in the list is used as the External IP address in config.txt
-        validateFalse(endpointLst.size() < 2, INVALID_GOSSIP_ENDPOINT);
+        validateFalse(endpointList.size() < 2, INVALID_GOSSIP_ENDPOINT);
 
-        for (final var endpoint : endpointLst) {
+        for (final var endpoint : endpointList) {
             validateFalse(
                     nodesConfig.gossipFqdnRestricted() && !endpoint.domainName().isEmpty(),
                     GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN);
@@ -94,14 +96,14 @@ public class AddressBookValidator {
     /**
      * Validates the service endpoint.
      *
-     * @param endpointLst The list of ServiceEndpoint to validate
+     * @param endpointList The list of ServiceEndpoint to validate
      * @param nodesConfig The nodes configuration
      */
     public void validateServiceEndpoint(
-            @Nullable final List<ServiceEndpoint> endpointLst, @NonNull final NodesConfig nodesConfig) {
-        validateFalse(endpointLst == null || endpointLst.isEmpty(), INVALID_SERVICE_ENDPOINT);
-        validateFalse(endpointLst.size() > nodesConfig.maxServiceEndpoint(), INVALID_SERVICE_ENDPOINT);
-        for (final var endpoint : endpointLst) {
+            @Nullable final List<ServiceEndpoint> endpointList, @NonNull final NodesConfig nodesConfig) {
+        validateFalse(endpointList == null || endpointList.isEmpty(), INVALID_SERVICE_ENDPOINT);
+        validateFalse(endpointList.size() > nodesConfig.maxServiceEndpoint(), INVALID_SERVICE_ENDPOINT);
+        for (final var endpoint : endpointList) {
             validateEndpoint(endpoint, nodesConfig);
         }
     }

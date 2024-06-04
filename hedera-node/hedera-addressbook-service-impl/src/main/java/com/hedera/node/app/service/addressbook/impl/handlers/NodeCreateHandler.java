@@ -20,11 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODE_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODES_CREATED;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,12 +40,14 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.NodesConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#NODE_CREATE}.
+ * This is a privileged(Needs signatures from 2-50 )
  */
 @Singleton
 public class NodeCreateHandler implements TransactionHandler {
@@ -64,23 +66,16 @@ public class NodeCreateHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.nodeCreate();
-        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-        final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
-        validateFalsePreCheck(accountId.equals(AccountID.DEFAULT), INVALID_NODE_ACCOUNT_ID);
+        final var accountId = validateAccountID(op.accountIdOrElse(AccountID.DEFAULT), INVALID_NODE_ACCOUNT_ID);
         validateFalsePreCheck(!accountId.hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
         validateFalsePreCheck(op.gossipEndpoint().isEmpty(), INVALID_GOSSIP_ENDPOINT);
         validateFalsePreCheck(op.serviceEndpoint().isEmpty(), INVALID_SERVICE_ENDPOINT);
-        validateFalsePreCheck(op.gossipCaCertificate().length() == 0, INVALID_GOSSIP_CAE_CERTIFICATE);
+        validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CAE_CERTIFICATE);
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var op = context.body().nodeCreate();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
-
-        validateTruePreCheck(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
     }
 
     @Override
@@ -92,16 +87,16 @@ public class NodeCreateHandler implements TransactionHandler {
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
         final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
+        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
 
-        final var nodeBuilder = new Node.Builder();
-
-        validateFalse(nodeStore.sizeOfState() >= nodeConfig.maxNumber(), MAX_NODE_HAVE_BEEN_CREATED);
+        validateFalse(nodeStore.sizeOfState() >= nodeConfig.maxNumber(), MAX_NODES_CREATED);
+        validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
         addressBookValidator.validateDescription(op.description(), nodeConfig);
         addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
         addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
-        validateFalse(op.gossipCaCertificate().length() == 0, INVALID_GOSSIP_CAE_CERTIFICATE);
 
-        nodeBuilder
+        final var nodeBuilder = new Node.Builder()
                 .accountId(op.accountId())
                 .description(op.description())
                 .gossipEndpoint(op.gossipEndpoint())
@@ -109,14 +104,23 @@ public class NodeCreateHandler implements TransactionHandler {
                 .gossipEndpoint(op.gossipEndpoint())
                 .serviceEndpoint(op.serviceEndpoint())
                 .gossipCaCertificate(op.gossipCaCertificate())
-                .grpcCertificateHash(op.grpcCertificateHash())
-                .build();
-        final var node = nodeBuilder.nodeId(handleContext.newEntityNum()).build();
+                .grpcCertificateHash(op.grpcCertificateHash());
+        final var node = nodeBuilder.nodeId(getNextNodeID(nodeStore)).build();
 
         nodeStore.put(node);
 
         final var recordBuilder = handleContext.recordBuilder(NodeCreateRecordBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
+    }
+
+    private long getNextNodeID(WritableNodeStore nodeStore) {
+        final var nodeIds = nodeStore.keys();
+        long max = 0;
+        while (nodeIds.hasNext()) {
+            max = Math.max(max, nodeIds.next().number());
+        }
+
+        return max + 1;
     }
 }
