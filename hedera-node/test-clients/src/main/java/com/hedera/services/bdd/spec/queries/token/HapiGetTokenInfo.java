@@ -99,9 +99,25 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private com.hedera.hapi.node.base.Key explicitFreezeKey;
 
     private Optional<String> expectedFreezeKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitSupplyKey;
+
     private Optional<String> expectedSupplyKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitWipeKey;
+
     private Optional<String> expectedWipeKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitFeeScheduleKey;
+
     private Optional<String> expectedFeeScheduleKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitPauseKey;
+
     private Optional<String> expectedPauseKey = Optional.empty();
     private boolean emptyAdminKey = false;
     private boolean emptyWipeKey = false;
@@ -268,6 +284,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasPauseKey(com.hedera.hapi.node.base.Key key) {
+        explicitPauseKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasPauseKey(String name) {
         expectedPauseKey = Optional.of(name);
         return this;
@@ -310,13 +331,28 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasSupplyKey(com.hedera.hapi.node.base.Key key) {
+        explicitSupplyKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasSupplyKey(String name) {
         expectedSupplyKey = Optional.of(name);
         return this;
     }
 
+    public HapiGetTokenInfo hasWipeKey(com.hedera.hapi.node.base.Key key) {
+        explicitWipeKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasWipeKey(String name) {
         expectedWipeKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasFeeScheduleKey(com.hedera.hapi.node.base.Key key) {
+        explicitFeeScheduleKey = key;
         return this;
     }
 
@@ -532,6 +568,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getWipeKey());
         } else if (invalidWipeKey) {
             assertForAllZerosInvalidKey(actualInfo.getWipeKey());
+        } else if (explicitWipeKey != null) {
+            Assertions.assertEquals(fromPbj(explicitWipeKey), actualInfo.getWipeKey(), "Wrong token wipe key!");
         } else {
             assertFor(
                     actualInfo.getWipeKey(),
@@ -560,6 +598,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getSupplyKey());
         } else if (invalidSupplyKey) {
             assertForAllZerosInvalidKey(actualInfo.getSupplyKey());
+        } else if (explicitSupplyKey != null) {
+            Assertions.assertEquals(fromPbj(explicitSupplyKey), actualInfo.getSupplyKey(), "Wrong token supply key!");
         } else {
             assertFor(
                     actualInfo.getSupplyKey(),
@@ -573,6 +613,9 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getFeeScheduleKey());
         } else if (invalidFeeScheduleKey) {
             assertForAllZerosInvalidKey(actualInfo.getFeeScheduleKey());
+        } else if (explicitFeeScheduleKey != null) {
+            Assertions.assertEquals(
+                    fromPbj(explicitFeeScheduleKey), actualInfo.getFeeScheduleKey(), "Wrong token fee schedule key!");
         } else {
             assertFor(
                     actualInfo.getFeeScheduleKey(),
@@ -586,6 +629,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getPauseKey());
         } else if (invalidPauseKey) {
             assertForAllZerosInvalidKey(actualInfo.getPauseKey());
+        } else if (explicitPauseKey != null) {
+            Assertions.assertEquals(fromPbj(explicitPauseKey), actualInfo.getPauseKey(), "Wrong token pause key!");
         } else {
             assertFor(
                     actualInfo.getPauseKey(),

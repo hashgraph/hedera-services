@@ -138,7 +138,7 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
     private SpecNonFungibleToken nonFungibleTokenFrom(
             @NonNull final NonFungibleTokenSpec annotation, @NonNull final String defaultName) {
         final var token = new SpecNonFungibleToken(annotation.name().isBlank() ? defaultName : annotation.name());
-        customizeToken(token, annotation.keys());
+        customizeToken(token, annotation.keys(), annotation.useAutoRenewAccount());
         token.setNumPreMints(annotation.numPreMints());
         return token;
     }
@@ -146,7 +146,7 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
     private SpecFungibleToken fungibleTokenFrom(
             @NonNull final FungibleTokenSpec annotation, @NonNull final String defaultName) {
         final var token = new SpecFungibleToken(annotation.name().isBlank() ? defaultName : annotation.name());
-        customizeToken(token, annotation.keys());
+        customizeToken(token, annotation.keys(), annotation.useAutoRenewAccount());
         return token;
     }
 
@@ -167,8 +167,12 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
         return new SpecKey(name, type);
     }
 
-    private void customizeToken(@NonNull final SpecToken token, @NonNull final SpecTokenKey[] keys) {
+    private void customizeToken(
+            @NonNull final SpecToken token, @NonNull final SpecTokenKey[] keys, final boolean useAutoRenewAccount) {
         token.setKeys(EnumSet.copyOf(List.of(keys)));
+        if (useAutoRenewAccount) {
+            token.useAutoRenewAccount();
+        }
     }
 
     private void injectValueIntoField(@NonNull final Field field, @NonNull final Object value)

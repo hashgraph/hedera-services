@@ -88,7 +88,7 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
             case SpecAccount account -> account.updateKeyFrom(
                     toPbj(spec.registry().getKey(managedKeyName)), spec);
             case SpecToken token -> {
-                // TODO - update the admin key
+                // (FUTURE) - update the admin key on the token model
             }
             default -> throw new IllegalStateException("Cannot authorize contract for " + target);
         }

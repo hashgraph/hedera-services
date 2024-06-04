@@ -47,6 +47,7 @@ import java.util.Set;
  */
 public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implements SpecEntity, EvmAddressableEntity {
     public static final String DEFAULT_TREASURY_NAME_SUFFIX = "Treasury";
+    public static final String DEFAULT_AUTO_RENEW_ACCOUNT_NAME_SUFFIX = "AutoRenew";
 
     protected final Token.Builder builder = Token.newBuilder();
 
@@ -64,6 +65,13 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
         super(name);
         builder.tokenType(tokenType);
         treasuryAccount = new SpecAccount(name + DEFAULT_TREASURY_NAME_SUFFIX);
+    }
+
+    /**
+     * Indicates this token should use an auto-renew account.
+     */
+    public void useAutoRenewAccount() {
+        autoRenewAccount = new SpecAccount(name + DEFAULT_AUTO_RENEW_ACCOUNT_NAME_SUFFIX);
     }
 
     /**

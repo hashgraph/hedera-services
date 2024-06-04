@@ -54,4 +54,11 @@ public @interface NonFungibleTokenSpec {
      * @return the number of pre-mints to perform
      */
     int numPreMints() default 0;
+
+    /**
+     * Whether to use an auto-renew account for the token.
+     *
+     * @return whether to use an auto-renew account for the token
+     */
+    boolean useAutoRenewAccount() default false;
 }

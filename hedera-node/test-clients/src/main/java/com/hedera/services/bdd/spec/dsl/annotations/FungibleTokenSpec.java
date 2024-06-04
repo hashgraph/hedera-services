@@ -47,4 +47,11 @@ public @interface FungibleTokenSpec {
      * @return the types of keys to associate with the token
      */
     SpecTokenKey[] keys() default {ADMIN_KEY, SUPPLY_KEY};
+
+    /**
+     * Whether to use an auto-renew account for the token.
+     *
+     * @return whether to use an auto-renew account for the token
+     */
+    boolean useAutoRenewAccount() default false;
 }

@@ -141,6 +141,7 @@ public class UpdateTokenPrecompileTest {
 
         @NonFungibleTokenSpec(
                 numPreMints = 1,
+                useAutoRenewAccount = true,
                 keys = {
                     ADMIN_KEY,
                     FEE_SCHEDULE_KEY,
@@ -217,21 +218,94 @@ public class UpdateTokenPrecompileTest {
         }
 
         @HapiTest
-        @DisplayName("can update the KYC key to a different crypto key")
-        public Stream<DynamicTest> canUpdateKycKeyToCrypto() {
+        @DisplayName("can update the KYC key to a different Ed25519 key or itself")
+        public Stream<DynamicTest> canUpdateKycKeyToEd25519OrItself() {
             return hapiTest(
                     // This contract uses 1 as shorthand for the KYC key
                     updateTokenPropertyContract.call("updateTokenKeyEd", sharedMutableToken, ed25519Key, 1),
-                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasKycKey(key))));
+                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasKycKey(key))),
+                    // And then to the managing contract's id
+                    updateTokenPropertyContract.call(
+                            "updateTokenKeyContractId", sharedMutableToken, updateTokenPropertyContract, 1),
+                    updateTokenPropertyContract.doWith(contract -> sharedMutableToken
+                            .getInfo()
+                            .andAssert(info -> info.hasKycKey(contractIdKeyFor(contract)))));
         }
 
         @HapiTest
-        @DisplayName("can update the freeze key to a different crypto key")
-        public Stream<DynamicTest> canUpdateFreezeKeyToCrypto() {
+        @DisplayName("can update the freeze key to a different Ed25519 key or itself")
+        public Stream<DynamicTest> canUpdateFreezeKeyToEd25519OrItself() {
             return hapiTest(
                     // This contract uses 2 as shorthand for the freeze key
                     updateTokenPropertyContract.call("updateTokenKeyEd", sharedMutableToken, ed25519Key, 2),
-                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasFreezeKey(key))));
+                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasFreezeKey(key))),
+                    // And then to the managing contract's id
+                    updateTokenPropertyContract.call(
+                            "updateTokenKeyContractId", sharedMutableToken, updateTokenPropertyContract, 2),
+                    updateTokenPropertyContract.doWith(contract -> sharedMutableToken
+                            .getInfo()
+                            .andAssert(info -> info.hasFreezeKey(contractIdKeyFor(contract)))));
+        }
+
+        @HapiTest
+        @DisplayName("can update the wipe key to a different Ed25519 key or itself")
+        public Stream<DynamicTest> canUpdateWipeKeyToEd25519OrItself() {
+            return hapiTest(
+                    // This contract uses 3 as shorthand for the wipe key; first update to an Ed25519 key
+                    updateTokenPropertyContract.call("updateTokenKeyEd", sharedMutableToken, ed25519Key, 3),
+                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasWipeKey(key))),
+                    // And then to the managing contract's id
+                    updateTokenPropertyContract.call(
+                            "updateTokenKeyContractId", sharedMutableToken, updateTokenPropertyContract, 3),
+                    updateTokenPropertyContract.doWith(contract -> sharedMutableToken
+                            .getInfo()
+                            .andAssert(info -> info.hasWipeKey(contractIdKeyFor(contract)))));
+        }
+
+        @HapiTest
+        @DisplayName("can update the supply key to a different Ed25519 key or itself")
+        public Stream<DynamicTest> canUpdateSupplyKeyToEd25519OrItself() {
+            return hapiTest(
+                    // This contract uses 4 as shorthand for the supply key; first update to an Ed25519 key
+                    updateTokenPropertyContract.call("updateTokenKeyEd", sharedMutableToken, ed25519Key, 4),
+                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasSupplyKey(key))),
+                    // And then to the managing contract's id
+                    updateTokenPropertyContract.call(
+                            "updateTokenKeyContractId", sharedMutableToken, updateTokenPropertyContract, 4),
+                    updateTokenPropertyContract.doWith(contract -> sharedMutableToken
+                            .getInfo()
+                            .andAssert(info -> info.hasSupplyKey(contractIdKeyFor(contract)))));
+        }
+
+        @HapiTest
+        @DisplayName("can update the fee schedule key to a different Ed25519 key or itself")
+        public Stream<DynamicTest> canUpdateFeeScheduleKeyToEd25519OrItself() {
+            return hapiTest(
+                    // This contract uses 5 as shorthand for the fee schedule key; first update to an Ed25519 key
+                    updateTokenPropertyContract.call("updateTokenKeyEd", sharedMutableToken, ed25519Key, 5),
+                    ed25519Key.doWith(
+                            key -> sharedMutableToken.getInfo().andAssert(info -> info.hasFeeScheduleKey(key))),
+                    // And then to the managing contract's id
+                    updateTokenPropertyContract.call(
+                            "updateTokenKeyContractId", sharedMutableToken, updateTokenPropertyContract, 5),
+                    updateTokenPropertyContract.doWith(contract -> sharedMutableToken
+                            .getInfo()
+                            .andAssert(info -> info.hasFeeScheduleKey(contractIdKeyFor(contract)))));
+        }
+
+        @HapiTest
+        @DisplayName("can update the pause key to a different Ed25519 key or itself")
+        public Stream<DynamicTest> canUpdatePauseKeyToEd25519OrItself() {
+            return hapiTest(
+                    // This contract uses 6 as shorthand for the pause key; first update to an Ed25519 key
+                    updateTokenPropertyContract.call("updateTokenKeyEd", sharedMutableToken, ed25519Key, 6),
+                    ed25519Key.doWith(key -> sharedMutableToken.getInfo().andAssert(info -> info.hasPauseKey(key))),
+                    // And then to the managing contract's id
+                    updateTokenPropertyContract.call(
+                            "updateTokenKeyContractId", sharedMutableToken, updateTokenPropertyContract, 6),
+                    updateTokenPropertyContract.doWith(contract -> sharedMutableToken
+                            .getInfo()
+                            .andAssert(info -> info.hasPauseKey(contractIdKeyFor(contract)))));
         }
 
         @Nested
