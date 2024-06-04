@@ -19,8 +19,6 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -91,7 +89,6 @@ public class ContractCallHandler implements TransactionHandler {
         final var op = txn.contractCallOrThrow();
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
 
-        validateTruePreCheck(op.gas() <= MAX_GAS_LIMIT, MAX_GAS_LIMIT_EXCEEDED);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
                 Bytes.wrap(op.functionParameters().toByteArray()), false);
         validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
