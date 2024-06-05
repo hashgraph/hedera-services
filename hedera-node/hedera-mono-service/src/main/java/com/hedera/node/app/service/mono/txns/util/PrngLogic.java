@@ -95,7 +95,7 @@ public class PrngLogic {
                 return MISSING_BYTES;
             }
             // generate binary string from the running hash of records
-            return nMinus3RunningHash.getValue();
+            return nMinus3RunningHash.copyToByteArray();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted when computing n-3 running hash");
