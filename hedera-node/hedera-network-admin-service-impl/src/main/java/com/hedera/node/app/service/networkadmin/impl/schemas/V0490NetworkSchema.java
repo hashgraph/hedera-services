@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.state.Schema;
+import com.swirlds.state.spi.Schema;
 
 /**
  * General schema for the network service. Currently a placeholder.

@@ -18,9 +18,9 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.StateDefinition;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.BDDAssertions;

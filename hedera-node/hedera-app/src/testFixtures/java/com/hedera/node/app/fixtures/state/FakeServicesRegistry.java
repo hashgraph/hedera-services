@@ -17,9 +17,9 @@
 package com.hedera.node.app.fixtures.state;
 
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
