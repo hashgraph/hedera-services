@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PENDING;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.setupFrom;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
+import static com.hedera.services.bdd.spec.infrastructure.HapiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
@@ -65,11 +65,12 @@ import com.google.common.io.Files;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -225,7 +226,7 @@ public class HapiSpec implements Runnable, Executable {
     FeeCalculator feeCalculator;
     FeesAndRatesProvider ratesProvider;
     HapiSpecSetup hapiSetup;
-    HapiApiClients hapiClients;
+    HapiClients hapiClients;
     HapiSpecRegistry hapiRegistry;
     HapiSpecOperation[] given;
     HapiSpecOperation[] when;
@@ -510,6 +511,9 @@ public class HapiSpec implements Runnable, Executable {
 
     private boolean init() {
         hapiClients = clientsFor(hapiSetup);
+        if (targetNetwork == null) {
+            targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), hapiClients);
+        }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
             if (sharedStates != null) {
@@ -941,10 +945,6 @@ public class HapiSpec implements Runnable, Executable {
         return hapiSetup;
     }
 
-    public HapiApiClients clients() {
-        return hapiClients;
-    }
-
     public FeesAndRatesProvider ratesProvider() {
         return ratesProvider;
     }
@@ -958,10 +958,6 @@ public class HapiSpec implements Runnable, Executable {
     private static String defaultNodeAccount;
     private static Map<String, String> otherOverrides;
     private static boolean runningInCi = false;
-
-    public static boolean isRunningInCi() {
-        return runningInCi;
-    }
 
     public static void runInCiMode(
             String nodes,
@@ -1134,9 +1130,8 @@ public class HapiSpec implements Runnable, Executable {
     public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {
         spec.setTargetNetwork(targetNetwork);
         spec.setTargetNetworkType(targetNetwork.type());
-        final var specNodes = targetNetwork.nodes().stream()
-                .map(HederaNode::hapiSpecIdentifier)
-                .collect(joining(","));
+        final var specNodes =
+                targetNetwork.nodes().stream().map(HederaNode::hapiSpecInfo).collect(joining(","));
         spec.addOverrideProperties(Map.of("nodes", specNodes));
     }
 

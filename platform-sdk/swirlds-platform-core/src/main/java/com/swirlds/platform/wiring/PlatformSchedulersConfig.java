@@ -17,7 +17,6 @@
 package com.swirlds.platform.wiring;
 
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.time.Duration;
@@ -38,8 +37,7 @@ import java.time.Duration;
  * @param pcesSequencer                          configuration for the preconsensus event sequencer scheduler
  * @param applicationTransactionPrehandler       configuration for the application transaction prehandler scheduler
  * @param stateSignatureCollector                configuration for the state signature collector scheduler
- * @param consensusRoundHandlerSchedulerType     the consensus round handler scheduler type
- * @param consensusRoundHandlerUnhandledCapacity number of unhandled tasks allowed for the consensus round handler
+ * @param transactionHandler                     configuration for the transaction handler scheduler
  * @param issDetector                            configuration for the ISS detector scheduler
  * @param issHandler                             configuration for the ISS handler scheduler
  * @param hashLogger                             configuration for the hash logger scheduler
@@ -55,7 +53,6 @@ import java.time.Duration;
  * @param signedStateSentinelHeartbeatPeriod     the frequency that heartbeats should be sent to the signed state
  *                                               sentinel
  * @param statusStateMachine                     configuration for the status state machine scheduler
- * @param platformStatusNexus                    configuration for the status nexus scheduler
  * @param staleEventDetector                     configuration for the stale event detector scheduler
  * @param transactionResubmitter                 configuration for the transaction resubmitter scheduler
  * @param transactionPool                        configuration for the transaction pool scheduler
@@ -68,11 +65,11 @@ import java.time.Duration;
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "500") int eventHasherUnhandledCapacity,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration internalEventValidator,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5000) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventDeduplicator,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventSignatureValidator,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration orphanBuffer,
@@ -80,7 +77,7 @@ public record PlatformSchedulersConfig(
                         defaultValue =
                                 "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
                 TaskSchedulerConfiguration consensusEngine,
-        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5000) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventCreationManager,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration selfEventSigner,
         @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD CAPACITY(20) UNHANDLED_TASK_METRIC")
@@ -94,8 +91,10 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration applicationTransactionPrehandler,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration stateSignatureCollector,
-        @ConfigProperty(defaultValue = "SEQUENTIAL_THREAD") TaskSchedulerType consensusRoundHandlerSchedulerType,
-        @ConfigProperty(defaultValue = "5") int consensusRoundHandlerUnhandledCapacity,
+        @ConfigProperty(
+                        defaultValue =
+                                "SEQUENTIAL_THREAD CAPACITY(5) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")
+                TaskSchedulerConfiguration transactionHandler,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration issDetector,
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration issHandler,
@@ -119,7 +118,6 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration roundDurabilityBuffer,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration statusStateMachine,
-        @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration platformStatusNexus,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration staleEventDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) UNHANDLED_TASK_METRIC")
@@ -127,7 +125,7 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT_THREADSAFE") TaskSchedulerConfiguration transactionPool,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration gossip,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(5000) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration postHashCollector,
@@ -135,4 +133,4 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration branchDetector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration branchReporter,
-        @ConfigProperty(defaultValue = "false") boolean hashCollectorEnabled) {}
+        @ConfigProperty(defaultValue = "true") boolean hashCollectorEnabled) {}

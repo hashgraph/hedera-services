@@ -79,7 +79,11 @@ class TransactionResubmitterTests {
                 final long round;
 
                 if (tooOld) {
-                    round = randotron.nextLong(1, currentRound - maxSignatureAge);
+                    if (currentRound - maxSignatureAge > 1) {
+                        round = randotron.nextLong(1, currentRound - maxSignatureAge);
+                    } else {
+                        round = 1;
+                    }
                 } else {
                     round = randotron.nextLong(currentRound - maxSignatureAge, currentRound);
                 }
