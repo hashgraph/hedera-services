@@ -151,7 +151,7 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
             if (tokenRejection.hasFungibleToken()) {
                 // Each fungible token rejection involves 2 AccountAmount transfers
                 // We add 2 in order to match CryptoTransfer's bpt & rbs fee calculation
-                numTokenRejections+=2;
+                numTokenRejections += 2;
             } else {
                 numNftRejections++;
             }

@@ -228,7 +228,8 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
                 .has(responseCode(INVALID_TRANSACTION_BODY));
     }
 
-    private void setupFeeTest(final TransactionBody txn, final FeeContext feeContext, final FeeCalculator feeCalculator) {
+    private void setupFeeTest(
+            final TransactionBody txn, final FeeContext feeContext, final FeeCalculator feeCalculator) {
         config = defaultConfig()
                 .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
                 .getOrCreateConfig();
