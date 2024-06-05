@@ -25,8 +25,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

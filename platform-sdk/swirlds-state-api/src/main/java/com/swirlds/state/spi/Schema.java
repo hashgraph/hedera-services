@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
-
-import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+package com.swirlds.state.spi;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
-import com.swirlds.state.spi.ReadableKVState;
-import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;
@@ -29,7 +25,7 @@ import java.util.Set;
 
 /**
  * Defines the schema of all states for a specific {@link SemanticVersion} of a specific {@link
- * com.hedera.node.app.spi.Service} instance. It is necessary to create a new {@link Schema}
+ * Service} instance. It is necessary to create a new {@link Schema}
  * whenever a new {@link ReadableKVState} is to be created, or an existing one removed, or a
  * migration has to happen. If your service makes use of a forwards and backwards compatible
  * serialization system (such as protobuf), then it is not necessary to define a new {@link Schema}
@@ -114,7 +110,7 @@ public abstract class Schema implements Comparable<Schema> {
     /** {@inheritDoc} */
     @Override
     public int compareTo(Schema o) {
-        return SEMANTIC_VERSION_COMPARATOR.compare(this.version, o.version);
+        return HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(this.version, o.version);
     }
 
     /** {@inheritDoc} */
