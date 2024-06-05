@@ -62,7 +62,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Exercises the ERC-721 {@code transferFrom()} call by setting up an owner that has two NFTs, one of which is
@@ -182,7 +181,7 @@ public class HtsErc721TransferFromXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedTokenRelations(@NotNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
+    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
         final var ownerRelation = Objects.requireNonNull(tokenRels.get(EntityIDPair.newBuilder()
                 .tokenId(ERC721_TOKEN_ID)
                 .accountId(OWNER_ID)
