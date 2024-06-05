@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.internal;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -86,6 +87,8 @@ public class EventImpl extends EventMetadata
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
 
+    private Bytes signature;
+
     public EventImpl() {}
 
     public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
@@ -118,6 +121,7 @@ public class EventImpl extends EventMetadata
 
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;
+        this.signature = baseEvent.getSignature();
 
         setDefaultValues();
         findSystemTransactions();
@@ -510,5 +514,10 @@ public class EventImpl extends EventMetadata
     @Override
     public void setHash(final Hash hash) {
         this.hash = hash;
+    }
+
+    @Override
+    public Bytes getSignature() {
+        return signature;
     }
 }

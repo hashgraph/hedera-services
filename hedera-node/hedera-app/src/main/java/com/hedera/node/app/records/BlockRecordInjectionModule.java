@@ -32,11 +32,12 @@ import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFacto
 import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.formats.BlockStreamWriterFactoryImpl;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFormatV1;
-import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
+import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
-import com.hedera.node.config.data.BlockStreamConfig;
+import com.amh.config.ConfigProvider;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
+
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -93,7 +94,8 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final ConfigProvider configProvider,
             @NonNull final StreamFileProducerConcurrent concurrent,
             @NonNull final StreamFileProducerSingleThreaded serial) {
-        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
+        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(
+                BlockRecordStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
             case "CONCURRENT" -> concurrent;
@@ -183,7 +185,8 @@ public abstract class BlockRecordInjectionModule {
             @NonNull @AsyncWorkStealingExecutor final ExecutorService executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final BlockStreamProducerSingleThreaded serial) {
-        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(
+                BlockStreamConfig.class);
         final var producerType = recordStreamConfig.streamFileProducer().toUpperCase();
         return switch (producerType) {
             case "CONCURRENT" -> new ConcurrentBlockStreamProducer(executor, serial);

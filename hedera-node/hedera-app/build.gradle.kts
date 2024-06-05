@@ -55,6 +55,7 @@ testModuleInfo {
     requires("uk.org.webcompere.systemstubs.core")
     requires("uk.org.webcompere.systemstubs.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+    requires("com.amh.config")
 }
 
 itestModuleInfo {
@@ -81,6 +82,7 @@ itestModuleInfo {
     requires("org.junit.jupiter.params")
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
+    requires("com.amh.config")
 }
 
 xtestModuleInfo {
@@ -125,6 +127,7 @@ xtestModuleInfo {
     requires("tuweni.units")
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
+    requires("com.amh.config")
 }
 
 jmhModuleInfo {

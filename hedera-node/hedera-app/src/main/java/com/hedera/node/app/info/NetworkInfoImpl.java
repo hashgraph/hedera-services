@@ -18,7 +18,7 @@ package com.hedera.node.app.info;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;

@@ -21,7 +21,7 @@ import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;

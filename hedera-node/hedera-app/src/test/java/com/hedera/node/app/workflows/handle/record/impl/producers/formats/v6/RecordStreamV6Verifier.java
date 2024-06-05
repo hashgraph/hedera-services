@@ -30,7 +30,7 @@ import com.hedera.hapi.streams.SidecarType;
 import com.hedera.hapi.streams.SignatureFile;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

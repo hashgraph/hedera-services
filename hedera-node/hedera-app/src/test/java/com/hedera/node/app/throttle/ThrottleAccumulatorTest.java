@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.amh.config.VersionedConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountAmount;
@@ -72,8 +73,7 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;

@@ -161,6 +161,9 @@ public final class HandlerUtility {
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
+            case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
+            case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
+            case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
             case UNSET -> HederaFunctionality.NONE;
         };
     }

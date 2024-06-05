@@ -55,7 +55,7 @@ import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.ParseException;

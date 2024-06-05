@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.config;
 
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import dagger.Binds;
 import dagger.Module;
 

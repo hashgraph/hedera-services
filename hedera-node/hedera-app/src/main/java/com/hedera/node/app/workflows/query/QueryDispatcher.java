@@ -88,6 +88,8 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
 
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
+            //todo: fill in
+            case NODE_GET_INFO -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
 }

@@ -25,7 +25,7 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NettyConfig;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config;
+package com.swirlds.platform.state.merkle.disk;
 
-import com.swirlds.config.api.Configuration;
+import com.hedera.hapi.streams.v7.StateChanges;
 
-/**
- * An interface that extends the {@link Configuration} interface with a version.
- */
-public interface VersionedConfiguration extends Configuration {
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public interface StateChangesSink {
 
     /**
-     * Returns the version of the configuration.
-     *
-     * @return the version of the configuration
+     * Write the state changes to the sink.
+     * @param stateChanges the state changes to write
      */
-    long getVersion();
+    void writeStateChanges(@NonNull final StateChanges stateChanges);
 }

@@ -18,13 +18,13 @@ package com.hedera.node.app;
 
 import static java.util.Objects.requireNonNull;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.SchemaRegistry;

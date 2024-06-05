@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.state.DeduplicationCache;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

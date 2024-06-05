@@ -42,4 +42,6 @@ testModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
+    requires("com.amh.config")
+    requires("com.hedera.pbj.runtime")
 }

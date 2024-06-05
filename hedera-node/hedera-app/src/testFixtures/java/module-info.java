@@ -21,4 +21,5 @@ module com.hedera.node.app.test.fixtures {
     requires org.apache.logging.log4j;
     requires org.assertj.core;
     requires static com.github.spotbugs.annotations;
+    requires com.amh.config;
 }

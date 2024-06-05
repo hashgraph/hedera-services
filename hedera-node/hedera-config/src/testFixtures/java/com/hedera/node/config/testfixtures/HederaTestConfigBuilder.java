@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.testfixtures;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
@@ -26,7 +27,7 @@ import com.hedera.node.app.service.mono.context.domain.security.PermissionedAcco
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
@@ -48,7 +49,6 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -99,6 +99,7 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -219,11 +220,12 @@ public final class HederaTestConfigBuilder {
 
     /**
      * Convenience method that creates and returns a {@link ConfigProvider} with the configuration of this builder as
-     * a {@link VersionedConfig} with version number 0.
+     * a {@link VersionedConfiguration} with version number 0.
      */
     @NonNull
     public static ConfigProvider createConfigProvider() {
         final var config = createConfig();
+
         final var versioned = new VersionedConfigImpl(config, 0);
         return () -> versioned;
     }

@@ -41,7 +41,7 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.function.LongSupplier;

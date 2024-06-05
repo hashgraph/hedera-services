@@ -106,7 +106,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                                 .hash(Bytes.wrap(
                                         selfParent == null
                                                 ? new byte[0]
-                                                : selfParent.getHash().getValue())))
+                                                : selfParent.getHash().copyToByteArray())))
                         // FUTURE: Include all the parents once platform exposes them.
                         .otherParents(EventDescriptor.newBuilder()
                                 .creatorId(
@@ -118,7 +118,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                                 .hash(Bytes.wrap(
                                         otherParent == null
                                                 ? new byte[0]
-                                                : otherParent.getHash().getValue()))
+                                                : otherParent.getHash().copyToByteArray()))
                                 .build())
                         .timeCreated(Timestamp.newBuilder()
                                 .seconds(consensusEvent.getTimeCreated().getEpochSecond())
@@ -126,8 +126,8 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                         .hash(Bytes.wrap(
                                 eventImpl.getHash() == null
                                         ? new byte[0]
-                                        : eventImpl.getHash().getValue()))
-                        .signature(Bytes.wrap(eventImpl.getSignature()))
+                                        : eventImpl.getHash().copyToByteArray()))
+                        .signature(eventImpl.getSignature())
                         .consensusData(ConsensusData.newBuilder()
                                 .consensusTimestamp(Timestamp.newBuilder()
                                         .seconds(consensusEvent
@@ -151,28 +151,34 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
         switch (systemTxn) {
             case StateSignatureTransaction stateSignatureTransaction -> {
+                //todo: add API to get the state/block? sig from StateSignatureTransaction, then uncomment below
                 // Ensure the signing algorithm is the one we set in the block header for this version.
-                assert stateSignatureTransaction
-                                .getStateSignature()
-                                .getSignatureType()
-                                .signingAlgorithm()
-                                .equals(com.swirlds.common.crypto.SignatureType.RSA.signingAlgorithm())
-                        : "SignatureType must be SHA384withRSA for BlockStreamFormatV1";
+//                assert stateSignatureTransaction
+//                                .getStateSignature()
+//                                .getSignatureType()
+//                                .signingAlgorithm()
+//                                .equals(com.swirlds.common.crypto.SignatureType.RSA.signingAlgorithm())
+//                        : "SignatureType must be SHA384withRSA for BlockStreamFormatV1";
 
-                //                final var epochHash = requireNonNull(stateSignatureTransaction.getEpochHash(),
-                // "EpochHash is null");
                 // TODO(nickpoorman): Not sure why this is null, maybe platform doesn't populate it yet. Fake it for
                 //  now.
+                //                final var epochHash = requireNonNull(stateSignatureTransaction.getEpochHash(),
+                // "EpochHash is null");
+
+                //todo: add API to get the following from StateSignatureTransaction
+//                var stateSig = stateSignatureTransaction.getStateSignature().getBytes();
+//                var stateHash = stateSignatureTransaction.getStateHash();
+//                long round = stateSignatureTransaction.getRound();
+                var stateSig = new byte[48];
+                var stateHash = new byte[48];
+                long round = 0;
                 final byte[] bytes = new byte[48];
                 new SecureRandom().nextBytes(bytes);
-                final var epochHash = new Hash(bytes);
                 systemTxnBuilder.stateSignature(StateSignatureSystemTransaction.newBuilder()
-                        .stateSignature(Bytes.wrap(
-                                stateSignatureTransaction.getStateSignature().getSignatureBytes()))
-                        .stateHash(Bytes.wrap(
-                                stateSignatureTransaction.getStateHash().getValue()))
-                        .epochHash(Bytes.wrap(epochHash.getValue()))
-                        .round(stateSignatureTransaction.getRound()));
+                        .stateSignature(Bytes.wrap(stateSig))
+                        .stateHash(Bytes.wrap(stateHash))
+                        .epochHash(Bytes.wrap(bytes))
+                        .round(round));
             }
 
                 // These are no longer used by Platform, but we may want to leave them here if we are going to back-fill

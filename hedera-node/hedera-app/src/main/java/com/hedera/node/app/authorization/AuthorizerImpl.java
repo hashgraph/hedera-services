@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;

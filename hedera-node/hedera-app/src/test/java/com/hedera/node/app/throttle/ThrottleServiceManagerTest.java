@@ -40,7 +40,7 @@ import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
 import com.hedera.node.app.util.FileUtilities;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;

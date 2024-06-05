@@ -23,7 +23,7 @@ import com.hedera.hapi.streams.v7.BlockSignature;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.state.HederaState;
+import com.swirlds.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -202,12 +202,14 @@ public class BlockStateProofProducer {
 
     @NonNull
     private Stream<BlockSignature> buildBlockSignatures() {
-        return signatures.stream()
-                .map(sst -> new BlockSignature(
-                        Bytes.wrap(sst.sig()
-                                .getStateSignature() // Can't be null because we don't insert nulls into the queue.
-                                .getSignatureBytes()),
-                        sst.nodeId()));
+        return Stream.empty();
+        //todo create an API for the state/block(?) signature
+//        return signatures.stream()
+//                .map(sst -> new BlockSignature(
+//                        Bytes.wrap(sst.sig()
+//                                .getStateSignature() // Can't be null because we don't insert nulls into the queue.
+//                                .getSignatureBytes()),
+//                        sst.nodeId()));
     }
 
     /**

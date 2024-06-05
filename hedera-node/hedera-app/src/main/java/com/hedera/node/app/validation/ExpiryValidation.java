@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;

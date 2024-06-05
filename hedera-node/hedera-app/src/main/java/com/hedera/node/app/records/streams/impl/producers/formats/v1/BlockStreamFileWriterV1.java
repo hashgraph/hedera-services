@@ -19,13 +19,14 @@ package com.hedera.node.app.records.streams.impl.producers.formats.v1;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.config.data.BlockStreamConfig;
+import com.swirlds.state.spi.info.NodeInfo;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

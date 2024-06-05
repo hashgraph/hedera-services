@@ -24,7 +24,7 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;

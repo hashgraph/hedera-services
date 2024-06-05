@@ -82,7 +82,7 @@ import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

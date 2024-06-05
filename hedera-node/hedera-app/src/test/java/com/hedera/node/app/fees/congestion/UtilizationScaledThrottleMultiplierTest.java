@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
@@ -61,8 +62,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.FeesConfig;

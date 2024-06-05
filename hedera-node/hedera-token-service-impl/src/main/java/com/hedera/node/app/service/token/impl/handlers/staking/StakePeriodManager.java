@@ -20,7 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.api.StakingRewardsApi;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

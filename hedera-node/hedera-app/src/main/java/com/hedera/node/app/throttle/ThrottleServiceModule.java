@@ -25,7 +25,7 @@ import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.GasThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.FeesConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;

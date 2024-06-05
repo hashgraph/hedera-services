@@ -18,12 +18,12 @@ package com.hedera.node.app.records.impl.producers.formats;
 
 import static java.util.Objects.requireNonNull;
 
+import com.amh.config.ConfigProvider;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordWriterV6;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;

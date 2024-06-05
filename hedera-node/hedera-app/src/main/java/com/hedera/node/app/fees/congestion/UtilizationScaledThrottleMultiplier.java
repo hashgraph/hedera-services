@@ -34,7 +34,7 @@ import com.hedera.node.app.service.token.*;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.FeesConfig;

@@ -19,6 +19,7 @@ package signatures;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
@@ -31,7 +32,6 @@ import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TestKeyInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

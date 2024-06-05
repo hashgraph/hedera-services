@@ -28,11 +28,12 @@ import com.hedera.hapi.streams.v7.BlockSignatureAlgorithm;
 import com.hedera.hapi.streams.v7.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.spi.info.SelfNodeInfo;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.MessageDigest;

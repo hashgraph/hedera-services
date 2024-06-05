@@ -17,7 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.hapi.streams.SidecarType;
-import com.hedera.node.config.NetworkProperty;
+import com.amh.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.Set;

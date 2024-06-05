@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;

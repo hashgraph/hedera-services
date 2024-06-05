@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records.streams.state;
+package com.swirlds.platform.state.merkle.disk;
 
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -51,7 +51,7 @@ import java.util.List;
  * changes. When a stack is committed we record all the changes that are a result of that commit.
  *
  * <p>What we'd like is a List of StateChanges that are tied to a SingleTransactionRecord, but right now this ties state
- *    changes to a stream<SingleTransactionRecord> which is not ideal but will give us a good estimate of data.
+ *    changes to a {@code stream<SingleTransactionRecord>} which is not ideal but will give us a good estimate of data.
  *
  * <p>To do that, we need an order of operations such that when a stack is committed, for a given transaction, we can let
  *    the RecordListBuilder know what the changes are for that transaction. We don't want to include the changes for the

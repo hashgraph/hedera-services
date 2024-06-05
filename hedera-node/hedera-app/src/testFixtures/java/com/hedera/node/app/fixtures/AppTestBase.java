@@ -34,7 +34,7 @@ import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;

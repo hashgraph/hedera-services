@@ -61,7 +61,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;

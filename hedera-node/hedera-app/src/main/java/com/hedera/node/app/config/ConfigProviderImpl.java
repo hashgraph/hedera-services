@@ -18,10 +18,10 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.sources.PropertyConfigSource;
 import com.hedera.node.config.sources.SettingsConfigSource;
 import com.hedera.pbj.runtime.ParseException;

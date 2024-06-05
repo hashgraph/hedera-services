@@ -59,7 +59,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Arrays;
 import java.util.List;

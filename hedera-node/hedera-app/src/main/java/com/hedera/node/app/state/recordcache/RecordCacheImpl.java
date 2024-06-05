@@ -35,7 +35,7 @@ import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.state.spi.ReadableQueueState;

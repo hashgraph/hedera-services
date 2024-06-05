@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records.streams.state;
+package com.swirlds.platform.state.merkle.disk;
 
 import com.hedera.hapi.streams.v7.StateChange;
 import com.swirlds.platform.system.Round;
@@ -23,7 +23,7 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class is used primarily for record stream < v7.
+ * This class is used primarily for record streams newer than (greater than) v7.
  */
 public class NoOpBlockObserver implements BlockObserver {
     public NoOpBlockObserver() {}

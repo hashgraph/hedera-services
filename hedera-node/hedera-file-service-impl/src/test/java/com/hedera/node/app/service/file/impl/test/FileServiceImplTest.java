@@ -19,11 +19,11 @@ package com.hedera.node.app.service.file.impl.test;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.verify;
 
+import com.amh.config.ConfigProvider;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
-import com.hedera.node.config.ConfigProvider;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.StateDefinition;

@@ -47,7 +47,6 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -82,6 +81,8 @@ import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.validation.ConfigValidator;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 

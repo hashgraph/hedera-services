@@ -19,17 +19,14 @@ package com.swirlds.platform.state.merkle.singleton;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logSingletonRead;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logSingletonWrite;
 
-import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

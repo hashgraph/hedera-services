@@ -55,7 +55,7 @@ import com.hedera.hapi.util.HapiUtils;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;

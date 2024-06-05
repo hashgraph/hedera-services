@@ -36,7 +36,7 @@ import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;

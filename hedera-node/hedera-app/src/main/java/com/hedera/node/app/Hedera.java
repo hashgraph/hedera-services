@@ -67,7 +67,7 @@ import com.hedera.node.app.util.MonoMigrationUtils;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;

@@ -23,17 +23,11 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapIterat
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapPut;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove;
 
-import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.state.merkle.StateMetadata;
+import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
-import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;

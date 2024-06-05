@@ -24,7 +24,7 @@ import static org.assertj.core.data.Offset.offset;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.utils.TestUtils;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;

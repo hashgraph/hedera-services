@@ -46,7 +46,7 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.ReadableSingletonStateBase;

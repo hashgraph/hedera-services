@@ -34,7 +34,7 @@ import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.stream.Signer;

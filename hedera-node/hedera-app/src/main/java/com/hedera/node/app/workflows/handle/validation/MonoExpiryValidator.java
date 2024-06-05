@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;

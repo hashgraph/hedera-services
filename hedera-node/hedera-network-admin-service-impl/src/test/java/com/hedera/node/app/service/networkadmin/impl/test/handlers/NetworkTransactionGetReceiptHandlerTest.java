@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -207,7 +208,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 Transaction.DEFAULT,
                 transactionRecord,
                 List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
+                new SingleTransactionRecord.TransactionOutputs(null, TransactionBody.DataOneOfType.UNSET));
     }
 
     @Test

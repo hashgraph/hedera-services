@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records.streams.state;
+package com.amh.config;
 
-import com.hedera.hapi.streams.v7.StateChanges;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface StateChangesSink {
+/**
+ * The ConfigProvider interface is used to provide the configuration. This interface can be seen as the "config
+ * facility". Whenever you want to access a configuration property that can change at runtime you should not store the
+ * {@link Configuration} instance.
+ */
+public interface ConfigProvider {
 
     /**
-     * Write the state changes to the sink.
-     * @param stateChanges the state changes to write
+     * Returns the configuration.
+     *
+     * @return the configuration
      */
-    void writeStateChanges(@NonNull final StateChanges stateChanges);
+    @NonNull
+    VersionedConfiguration getConfiguration();
 }

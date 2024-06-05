@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;

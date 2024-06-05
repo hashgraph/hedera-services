@@ -89,7 +89,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.DummyPreHandleDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.query.QueryContextImpl;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;

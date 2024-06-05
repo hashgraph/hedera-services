@@ -28,7 +28,7 @@ import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.util.FileUtilities;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;

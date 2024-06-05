@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.metric;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.StatsConfig;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.RunningAverageMetric;

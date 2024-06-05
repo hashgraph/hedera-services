@@ -165,6 +165,7 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
+    requires com.amh.config;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

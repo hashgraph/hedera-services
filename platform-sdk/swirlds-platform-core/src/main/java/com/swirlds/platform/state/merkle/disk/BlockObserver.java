@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records.streams.state;
+package com.swirlds.platform.state.merkle.disk;
 
 import com.hedera.hapi.streams.v7.StateChange;
 import com.swirlds.platform.system.Round;

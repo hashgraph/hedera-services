@@ -23,7 +23,8 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.swirlds.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -68,7 +69,7 @@ public class BlockEnder {
 
         // We will need the running hashes at the time the block has been completed.
         final var states = state.getReadableStates(BlockRecordService.NAME);
-        final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY);
+        final var runningHashState = states.<RunningHashes>getSingleton(V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY);
         // Set the running hashes at the time the block was completed.
         this.runningHashes = requireNonNull(runningHashState.get(), "Running hashes must be present");
 

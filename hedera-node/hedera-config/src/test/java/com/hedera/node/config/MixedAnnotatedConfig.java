@@ -16,6 +16,8 @@
 
 package com.hedera.node.config;
 
+import com.amh.config.NetworkProperty;
+import com.amh.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 

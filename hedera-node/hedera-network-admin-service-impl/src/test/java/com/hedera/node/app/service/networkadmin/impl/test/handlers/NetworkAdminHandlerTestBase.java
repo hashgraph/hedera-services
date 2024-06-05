@@ -22,14 +22,12 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -58,8 +56,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.OneOf;
@@ -302,7 +299,7 @@ public class NetworkAdminHandlerTestBase {
                 Transaction.DEFAULT,
                 record,
                 List.of(),
-                new TransactionOutputs(TokenType.FUNGIBLE_COMMON, TransactionBody.DataOneOfType.UNSET));
+                new TransactionOutputs(com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON, TransactionBody.DataOneOfType.UNSET));
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {
@@ -351,7 +348,7 @@ public class NetworkAdminHandlerTestBase {
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .customFees(List.of())
-                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .tokenType(com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }
 
@@ -379,8 +376,8 @@ public class NetworkAdminHandlerTestBase {
                 null,
                 0,
                 deleted,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
+                com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON,
+                com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
                 autoRenewAccountId,
                 autoRenewSecs,
                 expirationTime,
@@ -466,7 +463,8 @@ public class NetworkAdminHandlerTestBase {
 
     private TransactionID transactionID(Instant validStartTime, int nanos, int nonce) {
         return TransactionID.newBuilder()
-                .transactionValidStart(Timestamp.newBuilder()
+                .transactionValidStart(
+                        com.hedera.hapi.node.base.Timestamp.newBuilder()
                         .seconds(validStartTime.getEpochSecond())
                         .nanos(nanos))
                 .accountID(PAYER_ACCOUNT_ID)
@@ -478,7 +476,7 @@ public class NetworkAdminHandlerTestBase {
         final var now = Instant.now();
         return TransactionID.newBuilder()
                 .transactionValidStart(
-                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
+                        com.hedera.hapi.node.base.Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
                 .nonce(nonce)
                 .build();
     }

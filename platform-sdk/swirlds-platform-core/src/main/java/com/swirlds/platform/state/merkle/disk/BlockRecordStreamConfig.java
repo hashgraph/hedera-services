@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.swirlds.platform.state.merkle.disk;
 
-import com.hedera.node.config.NetworkProperty;
-import com.hedera.node.config.NodeProperty;
+import com.amh.config.NetworkProperty;
+import com.amh.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Max;

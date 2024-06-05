@@ -49,39 +49,9 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.node.base.HederaFunctionality.NONE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.isGasThrottled;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-import static java.util.Collections.emptyList;
+
 import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.streams.v7.BlockStateProof;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.*;
-import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -90,12 +60,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
@@ -103,10 +67,6 @@ import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -153,14 +113,14 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.BlockStreamConfig;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -1240,7 +1200,8 @@ public class HandleWorkflow {
     }
 
     private boolean usingBlockStreams() {
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(
+                BlockStreamConfig.class);
         // If gathering signatures is not enabled for preHandle, then we must do it in handle.
         return blockStreamConfig.enabled() && blockStreamConfig.blockVersion() >= 7;
     }

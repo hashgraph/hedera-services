@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records.streams.state;
+package com.swirlds.platform.state.merkle.disk;
 
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
-import com.hedera.node.config.data.BlockStreamConfig;
+import com.amh.config.ConfigProvider;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,7 +30,8 @@ public class BlockObserverSingleton {
     public static void initInstance(@NonNull final ConfigProvider configProvider) {
         final var current = instance.get();
 
-        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
+        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(
+                BlockRecordStreamConfig.class);
         final var recordFileVersion = recordStreamConfig.recordFileVersion();
         if (recordStreamConfig.enabled() && recordFileVersion < 7) {
             // Instantiate NoOpBlockObserver for v6 and below.
@@ -39,7 +39,8 @@ public class BlockObserverSingleton {
             return;
         }
 
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(
+                BlockStreamConfig.class);
         final var blockVersion = blockStreamConfig.blockVersion();
         if (blockStreamConfig.enabled() && blockVersion >= 7) {
             // Instantiate BlockObserverImpl for v7 and above.

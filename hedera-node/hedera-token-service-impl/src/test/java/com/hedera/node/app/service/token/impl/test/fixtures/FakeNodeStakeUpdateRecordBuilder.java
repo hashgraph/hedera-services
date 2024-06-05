@@ -55,7 +55,7 @@ public class FakeNodeStakeUpdateRecordBuilder {
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public NodeStakeUpdateRecordBuilder transactionBodyType(
                     @NonNull final TransactionBody.DataOneOfType transactionBodyType) {

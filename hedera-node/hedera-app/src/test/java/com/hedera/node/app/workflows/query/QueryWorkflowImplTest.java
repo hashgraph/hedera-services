@@ -40,6 +40,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -73,9 +74,8 @@ import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;

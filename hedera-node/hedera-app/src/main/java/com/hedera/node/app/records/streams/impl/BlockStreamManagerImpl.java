@@ -35,14 +35,15 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.producers.BlockEnder;
 import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
-import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
-import com.hedera.node.app.records.streams.state.StateChangesSink;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.state.HederaState;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
+import com.swirlds.platform.state.merkle.disk.StateChangesSink;
+import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.HederaState;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.BlockStreamConfig;
+import com.amh.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -58,6 +59,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -219,17 +222,17 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
         blockStreamProducer.writeSystemTransaction(systemTxn);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @return false, because we do not start a new block at the beginning of a user transaction.
-     */
-    @Override
-    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
-        // Our new block does not begin at a user transaction. It begins when beginBlock is called on
-        // a new round.
-        return false;
-    }
+//    /**
+//     * {@inheritDoc}
+//     *
+//     * @return false, because we do not start a new block at the beginning of a user transaction.
+//     */
+//    @Override
+//    public boolean startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state, PlatformState platformState) {
+//        // Our new block does not begin at a user transaction. It begins when beginBlock is called on
+//        // a new round.
+//        return false;
+//    }
 
     /** {@inheritDoc} */
     @Override
@@ -448,7 +451,8 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final Supplier<ProcessUserTransactionResult> callable) {
         BlockObserverSingleton.getInstanceOrThrow().recordUserTransactionStateChanges(this, platformTxn, () -> {
             //noinspection ResultOfMethodCallIgnored
-            this.startUserTransaction(consensusTime, state);
+            //todo need to pass in a platform instance here??
+            this.startUserTransaction(consensusTime, state, null);
             ProcessUserTransactionResult result = callable.get();
             this.endProcessUserTransaction(result);
         });

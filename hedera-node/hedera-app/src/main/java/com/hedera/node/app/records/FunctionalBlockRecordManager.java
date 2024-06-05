@@ -18,12 +18,13 @@ package com.hedera.node.app.records;
 
 import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.state.HederaState;
+import com.swirlds.state.HederaState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.spi.info.NodeInfo;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;

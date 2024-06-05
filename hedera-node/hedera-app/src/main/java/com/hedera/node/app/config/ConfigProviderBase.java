@@ -18,7 +18,7 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.PropertyFileConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;

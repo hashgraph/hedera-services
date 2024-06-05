@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import com.amh.config.ConfigProvider;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.config.ConfigProvider;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;

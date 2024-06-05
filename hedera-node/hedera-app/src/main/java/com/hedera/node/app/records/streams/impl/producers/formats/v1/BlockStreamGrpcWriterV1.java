@@ -24,9 +24,10 @@ import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.v7.Block;
 import com.hedera.hapi.streams.v7.BlockItem;
 import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriter;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
+import com.swirlds.state.spi.info.NodeInfo;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

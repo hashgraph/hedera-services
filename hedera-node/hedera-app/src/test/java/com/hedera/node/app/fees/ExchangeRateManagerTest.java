@@ -29,7 +29,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;

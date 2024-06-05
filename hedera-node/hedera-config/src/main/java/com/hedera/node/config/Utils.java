@@ -16,6 +16,7 @@
 
 package com.hedera.node.config;
 
+import com.amh.config.NetworkProperty;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.reflection.ConfigReflectionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +43,8 @@ public final class Utils {
 
     public static SortedMap<String, Object> networkProperties(@NonNull final Configuration configuration) {
         // Get all fields annotated with @NetworkProperty
-        return filteredProperties(configuration, component -> component.getAnnotation(NetworkProperty.class) != null);
+        return filteredProperties(configuration, component -> component.getAnnotation(
+                NetworkProperty.class) != null);
     }
 
     public static SortedMap<String, Object> allProperties(@NonNull final Configuration configuration) {

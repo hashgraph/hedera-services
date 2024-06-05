@@ -17,7 +17,7 @@
 package com.hedera.node.app.info;
 
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;

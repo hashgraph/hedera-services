@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableKVState;

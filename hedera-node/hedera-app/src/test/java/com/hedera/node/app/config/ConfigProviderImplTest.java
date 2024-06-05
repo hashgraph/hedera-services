@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;

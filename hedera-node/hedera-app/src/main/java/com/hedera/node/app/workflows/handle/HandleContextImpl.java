@@ -51,7 +51,6 @@ import com.hedera.node.app.fees.NoOpFeeCalculator;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -30,7 +31,7 @@ import java.util.List;
  * A class that stores temporary data that is used while calculating consensus inside the platform.
  * This data is not relevant after consensus has been calculated.
  */
-public class EventMetadata implements Clearable {
+public abstract class EventMetadata implements Clearable {
     /** the self parent of this */
     private EventImpl selfParent;
     /** the other parent of this */
@@ -440,4 +441,6 @@ public class EventMetadata implements Clearable {
         setFirstWitnessS(null);
         setRecTimes(null);
     }
+
+    public abstract Bytes getSignature();
 }

@@ -50,7 +50,7 @@ import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;

@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.config;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;

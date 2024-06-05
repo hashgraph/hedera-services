@@ -27,6 +27,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleF
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.unknownFailure;
 import static java.util.Objects.requireNonNull;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignaturePair;
@@ -38,7 +39,6 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -47,10 +47,8 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.data.BlockStreamConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.amh.config.ConfigProvider;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -390,7 +388,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private boolean collectSignaturesEnabled() {
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(
+                BlockStreamConfig.class);
 
         // If Block Streams is not enabled, then this is not enabled.
         if (!blockStreamConfig.enabled()) return false;

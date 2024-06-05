@@ -23,14 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.mono.utils.Units;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableSingletonState;

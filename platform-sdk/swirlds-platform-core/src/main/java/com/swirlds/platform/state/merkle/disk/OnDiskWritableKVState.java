@@ -23,16 +23,9 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapPut;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.records.streams.state.BlockObserverSingleton;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.pbj.runtime.Codec;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.hedera.pbj.runtime.Codec;
 import com.swirlds.state.spi.metrics.StoreMetrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -28,7 +28,7 @@ import com.hedera.node.app.authorization.AuthorizerImpl;
 import com.hedera.node.app.authorization.PrivilegesVerifier;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;

@@ -24,10 +24,11 @@ import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFacto
 import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamWriter;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFileWriterV1;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamGrpcWriterV1;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.BlockStreamConfig;
+import com.amh.config.ConfigProvider;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
+import com.swirlds.state.spi.info.SelfNodeInfo;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.util.concurrent.ExecutorService;

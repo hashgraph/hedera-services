@@ -82,7 +82,9 @@ public class StateSignatureTransactionCollector {
      * @param sig the state signature transaction to submit
      */
     public void putStateSignatureTransaction(long nodeId, @NonNull final StateSignatureTransaction sig) {
-        final long roundNum = sig.getRound();
+        //todo: add API to get round number from StateSignatureTransaction
+//        final long roundNum = sig.getRound();
+        final long roundNum = 0;
         final var q = getOrCreateQueue(roundNum);
         final var t = new QueuedStateSignatureTransaction(nodeId, sig, null);
         // We can exploit LinkedTransferQueue to attempt a fast-path transfer. If and only if no consumers are blocked

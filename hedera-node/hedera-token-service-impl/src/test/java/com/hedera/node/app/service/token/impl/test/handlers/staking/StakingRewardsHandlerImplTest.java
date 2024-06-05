@@ -43,7 +43,7 @@ import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;

@@ -16,8 +16,8 @@
 
 package com.hedera.node.config.data;
 
+import com.amh.config.NetworkProperty;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 

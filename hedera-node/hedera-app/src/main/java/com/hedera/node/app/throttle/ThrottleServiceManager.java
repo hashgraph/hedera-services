@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.HederaState;
