@@ -74,6 +74,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REJECT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
@@ -181,6 +182,7 @@ import java.util.function.Function;
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
  * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
  * @param getNodeInfo                   the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
+ * @param tokenReject                   the permission for {@link HederaFunctionality#TOKEN_REJECT} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -250,7 +252,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -325,6 +328,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
         permissionKeys.put(NODE_GET_INFO, c -> c.getNodeInfo);
+        permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
     }
 
     /**

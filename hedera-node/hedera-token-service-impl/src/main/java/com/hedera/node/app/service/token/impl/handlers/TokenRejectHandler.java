@@ -17,31 +17,53 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
-import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createFungibleTransfer;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createNftTransfer;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.nftTransfer;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations.PERMIT_FROZEN;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.TokenReference;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -50,13 +72,22 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FeesConfig;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TOKEN_REJECT}.
+ * This transaction type is used to reject tokens from an account and send them back to the treasury.
  */
 @Singleton
 public class TokenRejectHandler extends BaseTokenHandler implements TransactionHandler {
@@ -74,19 +105,29 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         // If not specified, payer account is considered as the one rejecting the tokens.
         if (op.hasOwner()) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
-            verifySenderAndRequireKey(op.owner(), context, accountStore);
+            verifyOwnerAndRequireKey(op.ownerOrThrow(), context, accountStore);
         }
     }
 
-    private void verifySenderAndRequireKey(
-            final AccountID senderId, final PreHandleContext context, final ReadableAccountStore accountStore)
+    /**
+     * Verifies that the owner account exists and ensures the account's key is valid and required for the transaction.
+     *
+     * @param ownerId The AccountID of the owner whose key needs to be validated.
+     * @param context The PreHandleContext providing transaction context.
+     * @param accountStore The store to access readable account information.
+     * @throws PreCheckException If the sender's account is immutable or the sender's account ID is invalid.
+     */
+    private void verifyOwnerAndRequireKey(
+            @NonNull final AccountID ownerId,
+            @NonNull final PreHandleContext context,
+            @NonNull final ReadableAccountStore accountStore)
             throws PreCheckException {
 
-        final var senderAccount = accountStore.getAliasedAccountById(senderId);
-        validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
+        final var ownerAccount = accountStore.getAliasedAccountById(ownerId);
+        validateTruePreCheck(ownerAccount != null, INVALID_OWNER_ID);
 
         // If the sender account is immutable, then we throw an exception.
-        final var key = senderAccount.key();
+        final var key = ownerAccount.key();
         if (key == null || !isValid(key)) {
             throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
         }
@@ -104,10 +145,10 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             validateAccountID(op.owner(), null);
         }
 
-        var uniqueTokenReferences = new HashSet<TokenReference>();
+        final var uniqueTokenReferences = new HashSet<TokenReference>();
         for (final var rejection : op.rejections()) {
             if (!uniqueTokenReferences.add(rejection)) {
-                throw new PreCheckException(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+                throw new PreCheckException(TOKEN_REFERENCE_REPEATED);
             }
             // Ensure one token type per single rejection reference.
             validateFalsePreCheck(rejection.hasFungibleToken() && rejection.hasNft(), INVALID_TRANSACTION_BODY);
@@ -126,9 +167,169 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context);
         final var op = context.body().tokenRejectOrThrow();
+        final var rejectingAccountID = op.ownerOrElse(context.payer());
         final var rejections = op.rejections();
-        // Todo: Implement the logic for token rejection
+
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.tokenRejectEnabled(), NOT_SUPPORTED);
+        validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), INVALID_TRANSACTION_BODY);
+
+        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var rejectingAccount = getIfUsableForAliasedId(
+                rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+
+        // Process the rejections to prepare for the transfers
+        final var processedRejectTransfers = processRejectionsForTransfer(rejections, context, rejectingAccount);
+
+        // Apply all changes to the handleContext's states by performing the transfer to the treasuries
+        final var transferContext = new TransferContextImpl(context, false, PERMIT_FROZEN, PERMIT_PAUSED);
+        final var fungibleTokensStep = new AdjustFungibleTokenChangesStep(processedRejectTransfers, context.payer());
+        final var nftOwnersChangeStep = new NFTOwnersChangeStep(processedRejectTransfers, context.payer());
+        fungibleTokensStep.doIn(transferContext);
+        nftOwnersChangeStep.doIn(transferContext);
+
+        // Update the token allowances
+        if (hederaConfig.allowancesIsEnabled()) {
+            final var nftStore = context.writableStore(WritableNftStore.class);
+            updateFungibleAllowances(rejectingAccount, rejections, accountStore);
+            updateNFTAllowances(rejections, nftStore);
+        }
+    }
+
+    /**
+     * Processes the rejections specified in the transaction to prepare for the transfers to the treasuries.
+     *
+     * @param rejections The list of TokenReferences representing the rejections to process.
+     * @param context The HandleContext providing the current handling context.
+     * @param rejectingAccount The Account rejecting its tokens.
+     * @return A List of TokenTransferLists representing the transfers for the rejected tokens to the treasuries.
+     */
+    private List<TokenTransferList> processRejectionsForTransfer(
+            @NonNull final List<TokenReference> rejections,
+            @NonNull final HandleContext context,
+            @NonNull final Account rejectingAccount) {
+
+        final WritableTokenStore tokenStore = context.writableStore(WritableTokenStore.class);
+        final WritableNftStore nftStore = context.writableStore(WritableNftStore.class);
+        final WritableTokenRelationStore relStore = context.writableStore(WritableTokenRelationStore.class);
+
+        final var accountID = rejectingAccount.accountIdOrThrow();
+
+        // Validate fungible tokens and collect token transfer lists to the treasuries
+        final var fungibleTransfers = rejections.stream()
+                .filter(TokenReference::hasFungibleToken)
+                .map(rejection -> processFungibleTokenRejection(rejection, rejectingAccount, tokenStore, relStore))
+                .toList();
+
+        // Validate NFTs and collect token transfer lists to the treasuries
+        // NFTTransfers with same TokenID are grouped under the same TokenTransferList
+        final var nftTransfers = rejections.stream()
+                .filter(TokenReference::hasNft)
+                .map(rejection -> processNFTTokenRejection(rejection.nftOrThrow(), accountID, nftStore, tokenStore))
+                .collect(Collectors.groupingBy(Pair::left, Collectors.mapping(Pair::right, Collectors.toList())))
+                .entrySet()
+                .stream()
+                .map(tokenIdNFTPair -> createNftTransfer(tokenIdNFTPair.getKey(), tokenIdNFTPair.getValue()))
+                .toList();
+
+        final var tokenTransferLists = new ArrayList<TokenTransferList>();
+        tokenTransferLists.addAll(fungibleTransfers);
+        tokenTransferLists.addAll(nftTransfers);
+        return tokenTransferLists;
+    }
+
+    /**
+     * Processes a single NFT rejection by performing validations and converting it to a Pair of TokenID & NftTransfer.
+     *
+     * @param nftID The NftID of the NFT being rejected.
+     * @param rejectingAccountID The AccountID of the owner rejecting the NFT.
+     * @param nftStore Access to writable NFT data.
+     * @param tokenStore Access to writable token data.
+     */
+    private Pair<TokenID, NftTransfer> processNFTTokenRejection(
+            @NonNull final NftID nftID,
+            @NonNull final AccountID rejectingAccountID,
+            @NonNull final WritableNftStore nftStore,
+            @NonNull final WritableTokenStore tokenStore) {
+        final var nft = getIfUsable(nftID, nftStore);
+        final var token = getIfUsable(nftID.tokenIdOrThrow(), tokenStore, PERMIT_PAUSED);
+        final var tokenTreasury = token.treasuryAccountIdOrThrow();
+        validateTrue(!tokenTreasury.equals(rejectingAccountID), ACCOUNT_IS_TREASURY);
+        validateTrue(nft.hasOwnerId() && rejectingAccountID.equals(nft.ownerId()), INVALID_OWNER_ID);
+
+        return Pair.of(token.tokenId(), nftTransfer(rejectingAccountID, tokenTreasury, nftID.serialNumber()));
+    }
+
+    /**
+     * Processes a single fungible token rejection by performing validations and builds the transfer for the rejected
+     * token.
+     *
+     * @param rejection The token reference detailing the rejection.
+     * @param rejectingAccount The Account rejecting the token.
+     * @param tokenStore Access to writable token data.
+     * @param relStore Access to writable token relations.
+     */
+    private TokenTransferList processFungibleTokenRejection(
+            @NonNull final TokenReference rejection,
+            @NonNull final Account rejectingAccount,
+            @NonNull final WritableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore relStore) {
+        final var accountID = rejectingAccount.accountIdOrThrow();
+        final var token = getIfUsable(rejection.fungibleTokenOrThrow(), tokenStore, PERMIT_PAUSED);
+        final var tokenId = token.tokenIdOrThrow();
+        final var tokenRelation = getIfUsable(accountID, tokenId, relStore, PERMIT_FROZEN);
+        validateTrue(token.treasuryAccountId() != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        validateTrue(!token.treasuryAccountId().equals(accountID), ACCOUNT_IS_TREASURY);
+        validateTrue(tokenRelation.balance() > 0, INSUFFICIENT_TOKEN_BALANCE);
+
+        return createFungibleTransfer(tokenId, accountID, tokenRelation.balance(), token.treasuryAccountId());
+    }
+
+    /**
+     * Updates the NFT allowances in the state after the token transfers have been processed,
+     * by setting the spender to null.
+     *
+     * @param tokenReferences The list of tokens that were rejected.
+     * @param nftStore The store to access writable NFT information.
+     */
+    private void updateNFTAllowances(
+            @NonNull final List<TokenReference> tokenReferences, @NonNull final WritableNftStore nftStore) {
+        tokenReferences.stream()
+                .filter(TokenReference::hasNft)
+                .map(reference -> getIfUsable(reference.nftOrThrow(), nftStore))
+                .forEach(nft -> {
+                    if (nft.hasSpenderId()) {
+                        nftStore.put(
+                                nft.copyBuilder().spenderId((AccountID) null).build());
+                    }
+                });
+    }
+
+    /**
+     * Updates the fungible token allowances in the state after the token transfers to the treasuries have been processed.
+     *
+     * @param rejectingAccount The account rejecting the tokens.
+     * @param tokenReferences The list of tokens that were rejected.
+     * @param accountStore The store to access writable account information.
+     */
+    private void updateFungibleAllowances(
+            @NonNull final Account rejectingAccount,
+            @NonNull final List<TokenReference> tokenReferences,
+            @NonNull final WritableAccountStore accountStore) {
+        final var updatedFungibleTokenAllowances = new ArrayList<>(rejectingAccount.tokenAllowances());
+        updatedFungibleTokenAllowances.removeIf(allowance -> tokenReferences.stream()
+                .filter(TokenReference::hasFungibleToken)
+                .anyMatch(fungibleToken -> Objects.equals(fungibleToken.fungibleToken(), allowance.tokenId())));
+
+        final var updatedAccount = rejectingAccount
+                .copyBuilder()
+                .tokenAllowances(updatedFungibleTokenAllowances)
+                .build();
+        accountStore.put(updatedAccount);
     }
 
     @NonNull
@@ -145,7 +346,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         int numOfNFTRejections = 0;
         for (final var rejection : op.rejections()) {
             if (rejection.hasFungibleToken()) {
-                numOfFungibleTokenRejections++;
+                // Each fungible token rejection involves 2 AccountAmount transfers
+                // We add 2 in order to match CryptoTransfer's bpt & rbs fee calculation
+                numOfFungibleTokenRejections += 2;
             } else {
                 numOfNFTRejections++;
             }
@@ -153,10 +356,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final int weightedTokensInvolved = tokenMultiplier * totalRejections;
         final int weightedFungibleTokens = tokenMultiplier * numOfFungibleTokenRejections;
-
         final long bpt =
                 calculateBytesPerTransaction(weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
-        final long rbs = calculateRamByteSeconds(weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
+        final long rbs = USAGE_PROPERTIES.legacyReceiptStorageSecs() * bpt;
 
         return feeContext
                 .feeCalculator(getSubType(numOfNFTRejections))
@@ -170,16 +372,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     }
 
     private long calculateBytesPerTransaction(
-            final int weightedTokens, final int weightedFungibleTokens, final int numNFTRejections) {
-        return weightedTokens * LONG_BASIC_ENTITY_ID_SIZE
-                + weightedFungibleTokens * LONG_ACCOUNT_AMOUNT_BYTES
-                + TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(numNFTRejections);
-    }
-
-    private long calculateRamByteSeconds(
-            final int weightedTokensInvolved, final int weightedFungibleTokens, final int numOfNFTRejections) {
-        return USAGE_PROPERTIES.legacyReceiptStorageSecs()
-                * TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                        weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
+            final int weightedTokensInvolved, final int weightedFungibleTokens, final int numNFTRejections) {
+        return TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                weightedTokensInvolved, weightedFungibleTokens, numNFTRejections);
     }
 }

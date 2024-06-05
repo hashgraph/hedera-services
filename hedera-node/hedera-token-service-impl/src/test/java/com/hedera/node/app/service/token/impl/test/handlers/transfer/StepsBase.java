@@ -92,7 +92,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     private PropertySource compositeProps;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    private ConfigProvider configProvider;
+    protected ConfigProvider configProvider;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
