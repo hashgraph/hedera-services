@@ -84,7 +84,7 @@ public class GetTokenKeyPrecompileTest {
     @DisplayName("cannot get a key not set on the token")
     public Stream<DynamicTest> cannotGetUnsetTokenKey() {
         return hapiTest(getTokenKeyContract
-                .call("getKeyFromToken", ZERO_ADDRESS, FREEZE_KEY.asBigInteger())
+                .call("getKeyFromToken", nonFungibleToken, FREEZE_KEY.asBigInteger())
                 .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, KEY_NOT_PROVIDED)));
     }
 }

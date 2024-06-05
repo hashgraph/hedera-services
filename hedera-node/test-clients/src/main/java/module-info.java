@@ -57,6 +57,7 @@ module com.hedera.node.test.clients {
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
+    requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app;
     requires com.hedera.node.config;
     requires com.fasterxml.jackson.core;
