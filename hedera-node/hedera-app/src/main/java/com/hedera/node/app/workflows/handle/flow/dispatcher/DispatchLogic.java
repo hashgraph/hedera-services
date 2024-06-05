@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
-import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
+import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
+import com.hedera.node.app.workflows.handle.flow.DueDiligenceReport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -29,40 +29,68 @@ import javax.inject.Singleton;
 public class DispatchLogic {
     private final Authorizer authorizer;
     private final SolvencyPreCheck solvencyPreCheck;
+    private final DueDiligenceLogic dueDiligenceLogic;
 
     @Inject
-    public DispatchLogic(final Authorizer authorizer, final SolvencyPreCheck solvencyPreCheck) {
+    public DispatchLogic(
+            final Authorizer authorizer,
+            final SolvencyPreCheck solvencyPreCheck,
+            final DueDiligenceLogic dueDiligenceLogic) {
         this.authorizer = authorizer;
         this.solvencyPreCheck = solvencyPreCheck;
+        this.dueDiligenceLogic = dueDiligenceLogic;
     }
 
+    /**
+     * This method is responsible for charging the fees and executing the business logic for the given dispatch,
+     * guaranteeing that the changes committed to its stack are exactly reflected in its recordBuilder.
+     * @param dispatch the dispatch to be processed
+     */
     public void dispatch(Dispatch dispatch) {
-        final var fees = dispatch.calculatedFees();
+        final var dueDiligenceReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
 
-        if (dispatch.dueDiligenceInfo().dueDiligenceStatus() != ResponseCodeEnum.OK) {
-            dispatch.recordBuilder().status(dispatch.dueDiligenceInfo().dueDiligenceStatus());
-            dispatch.feeAccumulator()
-                    .chargeNetworkFee(dispatch.dueDiligenceInfo().creator(), fees.networkFee());
+        if (dueDiligenceReport.isDueDiligenceFailure()) {
+            chargeCreator(dispatch, dueDiligenceReport);
         } else {
-            final var payer = getPayer(dispatch);
-            final var isPayerHollow = isHollow(payer);
-            if (!isPayerHollow) {
-                dispatch.keyVerifier().verificationFor(payer.keyOrThrow());
-            }
+            chargePayer(dispatch, dueDiligenceReport);
+            if (dueDiligenceReport.payerSolvency() != OK) {
+                dispatch.recordBuilder().status(dueDiligenceReport.payerSolvency());
+            } else {
 
-            final var hasWaivedFees = authorizer.hasWaivedFees(
-                    dispatch.syntheticPayer(),
-                    dispatch.txnInfo().functionality(),
-                    dispatch.txnInfo().txBody());
-            if (!hasWaivedFees) {}
+            }
         }
+
+        // TODO: finalize record, commit changes to stack
     }
 
-    private Account getPayer(final Dispatch dispatch) {
-        try {
-            return solvencyPreCheck.getPayerAccount(dispatch.storeFactory(), dispatch.syntheticPayer());
-        } catch (Exception e) {
-            throw new IllegalStateException("Missing payer should be a due diligence failure", e);
+    private void chargeCreator(final Dispatch dispatch, DueDiligenceReport report) {
+        dispatch.recordBuilder().status(report.dueDiligenceInfo().dueDiligenceStatus());
+        dispatch.feeAccumulator()
+                .chargeNetworkFee(
+                        report.dueDiligenceInfo().creator(),
+                        dispatch.calculatedFees().networkFee());
+    }
+
+    private void chargePayer(final Dispatch dispatch, DueDiligenceReport report) {
+        final var hasWaivedFees = authorizer.hasWaivedFees(
+                dispatch.syntheticPayer(),
+                dispatch.txnInfo().functionality(),
+                dispatch.txnInfo().txBody());
+        if (hasWaivedFees) {
+            return;
+        }
+        if (report.unableToPayServiceFee() || report.isDuplicate()) {
+            dispatch.feeAccumulator()
+                    .chargeFees(
+                            report.payer().accountIdOrThrow(),
+                            report.dueDiligenceInfo().creator(),
+                            dispatch.calculatedFees().withoutServiceComponent());
+        } else {
+            dispatch.feeAccumulator()
+                    .chargeFees(
+                            report.payer().accountIdOrThrow(),
+                            report.dueDiligenceInfo().creator(),
+                            dispatch.calculatedFees());
         }
     }
 }

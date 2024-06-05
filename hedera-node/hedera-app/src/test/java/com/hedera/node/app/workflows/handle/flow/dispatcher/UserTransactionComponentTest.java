@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra.records;
+package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
-import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public interface DispatchRecordInitializer {
+@ExtendWith(MockitoExtension.class)
+class UserTransactionComponentTest {
+    private UserTransactionComponent subject;
 
-    void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo);
+    @Test
+    void name() {}
 }

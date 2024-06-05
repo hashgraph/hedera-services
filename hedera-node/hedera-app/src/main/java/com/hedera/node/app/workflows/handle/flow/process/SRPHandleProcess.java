@@ -18,11 +18,11 @@ package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.future.ScheduleServiceCronLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
-import com.hedera.node.app.workflows.handle.flow.infra.records.UserRecordInitializer;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -36,24 +36,24 @@ public class SRPHandleProcess implements HandleProcess {
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final BlockRecordManager blockRecordManager;
     private final ScheduleServiceCronLogic scheduleServiceCronLogic;
-    private final UserRecordInitializer userRecordInitializer;
+    private final DispatchLogic dispatchLogic;
     private final UserTxnLogger userTxnLogger;
-    private final Provider<ChildDispatchComponent.Factory> dispatchProvider;
+    private final Provider<UserDispatchComponent.Factory> userDispatchProvider;
 
     @Inject
     public SRPHandleProcess(
             final StakingPeriodTimeHook stakingPeriodTimeHook,
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
-            final UserRecordInitializer userRecordInitializer,
+            final DispatchLogic dispatchLogic,
             final UserTxnLogger userTxnLogger,
-            final Provider<ChildDispatchComponent.Factory> dispatchProvider) {
+            final Provider<UserDispatchComponent.Factory> dispatchProvider) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
-        this.userRecordInitializer = userRecordInitializer;
+        this.dispatchLogic = dispatchLogic;
         this.userTxnLogger = userTxnLogger;
-        this.dispatchProvider = dispatchProvider;
+        this.userDispatchProvider = dispatchProvider;
     }
 
     @Override
@@ -63,8 +63,8 @@ public class SRPHandleProcess implements HandleProcess {
         scheduleServiceCronLogic.expireSchedules(blockRecordManager.consTimeOfLastHandledTxn(), userTxn);
         userTxnLogger.logUserTxn(userTxn);
 
-        final var dispatchComponent = dispatchProvider.get().create();
-        userRecordInitializer.initializeUserRecord(userTxn.recordBuilder(), userTxn.txnInfo());
+        final var userDispatch = userDispatchProvider.get().create();
+        dispatchLogic.dispatch(userDispatch);
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {

@@ -22,12 +22,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ChildRecordInitializer implements DispatchRecordInitializer {
+public class ChildRecordInitializer {
 
     @Inject
     public ChildRecordInitializer() {}
 
-    @Override
     public void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
         recordBuilder
                 .transaction(txnInfo.transaction())

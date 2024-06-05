@@ -121,14 +121,6 @@ public interface HandleContext {
     BlockRecordInfo blockRecordInfo();
 
     /**
-     * Getter for the payer key
-     *
-     * @return the payer key
-     */
-    @Nullable
-    Key payerKey();
-
-    /**
      * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
      * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
      * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by

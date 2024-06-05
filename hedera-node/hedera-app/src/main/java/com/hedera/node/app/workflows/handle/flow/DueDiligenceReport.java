@@ -16,15 +16,23 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record DueDiligenceInfo(AccountID creator, ResponseCodeEnum dueDiligenceStatus) {
-    public DueDiligenceInfo withReplacementStatus(ResponseCodeEnum dueDiligenceStatus) {
-        return new DueDiligenceInfo(creator, dueDiligenceStatus);
+public record DueDiligenceReport(
+        @Nullable Account payer,
+        @NonNull DueDiligenceInfo dueDiligenceInfo,
+        boolean isDuplicate,
+        @NonNull ResponseCodeEnum payerSolvency,
+        boolean unableToPayServiceFee) {
+    public DueDiligenceReport(
+            @Nullable Account payer, @NonNull DueDiligenceInfo dueDiligenceInfo, boolean isDuplicate) {
+        this(payer, dueDiligenceInfo, isDuplicate, ResponseCodeEnum.OK, false);
     }
 
     public boolean isDueDiligenceFailure() {
-        return dueDiligenceStatus != ResponseCodeEnum.OK;
+        return dueDiligenceInfo.isDueDiligenceFailure();
     }
 }

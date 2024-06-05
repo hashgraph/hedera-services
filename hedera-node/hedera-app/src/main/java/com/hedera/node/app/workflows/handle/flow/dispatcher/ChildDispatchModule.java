@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -91,12 +92,6 @@ public interface ChildDispatchModule {
 
     @Provides
     @DispatchScope
-    static DueDiligenceInfo provideDueDiligenceInfo() {
-        return new DueDiligenceInfo(AccountID.DEFAULT, ResponseCodeEnum.OK);
-    }
-
-    @Provides
-    @DispatchScope
     static FeeAccumulator provideFeeAccumulator(
             @NonNull SavepointStackImpl stack,
             @NonNull Configuration configuration,
@@ -105,5 +100,11 @@ public interface ChildDispatchModule {
         final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
+    }
+
+    @Provides
+    @DispatchScope
+    static DueDiligenceInfo provideDueDiligenceInfo(NodeInfo creator) {
+        return new DueDiligenceInfo(creator.accountId(), ResponseCodeEnum.OK);
     }
 }

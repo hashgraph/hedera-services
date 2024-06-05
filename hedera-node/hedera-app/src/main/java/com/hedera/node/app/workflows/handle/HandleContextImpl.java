@@ -301,12 +301,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return payer;
     }
 
-    @Nullable
-    @Override
-    public Key payerKey() {
-        return payerKey;
-    }
-
     @NonNull
     @Override
     public FeeCalculator feeCalculator(@NonNull final SubType subType) {

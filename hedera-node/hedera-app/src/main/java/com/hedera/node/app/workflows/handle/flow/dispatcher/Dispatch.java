@@ -17,13 +17,19 @@
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import java.time.Instant;
+import java.util.Set;
 
 public interface Dispatch {
 
@@ -42,4 +48,14 @@ public interface Dispatch {
     FeeAccumulator feeAccumulator();
 
     KeyVerifier keyVerifier();
+
+    NodeInfo creatorInfo();
+
+    Instant consensusNow();
+
+    Set<Key> requiredKeys();
+
+    Set<Account> hollowAccounts();
+
+    ResponseCodeEnum userError();
 }

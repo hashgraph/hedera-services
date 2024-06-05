@@ -25,7 +25,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class UserRecordInitializer implements DispatchRecordInitializer {
+public class UserRecordInitializer {
     private final ExchangeRateManager exchangeRateManager;
 
     @Inject
@@ -33,7 +33,6 @@ public class UserRecordInitializer implements DispatchRecordInitializer {
         this.exchangeRateManager = exchangeRateManager;
     }
 
-    @Override
     public void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
         final Bytes transactionBytes;
         final var transaction = txnInfo.transaction();

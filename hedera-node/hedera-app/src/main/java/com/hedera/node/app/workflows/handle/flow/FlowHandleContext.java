@@ -16,12 +16,16 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -43,6 +47,8 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,61 +63,86 @@ import javax.inject.Inject;
  * The HandleContext Implementation
  */
 public class FlowHandleContext implements HandleContext, FeeContext {
+    private final Instant consensusNow;
+    private final TransactionInfo txnInfo;
+    private final Configuration configuration;
+    private final Authorizer authorizer;
+    private final int numTxnSignatures;
+    private final BlockRecordManager blockRecordManager;
+    private final FeeManager feeManager;
+    private final ReadableStoreFactory storeFactory;
+    private final AccountID syntheticPayer;
+
     @Inject
-    public FlowHandleContext() {}
+    public FlowHandleContext(
+            final Instant consensusNow,
+            final TransactionInfo transactionInfo,
+            final Configuration configuration,
+            final Authorizer authorizer,
+            final int numTxnSignatures,
+            final BlockRecordManager blockRecordManager,
+            final FeeManager feeManager,
+            final ReadableStoreFactory storeFactory,
+            final AccountID syntheticPayer) {
+        this.consensusNow = consensusNow;
+        this.txnInfo = transactionInfo;
+        this.configuration = configuration;
+        this.authorizer = authorizer;
+        this.numTxnSignatures = numTxnSignatures;
+        this.blockRecordManager = blockRecordManager;
+        this.feeManager = feeManager;
+        this.storeFactory = storeFactory;
+        this.syntheticPayer = syntheticPayer;
+    }
 
     @NonNull
     @Override
     public Instant consensusNow() {
-        return null;
+        return consensusNow;
     }
 
     @NonNull
     @Override
     public TransactionBody body() {
-        return null;
+        return txnInfo.txBody();
     }
 
     @NonNull
     @Override
     public AccountID payer() {
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public Key payerKey() {
-        return null;
+        return syntheticPayer;
     }
 
     @NonNull
     @Override
     public Configuration configuration() {
-        return null;
+        return configuration;
     }
 
     @Nullable
     @Override
     public Authorizer authorizer() {
-        return null;
+        return authorizer;
     }
 
     @Override
     public int numTxnSignatures() {
-        return 0;
+        return numTxnSignatures;
     }
 
     @NonNull
     @Override
     public BlockRecordInfo blockRecordInfo() {
-        return null;
+        return blockRecordManager;
     }
 
     @NonNull
     @Override
     public FunctionalityResourcePrices resourcePricesFor(
             @NonNull final HederaFunctionality functionality, @NonNull final SubType subType) {
-        return null;
+        return new FunctionalityResourcePrices(
+                requireNonNull(feeManager.getFeeData(functionality, consensusNow, subType)),
+                feeManager.congestionMultiplierFor(txnInfo.txBody(), functionality, storeFactory));
     }
 
     @NonNull

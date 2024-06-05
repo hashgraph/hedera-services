@@ -17,13 +17,18 @@
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.annotations.DispatchScope;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import dagger.BindsInstance;
 import dagger.Subcomponent;
+import java.util.Set;
 
 @Subcomponent(modules = {ChildDispatchModule.class})
 @DispatchScope
@@ -31,11 +36,14 @@ public interface ChildDispatchComponent extends Dispatch {
     @Subcomponent.Factory
     interface Factory {
         ChildDispatchComponent create(
-                SingleTransactionRecordBuilderImpl recordBuilder,
-                TransactionInfo txnInfo,
-                ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
-                AccountID syntheticPayer,
-                HandleContext.TransactionCategory childCategory,
-                SavepointStackImpl stack);
+                @BindsInstance SingleTransactionRecordBuilderImpl recordBuilder,
+                @BindsInstance TransactionInfo txnInfo,
+                @BindsInstance ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
+                @BindsInstance AccountID syntheticPayer,
+                @BindsInstance HandleContext.TransactionCategory childCategory,
+                @BindsInstance SavepointStackImpl stack,
+                @BindsInstance Set<Key> requiredKeys,
+                @BindsInstance Set<Account> hollowAccounts,
+                @BindsInstance ResponseCodeEnum userError);
     }
 }
