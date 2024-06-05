@@ -64,6 +64,9 @@ public final class V0490ScheduleSchema extends Schema {
      */
     private static MerkleScheduledTransactions fs;
 
+    /**
+     * Instantiates a new V0490 (version 0.49.0) schedule schema.
+     */
     public V0490ScheduleSchema() {
         super(VERSION);
     }
@@ -181,6 +184,11 @@ public final class V0490ScheduleSchema extends Schema {
                 SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF, MAX_SCHEDULES_BY_EQUALITY);
     }
 
+    /**
+     * Used to migrate the state to the new schema. It is not thread safe and is set to null after migration.
+     *
+     * @param fs the state to migrate from
+     */
     public static void setFs(@Nullable final MerkleScheduledTransactions fs) {
         V0490ScheduleSchema.fs = fs;
     }
