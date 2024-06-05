@@ -33,8 +33,14 @@ import java.util.Set;
  */
 @SuppressWarnings("java:S6548")
 public final class ScheduleServiceDefinition implements RpcServiceDefinition {
+    /**
+     * The global singleton ScheduleServiceDefinition INSTANCE.
+     */
     public static final ScheduleServiceDefinition INSTANCE = new ScheduleServiceDefinition();
 
+    /**
+     * The set of methods supported by the Schedule Service.
+     */
     private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
             new RpcMethodDefinition<>("createSchedule", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("signSchedule", Transaction.class, TransactionResponse.class),
@@ -47,12 +53,22 @@ public final class ScheduleServiceDefinition implements RpcServiceDefinition {
         requireNonNull(CommonUtils.class);
     }
 
+    /**
+     * Returns the base path for the Schedule Service
+     *
+     * @return the base path
+     */
     @Override
     @NonNull
     public String basePath() {
         return "proto.ScheduleService";
     }
 
+    /**
+     * Returns the set of methods supported by the Schedule Service
+     *
+     * @return the methods
+     */
     @Override
     @NonNull
     public Set<RpcMethodDefinition<?, ?>> methods() {
