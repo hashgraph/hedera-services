@@ -192,7 +192,6 @@ public class CryptoOpsUsage {
 
         if (maxAutomaticTokenAssociations > 0) {
             baseSize += INT_SIZE;
-            accumulator.addRbs(maxAutomaticTokenAssociations * lifeTime * CREATE_SLOT_MULTIPLIER);
         }
 
         /* Variable bytes plus two additional longs for balance and auto-renew period;
