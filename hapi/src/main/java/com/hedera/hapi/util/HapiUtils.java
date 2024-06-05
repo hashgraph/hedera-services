@@ -229,6 +229,9 @@ public class HapiUtils {
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UNSET -> throw new UnknownHederaFunctionality();
+            case NODE_CREATE -> null;
+            case NODE_UPDATE -> null;
+            case NODE_DELETE -> null;
         };
     }
 
@@ -260,6 +263,7 @@ public class HapiUtils {
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UNSET -> throw new UnknownHederaFunctionality();
+            case NODE_GET_INFO -> null;
         };
     }
 
