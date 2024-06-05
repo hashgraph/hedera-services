@@ -63,13 +63,11 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
-import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
@@ -105,7 +103,7 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47TokenSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
-public class InitialModServiceTokenSchema extends Schema {
+public class InitialModServiceTokenSchema extends StakingInfoManagementSchema {
     private static final Logger log = LogManager.getLogger(InitialModServiceTokenSchema.class);
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
@@ -408,6 +406,11 @@ public class InitialModServiceTokenSchema extends Schema {
 
         stakingFs = null;
         mnc = null;
+    }
+
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        super.restart(ctx);
     }
 
     private void createGenesisSchema(@NonNull final MigrationContext ctx) {
