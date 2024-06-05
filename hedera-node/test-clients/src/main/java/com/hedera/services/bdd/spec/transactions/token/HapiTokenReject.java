@@ -43,7 +43,7 @@ import java.util.function.Function;
 
 public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
 
-    private final String account;
+    private String account;
     private final List<Function<HapiSpec, TokenReference>> referencesSources;
 
     @SafeVarargs
@@ -52,14 +52,19 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
         this.referencesSources = List.of(tokenReferencesSources);
     }
 
-    public static Function<HapiSpec, TokenReference> rejectingToken(@NonNull final String token) {
+    @SafeVarargs
+    public HapiTokenReject(final Function<HapiSpec, TokenReference>... tokenReferencesSources) {
+        this.referencesSources = List.of(tokenReferencesSources);
+    }
+
+    public static Function<HapiSpec, TokenReference> rejectingToken(final String token) {
         return spec -> {
             final var tokenID = TxnUtils.asTokenId(token, spec);
             return TokenReference.newBuilder().setFungibleToken(tokenID).build();
         };
     }
 
-    public static Function<HapiSpec, TokenReference> rejectingNFT(@NonNull final String token, final long serialNum) {
+    public static Function<HapiSpec, TokenReference> rejectingNFT(final String token, final long serialNum) {
         return spec -> {
             final var tokenID = TxnUtils.asTokenId(token, spec);
             return TokenReference.newBuilder()
@@ -112,9 +117,11 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
         final List<TokenReference> tokenReferences = referencesSources.stream()
                 .map(refSource -> refSource.apply(spec))
                 .toList();
-        final TokenRejectTransactionBody.Builder opBuilder = TokenRejectTransactionBody.newBuilder()
-                .setOwner(TxnUtils.asId(account, spec))
-                .addAllRejections(tokenReferences);
+        final TokenRejectTransactionBody.Builder opBuilder =
+                TokenRejectTransactionBody.newBuilder().addAllRejections(tokenReferences);
+        if (account != null) {
+            opBuilder.setOwner(TxnUtils.asId(account, spec));
+        }
         return b -> b.setTokenReject(opBuilder);
     }
 
@@ -123,8 +130,8 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
         final var op = txn.getTokenReject();
 
         // We only have direct token transfers to the treasury being sent when using the TokenReject operation.
-        // So we pass 0 for the memoUtf8Bytes and numExplicitTransfers in the BaseTransactionMeta.
-        final var baseMeta = new BaseTransactionMeta(0, 0);
+        // Since there are 0 hBar transfers we pass 0 for the numExplicitTransfers in the BaseTransactionMeta.
+        final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final var xferUsageMeta = getCryptoTransferMeta(multiplier, op);
 
         final var accumulator = new UsageAccumulator();
@@ -142,7 +149,9 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
         int numNftRejections = 0;
         for (final var tokenRejection : op.getRejectionsList()) {
             if (tokenRejection.hasFungibleToken()) {
-                numTokenRejections++;
+                // Each fungible token rejection involves 2 AccountAmount transfers
+                // We add 2 in order to match CryptoTransfer's bpt & rbs fee calculation
+                numTokenRejections += 2;
             } else {
                 numNftRejections++;
             }

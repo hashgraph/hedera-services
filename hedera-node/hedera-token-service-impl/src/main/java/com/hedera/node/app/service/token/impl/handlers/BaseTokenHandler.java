@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
@@ -409,12 +408,6 @@ public class BaseTokenHandler {
         }
         final var copyAccount = account.copyBuilder();
         accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
-    }
-
-    protected void validateNotFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {
-        validateTrue(!rel.frozen(), ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
-
-        validateTrue(rel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }
 
     /* ------------------------- Helper functions ------------------------- */

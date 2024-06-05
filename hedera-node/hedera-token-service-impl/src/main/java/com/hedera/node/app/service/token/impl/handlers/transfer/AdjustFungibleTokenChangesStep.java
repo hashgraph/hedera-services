@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -29,15 +30,16 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -49,22 +51,21 @@ import java.util.Map;
  * Puts all fungible token changes from CryptoTransfer into state's modifications map.
  */
 public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements TransferStep {
-    // The CryptoTransferTransactionBody here is obtained by replacing aliases with their
-    // corresponding accountIds.
-    private final CryptoTransferTransactionBody op;
+
+    private final List<TokenTransferList> tokenTransferLists;
     private final AccountID topLevelPayer;
 
     /**
-     * Constructs the step with the CryptoTransferTransactionBody and the topLevelPayer.
-     * @param op the CryptoTransferTransactionBody
+     * Constructs the step with token transfer lists and the payer account.
+     * @param tokenTransferLists the token transfer lists
      * @param topLevelPayer the payer account
      */
     public AdjustFungibleTokenChangesStep(
-            @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {
-        requireNonNull(op);
+            @NonNull final List<TokenTransferList> tokenTransferLists, @NonNull final AccountID topLevelPayer) {
+        requireNonNull(tokenTransferLists);
         requireNonNull(topLevelPayer);
 
-        this.op = op;
+        this.tokenTransferLists = tokenTransferLists;
         this.topLevelPayer = topLevelPayer;
     }
 
@@ -81,11 +82,14 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         final Map<EntityIDPair, Long> allowanceTransfers = new LinkedHashMap<>();
 
+        var tokenPausedValidation = transferContext.tokenValidations();
+        var tokenRelFrozenValidation = transferContext.tokenRelValidations();
+
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
-        for (final var transfers : op.tokenTransfers()) {
+        for (final var transfers : tokenTransferLists) {
             final var tokenId = transfers.tokenOrThrow();
-            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
+            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore, tokenPausedValidation);
 
             if (transfers.hasExpectedDecimals()) {
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
@@ -102,8 +106,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
                 // Validate freeze status and kyc granted
                 final var accountID = aa.accountIDOrThrow();
-                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
-                validateNotFrozenAndKycOnRelation(tokenRel);
+                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore, tokenRelFrozenValidation);
+                validateTrue(tokenRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
                 // If the (accountId, tokenId) pair doesn't exist in the map, add it.
@@ -122,7 +126,11 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
         modifyAggregatedTokenBalances(
-                aggregatedFungibleTokenChanges, tokenRelStore, accountStore, transferContext.getAssessedCustomFees());
+                aggregatedFungibleTokenChanges,
+                tokenRelStore,
+                accountStore,
+                transferContext.getAssessedCustomFees(),
+                tokenRelFrozenValidation);
     }
 
     /**
@@ -186,12 +194,14 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             @NonNull final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
+            @NonNull final List<AssessedCustomFee> assessedCustomFees,
+            @NonNull final TokenRelValidations tokenRelFrozenValidation) {
         // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
         for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
-            final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore);
+            final var rel = getIfUsable(
+                    atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore, tokenRelFrozenValidation);
             final var account = requireNonNull(accountStore.get(atPair.accountIdOrThrow()));
             try {
                 adjustBalance(rel, account, amount, tokenRelStore, accountStore);

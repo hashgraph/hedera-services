@@ -19,6 +19,8 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -31,7 +33,7 @@ import java.util.Map;
  * The resolutions are needed in further steps to is IDs instead of aliases.
  * It also has helper function to create accounts from alias.
  * This class stores all the needed information that is shared between steps in handling a CryptoTransfer transaction.
- * The lifecycle of this clas is the same as the lifecycle of a CryptoTransfer transaction.
+ * The lifecycle of this class is the same as the lifecycle of a CryptoTransfer transaction.
  */
 public interface TransferContext {
     /**
@@ -116,6 +118,18 @@ public interface TransferContext {
      * @return whether certain restrictions on custom fees are enforced
      */
     boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
+
+    /**
+     * Determines the validation requirements for the token-account relationships in this transfer.
+     * We permit FROZEN relationship for TokenReject transfers.
+     */
+    TokenRelValidations tokenRelValidations();
+
+    /**
+     * Determines the validation requirements for the token-account relationships in this transfer.
+     * We permit Paused relationship for TokenReject transfers.
+     */
+    TokenValidations tokenValidations();
 
     /**
      * Validates hbar allowances for the top-level operation in this transfer context.

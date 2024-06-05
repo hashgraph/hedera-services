@@ -70,6 +70,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REJECT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
@@ -172,6 +173,7 @@ import java.util.function.Function;
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
  * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
+ * @param tokenReject                the permission for {@link HederaFunctionality#TOKEN_REJECT} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -237,7 +239,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-60") PermissionedAccountsRange systemUndelete,
         @ConfigProperty(defaultValue = "2-58") PermissionedAccountsRange freeze,
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -308,6 +311,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_GET_ACCOUNT_NFT_INFOS, c -> c.tokenGetAccountNftInfos);
         permissionKeys.put(TOKEN_FEE_SCHEDULE_UPDATE, c -> c.tokenFeeScheduleUpdate);
         permissionKeys.put(UTIL_PRNG, c -> c.utilPrng);
+        permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
     }
 
     /**
