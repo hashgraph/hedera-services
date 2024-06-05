@@ -305,7 +305,7 @@ public class TestingEventBuilder {
     /**
      * Set an other-parent of an event
      * <p>
-     * If not set, no other-parent will NOT be generated: the output event will have a no other-parents.
+     * If not set, no other-parent will be generated: the output event will have a no other-parents.
      *
      * @param otherParent the other-parent
      * @return this instance
@@ -318,7 +318,7 @@ public class TestingEventBuilder {
     /**
      * Set a list of other-parents of an event
      * <p>
-     * If not set, no other-parents will NOT be generated: the output event will have a no other-parents.
+     * If not set, no other-parents will be generated: the output event will have a no other-parents.
      *
      * @param otherParents the other-parents
      * @return this instance
