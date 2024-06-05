@@ -168,7 +168,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
         with:
-          cache-disabled: true
+          cache-read-only: false
 
       - name: Setup NodeJS
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
