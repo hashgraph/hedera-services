@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi;
+package com.swirlds.state.spi;
 
-import static java.util.Collections.emptySet;
-
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * A definition of an interface that will be implemented by each conceptual "service" like
  * crypto-service, token-service etc.,
  */
 public interface Service {
+
     /**
      * A sort value for the service, used to determine the order in which service
      * schemas are migrated.
@@ -46,7 +42,7 @@ public interface Service {
     }
 
     /**
-     * Returns the name of the service. This name must be unique for each service deployed on the
+     * Returns the name of the application state. This name must be unique for each state type deployed on the
      * application.
      *
      * @return the name
@@ -55,22 +51,9 @@ public interface Service {
     String getServiceName();
 
     /**
-     * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
-     * Otherwise, it returns an empty set.
-     *
-     * @return The RPC service definitions if this service is exposed via RPC.
-     */
-    @NonNull
-    default Set<RpcServiceDefinition> rpcDefinitions() {
-        return emptySet();
-    }
-
-    /**
-     * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
+     * Registers the schemas this application state really uses with the given {@link SchemaRegistry}.
      *
      * @param registry the registry to register the schemas with
      */
-    default void registerSchemas(@NonNull final SchemaRegistry registry) {
-        // No-op
-    }
+    void registerSchemas(@NonNull SchemaRegistry registry);
 }

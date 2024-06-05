@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.info;
+package com.swirlds.state.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
 
