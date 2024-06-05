@@ -28,18 +28,9 @@ import javax.inject.Scope;
 
 /**
  * Scope for bindings whose lifetime consists of a single platform transaction.
- * This scope contains HederaState, consensusNow, NodeInfo, RecordListBuilder,
- * <ol>
- *     <li>HederaState</li>
- *     <li>configuration</li>
- *     <li>TokenContext</li> ???
- *     <li>RecordListBuilder</li>
- *     <li>PreHandleResult</li>
- *     <li></li>
- *  </ol>
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
 @Scope
-public @interface UserTxnScope {}
+public @interface ChildDispatchScope {}

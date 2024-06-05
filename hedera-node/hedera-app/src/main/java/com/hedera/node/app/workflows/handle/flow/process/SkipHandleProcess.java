@@ -21,7 +21,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;

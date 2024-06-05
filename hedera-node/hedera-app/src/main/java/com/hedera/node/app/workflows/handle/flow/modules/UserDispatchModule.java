@@ -14,27 +14,42 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
+import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.config.api.Configuration;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
-@Module
-public interface SomethingModule {
+@Module(subcomponents = {ChildDispatchComponent.class})
+public interface UserDispatchModule {
     @Provides
     @UserDispatchScope
     static DueDiligenceInfo provideDueDiligenceInfo(PreHandleResult preHandleResult, NodeInfo creator) {
@@ -75,5 +90,36 @@ public interface SomethingModule {
             @NonNull HederaConfig hederaConfig, TransactionInfo txnInfo, PreHandleResult preHandleResult) {
         return new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(), hederaConfig, preHandleResult.getVerificationResults());
+    }
+
+    @Provides
+    @UserDispatchScope
+    static Fees provideFees(@NonNull FeeContext feeContext, @NonNull TransactionDispatcher dispatcher) {
+        return dispatcher.dispatchComputeFees(feeContext);
+    }
+
+    @Binds
+    @UserDispatchScope
+    HandleContext bindHandleContext(FlowHandleContext handleContext);
+
+    @Binds
+    @UserDispatchScope
+    FeeContext bindFeeContext(FlowHandleContext handleContext);
+
+    @Provides
+    @UserDispatchScope
+    static ServiceApiFactory provideServiceApiFactory(
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
+        return new ServiceApiFactory(stack, configuration, storeMetricsService);
+    }
+
+    @Provides
+    @UserDispatchScope
+    static FeeAccumulator provideFeeAccumulator(
+            @NonNull SingleTransactionRecordBuilderImpl recordBuilder, @NonNull ServiceApiFactory serviceApiFactory) {
+        final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
+        return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
 }

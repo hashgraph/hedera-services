@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.annotations;
+package com.hedera.node.app.workflows.handle.flow.qualifiers;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -24,13 +24,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.inject.Scope;
+import javax.inject.Qualifier;
 
-/**
- * Scope for bindings whose lifetime consists of a single platform transaction.
- */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
-@Scope
-public @interface DispatchScope {}
+@Qualifier
+public @interface ChildQualifier {}

@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;

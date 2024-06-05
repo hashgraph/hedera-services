@@ -93,6 +93,7 @@ public class AutoAccountCreator {
 
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
+        // TODO: dispatch should charge fees
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
         // match mono - If superuser is the payer don't charge fee

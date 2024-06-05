@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.process;
 
-import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import javax.inject.Inject;
 import javax.inject.Singleton;

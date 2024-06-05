@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
+import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.future.ScheduleServiceCronLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
 import javax.inject.Inject;

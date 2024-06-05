@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
-import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
-import dagger.Subcomponent;
+import com.hedera.node.app.workflows.handle.flow.components.UserDispatchComponent;
+import dagger.Module;
 
-@Subcomponent(modules = {SomethingModule.class})
-@UserDispatchScope
-public interface UserDispatchComponent extends Dispatch {
-    @Subcomponent.Factory
-    interface Factory {
-        UserDispatchComponent create();
-    }
-}
+@Module(subcomponents = {UserDispatchComponent.class})
+public interface UserDispatchSubcomponentModule {}

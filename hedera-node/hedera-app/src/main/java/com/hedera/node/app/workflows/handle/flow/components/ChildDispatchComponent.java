@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.components;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -24,7 +24,10 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.annotations.DispatchScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.ChildDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.modules.ChildDispatchModule;
+import com.hedera.node.app.workflows.handle.flow.qualifiers.ChildQualifier;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import dagger.BindsInstance;
@@ -32,20 +35,20 @@ import dagger.Subcomponent;
 import java.util.Set;
 
 @Subcomponent(modules = {ChildDispatchModule.class})
-@DispatchScope
+@ChildDispatchScope
 public interface ChildDispatchComponent extends Dispatch {
     @Subcomponent.Factory
     interface Factory {
         ChildDispatchComponent create(
-                @BindsInstance SingleTransactionRecordBuilderImpl recordBuilder,
-                @BindsInstance TransactionInfo txnInfo,
+                @BindsInstance @ChildQualifier SingleTransactionRecordBuilderImpl recordBuilder,
+                @BindsInstance @ChildQualifier TransactionInfo txnInfo,
                 @BindsInstance ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
-                @BindsInstance AccountID syntheticPayer,
+                @BindsInstance @ChildQualifier AccountID syntheticPayer,
                 @BindsInstance HandleContext.TransactionCategory childCategory,
-                @BindsInstance SavepointStackImpl stack,
-                @BindsInstance Set<Key> requiredKeys,
-                @BindsInstance Set<Account> hollowAccounts,
-                @BindsInstance ResponseCodeEnum userError,
-                @BindsInstance KeyVerifier keyVerifier);
+                @BindsInstance @ChildQualifier SavepointStackImpl stack,
+                @BindsInstance @ChildQualifier Set<Key> requiredKeys,
+                @BindsInstance @ChildQualifier Set<Account> hollowAccounts,
+                @BindsInstance @ChildQualifier ResponseCodeEnum userError,
+                @BindsInstance @ChildQualifier KeyVerifier keyVerifier);
     }
 }

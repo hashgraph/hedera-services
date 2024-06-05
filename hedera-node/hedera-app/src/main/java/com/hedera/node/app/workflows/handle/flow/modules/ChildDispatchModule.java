@@ -14,28 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.modules;
 
-import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
-import com.hedera.node.app.workflows.handle.flow.annotations.DispatchScope;
+import com.hedera.node.app.workflows.handle.flow.annotations.ChildDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.qualifiers.ChildQualifier;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
@@ -47,64 +44,65 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 @Module
 public interface ChildDispatchModule {
     @Binds
-    @DispatchScope
+    @ChildDispatchScope
+    @ChildQualifier
     HandleContext bindHandleContext(FlowHandleContext handleContext);
 
-    @Provides
-    @DispatchScope
-    static FeeContext bindFeeContext(
-            @NonNull HandleContext context,
-            @NonNull TransactionInfo txnInfo,
-            @NonNull final FeeManager feeManager,
-            @NonNull final AccountID syntheticPayer,
-            @NonNull final Authorizer authorizer,
-            @NonNull final ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel) {
-        return new ChildFeeContextImpl(
-                feeManager,
-                context,
-                txnInfo.txBody(),
-                syntheticPayer,
-                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
-                authorizer,
-                0);
-    }
+    @Binds
+    @ChildDispatchScope
+    @ChildQualifier
+    FeeContext bindFeeContext(FlowHandleContext feeContext);
 
     @Provides
-    @DispatchScope
+    @ChildDispatchScope
+    @ChildQualifier
     static Fees provideFees(
-            @NonNull HandleContext handleContext,
-            @NonNull TransactionInfo txnInfo,
-            @NonNull AccountID syntheticPayer,
-            @NonNull HandleContext.TransactionCategory childCategory) {
+            @NonNull FeeContext feeContext,
+            @NonNull HandleContext.TransactionCategory childCategory,
+            @NonNull TransactionDispatcher dispatcher) {
         if (childCategory != HandleContext.TransactionCategory.SCHEDULED) {
             return Fees.FREE;
         }
-        return handleContext
-                .dispatchComputeFees(txnInfo.txBody(), syntheticPayer, ComputeDispatchFeesAsTopLevel.YES)
-                .onlyServiceComponent();
+        return dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
     }
 
     @Provides
-    @DispatchScope
+    @ChildDispatchScope
+    @ChildQualifier
     static ReadableStoreFactory provideReadableStoreFactory(SavepointStackImpl stack) {
         return new ReadableStoreFactory(stack);
     }
 
     @Provides
-    @DispatchScope
+    @ChildDispatchScope
+    @ChildQualifier
     static FeeAccumulator provideFeeAccumulator(
-            @NonNull SavepointStackImpl stack,
-            @NonNull Configuration configuration,
-            @NonNull StoreMetricsService storeMetricsService,
-            @NonNull SingleTransactionRecordBuilderImpl recordBuilder) {
-        final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
+            @NonNull SingleTransactionRecordBuilderImpl recordBuilder, @NonNull ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
 
     @Provides
-    @DispatchScope
+    @ChildDispatchScope
+    @ChildQualifier
     static DueDiligenceInfo provideDueDiligenceInfo(NodeInfo creator) {
         return new DueDiligenceInfo(creator.accountId(), ResponseCodeEnum.OK);
+    }
+
+    @Provides
+    @ChildDispatchScope
+    @ChildQualifier
+    static ServiceApiFactory provideServiceApiFactory(
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
+        return new ServiceApiFactory(stack, configuration, storeMetricsService);
+    }
+
+    @Provides
+    @ChildDispatchScope
+    @ChildQualifier
+    static Key providePayerKey() {
+        return Key.DEFAULT;
     }
 }

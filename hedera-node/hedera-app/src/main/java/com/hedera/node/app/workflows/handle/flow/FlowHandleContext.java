@@ -21,11 +21,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -67,11 +69,12 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private final TransactionInfo txnInfo;
     private final Configuration configuration;
     private final Authorizer authorizer;
-    private final int numTxnSignatures;
     private final BlockRecordManager blockRecordManager;
     private final FeeManager feeManager;
     private final ReadableStoreFactory storeFactory;
     private final AccountID syntheticPayer;
+    private final KeyVerifier verifier;
+    private final Key payerkey;
 
     @Inject
     public FlowHandleContext(
@@ -79,20 +82,22 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             final TransactionInfo transactionInfo,
             final Configuration configuration,
             final Authorizer authorizer,
-            final int numTxnSignatures,
             final BlockRecordManager blockRecordManager,
             final FeeManager feeManager,
             final ReadableStoreFactory storeFactory,
-            final AccountID syntheticPayer) {
+            final AccountID syntheticPayer,
+            final KeyVerifier verifier,
+            final Key payerkey) {
         this.consensusNow = consensusNow;
         this.txnInfo = transactionInfo;
         this.configuration = configuration;
         this.authorizer = authorizer;
-        this.numTxnSignatures = numTxnSignatures;
         this.blockRecordManager = blockRecordManager;
         this.feeManager = feeManager;
         this.storeFactory = storeFactory;
         this.syntheticPayer = syntheticPayer;
+        this.verifier = verifier;
+        this.payerkey = payerkey;
     }
 
     @NonNull
@@ -127,7 +132,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
 
     @Override
     public int numTxnSignatures() {
-        return numTxnSignatures;
+        return verifier.numSignaturesVerified();
     }
 
     @NonNull
@@ -148,7 +153,16 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public FeeCalculator feeCalculator(@NonNull final SubType subType) {
-        return null;
+        return feeManager.createFeeCalculator(
+                txnInfo.txBody(),
+                payerkey,
+                txnInfo.functionality(),
+                numTxnSignatures(),
+                SignatureMap.PROTOBUF.measureRecord(txnInfo.signatureMap()),
+                consensusNow,
+                subType,
+                false,
+                storeFactory);
     }
 
     @NonNull

@@ -18,25 +18,13 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import dagger.Module;
 import dagger.Provides;
@@ -44,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 @Module
-public interface StagingModule {
+public interface PreHandleResultModule {
     @Provides
     @UserTxnScope
     static PreHandleResult providePreHandleResult(
@@ -75,44 +63,13 @@ public interface StagingModule {
 
     @Provides
     @UserTxnScope
-    static int provideSignatureMapSize(@NonNull TransactionInfo txnInfo) {
-        return SignatureMap.PROTOBUF.measureRecord(txnInfo.signatureMap());
-    }
-
-    @Provides
-    @UserTxnScope
     static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo) {
         return txnInfo.functionality();
     }
 
     @Provides
     @UserTxnScope
-    static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
-            @NonNull RecordListBuilder recordListBuilder) {
-        return recordListBuilder.userTransactionRecordBuilder();
-    }
-
-    @Provides
-    @UserTxnScope
-    static Bytes transactionBytes(@NonNull TransactionInfo txnInfo) {
-        final var txn = txnInfo.transaction();
-        if (txnInfo.transaction().signedTransactionBytes().length() > 0) {
-            return txn.signedTransactionBytes();
-        } else {
-            // in this case, recorder hash the transaction itself, not its bodyBytes.
-            return Transaction.PROTOBUF.toBytes(txn);
-        }
-    }
-
-    @Provides
-    @UserTxnScope
-    static FeeAccumulator provideFeeAccumulator(
-            @NonNull SavepointStackImpl stack,
-            @NonNull Configuration configuration,
-            @NonNull StoreMetricsService storeMetricsService,
-            @NonNull SingleTransactionRecordBuilderImpl recordBuilder) {
-        final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
-        final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
-        return new FeeAccumulatorImpl(tokenApi, recordBuilder);
+    static Key providePayerKey(@NonNull PreHandleResult preHandleResult) {
+        return preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey();
     }
 }

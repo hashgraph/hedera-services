@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.components;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
@@ -25,9 +25,10 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.modules.ContextModule;
-import com.hedera.node.app.workflows.handle.flow.modules.StagingModule;
+import com.hedera.node.app.workflows.handle.flow.modules.PreHandleResultModule;
+import com.hedera.node.app.workflows.handle.flow.modules.RecordStreamModule;
 import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
-import com.hedera.node.app.workflows.handle.flow.modules.UserModule;
+import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchSubcomponentModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -48,9 +49,9 @@ import javax.inject.Provider;
             StateModule.class,
             ActiveConfigModule.class,
             ContextModule.class,
-            StagingModule.class,
-            UserDispatchModule.class,
-            UserModule.class
+            PreHandleResultModule.class,
+            UserDispatchSubcomponentModule.class,
+            RecordStreamModule.class
         })
 @UserTxnScope
 public interface UserTransactionComponent {

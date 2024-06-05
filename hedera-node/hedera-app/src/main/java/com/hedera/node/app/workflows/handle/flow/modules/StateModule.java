@@ -17,10 +17,13 @@
 package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.state.HederaState;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Module
 public interface StateModule {
@@ -28,5 +31,17 @@ public interface StateModule {
     @UserTxnScope
     static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
         return workingStateAccessor.getHederaState();
+    }
+
+    @Provides
+    @UserTxnScope
+    static SavepointStackImpl provideSavepointStackImpl(@NonNull final HederaState state) {
+        return new SavepointStackImpl(state);
+    }
+
+    @Provides
+    @UserTxnScope
+    static ReadableStoreFactory provideReadableStoreFactory(SavepointStackImpl stack) {
+        return new ReadableStoreFactory(stack);
     }
 }
