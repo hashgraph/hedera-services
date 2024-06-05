@@ -149,6 +149,7 @@ If the airdrop transaction fees from the list above are covered by a separate pa
 
 ### Service updates
 
+- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `TokenAirdrop` transaction type
 - Update `TokenServiceDefinition` class to include the new RPC method definition for sending airdrops
 - Implement new `TokenAirdropHandler` class which should be invoked when the gRPC server handles `TokenAirdropTransaction` transactions. The class should be responsible for:
     - Verify that the pending airdrops list contains between 1 and 10 entries, inclusive
@@ -191,8 +192,13 @@ If the airdrop transaction fees from the list above are covered by a separate pa
             - token association fee (pre-paid if account is not associated to the token)
             - auto account creation (assessed if the recipient does not exist and they are referred by their public `ECDSA` key or `evm_address`)
 - Interact with the pending airdrop state - if the recipient is not associated to the token, then the `TokenAirdropTransaction` responsibilities in term of interacting with the pending state would be to just add the airdrop information in the state
-- Add additional validation for account deletion. If an account has sent an airdrop, which is in pending state and we want to delete this account, we should first cancel this airdrop and then delete the account, so that pending state is kept clean 
-- Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
+- Add additional validation for account deletion. If an account has sent an airdrop, which is in pending state and we want to delete this account, we should first cancel this airdrop and then delete the account, so that pending state is kept clean
+- Update throttle definitions to include the new `TokenAirdrop` transaction type
+  - Throttle definitions are specified in `throttles.json` files
+  - There are different configurations containing throttle definitions under `hedera-node/configuration/` for the different environments e.g. testnet, previewnet, mainnet
+  - There is also a default throttle definition file in `resources/genesis/throttles.json` that is used during the genesis
+  - Add the new `TokenAirdrop` transaction type to the `ThroughputLimits` bucket
+  - Add this new operation type to the `ThroughputLimits` throttle bucket group, so that it's included in the throttling mechanism
 
 ## Acceptance Tests
 
