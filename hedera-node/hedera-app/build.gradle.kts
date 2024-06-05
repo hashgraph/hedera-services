@@ -115,6 +115,7 @@ xtestModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requires("tuweni.bytes")
+    requires("tuweni.units")
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }
