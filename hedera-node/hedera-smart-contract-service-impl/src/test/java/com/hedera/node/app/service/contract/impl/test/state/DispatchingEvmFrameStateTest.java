@@ -147,21 +147,18 @@ class DispatchingEvmFrameStateTest {
     @Test
     void dispatchesToSetNonce() {
         subject.setNonce(ACCOUNT_NUM, 1234);
-
         verify(nativeOperations).setNonce(ACCOUNT_NUM, 1234);
     }
 
     @Test
     void dispatchesToNumBytecodes() {
         given(contractStateStore.getNumBytecodes()).willReturn(1234L);
-
         assertEquals(1234L, subject.numBytecodesInState());
     }
 
     @Test
     void extFrameScopeesToFinalizeHollowAccount() {
         subject.finalizeHollowAccount(EVM_ADDRESS);
-
         verify(nativeOperations).finalizeHollowAccountAsContract(tuweniToPbjBytes(EVM_ADDRESS));
     }
 
