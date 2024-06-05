@@ -27,6 +27,7 @@ import com.hedera.node.app.workflows.handle.flow.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.modules.ContextModule;
 import com.hedera.node.app.workflows.handle.flow.modules.StagingModule;
 import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
+import com.hedera.node.app.workflows.handle.flow.modules.UserModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -40,6 +41,7 @@ import dagger.Subcomponent;
 import java.time.Instant;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.inject.Provider;
 
 @Subcomponent(
         modules = {
@@ -47,7 +49,8 @@ import java.util.stream.Stream;
             ActiveConfigModule.class,
             ContextModule.class,
             StagingModule.class,
-            UserDispatchModule.class
+            UserDispatchModule.class,
+            UserModule.class
         })
 @UserTxnScope
 public interface UserTransactionComponent {
@@ -90,4 +93,6 @@ public interface UserTransactionComponent {
     PreHandleResult preHandleResult();
 
     ReadableStoreFactory readableStoreFactory();
+
+    Provider<UserDispatchComponent.Factory> userDispatchProvider();
 }

@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
@@ -49,8 +50,9 @@ public interface StagingModule {
     static PreHandleResult providePreHandleResult(
             @NonNull NodeInfo creator,
             @NonNull ConsensusTransaction platformTxn,
-            @NonNull PreHandleLogic preHandleLogic) {
-        return preHandleLogic.getCurrentPreHandleResult(creator, platformTxn);
+            @NonNull PreHandleLogic preHandleLogic,
+            @NonNull final ReadableStoreFactory storeFactory) {
+        return preHandleLogic.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
     }
 
     @Provides

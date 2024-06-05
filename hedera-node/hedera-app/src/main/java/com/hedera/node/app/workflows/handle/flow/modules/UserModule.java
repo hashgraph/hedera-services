@@ -19,9 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,12 +30,5 @@ public interface UserModule {
     @UserTxnScope
     static Fees provideFees(@NonNull FeeContext feeContext, @NonNull TransactionDispatcher dispatcher) {
         return dispatcher.dispatchComputeFees(feeContext);
-    }
-
-    @Provides
-    @UserTxnScope
-    static DueDiligenceInfo provideDueDiligenceInfo(UserTransactionComponent userTxn) {
-        return new DueDiligenceInfo(
-                userTxn.creator().accountId(), userTxn.preHandleResult().responseCode());
     }
 }

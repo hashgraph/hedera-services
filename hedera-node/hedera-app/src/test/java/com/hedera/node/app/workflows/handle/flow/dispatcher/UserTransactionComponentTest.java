@@ -16,14 +16,32 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
+import com.hedera.node.app.spi.info.NodeInfo;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UserTransactionComponentTest {
     private UserTransactionComponent subject;
 
+    @Mock
+    PlatformState platformState;
+
+    @Mock
+    ConsensusEvent platformEvent;
+
+    NodeInfo creator;
+
+    ConsensusTransaction platformTxn;
+
+    Instant consensusTime = Instant.ofEpochSecond(123_456L);
+
     @Test
-    void name() {}
+    void checkBinds() {}
 }

@@ -17,14 +17,22 @@
 package com.hedera.node.app.workflows.handle.flow.modules;
 
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.process.ProcessRunner;
 import dagger.Binds;
 import dagger.Module;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @Module
 public interface ContextModule {
     @Binds
     @UserTxnScope
     TokenContext bindTokenContext(TokenContextImpl tokenContext);
+
+    @Binds
+    @UserTxnScope
+    Supplier<Stream<SingleTransactionRecord>> recordStreamSupplier(ProcessRunner processRunner);
 }

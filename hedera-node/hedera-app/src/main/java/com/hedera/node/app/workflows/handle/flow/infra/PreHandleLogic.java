@@ -34,16 +34,12 @@ public class PreHandleLogic {
     private static final Logger logger = LogManager.getLogger(PreHandleLogic.class);
     final PreHandleWorkflow preHandleWorkflow;
     final SolvencyPreCheck solvencyPreCheck;
-    final ReadableStoreFactory storeFactory;
 
     @Inject
     public PreHandleLogic(
-            @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final SolvencyPreCheck solvencyPreCheck,
-            final ReadableStoreFactory storeFactory) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow, @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.preHandleWorkflow = preHandleWorkflow;
         this.solvencyPreCheck = solvencyPreCheck;
-        this.storeFactory = storeFactory;
     }
 
     /*
@@ -54,7 +50,9 @@ public class PreHandleLogic {
      */
     @NonNull
     public PreHandleResult getCurrentPreHandleResult(
-            @NonNull final NodeInfo creator, @NonNull final ConsensusTransaction platformTxn) {
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn,
+            final ReadableStoreFactory storeFactory) {
         final var metadata = platformTxn.getMetadata();
         final PreHandleResult previousResult;
         if (metadata instanceof PreHandleResult result) {

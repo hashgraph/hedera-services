@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -44,6 +45,7 @@ public interface ChildDispatchComponent extends Dispatch {
                 @BindsInstance SavepointStackImpl stack,
                 @BindsInstance Set<Key> requiredKeys,
                 @BindsInstance Set<Account> hollowAccounts,
-                @BindsInstance ResponseCodeEnum userError);
+                @BindsInstance ResponseCodeEnum userError,
+                @BindsInstance KeyVerifier keyVerifier);
     }
 }

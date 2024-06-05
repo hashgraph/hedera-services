@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
+import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
 import dagger.Subcomponent;
 
 @Subcomponent(modules = {SomethingModule.class})
+@UserDispatchScope
 public interface UserDispatchComponent extends Dispatch {
     @Subcomponent.Factory
     interface Factory {

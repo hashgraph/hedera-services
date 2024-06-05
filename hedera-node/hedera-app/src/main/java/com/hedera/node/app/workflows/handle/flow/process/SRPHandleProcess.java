@@ -19,12 +19,10 @@ package com.hedera.node.app.workflows.handle.flow.process;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.future.ScheduleServiceCronLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +36,6 @@ public class SRPHandleProcess implements HandleProcess {
     private final ScheduleServiceCronLogic scheduleServiceCronLogic;
     private final DispatchLogic dispatchLogic;
     private final UserTxnLogger userTxnLogger;
-    private final Provider<UserDispatchComponent.Factory> userDispatchProvider;
 
     @Inject
     public SRPHandleProcess(
@@ -46,14 +43,12 @@ public class SRPHandleProcess implements HandleProcess {
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
             final DispatchLogic dispatchLogic,
-            final UserTxnLogger userTxnLogger,
-            final Provider<UserDispatchComponent.Factory> dispatchProvider) {
+            final UserTxnLogger userTxnLogger) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
         this.dispatchLogic = dispatchLogic;
         this.userTxnLogger = userTxnLogger;
-        this.userDispatchProvider = dispatchProvider;
     }
 
     @Override
@@ -63,7 +58,7 @@ public class SRPHandleProcess implements HandleProcess {
         scheduleServiceCronLogic.expireSchedules(blockRecordManager.consTimeOfLastHandledTxn(), userTxn);
         userTxnLogger.logUserTxn(userTxn);
 
-        final var userDispatch = userDispatchProvider.get().create();
+        final var userDispatch = userTxn.userDispatchProvider().get().create();
         dispatchLogic.dispatch(userDispatch);
     }
 
