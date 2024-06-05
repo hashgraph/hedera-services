@@ -19,6 +19,12 @@ plugins {
     id("com.hedera.gradle.benchmark")
 }
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-lossy-conversions")
+}
+
 testModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.merkle")

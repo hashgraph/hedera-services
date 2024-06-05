@@ -18,16 +18,16 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,12 +38,6 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class ServicesRegistryImpl implements ServicesRegistry {
     private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
-    /**
-     * Use a constant version to be passed to the schema registration.
-     * If the version changes the class id will be different and the upgrade will have issues.
-     */
-    private final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */
@@ -54,6 +48,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     /**
      * Creates a new registry.
      */
+    @Inject
     public ServicesRegistryImpl(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final GenesisRecordsBuilder genesisRecords) {
@@ -67,6 +62,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      *
      * @param service The service to register
      */
+    @Override
     public void register(@NonNull final Service service) {
         final var serviceName = service.getServiceName();
 
@@ -83,5 +79,11 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     @Override
     public SortedSet<Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
+    }
+
+    @NonNull
+    @Override
+    public GenesisRecordsBuilder getGenesisRecords() {
+        return genesisRecords;
     }
 }

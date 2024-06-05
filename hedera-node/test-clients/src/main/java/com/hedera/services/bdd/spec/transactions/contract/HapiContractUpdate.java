@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -237,11 +236,6 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
     private List<Function<HapiSpec, Key>> oldDefaults() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
                 .getKey(contract));
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::updateContract;
     }
 
     @Override

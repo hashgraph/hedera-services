@@ -651,7 +651,6 @@ public final class PlatformBuilder {
                 initialPcesFiles,
                 issScratchpad,
                 NotificationEngine.buildEngine(getStaticThreadManager()),
-                new AtomicReference<>(),
                 statusActionSubmitterAtomicReference,
                 swirldStateManager,
                 new AtomicReference<>(),

@@ -80,7 +80,8 @@ public class GuiEventStorage {
     public synchronized void handlePreconsensusEvent(@NonNull final GossipEvent event) {
         maxGeneration = Math.max(maxGeneration, event.getGeneration());
 
-        final EventImpl eventImpl = linker.linkEvent(event);
+        // since the gui will modify the event, we need to copy it
+        final EventImpl eventImpl = linker.linkEvent(event.copyGossipedData());
         if (eventImpl == null) {
             return;
         }
