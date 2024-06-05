@@ -24,7 +24,7 @@ import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.state.Schema;
+import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;

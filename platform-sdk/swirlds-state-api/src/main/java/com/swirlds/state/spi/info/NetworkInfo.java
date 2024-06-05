@@ -14,29 +14,39 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.info;
+package com.swirlds.state.spi.info;
 
-import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
- * Additional information specific to <b>this</b> node, including information not necessarily available in the address
- * book itself.
+ * Provides information about the network.
  */
-public interface SelfNodeInfo extends NodeInfo {
-    /**
-     * The version of HAPI supported by this operating node.
-     *
-     * @return The version of HAPI
-     */
-    @NonNull
-    SemanticVersion hapiVersion();
+public interface NetworkInfo {
 
     /**
-     * The version of the application running on this operating node.
+     * Returns the current ledger ID.
      *
-     * @return The version of the application
+     * @return the {@link Bytes} of the current ledger ID
      */
     @NonNull
-    SemanticVersion appVersion();
+    Bytes ledgerId();
+
+    @NonNull
+    SelfNodeInfo selfNodeInfo();
+
+    @NonNull
+    List<NodeInfo> addressBook();
+
+    @Nullable
+    NodeInfo nodeInfo(long nodeId);
+
+    /**
+     * Returns true if the network contains a node with the given ID.
+     * @param nodeId the ID of the node to check for
+     * @return true if the network contains a node with the given ID
+     */
+    boolean containsNode(long nodeId);
 }

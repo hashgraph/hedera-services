@@ -39,10 +39,10 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVir
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.StateDefinition;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
 import java.util.Comparator;
