@@ -113,11 +113,6 @@ public class GuiEventStorage {
         lastConsensusRound = null;
     }
 
-    public synchronized void clearState(){
-        consensus.loadSnapshot(SyntheticSnapshot.GENESIS_SNAPSHOT);
-        linker.clear();
-    }
-
     /**
      * Get the maximum generation of any event in the hashgraph.
      *

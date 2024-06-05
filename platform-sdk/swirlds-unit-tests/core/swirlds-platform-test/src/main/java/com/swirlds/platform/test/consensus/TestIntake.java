@@ -51,6 +51,7 @@ import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -147,12 +148,12 @@ public class TestIntake {
     /**
      * @return a queue of all rounds that have reached consensus
      */
-    public @NonNull Deque<ConsensusRound> getConsensusRounds() {
+    public @NonNull LinkedList<ConsensusRound> getConsensusRounds() {
         return output.getConsensusRounds();
     }
 
     public @Nullable ConsensusRound getLatestRound() {
-        return output.getConsensusRounds().pollLast();
+        return output.getConsensusRounds().getLast();
     }
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {

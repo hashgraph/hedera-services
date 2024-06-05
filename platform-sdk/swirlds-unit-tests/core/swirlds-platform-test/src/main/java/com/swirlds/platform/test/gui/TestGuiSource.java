@@ -20,12 +20,12 @@ import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
@@ -42,7 +42,7 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 
 public class TestGuiSource {
-    private final GraphGenerator<?> graphGenerator;
+    private final GuiEventProvider eventProvider;
     private final HashgraphGuiSource guiSource;
     private ConsensusSnapshot savedSnapshot;
     private final GuiEventStorage eventStorage;
@@ -57,22 +57,53 @@ public class TestGuiSource {
     public TestGuiSource(
             @NonNull final PlatformContext platformContext, final long seed, @NonNull final int numNodes) {
 
-        graphGenerator = new StandardGraphGenerator(platformContext, seed, generateSources(numNodes));
+        final GraphGenerator<?> graphGenerator = new StandardGraphGenerator(platformContext, seed,
+                generateSources(numNodes));
         graphGenerator.reset();
 
         eventStorage = new GuiEventStorage(platformContext.getConfiguration(), graphGenerator.getAddressBook());
         guiSource = new StandardGuiSource(graphGenerator.getAddressBook(), eventStorage);
+        eventProvider = new GuiEventProvider() {
+            @Override
+            public List<GossipEvent> generateEvents(final int numberOfEvents) {
+                return graphGenerator.generateEvents(numberOfEvents).stream().map(IndexedEvent::getBaseEvent)
+                        .toList();
+            }
+
+            @Override
+            public void reset() {
+                graphGenerator.reset();
+            }
+        };
     }
 
     public TestGuiSource(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @NonNull final GraphGenerator<?> graphGenerator,
-            @NonNull final TestIntake intake) {
-        this.graphGenerator = graphGenerator;
-
+            @NonNull final GraphGenerator<?> graphGenerator) {
         eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
         guiSource = new StandardGuiSource(addressBook, eventStorage);
+        eventProvider = new GuiEventProvider() {
+            @Override
+            public List<GossipEvent> generateEvents(final int numberOfEvents) {
+                return graphGenerator.generateEvents(numberOfEvents).stream().map(IndexedEvent::getBaseEvent)
+                        .toList();
+            }
+
+            @Override
+            public void reset() {
+                graphGenerator.reset();
+            }
+        };
+    }
+
+    public TestGuiSource(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final GuiEventProvider eventProvider) {
+        this.eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
+        this.guiSource = new StandardGuiSource(addressBook, eventStorage);
+        this.eventProvider = eventProvider;
     }
 
     public void runGui() {
@@ -80,9 +111,9 @@ public class TestGuiSource {
     }
 
     public void generateEvents(final int numEvents) {
-        final List<IndexedEvent> events = graphGenerator.generateEvents(numEvents);
-        for (final IndexedEvent event : events) {
-            eventStorage.handlePreconsensusEvent(event.getBaseEvent());
+        final List<GossipEvent> events = eventProvider.generateEvents(numEvents);
+        for (final GossipEvent event : events) {
+            eventStorage.handlePreconsensusEvent(event);
         }
     }
 
@@ -103,10 +134,10 @@ public class TestGuiSource {
                 Integer.valueOf(Integer.MAX_VALUE),
                 Integer.valueOf(numEventsStep)));
         nextEvent.addActionListener(e -> {
-            final List<IndexedEvent> events = graphGenerator.generateEvents(
+            final List<GossipEvent> events = eventProvider.generateEvents(
                     numEvents.getValue() instanceof Integer value ? value : defaultNumEvents);
-            for (final IndexedEvent event : events) {
-                eventStorage.handlePreconsensusEvent(event.getBaseEvent());
+            for (final GossipEvent event : events) {
+                eventStorage.handlePreconsensusEvent(event);
             }
 
             updateFameDecidedBelow.run();
@@ -114,7 +145,7 @@ public class TestGuiSource {
         // Reset
         final JButton reset = new JButton("Reset");
         reset.addActionListener(e -> {
-            graphGenerator.reset();
+            eventProvider.reset();
             eventStorage.handleSnapshotOverride(GENESIS_SNAPSHOT);
             updateFameDecidedBelow.run();
         });
@@ -158,6 +189,15 @@ public class TestGuiSource {
         controls.add(loadSavedSnapshot);
 
         return controls;
+    }
+
+    public void loadSnapshot(final ConsensusSnapshot snapshot) {
+        System.out.println("Loading snapshot for round: " + snapshot.round());
+        eventStorage.handleSnapshotOverride(snapshot);
+    }
+
+    public GuiEventStorage getEventStorage() {
+        return eventStorage;
     }
 
     public static @NonNull List<EventSource<?>> generateSources(final int numNetworkNodes) {

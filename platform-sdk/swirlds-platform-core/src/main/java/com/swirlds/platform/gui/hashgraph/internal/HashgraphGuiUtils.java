@@ -71,6 +71,9 @@ public final class HashgraphGuiUtils {
      * @return its color
      */
     public static Color eventColor(final EventImpl event, final HashgraphPictureOptions options) {
+        if(event.isJudge()){
+            return event.isConsensus() ? HashgraphGuiConstants.LIGHT_YELLOW : HashgraphGuiConstants.DARK_YELLOW;
+        }
         if (options.simpleColors()) { // if checkbox checked
             return event.isConsensus() ? HashgraphGuiConstants.LIGHT_BLUE : HashgraphGuiConstants.LIGHT_GREEN;
         }

@@ -41,8 +41,11 @@ public class HashgraphGuiConstants {
     public static final Color DARK_BLUE = new Color(0, 0, 128);
     /** non-witness witness, consensus */
     public static final Color LIGHT_GRAY = new Color(160, 160, 160);
+
     /** non-witness, non-consensus */
     public static final Color DARK_GRAY = new Color(0, 0, 0);
+    public static final Color LIGHT_YELLOW = new Color(160, 160, 0);
+    public static final Color DARK_YELLOW = new Color(100, 100, 0);
 
     public static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("H:m:s.n").withLocale(Locale.US).withZone(ZoneId.systemDefault());

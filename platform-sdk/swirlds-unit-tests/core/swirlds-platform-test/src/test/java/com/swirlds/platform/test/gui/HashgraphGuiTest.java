@@ -29,7 +29,7 @@ class HashgraphGuiTest {
     //@Disabled("this test is useful for debugging consensus")
     void runGuiWithControls() {
         final Randotron randotron = Randotron.create(1);
-        final int numNodes = 4;
+        final int numNodes = 3;
         final int initialEvents = 0;
 
         final PlatformContext platformContext =

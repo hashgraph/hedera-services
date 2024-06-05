@@ -41,9 +41,11 @@ import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -566,13 +568,39 @@ public final class ConsensusTestDefinitions {
             // instead of trying to bootstrap a second orchestrator in the proper state.  Replaying the previously
             // events is going to be wrong because the weight distribution by % in the 3 node network is different.
             orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
-                orchestrator2.getNodes().get(fi).getIntake().addEvent(e);
+                orchestrator2.getNodes().get(fi).getIntake().addEvent(e.copyGossipedData());
             });
+            System.out.println("After loading old event into %d, latest cons round is %d".formatted(
+                    i,
+                    orchestrator2.getNodes().get(i).getIntake().getLatestRound().getRoundNum()
+            ));
             ConsensusUtils.loadEventsIntoGenerator(
                     orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),
                     orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
                     orchestrator2.getNodes().get(i).getRandom());
         }
+
+        final TestGuiSource guiSource = new TestGuiSource(
+                input.platformContext(),
+                orchestrator2.getAddressBook(),
+                (GraphGenerator<?>) null);
+//        guiSource.loadSnapshot(orchestrator1
+//                .getNodes()
+//                .get(0)
+//                .getIntake()
+//                .getLatestRound()
+//                .getSnapshot());
+        guiSource.loadSnapshot(orchestrator1
+                .getNodes()
+                .get(0)
+                .getIntake()
+                .getConsensusRounds()
+                        .get(314)
+                .getSnapshot());
+        orchestrator1.getNodes().get(0).getOutput().getAddedEvents().forEach(e -> {
+            guiSource.getEventStorage().handlePreconsensusEvent(e.copyGossipedData());
+        });
+        guiSource.runGui();
 
         orchestrator2.generateEvents(0.5);
         orchestrator2.validate(
