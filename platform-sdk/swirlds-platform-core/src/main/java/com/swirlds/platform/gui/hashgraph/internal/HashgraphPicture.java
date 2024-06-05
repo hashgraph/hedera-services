@@ -93,7 +93,7 @@ public class HashgraphPicture extends JPanel {
             List<EventImpl> events;
             if (options.displayLatestEvents()) {
                 final long startGen = Math.max(
-                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay(),
+                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay()+1,
                         GraphGenerations.FIRST_GENERATION);
                 options.setStartGeneration(startGen);
                 events = hashgraphSource.getEvents(startGen, options.getNumGenerationsDisplay());

@@ -72,7 +72,7 @@ public final class HashgraphGuiUtils {
      */
     public static Color eventColor(final EventImpl event, final HashgraphPictureOptions options) {
         if(event.isJudge()){
-            return event.isConsensus() ? HashgraphGuiConstants.LIGHT_YELLOW : HashgraphGuiConstants.DARK_YELLOW;
+            return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
         }
         if (options.simpleColors()) { // if checkbox checked
             return event.isConsensus() ? HashgraphGuiConstants.LIGHT_BLUE : HashgraphGuiConstants.LIGHT_GREEN;
@@ -86,6 +86,6 @@ public final class HashgraphGuiUtils {
         if (event.isFamous()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GREEN : HashgraphGuiConstants.LIGHT_GREEN;
         }
-        return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
+        return event.isConsensus() ? HashgraphGuiConstants.DARK_YELLOW : HashgraphGuiConstants.LIGHT_YELLOW;
     }
 }

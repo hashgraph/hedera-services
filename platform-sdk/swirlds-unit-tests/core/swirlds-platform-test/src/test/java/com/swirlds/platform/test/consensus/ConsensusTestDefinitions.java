@@ -28,7 +28,10 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestUtils;
@@ -45,6 +48,7 @@ import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
+import com.swirlds.platform.test.gui.ListEventProvider;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -580,10 +584,15 @@ public final class ConsensusTestDefinitions {
                     orchestrator2.getNodes().get(i).getRandom());
         }
 
+        final AddressBook newAb = orchestrator1.getAddressBook().copy();
+        newAb.updateWeight(newAb.getNodeId(3), 0);
         final TestGuiSource guiSource = new TestGuiSource(
                 input.platformContext(),
-                orchestrator2.getAddressBook(),
-                (GraphGenerator<?>) null);
+                //orchestrator2.getAddressBook(),
+                newAb,
+                new ListEventProvider(
+                        orchestrator1.getNodes().get(0).getOutput().getAddedEvents().stream().map(GossipEvent::copyGossipedData).toList()
+                ));
 //        guiSource.loadSnapshot(orchestrator1
 //                .getNodes()
 //                .get(0)
@@ -597,9 +606,9 @@ public final class ConsensusTestDefinitions {
                 .getConsensusRounds()
                         .get(314)
                 .getSnapshot());
-        orchestrator1.getNodes().get(0).getOutput().getAddedEvents().forEach(e -> {
-            guiSource.getEventStorage().handlePreconsensusEvent(e.copyGossipedData());
-        });
+        guiSource.generateEvents(
+                orchestrator1.getNodes().get(0).getOutput().getAddedEvents().size() - 50
+        );
         guiSource.runGui();
 
         orchestrator2.generateEvents(0.5);

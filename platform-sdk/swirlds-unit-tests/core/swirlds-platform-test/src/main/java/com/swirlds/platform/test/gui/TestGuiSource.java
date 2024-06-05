@@ -63,18 +63,7 @@ public class TestGuiSource {
 
         eventStorage = new GuiEventStorage(platformContext.getConfiguration(), graphGenerator.getAddressBook());
         guiSource = new StandardGuiSource(graphGenerator.getAddressBook(), eventStorage);
-        eventProvider = new GuiEventProvider() {
-            @Override
-            public List<GossipEvent> generateEvents(final int numberOfEvents) {
-                return graphGenerator.generateEvents(numberOfEvents).stream().map(IndexedEvent::getBaseEvent)
-                        .toList();
-            }
-
-            @Override
-            public void reset() {
-                graphGenerator.reset();
-            }
-        };
+        eventProvider = new GeneratorEventProvider(graphGenerator);
     }
 
     public TestGuiSource(
@@ -83,18 +72,7 @@ public class TestGuiSource {
             @NonNull final GraphGenerator<?> graphGenerator) {
         eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
         guiSource = new StandardGuiSource(addressBook, eventStorage);
-        eventProvider = new GuiEventProvider() {
-            @Override
-            public List<GossipEvent> generateEvents(final int numberOfEvents) {
-                return graphGenerator.generateEvents(numberOfEvents).stream().map(IndexedEvent::getBaseEvent)
-                        .toList();
-            }
-
-            @Override
-            public void reset() {
-                graphGenerator.reset();
-            }
-        };
+        eventProvider = new GeneratorEventProvider(graphGenerator);
     }
 
     public TestGuiSource(
