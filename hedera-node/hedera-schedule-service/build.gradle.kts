@@ -26,6 +26,7 @@ description = "Hedera Scheduled Service API"
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
 testModuleInfo {
+    requires("com.swirlds.state.api")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
 }

@@ -45,12 +45,12 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.swirlds.state.spi.ReadableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Exercises the ERC-20 {@code transferFrom()} and {@code transfer()} call by setting up an owner that has a
@@ -96,7 +96,7 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAccounts(@NotNull ReadableKVState<AccountID, Account> accounts) {
+    protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {
         final var owner = Objects.requireNonNull(accounts.get(OWNER_ID));
         final var allowance = Objects.requireNonNull(owner.tokenAllowances()).get(0);
         assertEquals(ERC20_TOKEN_ID, allowance.tokenId());
@@ -105,7 +105,7 @@ public class HtsErc20TransfersXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedTokenRelations(@NotNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
+    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
         // The owner's balance should have been reduced by 300
         assertTokenBalance(tokenRels, OWNER_ID, 700L);
         // The receiver's balance should have been increased by 300

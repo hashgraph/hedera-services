@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state;
+package com.swirlds.state.spi;
 
-import com.hedera.node.app.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
