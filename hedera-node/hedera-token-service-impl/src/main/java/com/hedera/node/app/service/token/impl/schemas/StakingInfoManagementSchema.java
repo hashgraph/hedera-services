@@ -19,11 +19,13 @@ package com.hedera.node.app.service.token.impl.schemas;
 import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
@@ -36,8 +38,17 @@ import org.apache.logging.log4j.Logger;
  * Defines the schema for managing staking info.
  * IMPORTANT: Every TokenSchema version should extend this interface
  */
-public interface StakingInfoManagementSchema {
+public class StakingInfoManagementSchema extends Schema {
     Logger log = LogManager.getLogger(StakingInfoManagementSchema.class);
+
+    /**
+     * Create a new instance
+     *
+     * @param version The version of this schema
+     */
+    protected StakingInfoManagementSchema(@NonNull final SemanticVersion version) {
+        super(version);
+    }
 
     /**
      * Updates in-state staking info to match the address book.
@@ -51,7 +62,8 @@ public interface StakingInfoManagementSchema {
      *
      * @param ctx {@link MigrationContext} for this schema restart operation
      */
-    default void restart(@NonNull MigrationContext ctx) {
+    @Override
+    public void restart(@NonNull MigrationContext ctx) {
         final var networkInfo = ctx.networkInfo();
         final var newStakingStore = new WritableStakingInfoStore(ctx.newStates());
         // We need to validate and mark any node that are removed during upgrade as deleted.

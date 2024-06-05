@@ -60,7 +60,6 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -93,7 +92,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Initial mod-service schema for the token service.
  */
-public class V0490TokenSchema extends Schema implements StakingInfoManagementSchema {
+public class V0490TokenSchema extends StakingInfoManagementSchema {
     private static final Logger log = LogManager.getLogger(V0490TokenSchema.class);
 
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
@@ -391,6 +390,11 @@ public class V0490TokenSchema extends Schema implements StakingInfoManagementSch
         tFs = null;
         stakingFs = null;
         mnc = null;
+    }
+
+    @Override
+    public void restart(@NonNull final MigrationContext ctx) {
+        super.restart(ctx);
     }
 
     private void createGenesisSchema(@NonNull final MigrationContext ctx) {
