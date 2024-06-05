@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationL
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
+import static com.hedera.node.app.service.token.impl.util.TokenUtil.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -39,6 +40,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -65,11 +67,11 @@ public class AutoAccountCreator {
     /**
      * Creates an account for the given alias.
      *
-     * @param alias                  the alias to create the account for
-     * @param maxAutoAssociations   the maxAutoAssociations to set on the account
+     * @param alias                      the alias to create the account for
+     * @param requiredAutoAssociations   the requiredAutoAssociations to set on the account
      * @return the account ID of the created account
      */
-    public AccountID create(@NonNull final Bytes alias, int maxAutoAssociations) {
+    public AccountID create(@NonNull final Bytes alias, int requiredAutoAssociations) {
         requireNonNull(alias);
 
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
@@ -82,12 +84,16 @@ public class AutoAccountCreator {
         String memo;
 
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
+        final var entitiesConfig = handleContext.configuration().getConfigData(EntitiesConfig.class);
+        final int autoAssociations = entitiesConfig.unlimitedAutoAssociationsEnabled()
+                ? UNLIMITED_AUTOMATIC_ASSOCIATIONS
+                : requiredAutoAssociations;
         if (isAliasEVMAddress) {
-            syntheticCreation = createHollowAccount(alias, 0L, maxAutoAssociations);
+            syntheticCreation = createHollowAccount(alias, 0L, autoAssociations);
             memo = LAZY_MEMO;
         } else {
             final var key = asKeyFromAlias(alias);
-            syntheticCreation = createAccount(alias, key, 0L, maxAutoAssociations);
+            syntheticCreation = createAccount(alias, key, 0L, autoAssociations);
             memo = AUTO_MEMO;
         }
 

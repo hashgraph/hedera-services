@@ -52,7 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectExplicitCo
 import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectFailedContractBytecodeSidecarFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -94,6 +94,7 @@ import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.hexedSolidityAddressToHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.uint256ReturnWithValue;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FALSE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
@@ -141,6 +142,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -4874,15 +4876,21 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_NONCE,
                         ALLOW_SKIPPED_ENTITY_IDS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
+                .preserving(
+                        CHAIN_ID_PROPERTY,
+                        LAZY_CREATE_PROPERTY,
+                        "contracts.evm.version",
+                        "entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overridingThree(
+                        overridingAllOf(Map.of(
                                 CHAIN_ID_PROPERTY,
                                 "298",
                                 LAZY_CREATE_PROPERTY,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.34"),
+                                "v0.34",
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                FALSE)),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
@@ -4982,10 +4990,11 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_NONCE)
-                .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
+                .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP, "entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),
                         overriding(SIDECARS_PROP, ""),
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(create2Factory),
