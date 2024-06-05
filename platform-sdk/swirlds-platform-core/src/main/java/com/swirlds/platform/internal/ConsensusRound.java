@@ -17,8 +17,6 @@
 package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -72,7 +70,10 @@ public class ConsensusRound implements Round {
      */
     private final AddressBook consensusRoster;
 
-    private final StandardFuture<Hash> runningEventHashFuture = new StandardFuture<>();
+    /**
+     * True if this round reached consensus during the replaying of the preconsensus event stream.
+     */
+    private final boolean pcesRound;
 
     /**
      * Create a new instance with the provided consensus events.
@@ -83,6 +84,8 @@ public class ConsensusRound implements Round {
      * @param generations     the consensus generations for this round
      * @param eventWindow     the event window for this round
      * @param snapshot        snapshot of consensus at this round
+     * @param pcesRound       true if this round reached consensus during the replaying of the preconsensus event
+     *                        stream
      */
     public ConsensusRound(
             @NonNull final AddressBook consensusRoster,
@@ -90,7 +93,8 @@ public class ConsensusRound implements Round {
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations,
             @NonNull final EventWindow eventWindow,
-            @NonNull final ConsensusSnapshot snapshot) {
+            @NonNull final ConsensusSnapshot snapshot,
+            final boolean pcesRound) {
 
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
         this.consensusEvents = Collections.unmodifiableList(Objects.requireNonNull(consensusEvents));
@@ -98,6 +102,7 @@ public class ConsensusRound implements Round {
         this.generations = Objects.requireNonNull(generations);
         this.eventWindow = Objects.requireNonNull(eventWindow);
         this.snapshot = Objects.requireNonNull(snapshot);
+        this.pcesRound = pcesRound;
 
         for (final EventImpl e : consensusEvents) {
             numAppTransactions += e.getNumAppTransactions();
@@ -200,23 +205,10 @@ public class ConsensusRound implements Round {
     }
 
     /**
-     * Set the running event hash for this round.
-     *
-     * @param runningEventHash the running event hash
+     * {@inheritDoc}
      */
-    public void setRunningEventHash(@NonNull final Hash runningEventHash) {
-        runningEventHashFuture.complete(runningEventHash);
-    }
-
-    /**
-     * Get the running event hash for this round. If it has not yet been computed, block until it is.
-     *
-     * @return the running event hash
-     * @throws InterruptedException if the current thread is interrupted while waiting
-     */
-    @NonNull
-    public Hash getRunningEventHash() throws InterruptedException {
-        return runningEventHashFuture.getAndRethrow();
+    public boolean isPcesRound() {
+        return pcesRound;
     }
 
     @Override

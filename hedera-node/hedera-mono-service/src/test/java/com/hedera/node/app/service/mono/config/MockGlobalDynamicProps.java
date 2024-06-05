@@ -102,7 +102,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
     @Override
     public String pathToBalancesExportDir() {
-        return "src/test/resources";
+        return "build/tmp/test/resources";
     }
 
     @Override

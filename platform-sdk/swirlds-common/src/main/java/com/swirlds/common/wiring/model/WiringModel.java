@@ -113,6 +113,27 @@ public interface WiringModel extends Startable, Stoppable {
     OutputWire<Instant> buildHeartbeatWire(@NonNull final Duration period);
 
     /**
+     * Get the output of the wiring model's health monitor. The output of this wire is the length of time that any
+     * particular scheduler has been in an unhealthy state, or {@link Duration#ZERO} if all schedulers are currently
+     * healthy.
+     *
+     * @return the output wire
+     */
+    @NonNull
+    OutputWire<Duration> getHealthMonitorWire();
+
+    /**
+     * Get the duration that any particular scheduler has been concurrently unhealthy. This getter is intended for use
+     * by things outside of the wiring framework. For use within the framework, the proper way to access this value is
+     * via the wire returned by {@link #getHealthMonitorWire()}.
+     *
+     * @return the duration that any particular scheduler has been concurrently unhealthy, or {@link Duration#ZERO} if
+     * no scheduler is currently unhealthy
+     */
+    @NonNull
+    Duration getUnhealthyDuration();
+
+    /**
      * Build a wire that produces an instant (reflecting current time) at the specified rate. Note that the exact rate
      * of heartbeats may vary. This is a best effort algorithm, and actual rates may vary depending on a variety of
      * factors.
@@ -123,18 +144,6 @@ public interface WiringModel extends Startable, Stoppable {
      */
     @NonNull
     OutputWire<Instant> buildHeartbeatWire(final double frequency);
-
-    /**
-     * Prevent the JVM from exiting even if there are no non-daemon threads outside the wiring model. Calling this
-     * method while the JVM exit is already prevented has no effect.
-     */
-    void preventJvmExit();
-
-    /**
-     * If the JVM is currently being prevented from exiting due to a call to {@link #preventJvmExit()}, then this method
-     * will allow the JVM to exit. Calling this method while the JVM exit is already permitted has no effect.
-     */
-    void permitJvmExit();
 
     /**
      * Start everything in the model that needs to be started. Performs static analysis of the wiring topology and

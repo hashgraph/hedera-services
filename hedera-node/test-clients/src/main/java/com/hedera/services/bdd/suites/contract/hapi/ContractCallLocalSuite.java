@@ -111,7 +111,7 @@ public class ContractCallLocalSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(0L)
                                 .supplyKey(SUPPLY_KEY),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint"),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         // Create an account with alias
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1L)
@@ -196,7 +196,10 @@ public class ContractCallLocalSuite {
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
                         sleepFor(3_000L),
-                        contractCallLocal(CONTRACT, "getIndirect").gas(2_000L).hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
+                        contractCallLocal(CONTRACT, "getIndirect")
+                                .nodePayment(1_234_567)
+                                .gas(2_000L)
+                                .hasAnswerOnlyPrecheck(INSUFFICIENT_GAS));
     }
 
     @HapiTest

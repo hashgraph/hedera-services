@@ -21,11 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -37,7 +32,17 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
-import com.swirlds.state.spi.*;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -46,6 +51,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -223,7 +229,8 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleHederaState loadeMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
-        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var newRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -240,7 +247,8 @@ class SerializationTest extends MerkleTestBase {
                 config,
                 networkInfo,
                 mock(Metrics.class),
-                mock(WritableEntityIdStore.class));
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         loadedTree.migrate(1);
 
         return loadedTree;
@@ -249,11 +257,18 @@ class SerializationTest extends MerkleTestBase {
     private MerkleHederaState createMerkleHederaState(Schema schemaV1) {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(lifecycles);
-        final var originalRegistry =
-                new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class));
+        final var originalRegistry = new MerkleSchemaRegistry(
+                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
-                originalTree, null, v1, config, networkInfo, mock(Metrics.class), mock(WritableEntityIdStore.class));
+                originalTree,
+                null,
+                v1,
+                config,
+                networkInfo,
+                mock(Metrics.class),
+                mock(WritableEntityIdStore.class),
+                new HashMap<>());
         return originalTree;
     }
 

@@ -955,6 +955,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 } else {
                     // We removed the second to last leaf, so the first & last leaf paths are now the same.
                     state.setLastLeafPath(FIRST_LEFT_PATH);
+                    // One of the two remaining leaves is removed. When this virtual root copy is hashed,
+                    // the root hash will be a product of the remaining leaf hash and a null hash at
+                    // path 2. However, rehashing is only triggered, if there is at least one dirty leaf,
+                    // while leaf 1 is not marked as such: neither its contents nor its path are changed.
+                    // To fix it, mark it as dirty explicitly
+                    final VirtualLeafRecord<K, V> leaf = records.findLeafRecord(1, true);
+                    cache.putLeaf(leaf);
                 }
             } else {
                 final long lastLeafSibling = getSiblingPath(lastLeafPath);
@@ -1316,13 +1323,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
         }
 
+        // There are no remaining changes to be made to the cache, so we can seal it.
+        cache.seal();
+
+        // Make sure the copy is marked as hashed after the cache is sealed, otherwise the chances
+        // are an attempt to merge the cache will fail because the cache hasn't been sealed yet
         setHashPrivate(virtualHash);
 
         final long end = System.currentTimeMillis();
         statistics.recordHash(end - start);
-
-        // There are no remaining changes to be made to the cache, so we can seal it.
-        cache.seal();
     }
 
     /*

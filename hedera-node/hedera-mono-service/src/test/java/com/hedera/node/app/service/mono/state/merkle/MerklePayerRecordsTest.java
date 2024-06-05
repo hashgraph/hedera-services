@@ -77,10 +77,10 @@ class MerklePayerRecordsTest {
         assertEquals(oneRecordHash, secondOneRecordHash);
 
         final Set<BytesKey> uniqueHashes = new HashSet<>();
-        uniqueHashes.add(new BytesKey(emptyHash.getValue()));
-        uniqueHashes.add(new BytesKey(justNumHash.getValue()));
-        uniqueHashes.add(new BytesKey(oneRecordHash.getValue()));
-        uniqueHashes.add(new BytesKey(twoRecordHash.getValue()));
+        uniqueHashes.add(new BytesKey(emptyHash.copyToByteArray()));
+        uniqueHashes.add(new BytesKey(justNumHash.copyToByteArray()));
+        uniqueHashes.add(new BytesKey(oneRecordHash.copyToByteArray()));
+        uniqueHashes.add(new BytesKey(twoRecordHash.copyToByteArray()));
         assertEquals(4, uniqueHashes.size());
     }
 }

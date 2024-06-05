@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -38,6 +39,8 @@ import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
+    public static final long INTRINSIC_GAS_FOR_0_ARG_METHOD = 21064L;
+
     @Mock
     private TransactionComponent component;
 
@@ -64,7 +69,15 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
-    private final ContractCallHandler subject = new ContractCallHandler(() -> factory);
+    @Mock
+    private GasCalculator gasCalculator;
+
+    private ContractCallHandler subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new ContractCallHandler(() -> factory, gasCalculator);
+    }
 
     @Test
     void delegatesToCreatedComponentAndExposesSuccess() {
@@ -115,6 +128,19 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         assertThat(context.payerKey()).isEqualTo(payerKey);
     }
 
+    @Test
+    void validatePureChecks() {
+        // check null contact id
+        final var txn1 = contractCallTransactionWithNoContractId();
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn1));
+
+        // check at least intrinsic gas
+        final var txn2 = contractCallTransactionWithInsufficientGas();
+        given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
+                .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
+    }
+
     private TransactionBody contractCallTransaction() {
         final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         return TransactionBody.newBuilder()
@@ -122,6 +148,24 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
                 .contractCall(ContractCallTransactionBody.newBuilder()
                         .gas(1_234)
                         .amount(1_234L)
+                        .contractID(targetContract))
+                .build();
+    }
+
+    private TransactionBody contractCallTransactionWithNoContractId() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder())
+                .build();
+    }
+
+    private TransactionBody contractCallTransactionWithInsufficientGas() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
                         .contractID(targetContract))
                 .build();
     }

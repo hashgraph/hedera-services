@@ -27,7 +27,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.freeze.FreezeAbort;
 import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
@@ -151,7 +151,7 @@ public class SuiteRunner {
             byRunType.put("async", runCategories(statefulCategories.get(Boolean.FALSE)));
         }
         summarizeResults(byRunType);
-        HapiApiClients.tearDown();
+        HapiClients.tearDown();
 
         System.exit(globalPassFlag ? 0 : 1);
     }

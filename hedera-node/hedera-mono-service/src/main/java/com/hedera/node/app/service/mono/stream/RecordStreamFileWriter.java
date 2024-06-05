@@ -243,7 +243,7 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 try {
                     // write endRunningHash
                     final var endRunningHash = runningHash.getFutureHash().get();
-                    recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash.getValue()));
+                    recordStreamFileBuilder.setEndObjectRunningHash(toProto(endRunningHash.copyToByteArray()));
                     LOG.debug(
                             OBJECT_STREAM_FILE.getMarker(),
                             "closeCurrentAndSign :: write endRunningHash {}",
@@ -365,7 +365,7 @@ public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamOb
                 .setPatch(fileHeader[3]));
         try {
             final var startRunningHash = runningHash.getFutureHash().get();
-            recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
+            recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.copyToByteArray()));
             LOG.debug(
                     OBJECT_STREAM_FILE.getMarker(),
                     "beginNew :: write startRunningHash to metadata {}",

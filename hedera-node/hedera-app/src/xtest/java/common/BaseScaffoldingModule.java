@@ -58,12 +58,12 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.*;
@@ -99,6 +99,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import contract.ContractScaffoldingComponent;
 import dagger.Binds;
 import dagger.Module;
@@ -112,7 +114,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Singleton;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A helper module for Dagger2 to instantiate an {@link ContractScaffoldingComponent}; provides
@@ -185,6 +186,10 @@ public interface BaseScaffoldingModule {
     @Binds
     @Singleton
     Authorizer bindAuthorizer(AuthorizerImpl authorizer);
+
+    @Binds
+    @Singleton
+    ServicesRegistry bindServicesRegistry(ServicesRegistryImpl servicesRegistry);
 
     @Provides
     @Singleton
@@ -354,9 +359,9 @@ public interface BaseScaffoldingModule {
         return new SynchronizedThrottleAccumulator(frontendThrottle);
     }
 
-    @NotNull
+    @NonNull
     private static ThrottleMultiplier getThrottleMultiplier(
-            @NotNull ConfigProvider configProvider, ThrottleAccumulator backendThrottle) {
+            @NonNull ConfigProvider configProvider, ThrottleAccumulator backendThrottle) {
         return new ThrottleMultiplier(
                 "logical TPS",
                 "TPS",
@@ -372,9 +377,9 @@ public interface BaseScaffoldingModule {
                 () -> backendThrottle.activeThrottlesFor(CRYPTO_TRANSFER));
     }
 
-    @NotNull
+    @NonNull
     private static CongestionMultipliers getCongestionMultipliers(
-            @NotNull ConfigProvider configProvider,
+            @NonNull ConfigProvider configProvider,
             ThrottleMultiplier genericFeeMultiplier,
             ThrottleAccumulator backendThrottle) {
         final var txnRateMultiplier = new UtilizationScaledThrottleMultiplier(genericFeeMultiplier, configProvider);

@@ -16,124 +16,56 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.workingDirFor;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.services.bdd.junit.hedera.live.GrpcPinger;
-import com.hedera.services.bdd.junit.hedera.live.PrometheusClient;
-import com.hedera.services.bdd.junit.hedera.live.SubProcessNode;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.swirlds.platform.system.status.PlatformStatus;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * A network of Hedera nodes. For now, assumed to be accessed via
- * a live gRPC connection. In the future, we will abstract the
- * submission and querying operations to allow for an embedded
- * "network".
+ * A network of Hedera nodes.
  */
-public class HederaNetwork {
-    private static final Logger log = LogManager.getLogger(HederaNetwork.class);
-
-    private static final int FIRST_GRPC_PORT = 50211;
-    private static final int FIRST_GOSSIP_PORT = 60000;
-    private static final int FIRST_GOSSIP_TLS_PORT = 60001;
-    private static final int FIRST_PROMETHEUS_PORT = 10000;
-    private static final long FIRST_NODE_ACCOUNT_NUM = 3;
-    private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
-    private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
-    private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
-    private static final PrometheusClient PROMETHEUS_CLIENT = new PrometheusClient();
-
-    private static int nextGrpcPort = FIRST_GRPC_PORT;
-    private static int nextGossipPort = FIRST_GOSSIP_PORT;
-    private static int nextGossipTlsPort = FIRST_GOSSIP_TLS_PORT;
-    private static int nextPrometheusPort = FIRST_PROMETHEUS_PORT;
-
-    public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
-
-    private final String configTxt;
+public interface HederaNetwork {
     /**
-     * If null, this is the shared network (only one is allowed per launcher session).
-     */
-    @Nullable
-    private final String networkName;
-
-    private final List<HederaNode> nodes;
-
-    @Nullable
-    private CompletableFuture<Void> ready;
-
-    private HederaNetwork(@Nullable final String networkName, @NonNull final List<HederaNode> nodes) {
-        this.nodes = requireNonNull(nodes);
-        this.networkName = networkName;
-        this.configTxt = configTxtFor(name(), nodes);
-    }
-
-    /**
-     * Creates a shared network of sub-process nodes with the given size.
+     * Sends the given query to the network node with the given account id as if it
+     * was the given functionality. Blocks until the response is available.
      *
-     * @param size the number of nodes in the network
-     * @return the shared network
+     * <p>For valid queries, the functionality can be inferred; but for invalid queries,
+     * the functionality must be provided.
+     *
+     * @param query the query
+     * @param functionality the functionality to use
+     * @param nodeAccountId the account id of the node to send the query to
+     * @return the network's response
      */
-    public static synchronized HederaNetwork newSharedSubProcessNetwork(final int size) {
-        if (SHARED_NETWORK.get() != null) {
-            throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
-        }
-        final var sharedNetwork = liveNetwork(null, size);
-        SHARED_NETWORK.set(sharedNetwork);
-        return sharedNetwork;
-    }
+    @NonNull
+    Response send(@NonNull Query query, @NonNull HederaFunctionality functionality, @NonNull AccountID nodeAccountId);
 
     /**
-     * Creates a network of sub-process nodes with the given name and size. Unlike the shared
-     * network, this network's nodes will have working directories scoped to the given name.
+     * Submits the given transaction to the network node with the given account id as if it
+     * was the given functionality. Blocks until the response is available.
      *
-     * @param name the name of the network
-     * @param size the number of nodes in the network
-     * @return the network
-     */
-    public static HederaNetwork newSubProcessNetwork(@NonNull final String name, final int size) {
-        return liveNetwork(name, size);
-    }
-
-    /**
-     * Creates a network of live (sub-process) nodes with the given name and size. This method is
-     * synchronized because we don't want to re-use any ports across different networks.
+     * <p>For valid transactions, the functionality can be inferred; but for invalid transactions,
+     * the functionality must be provided.
      *
-     * @param name the name of the network
-     * @param size the number of nodes in the network
-     * @return the network
+     * @param transaction the transaction
+     * @param functionality the functionality to use
+     * @param target the target to use, given a system functionality
+     * @param nodeAccountId the account id of the node to submit the transaction to
+     * @return the network's response
      */
-    private static synchronized HederaNetwork liveNetwork(@Nullable final String name, final int size) {
-        final var network = new HederaNetwork(
-                name,
-                IntStream.range(0, size)
-                        .<HederaNode>mapToObj(
-                                nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
-                        .toList());
-        // Reserve ports for the next network
-        nextGrpcPort += size * 2;
-        nextGossipPort += size * 2;
-        nextGossipTlsPort += size * 2;
-        nextPrometheusPort += size;
-        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
-        return network;
-    }
+    TransactionResponse submit(
+            @NonNull Transaction transaction,
+            @NonNull HederaFunctionality functionality,
+            @NonNull SystemFunctionalityTarget target,
+            @NonNull AccountID nodeAccountId);
 
     /**
      * Returns the network type; for now this is always
@@ -141,18 +73,14 @@ public class HederaNetwork {
      *
      * @return the network type
      */
-    public TargetNetworkType type() {
-        return SHARED_HAPI_TEST_NETWORK;
-    }
+    TargetNetworkType type();
 
     /**
      * Returns the nodes of the network.
      *
      * @return the nodes of the network
      */
-    public List<HederaNode> nodes() {
-        return nodes;
-    }
+    List<HederaNode> nodes();
 
     /**
      * Returns the nodes of the network that match the given selector.
@@ -160,8 +88,20 @@ public class HederaNetwork {
      * @param selector the selector
      * @return the nodes that match the selector
      */
-    public List<HederaNode> nodesFor(@NonNull final NodeSelector selector) {
-        return nodes.stream().filter(selector).toList();
+    default List<HederaNode> nodesFor(@NonNull final NodeSelector selector) {
+        requireNonNull(selector);
+        return nodes().stream().filter(selector).toList();
+    }
+
+    /**
+     * Returns the node of the network that matches the given selector.
+     *
+     * @param selector the selector
+     * @return the nodes that match the selector
+     */
+    default HederaNode getRequiredNode(@NonNull final NodeSelector selector) {
+        requireNonNull(selector);
+        return nodes().stream().filter(selector).findAny().orElseThrow();
     }
 
     /**
@@ -169,93 +109,20 @@ public class HederaNetwork {
      *
      * @return the name of the network
      */
-    public String name() {
-        return networkName == null ? SHARED_NETWORK_NAME : networkName;
-    }
+    String name();
 
     /**
-     * Starts all nodes in the network and waits for them to reach the
-     * {@link PlatformStatus#ACTIVE} status, or times out.
-     *
-     * @param timeout the maximum time to wait for all nodes to start
+     * Starts all nodes in the network.
      */
-    public void startWithin(@NonNull final Duration timeout) {
-        final var latch = new CountDownLatch(nodes.size());
-        CompletableFuture.allOf(nodes.stream()
-                        .map(node -> runAsync(() -> {
-                                    node.initWorkingDir(configTxt);
-                                    node.start();
-                                })
-                                .thenCompose(nothing -> node.statusFuture(ACTIVE, timeout)
-                                        .thenRun(() -> {
-                                            log.info("Node '{}' is ready", node.getName());
-                                            latch.countDown();
-                                        })))
-                        .toArray(CompletableFuture[]::new))
-                .orTimeout(timeout.toMillis(), MILLISECONDS);
-        ready = runAsync(() -> {
-                    try {
-                        latch.await();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new IllegalStateException(e);
-                    }
-                })
-                .thenRun(() -> log.info("All nodes in network '{}' are ready", name()));
-    }
+    void start();
 
     /**
      * Forcibly stops all nodes in the network.
      */
-    public void terminate() {
-        nodes.forEach(HederaNode::terminate);
-    }
+    void terminate();
 
     /**
-     * Waits for all nodes in the network to be ready.
+     * Waits for all nodes in the network to be ready within the given timeout.
      */
-    public void waitForReady() {
-        requireNonNull(ready).join();
-    }
-
-    private static String configTxtFor(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
-        final var sb = new StringBuilder();
-        sb.append("swirld, ")
-                .append(networkName)
-                .append("\n")
-                .append("\n# This next line is, hopefully, ignored.\n")
-                .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-        for (final var node : nodes) {
-            sb.append("address, ")
-                    .append(node.getNodeId())
-                    .append(", ")
-                    .append(node.getName().charAt(0))
-                    .append(", ")
-                    .append(node.getName())
-                    .append(", 1, 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_PORT + (node.getNodeId() * 2))
-                    .append(", 127.0.0.1, ")
-                    .append(FIRST_GOSSIP_TLS_PORT + (node.getNodeId() * 2))
-                    .append(", ")
-                    .append("0.0.")
-                    .append(node.getAccountId().accountNumOrThrow())
-                    .append("\n");
-        }
-        sb.append("\nnextNodeId, ").append(nodes.size()).append("\n");
-        return sb.toString();
-    }
-
-    private static NodeMetadata metadataFor(final int nodeId, @Nullable final String networkName) {
-        return new NodeMetadata(
-                nodeId,
-                NODE_NAMES[nodeId],
-                AccountID.newBuilder()
-                        .accountNum(FIRST_NODE_ACCOUNT_NUM + nodeId)
-                        .build(),
-                nextGrpcPort + nodeId * 2,
-                nextGossipPort + nodeId * 2,
-                nextGossipTlsPort + nodeId * 2,
-                nextPrometheusPort + nodeId,
-                workingDirFor(nodeId, networkName));
-    }
+    void awaitReady(@NonNull Duration timeout);
 }

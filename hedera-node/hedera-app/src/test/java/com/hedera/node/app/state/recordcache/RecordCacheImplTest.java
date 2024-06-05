@@ -40,19 +40,19 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
 import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -100,7 +100,7 @@ final class RecordCacheImplTest extends AppTestBase {
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
         final var svc = new RecordCacheService();
-        svc.registerSchemas(registry, TestSchema.CURRENT_VERSION);
+        svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
         lenient().when(wsa.getHederaState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
@@ -192,7 +192,7 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
-                    services.getQueue(RecordCacheService.TXN_RECORD_QUEUE);
+                    services.getQueue(V0490RecordCacheSchema.TXN_RECORD_QUEUE);
             assertThat(queue).isNotNull();
             entries.forEach(queue::add);
             ((ListWritableQueueState<?>) queue).commit();
@@ -262,7 +262,7 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
-                    services.getQueue(RecordCacheService.TXN_RECORD_QUEUE);
+                    services.getQueue(V0490RecordCacheSchema.TXN_RECORD_QUEUE);
             assertThat(queue).isNotNull();
             queue.add(oldEntry);
             ((ListWritableQueueState<?>) queue).commit();

@@ -17,13 +17,10 @@
 package com.swirlds.common.wiring.model;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.internal.AutoLock;
-import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.wiring.model.internal.deterministic.DeterministicHeartbeatScheduler;
 import com.swirlds.common.wiring.model.internal.deterministic.DeterministicTaskSchedulerBuilder;
-import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
+import com.swirlds.common.wiring.wires.output.NoOpOutputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -50,16 +47,6 @@ public class DeterministicWiringModel extends TraceableWiringModel {
     private List<Runnable> nextCycleWork = new ArrayList<>();
 
     private final DeterministicHeartbeatScheduler heartbeatScheduler;
-
-    /**
-     * Used to protect access to the JVM anchor.
-     */
-    private final AutoClosableLock jvmExitLock = new AutoLock();
-
-    /**
-     * Used to prevent the JVM from prematurely exiting.
-     */
-    private JvmAnchor anchor;
 
     /**
      * Constructor.
@@ -121,34 +108,26 @@ public class DeterministicWiringModel extends TraceableWiringModel {
      */
     @NonNull
     @Override
+    public OutputWire<Duration> getHealthMonitorWire() {
+        return new NoOpOutputWire<>(this, "HealthMonitor");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Duration getUnhealthyDuration() {
+        return Duration.ZERO;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         return heartbeatScheduler.buildHeartbeatWire(frequency);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void preventJvmExit() {
-        try (final Locked ignored = jvmExitLock.lock()) {
-            if (anchor == null) {
-                anchor = new JvmAnchor();
-                anchor.start();
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void permitJvmExit() {
-        try (final Locked ignored = jvmExitLock.lock()) {
-            if (anchor != null) {
-                anchor.stop();
-                anchor = null;
-            }
-        }
     }
 
     /**

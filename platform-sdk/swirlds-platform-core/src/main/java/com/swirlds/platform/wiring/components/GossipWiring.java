@@ -25,9 +25,11 @@ import com.swirlds.common.wiring.wires.output.OutputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 
 /**
  * Wiring for gossip.
@@ -74,6 +76,17 @@ public class GossipWiring {
      */
     private final BindableInputWire<NoInput, Void> clearInput;
 
+    /**
+     * This wire is used to tell gossip the health of the system, carries the duration that the system has been in an
+     * unhealthy state.
+     */
+    private final BindableInputWire<Duration, Void> systemHealthInput;
+
+    /**
+     * This wire is used to tell gossip the status of the platform.
+     */
+    private final BindableInputWire<PlatformStatus, Void> platformStatusInput;
+
     public GossipWiring(@NonNull final PlatformContext platformContext, @NonNull final WiringModel model) {
         this.model = model;
 
@@ -92,6 +105,8 @@ public class GossipWiring {
         startInput = scheduler.buildInputWire("start");
         stopInput = scheduler.buildInputWire("stop");
         clearInput = scheduler.buildInputWire("clear");
+        systemHealthInput = scheduler.buildInputWire("health info");
+        platformStatusInput = scheduler.buildInputWire("PlatformStatus");
     }
 
     /**
@@ -100,7 +115,16 @@ public class GossipWiring {
      * @param gossip the gossip implementation
      */
     public void bind(@NonNull final Gossip gossip) {
-        gossip.bind(model, eventInput, eventWindowInput, eventOutput, startInput, stopInput, clearInput);
+        gossip.bind(
+                model,
+                eventInput,
+                eventWindowInput,
+                eventOutput,
+                startInput,
+                stopInput,
+                clearInput,
+                systemHealthInput,
+                platformStatusInput);
     }
 
     /**
@@ -161,6 +185,26 @@ public class GossipWiring {
     @NonNull
     public InputWire<NoInput> getClearInput() {
         return clearInput;
+    }
+
+    /**
+     * Get the input wire to tell gossip the health of the system.
+     *
+     * @return the input wire to tell gossip the health of the system
+     */
+    @NonNull
+    public InputWire<Duration> getSystemHealthInput() {
+        return systemHealthInput;
+    }
+
+    /**
+     * Get the input wire to tell gossip the status of the platform.
+     *
+     * @return the input wire to tell gossip the status of the platform
+     */
+    @NonNull
+    public InputWire<PlatformStatus> getPlatformStatusInput() {
+        return platformStatusInput;
     }
 
     /**
