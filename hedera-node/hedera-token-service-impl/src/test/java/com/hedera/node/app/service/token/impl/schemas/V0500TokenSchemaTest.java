@@ -43,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class V0500TokenSchemaTest {
     private static final int N = 3;
+
     private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
     private static final SortedMap<ContractID, Bytes> FIRST_KEYS = new TreeMap<>(CONTRACT_ID_COMPARATOR) {
         {
