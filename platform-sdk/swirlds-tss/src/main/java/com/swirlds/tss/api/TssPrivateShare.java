@@ -25,4 +25,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param shareId    the share ID
  * @param privateKey the private key
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {}
+public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {
+
+
+    /**
+     * Sign a message using the private key.
+     * <p>
+     * @param message the message to sign
+     * @return the signature, which will be in the group opposite to the group of the public key
+     */
+    @NonNull
+    public TssShareSignature sign(final @NonNull byte[] message) {
+        return new TssShareSignature(shareId, privateKey.sign(message));
+    }
+
+}

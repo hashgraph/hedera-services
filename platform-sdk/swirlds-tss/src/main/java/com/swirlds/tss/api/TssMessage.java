@@ -42,7 +42,7 @@ public record TssMessage(
      * @param shareClaims the pending share claims the TSS message was created for
      * @return true if the message is valid, false otherwise
      */
-    boolean verify(@NonNull final PairingPublicKey publicKey, @NonNull final ShareClaims shareClaims) {
+    public boolean verify(@NonNull final PairingPublicKey publicKey, @NonNull final ShareClaims shareClaims) {
         return publicKey.keyElement().equals(commitment.commitmentCoefficients().getFirst())
                 && proof.verify(cipherText, commitment, shareClaims);
     }
@@ -52,7 +52,7 @@ public record TssMessage(
      *
      * @return the byte array representation of the message
      */
-    byte[] toBytes() {
+    public byte[] toBytes() {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

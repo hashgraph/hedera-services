@@ -50,10 +50,21 @@ public class SignatureSchema {
         final byte curveIdByte = BytePacker.unpackCurveType(idByte);
         final GroupAssignment groupAssignment = BytePacker.unpackGroupAssignment(idByte);
         final Curve curve = Curve.fromId(curveIdByte);
-        final BilinearPairing pairing = BilinearPairingService.instanceOf(curve);
-
-        return new SignatureSchema(pairing, groupAssignment, curve);
+        return create(curve,groupAssignment);
     }
+
+    /**
+     * Returns a signature scheme a curve and a groupAssignment
+     *
+     * @param groupAssignment the group assignment
+     * @param curve           the curve
+     * @return the SignatureSchema instance
+     */
+    @NonNull
+    public static SignatureSchema create(Curve curve, GroupAssignment groupAssignment) {
+        return new SignatureSchema(BilinearPairingService.instanceOf(curve), groupAssignment ,curve);
+    }
+
 
     /**
      * Get the group used for public keys
