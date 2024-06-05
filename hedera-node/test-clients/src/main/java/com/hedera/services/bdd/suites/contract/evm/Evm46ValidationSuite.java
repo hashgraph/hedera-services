@@ -126,8 +126,7 @@ public class Evm46ValidationSuite {
     public static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
     public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
-    public static final List<Long> callOperationsSuccessSystemAccounts =
-            List.of(0L, 1L, 358L, 750L, 751L, 999L, 1000L);
+    public static final List<Long> callOperationsSuccessSystemAccounts = List.of(0L, 1L, 358L, 750L, 751L, 999L, 1000L);
 
     @HapiTest
     final Stream<DynamicTest> directCallToDeletedContractResultsInSuccessfulNoop() {
@@ -1486,7 +1485,10 @@ public class Evm46ValidationSuite {
             int finalI = i;
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
-                    contractCall(contract, functionName, mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
+                    contractCall(
+                                    contract,
+                                    functionName,
+                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
                             .hasKnownStatus(SUCCESS)
                             .via("callTest" + finalI)));
         }
@@ -1505,7 +1507,10 @@ public class Evm46ValidationSuite {
             int finalI = i;
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
-                    contractCall(contract, functionName, mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
+                    contractCall(
+                                    contract,
+                                    functionName,
+                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
                             .hasKnownStatus(SUCCESS)
                             .via("callCodeTest" + finalI)));
         }
@@ -1524,7 +1529,10 @@ public class Evm46ValidationSuite {
             int finalI = i;
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
-                    contractCall(contract, functionName, mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
+                    contractCall(
+                                    contract,
+                                    functionName,
+                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
                             .hasKnownStatus(SUCCESS)
                             .via("delegateCall" + finalI)));
         }
@@ -1543,7 +1551,10 @@ public class Evm46ValidationSuite {
             int finalI = i;
             opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
                     spec,
-                    contractCall(contract, functionName, mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
+                    contractCall(
+                                    contract,
+                                    functionName,
+                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
                             .hasKnownStatus(SUCCESS)
                             .via("staticcall" + finalI)));
         }
