@@ -49,11 +49,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitEthereumTransaction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -124,6 +126,7 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -346,6 +349,9 @@ public class ContractCreateSuite {
                                 ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE,
                                 LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
                         newKeyNamed(MULTI_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .initialSupply(1000)
@@ -375,7 +381,17 @@ public class ContractCreateSuite {
                                 .hasKnownStatus(SUCCESS),
                         contractCall(createContract, "create")
                                 .via("createViaCall")
-                                .hasKnownStatus(SUCCESS))
+                                .hasKnownStatus(SUCCESS),
+                        ethereumCall(createContract, "create")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via("ethereumCreate")
+                                .nonce(0)
+                                .maxFeePerGas(50L)
+                                .maxPriorityGas(2L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
                 .then(
                         getContractInfo(initCreateContract)
                                 .has(contractWith().maxAutoAssociations(0))
@@ -388,7 +404,8 @@ public class ContractCreateSuite {
                                 .logged(),
                         assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
                         assertCreationMaxAssociations("constructorCreate", 1, 5),
-                        assertCreationViaCallMaxAssociations("createViaCall", 0, 0));
+                        assertCreationViaCallMaxAssociations("createViaCall", 0, 0),
+                        assertCreationViaCallMaxAssociations("ethereumCreate", 0, 0));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
