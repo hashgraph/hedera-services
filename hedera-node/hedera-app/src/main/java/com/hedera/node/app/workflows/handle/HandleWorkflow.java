@@ -46,6 +46,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NOD
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -121,7 +122,9 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
@@ -173,6 +176,9 @@ public class HandleWorkflow {
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final StoreMetricsService storeMetricsService;
+    private final TransactionChecker transactionChecker;
+    private final InitTrigger initTrigger;
+    private final SoftwareVersion softwareVersion;
 
     @Inject
     public HandleWorkflow(
@@ -200,7 +206,10 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final SoftwareVersion softwareVersion) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -230,6 +239,9 @@ public class HandleWorkflow {
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
         this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
+        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
+        this.initTrigger = requireNonNull(initTrigger, "initTrigger must not be null");
+        this.softwareVersion = requireNonNull(softwareVersion, "softwareVersion must not be null");
     }
 
     /**
@@ -317,15 +329,50 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction platformTxn) {
-        // (FUTURE) We actually want consider exporting synthetic transactions on every
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
+
+        // First, check if the transaction is submitted with a version prior to the deployed version. If so, set the
+        // status on the receipt to BUSY and return
+        if (this.initTrigger != EVENT_STREAM_RECOVERY
+                && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
+            // Reparse the transaction (so we don't need to get the prehandle result)
+            final TransactionInfo transactionInfo;
+            try {
+                transactionInfo = transactionChecker.parseAndCheck(platformTxn.getApplicationPayload());
+            } catch (PreCheckException e) {
+                logger.error(
+                        "Bad old transaction (version {}) from creator {}",
+                        platformEvent.getSoftwareVersion(),
+                        creator,
+                        e);
+                // We don't care since we're checking a transaction with an older software version. We were going to
+                // skip the transaction handling anyway
+                return;
+            }
+
+            // Initialize record builder list
+            recordBuilder
+                    .transaction(transactionInfo.transaction())
+                    .transactionBytes(transactionInfo.signedBytes())
+                    .transactionID(transactionInfo.transactionID())
+                    .exchangeRate(exchangeRateManager.exchangeRates())
+                    .memo(transactionInfo.txBody().memo());
+
+            // Place a BUSY record in the cache
+            final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
+            recordCache.add(creator.nodeId(), transactionInfo.payerID(), List.of(record));
+
+            return;
+        }
+
+        // (FUTURE) We actually want to consider exporting synthetic transactions on every
         // first post-upgrade transaction, not just the first transaction after genesis.
         final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
         final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
 
-        // Setup record builder list
+        // Start the user transaction
         final boolean switchedBlocks = blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordListBuilder = new RecordListBuilder(consensusNow);
-        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
 
         // Setup helpers
         final var configuration = configProvider.getConfiguration();

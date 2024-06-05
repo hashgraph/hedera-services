@@ -16,19 +16,19 @@
 
 package com.hedera.node.app.statedumpers;
 
-import static com.hedera.node.app.ids.EntityIdService.ENTITY_ID_STATE_KEY;
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
-import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.NFTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
-import static com.hedera.node.app.state.recordcache.RecordCacheService.TXN_RECORD_QUEUE;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.NFTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
+import static com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema.TXN_RECORD_QUEUE;
 import static com.hedera.node.app.statedumpers.accounts.AccountDumpUtils.dumpModAccounts;
 import static com.hedera.node.app.statedumpers.associations.TokenAssociationsDumpUtils.dumpModTokenRelations;
 import static com.hedera.node.app.statedumpers.contracts.ContractBytecodesDumpUtils.dumpModContractBytecodes;
@@ -42,8 +42,8 @@ import static com.hedera.node.app.statedumpers.singleton.StakingInfoDumpUtils.du
 import static com.hedera.node.app.statedumpers.singleton.StakingRewardsDumpUtils.dumpModStakingRewards;
 import static com.hedera.node.app.statedumpers.tokentypes.TokenTypesDumpUtils.dumpModTokenType;
 import static com.hedera.node.app.statedumpers.topics.TopicDumpUtils.dumpModTopics;
-import static com.hedera.node.app.throttle.CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY;
-import static com.hedera.node.app.throttle.CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -77,9 +77,9 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
@@ -94,6 +94,7 @@ import com.swirlds.platform.state.merkle.memory.InMemoryKey;
 import com.swirlds.platform.state.merkle.memory.InMemoryValue;
 import com.swirlds.platform.state.merkle.queue.QueueNode;
 import com.swirlds.platform.state.merkle.singleton.SingletonNode;
+import com.swirlds.state.HederaState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -122,7 +123,10 @@ public class StateDumper {
     private static final String SEMANTIC_CONGESTION = "congestion.txt";
 
     public static void dumpModChildrenFrom(
-            @NonNull final MerkleHederaState state, @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final HederaState hederaState, @NonNull final DumpCheckpoint checkpoint) {
+        if (!(hederaState instanceof MerkleHederaState state)) {
+            throw new IllegalArgumentException("Expected a MerkleHederaState");
+        }
         final SingletonNode<BlockInfo> blockInfoNode =
                 requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
         final var blockInfo = blockInfoNode.getValue();
@@ -141,15 +145,15 @@ public class StateDumper {
         dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint);
 
         final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
-                requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
+                requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, V0490FileSchema.BLOBS_KEY)));
         dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
 
         final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
                 requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
         dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
 
-        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(state.getChild(
-                state.findNodeIndex(ContractService.NAME, InitialModServiceContractSchema.BYTECODE_KEY)));
+        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(
+                state.getChild(state.findNodeIndex(ContractService.NAME, V0490ContractSchema.BYTECODE_KEY)));
         dumpModContractBytecodes(
                 Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
                 byteCodes,

@@ -18,7 +18,9 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -35,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -148,6 +151,24 @@ public class TestingEventBuilder {
      * If not set, defaults to {@link #DEFAULT_SOFTWARE_VERSION}.
      */
     private SoftwareVersion softwareVersion;
+
+    /**
+     * The consensus timestamp of the event.
+     * <p>
+     * If consensus order is set, and consensus timestamp is not set, it will be a random timestamp.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     */
+    private Instant consensusTimestamp;
+
+    /**
+     * The consensus order of the event.
+     * <p>
+     * If consensus timestamp is set, and consensus order is not set, it will be a random positive long.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     */
+    private Long consensusOrder;
 
     /**
      * Constructor
@@ -362,6 +383,36 @@ public class TestingEventBuilder {
     }
 
     /**
+     * Set the consensus timestamp of an event.
+     * <p>
+     * If consensus order is set, and consensus timestamp is not set, it will be a random timestamp.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     *
+     * @param consensusTimestamp the consensus timestamp
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setConsensusTimestamp(@Nullable final Instant consensusTimestamp) {
+        this.consensusTimestamp = consensusTimestamp;
+        return this;
+    }
+
+    /**
+     * Set the consensus order of an event.
+     * <p>
+     * If consensus timestamp is set, and consensus order is not set, it will be a random positive long.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     *
+     * @param consensusOrder the consensus order
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setConsensusOrder(@Nullable final Long consensusOrder) {
+        this.consensusOrder = consensusOrder;
+        return this;
+    }
+
+    /**
      * Generate transactions based on the settings provided.
      * <p>
      * Only utilized if the transactions are not set with {@link #setTransactions}.
@@ -502,6 +553,14 @@ public class TestingEventBuilder {
         random.nextBytes(signature);
 
         final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
+
+        if (consensusTimestamp != null || consensusOrder != null) {
+            gossipEvent.setConsensusData(new EventConsensusData.Builder()
+                    .consensusTimestamp(HapiUtils.asTimestamp(
+                            Optional.ofNullable(consensusTimestamp).orElse(RandomUtils.randomInstant(random))))
+                    .consensusOrder(Optional.ofNullable(consensusOrder).orElse(random.nextLong(1, Long.MAX_VALUE)))
+                    .build());
+        }
 
         return gossipEvent;
     }

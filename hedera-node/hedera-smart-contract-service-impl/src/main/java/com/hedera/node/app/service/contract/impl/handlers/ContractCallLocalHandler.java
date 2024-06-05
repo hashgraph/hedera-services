@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL_LOCAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
@@ -52,6 +53,7 @@ import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CALL_LOCAL}.
@@ -59,10 +61,13 @@ import javax.inject.Singleton;
 @Singleton
 public class ContractCallLocalHandler extends PaidQueryHandler {
     private final Provider<QueryComponent.Factory> provider;
+    private final GasCalculator gasCalculator;
 
     @Inject
-    public ContractCallLocalHandler(@NonNull final Provider<Factory> provider) {
+    public ContractCallLocalHandler(
+            @NonNull final Provider<Factory> provider, @NonNull final GasCalculator gasCalculator) {
         this.provider = provider;
+        this.gasCalculator = gasCalculator;
     }
 
     @Override
@@ -88,6 +93,10 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         final var maxGasLimit =
                 context.configuration().getConfigData(ContractsConfig.class).maxGasPerSec();
         validateTruePreCheck(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
+        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
+                org.apache.tuweni.bytes.Bytes.wrap(op.functionParameters().toByteArray()), false);
+        validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
         // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have

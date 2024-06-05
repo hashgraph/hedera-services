@@ -23,6 +23,7 @@ import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStrea
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.TEST_CLIENTS_PREFIX;
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentWithCurrentPathPrefix;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -31,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -68,6 +70,34 @@ public enum RecordStreamAccess {
     }
 
     /**
+     * Registers a listener for the record stream file at the given path. Returns a runnable that can
+     * be used to unregister the listener.
+     *
+     * @param path the path to the record stream file
+     * @param listener the listener to register
+     * @return a runnable that can be used to unregister the listener
+     */
+    public synchronized Runnable subscribe(@NonNull final Path path, @NonNull final StreamDataListener listener) {
+        requireNonNull(path);
+        requireNonNull(listener);
+        try {
+            final var unsubscribe = getValidatingListener(
+                            path.toAbsolutePath().normalize().toString())
+                    .subscribe(listener);
+            return () -> {
+                try {
+                    unsubscribe.run();
+                    stopMonitorIfNoSubscribers();
+                } catch (final Exception e) {
+                    LOGGER.error("Failed to unregister listener for " + path, e);
+                }
+            };
+        } catch (final Exception e) {
+            throw new IllegalStateException("Failed to register listener for " + path, e);
+        }
+    }
+
+    /**
      * Stops the polling loop for record stream access if there are no listeners for any location.
      */
     public synchronized void stopMonitorIfNoSubscribers() {
@@ -77,8 +107,13 @@ public enum RecordStreamAccess {
                 .sum();
         if (numSubscribers == 0) {
             try {
-                LOGGER.info("Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
-                validatingListeners.clear();
+                if (!validatingListeners.isEmpty()) {
+                    LOGGER.info(
+                            "Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
+                    validatingListeners.clear();
+                }
+                // Remove all observers and stop the monitor
+                monitor.getObservers().forEach(monitor::removeObserver);
                 // Will throw ISE if already stopped, ignore that
                 monitor.stop();
             } catch (Exception ignore) {

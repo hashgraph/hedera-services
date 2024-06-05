@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -44,7 +45,7 @@ public class ShutdownWithinOp extends AbstractLifecycleOp {
         log.info("Asking node '{}' to stop", node.getName());
         node.stop();
         log.info("Waiting for '{}' to stop", node.getName());
-        node.stopFuture(timeout).join();
+        node.stopFuture().orTimeout(timeout.toMillis(), MILLISECONDS).join();
         log.info("Stopped node '{}'", node.getName());
     }
 }

@@ -39,9 +39,10 @@ import org.junit.jupiter.api.Tag;
 @Tag(ND_RECONNECT)
 public class MixedOpsNodeDeathReconnectTest {
     private static final int MIXED_OPS_BURST_TPS = 50;
+    private static final long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
     private static final Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
-    private static final Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(120);
+    private static final Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(180);
 
     @HapiTest
     final Stream<DynamicTest> reconnectMixedOps() {
@@ -54,11 +55,7 @@ public class MixedOpsNodeDeathReconnectTest {
                         // Stop node 2
                         shutdownWithin("Carol", SHUTDOWN_TIMEOUT),
                         logIt("Node 2 is supposedly down"),
-                        // This sleep is needed, since the ports of shutdown node may still be in time_wait status,
-                        // which will cause an error that address is already in use when restarting nodes.
-                        // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
-                        // kernel settings), so restarting node succeeds.
-                        sleepFor(180_000))
+                        sleepFor(PORT_UNBINDING_TIMEOUT_MS))
                 .when(
                         // Submit operations when node 2 is down
                         MixedOperations.burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),

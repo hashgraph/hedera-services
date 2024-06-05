@@ -537,7 +537,8 @@ class RecordStreamFileWriterTest {
         // assert metadata hash
         assertEquals(HashAlgorithm.SHA_384, actualMetaHash.getAlgorithm());
         assertEquals(expectedMetaHash.getDigestType().digestLength(), actualMetaHash.getLength());
-        assertArrayEquals(expectedMetaHash.getValue(), actualMetaHash.getHash().toByteArray());
+        assertArrayEquals(
+                expectedMetaHash.copyToByteArray(), actualMetaHash.getHash().toByteArray());
         // assert metadata signature
         assertEquals(SignatureType.SHA_384_WITH_RSA, metadataSignatureObject.getType());
         assertEquals(expectedMetadataSignature.length, metadataSignatureObject.getLength());
@@ -553,7 +554,7 @@ class RecordStreamFileWriterTest {
         return HashObject.newBuilder()
                 .setAlgorithm(HashAlgorithm.SHA_384)
                 .setLength(hash.getDigestType().digestLength())
-                .setHash(ByteString.copyFrom(hash.getValue()))
+                .setHash(ByteString.copyFrom(hash.copyToByteArray()))
                 .build();
     }
 
@@ -569,12 +570,12 @@ class RecordStreamFileWriterTest {
             // digest startRunningHash
             final var startRunningHash = new Hash(
                     recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
-            outputStream.write(startRunningHash.getValue());
+            startRunningHash.getBytes().writeTo(outputStream);
 
             // digest endRunningHash
             final var endRunningHash = new Hash(
                     recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
-            outputStream.write(endRunningHash.getValue());
+            endRunningHash.getBytes().writeTo(outputStream);
 
             // digest block number
             outputStream.writeLong(recordStreamFile.getBlockNumber());

@@ -679,4 +679,8 @@ public class TxnUtils {
         final var nextPeriod = currentPeriod + 1;
         return java.time.Duration.between(now, Instant.ofEpochMilli(nextPeriod * stakePeriodMillis));
     }
+
+    public static Instant instantOf(@NonNull final Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
 }

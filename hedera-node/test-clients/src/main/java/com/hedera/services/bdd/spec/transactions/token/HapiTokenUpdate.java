@@ -514,11 +514,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateToken;
-    }
-
-    @Override
     protected void updateStateOf(HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;

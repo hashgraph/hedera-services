@@ -16,18 +16,20 @@
 
 package com.swirlds.common.wiring.model;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.SEQUENTIAL_THREAD;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.internal.AutoLock;
-import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.common.wiring.model.diagram.HyperlinkBuilder;
+import com.swirlds.common.wiring.model.internal.monitor.HealthMonitor;
 import com.swirlds.common.wiring.model.internal.standard.HeartbeatScheduler;
 import com.swirlds.common.wiring.model.internal.standard.JvmAnchor;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.internal.StandardTaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.internal.SequentialThreadTaskScheduler;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -54,6 +56,21 @@ public class StandardWiringModel extends TraceableWiringModel {
     private HeartbeatScheduler heartbeatScheduler = null;
 
     /**
+     * The scheduler that the health monitor runs on.
+     */
+    private final TaskScheduler<Duration> healthMonitorScheduler;
+
+    /**
+     * The health monitor.
+     */
+    private HealthMonitor healthMonitor;
+
+    /**
+     * The input wire for the health monitor.
+     */
+    private final BindableInputWire<Instant, Duration> healthMonitorInputWire;
+
+    /**
      * Thread schedulers need to have their threads started/stopped.
      */
     private final List<SequentialThreadTaskScheduler<?>> threadSchedulers = new ArrayList<>();
@@ -64,26 +81,53 @@ public class StandardWiringModel extends TraceableWiringModel {
     private final ForkJoinPool defaultPool;
 
     /**
-     * Used to protect access to the JVM anchor.
-     */
-    private final AutoClosableLock jvmExitLock = new AutoLock();
-
-    /**
      * Used to prevent the JVM from prematurely exiting.
      */
-    private JvmAnchor anchor;
+    private final JvmAnchor anchor;
+
+    /**
+     * The amount of time that must pass before we start logging health information.
+     */
+    private final Duration healthLogThreshold;
+
+    /**
+     * The period at which we log health information.
+     */
+    private final Duration healthLogPeriod;
 
     /**
      * Constructor.
      *
-     * @param platformContext the platform context
-     * @param defaultPool     the default fork join pool, schedulers not explicitly assigned a pool will use this one
+     * @param builder the builder for this model, contains all needed configuration
      */
-    StandardWiringModel(@NonNull final PlatformContext platformContext, @NonNull final ForkJoinPool defaultPool) {
-        super(true);
+    StandardWiringModel(@NonNull final WiringModelBuilder builder) {
+        super(builder.isHardBackpressureEnabled());
 
-        this.platformContext = Objects.requireNonNull(platformContext);
-        this.defaultPool = Objects.requireNonNull(defaultPool);
+        this.platformContext = Objects.requireNonNull(builder.getPlatformContext());
+        this.defaultPool = Objects.requireNonNull(builder.getDefaultPool());
+
+        final TaskSchedulerBuilder<Duration> healthMonitorSchedulerBuilder = this.schedulerBuilder("HealthMonitor");
+        healthMonitorSchedulerBuilder.withHyperlink(HyperlinkBuilder.platformCoreHyperlink(HealthMonitor.class));
+        if (builder.isHealthMonitorEnabled()) {
+            healthMonitorSchedulerBuilder
+                    .withType(SEQUENTIAL)
+                    .withUnhandledTaskMetricEnabled(true)
+                    .withUnhandledTaskCapacity(builder.getHealthMonitorCapacity());
+        } else {
+            healthMonitorSchedulerBuilder.withType(NO_OP);
+        }
+
+        healthLogThreshold = builder.getHealthLogThreshold();
+        healthLogPeriod = builder.getHealthLogPeriod();
+        healthMonitorScheduler = healthMonitorSchedulerBuilder.build();
+        healthMonitorInputWire = healthMonitorScheduler.buildInputWire("check system health");
+        buildHeartbeatWire(builder.getHealthMonitorPeriod()).solderTo(healthMonitorInputWire);
+
+        if (builder.isJvmAnchorEnabled()) {
+            anchor = new JvmAnchor();
+        } else {
+            anchor = null;
+        }
     }
 
     /**
@@ -109,37 +153,30 @@ public class StandardWiringModel extends TraceableWiringModel {
     /**
      * {@inheritDoc}
      */
+    @NonNull
+    @Override
+    public OutputWire<Duration> getHealthMonitorWire() {
+        return healthMonitorScheduler.getOutputWire();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Duration getUnhealthyDuration() {
+        throwIfNotStarted();
+        return healthMonitor.getUnhealthyDuration();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public OutputWire<Instant> buildHeartbeatWire(final double frequency) {
         throwIfStarted();
         return getHeartbeatScheduler().buildHeartbeatWire(frequency);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void preventJvmExit() {
-        try (final Locked ignored = jvmExitLock.lock()) {
-            if (anchor == null) {
-                anchor = new JvmAnchor();
-                anchor.start();
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void permitJvmExit() {
-        try (final Locked ignored = jvmExitLock.lock()) {
-            if (anchor != null) {
-                anchor.stop();
-                anchor = null;
-            }
-        }
     }
 
     /**
@@ -159,6 +196,14 @@ public class StandardWiringModel extends TraceableWiringModel {
     @Override
     public void start() {
         throwIfStarted();
+
+        if (anchor != null) {
+            anchor.start();
+        }
+
+        healthMonitor = new HealthMonitor(platformContext, schedulers, healthLogThreshold, healthLogPeriod);
+        healthMonitorInputWire.bind(healthMonitor::checkSystemHealth);
+
         markAsStarted();
 
         // We don't have to do anything with the output of these sanity checks.
@@ -182,6 +227,7 @@ public class StandardWiringModel extends TraceableWiringModel {
     @Override
     public void stop() {
         throwIfNotStarted();
+
         if (heartbeatScheduler != null) {
             heartbeatScheduler.stop();
         }
@@ -190,7 +236,9 @@ public class StandardWiringModel extends TraceableWiringModel {
             threadScheduler.stop();
         }
 
-        permitJvmExit();
+        if (anchor != null) {
+            anchor.stop();
+        }
     }
 
     /**
@@ -201,7 +249,7 @@ public class StandardWiringModel extends TraceableWiringModel {
     @NonNull
     private HeartbeatScheduler getHeartbeatScheduler() {
         if (heartbeatScheduler == null) {
-            heartbeatScheduler = new HeartbeatScheduler(this, platformContext.getTime(), "heartbeat");
+            heartbeatScheduler = new HeartbeatScheduler(this, platformContext.getTime(), "Heartbeat");
         }
         return heartbeatScheduler;
     }

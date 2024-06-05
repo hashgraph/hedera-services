@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -135,8 +136,10 @@ import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
+import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
+import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion;
@@ -159,6 +162,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -236,6 +240,35 @@ public class UtilVerbs {
 
     public static HapiFreeze freezeAbort() {
         return new HapiFreeze(FREEZE_ABORT);
+    }
+
+    /**
+     * Returns an operation that validates the streams of the target network.
+     *
+     * @return the operation that validates the streams
+     */
+    public static StreamValidationOp validateStreams() {
+        return new StreamValidationOp();
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * any of the target network node application logs.
+     *
+     * @return the operation that validates the logs of a node
+     */
+    public static HapiSpecOperation validateAnyLogAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ANY_NODE, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * all of the target network node application logs.
+     *
+     * @return the operation that validates the logs of the target network
+     */
+    public static HapiSpecOperation validateAllLogsAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ALL_NODES, delay);
     }
 
     /* Some fairly simple utility ops */
@@ -1407,13 +1440,31 @@ public class UtilVerbs {
                         HapiPropertySource.asAccount("0.0.801")));
     }
 
+    /**
+     * Returns an operation that validates the node payment returned by the {@link ResponseType#COST_ANSWER}
+     * version of the query returned by the given factory is <b>exact</b> in the sense that offering even
+     * 1 tinybar less as node payment results in a {@link ResponseCodeEnum#INSUFFICIENT_TX_FEE} precheck.
+     *
+     * @param queryOp the query operation factory
+     * @return the cost validation operation
+     */
+    public static HapiSpecOperation withStrictCostAnswerValidation(@NonNull final Supplier<HapiQueryOp<?>> queryOp) {
+        final var requiredNodePayment = new AtomicLong();
+        return blockingOrder(
+                sourcing(() -> queryOp.get().exposingNodePaymentTo(requiredNodePayment::set)),
+                sourcing(() -> queryOp.get()
+                        .nodePayment(requiredNodePayment.get() - 1)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)));
+    }
+
     public static HapiSpecOperation validateRecordTransactionFees(String txn, Set<AccountID> feeRecipients) {
         return assertionsHold((spec, assertLog) -> {
-            HapiGetTxnRecord subOp =
-                    getTxnRecord(txn).logged().payingWith(EXCHANGE_RATE_CONTROL).expectStrictCostAnswer();
-            allRunFor(spec, subOp);
-            TransactionRecord rcd =
-                    subOp.getResponse().getTransactionGetRecord().getTransactionRecord();
+            final AtomicReference<TransactionRecord> txnRecord = new AtomicReference<>();
+            allRunFor(spec, withStrictCostAnswerValidation(() -> getTxnRecord(txn)
+                    .payingWith(EXCHANGE_RATE_CONTROL)
+                    .exposingTo(txnRecord::set)
+                    .logged()));
+            final var rcd = txnRecord.get();
             long realFee = rcd.getTransferList().getAccountAmountsList().stream()
                     .filter(aa -> feeRecipients.contains(aa.getAccountID()))
                     .mapToLong(AccountAmount::getAmount)

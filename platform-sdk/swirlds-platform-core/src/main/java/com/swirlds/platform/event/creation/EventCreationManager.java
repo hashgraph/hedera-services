@@ -23,6 +23,7 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 
 /**
  * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
@@ -62,6 +63,15 @@ public interface EventCreationManager {
      */
     @InputWireLabel("PlatformStatus")
     void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+
+    /**
+     * Report the amount of time that the system has been in an unhealthy state. Will receive a report of
+     * {@link Duration#ZERO} when the system enters a healthy state.
+     *
+     * @param duration the amount of time that the system has been in an unhealthy state
+     */
+    @InputWireLabel("health info")
+    void reportUnhealthyDuration(@NonNull final Duration duration);
 
     /**
      * Clear the internal state of the event creation manager.

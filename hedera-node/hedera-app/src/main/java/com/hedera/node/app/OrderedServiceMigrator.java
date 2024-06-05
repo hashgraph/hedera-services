@@ -29,9 +29,11 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.config.VersionedConfiguration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * The entire purpose of this class is to ensure that inter-service dependencies are respected between
  * migrations. The only required dependency right now is the {@link EntityIdService}, which is needed
  * for genesis blocklist accounts in the token service genesis migration. (See {@link
- * Service#registerSchemas(SchemaRegistry, SemanticVersion)}).
+ * Service#registerSchemas(SchemaRegistry)}).
  *
  * <p>Note: there are only two ordering requirements to maintain: first, that the entity ID service
  * is migrated before the token service; and second, that the remaining services are migrated _in any
@@ -59,7 +61,7 @@ public class OrderedServiceMigrator {
      * Migrates the services registered with the {@link ServicesRegistry}
      */
     public void doMigrations(
-            @NonNull final MerkleHederaState state,
+            @NonNull final HederaState state,
             @NonNull final SemanticVersion currentVersion,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final VersionedConfiguration versionedConfiguration,
@@ -71,6 +73,7 @@ public class OrderedServiceMigrator {
         requireNonNull(networkInfo);
         requireNonNull(metrics);
 
+        final Map<String, Object> sharedValues = new HashMap<>();
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
@@ -85,7 +88,8 @@ public class OrderedServiceMigrator {
                 networkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
-                null);
+                null,
+                sharedValues);
 
         // The token service has a dependency on the entity ID service during genesis migrations, so we
         // CAREFULLY create a different WritableStates specific to the entity ID service. The different
@@ -100,12 +104,11 @@ public class OrderedServiceMigrator {
         final var entityIdWritableStates = state.getWritableStates(EntityIdService.NAME);
         final var entityIdStore = new WritableEntityIdStore(entityIdWritableStates);
 
-        // Now that the Entity ID Service is migrated, migrate the remaining services in name order. Note: the name
-        // ordering itself isn't important, just that the ordering is deterministic
+        // Now that the Entity ID Service is migrated, migrate the remaining services in the order
+        // determined by the service registry (this ordering can be critical for migrations with
+        // inter-service dependencies)
         servicesRegistry.registrations().stream()
                 .filter(r -> !Objects.equals(entityIdRegistration, r))
-                .sorted(Comparator.comparing(
-                        (ServicesRegistry.Registration r) -> r.service().getServiceName()))
                 .forEach(registration -> {
                     // FUTURE We should have metrics here to keep track of how long it takes to
                     // migrate each service
@@ -124,7 +127,8 @@ public class OrderedServiceMigrator {
                             // If we have reached this point in the code, entityIdStore should not be null because the
                             // EntityIdService should have been migrated already. We enforce with requireNonNull in case
                             // there are scenarios we haven't considered.
-                            requireNonNull(entityIdStore));
+                            requireNonNull(entityIdStore),
+                            sharedValues);
                     // Now commit any changes that were made to the entity ID state (since other service entities could
                     // depend on newly-generated entity IDs)
                     if (entityIdWritableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
