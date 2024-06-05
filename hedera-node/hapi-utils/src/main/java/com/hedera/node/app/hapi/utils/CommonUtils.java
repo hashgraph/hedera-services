@@ -70,6 +70,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -220,5 +221,12 @@ public final class CommonUtils {
 
     public static Instant timestampToInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
+
+    public static byte[] removeIfAnyLeading0x(Bytes contents) {
+        final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
+        final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
+        final var len = contents.length() - offset;
+        return contents.getBytes(offset, len).toByteArray();
     }
 }

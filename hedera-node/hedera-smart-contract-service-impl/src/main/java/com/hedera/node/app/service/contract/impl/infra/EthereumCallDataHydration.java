@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.hapi.utils.CommonUtils.removeIfAnyLeading0x;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData.successFrom;
@@ -76,13 +77,9 @@ public class EthereumCallDataHydration {
             }
 
             // Bytes.fromHex() doesn't appreciate a leading '0x' but we supported it in mono-service
-            final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
-            final var contents = callDataFile.contents();
-            final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
-            final var len = contents.length() - offset;
             final byte[] callData;
             try {
-                callData = Hex.decode(contents.getBytes(offset, len).toByteArray());
+                callData = Hex.decode(removeIfAnyLeading0x(callDataFile.contents()));
             } catch (final DecoderException ignore) {
                 return failureFrom(INVALID_FILE_ID);
             }
