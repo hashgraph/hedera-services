@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  * A schema that ensures the first contract storage key of each account matches what
  * is set in the shared migration context at key {@code "V0500_FIRST_STORAGE_KEYS"}.
  */
-public class V0500TokenSchema extends Schema {
+public class V0500TokenSchema extends Schema implements StakingInfoManagementSchema {
     private static final Logger log = LogManager.getLogger(V0500TokenSchema.class);
     private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
 
