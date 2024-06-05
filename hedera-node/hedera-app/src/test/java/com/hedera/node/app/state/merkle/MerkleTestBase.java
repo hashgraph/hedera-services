@@ -17,7 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.utility.Labeled;
@@ -28,6 +27,7 @@ import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.platform.state.merkle.memory.InMemoryKey;
 import com.swirlds.platform.state.merkle.memory.InMemoryValue;
 import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 

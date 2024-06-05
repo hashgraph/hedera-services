@@ -32,7 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;

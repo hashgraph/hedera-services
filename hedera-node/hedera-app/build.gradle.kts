@@ -23,6 +23,12 @@ plugins {
 
 description = "Hedera Application - Implementation"
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-cast")
+}
+
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
     annotationProcessor("com.google.auto.service.processor")
@@ -61,6 +67,7 @@ itestModuleInfo {
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.common")
     requires("com.swirlds.config.api")
+    requires("com.swirlds.state.api")
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.swirlds.metrics.api")
@@ -115,6 +122,7 @@ xtestModuleInfo {
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
     requires("tuweni.bytes")
+    requires("tuweni.units")
     runtimeOnly("io.netty.transport.epoll.linux.x86_64")
     runtimeOnly("io.netty.transport.epoll.linux.aarch_64")
 }

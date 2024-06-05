@@ -18,11 +18,11 @@ package com.hedera.node.app.ids.schemas;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;

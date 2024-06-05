@@ -18,12 +18,12 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.RpcService;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Standard implementation of the {@link ScheduleService} {@link Service}.
+ * Standard implementation of the {@link ScheduleService} {@link RpcService}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {
     @Override
