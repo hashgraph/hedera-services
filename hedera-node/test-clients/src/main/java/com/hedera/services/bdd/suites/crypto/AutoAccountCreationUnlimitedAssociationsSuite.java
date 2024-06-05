@@ -95,7 +95,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     private static final String AUTO_MEMO = "auto-created account";
     private static final String CIVILIAN = "somebody";
     private static final String SPONSOR = "autoCreateSponsor";
-    private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS = 39291826L;
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final String HBAR_XFER = "hbarXfer";
     private static final String FT_XFER = "ftXfer";
@@ -130,9 +129,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         childRecordsCheck(
                                 TRANSFER_TXN,
                                 SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE_UNLIMITED_ASSOCIATIONS)),
+                                recordWith().status(SUCCESS).fee(EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE)),
                         assertionsHold((spec, opLog) -> {
                             final var lookup = getTxnRecord(TRANSFER_TXN)
                                     .andAllChildRecords()
