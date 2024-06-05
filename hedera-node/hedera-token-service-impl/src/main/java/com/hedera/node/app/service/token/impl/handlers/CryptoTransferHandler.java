@@ -243,6 +243,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var unlimitedAutoAssociations =
+                context.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
         validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
@@ -261,13 +263,15 @@ public class CryptoTransferHandler implements TransactionHandler {
             step.doIn(transferContext);
         }
 
-        for (var tokenAssociation : transferContext.getAutomaticAssociations()) {
-            var accountId = tokenAssociation.accountId();
-            var account = accountStore.getAliasedAccountById(accountId);
-            if (account.maxAutoAssociations() >= 0) {
-                validateFalse(
-                        account.usedAutoAssociations() + 1 > account.maxAutoAssociations(),
-                        NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        if (unlimitedAutoAssociations) {
+            for (var tokenAssociation : transferContext.getAutomaticAssociations()) {
+                var accountId = tokenAssociation.accountId();
+                var account = accountStore.getAliasedAccountById(accountId);
+                if (account.maxAutoAssociations() >= 0) {
+                    validateFalse(
+                            account.usedAutoAssociations() + 1 > account.maxAutoAssociations(),
+                            NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+                }
             }
         }
 
