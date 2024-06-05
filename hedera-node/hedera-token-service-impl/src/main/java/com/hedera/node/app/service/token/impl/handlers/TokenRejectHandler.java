@@ -31,8 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATE
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
-import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createFungibleTransfer;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createNftTransfer;
@@ -348,7 +346,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         int numOfNFTRejections = 0;
         for (final var rejection : op.rejections()) {
             if (rejection.hasFungibleToken()) {
-                numOfFungibleTokenRejections++;
+                // Each fungible token rejection involves 2 AccountAmount transfers
+                // We add 2 in order to match CryptoTransfer's bpt & rbs fee calculation
+                numOfFungibleTokenRejections += 2;
             } else {
                 numOfNFTRejections++;
             }
@@ -356,10 +356,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final int weightedTokensInvolved = tokenMultiplier * totalRejections;
         final int weightedFungibleTokens = tokenMultiplier * numOfFungibleTokenRejections;
-
         final long bpt =
                 calculateBytesPerTransaction(weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
-        final long rbs = calculateRamByteSeconds(weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
+        final long rbs = USAGE_PROPERTIES.legacyReceiptStorageSecs() * bpt;
 
         return feeContext
                 .feeCalculator(getSubType(numOfNFTRejections))
@@ -373,16 +372,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     }
 
     private long calculateBytesPerTransaction(
-            final int weightedTokens, final int weightedFungibleTokens, final int numNFTRejections) {
-        return weightedTokens * LONG_BASIC_ENTITY_ID_SIZE
-                + weightedFungibleTokens * LONG_ACCOUNT_AMOUNT_BYTES
-                + TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(numNFTRejections);
-    }
-
-    private long calculateRamByteSeconds(
-            final int weightedTokensInvolved, final int weightedFungibleTokens, final int numOfNFTRejections) {
-        return USAGE_PROPERTIES.legacyReceiptStorageSecs()
-                * TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                        weightedTokensInvolved, weightedFungibleTokens, numOfNFTRejections);
+            final int weightedTokensInvolved, final int weightedFungibleTokens, final int numNFTRejections) {
+        return TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
+                weightedTokensInvolved, weightedFungibleTokens, numNFTRejections);
     }
 }
