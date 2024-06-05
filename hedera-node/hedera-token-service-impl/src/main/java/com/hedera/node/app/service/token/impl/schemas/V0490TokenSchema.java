@@ -392,11 +392,6 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
         mnc = null;
     }
 
-    @Override
-    public void restart(@NonNull final MigrationContext ctx) {
-        super.restart(ctx);
-    }
-
     private void createGenesisSchema(@NonNull final MigrationContext ctx) {
         // Create the network rewards state
         initializeNetworkRewards(ctx);
