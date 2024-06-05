@@ -154,7 +154,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -1584,7 +1583,9 @@ public class CryptoTransferSuite {
                         getTxnRecord(tokenBcreateTxn)
                                 .hasNewTokenAssociation(tokenB, firstUser)
                                 .logged(),
-                        mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata1"), ByteString.copyFromUtf8("metadata2"))),
+                        mintToken(
+                                tokenB,
+                                List.of(ByteString.copyFromUtf8("metadata1"), ByteString.copyFromUtf8("metadata2"))),
                         // Transfer fungible token
                         cryptoTransfer(moving(1, tokenA).between(firstUser, secondUser))
                                 .via(transferToFU),
@@ -1592,8 +1593,7 @@ public class CryptoTransferSuite {
                                 .hasNewTokenAssociation(tokenA, secondUser)
                                 .logged(),
                         // Transfer NFT
-                        cryptoTransfer(movingUnique(tokenB, 1)
-                                .between(firstUser, secondUser))
+                        cryptoTransfer(movingUnique(tokenB, 1).between(firstUser, secondUser))
                                 .via(transferToSU),
                         getTxnRecord(transferToSU)
                                 .hasNewTokenAssociation(tokenB, secondUser)

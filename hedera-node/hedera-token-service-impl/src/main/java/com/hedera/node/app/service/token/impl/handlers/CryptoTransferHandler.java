@@ -66,7 +66,6 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
@@ -573,7 +572,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
-        final var unlimitedAutoAssociations = config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+        final var unlimitedAutoAssociations =
+                config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers =
@@ -675,21 +675,25 @@ public class CryptoTransferHandler implements TransactionHandler {
                 if (account != null) {
                     autoRenewSeconds = account.autoRenewSeconds();
                 }
-                associationsRbs += calculateAccountAssociationsRbs(associationsMap, tokenRelStore, accountId, autoRenewSeconds);
+                associationsRbs +=
+                        calculateAccountAssociationsRbs(associationsMap, tokenRelStore, accountId, autoRenewSeconds);
             }
         }
 
         return associationsRbs;
     }
 
-    private long calculateHollowAccountAssociationsRbs(final HashMap<AccountID, HashSet<TokenID>> associationsMap,
-            final AccountID accountId) {
+    private long calculateHollowAccountAssociationsRbs(
+            final HashMap<AccountID, HashSet<TokenID>> associationsMap, final AccountID accountId) {
         var numAutoAssociations = associationsMap.get(accountId).size();
         return numAutoAssociations * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER;
     }
 
-    private long calculateAccountAssociationsRbs(final HashMap<AccountID, HashSet<TokenID>> associationsMap,
-            final ReadableTokenRelationStore tokenRelStore, final AccountID accountId, final long autoRenewSeconds) {
+    private long calculateAccountAssociationsRbs(
+            final HashMap<AccountID, HashSet<TokenID>> associationsMap,
+            final ReadableTokenRelationStore tokenRelStore,
+            final AccountID accountId,
+            final long autoRenewSeconds) {
         var tokenIds = associationsMap.get(accountId);
         var newAutoAssociations = 0;
         for (var tokenId : tokenIds) {
@@ -715,8 +719,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         tokenTransfers.stream()
                 .flatMap(tt -> Stream.concat(
                         tt.transfers().stream().filter(aa -> aa.amount() > 0).map(AccountAmount::accountID),
-                        tt.nftTransfers().stream().map(NftTransfer::receiverAccountID)
-                ))
+                        tt.nftTransfers().stream().map(NftTransfer::receiverAccountID)))
                 .forEach(recipientsSet::add);
         return recipientsSet;
     }
@@ -732,8 +735,12 @@ public class CryptoTransferHandler implements TransactionHandler {
         final HashMap<AccountID, HashSet<TokenID>> associationsMap = new HashMap<>();
         for (var tt : tokenTransfers) {
             var tokenId = tt.token();
-            tt.transfers().stream().filter(aa -> aa.amount() > 0).forEach(aa -> associationsMap.computeIfAbsent(aa.accountID(), v -> new HashSet<>()).add(tokenId));
-            tt.nftTransfers().forEach(nt -> associationsMap.computeIfAbsent(nt.receiverAccountID(), v -> new HashSet<>()).add(tokenId));
+            tt.transfers().stream().filter(aa -> aa.amount() > 0).forEach(aa -> associationsMap
+                    .computeIfAbsent(aa.accountID(), v -> new HashSet<>())
+                    .add(tokenId));
+            tt.nftTransfers().forEach(nt -> associationsMap
+                    .computeIfAbsent(nt.receiverAccountID(), v -> new HashSet<>())
+                    .add(tokenId));
         }
         return associationsMap;
     }
