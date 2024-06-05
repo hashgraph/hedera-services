@@ -528,12 +528,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     platformState,
                     storeMetricsService);
         }
-
-        @Test
-        void getsFreezeTime() {
-            given(platformState.getFreezeTime()).willReturn(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
-            assertThat(handleContext.freezeTime()).isEqualTo(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
-        }
     }
 
     @Nested

@@ -44,7 +44,7 @@ public interface ChildDispatchComponent extends Dispatch {
                 @BindsInstance @ChildQualifier TransactionInfo txnInfo,
                 @BindsInstance ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
                 @BindsInstance @ChildQualifier AccountID syntheticPayer,
-                @BindsInstance HandleContext.TransactionCategory childCategory,
+                @BindsInstance @ChildQualifier HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,
                 @BindsInstance @ChildQualifier Set<Key> requiredKeys,
                 @BindsInstance @ChildQualifier Set<Account> hollowAccounts,

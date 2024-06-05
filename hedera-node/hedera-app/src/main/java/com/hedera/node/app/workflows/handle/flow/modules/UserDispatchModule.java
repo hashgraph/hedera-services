@@ -21,7 +21,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -33,6 +37,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
@@ -122,4 +128,35 @@ public interface UserDispatchModule {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
+
+    @Provides
+    @UserDispatchScope
+    static WritableEntityIdStore provideEntityIdStore(
+            SavepointStackImpl stack, Configuration configuration, StoreMetricsService storeMetricsService) {
+        final var entityIdsFactory =
+                new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
+        return entityIdsFactory.getStore(WritableEntityIdStore.class);
+    }
+
+    @Provides
+    @UserDispatchScope
+    static WritableStoreFactory provideWritableStoreFactory(
+            SavepointStackImpl stack,
+            TransactionInfo txnInfo,
+            Configuration configuration,
+            ServiceScopeLookup serviceScopeLookup,
+            StoreMetricsService storeMetricsService) {
+        return new WritableStoreFactory(
+                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), configuration, storeMetricsService);
+    }
+
+    @Provides
+    @UserDispatchScope
+    static HandleContext.TransactionCategory provideTransactionCategory() {
+        return HandleContext.TransactionCategory.USER;
+    }
+
+    @Binds
+    @UserDispatchScope
+    FinalizeContext bindFinalizeContext(TokenContextImpl tokenContext);
 }

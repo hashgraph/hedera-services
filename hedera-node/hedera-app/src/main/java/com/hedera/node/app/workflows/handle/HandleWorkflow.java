@@ -108,6 +108,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.util.ValidationResult;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
@@ -139,6 +140,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -180,6 +182,7 @@ public class HandleWorkflow {
     private final TransactionChecker transactionChecker;
     private final InitTrigger initTrigger;
     private final SoftwareVersion softwareVersion;
+    private final Provider<UserTransactionComponent.Factory> userTxnProvider;
 
     @Inject
     public HandleWorkflow(
@@ -210,7 +213,8 @@ public class HandleWorkflow {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final InitTrigger initTrigger,
-            @NonNull final SoftwareVersion softwareVersion) {
+            @NonNull final SoftwareVersion softwareVersion,
+            final Provider<UserTransactionComponent.Factory> userTxnProvider) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -243,6 +247,7 @@ public class HandleWorkflow {
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
         this.initTrigger = requireNonNull(initTrigger, "initTrigger must not be null");
         this.softwareVersion = requireNonNull(softwareVersion, "softwareVersion must not be null");
+        this.userTxnProvider = userTxnProvider;
     }
 
     /**
@@ -287,7 +292,9 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                        //                        handlePlatformTransaction(state, platformState, event, creator,
+                        // platformTxn);
+                        handlePlatformTransactionV2(state, platformState, event, creator, platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -322,6 +329,26 @@ public class HandleWorkflow {
 
         // handle user transaction
         handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
+    }
+
+    private void handlePlatformTransactionV2(
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn) {
+        final var handleStart = System.nanoTime();
+        final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
+
+        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        final var userTxn =
+                userTxnProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
+
+        final var recordStream = userTxn.recordStream().get();
+        blockRecordManager.endUserTransaction(recordStream, state);
+
+        handleWorkflowMetrics.updateTransactionDuration(
+                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
 
     private void handleUserTransaction(
@@ -706,7 +733,6 @@ public class HandleWorkflow {
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         try {
             transactionFinalizer.finalizeParentRecord(
-                    payer,
                     tokenServiceContext,
                     functionality,
                     extraRewardReceivers(txBody, functionality, recordBuilder),

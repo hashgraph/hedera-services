@@ -786,7 +786,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     consensusNow(),
                     configuration);
             parentRecordFinalizer.finalizeParentRecord(
-                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
+                    finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
             final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
             if (!paidStakingRewards.isEmpty()) {
                 if (dispatchPaidRewards == null) {
@@ -931,13 +931,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     @NonNull
-    public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
@@ -982,13 +975,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return networkUtilizationManager.shouldThrottle(txInfo, current(), userTransactionConsensusTime);
     }
 
-    @Override
-    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+    private List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
         return networkUtilizationManager.getUsageSnapshots();
     }
 
-    @Override
-    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+    private void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
         networkUtilizationManager.resetUsageThrottlesTo(snapshots);
     }
 
@@ -1030,12 +1021,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return isAllowed;
     }
 
-    @Override
-    public boolean isSelfSubmitted() {
-        return Objects.equals(
-                body().nodeAccountID(), networkInfo().selfNodeInfo().accountId());
-    }
-
     public enum PrecedingTransactionCategory {
         UNLIMITED_CHILD_RECORDS,
         LIMITED_CHILD_RECORDS
@@ -1064,11 +1049,5 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
         this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
-    }
-
-    @Nullable
-    @Override
-    public Instant freezeTime() {
-        return platformState.getFreezeTime();
     }
 }

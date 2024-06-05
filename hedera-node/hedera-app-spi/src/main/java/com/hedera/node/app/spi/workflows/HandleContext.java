@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
@@ -44,7 +43,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -621,19 +619,6 @@ public interface HandleContext {
     <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
-     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
      * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
      * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
      * rolled back.
@@ -690,26 +675,6 @@ public interface HandleContext {
     RecordListCheckPoint createRecordListCheckPoint();
 
     /**
-     * Returns a list of snapshots of the current usage of all active throttles.
-     * @return the active snapshots
-     */
-    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
-
-    /**
-     * Resets the current usage of all active throttles to the given snapshots.
-     *
-     * @param snapshots the snapshots to reset to
-     */
-    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
-
-    /**
-     * Returns whether the current transaction being processed was submitted by this node.
-     *
-     * @return true if the current transaction was submitted by this node
-     */
-    boolean isSelfSubmitted();
-
-    /**
      * A stack of savepoints.
      *
      * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time
@@ -753,13 +718,6 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
-
-    /**
-     * Returns the freeze time from state, if it is set.
-     * @return the freeze time, if it is set
-     */
-    @Nullable
-    Instant freezeTime();
 
     @NonNull
     Map<AccountID, Long> dispatchPaidRewards();

@@ -32,7 +32,7 @@ import javax.inject.Scope;
  * <ol>
  *     <li>HederaState</li>
  *     <li>configuration</li>
- *     <li>TokenContext</li> ???
+ *     <li>TokenContext</li>
  *     <li>RecordListBuilder</li>
  *     <li>PreHandleResult</li>
  *     <li></li>

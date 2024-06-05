@@ -37,7 +37,7 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
     private final InitTrigger initTrigger;
     private final RecordListBuilder recordListBuilder;
     private final SkipHandleProcess skipHandleProcess;
-    private final SRPHandleProcess defaultHandleProcess;
+    private final DefaultHandleProcess defaultHandleProcess;
     private final GenesisHandleProcess genesisHandleProcess;
     final UserTransactionComponent userTxn;
     private final BlockRecordManager blockRecordManager;
@@ -48,7 +48,7 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
             @NonNull final InitTrigger initTrigger,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SkipHandleProcess skipHandleProcess,
-            @NonNull final SRPHandleProcess defaultHandleProcess,
+            @NonNull final DefaultHandleProcess defaultHandleProcess,
             final GenesisHandleProcess genesisHandleProcess,
             @NonNull final UserTransactionComponent userTxn,
             final BlockRecordManager blockRecordManager) {

@@ -21,7 +21,6 @@ import static java.util.Collections.emptyMap;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,17 +49,15 @@ public interface ParentRecordFinalizer {
      * It determines the net hbar transfers and token transfers based on the original value from readable state,
      * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
      * for the parent record. It also calculates staking rewards for the parent record.
-     * @param payer the account that will pay for the transaction
      * @param context the context
      * @param functionality the functionality
      * @param explicitRewardReceivers the explicit reward receivers
      */
     default void finalizeParentRecord(
-            @NonNull AccountID payer,
             @NonNull FinalizeContext context,
             @NonNull HederaFunctionality functionality,
             @NonNull Set<AccountID> explicitRewardReceivers) {
-        finalizeParentRecord(payer, context, functionality, explicitRewardReceivers, emptyMap());
+        finalizeParentRecord(context, functionality, explicitRewardReceivers, emptyMap());
     }
 
     /**
@@ -68,14 +65,12 @@ public interface ParentRecordFinalizer {
      * It determines the net hbar transfers and token transfers based on the original value from readable state,
      * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
      * for the parent record. It also calculates staking rewards for the parent record.
-     * @param payer the account that will pay for the transaction
      * @param context the context
      * @param functionality the functionality
      * @param explicitRewardReceivers the explicit reward receivers
      * @param prePaidRewards a map of account id to the amount of rewards paid out
      */
     void finalizeParentRecord(
-            @Nullable AccountID payer,
             @NonNull FinalizeContext context,
             @NonNull HederaFunctionality functionality,
             @NonNull Set<AccountID> explicitRewardReceivers,

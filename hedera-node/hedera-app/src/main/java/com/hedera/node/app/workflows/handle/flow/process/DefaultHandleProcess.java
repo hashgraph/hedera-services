@@ -28,8 +28,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class SRPHandleProcess implements HandleProcess {
-    private static final Logger logger = LogManager.getLogger(SRPHandleProcess.class);
+public class DefaultHandleProcess implements HandleProcess {
+    private static final Logger logger = LogManager.getLogger(DefaultHandleProcess.class);
 
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final BlockRecordManager blockRecordManager;
@@ -38,7 +38,7 @@ public class SRPHandleProcess implements HandleProcess {
     private final UserTxnLogger userTxnLogger;
 
     @Inject
-    public SRPHandleProcess(
+    public DefaultHandleProcess(
             final StakingPeriodTimeHook stakingPeriodTimeHook,
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
@@ -59,7 +59,7 @@ public class SRPHandleProcess implements HandleProcess {
         userTxnLogger.logUserTxn(userTxn);
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
-        dispatchLogic.dispatch(userDispatch);
+        dispatchLogic.dispatch(userDispatch, userTxn.recordListBuilder());
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {

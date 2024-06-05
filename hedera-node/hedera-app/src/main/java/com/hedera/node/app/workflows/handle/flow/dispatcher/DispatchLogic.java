@@ -17,28 +17,44 @@
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.workflows.SolvencyPreCheck;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceReport;
+import com.hedera.node.app.workflows.handle.flow.infra.HandleLogic;
+import com.hedera.node.app.workflows.handle.flow.infra.records.RecordFinalizerlogic;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class DispatchLogic {
     private final Authorizer authorizer;
-    private final SolvencyPreCheck solvencyPreCheck;
     private final DueDiligenceLogic dueDiligenceLogic;
+    private final HandleLogic handleLogic;
+    private final RecordFinalizerlogic recordFinalizerlogic;
+    private final HederaRecordCache recordCache;
 
     @Inject
     public DispatchLogic(
             final Authorizer authorizer,
-            final SolvencyPreCheck solvencyPreCheck,
-            final DueDiligenceLogic dueDiligenceLogic) {
+            final DueDiligenceLogic dueDiligenceLogic,
+            final HandleLogic handleLogic,
+            final RecordFinalizerlogic recordFinalizerlogic,
+            final HederaRecordCache recordCache) {
         this.authorizer = authorizer;
-        this.solvencyPreCheck = solvencyPreCheck;
         this.dueDiligenceLogic = dueDiligenceLogic;
+        this.handleLogic = handleLogic;
+        this.recordFinalizerlogic = recordFinalizerlogic;
+        this.recordCache = recordCache;
     }
 
     /**
@@ -46,21 +62,48 @@ public class DispatchLogic {
      * guaranteeing that the changes committed to its stack are exactly reflected in its recordBuilder.
      * @param dispatch the dispatch to be processed
      */
-    public void dispatch(Dispatch dispatch) {
+    public void dispatch(Dispatch dispatch, final RecordListBuilder recordListBuilder) {
         final var dueDiligenceReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
-
+        final AccountID chargedAccountId;
         if (dueDiligenceReport.isDueDiligenceFailure()) {
             chargeCreator(dispatch, dueDiligenceReport);
+            chargedAccountId = dueDiligenceReport.dueDiligenceInfo().creator();
         } else {
             chargePayer(dispatch, dueDiligenceReport);
             if (dueDiligenceReport.payerSolvency() != OK) {
                 dispatch.recordBuilder().status(dueDiligenceReport.payerSolvency());
             } else {
-
+                handleTransaction(dispatch, dueDiligenceReport, recordListBuilder);
             }
+            chargedAccountId = dispatch.syntheticPayer();
         }
 
-        // TODO: finalize record, commit changes to stack
+        recordFinalizerlogic.finalizeRecord(dispatch);
+        dispatch.stack().commitFullStack();
+
+        recordCache.add(
+                dispatch.creatorInfo().nodeId(),
+                chargedAccountId,
+                recordListBuilder.build().records());
+    }
+
+    private void handleTransaction(
+            Dispatch dispatch, final DueDiligenceReport dueDiligenceReport, final RecordListBuilder recordListBuilder) {
+        try {
+            handleLogic.handle(dispatch);
+            dispatch.recordBuilder().status(SUCCESS);
+        } catch (HandleException e) {
+            // In case of a ContractCall when it reverts, the gas charged should not be rolled back
+            rollback(
+                    e.shouldRollbackStack(),
+                    e.getStatus(),
+                    dispatch.stack(),
+                    recordListBuilder,
+                    dispatch.recordBuilder());
+            if (e.shouldRollbackStack()) {
+                chargePayer(dispatch, dueDiligenceReport);
+            }
+        }
     }
 
     private void chargeCreator(final Dispatch dispatch, DueDiligenceReport report) {
@@ -92,5 +135,27 @@ public class DispatchLogic {
                             report.dueDiligenceInfo().creator(),
                             dispatch.calculatedFees());
         }
+    }
+
+    /**
+     * Rolls back the stack and sets the status of the transaction in case of a failure.
+     *
+     * @param rollbackStack whether to rollback the stack. Will be false when the failure is due to a
+     * {@link HandleException} that is due to a contract call revert.
+     * @param status the status to set
+     * @param stack the save point stack to rollback
+     * @param recordListBuilder the record list builder to revert
+     */
+    private void rollback(
+            final boolean rollbackStack,
+            @NonNull final ResponseCodeEnum status,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+        if (rollbackStack) {
+            stack.rollbackFullStack();
+        }
+        recordBuilder.status(status);
+        recordListBuilder.revertChildrenOf(recordBuilder);
     }
 }

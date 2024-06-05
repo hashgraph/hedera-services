@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,10 +34,12 @@ import javax.inject.Singleton;
 @Singleton
 public class HandleLogic {
     private final Authorizer authorizer;
+    private final TransactionDispatcher dispatcher;
 
     @Inject
-    public HandleLogic(final Authorizer authorizer) {
+    public HandleLogic(final Authorizer authorizer, final TransactionDispatcher dispatcher) {
         this.authorizer = authorizer;
+        this.dispatcher = dispatcher;
     }
 
     public void handle(Dispatch dispatch) {
@@ -51,6 +54,9 @@ public class HandleLogic {
             dispatch.recordBuilder().status(INVALID_SIGNATURE);
             return;
         }
+
+        dispatcher.dispatchHandle(dispatch.handleContext());
+        // Do business logic
     }
 
     private boolean isUnAuthorized(final Dispatch dispatch) {

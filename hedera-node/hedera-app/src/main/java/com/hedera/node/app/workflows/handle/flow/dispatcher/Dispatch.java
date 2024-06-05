@@ -20,14 +20,17 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import java.time.Instant;
 import java.util.Set;
 
@@ -58,4 +61,12 @@ public interface Dispatch {
     Set<Account> hollowAccounts();
 
     ResponseCodeEnum userError();
+
+    HandleContext handleContext();
+
+    SavepointStackImpl stack();
+
+    HandleContext.TransactionCategory txnCategory();
+
+    FinalizeContext finalizeContext();
 }
