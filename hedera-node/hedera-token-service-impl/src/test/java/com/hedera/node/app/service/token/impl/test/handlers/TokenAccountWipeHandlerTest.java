@@ -88,7 +88,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -117,7 +116,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             private long newTotalSupply;
             private TokenType tokenType;
 
-            @NotNull
+            @NonNull
             @Override
             public TransactionBody transactionBody() {
                 return TransactionBody.DEFAULT;
@@ -134,25 +133,25 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
+            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
                 newTotalSupply = supply;
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
                 this.tokenType = tokenType;
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public ResponseCodeEnum status() {
                 return OK;
