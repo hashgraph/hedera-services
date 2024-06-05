@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -86,6 +87,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -107,6 +109,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
@@ -151,6 +154,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -1543,6 +1547,66 @@ public class CryptoTransferSuite {
                         cryptoTransfer(moving(1, tokenA).between(firstUser, TREASURY)),
                         tokenDissociate(firstUser, tokenA),
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> autoAssociateTokensHappyPath() {
+        final String tokenA = "tokenA";
+        final String tokenB = "tokenB";
+        final String firstUser = "firstUser";
+        final String secondUser = "secondUser";
+        final String tokenAcreateTxn = "tokenACreate";
+        final String tokenBcreateTxn = "tokenBCreate";
+        final String transferToFU = "transferToFU";
+        final String transferToSU = "transferToSU";
+        return propertyPreservingHapiSpec("autoAssociateTokensHappyPath")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(secondUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(10))
+                .when(
+                        tokenCreate(tokenA)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(firstUser)
+                                .via(tokenAcreateTxn),
+                        getTxnRecord(tokenAcreateTxn)
+                                .hasNewTokenAssociation(tokenA, firstUser)
+                                .logged(),
+                        tokenCreate(tokenB)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(firstUser)
+                                .via(tokenBcreateTxn),
+                        getTxnRecord(tokenBcreateTxn)
+                                .hasNewTokenAssociation(tokenB, firstUser)
+                                .logged(),
+                        mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata1"), ByteString.copyFromUtf8("metadata2"))),
+                        // Transfer fungible token
+                        cryptoTransfer(moving(1, tokenA).between(firstUser, secondUser))
+                                .via(transferToFU),
+                        getTxnRecord(transferToFU)
+                                .hasNewTokenAssociation(tokenA, secondUser)
+                                .logged(),
+                        // Transfer NFT
+                        cryptoTransfer(movingUnique(tokenB, 1)
+                                .between(firstUser, secondUser))
+                                .via(transferToSU),
+                        getTxnRecord(transferToSU)
+                                .hasNewTokenAssociation(tokenB, secondUser)
+                                .logged(),
+                        // Transfer fungible token to hollow account
+                        cryptoTransfer(moving(1, tokenA).between(firstUser, MULTI_KEY))
+                                .hasKnownStatus(SUCCESS)
+                                .logged(),
+                        // Transfer NFT to hollow account
+                        cryptoTransfer(movingUnique(tokenB, 2).between(firstUser, MULTI_KEY))
+                                .hasKnownStatus(SUCCESS)
+                                .logged())
+                .then();
     }
 
     @HapiTest

@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -32,13 +33,16 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.CREATE_SLOT_MULTIPLIER;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -62,6 +66,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
@@ -81,6 +86,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
@@ -88,9 +94,12 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -230,6 +239,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
         final var topLevelPayer = context.payer();
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
@@ -250,6 +260,16 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
+        }
+
+        for (var tokenAssociation : transferContext.getAutomaticAssociations()) {
+            var accountId = tokenAssociation.accountId();
+            var account = accountStore.getAliasedAccountById(accountId);
+            if (account.maxAutoAssociations() >= 0) {
+                validateFalse(
+                        account.usedAutoAssociations() + 1 > account.maxAutoAssociations(),
+                        NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+            }
         }
 
         final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
@@ -553,6 +573,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = body.cryptoTransferOrThrow();
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
+        final var unlimitedAutoAssociations = config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
         /* BPT calculations shouldn't include any custom fee payment usage */
         int totalXfers =
@@ -605,6 +626,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         long rbs = (totalXfers * LONG_ACCOUNT_AMOUNT_BYTES)
                 + TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
                         weightedTokensInvolved, weightedTokenXfers, numNftOwnershipChanges);
+        long associationsRbs = 0;
+        if (unlimitedAutoAssociations) {
+            associationsRbs = getAutoAssociationsRbsFee(feeContext);
+        }
 
         /* Get subType based on the above information */
         final var subType = getSubType(
@@ -616,8 +641,101 @@ public class CryptoTransferHandler implements TransactionHandler {
         return feeContext
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
+                .addRamByteSeconds(associationsRbs)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
+    }
+
+    private long getAutoAssociationsRbsFee(final FeeContext feeContext) {
+        final var body = feeContext.body();
+        final var op = body.cryptoTransferOrThrow();
+        final var tokenTransfers = op.tokenTransfers();
+
+        // If the token transfers collection is empty, then we have only hbars transfer and no token
+        // associations are needed, so we do not need to calculate the next part.
+        if (tokenTransfers.isEmpty()) {
+            return 0;
+        }
+
+        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
+
+        final Set<AccountID> recipientsSet = getTransferRecipients(tokenTransfers);
+        final HashMap<AccountID, HashSet<TokenID>> associationsMap = getTokenTransferAssociations(tokenTransfers);
+
+        var associationsRbs = 0L;
+        var autoRenewSeconds = THREE_MONTHS_IN_SECONDS;
+        for (var accountId : recipientsSet) {
+            var account = accountStore.getAccountById(accountId);
+            // If this is a transfer to an alias and the account is null this is a hollow account creation case,
+            // and we need to set default values.
+            if (account == null && isAlias(accountId)) {
+                associationsRbs += calculateHollowAccountAssociationsRbs(associationsMap, accountId);
+            } else {
+                if (account != null) {
+                    autoRenewSeconds = account.autoRenewSeconds();
+                }
+                associationsRbs += calculateAccountAssociationsRbs(associationsMap, tokenRelStore, accountId, autoRenewSeconds);
+            }
+        }
+
+        return associationsRbs;
+    }
+
+    private long calculateHollowAccountAssociationsRbs(final HashMap<AccountID, HashSet<TokenID>> associationsMap,
+            final AccountID accountId) {
+        var numAutoAssociations = associationsMap.get(accountId).size();
+        return numAutoAssociations * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER;
+    }
+
+    private long calculateAccountAssociationsRbs(final HashMap<AccountID, HashSet<TokenID>> associationsMap,
+            final ReadableTokenRelationStore tokenRelStore, final AccountID accountId, final long autoRenewSeconds) {
+        var tokenIds = associationsMap.get(accountId);
+        var newAutoAssociations = 0;
+        for (var tokenId : tokenIds) {
+            var tokenRel = tokenRelStore.get(accountId, tokenId);
+            // If there already is an association, no need to compute further association fees.
+            if (tokenRel != null) {
+                continue;
+            }
+            newAutoAssociations++;
+        }
+        return newAutoAssociations * autoRenewSeconds * CREATE_SLOT_MULTIPLIER;
+    }
+
+    /**
+     * This method iterates through all token transfers (for fungible tokens and NFTs) and creates a set
+     * with accountIds as keys for the recipients.
+     * @param tokenTransfers all token transfers - fungible tokens and NFTs
+     * @return the set of all recipients that participate in a transfer as recipients
+     */
+    private Set<AccountID> getTransferRecipients(List<TokenTransferList> tokenTransfers) {
+        final Set<AccountID> recipientsSet = new HashSet<>();
+        // for fungible tokens and nft transfers
+        tokenTransfers.stream()
+                .flatMap(tt -> Stream.concat(
+                        tt.transfers().stream().filter(aa -> aa.amount() > 0).map(AccountAmount::accountID),
+                        tt.nftTransfers().stream().map(NftTransfer::receiverAccountID)
+                ))
+                .forEach(recipientsSet::add);
+        return recipientsSet;
+    }
+
+    /**
+     * This method iterates through all token transfers (for fungible tokens and NFTs) and creates a map
+     * with all needed token associations. It does not verify if there is an association that already
+     * exists.
+     * @param tokenTransfers all token transfers - fungible tokens and NFTs
+     * @return the map of accounts and tokens that are part of a transfer in this transaction
+     */
+    private HashMap<AccountID, HashSet<TokenID>> getTokenTransferAssociations(List<TokenTransferList> tokenTransfers) {
+        final HashMap<AccountID, HashSet<TokenID>> associationsMap = new HashMap<>();
+        for (var tt : tokenTransfers) {
+            var tokenId = tt.token();
+            tt.transfers().stream().filter(aa -> aa.amount() > 0).forEach(aa -> associationsMap.computeIfAbsent(aa.accountID(), v -> new HashSet<>()).add(tokenId));
+            tt.nftTransfers().forEach(nt -> associationsMap.computeIfAbsent(nt.receiverAccountID(), v -> new HashSet<>()).add(tokenId));
+        }
+        return associationsMap;
     }
 
     /**
