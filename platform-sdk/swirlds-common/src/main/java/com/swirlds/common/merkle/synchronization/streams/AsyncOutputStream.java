@@ -25,6 +25,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.StopWatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -179,7 +180,13 @@ public class AsyncOutputStream implements AutoCloseable {
      * Send a message asynchronously. Messages are guaranteed to be delivered in the order sent.
      */
     public void sendAsync(final int viewId, final SelfSerializable message) throws InterruptedException {
-        sendAsync(new QueueItem(viewId, message));
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        try (final SerializableDataOutputStream dout = new SerializableDataOutputStream(bout)) {
+            message.serialize(dout);
+        } catch (final IOException e) {
+            throw new MerkleSynchronizationException("Can't serialize message", e);
+        }
+        sendAsync(new QueueItem(viewId, bout.toByteArray()));
     }
 
     /**
@@ -227,14 +234,14 @@ public class AsyncOutputStream implements AutoCloseable {
             streamQueue.drainTo(localQueue, size);
             for (final QueueItem item : localQueue) {
                 if (item.toNotify() != null) {
-                    assert item.message() == null;
+                    assert item.messageBytes() == null;
                     item.toNotify().run();
                 } else {
                     final int viewId = item.viewId();
-                    final SelfSerializable message = item.message();
+                    final byte[] messageBytes = item.messageBytes();
                     try {
                         outputStream.writeInt(viewId);
-                        serializeMessage(message);
+                        outputStream.write(messageBytes);
                     } catch (final IOException e) {
                         throw new MerkleSynchronizationException(e);
                     }
@@ -274,9 +281,9 @@ public class AsyncOutputStream implements AutoCloseable {
         }
     }
 
-    private record QueueItem(int viewId, SelfSerializable message, Runnable toNotify) {
-        public QueueItem(int viewId, SelfSerializable message) {
-            this(viewId, message, null);
+    private record QueueItem(int viewId, byte[] messageBytes, Runnable toNotify) {
+        public QueueItem(int viewId, byte[] messageBytes) {
+            this(viewId, messageBytes, null);
         }
 
         public QueueItem(Runnable toNotify) {
