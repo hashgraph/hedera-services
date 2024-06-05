@@ -241,7 +241,7 @@ public class LeakyCryptoTestsSuite {
         final var payerBalance = 100 * ONE_HUNDRED_HBARS;
         final var updateWithExpiredAccount = "updateWithExpiredAccount";
         final var autoAssocSlotPrice = 0.0018;
-        final var baseFee = 0.00022;
+        final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
                 .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
@@ -265,7 +265,7 @@ public class LeakyCryptoTestsSuite {
                                 .payingWith(shortLivedAutoAssocUser)
                                 .maxAutomaticAssociations(10)
                                 .via(updateWithExpiredAccount),
-                        validateChargedUsd(updateWithExpiredAccount, plusTenSlotsFee));
+                        validateChargedUsd(updateWithExpiredAccount, baseFee));
     }
 
     @HapiTest
