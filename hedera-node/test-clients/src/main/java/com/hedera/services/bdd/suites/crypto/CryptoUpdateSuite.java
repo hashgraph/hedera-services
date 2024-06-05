@@ -184,6 +184,10 @@ public class CryptoUpdateSuite {
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
         final var plusTenTxn = "plusTenTxn";
+        final var plusFiveKTxn = "plusFiveKTxn";
+        final var plusFiveKAndOneTxn = "plusFiveKAndOneTxn";
+        final var invalidNegativeTxn = "invalidNegativeTxn";
+        final var validNegativeTxn = "validNegativeTxn";
         final var allowedPercentDiff = 1.5;
 
         AtomicLong expiration = new AtomicLong();
@@ -212,22 +216,63 @@ public class CryptoUpdateSuite {
                                 .expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
                                 .blankMemo()
                                 .via(baseTxn)),
+                        getAccountInfo("canonicalAccount")
+                                .hasMaxAutomaticAssociations(0)
+                                .logged(),
                         cryptoUpdate("autoAssocTarget")
                                 .payingWith("autoAssocTarget")
                                 .blankMemo()
                                 .maxAutomaticAssociations(1)
                                 .via(plusOneTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(1)
+                                .logged(),
                         cryptoUpdate("autoAssocTarget")
                                 .payingWith("autoAssocTarget")
                                 .blankMemo()
                                 .maxAutomaticAssociations(11)
-                                .via(plusTenTxn))
+                                .via(plusTenTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(11)
+                                .logged(),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(5000)
+                                .via(plusFiveKTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(5000)
+                                .logged(),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(-1000)
+                                .via(invalidNegativeTxn)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(5001)
+                                .via(plusFiveKAndOneTxn)
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(-1)
+                                .via(validNegativeTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(-1)
+                                .logged())
                 .then(
                         validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
                         validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
                         validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
@@ -458,12 +503,14 @@ public class CryptoUpdateSuite {
                                 .newMaxAutomaticAssociations(newBadMax)
                                 .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
                         contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(newGoodMax)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
                                 .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(-2)
                                 .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS));
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)));
     }
 }
