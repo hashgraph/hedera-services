@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.StateDefinition;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import org.junit.jupiter.api.BeforeEach;

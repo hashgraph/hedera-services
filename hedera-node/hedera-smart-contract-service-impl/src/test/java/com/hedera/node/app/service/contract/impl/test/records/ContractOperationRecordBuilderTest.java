@@ -37,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 class ContractOperationRecordBuilderTest {
@@ -45,7 +44,7 @@ class ContractOperationRecordBuilderTest {
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationRecordBuilder() {
             @Override
-            public void trackExplicitRewardSituation(@NotNull AccountID accountId) {}
+            public void trackExplicitRewardSituation(@NonNull AccountID accountId) {}
 
             @Override
             public Set<AccountID> explicitRewardSituationIds() {
@@ -61,7 +60,7 @@ class ContractOperationRecordBuilderTest {
                 return totalFee;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public TransactionBody transactionBody() {
                 return TransactionBody.DEFAULT;
