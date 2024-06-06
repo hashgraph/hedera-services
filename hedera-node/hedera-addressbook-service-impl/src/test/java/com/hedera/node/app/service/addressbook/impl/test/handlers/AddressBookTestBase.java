@@ -18,6 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -52,6 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class AddressBookTestBase {
+    protected final Key key = A_COMPLEX_KEY;
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
     protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
@@ -60,7 +62,8 @@ public class AddressBookTestBase {
     protected final byte[] grpcCertificateHash = "grpcCertificateHash".getBytes();
     protected final byte[] gossipCaCertificate = "gossipCaCertificate".getBytes();
     protected final long WELL_KNOWN_NODE_ID = 1L;
-    protected final EntityNumber nodeId = EntityNumber.newBuilder().number(WELL_KNOWN_NODE_ID).build();
+    protected final EntityNumber nodeId =
+            EntityNumber.newBuilder().number(WELL_KNOWN_NODE_ID).build();
     protected final EntityNumber nodeId2 = EntityNumber.newBuilder().number(3L).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
@@ -111,6 +114,16 @@ public class AddressBookTestBase {
     protected void refreshStoresWithCurrentNodeInReadable() {
         readableNodeState = readableNodeState();
         writableNodeState = emptyWritableNodeState();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
+        readableStore = new ReadableNodeStoreImpl(readableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+    }
+
+    protected void refreshStoresWithCurrentNodeInBothReadableAndWritable() {
+        readableNodeState = readableNodeState();
+        writableNodeState = writableNodeStateWithOneKey();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         readableStore = new ReadableNodeStoreImpl(readableStates);

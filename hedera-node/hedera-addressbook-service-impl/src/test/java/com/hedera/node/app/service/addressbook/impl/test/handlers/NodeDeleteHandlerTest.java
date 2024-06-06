@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -175,7 +175,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @DisplayName("Node not found returns error")
     void NodeIdNotFound() throws PreCheckException {
         // given:
-        mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
+        mockPayerLookup(key, payerId, accountStore);
         given(mockStore.get(anyLong())).willReturn(null);
         final var context = new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
         assertThatThrownBy(() -> subject.preHandle(context)).isInstanceOf(PreCheckException.class);
@@ -187,11 +187,11 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @DisplayName("Pre handle works as expected")
     void preHandleWorksAsExpectedImmutable() throws PreCheckException {
         node = createNode();
-        refreshStoresWithCurrentNodeOnlyInReadable();
+        refreshStoresWithCurrentNodeInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
         BDDMockito.given(mockStoreFactory.getStore(ReadableNodeStore.class)).willReturn(readableStore);
         BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
-        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
+        BDDMockito.given(payerAccount.key()).willReturn(key);
 
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var deleteNodeBuilder = NodeDeleteTransactionBody.newBuilder().nodeId(WELL_KNOWN_NODE_ID);
