@@ -181,6 +181,24 @@ public class Utils {
         return topicAddress;
     }
 
+    /**
+     * Returns the bytecode of the contract by the name of the contract from the classpath resource.
+     *
+     * @param contractName the name of the contract
+     * @return the bytecode of the contract
+     * @throws IllegalArgumentException if the contract is not found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    public static ByteString getInitcodeOf(@NonNull final String contractName) {
+        final var path = getResourcePath(contractName, ".bin");
+        try {
+            final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
+            return ByteString.copyFrom(bytes);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public static ByteString extractByteCode(String path) {
         try {
             final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
