@@ -52,6 +52,7 @@ public class CryptoOpsUsage {
 
     public static final long CREATE_SLOT_MULTIPLIER = 1228;
     public static final long UPDATE_SLOT_MULTIPLIER = 24000;
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -86,6 +87,9 @@ public class CryptoOpsUsage {
         incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
                 weightedTokensInvolved, weightedTokenXfers, xferMeta.getNumNftOwnershipChanges());
         accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+        // Add rbs for auto associations
+        accumulator.addRbs((xferMeta.getNumFungibleTokenTransfers() + xferMeta.getNumNftOwnershipChanges()) * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER);
     }
 
     public FeeData cryptoInfoUsage(final Query cryptoInfoReq, final ExtantCryptoContext ctx) {

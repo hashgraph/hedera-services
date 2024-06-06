@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -107,6 +108,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
@@ -162,6 +164,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -2360,5 +2363,71 @@ public class CryptoTransferSuite {
                 .when()
                 .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
+        final var tokenA = "tokenA";
+        final var tokenB = "tokenB";
+        final var transferTokenAToHollowAccountTxn = "transferTokenAToHollowAccountTxn";
+        final var transferTokenBToHollowAccountTxn = "transferTokenBToHollowAccountTxn";
+        final double expectedCreateHollowAccountAndNftATransferFeeUsd = 0.04828;
+        final double expectedNftTransferUsd = 0.0001;
+        final double autoAssocSlotPriceUsd = 0.0010316252;
+        final double expectedCryptoTransferAndAssociationUsd = expectedNftTransferUsd + autoAssocSlotPriceUsd;
+
+        return propertyPreservingHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS)
+                )
+                .when(
+                        // Create NFT1
+                        tokenCreate(tokenA)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        // Create NFT2
+                        tokenCreate(tokenB)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        // Mint both NFTs
+                        mintToken(
+                                tokenA,
+                                List.of(ByteString.copyFromUtf8("metadata1"))),
+                        mintToken(
+                                tokenB,
+                                List.of(ByteString.copyFromUtf8("metadata2"))),
+                        mintToken(
+                                tokenB,
+                                List.of(ByteString.copyFromUtf8("metadata3"))),
+                        // Create hollow account
+                        cryptoTransfer(movingUnique(tokenA, 1).between(TREASURY, MULTI_KEY))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenAToHollowAccountTxn),
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT1
+                        getAliasedAccountInfo(MULTI_KEY)
+                                .hasToken(relationshipWith(tokenA))
+                                .hasMaxAutomaticAssociations(-1),
+                        // Verify auto association to NFT2
+                        cryptoTransfer(movingUnique(tokenB, 1).between(TREASURY, MULTI_KEY))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenBToHollowAccountTxn)
+                                .logged(),
+                        getAliasedAccountInfo(MULTI_KEY)
+                                .hasToken(relationshipWith(tokenB))
+                        // TODO: finish the test accoring to the test plan
+                )
+                .then(
+                        validateChargedUsdWithin(transferTokenAToHollowAccountTxn, expectedCreateHollowAccountAndNftATransferFeeUsd, 0.01),
+                        validateChargedUsdWithin(transferTokenBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd, 0.01)
+                );
     }
 }
