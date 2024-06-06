@@ -115,20 +115,15 @@ public class AddressBookValidator {
     private void validateEndpoint(@NonNull final ServiceEndpoint endpoint, @NonNull final NodesConfig nodesConfig) {
         validateFalse(endpoint.port() == 0, INVALID_ENDPOINT);
         validateFalse(
-                (endpoint.ipAddressV4().length() == 0 || endpoint.ipAddressV4().equals(Bytes.EMPTY))
+                endpoint.ipAddressV4().length() == 0
                         && endpoint.domainName().trim().isEmpty(),
                 INVALID_ENDPOINT);
         validateFalse(
                 endpoint.ipAddressV4().length() != 0
-                        && !endpoint.ipAddressV4().equals(Bytes.EMPTY)
                         && !endpoint.domainName().trim().isEmpty(),
                 IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT);
         validateFalse(endpoint.domainName().trim().length() > nodesConfig.maxFqdnSize(), FQDN_SIZE_TOO_LARGE);
-        validateFalse(
-                endpoint.ipAddressV4().length() != 0
-                        && !endpoint.ipAddressV4().equals(Bytes.EMPTY)
-                        && !isIPv4(endpoint.ipAddressV4()),
-                INVALID_IPV4_ADDRESS);
+        validateFalse(endpoint.ipAddressV4().length() != 0 && !isIPv4(endpoint.ipAddressV4()), INVALID_IPV4_ADDRESS);
     }
 
     private boolean isIPv4(@NonNull final Bytes ip) {

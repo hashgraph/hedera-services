@@ -83,8 +83,8 @@ public class NodeUpdateHandler implements TransactionHandler {
         final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
         final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
 
-        final var existNode = nodeStore.get(op.nodeId());
-        validateFalse(existNode == null, INVALID_NODE_ID);
+        final var existingNode = nodeStore.get(op.nodeId());
+        validateFalse(existingNode == null, INVALID_NODE_ID);
         if (op.hasAccountId()) {
             final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
             validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
@@ -95,7 +95,7 @@ public class NodeUpdateHandler implements TransactionHandler {
         if (!op.serviceEndpoint().isEmpty())
             addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
 
-        final var nodeBuilder = updateNode(op, existNode);
+        final var nodeBuilder = updateNode(op, existingNode);
         nodeStore.put(nodeBuilder.build());
     }
 
@@ -103,13 +103,9 @@ public class NodeUpdateHandler implements TransactionHandler {
         final var nodeBuilder = node.copyBuilder();
         if (op.hasAccountId()) {
             nodeBuilder.accountId(op.accountId());
-        } else {
-            nodeBuilder.accountId(node.accountId());
         }
         if (op.hasDescription()) {
             nodeBuilder.description(op.description());
-        } else {
-            nodeBuilder.description(node.description());
         }
         if (!op.gossipEndpoint().isEmpty()) {
             nodeBuilder.gossipEndpoint(op.gossipEndpoint());
