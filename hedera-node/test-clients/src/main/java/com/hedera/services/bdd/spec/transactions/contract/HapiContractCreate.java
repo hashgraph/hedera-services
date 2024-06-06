@@ -269,18 +269,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         }
         spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
         spec.registry().saveContractId(contract, newId);
-        final var otherInfoBuilder = ContractGetInfoResponse.ContractInfo.newBuilder()
-                .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
-                .setMemo(memo.orElse(spec.setup().defaultMemo()))
-                .setAutoRenewPeriod(Duration.newBuilder()
-                        .setSeconds(autoRenewPeriodSecs.orElse(
-                                spec.setup().defaultAutoRenewPeriod().getSeconds()))
-                        .build());
-        if (!omitAdminKey && !useDeprecatedAdminKey) {
-            otherInfoBuilder.setAdminKey(adminKey);
-        }
-        final var otherInfo = otherInfoBuilder.build();
-        spec.registry().saveContractInfo(contract, otherInfo);
+        spec.registry().saveContractInfo(contract, infoOfCreatedContractOrThrow());
         successCb.ifPresent(cb -> cb.accept(spec.registry()));
         if (advertiseCreation) {
             String banner = "\n\n"
@@ -292,6 +281,27 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         if (gasObserver.isPresent()) {
             doGasLookup(gas -> gasObserver.get().accept(SUCCESS, gas), spec, txnSubmitted, true);
         }
+    }
+
+    /**
+     * Returns the contract info of the created contract.
+     *
+     * @return the contract info
+     */
+    public ContractGetInfoResponse.ContractInfo infoOfCreatedContractOrThrow() {
+        if (lastReceipt == null || memo.isEmpty() || autoRenewPeriodSecs.isEmpty()) {
+            throw new IllegalStateException("Contract was not created");
+        }
+        final var builder = ContractGetInfoResponse.ContractInfo.newBuilder()
+                .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
+                .setMemo(memo.get())
+                .setAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(autoRenewPeriodSecs.get())
+                        .build());
+        if (!omitAdminKey && !useDeprecatedAdminKey) {
+            builder.setAdminKey(adminKey);
+        }
+        return builder.build();
     }
 
     @Override
@@ -323,6 +333,13 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
             params = abi.isPresent()
                     ? Optional.of(encodeParametersForConstructor(args.get(), abi.get()))
                     : Optional.empty();
+        }
+        if (memo.isEmpty()) {
+            memo = Optional.of(spec.setup().defaultMemo());
+        }
+        if (autoRenewPeriodSecs.isEmpty()) {
+            autoRenewPeriodSecs =
+                    Optional.of(spec.setup().defaultAutoRenewPeriod().getSeconds());
         }
         ContractCreateTransactionBody opBody = spec.txns()
                 .<ContractCreateTransactionBody, ContractCreateTransactionBody.Builder>body(
@@ -391,6 +408,12 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
+    }
+
+    public long numOfCreatedContractOrThrow() {
+        return Optional.ofNullable(lastReceipt)
+                .map(receipt -> receipt.getContractID().getContractNum())
+                .orElseThrow();
     }
 
     public boolean getDeferStatusResolution() {

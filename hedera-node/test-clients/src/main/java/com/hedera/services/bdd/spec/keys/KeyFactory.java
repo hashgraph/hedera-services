@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PR
 import static com.hedera.services.bdd.spec.persistence.SpecKey.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
 import static java.util.Map.Entry;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
@@ -37,6 +38,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
@@ -88,6 +90,13 @@ public class KeyFactory implements Serializable {
 
         final var genesisKey = payerKey(setup);
         incorporate(setup.genesisAccountName(), genesisKey, KeyShape.listSigs(ON));
+    }
+
+    public Map<String, PrivateKey> privateKeyMapFor(@NonNull final com.hedera.hapi.node.base.Key key) {
+        requireNonNull(key);
+        final Map<String, PrivateKey> keyMap = new HashMap<>();
+        addPrivateKeys(key, keyMap);
+        return keyMap;
     }
 
     public void exportSimpleKey(final String loc, final String name) {
@@ -165,6 +174,11 @@ public class KeyFactory implements Serializable {
 
     public void setControl(final Key key, final SigControl control) {
         controlMap.put(key, control);
+    }
+
+    public void addPrivateKeyMap(@NonNull final Map<String, PrivateKey> keyMap) {
+        requireNonNull(keyMap);
+        pkMap.putAll(keyMap);
     }
 
     public int controlledKeyCount(final Key key, final Map<Key, SigControl> overrides) {
@@ -333,7 +347,7 @@ public class KeyFactory implements Serializable {
 
     public static String mnemonicFromFile(final String wordsLoc) {
         try {
-            return java.nio.file.Files.lines(Paths.get(wordsLoc))
+            return Files.lines(Paths.get(wordsLoc))
                     .map(String::strip)
                     .collect(Collectors.joining(" "))
                     .strip();
@@ -467,18 +481,42 @@ public class KeyFactory implements Serializable {
                         KeyShape.threshSigs(
                                 setup.defaultThresholdM(),
                                 IntStream.range(0, setup.defaultThresholdN())
-                                        .mapToObj(ignore -> SigControl.ON)
+                                        .mapToObj(ignore -> ON)
                                         .toArray(SigControl[]::new)),
                         keyGen);
             case LIST:
                 return generateSubjectTo(
                         spec,
                         KeyShape.listSigs(IntStream.range(0, setup.defaultListN())
-                                .mapToObj(ignore -> SigControl.ON)
+                                .mapToObj(ignore -> ON)
                                 .toArray(SigControl[]::new)),
                         keyGen);
             default:
                 return generateSubjectTo(spec, ON, keyGen);
+        }
+    }
+
+    private void addPrivateKeys(
+            @NonNull final com.hedera.hapi.node.base.Key key, @NonNull final Map<String, PrivateKey> keyMap) {
+        switch (key.key().kind()) {
+            case ED25519 -> {
+                final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(
+                        key.ed25519OrThrow().toByteArray());
+                keyMap.put(hexedPubKey, requireNonNull(pkMap.get(hexedPubKey)));
+            }
+            case ECDSA_SECP256K1 -> {
+                final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(
+                        key.ecdsaSecp256k1OrThrow().toByteArray());
+                keyMap.put(hexedPubKey, requireNonNull(pkMap.get(hexedPubKey)));
+            }
+            case KEY_LIST -> key.keyListOrThrow().keys().forEach(k -> addPrivateKeys(k, keyMap));
+            case THRESHOLD_KEY -> key.thresholdKeyOrThrow()
+                    .keysOrThrow()
+                    .keys()
+                    .forEach(k -> addPrivateKeys(k, keyMap));
+            default -> {
+                // No-op
+            }
         }
     }
 }

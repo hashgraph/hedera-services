@@ -32,6 +32,9 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams;
     exports com.hedera.hapi.streams.codec;
     exports com.hedera.hapi.streams.schema;
+    exports com.hedera.hapi.node.addressbook;
+    exports com.hedera.hapi.node.state.addressbook.codec;
+    exports com.hedera.hapi.node.state.addressbook;
     exports com.hedera.hapi.node.state.consensus.codec;
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;
