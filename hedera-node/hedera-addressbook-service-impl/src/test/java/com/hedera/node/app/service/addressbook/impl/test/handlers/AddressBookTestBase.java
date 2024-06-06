@@ -18,7 +18,6 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -49,7 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class AddressBookTestBase {
-    protected final Key key = A_COMPLEX_KEY;
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
     protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
