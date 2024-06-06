@@ -38,6 +38,7 @@ import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableAirdropStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
@@ -76,6 +78,7 @@ public class ReadableStoreFactory {
         Map<Class<?>, StoreEntry> newMap = new HashMap<>();
         // Tokens and accounts
         newMap.put(ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new));
+        newMap.put(ReadableAirdropStore.class, new StoreEntry(TokenService.NAME, ReadableAirdropStoreImpl::new));
         newMap.put(ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new));
         newMap.put(
                 ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new));

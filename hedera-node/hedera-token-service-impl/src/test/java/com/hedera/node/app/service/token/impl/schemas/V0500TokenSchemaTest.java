@@ -24,11 +24,15 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.StateDefinition;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
@@ -62,6 +66,19 @@ class V0500TokenSchemaTest {
     private MigrationContext ctx;
 
     private final V0500TokenSchema subject = new V0500TokenSchema();
+
+    @Test
+    @DisplayName("verify states to create")
+    void verifyStatesToCreate() {
+        var sortedResult = subject.statesToCreate().stream()
+                .sorted(Comparator.comparing(StateDefinition::stateKey))
+                .toList();
+
+        final var firstStateDef = sortedResult.getFirst();
+        assertThat(firstStateDef.stateKey()).isEqualTo("PENDING_AIRDROPS");
+        assertThat(firstStateDef.keyCodec()).isEqualTo(PendingAirdropId.PROTOBUF);
+        assertThat(firstStateDef.valueCodec()).isEqualTo(PendingAirdropValue.PROTOBUF);
+    }
 
     @Test
     @DisplayName("skips migration without shared values")

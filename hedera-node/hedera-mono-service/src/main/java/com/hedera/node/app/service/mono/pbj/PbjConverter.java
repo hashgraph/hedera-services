@@ -354,6 +354,7 @@ public final class PbjConverter {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
+            case TokenReject -> HederaFunctionality.TOKEN_REJECT;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -458,6 +459,7 @@ public final class PbjConverter {
                     .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+            case TOKEN_REJECT -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenReject;
         };
     }
 
@@ -796,6 +798,8 @@ public final class PbjConverter {
             case FQDN_SIZE_TOO_LARGE -> ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
             case INVALID_ENDPOINT -> ResponseCodeEnum.INVALID_ENDPOINT;
             case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
+            case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1357,6 +1361,8 @@ public final class PbjConverter {
                     .GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
+            case TOKEN_REFERENCE_REPEATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case INVALID_OWNER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
         };
     }
 
