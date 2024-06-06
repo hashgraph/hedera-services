@@ -19,8 +19,8 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 

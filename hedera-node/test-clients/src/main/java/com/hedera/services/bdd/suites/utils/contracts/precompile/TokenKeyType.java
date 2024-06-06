@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
+import java.math.BigInteger;
+
 /** All key types in one place for easy review. */
 public enum TokenKeyType {
     ADMIN_KEY(1),
@@ -35,5 +37,9 @@ public enum TokenKeyType {
 
     public int value() {
         return value;
+    }
+
+    public BigInteger asBigInteger() {
+        return BigInteger.valueOf(value);
     }
 }

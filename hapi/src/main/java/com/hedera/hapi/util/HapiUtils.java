@@ -97,15 +97,6 @@ public class HapiUtils {
     public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
             Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
 
-    /** A {@link Comparator} for {@link SemanticVersion}s that ignores
-     * any semver part that cannot be parsed as an integer. */
-    public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
-                    SemanticVersion::major)
-            .thenComparingInt(SemanticVersion::minor)
-            .thenComparingInt(SemanticVersion::patch)
-            .thenComparingInt(semVer -> parsedIntOrZero(semVer.pre()))
-            .thenComparingInt(semVer -> parsedIntOrZero(semVer.build()));
-
     private HapiUtils() {}
 
     /**

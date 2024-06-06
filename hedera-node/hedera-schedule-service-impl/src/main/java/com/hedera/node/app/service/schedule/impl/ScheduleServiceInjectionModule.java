@@ -23,16 +23,45 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import dagger.Module;
 
+/**
+ * Schedule service injection interface. Used to inject the schedule service handlers into the
+ * implementation class using Dagger dependency injection
+ */
 @Module
 public interface ScheduleServiceInjectionModule {
 
+    /**
+     * Schedule create handler
+     *
+     * @return the schedule create handler
+     */
     ScheduleCreateHandler scheduleCreateHandler();
 
+    /**
+     * Schedule delete handler
+     *
+     * @return the schedule delete handler
+     */
     ScheduleDeleteHandler scheduleDeleteHandler();
 
+    /**
+     * Schedule get info handler
+     *
+     * @return the schedule get info handler
+     */
     ScheduleGetInfoHandler scheduleGetInfoHandler();
 
+    /**
+     * Schedule sign handler
+     *
+     * @return the schedule sign handler
+     */
     ScheduleSignHandler scheduleSignHandler();
 
+    /**
+     * Schedule handlers
+     *
+     * @return the schedule handlers
+     */
     ScheduleHandlers scheduleHandlers();
 }

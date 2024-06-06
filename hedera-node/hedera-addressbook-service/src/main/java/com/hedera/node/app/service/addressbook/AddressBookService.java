@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.addressbook;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
@@ -27,7 +27,7 @@ import java.util.Set;
  * Implements the HAPI <a
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/address_book_service.proto">Address Book Service</a>.
  */
-public interface AddressBookService extends Service {
+public interface AddressBookService extends RpcService {
 
     String NAME = "AddressBookService";
 
@@ -50,6 +50,6 @@ public interface AddressBookService extends Service {
      */
     @NonNull
     static AddressBookService getInstance() {
-        return ServiceFactory.loadService(AddressBookService.class, ServiceLoader.load(AddressBookService.class));
+        return RpcServiceFactory.loadService(AddressBookService.class, ServiceLoader.load(AddressBookService.class));
     }
 }
