@@ -87,11 +87,6 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(@NonNull final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::rejectToken;
-    }
-
-    @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         return super.toStringHelper().add("account", account).add("rejectedTokens", referencesSources);
     }
