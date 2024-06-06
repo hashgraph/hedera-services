@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.components;
+package com.hedera.node.app.workflows.handle.flow.dagger.components;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
-import com.hedera.node.app.workflows.handle.flow.modules.ActiveConfigModule;
-import com.hedera.node.app.workflows.handle.flow.modules.ContextModule;
-import com.hedera.node.app.workflows.handle.flow.modules.PreHandleResultModule;
-import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
-import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchSubcomponentModule;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.modules.ActiveConfigModule;
+import com.hedera.node.app.workflows.handle.flow.dagger.modules.ContextModule;
+import com.hedera.node.app.workflows.handle.flow.dagger.modules.PreHandleResultModule;
+import com.hedera.node.app.workflows.handle.flow.dagger.modules.StateModule;
+import com.hedera.node.app.workflows.handle.flow.dagger.modules.UserDispatchSubcomponentModule;
 import com.hedera.node.app.workflows.handle.flow.process.ProcessRunner;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra.records;
+package com.hedera.node.app.workflows.handle.flow.records;
 
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;

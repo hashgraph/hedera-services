@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.components;
+package com.hedera.node.app.workflows.handle.flow.dagger.components;
 
-import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.modules.UserDispatchModule;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchModule;
 import dagger.Subcomponent;
 import javax.inject.Provider;
 

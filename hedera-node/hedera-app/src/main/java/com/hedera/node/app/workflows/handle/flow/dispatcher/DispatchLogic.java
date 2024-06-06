@@ -27,7 +27,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
 import com.hedera.node.app.workflows.handle.flow.ErrorReport;
 import com.hedera.node.app.workflows.handle.flow.infra.HandleLogic;
-import com.hedera.node.app.workflows.handle.flow.infra.records.RecordFinalizerlogic;
+import com.hedera.node.app.workflows.handle.flow.records.RecordFinalizerlogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;

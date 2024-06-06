@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dagger.modules;
 
-import com.hedera.node.app.workflows.handle.flow.components.UserDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dagger.components.UserDispatchComponent;
 import dagger.Module;
 
 @Module(subcomponents = {UserDispatchComponent.class})

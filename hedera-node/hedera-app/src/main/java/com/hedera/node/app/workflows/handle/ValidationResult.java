@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.util;
+package com.hedera.node.app.workflows.handle;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record TransactionBaseData(
-        @NonNull HederaFunctionality functionality,
-        @NonNull Bytes transactionBytes,
-        @Nullable Transaction transaction,
-        @Nullable TransactionBody txBody,
-        @Nullable AccountID payer) {}
+public record ValidationResult(
+        @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}

@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.util;
+package com.hedera.node.app.workflows.handle.flow.dagger.modules;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.workflows.handle.TokenContextImpl;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
+import dagger.Binds;
+import dagger.Module;
 
-public record ValidationResult(
-        @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}
+@Module
+public interface ContextModule {
+    @Binds
+    @UserTxnScope
+    TokenContext bindTokenContext(TokenContextImpl tokenContext);
+}

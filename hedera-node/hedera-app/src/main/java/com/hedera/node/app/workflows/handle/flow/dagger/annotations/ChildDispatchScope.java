@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.annotations;
+package com.hedera.node.app.workflows.handle.flow.dagger.annotations;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -27,10 +27,10 @@ import java.lang.annotation.Target;
 import javax.inject.Scope;
 
 /**
- * Scope for bindings whose lifetime consists of a user transaction dispatch.
+ * Scope for bindings whose lifetime is only for a child transaction dispatch.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
 @Scope
-public @interface UserDispatchScope {}
+public @interface ChildDispatchScope {}

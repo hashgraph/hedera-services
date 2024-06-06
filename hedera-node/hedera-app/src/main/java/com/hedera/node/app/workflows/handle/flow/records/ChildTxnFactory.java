@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra.records;
+package com.hedera.node.app.workflows.handle.flow.records;
 
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 

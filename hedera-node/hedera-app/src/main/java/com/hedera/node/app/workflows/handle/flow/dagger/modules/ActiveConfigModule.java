@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dagger.modules;
 
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;

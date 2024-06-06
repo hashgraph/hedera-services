@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.process;
 
-import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 
 public interface HandleProcess {
 

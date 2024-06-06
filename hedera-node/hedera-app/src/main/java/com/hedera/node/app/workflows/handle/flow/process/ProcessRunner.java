@@ -20,8 +20,8 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
-import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;

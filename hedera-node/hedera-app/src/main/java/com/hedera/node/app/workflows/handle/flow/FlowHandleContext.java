@@ -64,7 +64,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;

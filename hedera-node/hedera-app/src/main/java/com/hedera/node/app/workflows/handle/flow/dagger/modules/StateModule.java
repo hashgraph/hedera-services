@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dagger.modules;
 
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.state.HederaState;
 import dagger.Module;

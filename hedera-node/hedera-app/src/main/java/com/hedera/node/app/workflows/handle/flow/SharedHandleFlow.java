@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import com.hedera.node.app.workflows.handle.flow.annotations.ChildDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.ChildDispatchScope;
 
 @ChildDispatchScope
 public class SharedHandleFlow {

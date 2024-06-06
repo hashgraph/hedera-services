@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.modules;
+package com.hedera.node.app.workflows.handle.flow.dagger.modules;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -46,11 +46,11 @@ import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
-import com.hedera.node.app.workflows.handle.flow.annotations.ChildDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dagger.annotations.ChildDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dagger.qualifiers.ChildQualifier;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.qualifiers.ChildQualifier;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
