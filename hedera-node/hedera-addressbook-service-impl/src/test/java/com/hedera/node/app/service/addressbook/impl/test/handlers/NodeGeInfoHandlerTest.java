@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
+import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
@@ -114,9 +115,6 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     void validatesQueryWhenValidNode() {
         givenValidNode();
 
-        final var config =
-                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
         final var query = createGeNodeInfoQuery(nodeId.number());
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableNodeStore.class)).willReturn(readableStore);
@@ -136,9 +134,6 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
         final var query = createGeNodeInfoQuery(-5L);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNodeStore.class)).thenReturn(store);
-        final var config =
-                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
 
         assertThatThrownBy(() -> subject.validate(context))
                 .isInstanceOf(PreCheckException.class)
@@ -157,9 +152,6 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
         final var query = createEmptyGetNodeInfoQuery();
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNodeStore.class)).thenReturn(store);
-        final var config =
-                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
 
         assertThatThrownBy(() -> subject.validate(context))
                 .isInstanceOf(PreCheckException.class)
@@ -240,8 +232,8 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     private NodeInfo getExpectedInfo(boolean deleted) {
         return NodeInfo.newBuilder()
                 .nodeId(nodeId.number())
-                .accountId(payerId)
-                .description(description)
+                .accountId(accountId)
+                .description("description")
                 .gossipEndpoint((List<ServiceEndpoint>) null)
                 .serviceEndpoint((List<ServiceEndpoint>) null)
                 .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
