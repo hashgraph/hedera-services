@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -42,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
@@ -66,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -192,9 +195,13 @@ public class CryptoUpdateSuite {
 
         AtomicLong expiration = new AtomicLong();
         return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving("entities.unlimitedAutoAssociationsEnabled", "ledger.maxAutoAssociations")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        overridingTwo(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                TRUE_VALUE,
+                                "ledger.maxAutoAssociations",
+                                "5000"),
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
                         cryptoCreate("canonicalAccount")
@@ -447,7 +454,7 @@ public class CryptoUpdateSuite {
                 .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
