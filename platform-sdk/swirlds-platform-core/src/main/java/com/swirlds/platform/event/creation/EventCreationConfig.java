@@ -54,5 +54,5 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
-        @ConfigProperty(defaultValue = "false") boolean useLegacyBackpressure,
+        @ConfigProperty(defaultValue = "true") boolean useLegacyBackpressure,
         @ConfigProperty(defaultValue = "5s") Duration maximumPermissibleUnhealthyDuration) {}

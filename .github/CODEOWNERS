@@ -63,6 +63,7 @@
 /platform-sdk/swirlds-fcqueue/                  @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-jasperdb/                 @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-logging/                  @hashgraph/platform-hashgraph @hashgraph/platform-base
+/platform-sdk/swirlds-logging-*/                @hashgraph/platform-base
 /platform-sdk/swirlds-merkle/                   @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-platform-core/            @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-hashgraph @hashgraph/platform-base

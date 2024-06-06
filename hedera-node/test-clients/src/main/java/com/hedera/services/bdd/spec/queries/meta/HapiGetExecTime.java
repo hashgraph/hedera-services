@@ -28,9 +28,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeResponse;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
@@ -87,9 +88,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = maybeModified(getExecTimesQuery(spec, payment, false), spec);
-        response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getExecutionTime(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         timesResponse = response.getNetworkGetExecutionTime();
         if (verboseLoggingOn) {
             log.info("Exec times :: {}", asReadable(timesResponse.getExecutionTimesList()));
@@ -138,12 +137,15 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
         return sb.toString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getExecTimesQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getExecutionTime(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getExecTimesQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getExecTimesQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

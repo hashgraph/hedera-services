@@ -36,10 +36,12 @@ import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -268,11 +270,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getAccountBalanceQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
-        ResponseCodeEnum status =
-                response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
+        final var status = response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
         if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
             String message = String.format("%s%s was actually deleted!", spec.logPrefix(), repr);
             log.info(message);
@@ -289,6 +288,17 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 System.out.println(".i. " + String.format("%20s | %20d |", repr, balance));
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getAccountBalanceQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getAccountBalanceQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
