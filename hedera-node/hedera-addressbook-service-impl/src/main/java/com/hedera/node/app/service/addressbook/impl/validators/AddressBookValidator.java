@@ -21,13 +21,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_IPV4_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.node.config.data.NodesConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -112,13 +115,26 @@ public class AddressBookValidator {
     private void validateEndpoint(@NonNull final ServiceEndpoint endpoint, @NonNull final NodesConfig nodesConfig) {
         validateFalse(endpoint.port() == 0, INVALID_ENDPOINT);
         validateFalse(
-                endpoint.ipAddressV4().length() == 0
+                (endpoint.ipAddressV4().length() == 0 || endpoint.ipAddressV4().equals(Bytes.EMPTY))
                         && endpoint.domainName().trim().isEmpty(),
                 INVALID_ENDPOINT);
         validateFalse(
                 endpoint.ipAddressV4().length() != 0
+                        && !endpoint.ipAddressV4().equals(Bytes.EMPTY)
                         && !endpoint.domainName().trim().isEmpty(),
                 IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT);
         validateFalse(endpoint.domainName().trim().length() > nodesConfig.maxFqdnSize(), FQDN_SIZE_TOO_LARGE);
+        validateFalse(
+                endpoint.ipAddressV4().length() != 0
+                        && !endpoint.ipAddressV4().equals(Bytes.EMPTY)
+                        && !isIPv4(endpoint.ipAddressV4()),
+                INVALID_IPV4_ADDRESS);
+    }
+
+    private boolean isIPv4(@NonNull final Bytes ip) {
+        requireNonNull(ip);
+        final var part = "(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])";
+        final var regex = part + "\\." + part + "\\." + part + "\\." + part;
+        return ip.asUtf8String().matches(regex);
     }
 }

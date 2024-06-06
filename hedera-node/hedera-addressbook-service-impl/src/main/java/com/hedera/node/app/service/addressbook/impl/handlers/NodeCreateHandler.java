@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -70,13 +71,14 @@ public class NodeCreateHandler implements TransactionHandler {
         validateFalsePreCheck(!accountId.hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
         validateFalsePreCheck(op.gossipEndpoint().isEmpty(), INVALID_GOSSIP_ENDPOINT);
         validateFalsePreCheck(op.serviceEndpoint().isEmpty(), INVALID_SERVICE_ENDPOINT);
-        validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CAE_CERTIFICATE);
+        validateFalsePreCheck(
+                op.gossipCaCertificate().length() == 0
+                        || op.gossipCaCertificate().equals(Bytes.EMPTY),
+                INVALID_GOSSIP_CAE_CERTIFICATE);
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
-        requireNonNull(context);
-    }
+    public void preHandle(@NonNull final PreHandleContext context) {}
 
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
@@ -114,13 +116,11 @@ public class NodeCreateHandler implements TransactionHandler {
         recordBuilder.nodeID(node.nodeId());
     }
 
-    private long getNextNodeID(WritableNodeStore nodeStore) {
+    private long getNextNodeID(@NonNull final WritableNodeStore nodeStore) {
+        requireNonNull(nodeStore);
         final var nodeIds = nodeStore.keys();
-        long max = 0;
-        while (nodeIds.hasNext()) {
-            max = Math.max(max, nodeIds.next().number());
-        }
-
-        return max + 1;
+        AtomicLong max = new AtomicLong(-1);
+        nodeIds.forEachRemaining(nodeId -> max.set(Math.max(max.get(), nodeId.number())));
+        return max.get() + 1;
     }
 }
