@@ -340,6 +340,7 @@ public class HandleWorkflow {
         final var handleStart = System.nanoTime();
         final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
+        //FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var userTxnContext = userTxnProvider.get()
                 .create(platformState, platformEvent, creator, platformTxn, consensusNow);
