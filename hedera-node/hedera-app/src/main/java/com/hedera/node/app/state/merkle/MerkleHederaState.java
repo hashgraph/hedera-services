@@ -30,8 +30,8 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
@@ -97,7 +97,7 @@ import org.apache.logging.log4j.Logger;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleHederaState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState, HederaState, RootNodeState {
+        implements MerkleInternal, SwirldState, HederaState, MerkleRoot {
     private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
 
     /**

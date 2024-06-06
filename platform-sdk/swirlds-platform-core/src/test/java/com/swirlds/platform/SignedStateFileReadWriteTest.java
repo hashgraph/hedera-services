@@ -43,8 +43,8 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
@@ -81,7 +81,7 @@ class SignedStateFileReadWriteTest {
     @DisplayName("writeHashInfoFile() Test")
     void writeHashInfoFileTest() throws IOException {
 
-        final RootNodeState state = new RandomSignedStateGenerator().build().getState();
+        final MerkleRoot state = new RandomSignedStateGenerator().build().getState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         writeHashInfoFile(platformContext, testDirectory, state);

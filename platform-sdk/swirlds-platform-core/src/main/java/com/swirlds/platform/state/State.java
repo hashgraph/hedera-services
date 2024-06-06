@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  * The root of the merkle tree holding the state of the Swirlds ledger. Contains two children: the state used by the
  * application and the state used by the platform.
  */
-public class State extends PartialNaryMerkleInternal implements RootNodeState {
+public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     private static final Logger logger = LogManager.getLogger(State.class);
 
@@ -167,7 +167,7 @@ public class State extends PartialNaryMerkleInternal implements RootNodeState {
      * {@inheritDoc}
      */
     @Override
-    public RootNodeState copy() {
+    public MerkleRoot copy() {
         throwIfImmutable();
         throwIfDestroyed();
         return new State(this);
@@ -192,7 +192,7 @@ public class State extends PartialNaryMerkleInternal implements RootNodeState {
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        final RootNodeState state = (RootNodeState) other;
+        final MerkleRoot state = (MerkleRoot) other;
         return Objects.equals(getPlatformState(), state.getPlatformState())
                 && Objects.equals(getSwirldState(), state.getSwirldState());
     }

@@ -25,8 +25,8 @@ import static com.swirlds.platform.system.SoftwareVersion.NO_VERSION;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -70,7 +70,7 @@ public final class StateInitializer {
             trigger = RESTART;
         }
 
-        final RootNodeState initialState = signedState.getState();
+        final MerkleRoot initialState = signedState.getState();
 
         // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
         // of that state here. That copy should have caused the hash to be cleared.

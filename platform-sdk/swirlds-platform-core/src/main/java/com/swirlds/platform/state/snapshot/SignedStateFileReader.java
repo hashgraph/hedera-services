@@ -28,7 +28,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.RootNodeState;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,7 +83,7 @@ public final class SignedStateFileReader {
 
         final DeserializedSignedState returnState;
 
-        record StateFileData(RootNodeState state, Hash hash, SigSet sigSet) {}
+        record StateFileData(MerkleRoot state, Hash hash, SigSet sigSet) {}
 
         final StateFileData data = deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
@@ -92,7 +92,7 @@ public final class SignedStateFileReader {
 
                     final Path directory = stateFile.getParent();
 
-                    final RootNodeState state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
+                    final MerkleRoot state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
                     final Hash hash = in.readSerializable();
                     final SigSet sigSet = in.readSerializable();
 

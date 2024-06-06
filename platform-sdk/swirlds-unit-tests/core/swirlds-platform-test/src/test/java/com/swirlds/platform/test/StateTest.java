@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.platform.state.RootNodeState;
+import com.swirlds.platform.state.MerkleRoot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,8 +37,8 @@ class StateTest {
     @DisplayName("Test Copy")
     void testCopy() {
 
-        final RootNodeState state = SignedStateUtils.randomSignedState(0).getState();
-        final RootNodeState copy = state.copy();
+        final MerkleRoot state = SignedStateUtils.randomSignedState(0).getState();
+        final MerkleRoot copy = state.copy();
 
         assertNotSame(state, copy, "copy should not return the same object");
 
@@ -59,7 +59,7 @@ class StateTest {
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Test Try Reserve")
     void tryReserveTest() {
-        final RootNodeState state = SignedStateUtils.randomSignedState(0).getState();
+        final MerkleRoot state = SignedStateUtils.randomSignedState(0).getState();
         assertEquals(
                 1,
                 state.getReservationCount(),

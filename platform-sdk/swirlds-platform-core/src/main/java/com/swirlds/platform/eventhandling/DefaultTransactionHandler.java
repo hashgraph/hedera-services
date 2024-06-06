@@ -36,8 +36,8 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -300,7 +300,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         }
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        final RootNodeState immutableStateCons = swirldStateManager.getStateForSigning();
+        final MerkleRoot immutableStateCons = swirldStateManager.getStateForSigning();
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(

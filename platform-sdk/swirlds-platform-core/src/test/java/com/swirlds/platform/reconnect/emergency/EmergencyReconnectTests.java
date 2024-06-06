@@ -57,8 +57,8 @@ import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
@@ -229,7 +229,7 @@ class EmergencyReconnectTests {
 
     private ReconnectController createReconnectController(
             final AddressBook addressBook,
-            final Supplier<RootNodeState> learnerState,
+            final Supplier<MerkleRoot> learnerState,
             final Consumer<SignedState> receivedStateConsumer) {
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);

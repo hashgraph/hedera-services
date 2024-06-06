@@ -22,7 +22,7 @@ import com.swirlds.platform.system.SwirldState;
 /**
  * This interface represents the root node of Hedera Merkle tree.
  */
-public interface RootNodeState extends MerkleInternal {
+public interface MerkleRoot extends MerkleInternal {
     /**
      * Get the application state.
      *
@@ -51,5 +51,5 @@ public interface RootNodeState extends MerkleInternal {
     String getInfoString(int hashDepth);
 
     /** {@inheritDoc} */
-    RootNodeState copy();
+    MerkleRoot copy();
 }

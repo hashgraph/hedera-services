@@ -49,12 +49,12 @@ public class SwirldStateManager implements FreezePeriodChecker {
     /**
      * reference to the state that reflects all known consensus transactions
      */
-    private final AtomicReference<RootNodeState> stateRef = new AtomicReference<>();
+    private final AtomicReference<MerkleRoot> stateRef = new AtomicReference<>();
 
     /**
      * The most recent immutable state. No value until the first fast copy is created.
      */
-    private final AtomicReference<RootNodeState> latestImmutableState = new AtomicReference<>();
+    private final AtomicReference<MerkleRoot> latestImmutableState = new AtomicReference<>();
 
     /**
      * Handle transactions by applying them to a state
@@ -104,7 +104,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param state the initial state
      */
-    public void setInitialState(@NonNull final RootNodeState state) {
+    public void setInitialState(@NonNull final MerkleRoot state) {
         Objects.requireNonNull(state);
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
@@ -125,7 +125,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param round the round to handle
      */
     public void handleConsensusRound(final ConsensusRound round) {
-        final RootNodeState state = stateRef.get();
+        final MerkleRoot state = stateRef.get();
 
         uptimeTracker.handleRound(
                 round,
@@ -139,7 +139,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * Returns the consensus state. The consensus state could become immutable at any time. Modifications must not be
      * made to the returned state.
      */
-    public RootNodeState getConsensusState() {
+    public MerkleRoot getConsensusState() {
         return stateRef.get();
     }
 
@@ -163,7 +163,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @param signedState the signed state to load
      */
     public void loadFromSignedState(@NonNull final SignedState signedState) {
-        final RootNodeState state = signedState.getState();
+        final MerkleRoot state = signedState.getState();
 
         state.throwIfDestroyed("state must not be destroyed");
         state.throwIfImmutable("state must be mutable");
@@ -171,8 +171,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
         fastCopyAndUpdateRefs(state);
     }
 
-    private void fastCopyAndUpdateRefs(final RootNodeState state) {
-        final RootNodeState consState = fastCopy(state, stats, softwareVersion);
+    private void fastCopyAndUpdateRefs(final MerkleRoot state) {
+        final MerkleRoot consState = fastCopy(state, stats, softwareVersion);
 
         // Set latest immutable first to prevent the newly immutable state from being deleted between setting the
         // stateRef and the latestImmutableState
@@ -185,8 +185,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param state the new mutable state
      */
-    private void setState(final RootNodeState state) {
-        final RootNodeState currVal = stateRef.get();
+    private void setState(final MerkleRoot state) {
+        final MerkleRoot currVal = stateRef.get();
         if (currVal != null) {
             currVal.release();
         }
@@ -195,8 +195,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
         stateRef.set(state);
     }
 
-    private void setLatestImmutableState(final RootNodeState immutableState) {
-        final RootNodeState currVal = latestImmutableState.get();
+    private void setLatestImmutableState(final MerkleRoot immutableState) {
+        final MerkleRoot currVal = latestImmutableState.get();
         if (currVal != null) {
             currVal.release();
         }
@@ -233,7 +233,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * @return a copy of the state to use for the next signed state
      * @see State#copy()
      */
-    public RootNodeState getStateForSigning() {
+    public MerkleRoot getStateForSigning() {
         fastCopyAndUpdateRefs(stateRef.get());
         return latestImmutableState.get();
     }
