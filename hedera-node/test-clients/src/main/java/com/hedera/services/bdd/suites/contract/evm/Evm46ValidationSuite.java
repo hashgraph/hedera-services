@@ -1480,18 +1480,7 @@ public class Evm46ValidationSuite {
     final Stream<DynamicTest> testCallOperationsForSystemAccounts() {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "call";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[callOperationsSuccessSystemAccounts.size()];
-        for (int i = 0; i < callOperationsSuccessSystemAccounts.size(); i++) {
-            int finalI = i;
-            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
-                    spec,
-                    contractCall(
-                                    contract,
-                                    functionName,
-                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
-                            .hasKnownStatus(SUCCESS)
-                            .via("callTest" + finalI)));
-        }
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
         return defaultHapiSpec("testCallOperationsForSystemAccounts")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
@@ -1502,18 +1491,7 @@ public class Evm46ValidationSuite {
     final Stream<DynamicTest> testCallCodeOperationsForSystemAccounts() {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "callCode";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[callOperationsSuccessSystemAccounts.size()];
-        for (int i = 0; i < callOperationsSuccessSystemAccounts.size(); i++) {
-            int finalI = i;
-            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
-                    spec,
-                    contractCall(
-                                    contract,
-                                    functionName,
-                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
-                            .hasKnownStatus(SUCCESS)
-                            .via("callCodeTest" + finalI)));
-        }
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
         return defaultHapiSpec("testCallCodeOperationsForSystemAccounts")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
@@ -1524,18 +1502,7 @@ public class Evm46ValidationSuite {
     final Stream<DynamicTest> testDelegateCallOperationsForSystemAccounts() {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "delegateCall";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[callOperationsSuccessSystemAccounts.size()];
-        for (int i = 0; i < callOperationsSuccessSystemAccounts.size(); i++) {
-            int finalI = i;
-            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
-                    spec,
-                    contractCall(
-                                    contract,
-                                    functionName,
-                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
-                            .hasKnownStatus(SUCCESS)
-                            .via("delegateCall" + finalI)));
-        }
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
         return defaultHapiSpec("testDelegateCallOperationsForSystemAccounts")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
@@ -1546,6 +1513,14 @@ public class Evm46ValidationSuite {
     final Stream<DynamicTest> testStaticCallOperationsForSystemAccounts() {
         final var contract = "CallOperationsCheckerSuccess";
         final var functionName = "staticcall";
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
+        return defaultHapiSpec("testStaticCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    private HapiSpecOperation[] getCallOperationsOnSystemAccounts(String contract, String functionName) {
         final HapiSpecOperation[] opsArray = new HapiSpecOperation[callOperationsSuccessSystemAccounts.size()];
         for (int i = 0; i < callOperationsSuccessSystemAccounts.size(); i++) {
             int finalI = i;
@@ -1555,12 +1530,8 @@ public class Evm46ValidationSuite {
                                     contract,
                                     functionName,
                                     mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
-                            .hasKnownStatus(SUCCESS)
-                            .via("staticcall" + finalI)));
+                            .hasKnownStatus(SUCCESS)));
         }
-        return defaultHapiSpec("testStaticCallOperationsForSystemAccounts")
-                .given(uploadInitCode(contract), contractCreate(contract))
-                .when()
-                .then(opsArray);
+        return opsArray;
     }
 }
