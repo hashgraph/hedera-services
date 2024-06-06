@@ -72,7 +72,6 @@ import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.fees.Payment;
-import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -227,7 +226,6 @@ public class HapiSpec implements Runnable, Executable {
     FeeCalculator feeCalculator;
     FeesAndRatesProvider ratesProvider;
     HapiSpecSetup hapiSetup;
-    HapiClients hapiClients;
     HapiSpecRegistry hapiRegistry;
     SpecOperation[] given;
     SpecOperation[] when;
@@ -511,21 +509,18 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     private boolean init() {
-        hapiClients = clientsFor(hapiSetup);
         if (targetNetwork == null) {
-            targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), hapiClients);
+            targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), clientsFor(hapiSetup));
         }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
             if (sharedStates != null) {
-                sharedStates.forEach(sharedState -> {
-                    hapiRegistry.include(sharedState.registry());
-                });
+                sharedStates.forEach(sharedState -> hapiRegistry.include(sharedState.registry()));
             }
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
             txnFactory = new TxnFactory(hapiSetup, keyFactory);
             FeesAndRatesProvider scheduleProvider =
-                    new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
+                    new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiRegistry, targetNetwork);
             feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
             this.ratesProvider = scheduleProvider;
         } catch (Throwable t) {
@@ -1340,7 +1335,6 @@ public class HapiSpec implements Runnable, Executable {
         entities = null;
         feeCalculator = null;
         ratesProvider = null;
-        hapiClients = null;
         hapiRegistry = null;
     }
 }

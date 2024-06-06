@@ -31,7 +31,6 @@ import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -99,7 +98,6 @@ class IngestComponentTest {
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .bootstrapProps(new BootstrapProperties())
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
                 .self(selfNodeInfo)

@@ -48,7 +48,6 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
@@ -552,7 +551,7 @@ public final class Hedera implements SwirldMain {
                             LANG={}
                             file.encoding={}
                             """,
-                    daggerApp.nodeId(),
+                    nodeId,
                     defaultCharset,
                     System.getenv("LC_ALL"),
                     System.getenv("LANG"),
@@ -564,8 +563,7 @@ public final class Hedera implements SwirldMain {
         final var digestFactory = daggerApp.digestFactory();
         if (!sha384DigestIsAvailable(digestFactory)) {
             logger.error(
-                    "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384",
-                    daggerApp.nodeId());
+                    "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384", nodeId);
             daggerApp.systemExits().fail(1);
         }
 
@@ -624,7 +622,7 @@ public final class Hedera implements SwirldMain {
             // Has some relationship to freeze/upgrade, but also with balance exports. This was the trigger that
             // caused us to export balance files on a certain schedule.
         } catch (final Throwable th) {
-            logger.error("Fatal precondition violation in HederaNode#{}", daggerApp.nodeId(), th);
+            logger.error("Fatal precondition violation in HederaNode#{}", nodeId, th);
             daggerApp.systemExits().fail(1); // TBD: Better exit code?
         }
     }
@@ -900,7 +898,6 @@ public final class Hedera implements SwirldMain {
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                 .instantSource(InstantSource.system())
                 .genesisRecordsConsensusHook((GenesisRecordsConsensusHook) genesisRecordsBuilder)
                 .build();

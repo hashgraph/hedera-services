@@ -152,22 +152,6 @@ public class HapiSpecSetup {
         return props.get("app.properties.name");
     }
 
-    public Boolean clientFeeScheduleFromDisk() {
-        return props.getBoolean("client.feeSchedule.fromDisk");
-    }
-
-    public String clientFeeSchedulePath() {
-        return props.get("client.feeSchedule.path");
-    }
-
-    public Boolean clientExchangeRatesFromDisk() {
-        return props.getBoolean("client.exchangeRates.fromDisk");
-    }
-
-    public String clientExchangeRatesPath() {
-        return props.get("client.exchangeRates.path");
-    }
-
     public String costSnapshotDir() {
         return props.get("cost.snapshot.dir");
     }
@@ -451,7 +435,7 @@ public class HapiSpecSetup {
         return props.getInteger("fees.tokenTransferUsageMultiplier");
     }
 
-    public Boolean useFixedFee() {
+    public boolean useFixedFee() {
         return props.getBoolean("fees.useFixedOffer");
     }
 
@@ -505,10 +489,6 @@ public class HapiSpecSetup {
 
     public String invalidContractName() {
         return props.get("invalid.contract.name");
-    }
-
-    public Boolean measureConsensusLatency() {
-        return props.getBoolean("measure.consensus.latency");
     }
 
     public Boolean suppressUnrecoverableNetworkFailures() {

@@ -91,7 +91,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
 
     @Override
     public SubProcessNode initWorkingDir(@NonNull final String configTxt) {
-        recreateWorkingDir(metadata.workingDir(), configTxt);
+        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
         workingDirInitialized = true;
         return this;
     }
