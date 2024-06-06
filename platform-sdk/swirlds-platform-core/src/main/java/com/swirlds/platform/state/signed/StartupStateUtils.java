@@ -254,7 +254,8 @@ public final class StartupStateUtils {
             }
         }
 
-        final RootNodeState state = deserializedSignedState.reservedSignedState().get().getState();
+        final RootNodeState state =
+                deserializedSignedState.reservedSignedState().get().getState();
 
         final Hash oldHash = deserializedSignedState.originalHash();
         final Hash newHash = rehashTree(state);
