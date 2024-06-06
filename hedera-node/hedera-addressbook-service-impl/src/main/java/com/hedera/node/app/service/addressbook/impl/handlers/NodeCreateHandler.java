@@ -78,7 +78,9 @@ public class NodeCreateHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {}
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+    }
 
     @Override
     public void handle(@NonNull final HandleContext handleContext) {

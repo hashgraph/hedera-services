@@ -69,7 +69,9 @@ public class NodeUpdateHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {}
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+    }
 
     @Override
     public void handle(@NonNull final HandleContext handleContext) {
