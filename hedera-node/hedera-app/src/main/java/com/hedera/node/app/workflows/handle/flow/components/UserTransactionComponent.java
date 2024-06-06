@@ -25,7 +25,6 @@ import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.modules.ContextModule;
 import com.hedera.node.app.workflows.handle.flow.modules.PreHandleResultModule;
-import com.hedera.node.app.workflows.handle.flow.modules.RecordStreamModule;
 import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
 import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchSubcomponentModule;
 import com.hedera.node.app.workflows.handle.flow.process.ProcessRunner;
@@ -50,8 +49,7 @@ import javax.inject.Provider;
             ActiveConfigModule.class,
             ContextModule.class,
             PreHandleResultModule.class,
-            UserDispatchSubcomponentModule.class,
-            RecordStreamModule.class
+            UserDispatchSubcomponentModule.class
         })
 @UserTxnScope
 public interface UserTransactionComponent {

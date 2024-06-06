@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import java.time.Instant;
@@ -67,7 +68,7 @@ public interface Dispatch {
      * The readable store factory for the transaction
      * @return the store factory
      */
-    ReadableStoreFactory storeFactory();
+    ReadableStoreFactory readableStoreFactory();
 
     /**
      * The due diligence info for the transaction.
@@ -141,4 +142,10 @@ public interface Dispatch {
      * @return the finalize context
      */
     FinalizeContext finalizeContext();
+
+    /**
+     * The record list builder for the user transaction
+     * @return the record list builder
+     */
+    RecordListBuilder recordListBuilder();
 }

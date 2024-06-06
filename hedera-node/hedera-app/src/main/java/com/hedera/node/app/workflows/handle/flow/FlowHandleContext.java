@@ -56,6 +56,8 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -69,6 +71,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.function.Predicate;
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 /**
  * The HandleContext Implementation
@@ -96,6 +99,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private final ServiceApiFactory serviceApiFactory;
     private final NetworkInfo networkInfo;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
+    private final Provider<ChildDispatchComponent.Factory> childDispatchFactory;
+    private final ChildDispatchLogic childDispatchLogic;
 
     @Inject
     public FlowHandleContext(
@@ -118,7 +123,9 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             final WritableStoreFactory writableStoreFactory,
             final ServiceApiFactory serviceApiFactory,
             final NetworkInfo networkInfo,
-            final SingleTransactionRecordBuilderImpl recordBuilder) {
+            final SingleTransactionRecordBuilderImpl recordBuilder,
+            final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
+            final ChildDispatchLogic childDispatchLogic) {
         this.consensusNow = consensusNow;
         this.txnInfo = transactionInfo;
         this.configuration = configuration;
@@ -133,6 +140,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         this.exchangeRateManager = exchangeRateManager;
         this.stack = stack;
         this.entityIdStore = entityIdStore;
+        this.childDispatchFactory = childDispatchFactory;
+        this.childDispatchLogic = childDispatchLogic;
         // TODO : Provide these two from UserTxnScope after deleting mono code
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);

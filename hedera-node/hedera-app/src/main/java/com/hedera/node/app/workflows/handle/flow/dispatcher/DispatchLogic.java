@@ -25,7 +25,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
-import com.hedera.node.app.workflows.handle.flow.DueDiligenceReport;
+import com.hedera.node.app.workflows.handle.flow.ErrorReport;
 import com.hedera.node.app.workflows.handle.flow.infra.HandleLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.records.RecordFinalizerlogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -102,7 +102,7 @@ public class DispatchLogic {
      */
     private void handleTransaction(
             @NonNull final Dispatch dispatch,
-            @NonNull final DueDiligenceReport dueDiligenceReport,
+            @NonNull final ErrorReport dueDiligenceReport,
             @NonNull final RecordListBuilder recordListBuilder) {
         try {
             handleLogic.handle(dispatch);
@@ -126,7 +126,7 @@ public class DispatchLogic {
      * @param dispatch the dispatch to be processed
      * @param report the due diligence report for the dispatch
      */
-    private void chargeCreator(final Dispatch dispatch, DueDiligenceReport report) {
+    private void chargeCreator(final Dispatch dispatch, ErrorReport report) {
         dispatch.recordBuilder().status(report.dueDiligenceInfo().dueDiligenceStatus());
         dispatch.feeAccumulator()
                 .chargeNetworkFee(
@@ -140,7 +140,7 @@ public class DispatchLogic {
      * @param dispatch the dispatch to be processed
      * @param report the due diligence report for the dispatch
      */
-    private void chargePayer(final Dispatch dispatch, DueDiligenceReport report) {
+    private void chargePayer(final Dispatch dispatch, ErrorReport report) {
         final var hasWaivedFees = authorizer.hasWaivedFees(
                 dispatch.syntheticPayer(),
                 dispatch.txnInfo().functionality(),

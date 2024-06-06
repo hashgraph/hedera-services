@@ -21,14 +21,13 @@ import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record DueDiligenceReport(
+public record ErrorReport(
         @Nullable Account payer,
         @NonNull DueDiligenceInfo dueDiligenceInfo,
         boolean isDuplicate,
         @NonNull ResponseCodeEnum payerSolvency,
         boolean unableToPayServiceFee) {
-    public DueDiligenceReport(
-            @Nullable Account payer, @NonNull DueDiligenceInfo dueDiligenceInfo, boolean isDuplicate) {
+    public ErrorReport(@Nullable Account payer, @NonNull DueDiligenceInfo dueDiligenceInfo, boolean isDuplicate) {
         this(payer, dueDiligenceInfo, isDuplicate, ResponseCodeEnum.OK, false);
     }
 

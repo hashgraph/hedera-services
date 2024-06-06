@@ -50,13 +50,13 @@ public class DueDiligenceLogic {
         this.transactionChecker = transactionChecker;
     }
 
-    public DueDiligenceReport dueDiligenceReportFor(@NonNull final Dispatch dispatch) {
+    public ErrorReport dueDiligenceReportFor(@NonNull final Dispatch dispatch) {
         if (dispatch.dueDiligenceInfo().dueDiligenceStatus() != ResponseCodeEnum.OK) {
-            return new DueDiligenceReport(null, dispatch.dueDiligenceInfo(), false);
+            return new ErrorReport(null, dispatch.dueDiligenceInfo(), false);
         } else {
             final var response = checkIfExpired(dispatch);
             if (response != OK) {
-                return new DueDiligenceReport(null, dispatch.dueDiligenceInfo().withReplacementStatus(response), false);
+                return new ErrorReport(null, dispatch.dueDiligenceInfo().withReplacementStatus(response), false);
             }
 
             final var payer = getPayer(dispatch);
@@ -64,7 +64,7 @@ public class DueDiligenceLogic {
             if (!isPayerHollow) {
                 final var verification = dispatch.keyVerifier().verificationFor(payer.keyOrThrow());
                 if (verification.failed()) {
-                    return new DueDiligenceReport(
+                    return new ErrorReport(
                             null, dispatch.dueDiligenceInfo().withReplacementStatus(INVALID_PAYER_SIGNATURE), false);
                 }
             }
@@ -75,7 +75,7 @@ public class DueDiligenceLogic {
                     dispatch.creatorInfo().nodeId());
             return switch (duplicateCheckResult) {
                 case NO_DUPLICATE -> checkSolvencyOfPayer(payer, false, dispatch);
-                case SAME_NODE -> new DueDiligenceReport(
+                case SAME_NODE -> new ErrorReport(
                         null, dispatch.dueDiligenceInfo().withReplacementStatus(DUPLICATE_TRANSACTION), true);
                 case OTHER_NODE -> checkSolvencyOfPayer(payer, true, dispatch);
             };
@@ -83,19 +83,19 @@ public class DueDiligenceLogic {
     }
 
     @NonNull
-    private DueDiligenceReport checkSolvencyOfPayer(final Account payer, boolean isDuplicate, final Dispatch dispatch) {
+    private ErrorReport checkSolvencyOfPayer(final Account payer, boolean isDuplicate, final Dispatch dispatch) {
         try {
             solvencyPreCheck.checkSolvency(dispatch.txnInfo(), payer, dispatch.calculatedFees(), false);
         } catch (final InsufficientServiceFeeException e) {
-            return new DueDiligenceReport(payer, dispatch.dueDiligenceInfo(), isDuplicate, e.responseCode(), true);
+            return new ErrorReport(payer, dispatch.dueDiligenceInfo(), isDuplicate, e.responseCode(), true);
         } catch (final InsufficientNonFeeDebitsException e) {
-            return new DueDiligenceReport(payer, dispatch.dueDiligenceInfo(), isDuplicate, e.responseCode(), false);
+            return new ErrorReport(payer, dispatch.dueDiligenceInfo(), isDuplicate, e.responseCode(), false);
         } catch (final PreCheckException e) {
             // Includes InsufficientNetworkFeeException
-            return new DueDiligenceReport(
+            return new ErrorReport(
                     null, dispatch.dueDiligenceInfo().withReplacementStatus(e.responseCode()), isDuplicate);
         }
-        return new DueDiligenceReport(payer, dispatch.dueDiligenceInfo(), isDuplicate);
+        return new ErrorReport(payer, dispatch.dueDiligenceInfo(), isDuplicate);
     }
 
     private ResponseCodeEnum checkIfExpired(final @NonNull Dispatch dispatch) {
@@ -113,7 +113,7 @@ public class DueDiligenceLogic {
 
     private Account getPayer(final Dispatch dispatch) {
         try {
-            return solvencyPreCheck.getPayerAccount(dispatch.storeFactory(), dispatch.syntheticPayer());
+            return solvencyPreCheck.getPayerAccount(dispatch.readableStoreFactory(), dispatch.syntheticPayer());
         } catch (Exception e) {
             throw new IllegalStateException("Missing payer should be a due diligence failure", e);
         }
