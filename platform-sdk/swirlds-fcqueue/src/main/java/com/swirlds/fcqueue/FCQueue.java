@@ -67,7 +67,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
          */
         public static final int ORIGINAL = 1;
         /**
-         * FCQ implements MerkleLeaf, element implements FastCopyable & SerializableHashable
+         * FCQ implements MerkleLeaf, element implements FastCopyable and SerializableHashable
          */
         public static final int MIGRATE_TO_SERIALIZABLE = 2;
 
