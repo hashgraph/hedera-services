@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.metrics;
-
-import com.swirlds.state.spi.metrics.StoreMetrics;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public interface StoreMetricsService {
-
-    enum StoreType {
-        TOPIC,
-        ACCOUNT,
-        NFT,
-        TOKEN,
-        TOKEN_RELATION,
-        FILE,
-        SLOT_STORAGE,
-        CONTRACT,
-        SCHEDULE,
-        NODE
-    }
-
-    StoreMetrics get(@NonNull StoreType storeType, long capacity);
+plugins {
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.java-test-fixtures")
 }
+
+description = "Hedera AddressBook Service API"
