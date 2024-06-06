@@ -484,10 +484,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private void setupConfig(boolean balancesInQueriesEnabled) {
         final var configBuilder = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
-                .withValue("ledger.id", "0x03");
-        if (balancesInQueriesEnabled) {
-            configBuilder.withValue("tokens.balancesInQueries.enabled", true);
-        }
+                .withValue("ledger.id", "0x03")
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled);
         given(context.configuration()).willReturn(configBuilder.getOrCreateConfig());
     }
 
