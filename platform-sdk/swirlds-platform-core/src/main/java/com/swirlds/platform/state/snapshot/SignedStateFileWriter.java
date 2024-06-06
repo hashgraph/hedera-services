@@ -35,7 +35,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,7 +68,7 @@ public final class SignedStateFileWriter {
      * @param directory       the directory where the state is being written
      */
     public static void writeHashInfoFile(
-            @NonNull final PlatformContext platformContext, final Path directory, final State state)
+            @NonNull final PlatformContext platformContext, final Path directory, final RootNodeState state)
             throws IOException {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final String platformInfo = state.getInfoString(stateConfig.debugHashDepth());

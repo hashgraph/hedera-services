@@ -63,7 +63,7 @@ public final class BirthRoundStateMigration {
             return;
         }
 
-        final State state = initialState.getState();
+        final RootNodeState state = initialState.getState();
         final PlatformState platformState = state.getPlatformState();
 
         final boolean alreadyMigrated = platformState.getFirstVersionInBirthRoundMode() != null;

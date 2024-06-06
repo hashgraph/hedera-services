@@ -38,7 +38,7 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
@@ -187,7 +187,7 @@ final class ReconnectTest {
     }
 
     private ReconnectLearner buildReceiver(
-            final State state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
+            final RootNodeState state, final Connection connection, final ReconnectMetrics reconnectMetrics) {
         final AddressBook addressBook = buildAddressBook(5);
 
         return new ReconnectLearner(

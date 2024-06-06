@@ -70,7 +70,7 @@ class StateRegistryTests {
 
         assertEquals(0, RuntimeObjectRegistry.getActiveObjectsCount(State.class), "no states have been created yet");
 
-        final List<State> states = new LinkedList<>();
+        final List<RootNodeState> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
             states.add(new State());
@@ -81,9 +81,9 @@ class StateRegistryTests {
         }
 
         // Fast copy a state
-        final State stateToCopy = new State();
+        final RootNodeState stateToCopy = new State();
         states.add(stateToCopy);
-        final State copyOfStateToCopy = stateToCopy.copy();
+        final RootNodeState copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
@@ -100,7 +100,7 @@ class StateRegistryTests {
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
         io.startReading();
-        final State deserializedState = io.getInput().readMerkleTree(dir, 5);
+        final RootNodeState deserializedState = io.getInput().readMerkleTree(dir, 5);
         states.add(deserializedState);
         assertEquals(
                 states.size(),

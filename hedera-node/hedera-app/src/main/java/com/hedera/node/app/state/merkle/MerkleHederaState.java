@@ -31,6 +31,8 @@ import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.RootNodeState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
@@ -94,7 +96,7 @@ import org.apache.logging.log4j.Logger;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
-public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState {
+public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState, HederaState, RootNodeState {
     private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
 
     /**
@@ -784,5 +786,26 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     @NonNull
     private static String extractStateKey(@NonNull final StateMetadata<?, ?> md) {
         return md.stateDefinition().stateKey();
+    }
+
+    // FUTURE USE: the following code will become relevant with https://github.com/hashgraph/hedera-services/issues/11773
+    @Override
+    public SwirldState getSwirldState() {
+        return this;
+    }
+
+    @Override
+    public PlatformState getPlatformState() {
+        throw new UnsupportedOperationException("To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
+    }
+
+    @Override
+    public void setPlatformState(PlatformState platformState) {
+        throw new UnsupportedOperationException("To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
+    }
+
+    @Override
+    public String getInfoString(int hashDepth) {
+        return State.createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 }

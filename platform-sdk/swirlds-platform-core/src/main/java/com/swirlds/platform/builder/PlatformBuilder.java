@@ -70,7 +70,7 @@ import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.scratchpad.Scratchpad;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.iss.IssScratchpad;
@@ -535,7 +535,7 @@ public final class PlatformBuilder {
                 platformContext);
 
         if (addressBookInitializer.hasAddressBookChanged()) {
-            final State state = initialState.get().getState();
+            final RootNodeState state = initialState.get().getState();
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.

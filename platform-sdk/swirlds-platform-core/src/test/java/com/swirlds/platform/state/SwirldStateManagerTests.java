@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private State initialState;
+    private RootNodeState initialState;
 
     @BeforeEach
     void setup() {
@@ -107,7 +107,7 @@ class SwirldStateManagerTests {
                         + "decremented.");
     }
 
-    private static State newState() {
+    private static RootNodeState newState() {
         final State state = new State();
         state.setSwirldState(new DummySwirldState());
 

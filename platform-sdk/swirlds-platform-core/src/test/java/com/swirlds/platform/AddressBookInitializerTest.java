@@ -39,6 +39,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.AddressBookConfig_;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.RootNodeState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
@@ -378,7 +379,7 @@ class AddressBookInitializerTest {
         when(platformState.getCreationSoftwareVersion()).thenReturn(softwareVersion);
         when(platformState.getAddressBook()).thenReturn(currentAddressBook);
         when(platformState.getPreviousAddressBook()).thenReturn(previousAddressBook);
-        final State state = mock(State.class);
+        final RootNodeState state = mock(State.class);
         when(state.getPlatformState()).thenReturn(platformState);
         when(signedState.getState()).thenReturn(state);
         when(signedState.isGenesisState()).thenReturn(fromGenesis);

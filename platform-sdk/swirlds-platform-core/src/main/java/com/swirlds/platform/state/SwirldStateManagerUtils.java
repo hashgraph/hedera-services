@@ -41,8 +41,8 @@ public final class SwirldStateManagerUtils {
      * @param softwareVersion the current software version
      * @return the newly created state copy
      */
-    public static State fastCopy(
-            @NonNull final State state,
+    public static RootNodeState fastCopy(
+            @NonNull final RootNodeState state,
             @NonNull final SwirldStateMetrics stats,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -51,7 +51,7 @@ public final class SwirldStateManagerUtils {
         final long copyStart = System.nanoTime();
 
         // Create a fast copy
-        final State copy = state.copy();
+        final RootNodeState copy = state.copy();
         state.getPlatformState().setCreationSoftwareVersion(softwareVersion);
 
         // Increment the reference count because this reference becomes the new value
