@@ -18,9 +18,11 @@ package com.hedera.node.app.workflows.handle.flow.infra.records;
 
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
@@ -51,7 +53,13 @@ public class ChildTxnFactory {
                 .build();
 
         return new TransactionInfo(
-                transaction, txBody, SignatureMap.DEFAULT, signedTransactionBytes, functionOfTxn(txBody));
+                transaction,
+                txBody,
+                TransactionID.DEFAULT,
+                AccountID.DEFAULT,
+                SignatureMap.DEFAULT,
+                signedTransactionBytes,
+                functionOfTxn(txBody));
     }
 
     /**

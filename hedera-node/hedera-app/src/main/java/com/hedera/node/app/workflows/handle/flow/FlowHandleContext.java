@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -24,7 +26,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.WritableEntityIdStore;
@@ -47,10 +53,12 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -58,6 +66,8 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -68,6 +78,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -101,6 +112,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final Provider<ChildDispatchComponent.Factory> childDispatchFactory;
     private final ChildDispatchLogic childDispatchLogic;
+    private final Dispatch parentDispatch;
+    private final DispatchLogic dispatchLogic;
 
     @Inject
     public FlowHandleContext(
@@ -125,7 +138,9 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             final NetworkInfo networkInfo,
             final SingleTransactionRecordBuilderImpl recordBuilder,
             final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
-            final ChildDispatchLogic childDispatchLogic) {
+            final ChildDispatchLogic childDispatchLogic,
+            final Dispatch parentDispatch,
+            final DispatchLogic dispatchLogic) {
         this.consensusNow = consensusNow;
         this.txnInfo = transactionInfo;
         this.configuration = configuration;
@@ -142,6 +157,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         this.entityIdStore = entityIdStore;
         this.childDispatchFactory = childDispatchFactory;
         this.childDispatchLogic = childDispatchLogic;
+        this.parentDispatch = parentDispatch;
+        this.dispatchLogic = dispatchLogic;
         // TODO : Provide these two from UserTxnScope after deleting mono code
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
@@ -347,71 +364,141 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        var bodyToDispatch = txBody;
+        if (!txBody.hasTransactionID()) {
+            // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
+            // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
+            bodyToDispatch = txBody.copyBuilder()
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(syntheticPayerId)
+                            .transactionValidStart(Timestamp.newBuilder()
+                                    .seconds(consensusNow().getEpochSecond())
+                                    .nanos(consensusNow().getNano())))
+                    .build();
+        }
+        try {
+            // If the payer is authorized to waive fees, then we can skip the fee calculation.
+            if (authorizer.hasWaivedFees(syntheticPayerId, functionOf(txBody), bodyToDispatch)) {
+                return Fees.FREE;
+            }
+        } catch (UnknownHederaFunctionality ex) {
+            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        }
+
+        return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(
+                feeManager,
+                this,
+                bodyToDispatch,
+                syntheticPayerId,
+                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
+                authorizer,
+                numTxnSignatures()));
     }
 
     @NonNull
     @Override
     public <T> T dispatchPrecedingTransaction(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody childTxnBody,
             @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> verifier,
-            final AccountID syntheticPayer) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+            @Nullable final Predicate<Key> childCallback,
+            final AccountID childSyntheticPayerId) {
+        return dispatchForRecord(
+                childTxnBody,
+                recordBuilderClass,
+                childCallback,
+                childSyntheticPayerId,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                TransactionCategory.PRECEDING,
+                SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
+                true);
     }
 
     @NonNull
     @Override
     public <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> verifier,
-            final AccountID syntheticPayer) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+            @NonNull final Predicate<Key> childCallback,
+            final AccountID childSyntheticPayer) {
+        return dispatchForRecord(
+                childTxBody,
+                recordBuilderClass,
+                childCallback,
+                childSyntheticPayer,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                TransactionCategory.PRECEDING,
+                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                false);
     }
 
     @NonNull
     @Override
     public <T> T dispatchRemovablePrecedingTransaction(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> verifier,
-            final AccountID syntheticPayer) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+            @Nullable final Predicate<Key> childCallback,
+            final AccountID childSyntheticPayer) {
+        return dispatchForRecord(
+                childTxBody,
+                recordBuilderClass,
+                childCallback,
+                childSyntheticPayer,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                TransactionCategory.PRECEDING,
+                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                false);
     }
 
     @NonNull
     @Override
     public <T> T dispatchChildTransaction(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId,
+            @Nullable final Predicate<Key> childCallback,
+            @NonNull final AccountID childSyntheticPayerId,
             @NonNull final TransactionCategory childCategory) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        return dispatchForRecord(
+                childTxBody,
+                recordBuilderClass,
+                childCallback,
+                childSyntheticPayerId,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                childCategory,
+                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                false);
     }
 
     @NonNull
     @Override
     public <T> T dispatchRemovableChildTransaction(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId,
+            @Nullable final Predicate<Key> childCallback,
+            @NonNull final AccountID childSyntheticPayerId,
             @NonNull final ExternalizedRecordCustomizer customizer) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        return dispatchForRecord(
+                childTxBody,
+                recordBuilderClass,
+                childCallback,
+                childSyntheticPayerId,
+                customizer,
+                TransactionCategory.CHILD,
+                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                false);
     }
 
     @NonNull
     @Override
     public <T> T addChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        final var result = parentDispatch.recordListBuilder().addChild(configuration(), CHILD);
+        return castRecordBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        final var result = parentDispatch.recordListBuilder().addRemovableChild(configuration());
+        return castRecordBuilder(result, recordBuilderClass);
     }
 
     @NonNull
@@ -422,29 +509,70 @@ public class FlowHandleContext implements HandleContext, FeeContext {
 
     @Override
     public void revertRecordsFrom(@NonNull final RecordListCheckPoint recordListCheckPoint) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        parentDispatch.recordListBuilder().revertChildrenFrom(recordListCheckPoint);
     }
 
     @Override
     public boolean shouldThrottleNOfUnscaled(final int n, final HederaFunctionality function) {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        // TODO: Implement this
+        return false;
     }
 
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        // TODO: Implement this
+        return true;
     }
 
     @NonNull
     @Override
     public RecordListCheckPoint createRecordListCheckPoint() {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        final var precedingRecordBuilders = parentDispatch.recordListBuilder().precedingRecordBuilders();
+        final var childRecordBuilders = parentDispatch.recordListBuilder().childRecordBuilders();
+
+        SingleTransactionRecordBuilder lastFollowing = null;
+        SingleTransactionRecordBuilder firstPreceding = null;
+
+        if (!precedingRecordBuilders.isEmpty()) {
+            firstPreceding = precedingRecordBuilders.get(precedingRecordBuilders.size() - 1);
+        }
+        if (!childRecordBuilders.isEmpty()) {
+            lastFollowing = childRecordBuilders.get(childRecordBuilders.size() - 1);
+        }
+
+        return new RecordListCheckPoint(firstPreceding, lastFollowing);
     }
 
     @NonNull
     @Override
     public Map<AccountID, Long> dispatchPaidRewards() {
-        throw new UnsupportedOperationException(" Not implemented yet");
+        // TODO: Implement this
+        return Collections.emptyMap();
+    }
+
+    private <T> T dispatchForRecord(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @Nullable final Predicate<Key> verifier,
+            final AccountID syntheticPayer,
+            @NonNull ExternalizedRecordCustomizer customizer,
+            TransactionCategory category,
+            SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            boolean commitStack) {
+        final var childDispatch = childDispatchLogic.createChildDispatch(
+                parentDispatch,
+                txBody,
+                verifier,
+                syntheticPayer,
+                category,
+                childDispatchFactory,
+                customizer,
+                reversingBehavior);
+        dispatchLogic.dispatch(childDispatch, parentDispatch.recordListBuilder());
+        if (commitStack) {
+            stack.commitFullStack();
+        }
+        return castRecordBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 
     private static <T> T castRecordBuilder(

@@ -16,19 +16,27 @@
 
 package com.hedera.node.app.workflows.handle.flow.modules;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -39,6 +47,9 @@ import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.annotations.ChildDispatchScope;
+import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.qualifiers.ChildQualifier;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -48,6 +59,7 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import javax.inject.Provider;
 
 @Module
 public interface ChildDispatchModule {
@@ -151,5 +163,60 @@ public interface ChildDispatchModule {
             @NonNull final Configuration configuration) {
         return new TriggeredFinalizeContext(
                 readableStoreFactory, writableStoreFactory, recordBuilder, consensusNow, configuration);
+    }
+
+    @Provides
+    @ChildDispatchScope
+    @ChildQualifier
+    static HandleContext provideFlowHandleContext(
+            final Instant consensusNow,
+            @ChildQualifier @NonNull final TransactionInfo transactionInfo,
+            final Configuration configuration,
+            final Authorizer authorizer,
+            final BlockRecordManager blockRecordManager,
+            final FeeManager feeManager,
+            @ChildQualifier @NonNull final ReadableStoreFactory storeFactory,
+            @ChildQualifier @NonNull final AccountID syntheticPayer,
+            @ChildQualifier @NonNull final KeyVerifier verifier,
+            @ChildQualifier @NonNull final Key payerkey,
+            @ChildQualifier @NonNull final FeeAccumulator feeAccumulator,
+            final ExchangeRateManager exchangeRateManager,
+            @ChildQualifier @NonNull final SavepointStackImpl stack,
+            @ChildQualifier @NonNull final WritableEntityIdStore entityIdStore,
+            final TransactionDispatcher dispatcher,
+            final RecordCache recordCache,
+            @ChildQualifier @NonNull final WritableStoreFactory writableStoreFactory,
+            @ChildQualifier @NonNull final ServiceApiFactory serviceApiFactory,
+            final NetworkInfo networkInfo,
+            @ChildQualifier @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
+            final ChildDispatchLogic childDispatchLogic,
+            @ChildQualifier @NonNull final ChildDispatchComponent dispatch,
+            @NonNull final DispatchLogic dispatchLogic) {
+        return new FlowHandleContext(
+                consensusNow,
+                transactionInfo,
+                configuration,
+                authorizer,
+                blockRecordManager,
+                feeManager,
+                storeFactory,
+                syntheticPayer,
+                verifier,
+                payerkey,
+                feeAccumulator,
+                exchangeRateManager,
+                stack,
+                entityIdStore,
+                dispatcher,
+                recordCache,
+                writableStoreFactory,
+                serviceApiFactory,
+                networkInfo,
+                recordBuilder,
+                childDispatchFactory,
+                childDispatchLogic,
+                dispatch,
+                dispatchLogic);
     }
 }

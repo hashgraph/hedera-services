@@ -43,6 +43,8 @@ import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
 import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.components.UserDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.infra.records.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -58,6 +60,10 @@ import java.util.Set;
 
 @Module(subcomponents = {ChildDispatchComponent.class})
 public interface UserDispatchModule {
+    @Binds
+    @UserDispatchScope
+    Dispatch bindDispatch(UserDispatchComponent userDispatchComponent);
+
     @Provides
     @UserDispatchScope
     static DueDiligenceInfo provideDueDiligenceInfo(PreHandleResult preHandleResult, NodeInfo creator) {
