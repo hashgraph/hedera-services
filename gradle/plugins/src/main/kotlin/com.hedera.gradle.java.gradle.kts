@@ -211,6 +211,8 @@ tasks.withType<Javadoc>().configureEach {
             "implSpec:a:Implementation Requirements:",
             "implNote:a:Implementation Note:"
         )
+        options.windowTitle = "Hedera Consensus Node"
+        options.memberLevel = JavadocMemberLevel.PACKAGE
     }
 }
 
