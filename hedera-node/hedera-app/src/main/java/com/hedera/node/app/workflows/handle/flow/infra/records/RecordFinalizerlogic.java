@@ -23,6 +23,10 @@ import java.util.Collections;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Finalizes the record based on the transaction category. The record finalization is delegated to the
+ * parent or child record finalizer.
+ */
 @Singleton
 public class RecordFinalizerlogic {
     private final ParentRecordFinalizer parentRecordFinalizer;
@@ -35,6 +39,12 @@ public class RecordFinalizerlogic {
         this.childRecordFinalizer = childRecordFinalizer;
     }
 
+    /**
+     * Finalizes the record based on the transaction category. The record finalization is delegated to the
+     * parent or child record finalizer. The parent record finalizer is used for user and scheduled transactions
+     * and the child record finalizer is used for child and preceding transactions.
+     * @param dispatch the dispatch
+     */
     public void finalizeRecord(final Dispatch dispatch) {
         switch (dispatch.txnCategory()) {
             case USER, SCHEDULED -> parentRecordFinalizer.finalizeParentRecord(

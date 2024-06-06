@@ -28,7 +28,7 @@ import javax.inject.Scope;
 
 /**
  * Scope for bindings whose lifetime consists of a single platform transaction.
- * This scope contains HederaState, consensusNow, NodeInfo, RecordListBuilder,
+ * This scope contains the following bindings:
  * <ol>
  *     <li>HederaState</li>
  *     <li>configuration</li>

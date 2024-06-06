@@ -31,6 +31,9 @@ import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Business logic for handling transactions.
+ */
 @Singleton
 public class HandleLogic {
     private final Authorizer authorizer;

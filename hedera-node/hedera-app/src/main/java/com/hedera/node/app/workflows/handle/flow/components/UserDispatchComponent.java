@@ -22,6 +22,9 @@ import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchModule;
 import dagger.Subcomponent;
 import javax.inject.Provider;
 
+/**
+ * The Dagger subcomponent to provide the bindings for the user transaction dispatch scope.
+ */
 @Subcomponent(modules = {UserDispatchModule.class})
 @UserDispatchScope
 public interface UserDispatchComponent extends Dispatch {
@@ -30,5 +33,9 @@ public interface UserDispatchComponent extends Dispatch {
         UserDispatchComponent create();
     }
 
+    /**
+     * The provider for the child dispatch component
+     * @return the provider
+     */
     Provider<ChildDispatchComponent.Factory> childDispatchComponentFactory();
 }

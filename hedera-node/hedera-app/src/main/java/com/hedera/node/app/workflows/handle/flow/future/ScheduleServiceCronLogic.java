@@ -22,10 +22,15 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
 import com.hedera.node.app.workflows.handle.flow.components.UserTransactionComponent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * The logic for the schedule service cron that purges expired schedules which runs as a part of default
+ * handle process for the user transaction
+ */
 @Singleton
 public class ScheduleServiceCronLogic {
     private final ScheduleExpirationHook scheduleExpirationHook;
@@ -33,22 +38,29 @@ public class ScheduleServiceCronLogic {
 
     @Inject
     public ScheduleServiceCronLogic(
-            final ScheduleExpirationHook scheduleExpirationHook, final StoreMetricsService storeMetricsService) {
+            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
+            @NonNull final StoreMetricsService storeMetricsService) {
         this.scheduleExpirationHook = scheduleExpirationHook;
         this.storeMetricsService = storeMetricsService;
     }
 
-    public void expireSchedules(Instant lastHandledTxnTime, UserTransactionComponent userTxn) {
+    /**
+     * Expire schedules that are due to be executed between the last handled transaction time and the current consensus
+     * time.
+     * @param lastHandledTxnTime the consensus time of the last handled transaction
+     * @param userTxnContext the user transaction component
+     */
+    public void expireSchedules(@NonNull Instant lastHandledTxnTime, @NonNull UserTransactionComponent userTxnContext) {
         if (lastHandledTxnTime == Instant.EPOCH) {
             return;
         }
-        if (userTxn.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
+        if (userTxnContext.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
-            final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
+            final var lastSecondToExpire = userTxnContext.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
-                            userTxn.savepointStack(),
+                            userTxnContext.savepointStack(),
                             ScheduleService.NAME,
-                            userTxn.tokenContext().configuration(),
+                            userTxnContext.tokenContext().configuration(),
                             storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time

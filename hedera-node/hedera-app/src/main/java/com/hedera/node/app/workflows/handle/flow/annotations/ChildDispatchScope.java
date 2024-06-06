@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 import javax.inject.Scope;
 
 /**
- * Scope for bindings whose lifetime consists of a single platform transaction.
+ * Scope for bindings whose lifetime is only for a child transaction dispatch.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)

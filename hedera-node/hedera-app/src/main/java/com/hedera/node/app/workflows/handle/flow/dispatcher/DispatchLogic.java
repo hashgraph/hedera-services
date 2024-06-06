@@ -35,6 +35,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * This class has the common logic that is executed for a user dispatch and a child dispatch transactions.
+ * This will charge the fees to the creator if there is a node due diligence failure. Otherwise, charges the fees to the
+ * payer and executes the business logic for the given dispatch, guaranteeing that the changes committed to its stack
+ * are exactly reflected in its recordBuilder.
+ */
 @Singleton
 public class DispatchLogic {
     private final Authorizer authorizer;
@@ -62,7 +68,7 @@ public class DispatchLogic {
      * guaranteeing that the changes committed to its stack are exactly reflected in its recordBuilder.
      * @param dispatch the dispatch to be processed
      */
-    public void dispatch(Dispatch dispatch, final RecordListBuilder recordListBuilder) {
+    public void dispatch(@NonNull Dispatch dispatch, @NonNull final RecordListBuilder recordListBuilder) {
         final var dueDiligenceReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
         final AccountID chargedAccountId;
         if (dueDiligenceReport.isDueDiligenceFailure()) {
@@ -87,8 +93,17 @@ public class DispatchLogic {
                 recordListBuilder.build().records());
     }
 
+    /**
+     * Handles the transaction logic for the given dispatch. If the logic fails, it will rollback the stack and charge
+     * the payer for the fees.
+     * @param dispatch the dispatch to be processed
+     * @param dueDiligenceReport the due diligence report for the dispatch
+     * @param recordListBuilder the record list builder for the dispatch
+     */
     private void handleTransaction(
-            Dispatch dispatch, final DueDiligenceReport dueDiligenceReport, final RecordListBuilder recordListBuilder) {
+            @NonNull final Dispatch dispatch,
+            @NonNull final DueDiligenceReport dueDiligenceReport,
+            @NonNull final RecordListBuilder recordListBuilder) {
         try {
             handleLogic.handle(dispatch);
             dispatch.recordBuilder().status(SUCCESS);
@@ -106,6 +121,11 @@ public class DispatchLogic {
         }
     }
 
+    /**
+     * Charges the creator for the network fee. This will be called when there is a due diligence failure.
+     * @param dispatch the dispatch to be processed
+     * @param report the due diligence report for the dispatch
+     */
     private void chargeCreator(final Dispatch dispatch, DueDiligenceReport report) {
         dispatch.recordBuilder().status(report.dueDiligenceInfo().dueDiligenceStatus());
         dispatch.feeAccumulator()
@@ -114,6 +134,12 @@ public class DispatchLogic {
                         dispatch.calculatedFees().networkFee());
     }
 
+    /**
+     * Charges the payer for the fees. If the payer is unable to pay the service fee, the service fee will be charged to
+     * the creator. If the transaction is a duplicate, the service fee will be waived.
+     * @param dispatch the dispatch to be processed
+     * @param report the due diligence report for the dispatch
+     */
     private void chargePayer(final Dispatch dispatch, DueDiligenceReport report) {
         final var hasWaivedFees = authorizer.hasWaivedFees(
                 dispatch.syntheticPayer(),

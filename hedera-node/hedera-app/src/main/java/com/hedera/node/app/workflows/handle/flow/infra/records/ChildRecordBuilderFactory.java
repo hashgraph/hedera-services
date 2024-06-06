@@ -31,6 +31,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Provider of the child record builder based on the dispatched child transaction category
+ */
 @Singleton
 public class ChildRecordBuilderFactory {
     private final ChildRecordInitializer childRecordInitializer;
@@ -40,6 +43,17 @@ public class ChildRecordBuilderFactory {
         this.childRecordInitializer = childRecordInitializer;
     }
 
+    /**
+     * Provides the record builder for the child transaction category and initializes it.
+     * The record builder is created based on the child category and the reversing behavior.
+     * @param txnInfo the transaction info
+     * @param recordListBuilder the record list builder
+     * @param configuration the configuration
+     * @param childCategory the child category
+     * @param reversingBehavior the reversing behavior
+     * @param customizer the externalized record customizer
+     * @return the record builder
+     */
     public SingleTransactionRecordBuilderImpl recordBuilderFor(
             TransactionInfo txnInfo,
             final RecordListBuilder recordListBuilder,

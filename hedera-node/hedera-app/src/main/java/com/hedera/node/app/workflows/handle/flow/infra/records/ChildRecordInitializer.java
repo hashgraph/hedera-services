@@ -21,12 +21,20 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Initializes the child record with all the necessary information.
+ */
 @Singleton
 public class ChildRecordInitializer {
 
     @Inject
     public ChildRecordInitializer() {}
 
+    /**
+     * Initializes the user record with the transaction information.
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
     public void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
         recordBuilder
                 .transaction(txnInfo.transaction())

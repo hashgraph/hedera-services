@@ -41,6 +41,9 @@ import dagger.Subcomponent;
 import java.time.Instant;
 import javax.inject.Provider;
 
+/**
+ * The Dagger subcomponent to provide the bindings for the platform transaction scope.
+ */
 @Subcomponent(
         modules = {
             StateModule.class,
@@ -62,33 +65,93 @@ public interface UserTransactionComponent {
                 @BindsInstance Instant consensusTime);
     }
 
+    /**
+     * The functionality of the user transaction
+     * @return the functionality
+     */
     HederaFunctionality functionality();
 
+    /**
+     * The process runner for the user transaction to produce stream items
+     * @return the process runner
+     */
     ProcessRunner processor();
 
+    /**
+     * The consensus time of the user transaction
+     * @return the consensus time
+     */
     Instant consensusNow();
 
+    /**
+     * The state used for the user transaction processing
+     * @return the state
+     */
     HederaState state();
 
+    /**
+     * The platform state provided by the platform to handle the user transaction
+     * @return the platform state
+     */
     PlatformState platformState();
 
+    /**
+     * The consensus event provided by the platform to handle the user transaction
+     * @return the consensus event
+     */
     ConsensusEvent platformEvent();
 
+    /**
+     * The creator node info of the user transaction
+     * @return the creator
+     */
     NodeInfo creator();
 
+    /**
+     * The platform transaction of the user transaction
+     * @return the consensus transaction
+     */
     ConsensusTransaction platformTxn();
 
+    /**
+     * The record list builder that will wrap all record streams for the user transaction
+     * @return the record list builder
+     */
     RecordListBuilder recordListBuilder();
 
+    /**
+     * The transaction info returned when we prehandle the user transaction
+     * @return the transaction info
+     */
     TransactionInfo txnInfo();
 
+    /**
+     * The token context for the user transaction
+     * @return the token context
+     */
     TokenContext tokenContext();
 
+    /**
+     * The savepoint stack used for the user transaction
+     * @return the savepoint stack
+     */
     SavepointStackImpl savepointStack();
 
+    /**
+     * The prehandle result for the user transaction
+     * @return the prehandle result
+     */
     PreHandleResult preHandleResult();
 
+    /**
+     * The readable store factory for the user transaction
+     * @return the store factory
+     */
     ReadableStoreFactory readableStoreFactory();
 
+    /**
+     * The provider for the user dispatch subcomponent
+     * @return the provider
+     */
     Provider<UserDispatchComponent.Factory> userDispatchProvider();
 }

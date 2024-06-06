@@ -24,6 +24,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Initializes the user record with all the necessary information.
+ */
 @Singleton
 public class UserRecordInitializer {
     private final ExchangeRateManager exchangeRateManager;
@@ -33,6 +36,12 @@ public class UserRecordInitializer {
         this.exchangeRateManager = exchangeRateManager;
     }
 
+    /**
+     * Initializes the user record with the transaction information. The record builder list is initialized with the
+     * transaction, transaction bytes, transaction ID, exchange rate, and memo.
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
     public void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
         final Bytes transactionBytes;
         final var transaction = txnInfo.transaction();

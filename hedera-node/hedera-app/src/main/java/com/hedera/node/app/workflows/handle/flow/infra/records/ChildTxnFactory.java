@@ -28,11 +28,19 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Factory for providing all needed information for a child transaction.
+ */
 @Singleton
 public class ChildTxnFactory {
     @Inject
     public ChildTxnFactory() {}
 
+    /**
+     * Provides the transaction information for the given dispatched transaction body.
+     * @param txBody the transaction body
+     * @return the transaction information
+     */
     public TransactionInfo getTxnInfoFrom(TransactionBody txBody) {
         final var bodyBytes = TransactionBody.PROTOBUF.toBytes(txBody);
         final var signedTransaction =
@@ -46,6 +54,11 @@ public class ChildTxnFactory {
                 transaction, txBody, SignatureMap.DEFAULT, signedTransactionBytes, functionOfTxn(txBody));
     }
 
+    /**
+     * Provides the functionality of the transaction body.
+     * @param txBody the transaction body
+     * @return the functionality
+     */
     private static HederaFunctionality functionOfTxn(final TransactionBody txBody) {
         try {
             return functionOf(txBody);

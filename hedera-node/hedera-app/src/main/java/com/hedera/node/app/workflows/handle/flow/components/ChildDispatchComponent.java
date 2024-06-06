@@ -34,6 +34,9 @@ import dagger.BindsInstance;
 import dagger.Subcomponent;
 import java.util.Set;
 
+/**
+ * The Dagger subcomponent to provide the bindings for the child transaction dispatch scope.
+ */
 @Subcomponent(modules = {ChildDispatchModule.class})
 @ChildDispatchScope
 public interface ChildDispatchComponent extends Dispatch {
