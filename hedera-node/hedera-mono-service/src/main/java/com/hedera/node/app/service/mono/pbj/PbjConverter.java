@@ -1361,7 +1361,8 @@ public final class PbjConverter {
                     .GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
-            case TOKEN_REFERENCE_REPEATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case TOKEN_REFERENCE_REPEATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .TOKEN_REFERENCE_REPEATED;
             case INVALID_OWNER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
         };
     }
