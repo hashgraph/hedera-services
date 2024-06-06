@@ -18,7 +18,7 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
@@ -26,12 +26,10 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -50,30 +48,10 @@ public class NodeDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
-        final long nodeId = transactionBody.nodeId();
-
-        if (nodeId <= 0 || nodeId > Long.MAX_VALUE) {
-            throw new PreCheckException(INVALID_NODE_ID);
-        }
-    }
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        requireNonNull(context);
-
-        final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
-        final ReadableNodeStore nodeStore = context.createStore(ReadableNodeStore.class);
-        final long nodeId = transactionBody.nodeId();
-
-        if (nodeId <= 0 || nodeId > Long.MAX_VALUE) {
-            throw new PreCheckException(INVALID_NODE_ID);
-        }
-
-        Node node = nodeStore.get(nodeId);
-        mustExist(node, INVALID_NODE_ID);
-    }
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {}
 
     /**
      * Given the appropriate context, deletes a node.
@@ -88,32 +66,18 @@ public class NodeDeleteHandler implements TransactionHandler {
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
 
-        if (nodeId <= 0 || nodeId > Long.MAX_VALUE) {
-            throw new HandleException(INVALID_NODE_ID);
-        }
+        validateFalse(nodeId <= 0, INVALID_NODE_ID);
 
         final var nodeStore = context.writableStore(WritableNodeStore.class);
 
         Node node = nodeStore.get(nodeId);
 
-        if (node == null) {
-            throw new HandleException(INVALID_NODE_ID);
-        }
+        validateFalse(node == null, INVALID_NODE_ID);
 
-        if (node.deleted()) {
-            throw new HandleException(NODE_DELETED);
-        }
+        validateFalse(node.deleted(), NODE_DELETED);
 
         /* Copy all the fields from existing, and mark deleted flag  */
-        final var nodeBuilder = new Node.Builder()
-                .nodeId(node.nodeId())
-                .accountId(node.accountId())
-                .gossipEndpoint(node.gossipEndpoint())
-                .serviceEndpoint(node.serviceEndpoint())
-                .gossipCaCertificate(node.gossipCaCertificate())
-                .grpcCertificateHash(node.grpcCertificateHash())
-                .weight(node.weight())
-                .deleted(true);
+        final var nodeBuilder = node.copyBuilder().deleted(true);
 
         /* --- Put the modified node. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
