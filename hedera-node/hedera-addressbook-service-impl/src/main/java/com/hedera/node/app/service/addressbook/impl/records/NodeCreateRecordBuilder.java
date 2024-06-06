@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.metrics;
+package com.hedera.node.app.service.addressbook.impl.records;
 
-import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface StoreMetricsService {
-
-    enum StoreType {
-        TOPIC,
-        ACCOUNT,
-        NFT,
-        TOKEN,
-        TOKEN_RELATION,
-        FILE,
-        SLOT_STORAGE,
-        CONTRACT,
-        SCHEDULE,
-        NODE
-    }
-
-    StoreMetrics get(@NonNull StoreType storeType, long capacity);
+/**
+ * A {@code RecordBuilder} specialization for tracking the side-effects of a {@code NodeCreate} transaction.
+ */
+public interface NodeCreateRecordBuilder {
+    /**
+     * Tracks creation of a new node by {@link nodeID}.
+     *
+     * @param nodeID  the new node
+     * @return this builder
+     */
+    @NonNull
+    NodeCreateRecordBuilder nodeID(long nodeID);
 }
