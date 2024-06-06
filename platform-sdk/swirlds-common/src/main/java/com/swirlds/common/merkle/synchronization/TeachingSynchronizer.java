@@ -181,7 +181,7 @@ public class TeachingSynchronizer {
         final StandardWorkGroup workGroup =
                 createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
-        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
+        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
         in.start();
         final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
         out.start();
@@ -214,14 +214,6 @@ public class TeachingSynchronizer {
             throw new MerkleSynchronizationException(
                     "Synchronization failed with exceptions", firstReconnectException.get());
         }
-    }
-
-    private SelfSerializable createMessage(final int viewId) {
-        final TeacherTreeView<?> view = views.get(viewId);
-        if (view == null) {
-            throw new MerkleSynchronizationException("Can't create message, unknown view: " + viewId);
-        }
-        return view.createMessage(viewId);
     }
 
     private void reconnectRootEncountered(final CustomReconnectRoot<?, ?> root) {

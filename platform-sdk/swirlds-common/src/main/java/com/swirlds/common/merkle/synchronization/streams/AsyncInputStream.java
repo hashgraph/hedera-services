@@ -18,14 +18,15 @@ package com.swirlds.common.merkle.synchronization.streams;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
-import com.swirlds.common.Releasable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,9 +65,9 @@ public class AsyncInputStream implements AutoCloseable {
     private final SerializableDataInputStream inputStream;
 
     // Messages read from the underlying input stream so far, per merkle sub-tree
-    public final Map<Integer, Queue<SelfSerializable>> viewQueues;
+    public final Map<Integer, Queue<byte[]>> viewQueues;
 
-    private final Queue<SelfSerializable> sharedQueue;
+    private final Queue<SharedQueueItem> sharedQueue;
 
     // Checking queue size on every received message may be expensive. Instead, track the
     // size manually using an atomic
@@ -83,8 +85,6 @@ public class AsyncInputStream implements AutoCloseable {
 
     private final AtomicBoolean alive = new AtomicBoolean(true);
 
-    private final Function<Integer, SelfSerializable> messagesFactory;
-
     private final StandardWorkGroup workGroup;
 
     private final int sharedQueueSizeThreshold;
@@ -99,13 +99,11 @@ public class AsyncInputStream implements AutoCloseable {
     public AsyncInputStream(
             @NonNull final SerializableDataInputStream inputStream,
             @NonNull final StandardWorkGroup workGroup,
-            @NonNull final Function<Integer, SelfSerializable> messagesFactory,
             @NonNull final ReconnectConfig reconnectConfig) {
         Objects.requireNonNull(reconnectConfig, "Reconnect config must not be null");
 
         this.inputStream = Objects.requireNonNull(inputStream, "inputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
-        this.messagesFactory = Objects.requireNonNull(messagesFactory, "Messages factory must not be null");
         this.pollTimeout = reconnectConfig.asyncStreamTimeout();
         this.finishedLatch = new CountDownLatch(1);
 
@@ -127,32 +125,29 @@ public class AsyncInputStream implements AutoCloseable {
      * queue.
      */
     private void run() {
-        SelfSerializable message = null;
         try {
             while (alive.get() && !Thread.currentThread().isInterrupted()) {
-                message = null;
                 final int viewId = inputStream.readInt();
                 if (viewId < 0) {
                     logger.info(RECONNECT.getMarker(), "Async input stream is done");
                     alive.set(false);
                     break;
                 }
-                message = messagesFactory.apply(viewId);
-                if (message == null) {
-                    throw new MerkleSynchronizationException(
-                            "Cannot deserialize a message, unknown view ID: " + viewId);
+                final int len = inputStream.readInt();
+                final byte[] messageBytes = new byte[len];
+                if (completelyRead(inputStream, messageBytes) != len) {
+                    throw new MerkleSynchronizationException("Failed to read a message completely");
                 }
-                message.deserialize(inputStream, message.getVersion());
 
-                Queue<SelfSerializable> viewQueue = viewQueues.get(viewId);
+                Queue<byte[]> viewQueue = viewQueues.get(viewId);
                 if (viewQueue != null) {
-                    final boolean accepted = viewQueue.add(message);
+                    final boolean accepted = viewQueue.add(messageBytes);
                     if (!accepted) {
                         throw new MerkleSynchronizationException(
                                 "Timed out waiting to add message to received messages queue");
                     }
                 } else {
-                    sharedQueue.add(message);
+                    sharedQueue.add(new SharedQueueItem(viewId, messageBytes));
                     // Slow down reading from the stream, if handling threads can't keep up
                     if (sharedQueueSize.incrementAndGet() > sharedQueueSizeThreshold) {
                         Thread.sleep(0, 1);
@@ -160,18 +155,35 @@ public class AsyncInputStream implements AutoCloseable {
                 }
             }
         } catch (final IOException e) {
-            final String exceptionMessage = message == null
-                    ? "Failed to deserialize a message"
-                    : String.format(
-                            "Failed to deserialize object with class ID %d(0x%08X) (%s)",
-                            message.getClassId(), message.getClassId(), message.getClass());
-            workGroup.handleError(new MerkleSynchronizationException(exceptionMessage, e));
+            workGroup.handleError(e);
         } catch (final InterruptedException e) {
             logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
             Thread.currentThread().interrupt();
         } finally {
             finishedLatch.countDown();
         }
+    }
+
+    /**
+     * Reads bytes from an input stream to an array, until array length bytes are read, or EOF
+     * is encountered.
+     *
+     * @param in the input stream to read from
+     * @param dst the byte array to read to
+     * @return the total number of bytes read
+     * @throws IOException if an exception occurs while reading
+     */
+    private static int completelyRead(final InputStream in, final byte[] dst) throws IOException {
+        int totalBytesRead = 0;
+        while (totalBytesRead < dst.length) {
+            final int bytesRead = in.read(dst, totalBytesRead, dst.length - totalBytesRead);
+            if (bytesRead < 0) {
+                // Reached EOF
+                break;
+            }
+            totalBytesRead += bytesRead;
+        }
+        return totalBytesRead;
     }
 
     public void setNeedsDedicatedQueue(final int viewId) {
@@ -183,13 +195,25 @@ public class AsyncInputStream implements AutoCloseable {
         return alive.get();
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends SelfSerializable> T readAnticipatedMessage() {
-        final T result = (T) sharedQueue.poll();
-        if (result != null) {
-            sharedQueueSize.decrementAndGet();
+    private <T extends SelfSerializable> T deserializeMessage(final byte[] messageBytes, final T message)
+            throws IOException {
+        try (final ByteArrayInputStream bin = new ByteArrayInputStream(messageBytes);
+                final SerializableDataInputStream in = new SerializableDataInputStream(bin)) {
+            message.deserialize(in, message.getVersion());
         }
-        return result;
+        return message;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends SelfSerializable> T readAnticipatedMessage(final Function<Integer, T> messageFactory) throws IOException {
+        final SharedQueueItem item = sharedQueue.poll();
+        if (item != null) {
+            sharedQueueSize.decrementAndGet();
+            final int viewId = item.viewId();
+            final byte[] messageBytes = item.messageBytes();
+            return deserializeMessage(messageBytes, messageFactory.apply(viewId));
+        }
+        return null;
     }
 
     /**
@@ -197,11 +221,12 @@ public class AsyncInputStream implements AutoCloseable {
      * into addAnticipatedMessage, but deserialized from the stream.
      */
     @SuppressWarnings("unchecked")
-    public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId) throws InterruptedException {
-        final Queue<SelfSerializable> viewQueue = viewQueues.get(viewId);
+    public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId, final Supplier<T> messageFactory)
+            throws IOException, InterruptedException {
+        final Queue<byte[]> viewQueue = viewQueues.get(viewId);
         assert viewQueue != null;
         // Emulate blocking queue poll with a timeout
-        SelfSerializable data = viewQueue.poll();
+        byte[] data = viewQueue.poll();
         if (data == null) {
             final long start = System.currentTimeMillis();
             final Thread currentThread = Thread.currentThread();
@@ -223,7 +248,7 @@ public class AsyncInputStream implements AutoCloseable {
             }
             throw new MerkleSynchronizationException("Timed out waiting for data");
         }
-        return (T) data;
+        return deserializeMessage(data, messageFactory.get());
     }
 
     /**
@@ -238,20 +263,6 @@ public class AsyncInputStream implements AutoCloseable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-
-        abortQueue(sharedQueue);
-        for (final Queue<SelfSerializable> queue : viewQueues.values()) {
-            abortQueue(queue);
-        }
-    }
-
-    private void abortQueue(final Queue<SelfSerializable> queue) {
-        while (!queue.isEmpty()) {
-            final SelfSerializable message = queue.remove();
-            if (message instanceof Releasable) {
-                ((Releasable) message).release();
-            }
-        }
     }
 
     /**
@@ -265,4 +276,6 @@ public class AsyncInputStream implements AutoCloseable {
     public void waitForCompletion() throws InterruptedException {
         finishedLatch.await();
     }
+
+    private static record SharedQueueItem(int viewId, byte[] messageBytes) {}
 }

@@ -85,11 +85,6 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
         learnerThread.start();
     }
 
-    @Override
-    public SelfSerializable createMessage() {
-        return new Lesson<>(this);
-    }
-
     /**
      * {@inheritDoc}
      */

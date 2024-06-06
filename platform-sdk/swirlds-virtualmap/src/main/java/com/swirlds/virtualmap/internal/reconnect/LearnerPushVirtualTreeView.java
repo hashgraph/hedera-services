@@ -156,11 +156,6 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
         learnerThread.start();
     }
 
-    @Override
-    public SelfSerializable createMessage() {
-        return new Lesson<>(this);
-    }
-
     /**
      * {@inheritDoc}
      */

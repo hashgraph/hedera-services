@@ -107,11 +107,6 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
         return root;
     }
 
-    @Override
-    public SelfSerializable createMessage(final int viewId) {
-        return new QueryResponse();
-    }
-
     /**
      * {@inheritDoc}
      */

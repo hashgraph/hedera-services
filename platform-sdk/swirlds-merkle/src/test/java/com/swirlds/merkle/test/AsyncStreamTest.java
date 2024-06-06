@@ -42,6 +42,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -69,8 +70,7 @@ class AsyncStreamTest {
 
             final int viewId = 11;
 
-            final AsyncInputStream in = new AsyncInputStream(
-                    streams.getTeacherInput(), workGroup, vi -> new SerializableLong(), reconnectConfig);
+            final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
             in.setNeedsDedicatedQueue(viewId);
@@ -82,7 +82,7 @@ class AsyncStreamTest {
 
             for (int i = 0; i < count; i++) {
                 out.sendAsync(viewId, new SerializableLong(i));
-                final SerializableLong message = in.readAnticipatedMessage(viewId);
+                final SerializableLong message = in.readAnticipatedMessage(viewId, SerializableLong::new);
                 assertEquals(i, message.getValue(), "message should match the value that was serialized");
             }
 
@@ -106,8 +106,7 @@ class AsyncStreamTest {
 
             final int viewId = 12;
 
-            final AsyncInputStream in = new AsyncInputStream(
-                    streams.getTeacherInput(), workGroup, vi -> new SerializableLong(), reconnectConfig);
+            final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
             in.setNeedsDedicatedQueue(viewId);
@@ -119,7 +118,7 @@ class AsyncStreamTest {
 
             for (int i = 0; i < count; i++) {
                 out.sendAsync(viewId, new SerializableLong(i));
-                final SerializableLong message = in.readAnticipatedMessage(viewId);
+                final SerializableLong message = in.readAnticipatedMessage(viewId, SerializableLong::new);
                 assertEquals(i, message.getValue(), "message should match the value that was serialized");
             }
 
@@ -232,8 +231,7 @@ class AsyncStreamTest {
 
         final BlockingInputStream blockingIn = new BlockingInputStream(new ByteArrayInputStream(data));
 
-        final AsyncInputStream in = new AsyncInputStream(
-                new SerializableDataInputStream(blockingIn), workGroup, vi -> new SerializableLong(), reconnectConfig);
+        final AsyncInputStream in = new AsyncInputStream(new SerializableDataInputStream(blockingIn), workGroup, reconnectConfig);
         in.setNeedsDedicatedQueue(viewId);
         in.start();
 
@@ -248,9 +246,11 @@ class AsyncStreamTest {
                 .setRunnable(() -> {
                     for (int i = 0; i < count; i++) {
                         try {
-                            final SerializableLong message = in.readAnticipatedMessage(viewId);
+                            final SerializableLong message = in.readAnticipatedMessage(viewId, SerializableLong::new);
                             assertEquals(i, message.getValue(), "value does not match expected");
                             messagesReceived.getAndIncrement();
+                        } catch (final IOException ex) {
+                            throw new UncheckedIOException(ex);
                         } catch (final InterruptedException ex) {
                             Thread.currentThread().interrupt();
                             ex.printStackTrace();
@@ -301,8 +301,16 @@ class AsyncStreamTest {
                     new AsyncOutputStream(pairedStreams.getTeacherOutput(), workGroup, reconnectConfig);
 
             final int viewId = 15;
-            final AsyncInputStream learnerIn = new AsyncInputStream(
-                    pairedStreams.getLearnerInput(), workGroup, vi -> new ExplodingSelfSerializable(), reconnectConfig);
+            final AsyncInputStream learnerIn = new AsyncInputStream(pairedStreams.getLearnerInput(), workGroup, reconnectConfig);
+
+            final Runnable reader = () -> {
+                try {
+                    learnerIn.readAnticipatedMessage(viewId, ExplodingSelfSerializable::new);
+                } catch (final Exception e) {
+                    workGroup.handleError(e);
+                }
+            };
+            workGroup.execute(reader);
 
             learnerIn.start();
             teacherOut.start();

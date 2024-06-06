@@ -132,12 +132,4 @@ public interface TeacherTreeView<T>
         // By default, a view is considered "ready" after constructed.
         // If that is not the case for a view implementation, override this method.
     }
-
-    /**
-     * Create a new message object, which will then be used by {@link AsyncInputStream} to read
-     * data from the learner from the socket input stream.
-     *
-     * @return a new message object used by this teacher view to receive data from the learner
-     */
-    SelfSerializable createMessage(final int viewId);
 }

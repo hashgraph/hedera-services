@@ -219,7 +219,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         final StandardWorkGroup workGroup =
                 createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
 
-        in = new AsyncInputStream(inputStream, workGroup, this::createMessage, reconnectConfig);
+        in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
         out = buildOutputStream(workGroup, outputStream);
 
         final List<AtomicReference<MerkleNode>> reconstructedRoots = new ArrayList<>();
@@ -264,32 +264,6 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         synchronizationTimeMilliseconds = System.currentTimeMillis() - start;
         logger.info(RECONNECT.getMarker(), "synchronization complete");
-    }
-
-    private SelfSerializable createMessage(final int viewId) {
-        LearnerTreeView<?> view = views.get(viewId);
-        if (view == null) {
-            // In rare cases, teacher starts sending messages for a custom view, but learner doesn't
-            // know about this view yet. It may happen, because messages are received in one thread
-            // (async input stream), but processed asynchronously on another thread (learner push
-            // task). In this case, just wait a little bit
-            final long start = System.currentTimeMillis();
-            do {
-                view = views.get(viewId);
-                if (view != null) {
-                    break;
-                }
-                try {
-                    Thread.sleep(1);
-                } catch (final InterruptedException e) {
-                    break;
-                }
-            } while (System.currentTimeMillis() - start < 60 * 1000);
-        }
-        if (view == null) {
-            throw new MerkleSynchronizationException("Cannot create message, unknown view: " + viewId);
-        }
-        return view.createMessage();
     }
 
     private LearnerTreeView<?> nodeTreeView(final MerkleNode root) {

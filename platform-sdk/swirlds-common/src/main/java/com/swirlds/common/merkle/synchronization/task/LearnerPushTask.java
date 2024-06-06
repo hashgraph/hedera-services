@@ -32,6 +32,7 @@ import com.swirlds.common.utility.ThresholdLimitingHandler;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -236,13 +237,14 @@ public class LearnerPushTask<T> {
         boolean success = false;
         boolean firstLesson = true;
 
+        final Supplier<Lesson<T>> messageFactory = () -> new Lesson<>(view);
         try (view) {
             view.expectLessonFor(null, 0, view.getOriginalRoot(), false);
 
             while (view.hasNextExpectedLesson() && !Thread.currentThread().isInterrupted()) {
 
                 final ExpectedLesson<T> expectedLesson = view.getNextExpectedLesson();
-                final Lesson<T> lesson = in.readAnticipatedMessage(viewId);
+                final Lesson<T> lesson = in.readAnticipatedMessage(viewId, messageFactory);
 
                 final T parent = expectedLesson.getParent();
 

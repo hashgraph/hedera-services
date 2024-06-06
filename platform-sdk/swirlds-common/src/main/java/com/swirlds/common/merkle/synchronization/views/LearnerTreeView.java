@@ -159,14 +159,6 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
     void releaseNode(T node);
 
     /**
-     * Create a new message object, which will then be used by {@link AsyncInputStream} to read data
-     * from the teacher from the socket input stream.
-     *
-     * @return a new message object used by this learner view to receive data from the teacher
-     */
-    SelfSerializable createMessage();
-
-    /**
      * Indicates whether this learner view uses a shared or a dedicated message queue when
      * reading messages from an async input stream.
      *

@@ -102,7 +102,8 @@ public class LearnerPullVirtualTreeReceiveTask {
 
             while ((!finished || responseExpected) && !Thread.currentThread().isInterrupted()) {
                 if (responseExpected) {
-                    final PullVirtualTreeResponse response = in.readAnticipatedMessage(viewId);
+                    final PullVirtualTreeResponse response =
+                            in.readAnticipatedMessage(viewId, () -> new PullVirtualTreeResponse(view));
                     view.responseReceived(response);
                     if (response.getPath() == 0) {
                         rootResponseReceived.countDown();

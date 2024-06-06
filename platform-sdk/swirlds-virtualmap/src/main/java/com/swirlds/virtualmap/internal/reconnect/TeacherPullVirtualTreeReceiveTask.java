@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -108,7 +110,7 @@ public class TeacherPullVirtualTreeReceiveTask {
             // already checked to be ready
             final Set<Integer> viewsCheckedReady = new HashSet<>();
             while (!Thread.currentThread().isInterrupted()) {
-                final PullVirtualTreeRequest request = in.readAnticipatedMessage();
+                final PullVirtualTreeRequest request = in.readAnticipatedMessage(PullVirtualTreeRequest::new);
                 if (request == null) {
                     if (!in.isAlive()) {
                         break;

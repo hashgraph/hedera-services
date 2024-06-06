@@ -241,6 +241,7 @@ public class AsyncOutputStream implements AutoCloseable {
                     final byte[] messageBytes = item.messageBytes();
                     try {
                         outputStream.writeInt(viewId);
+                        outputStream.writeInt(messageBytes.length);
                         outputStream.write(messageBytes);
                     } catch (final IOException e) {
                         throw new MerkleSynchronizationException(e);

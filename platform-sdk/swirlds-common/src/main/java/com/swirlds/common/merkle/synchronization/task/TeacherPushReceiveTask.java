@@ -85,7 +85,7 @@ public class TeacherPushReceiveTask<T> {
 
             while ((!finished || responseExpected) && !Thread.currentThread().isInterrupted()) {
                 if (responseExpected) {
-                    final QueryResponse response = in.readAnticipatedMessage(viewId);
+                    final QueryResponse response = in.readAnticipatedMessage(viewId, QueryResponse::new);
                     final T node = view.getNodeForNextResponse();
                     view.registerResponseForNode(node, response.doesLearnerHaveTheNode());
                 } else {

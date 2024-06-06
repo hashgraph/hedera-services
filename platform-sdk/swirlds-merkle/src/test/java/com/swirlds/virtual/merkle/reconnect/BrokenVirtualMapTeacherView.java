@@ -94,11 +94,6 @@ public class BrokenVirtualMapTeacherView<K extends VirtualKey, V extends Virtual
     }
 
     @Override
-    public SelfSerializable createMessage(final int viewId) {
-        return baseView.createMessage(viewId);
-    }
-
-    @Override
     public void addToHandleQueue(final Long node) {
         baseView.addToHandleQueue(node);
     }

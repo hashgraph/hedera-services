@@ -156,11 +156,6 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
         }
     }
 
-    @Override
-    public SelfSerializable createMessage(final int viewId) {
-        return new PullVirtualTreeRequest(viewId);
-    }
-
     public boolean isLeaf(final long path) {
         return (path >= reconnectState.getFirstLeafPath())
                 && (path <= reconnectState.getLastLeafPath())

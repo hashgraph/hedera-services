@@ -196,11 +196,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         learnerSendTask.exec();
     }
 
-    @Override
-    public SelfSerializable createMessage() {
-        return new PullVirtualTreeResponse(this);
-    }
-
     public boolean isLeaf(long path) {
         assert path <= reconnectState.getLastLeafPath();
         return path >= reconnectState.getFirstLeafPath();

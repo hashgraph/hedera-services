@@ -213,14 +213,6 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * {@inheritDoc}
      */
     @Override
-    public SelfSerializable createMessage(final int viewId) {
-        return new QueryResponse();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public Long getRoot() {
         return ROOT_PATH;
     }
