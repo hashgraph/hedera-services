@@ -63,13 +63,11 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
-import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
@@ -105,7 +103,7 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47TokenSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
-public class InitialModServiceTokenSchema extends Schema {
+public class InitialModServiceTokenSchema extends StakingInfoManagementSchema {
     private static final Logger log = LogManager.getLogger(InitialModServiceTokenSchema.class);
     // These need to be big so databases are created at right scale. If they are too small then the on disk hash map
     // buckets will be too full which results in very poor performance. Have chosen 10 billion as should give us
@@ -190,44 +188,6 @@ public class InitialModServiceTokenSchema extends Schema {
             @Nullable final MerkleNetworkContext mnc) {
         this.stakingFs = stakingFs;
         this.mnc = mnc;
-    }
-
-    /**
-     * Updates in-state staking info to match the address book.
-     * <ol>
-     *     <li>For any node with staking info in state that is no longer in the address book,
-     *     marks it deleted and sets its weight to zero.</li>
-     *     <li>For any node in the address book that is not in state,
-     *     initializes its staking info.</li>
-     *     <li>Ensures all max stake values reflect the current address book size.</li>
-     * </ol>
-     *
-     * @param ctx {@link MigrationContext} for this schema restart operation
-     */
-    @Override
-    public void restart(@NonNull MigrationContext ctx) {
-        final var networkInfo = ctx.networkInfo();
-        final var newStakingStore = new WritableStakingInfoStore(ctx.newStates());
-        // We need to validate and mark any node that are removed during upgrade as deleted.
-        // Since restart is called in the schema after an upgrade, and we don't want to depend on
-        // schema version change, validate all the nodeIds from the addressBook in state and mark
-        // them as deleted if they are not yet deleted in staking info.
-        if (!ctx.previousStates().isEmpty()) {
-            final var oldStakingStore = new ReadableStakingInfoStoreImpl(ctx.previousStates());
-            oldStakingStore.getAll().stream().sorted().forEach(nodeId -> {
-                final var stakingInfo = requireNonNull(oldStakingStore.get(nodeId));
-                if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
-                    newStakingStore.put(
-                            nodeId,
-                            stakingInfo.copyBuilder().weight(0).deleted(true).build());
-                    log.info("Marked node{} as deleted since it has been removed from the address book", nodeId);
-                }
-            });
-        }
-        // Validate if any new nodes are added in addressBook and not in staking info.
-        // If so, add them to staking info/ with weight 0. Also update maxStake and
-        // minStake for the new nodes.
-        completeUpdateFromNewAddressBook(newStakingStore, networkInfo.addressBook(), ctx.configuration());
     }
 
     @Override
