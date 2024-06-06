@@ -30,7 +30,6 @@ import com.hedera.node.app.workflows.handle.flow.modules.RecordStreamModule;
 import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
 import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchSubcomponentModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.state.PlatformState;
@@ -88,8 +87,6 @@ public interface UserTransactionComponent {
     TokenContext tokenContext();
 
     SavepointStackImpl savepointStack();
-
-    SingleTransactionRecordBuilderImpl recordBuilder();
 
     PreHandleResult preHandleResult();
 

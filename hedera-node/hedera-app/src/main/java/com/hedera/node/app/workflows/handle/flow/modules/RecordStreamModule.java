@@ -19,24 +19,13 @@ package com.hedera.node.app.workflows.handle.flow.modules;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.process.ProcessRunner;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Module
 public interface RecordStreamModule {
-    @Provides
-    @UserTxnScope
-    static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
-            @NonNull RecordListBuilder recordListBuilder) {
-        return recordListBuilder.userTransactionRecordBuilder();
-    }
-
     @Binds
     @UserTxnScope
     Supplier<Stream<SingleTransactionRecord>> recordStreamSupplier(ProcessRunner processRunner);

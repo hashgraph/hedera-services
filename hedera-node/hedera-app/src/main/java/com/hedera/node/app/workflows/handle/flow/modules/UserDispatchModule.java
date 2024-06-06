@@ -43,6 +43,8 @@ import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserDispatchScope;
 import com.hedera.node.app.workflows.handle.flow.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.infra.records.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -159,4 +161,14 @@ public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
     FinalizeContext bindFinalizeContext(TokenContextImpl tokenContext);
+
+    @Provides
+    @UserDispatchScope
+    static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
+            @NonNull RecordListBuilder recordListBuilder,
+            @NonNull UserRecordInitializer userRecordInitializer,
+            TransactionInfo txnInfo) {
+        userRecordInitializer.initializeUserRecord(recordListBuilder.userTransactionRecordBuilder(), txnInfo);
+        return recordListBuilder.userTransactionRecordBuilder();
+    }
 }

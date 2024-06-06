@@ -46,7 +46,7 @@ public class UserRecordInitializer {
         recordBuilder
                 .transaction(txnInfo.transaction())
                 .transactionBytes(transactionBytes)
-                .transactionID(txnInfo.transactionID())
+                .transactionID(txnInfo.txBody().transactionIDOrThrow())
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .memo(txnInfo.txBody().memo());
     }
