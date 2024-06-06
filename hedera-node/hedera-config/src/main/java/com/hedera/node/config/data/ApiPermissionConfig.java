@@ -75,7 +75,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_A
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REJECT;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REJECT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
