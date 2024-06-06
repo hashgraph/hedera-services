@@ -341,14 +341,13 @@ public class HandleWorkflow {
         final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
 
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var userTxn =
-                userTxnProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
-
-        final var recordStream = userTxn.recordStream().get();
+        final var userTxnContext = userTxnProvider.get()
+                .create(platformState, platformEvent, creator, platformTxn, consensusNow);
+        final var recordStream = userTxnContext.processor().execute();
         blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
-                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+                userTxnContext.functionality(), (int) (System.nanoTime() - handleStart));
     }
 
     private void handleUserTransaction(

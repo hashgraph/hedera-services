@@ -27,12 +27,11 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
 @UserTxnScope
-public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> {
+public class ProcessRunner {
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
     private final RecordListBuilder recordListBuilder;
@@ -62,8 +61,7 @@ public class ProcessRunner implements Supplier<Stream<SingleTransactionRecord>> 
         this.blockRecordManager = blockRecordManager;
     }
 
-    @Override
-    public Stream<SingleTransactionRecord> get() {
+    public Stream<SingleTransactionRecord> execute() {
         if (isOlderSoftwareEvent()) {
             skipHandleProcess.processUserTransaction(userTxn);
         } else {

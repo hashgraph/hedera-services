@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.flow.components;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.annotations.UserTxnScope;
@@ -29,6 +28,7 @@ import com.hedera.node.app.workflows.handle.flow.modules.PreHandleResultModule;
 import com.hedera.node.app.workflows.handle.flow.modules.RecordStreamModule;
 import com.hedera.node.app.workflows.handle.flow.modules.StateModule;
 import com.hedera.node.app.workflows.handle.flow.modules.UserDispatchSubcomponentModule;
+import com.hedera.node.app.workflows.handle.flow.process.ProcessRunner;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -39,8 +39,6 @@ import com.swirlds.state.HederaState;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 import java.time.Instant;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import javax.inject.Provider;
 
 @Subcomponent(
@@ -66,7 +64,7 @@ public interface UserTransactionComponent {
 
     HederaFunctionality functionality();
 
-    Supplier<Stream<SingleTransactionRecord>> recordStream();
+    ProcessRunner processor();
 
     Instant consensusNow();
 
