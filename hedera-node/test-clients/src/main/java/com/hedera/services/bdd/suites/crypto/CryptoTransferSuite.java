@@ -164,7 +164,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -2381,8 +2380,7 @@ public class CryptoTransferSuite {
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS)
-                )
+                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS))
                 .when(
                         // Create NFT1
                         tokenCreate(tokenA)
@@ -2397,15 +2395,9 @@ public class CryptoTransferSuite {
                                 .supplyKey(MULTI_KEY)
                                 .treasury(TREASURY),
                         // Mint both NFTs
-                        mintToken(
-                                tokenA,
-                                List.of(ByteString.copyFromUtf8("metadata1"))),
-                        mintToken(
-                                tokenB,
-                                List.of(ByteString.copyFromUtf8("metadata2"))),
-                        mintToken(
-                                tokenB,
-                                List.of(ByteString.copyFromUtf8("metadata3"))),
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
+                        mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata2"))),
+                        mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata3"))),
                         // Create hollow account
                         cryptoTransfer(movingUnique(tokenA, 1).between(TREASURY, MULTI_KEY))
                                 .payingWith(TREASURY)
@@ -2421,13 +2413,15 @@ public class CryptoTransferSuite {
                                 .signedBy(TREASURY)
                                 .via(transferTokenBToHollowAccountTxn)
                                 .logged(),
-                        getAliasedAccountInfo(MULTI_KEY)
-                                .hasToken(relationshipWith(tokenB))
+                        getAliasedAccountInfo(MULTI_KEY).hasToken(relationshipWith(tokenB))
                         // TODO: finish the test accoring to the test plan
-                )
+                        )
                 .then(
-                        validateChargedUsdWithin(transferTokenAToHollowAccountTxn, expectedCreateHollowAccountAndNftATransferFeeUsd, 0.01),
-                        validateChargedUsdWithin(transferTokenBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd, 0.01)
-                );
+                        validateChargedUsdWithin(
+                                transferTokenAToHollowAccountTxn,
+                                expectedCreateHollowAccountAndNftATransferFeeUsd,
+                                0.01),
+                        validateChargedUsdWithin(
+                                transferTokenBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd, 0.01));
     }
 }

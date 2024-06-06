@@ -89,7 +89,9 @@ public class CryptoOpsUsage {
         accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
         // Add rbs for auto associations
-        accumulator.addRbs((xferMeta.getNumFungibleTokenTransfers() + xferMeta.getNumNftOwnershipChanges()) * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER);
+        accumulator.addRbs((xferMeta.getNumFungibleTokenTransfers() + xferMeta.getNumNftOwnershipChanges())
+                * THREE_MONTHS_IN_SECONDS
+                * CREATE_SLOT_MULTIPLIER);
     }
 
     public FeeData cryptoInfoUsage(final Query cryptoInfoReq, final ExtantCryptoContext ctx) {
