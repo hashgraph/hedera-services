@@ -216,13 +216,6 @@ jobs:
         id: gradle-build
         run: ${GRADLE_EXEC} assemble --scan
 
-      - name: Upload Hapi Build
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: Hapi Build Dir
-          path: "**/hapi/build/**"
-          retention-days: 7
-
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
         run: ${GRADLE_EXEC} spotlessCheck --scan
