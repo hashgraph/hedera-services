@@ -236,6 +236,7 @@ public class LeakyCryptoTestsSuite {
     final Stream<DynamicTest> autoAssociationPropertiesWorkAsExpected() {
         final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
         final var maxAssociationsPropertyName = "ledger.maxAutoAssociations";
+        final var unlimitedAutoAssociationsPropertyName = "entities.unlimitedAutoAssociationsEnabled";
         final var shortLivedAutoAssocUser = "shortLivedAutoAssocUser";
         final var longLivedAutoAssocUser = "longLivedAutoAssocUser";
         final var payerBalance = 100 * ONE_HUNDRED_HBARS;
@@ -244,11 +245,15 @@ public class LeakyCryptoTestsSuite {
         final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
-                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
+                .preserving(
+                        maxAssociationsPropertyName,
+                        minAutoRenewPeriodPropertyName,
+                        unlimitedAutoAssociationsPropertyName)
                 .given(
-                        overridingTwo(
+                        overridingThree(
                                 maxAssociationsPropertyName, "100",
-                                minAutoRenewPeriodPropertyName, "1"),
+                                minAutoRenewPeriodPropertyName, "1",
+                                unlimitedAutoAssociationsPropertyName, "true"),
                         cryptoCreate(longLivedAutoAssocUser)
                                 .balance(payerBalance)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS),

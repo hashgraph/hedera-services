@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -471,11 +470,16 @@ public class CryptoUpdateSuite {
         final String CONTRACT = "Multipurpose";
         final String ADMIN_KEY = "adminKey";
 
-        return defaultHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.allowAutoAssociations", "entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
-                        overriding("contracts.allowAutoAssociations", "true"),
+                        overridingTwo(
+                                "contracts.allowAutoAssociations",
+                                "true",
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                "true"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)
