@@ -48,7 +48,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
@@ -88,7 +87,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<Function<HapiSpec, Long>> balanceFn = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
-    private final Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
     private Optional<String> stakedAccountId = Optional.empty();
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
@@ -329,7 +327,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
             return;
         }
         final var createdAccountId = lastReceipt.getAccountID();
-        final var createdTokenId = lastReceipt.getTokenID();
         if (recharging) {
             spec.registry()
                     .setRecharging(account, initialBalance.orElse(spec.setup().defaultBalance()));
@@ -340,7 +337,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         spec.registry().saveKey(account, key);
         spec.registry().saveAccountId(account, createdAccountId);
         newAccountIdObserver.ifPresent(obs -> obs.accept(createdAccountId));
-        newTokenIdObserver.ifPresent(obs -> obs.accept(createdTokenId));
         receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
         Optional.ofNullable(addressObserver)
                 .ifPresent(obs -> evmAddress.ifPresentOrElse(
@@ -376,6 +372,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getAccountID().getAccountNum())
                 .orElse(-1L);
+    }
+
+    public Key getKey() {
+        return key;
     }
 
     public HapiCryptoCreate withMatchingEvmAddress() {

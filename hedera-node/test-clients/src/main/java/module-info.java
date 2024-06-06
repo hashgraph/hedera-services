@@ -3,6 +3,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.inventory;
     exports com.hedera.services.bdd.suites;
     exports com.hedera.services.bdd.suites.utils.sysfiles.serdes;
+    exports com.hedera.services.bdd;
     exports com.hedera.services.bdd.spec;
     exports com.hedera.services.bdd.spec.persistence;
     exports com.hedera.services.bdd.spec.infrastructure;
@@ -56,6 +57,7 @@ module com.hedera.node.test.clients {
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
+    requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app;
     requires com.hedera.node.config;
     requires com.fasterxml.jackson.core;
