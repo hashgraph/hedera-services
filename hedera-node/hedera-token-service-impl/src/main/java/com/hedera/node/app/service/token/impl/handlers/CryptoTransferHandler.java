@@ -664,8 +664,8 @@ public class CryptoTransferHandler implements TransactionHandler {
             } else {
                 if (account != null && account.maxAutoAssociations() != 0) {
                     autoRenewSeconds = account.autoRenewSeconds();
-                    associationsRbs +=
-                            calculateAccountAssociationsRbs(associationsMap, tokenRelStore, accountId, autoRenewSeconds);
+                    associationsRbs += calculateAccountAssociationsRbs(
+                            associationsMap, tokenRelStore, accountId, autoRenewSeconds);
                 }
             }
         }
