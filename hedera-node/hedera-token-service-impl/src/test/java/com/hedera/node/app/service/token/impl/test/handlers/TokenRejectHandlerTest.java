@@ -61,6 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     public static final String LEDGER_TOKEN_REJECTS_MAX_LEN = "ledger.tokenRejects.maxLen";
+    public static final String TOKEN_REJECT_ENABLED_PROPERTY = "tokens.reject.enabled";
 
     private final TokenReference tokenRefFungible =
             TokenReference.newBuilder().fungibleToken(fungibleTokenId).build();
@@ -92,7 +93,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         given(handleContext.payer()).willReturn(ownerId);
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.configuration()).willReturn(configuration);
+        when(handleContext.configuration()).thenReturn(defaultConfig().getOrCreateConfig());
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
 
@@ -250,7 +251,9 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     private static TestConfigBuilder defaultConfig() {
-        return HederaTestConfigBuilder.create().withValue(LEDGER_TOKEN_REJECTS_MAX_LEN, 10);
+        return HederaTestConfigBuilder.create()
+                .withValue(TOKEN_REJECT_ENABLED_PROPERTY, "true")
+                .withValue(LEDGER_TOKEN_REJECTS_MAX_LEN, 10);
     }
 
     private TransactionBody newTokenReject(final AccountID payerId, final TokenReference... tokenReferences) {
