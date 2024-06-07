@@ -1,7 +1,7 @@
 # Schedule Service
 The Schedule Service processes transactions that create a schedulable entity on the network.
-TokenTransfer, ConsensusSubmitMessage, CryptoApproveAllowance, TokenMint and TokenBurn transactions 
-are the transaction types that can be scheduled. 
+CryptoTransfer,ConsensusSubmitMessage,TokenBurn,TokenMint, and CryptoApproveAllowance transactions 
+are the transaction types that can be scheduled.
 Additional schedulable transactions will be added in future releases.
 
 ### Table of Contents
@@ -93,7 +93,7 @@ scheduled.
 Here are the key fields of ```SchedulableTransactionBody```:  
 - ```transactionFee``` : This field is of type uint64 and represents the maximum transaction fee the client is willing to pay.  
 - ```memo```: This is an optional field of type string that can hold a UTF-8 encoded 
-- string of no more than 100 bytes which does not contain the zero byte.  
+string of no more than 100 bytes which does not contain the zero byte.  
 - ```data```: This field is a oneof type which means it can hold one of many types of 
 transactions. The types of transactions that can be scheduled are arranged by 
 service in roughly lexicographical order. The field ordinals are non-sequential, 
