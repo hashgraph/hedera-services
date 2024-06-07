@@ -17,13 +17,11 @@
 package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.future.ScheduleServiceCronLogic;
+import com.hedera.node.app.workflows.handle.flow.infra.HollowAccountFinalizationLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,9 +37,7 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
     private final ScheduleServiceCronLogic scheduleServiceCronLogic;
     private final DispatchLogic dispatchLogic;
     private final UserTxnLogger userTxnLogger;
-    private final HederaRecordCache recordCache;
-    private final ThrottleServiceManager throttleServiceManager;
-    private final NetworkUtilizationManager networkUtilizationManager;
+    private final HollowAccountFinalizationLogic hollowAccountFinalization;
 
     @Inject
     public MainUserTransactionProcess(
@@ -50,17 +46,13 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
             final DispatchLogic dispatchLogic,
             final UserTxnLogger userTxnLogger,
-            final HederaRecordCache recordCache,
-            final ThrottleServiceManager throttleServiceManager,
-            final NetworkUtilizationManager networkUtilizationManager) {
+            final HollowAccountFinalizationLogic hollowAccountFinalization) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
         this.dispatchLogic = dispatchLogic;
         this.userTxnLogger = userTxnLogger;
-        this.recordCache = recordCache;
-        this.throttleServiceManager = throttleServiceManager;
-        this.networkUtilizationManager = networkUtilizationManager;
+        this.hollowAccountFinalization = hollowAccountFinalization;
     }
 
     @Override
@@ -71,6 +63,8 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
         userTxnLogger.logUserTxn(userTxn);
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
+        hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
+
         return dispatchLogic.dispatch(userDispatch, userTxn.recordListBuilder());
     }
 
