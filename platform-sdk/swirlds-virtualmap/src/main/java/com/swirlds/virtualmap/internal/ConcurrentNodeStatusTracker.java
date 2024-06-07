@@ -276,7 +276,7 @@ public final class ConcurrentNodeStatusTracker {
     /**
      * We use two {@link BitSet} to handle the 3 possible
      * states of a value:
-     * <lu>
+     * <ul>
      * <li><strong>UNKNOWN</strong>: if {@code knowns} is set to false.
      * </li>
      * <li><strong>KNOWN</strong>: if {@code knowns} is set to true and
@@ -285,7 +285,7 @@ public final class ConcurrentNodeStatusTracker {
      * <li><strong>NOT_KNOWN</strong>: if {@code knowns} is set to true
      * and {@code status} is not set.
      * </li>
-     * </lu>
+     * </ul>
      */
     private static final class BitSetGroup {
         private final BitSet status;
