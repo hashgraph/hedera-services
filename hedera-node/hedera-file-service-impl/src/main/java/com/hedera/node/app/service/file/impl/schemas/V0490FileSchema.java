@@ -53,6 +53,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -166,9 +167,10 @@ public class V0490FileSchema extends Schema {
             final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
             final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
             final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
+            final var grpcConfig = ctx.configuration().getConfigData(GrpcConfig.class);
             final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
             createGenesisAddressBookAndNodeDetails(
-                    bootstrapConfig, hederaConfig, filesConfig, files, ctx.networkInfo());
+                    bootstrapConfig, hederaConfig, filesConfig, grpcConfig, files, ctx.networkInfo());
             createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
@@ -231,6 +233,7 @@ public class V0490FileSchema extends Schema {
             @NonNull final BootstrapConfig bootstrapConfig,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
+            @NonNull final GrpcConfig grpcConfig,
             @NonNull final WritableKVState<FileID, File> files,
             @NonNull final NetworkInfo networkInfo) {
 
@@ -240,16 +243,22 @@ public class V0490FileSchema extends Schema {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         for (final var nodeInfo : networkInfo.addressBook()) {
             nodeAddresses.add(NodeAddress.newBuilder()
-                    .ipAddress(Bytes.wrap(nodeInfo.externalHostName()))
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     .nodeId(nodeInfo.nodeId())
-                    .stake(nodeInfo.stake())
-                    .memo(Bytes.wrap(nodeInfo.memo()))
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
-                            .port(nodeInfo.externalPort())
-                            .build())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     .nodeAccountId(nodeInfo.accountId())
+                    .serviceEndpoint(List.of(
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(
+                                            nodeInfo.externalHostName())) // we can't get this field value, use
+                                    // externalHostName for now.
+                                    .port(grpcConfig.port())
+                                    .build(),
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(
+                                            nodeInfo.externalHostName())) // we can't get this field value, use
+                                    // externalHostName for now.
+                                    .port(grpcConfig.tlsPort())
+                                    .build()))
                     .build());
         }
 
@@ -282,7 +291,33 @@ public class V0490FileSchema extends Schema {
                         .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
 
-        // Create the node details
+        // Create the node details for file 102,  their fields are different from 101, addressBook
+        final var nodeDetail = new ArrayList<NodeAddress>();
+        for (final var nodeInfo : networkInfo.addressBook()) {
+            nodeDetail.add(NodeAddress.newBuilder()
+                    .stake(nodeInfo.stake())
+                    .nodeAccountId(nodeInfo.accountId())
+                    .nodeId(nodeInfo.nodeId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    .serviceEndpoint(List.of(
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(
+                                            nodeInfo.externalHostName())) // we can't get this field value, use
+                                    // externalHostName for now.
+                                    .port(grpcConfig.port())
+                                    .build(),
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(
+                                            nodeInfo.externalHostName())) // we can't get this field value, use
+                                    // externalHostName for now.
+                                    .port(grpcConfig.port())
+                                    .build()))
+                    .build());
+        }
+
+        final var nodeDetails =
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
+        final var nodeDetailsProto = NodeAddressBook.PROTOBUF.toBytes(nodeDetails);
         final var nodeInfoFileNum = filesConfig.nodeDetails();
         final var nodeInfoFileId = FileID.newBuilder()
                 .shardNum(hederaConfig.shard())
@@ -294,7 +329,7 @@ public class V0490FileSchema extends Schema {
         files.put(
                 nodeInfoFileId,
                 File.newBuilder()
-                        .contents(nodeAddressBookProto)
+                        .contents(nodeDetailsProto)
                         .fileId(nodeInfoFileId)
                         .keys(masterKey)
                         .expirationSecond(bootstrapConfig.systemEntityExpiry())
