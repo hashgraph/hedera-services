@@ -2402,6 +2402,7 @@ public class CryptoTransferSuite {
                         cryptoTransfer(movingUnique(tokenA, 1).between(TREASURY, MULTI_KEY))
                                 .payingWith(TREASURY)
                                 .signedBy(TREASURY)
+                                .fee(ONE_HBAR) // Temp workaround
                                 .via(transferTokenAToHollowAccountTxn),
                         // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT1
                         getAliasedAccountInfo(MULTI_KEY)
@@ -2411,10 +2412,10 @@ public class CryptoTransferSuite {
                         cryptoTransfer(movingUnique(tokenB, 1).between(TREASURY, MULTI_KEY))
                                 .payingWith(TREASURY)
                                 .signedBy(TREASURY)
-                                .via(transferTokenBToHollowAccountTxn)
-                                .logged(),
+                                .fee(ONE_HBAR) // Temp workaround
+                                .via(transferTokenBToHollowAccountTxn),
                         getAliasedAccountInfo(MULTI_KEY).hasToken(relationshipWith(tokenB))
-                        // TODO: finish the test accoring to the test plan
+                        // TODO: finish the test according to the test plan
                         )
                 .then(
                         validateChargedUsdWithin(

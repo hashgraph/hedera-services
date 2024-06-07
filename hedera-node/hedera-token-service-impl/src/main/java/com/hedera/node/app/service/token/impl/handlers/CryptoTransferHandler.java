@@ -263,18 +263,6 @@ public class CryptoTransferHandler implements TransactionHandler {
             step.doIn(transferContext);
         }
 
-        if (unlimitedAutoAssociations) {
-            for (var tokenAssociation : transferContext.getAutomaticAssociations()) {
-                var accountId = tokenAssociation.accountId();
-                var account = accountStore.getAliasedAccountById(accountId);
-                if (account.maxAutoAssociations() >= 0) {
-                    validateFalse(
-                            account.usedAutoAssociations() + 1 > account.maxAutoAssociations(),
-                            NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-                }
-            }
-        }
-
         final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
         if (!transferContext.getAutomaticAssociations().isEmpty()) {
             transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
