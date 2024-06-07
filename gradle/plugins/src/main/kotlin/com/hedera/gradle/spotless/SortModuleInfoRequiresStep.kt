@@ -22,7 +22,7 @@ import com.diffplug.spotless.FormatterStep
 class SortModuleInfoRequiresStep {
     companion object {
         private const val NAME = "SortModuleInfoRequires"
-        private val OWN_PACKAGES = listOf("com.swirlds.", "com.hedera.node", "com.hedera.storage")
+        private val OWN_PACKAGES = listOf("com.swirlds.", "com.hedera.node.", "com.hedera.storage.")
 
         fun create(): FormatterStep {
             return FormatterStep.create(
