@@ -50,8 +50,8 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollow
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
@@ -1125,7 +1125,7 @@ public class TransferWithCustomFixedFees {
 
         return defaultHapiSpec("transferMaxFungibleWith10FixedHtsCustomFees2Layers")
                 .given(withOpContext((spec, log) -> {
-                    ArrayList<HapiSpecOperation> ops = new ArrayList<>();
+                    final ArrayList<SpecOperation> ops = new ArrayList<>();
                     var collectorCreate = cryptoCreate(htsCollector);
                     var collector2Create = cryptoCreate(htsCollector2);
                     var tokenOwnerCreate = cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS);

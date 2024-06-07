@@ -22,9 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -479,30 +477,6 @@ public class HapiSpecRegistry {
         return get(name, Long.class);
     }
 
-    public void saveIntValue(String name, Integer intVal) {
-        put(name, intVal);
-    }
-
-    public Integer getIntValue(String name) {
-        return get(name, Integer.class);
-    }
-
-    public void saveFloatValue(String name, Float floatVal) {
-        put(name, floatVal);
-    }
-
-    public Float getFloatValue(String name) {
-        return get(name, Float.class);
-    }
-
-    public void saveDoubleValue(String name, Double doubleVal) {
-        put(name, doubleVal);
-    }
-
-    public Double getDoubleValue(String name) {
-        return get(name, Double.class);
-    }
-
     public void saveSigRequirement(String name, Boolean isRequired) {
         put(name, isRequired);
     }
@@ -548,6 +522,12 @@ public class HapiSpecRegistry {
 
     public Optional<TransactionID> getMaybeTxnId(String name) {
         return Optional.ofNullable(getOrElse(name, TransactionID.class, null));
+    }
+
+    public <T extends Record> void saveRecord(@NonNull final String name, @NonNull final T registryRecord) {
+        requireNonNull(name);
+        requireNonNull(registryRecord);
+        put(name, registryRecord);
     }
 
     public void saveAccountId(String name, AccountID id) {
@@ -760,13 +740,6 @@ public class HapiSpecRegistry {
         put(name, txnRecord);
     }
 
-    public void removeTransactionRecord(String name) {
-        try {
-            remove(name, TransactionRecord.class);
-        } catch (Exception ignore) {
-        }
-    }
-
     public boolean hasTransactionRecord(String name) {
         return has(name, TransactionRecord.class);
     }
@@ -779,13 +752,6 @@ public class HapiSpecRegistry {
         put(name, info);
     }
 
-    public void removeFileInfo(String name) {
-        try {
-            remove(name, ContractGetInfoResponse.ContractInfo.class);
-        } catch (Exception ignore) {
-        }
-    }
-
     public FileGetInfoResponse.FileInfo getFileInfo(String name) {
         return get(name, FileGetInfoResponse.FileInfo.class);
     }
@@ -796,13 +762,6 @@ public class HapiSpecRegistry {
 
     public void saveAccountDetails(String name, GetAccountDetailsResponse.AccountDetails details) {
         put(name, details);
-    }
-
-    public void removeAccountInfo(String name) {
-        try {
-            remove(name, CryptoGetInfoResponse.AccountInfo.class);
-        } catch (Exception ignore) {
-        }
     }
 
     public CryptoGetInfoResponse.AccountInfo getAccountInfo(String name) {
@@ -886,18 +845,6 @@ public class HapiSpecRegistry {
     private String full(String name, Class<?> type) {
         String typeName = type.getSimpleName();
         return typeName + "-" + name;
-    }
-
-    public Map<Class, Long> typeCounts() {
-        return registry.values().stream().collect(groupingBy(Object::getClass, counting()));
-    }
-
-    public List<String> stringValues() {
-        return registry.entrySet().stream()
-                .filter(entry -> entry.getValue().getClass().equals(String.class))
-                .map(entry -> String.format(
-                        "%s -> %s", entry.getKey(), entry.getValue().toString()))
-                .collect(toList());
     }
 
     public void forgetMetadataKey(String name) {
