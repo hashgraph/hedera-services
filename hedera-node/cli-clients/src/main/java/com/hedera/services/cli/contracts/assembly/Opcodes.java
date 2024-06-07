@@ -279,7 +279,7 @@ public class Opcodes {
         byMnemonic = ImmutableSortedMap.copyOf(descrs.stream().collect(toMap(Descr::mnemonic, d -> d)));
     }
 
-    /** Returns a Stream<Integer> of a range of integers, inclusive of both ends */
+    /** Returns a Stream&lt;Integer&gt; of a range of integers, inclusive of both ends */
     private static Stream<Integer> intRange(int low, int high) {
         return IntStream.rangeClosed(low, high).boxed();
     }
