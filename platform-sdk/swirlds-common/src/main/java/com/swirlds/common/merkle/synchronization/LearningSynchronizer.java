@@ -41,12 +41,13 @@ import com.swirlds.logging.legacy.payload.SynchronizationCompletePayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,8 +150,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         views = new ConcurrentHashMap<>();
         final int viewId = viewIdGen.getAndIncrement();
         views.put(viewId, nodeTreeView(root));
-        viewsToInitialize = new LinkedList<>();
-        rootsToReceive = new LinkedList<>();
+        viewsToInitialize = new ConcurrentLinkedDeque<>();
+        rootsToReceive = new ConcurrentLinkedQueue<>();
         rootsToReceive.add(root);
 
         this.breakConnection = breakConnection;

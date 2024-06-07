@@ -38,11 +38,11 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.SocketException;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -148,7 +148,7 @@ public class TeachingSynchronizer {
         final int viewId = viewIdGen.getAndIncrement();
         final TeacherTreeView<?> view = new TeacherPushMerkleTreeView(configuration, root);
         views.put(viewId, view);
-        subtrees = new LinkedList<>();
+        subtrees = new ConcurrentLinkedQueue<>();
         final TeacherSubtree rootSubtree = new TeacherSubtree(root, viewId, view);
         subtrees.add(rootSubtree);
 
