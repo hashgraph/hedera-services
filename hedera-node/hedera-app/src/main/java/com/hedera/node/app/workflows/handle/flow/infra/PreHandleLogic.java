@@ -17,12 +17,12 @@
 package com.hedera.node.app.workflows.handle.flow.infra;
 
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;

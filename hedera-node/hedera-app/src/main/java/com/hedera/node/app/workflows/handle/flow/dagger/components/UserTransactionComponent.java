@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.flow.dagger.components;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
@@ -36,6 +35,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.info.NodeInfo;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 import java.time.Instant;

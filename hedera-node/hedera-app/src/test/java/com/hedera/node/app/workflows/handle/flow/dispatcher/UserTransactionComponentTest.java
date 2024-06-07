@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

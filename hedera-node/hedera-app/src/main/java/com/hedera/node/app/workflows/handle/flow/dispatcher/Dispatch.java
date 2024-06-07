@@ -24,7 +24,6 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -33,6 +32,7 @@ import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import java.util.Set;
 

@@ -62,10 +62,6 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
     private SortedSet<Account> miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
-
-    @Inject
-    public GenesisRecordsConsensusHook() {}
-
     /**
      * Constructs a new {@link GenesisRecordsConsensusHook}.
      */
