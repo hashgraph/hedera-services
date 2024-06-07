@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.ALERT_MESSAGE;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -34,6 +35,8 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class has the common logic that is executed for a user dispatch and a child dispatch transactions.
@@ -43,6 +46,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class DispatchLogic {
+    private static final Logger logger = LogManager.getLogger(DispatchLogic.class);
     private final Authorizer authorizer;
     private final DueDiligenceLogic dueDiligenceLogic;
     private final HandleLogic handleLogic;
@@ -90,12 +94,12 @@ public class DispatchLogic {
      * Handles the transaction logic for the given dispatch. If the logic fails, it will rollback the stack and charge
      * the payer for the fees.
      * @param dispatch the dispatch to be processed
-     * @param dueDiligenceReport the due diligence report for the dispatch
+     * @param errorReport the due diligence report for the dispatch
      * @param recordListBuilder the record list builder for the dispatch
      */
     private WorkDone handleTransaction(
             @NonNull final Dispatch dispatch,
-            @NonNull final ErrorReport dueDiligenceReport,
+            @NonNull final ErrorReport errorReport,
             @NonNull final RecordListBuilder recordListBuilder) {
         try {
             final var workDone = handleLogic.handle(dispatch);
@@ -110,14 +114,26 @@ public class DispatchLogic {
                     recordListBuilder,
                     dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
-                chargePayer(dispatch, dueDiligenceReport);
+                chargePayer(dispatch, errorReport);
             }
             return WorkDone.USER_TRANSACTION;
         } catch (ThrottleException e) {
-            rollback(true, e.getStatus(), dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
-            chargePayer(dispatch, dueDiligenceReport.withoutServiceFee());
-            return WorkDone.FEES_ONLY;
+            return handleException(dispatch, errorReport, recordListBuilder, e.getStatus());
+        } catch (Exception e) {
+            logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
+            return handleException(dispatch, errorReport, recordListBuilder, ResponseCodeEnum.FAIL_INVALID);
         }
+    }
+
+    @NonNull
+    private WorkDone handleException(
+            final @NonNull Dispatch dispatch,
+            final @NonNull ErrorReport errorReport,
+            final @NonNull RecordListBuilder recordListBuilder,
+            final ResponseCodeEnum status) {
+        rollback(true, status, dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
+        chargePayer(dispatch, errorReport.withoutServiceFee());
+        return WorkDone.FEES_ONLY;
     }
 
     /**

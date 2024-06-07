@@ -42,6 +42,7 @@ public class UserRecordInitializer {
      * @param recordBuilder the record builder
      * @param txnInfo the transaction info
      */
+    // TODO: Guarantee that this never throws an exception
     public void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
         final Bytes transactionBytes;
         final var transaction = txnInfo.transaction();

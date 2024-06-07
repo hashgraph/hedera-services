@@ -23,7 +23,6 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -51,7 +50,7 @@ public class SkipUserTransactionProcess implements UserTransactionProcess {
     public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
         final TransactionInfo transactionInfo = userTxn.txnInfo();
         // Initialize record builder list and place a BUSY record in the cache
-        final var parentRecord = userTxn.recordListBuilder()
+        userTxn.recordListBuilder()
                 .userTransactionRecordBuilder()
                 .transaction(transactionInfo.transaction())
                 .transactionBytes(transactionInfo.signedBytes())
@@ -59,8 +58,6 @@ public class SkipUserTransactionProcess implements UserTransactionProcess {
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .memo(transactionInfo.txBody().memo())
                 .status(ResponseCodeEnum.BUSY);
-
-        recordCache.add(userTxn.creator().nodeId(), transactionInfo.payerID(), List.of(parentRecord.build()));
         return WorkDone.NONE;
     }
 }

@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.process;
 
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
+import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.CONTRACT_OPERATIONS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
@@ -34,6 +35,7 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.records.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -44,9 +46,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @UserTxnScope
 public class UserHandleWorkflow {
+    private static final Logger logger = LogManager.getLogger(UserHandleWorkflow.class);
+
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
     private final RecordListBuilder recordListBuilder;
@@ -60,6 +66,7 @@ public class UserHandleWorkflow {
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final NetworkInfo networkInfo;
+    private final UserRecordInitializer userRecordInitializer;
 
     @Inject
     public UserHandleWorkflow(
@@ -75,7 +82,8 @@ public class UserHandleWorkflow {
             final NetworkUtilizationManager networkUtilizationManager,
             final HandleWorkflowMetrics handleWorkflowMetrics,
             final ThrottleServiceManager throttleServiceManager,
-            final NetworkInfo networkInfo) {
+            final NetworkInfo networkInfo,
+            final UserRecordInitializer userRecordInitializer) {
         this.version = version;
         this.initTrigger = initTrigger;
         this.recordListBuilder = recordListBuilder;
@@ -89,9 +97,28 @@ public class UserHandleWorkflow {
         this.handleWorkflowMetrics = handleWorkflowMetrics;
         this.throttleServiceManager = throttleServiceManager;
         this.networkInfo = networkInfo;
+        this.userRecordInitializer = userRecordInitializer;
     }
 
     public Stream<SingleTransactionRecord> execute() {
+        try {
+            return getComputedRecordStream();
+        } catch (final Exception e) {
+            logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
+            return getFailInvalidRecordStream();
+        }
+    }
+
+    private Stream<SingleTransactionRecord> getFailInvalidRecordStream() {
+        final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
+        final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
+        userRecordInitializer.initializeUserRecord(recordBuilder, userTxn.txnInfo());
+        recordBuilder.status(ResponseCodeEnum.FAIL_INVALID);
+        userTxn.stack().rollbackFullStack();
+        return buildAndCacheResult(failInvalidRecordListBuilder);
+    }
+
+    private Stream<SingleTransactionRecord> getComputedRecordStream() {
         if (isOlderSoftwareEvent()) {
             skipHandleProcess.processUserTransaction(userTxn);
         } else {
@@ -102,7 +129,11 @@ public class UserHandleWorkflow {
             trackUsage(workDone);
         }
 
-        final var result = recordListBuilder.build();
+        return buildAndCacheResult(userTxn.recordListBuilder());
+    }
+
+    private Stream<SingleTransactionRecord> buildAndCacheResult(RecordListBuilder builder) {
+        final var result = builder.build();
         recordCache.add(
                 userTxn.creator().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
         return result.records().stream();

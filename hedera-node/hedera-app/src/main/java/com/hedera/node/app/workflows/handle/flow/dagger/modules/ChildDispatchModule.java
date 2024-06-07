@@ -38,6 +38,7 @@ import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -181,7 +182,8 @@ public interface ChildDispatchModule {
             final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             final ChildDispatchLogic childDispatchLogic,
             @NonNull final ChildDispatchComponent dispatch,
-            @NonNull final DispatchLogic dispatchLogic) {
+            @NonNull final DispatchLogic dispatchLogic,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         return new FlowHandleContext(
                 consensusNow,
                 transactionInfo,
