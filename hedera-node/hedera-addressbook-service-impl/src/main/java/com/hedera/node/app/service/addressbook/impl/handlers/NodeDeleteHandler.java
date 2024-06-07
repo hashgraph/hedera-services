@@ -93,6 +93,8 @@ public class NodeDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        return feeContext.feeCalculator(SubType.DEFAULT).calculate();
+        final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
+        feeCalculator.resetUsage();
+        return feeCalculator.addBytesPerTransaction(1).calculate();
     }
 }

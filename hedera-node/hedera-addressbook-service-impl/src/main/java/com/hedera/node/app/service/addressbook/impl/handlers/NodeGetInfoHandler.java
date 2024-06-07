@@ -136,9 +136,8 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
     @NonNull
     @Override
     public Fees computeFees(@NonNull QueryContext queryContext) {
-        final var query = queryContext.query();
-        final var nodeStore = queryContext.createStore(ReadableNodeStore.class);
-        final var op = query.nodeGetInfoOrThrow();
-        return queryContext.feeCalculator().calculate();
+        final var feeCalculator = queryContext.feeCalculator();
+        feeCalculator.resetUsage();
+        return feeCalculator.addBytesPerTransaction(1).calculate();
     }
 }

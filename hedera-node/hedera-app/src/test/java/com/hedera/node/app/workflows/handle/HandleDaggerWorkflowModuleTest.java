@@ -19,6 +19,10 @@ package com.hedera.node.app.workflows.handle;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
@@ -100,6 +104,9 @@ class HandleDaggerWorkflowModuleTest {
 
     @Mock
     private UtilHandlers utilHandlers;
+
+    @Mock
+    private AddressBookHandlers addressBookHandlers;
 
     @Mock
     private ConsensusCreateTopicHandler consensusCreateTopicHandler;
@@ -237,6 +244,15 @@ class HandleDaggerWorkflowModuleTest {
     private TokenUnpauseHandler tokenUnpauseHandler;
 
     @Mock
+    private NodeCreateHandler nodeCreateHandler;
+
+    @Mock
+    private NodeUpdateHandler nodeUpdateHandler;
+
+    @Mock
+    private NodeDeleteHandler nodeDeleteHandler;
+
+    @Mock
     private UtilPrngHandler utilPrngHandler;
 
     @Test
@@ -287,6 +303,9 @@ class HandleDaggerWorkflowModuleTest {
         given(tokenHandlers.tokenPauseHandler()).willReturn(tokenPauseHandler);
         given(tokenHandlers.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilHandlers.prngHandler()).willReturn(utilPrngHandler);
+        given(addressBookHandlers.nodeCreateHandler()).willReturn(nodeCreateHandler);
+        given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
+        given(addressBookHandlers.nodeDeleteHandler()).willReturn(nodeDeleteHandler);
 
         final var handlers = HandlersInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
@@ -295,7 +314,8 @@ class HandleDaggerWorkflowModuleTest {
                 () -> contractHandlers,
                 scheduleHandlers,
                 tokenHandlers,
-                utilHandlers);
+                utilHandlers,
+                addressBookHandlers);
         assertInstanceOf(TransactionHandlers.class, handlers);
     }
 }

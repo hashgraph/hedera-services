@@ -29,6 +29,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -116,6 +118,14 @@ public class NodeCreateHandler implements TransactionHandler {
         final var recordBuilder = handleContext.recordBuilder(NodeCreateRecordBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
+        feeCalculator.resetUsage();
+        return feeCalculator.addBytesPerTransaction(1).calculate();
     }
 
     private long getNextNodeID(@NonNull final WritableNodeStore nodeStore) {

@@ -201,5 +201,18 @@
   },
   "UtilPrng": {
 	"DEFAULT": 0.001
+  },
+  "NodeCreate": {
+    "DEFAULT": 0.0001
+  },
+  "NodeUpdate": {
+    "DEFAULT": 0.0001
+  },
+  "NodeDelete": {
+    "DEFAULT": 0.0001
+  },
+  "NodeGetInfo": {
+    "DEFAULT": 0.0001
   }
+
 }

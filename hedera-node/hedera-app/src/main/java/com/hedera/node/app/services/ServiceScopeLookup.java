@@ -17,6 +17,7 @@
 package com.hedera.node.app.services;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
@@ -113,6 +114,8 @@ public class ServiceScopeLookup {
                 case FILE_ID -> FileService.NAME;
                 default -> NON_EXISTING_SERVICE;
             };
+
+            case NODE_CREATE, NODE_DELETE, NODE_UPDATE -> AddressBookService.NAME;
 
             default -> NON_EXISTING_SERVICE;
         };

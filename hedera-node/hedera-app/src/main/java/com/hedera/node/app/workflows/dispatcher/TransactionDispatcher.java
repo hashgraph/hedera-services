@@ -47,6 +47,7 @@ public class TransactionDispatcher {
     public static final String SYSTEM_UNDELETE_WITHOUT_ID_CASE = "SystemUndelete without IdCase";
 
     protected final TransactionHandlers handlers;
+    private Object NODE_CREATE;
 
     /**
      * Creates a {@code TransactionDispatcher}.
@@ -200,6 +201,10 @@ public class TransactionDispatcher {
             case TOKEN_PAUSE -> handlers.tokenPauseHandler();
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
             case TOKEN_UPDATE_NFTS -> handlers.tokenUpdateNftsHandler();
+
+            case NODE_CREATE -> handlers.nodeCreateHandler();
+            case NODE_UPDATE -> handlers.nodeUpdateHandler();
+            case NODE_DELETE -> handlers.nodeDeleteHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 
