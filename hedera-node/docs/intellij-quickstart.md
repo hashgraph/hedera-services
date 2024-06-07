@@ -141,3 +141,6 @@ Maven `antrun:run@app-clean` goal in the `hedera-node` project to get
 a clean state. (Or simply delete _rm -rf hedera-node/data/saved_ for a
 quick reset.)
 
+## Additional resources
+
+* [SonarQube configuration](./sonar-quickstart.md)
