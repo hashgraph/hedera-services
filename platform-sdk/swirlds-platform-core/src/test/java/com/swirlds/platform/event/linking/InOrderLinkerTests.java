@@ -134,8 +134,7 @@ class InOrderLinkerTests {
         long ancientValue = 0;
         for (final GossipEvent ancientEvent : ancientEvents) {
             ancientValue = switch (ancientMode) {
-                case BIRTH_ROUND_THRESHOLD -> Math.max(
-                        ancientValue, ancientEvent.getHashedData().getBirthRound());
+                case BIRTH_ROUND_THRESHOLD -> Math.max(ancientValue, ancientEvent.getBirthRound());
                 case GENERATION_THRESHOLD -> Math.max(ancientValue, ancientEvent.getGeneration());};
         }
 
@@ -168,7 +167,7 @@ class InOrderLinkerTests {
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
-                .setBirthRound(genesisSelfParent.getHashedData().getBirthRound() + 1)
+                .setBirthRound(genesisSelfParent.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -189,7 +188,7 @@ class InOrderLinkerTests {
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(genesisOtherParent)
-                .setBirthRound(child1.getHashedData().getBirthRound() + 1)
+                .setBirthRound(child1.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -210,7 +209,7 @@ class InOrderLinkerTests {
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(child2)
-                .setBirthRound(child2.getHashedData().getBirthRound() + 1)
+                .setBirthRound(child2.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -229,7 +228,7 @@ class InOrderLinkerTests {
                 .setCreatorId(selfId)
                 .setSelfParent(child2)
                 .setOtherParent(child3)
-                .setBirthRound(child3.getHashedData().getBirthRound() + 1)
+                .setBirthRound(child3.getBirthRound() + 1)
                 .setTimeCreated(time.now())
                 .build();
 
@@ -356,8 +355,7 @@ class InOrderLinkerTests {
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
-                .overrideSelfParentBirthRound(
-                        genesisSelfParent.getHashedData().getBirthRound() + 1) // birth round doesn't match actual
+                .overrideSelfParentBirthRound(genesisSelfParent.getBirthRound() + 1) // birth round doesn't match actual
                 .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
@@ -402,7 +400,7 @@ class InOrderLinkerTests {
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
                 .overrideOtherParentBirthRound(
-                        genesisOtherParent.getHashedData().getBirthRound() + 1) // birth round doesn't match actual
+                        genesisOtherParent.getBirthRound() + 1) // birth round doesn't match actual
                 .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
