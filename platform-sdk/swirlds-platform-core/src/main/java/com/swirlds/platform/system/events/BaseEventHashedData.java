@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -91,6 +92,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
      * the other parents' event descriptors
      */
     private List<EventDescriptor> otherParents;
+
+    /** a combined list of all parents, selfParent + otherParents */
+    private List<EventDescriptor> allParents;
 
     /**
      * creation time, as claimed by its creator
@@ -146,6 +150,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         Objects.requireNonNull(otherParents, "The otherParents must not be null");
         otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
+        this.allParents = createAllParentsList();
         this.birthRound = birthRound;
         this.birthRoundOverride = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
@@ -192,6 +197,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         }
         selfParent = in.readSerializable(false, EventDescriptor::new);
         otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        allParents = createAllParentsList();
         birthRound = in.readLong();
         birthRoundOverride = birthRound;
 
@@ -310,6 +316,19 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     @NonNull
     public List<EventDescriptor> getOtherParents() {
         return otherParents;
+    }
+
+    /** @return a list of all parents, self parent (if any), + all other parents */
+    @NonNull
+    public List<EventDescriptor> getAllParents() {
+        return allParents;
+    }
+
+    @NonNull
+    private List<EventDescriptor> createAllParentsList() {
+        return !hasSelfParent()
+                ? otherParents
+                : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
     }
 
     /**

@@ -26,24 +26,23 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.OrderedServiceMigrator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -284,7 +283,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         static final String NAME = "DependentService";
         static final String STATE_KEY = "DS_MAPPINGS";
 
-        @NotNull
+        @NonNull
         @Override
         public String getServiceName() {
             return NAME;

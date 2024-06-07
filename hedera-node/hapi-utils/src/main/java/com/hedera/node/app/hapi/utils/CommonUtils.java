@@ -108,6 +108,21 @@ public final class CommonUtils {
         return unwrapUnsafelyIfPossible(extractTransactionBodyByteString(transaction));
     }
 
+    /**
+     * Extracts the {@link TransactionBody} from a {@link TransactionOrBuilder} and throws an unchecked exception if
+     * the extraction fails.
+     *
+     * @param transaction the {@link TransactionOrBuilder} from which to extract the {@link TransactionBody}
+     * @return the extracted {@link TransactionBody}
+     */
+    public static TransactionBody extractTransactionBodyUnchecked(final TransactionOrBuilder transaction) {
+        try {
+            return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     public static TransactionBody extractTransactionBody(final TransactionOrBuilder transaction)
             throws InvalidProtocolBufferException {
         return TransactionBody.parseFrom(extractTransactionBodyByteString(transaction));

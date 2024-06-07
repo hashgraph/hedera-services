@@ -56,7 +56,8 @@ class TransactionResubmitterTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final long currentRound = randotron.nextLong(1, 1000);
+        // the round must be high enough to allow events to be too old
+        final long currentRound = randotron.nextLong(1000, 2000);
         final EventWindow eventWindow = new EventWindow(
                 currentRound,
                 1 /* ignored by resubmitter */,
@@ -78,7 +79,11 @@ class TransactionResubmitterTests {
                 final long round;
 
                 if (tooOld) {
-                    round = randotron.nextLong(1, currentRound - maxSignatureAge);
+                    if (currentRound - maxSignatureAge > 1) {
+                        round = randotron.nextLong(1, currentRound - maxSignatureAge);
+                    } else {
+                        round = 1;
+                    }
                 } else {
                     round = randotron.nextLong(currentRound - maxSignatureAge, currentRound);
                 }
