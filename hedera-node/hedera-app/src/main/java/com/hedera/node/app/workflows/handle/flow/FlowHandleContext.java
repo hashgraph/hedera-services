@@ -69,6 +69,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
@@ -84,6 +85,9 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -98,6 +102,8 @@ import javax.inject.Provider;
  */
 @Reusable
 public class FlowHandleContext implements HandleContext, FeeContext {
+    private static final Logger logger = LogManager.getLogger(FlowHandleContext.class);
+
     private final Instant consensusNow;
     private final TransactionInfo txnInfo;
     private final Configuration configuration;
@@ -193,6 +199,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public TransactionBody body() {
+        logger.info("Transaction body {}", txnInfo);
         return txnInfo.txBody();
     }
 
@@ -615,6 +622,11 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 customizer,
                 reversingBehavior);
         dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
+        logger.info(
+                "Dispatched child transaction {}, status {}",
+                childTxBody,
+                childDispatch.recordBuilder().status()
+        );
         if (commitStack) {
             stack.commitFullStack();
         }

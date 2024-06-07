@@ -105,7 +105,6 @@ public class DueDiligenceLogic {
 
     private ResponseCodeEnum checkIfExpired(final @NonNull Dispatch dispatch) {
         try {
-            // TODO: Confirm child txnBody has txID here
             transactionChecker.checkTimeBox(
                     dispatch.txnInfo().txBody(),
                     dispatch.consensusNow(),

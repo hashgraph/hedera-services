@@ -119,6 +119,7 @@ public class DispatchLogic {
             handleSystemUpdates(dispatch);
             return workDone;
         } catch (HandleException e) {
+           logger.info("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
             rollback(
                     e.shouldRollbackStack(),

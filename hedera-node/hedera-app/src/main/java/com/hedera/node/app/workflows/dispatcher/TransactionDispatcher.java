@@ -28,7 +28,11 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -42,6 +46,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TransactionDispatcher {
+    private static final Logger logger = LogManager.getLogger(TransactionDispatcher.class);
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
     public static final String SYSTEM_DELETE_WITHOUT_ID_CASE = "SystemDelete without IdCase";
     public static final String SYSTEM_UNDELETE_WITHOUT_ID_CASE = "SystemUndelete without IdCase";
@@ -142,6 +147,7 @@ public class TransactionDispatcher {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
         try {
+            logger.error("Dispatching handle for transaction: {}", context.body());
             final var handler = getHandler(context.body());
             handler.handle(context);
         } catch (UnsupportedOperationException ex) {
