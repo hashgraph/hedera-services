@@ -6,6 +6,7 @@ of what each of the different APIs are intended for.
 ### Table of Contents
 - [Service](#Service)
   - [File Service](file-service/file-service.md)
+  - [Consensus Service](consensus-service/consensus-service.md)
 
 ## Service
 
