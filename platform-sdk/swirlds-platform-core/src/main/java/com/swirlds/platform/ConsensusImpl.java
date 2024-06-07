@@ -376,6 +376,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 // elections for this witness, but this witness does not vote
                 rounds.newWitness(event);
             } else {
+                if(event.getRoundCreated() == 318){
+                    int a = 1;
+                }
                 // this is a witness for a round later than the round being voted on, so it should
                 // vote in all elections in the current round
                 voteInAllElections(event);
@@ -393,6 +396,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // be the election round. if we didn't do that, then an event could reach consensus twice.
         final RoundElections roundElections = rounds.getElectionRound();
         if (roundElections.isDecided() && noInitJudgesMissing()) {
+            if(roundElections.getRound() == 317){
+                return null;
+            }
             // all famous witnesses for this round are now known. None will ever be added again. We
             // know this round has at least one witness. We know they all have fame decided. We
             // know the next 2 rounds have events in them, because otherwise we couldn't have
@@ -617,12 +623,16 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             logger.info(
                     CONSENSUS_VOTING.getMarker(),
                     "Witness {} voted on {}. vote:{} type:{} diff:{}",
-                    votingWitness,
-                    candidateWitness.getWitness(),
+                    votingEvent(votingWitness),
+                    votingEvent(candidateWitness.getWitness()),
                     votingWitness.getVote(candidateWitness),
                     votingType,
                     diff);
         }
+    }
+
+    public static String votingEvent(final EventImpl event){
+        return "(%d,%d)".formatted(event.getCreatorId().id(), event.getRoundCreated());
     }
 
     private boolean firstVote(@NonNull final EventImpl voting, @NonNull final EventImpl votedOn) {

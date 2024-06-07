@@ -19,6 +19,7 @@ package com.swirlds.platform.consensus;
 import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 
 import com.swirlds.common.utility.IntReference;
+import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -101,7 +102,7 @@ public final class CandidateWitness {
         logger.info(
                 CONSENSUS_VOTING.getMarker(),
                 "Fame decided for {}, election round {} unknown fame: {} ",
-                witness,
+                ConsensusImpl.votingEvent(witness),
                 witness.getRoundCreated(),
                 numUnknownFame.get());
 

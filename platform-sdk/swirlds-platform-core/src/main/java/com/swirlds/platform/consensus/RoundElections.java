@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.IntReference;
+import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.internal.EventImpl;
@@ -83,7 +84,7 @@ public class RoundElections {
         logger.info(
                 CONSENSUS_VOTING.getMarker(),
                 "Adding witness for election {}",
-                witness.getBaseEvent().getDescriptor());
+                ConsensusImpl.votingEvent(witness));
         numUnknownFame.increment();
         elections.add(new CandidateWitness(witness, numUnknownFame, elections.size()));
     }

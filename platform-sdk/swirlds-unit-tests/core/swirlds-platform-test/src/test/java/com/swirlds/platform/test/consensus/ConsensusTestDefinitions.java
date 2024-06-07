@@ -571,21 +571,20 @@ public final class ConsensusTestDefinitions {
             // The implementation of this test needs to be redone to properly remove a node from the first orchestrator
             // instead of trying to bootstrap a second orchestrator in the proper state.  Replaying the previously
             // events is going to be wrong because the weight distribution by % in the 3 node network is different.
-            orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
-                orchestrator2.getNodes().get(fi).getIntake().addEvent(e.copyGossipedData());
-            });
-            System.out.println("After loading old event into %d, latest cons round is %d".formatted(
-                    i,
-                    orchestrator2.getNodes().get(i).getIntake().getLatestRound().getRoundNum()
-            ));
-            ConsensusUtils.loadEventsIntoGenerator(
-                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),
-                    orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
-                    orchestrator2.getNodes().get(i).getRandom());
+//            orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
+//                orchestrator2.getNodes().get(fi).getIntake().addEvent(e.copyGossipedData());
+//            });
+//            ConsensusUtils.loadEventsIntoGenerator(
+//                    orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),
+//                    orchestrator2.getNodes().get(i).getEventEmitter().getGraphGenerator(),
+//                    orchestrator2.getNodes().get(i).getRandom());
         }
 
         final AddressBook newAb = orchestrator1.getAddressBook().copy();
         newAb.updateWeight(newAb.getNodeId(3), 0);
+        newAb.iterator().forEachRemaining(
+                a-> System.out.println("Node %d has weight %d".formatted(a.getNodeId().id(), a.getWeight()))
+        );
         final TestGuiSource guiSource = new TestGuiSource(
                 input.platformContext(),
                 //orchestrator2.getAddressBook(),
@@ -607,7 +606,7 @@ public final class ConsensusTestDefinitions {
                         .get(314)
                 .getSnapshot());
         guiSource.generateEvents(
-                orchestrator1.getNodes().get(0).getOutput().getAddedEvents().size() - 50
+                orchestrator1.getNodes().get(0).getOutput().getAddedEvents().size() - 30
         );
         guiSource.runGui();
 
