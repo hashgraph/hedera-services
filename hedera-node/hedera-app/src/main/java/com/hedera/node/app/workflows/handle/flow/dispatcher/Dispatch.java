@@ -32,6 +32,7 @@ import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.swirlds.platform.state.PlatformState;
 import java.time.Instant;
 import java.util.Set;
 
@@ -148,4 +149,6 @@ public interface Dispatch {
      * @return the record list builder
      */
     RecordListBuilder recordListBuilder();
+
+    PlatformState platformState();
 }

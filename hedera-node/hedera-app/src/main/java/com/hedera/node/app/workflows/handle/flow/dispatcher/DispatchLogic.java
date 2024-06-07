@@ -21,8 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.ALERT_MESSAGE;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
 import com.hedera.node.app.workflows.handle.flow.ErrorReport;
 import com.hedera.node.app.workflows.handle.flow.exceptions.ThrottleException;
@@ -51,17 +54,26 @@ public class DispatchLogic {
     private final DueDiligenceLogic dueDiligenceLogic;
     private final HandleLogic handleLogic;
     private final RecordFinalizerlogic recordFinalizerlogic;
+    private final SystemFileUpdateFacility systemFileUpdateFacility;
+    private final PlatformStateUpdateFacility platformStateUpdateFacility;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
     public DispatchLogic(
             final Authorizer authorizer,
             final DueDiligenceLogic dueDiligenceLogic,
             final HandleLogic handleLogic,
-            final RecordFinalizerlogic recordFinalizerlogic) {
+            final RecordFinalizerlogic recordFinalizerlogic,
+            final SystemFileUpdateFacility systemFileUpdateFacility,
+            final PlatformStateUpdateFacility platformStateUpdateFacility,
+            final ExchangeRateManager exchangeRateManager) {
         this.authorizer = authorizer;
         this.dueDiligenceLogic = dueDiligenceLogic;
         this.handleLogic = handleLogic;
         this.recordFinalizerlogic = recordFinalizerlogic;
+        this.systemFileUpdateFacility = systemFileUpdateFacility;
+        this.platformStateUpdateFacility = platformStateUpdateFacility;
+        this.exchangeRateManager = exchangeRateManager;
     }
 
     /**
@@ -70,18 +82,18 @@ public class DispatchLogic {
      * @param dispatch the dispatch to be processed
      */
     public WorkDone dispatch(@NonNull Dispatch dispatch, @NonNull final RecordListBuilder recordListBuilder) {
-        final var dueDiligenceReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
+        final var errorReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
         final WorkDone workDone;
-        if (dueDiligenceReport.isDueDiligenceFailure()) {
-            chargeCreator(dispatch, dueDiligenceReport);
+        if (errorReport.isDueDiligenceFailure()) {
+            chargeCreator(dispatch, errorReport);
             workDone = WorkDone.FEES_ONLY;
         } else {
-            chargePayer(dispatch, dueDiligenceReport);
-            if (dueDiligenceReport.payerSolvency() != OK) {
-                dispatch.recordBuilder().status(dueDiligenceReport.payerSolvency());
+            chargePayer(dispatch, errorReport);
+            if (errorReport.payerSolvency() != OK) {
+                dispatch.recordBuilder().status(errorReport.payerSolvency());
                 workDone = WorkDone.FEES_ONLY;
             } else {
-                workDone = handleTransaction(dispatch, dueDiligenceReport, recordListBuilder);
+                workDone = handleTransaction(dispatch, errorReport, recordListBuilder);
             }
         }
 
@@ -104,6 +116,7 @@ public class DispatchLogic {
         try {
             final var workDone = handleLogic.handle(dispatch);
             dispatch.recordBuilder().status(SUCCESS);
+            handleSystemUpdates(dispatch);
             return workDone;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
@@ -123,6 +136,21 @@ public class DispatchLogic {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
             return handleException(dispatch, errorReport, recordListBuilder, ResponseCodeEnum.FAIL_INVALID);
         }
+    }
+
+    private void handleSystemUpdates(final Dispatch dispatch) {
+        // Notify responsible facility if system-file was uploaded.
+        // Returns SUCCESS if no system-file was uploaded
+        final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(
+                dispatch.stack(), dispatch.txnInfo().txBody());
+
+        dispatch.recordBuilder()
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .status(fileUpdateResult);
+
+        // Notify if platform state was updated
+        platformStateUpdateFacility.handleTxBody(
+                dispatch.stack(), dispatch.platformState(), dispatch.txnInfo().txBody());
     }
 
     @NonNull
