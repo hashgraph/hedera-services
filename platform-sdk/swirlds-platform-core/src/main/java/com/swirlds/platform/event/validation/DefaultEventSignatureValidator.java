@@ -135,7 +135,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      */
     @Nullable
     private AddressBook determineApplicableAddressBook(@NonNull final GossipEvent event) {
-        final SoftwareVersion eventVersion = event.getHashedData().getSoftwareVersion();
+        final SoftwareVersion eventVersion = event.getSoftwareVersion();
 
         final int softwareComparison = currentSoftwareVersion.compareTo(eventVersion);
         if (softwareComparison < 0) {
@@ -176,7 +176,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
             return false;
         }
 
-        final NodeId eventCreatorId = event.getHashedData().getCreatorId();
+        final NodeId eventCreatorId = event.getCreatorId();
 
         if (!applicableAddressBook.contains(eventCreatorId)) {
             rateLimitedLogger.error(
@@ -195,8 +195,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
             return false;
         }
 
-        final boolean isSignatureValid = signatureVerifier.verifySignature(
-                event.getHashedData().getHash().getBytes(), event.getSignature(), publicKey);
+        final boolean isSignatureValid =
+                signatureVerifier.verifySignature(event.getHash().getBytes(), event.getSignature(), publicKey);
 
         if (!isSignatureValid) {
             rateLimitedLogger.error(
@@ -204,7 +204,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
                     event.getSignature().toHex(),
-                    event.getHashedData().getHash());
+                    event.getHash());
         }
 
         return isSignatureValid;
