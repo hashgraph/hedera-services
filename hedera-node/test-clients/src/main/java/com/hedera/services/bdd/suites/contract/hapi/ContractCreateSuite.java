@@ -336,7 +336,7 @@ public class ContractCreateSuite {
     final Stream<DynamicTest> contractCreationsHaveValidAssociations() {
         final var initCreateContract = "ParentChildTransfer";
         final var slotUserContract = "SlotUser";
-        final var multiPurpose = "MultiPurpose";
+        final var multiPurpose = "Multipurpose";
         final var createContract = "CreateTrivial";
         return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
                 .preserving(
