@@ -19,6 +19,7 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
@@ -48,7 +49,12 @@ public class NodeDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
+        final long nodeId = transactionBody.nodeId();
+
+        validateFalsePreCheck(nodeId < 0, INVALID_NODE_ID);
+    }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {}
@@ -65,8 +71,6 @@ public class NodeDeleteHandler implements TransactionHandler {
 
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
-
-        validateFalse(nodeId <= 0, INVALID_NODE_ID);
 
         final var nodeStore = context.writableStore(WritableNodeStore.class);
 

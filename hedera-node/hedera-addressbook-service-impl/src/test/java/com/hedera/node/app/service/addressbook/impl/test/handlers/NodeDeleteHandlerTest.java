@@ -19,13 +19,14 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -33,7 +34,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
@@ -44,7 +44,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,9 +70,6 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @Mock
     private NodeDeleteHandler subject;
 
-    @Mock(strictness = Strictness.LENIENT)
-    protected ReadableStoreFactory mockStoreFactory;
-
     @Mock
     private StoreMetricsService storeMetricsService;
 
@@ -88,8 +85,28 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
-        when(mockStoreFactory.getStore(ReadableNodeStore.class)).thenReturn(mockStore);
-        when(mockStoreFactory.getStore(ReadableAccountStore.class)).thenReturn(accountStore);
+    }
+
+    @Test
+    @DisplayName("pureChecks throws exception when node id is negative or zero")
+    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+        NodeDeleteTransactionBody transactionBody = mock(NodeDeleteTransactionBody.class);
+        TransactionBody transaction = mock(TransactionBody.class);
+        given(handleContext.body()).willReturn(transaction);
+        given(transaction.nodeDeleteOrThrow()).willReturn(transactionBody);
+        given(transactionBody.nodeId()).willReturn(-1L);
+
+        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+        var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(handleContext.body()));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+    }
+
+    @Test
+    @DisplayName("pureChecks does not throw exception when node id is not null")
+    public void testPureChecksDoesNotThrowExceptionWhenNodeIdIsNotNull() {
+        given(handleContext.body()).willReturn(newDeleteTxn());
+
+        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
     }
 
     @Test
