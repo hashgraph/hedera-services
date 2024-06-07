@@ -149,7 +149,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class HandleWorkflow {
-
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
@@ -182,6 +181,7 @@ public class HandleWorkflow {
     private final InitTrigger initTrigger;
     private final SoftwareVersion softwareVersion;
     private final Provider<UserTransactionComponent.Factory> userTxnProvider;
+    private boolean useV2HandleTxn = true;
 
     @Inject
     public HandleWorkflow(
@@ -291,9 +291,11 @@ public class HandleWorkflow {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
-                        //                        handlePlatformTransaction(state, platformState, event, creator,
-                        // platformTxn);
-                        handlePlatformTransactionV2(state, platformState, event, creator, platformTxn);
+                        if (useV2HandleTxn) {
+                            handlePlatformTransactionV2(state, platformState, event, creator, platformTxn);
+                        } else {
+                            handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                        }
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -1138,5 +1140,9 @@ public class HandleWorkflow {
             // ignore
         }
         return new TransactionBaseData(function, transactionBytes, transaction, txBody, payer);
+    }
+
+    public void setUseV1HandleTxn() {
+        this.useV2HandleTxn = false;
     }
 }

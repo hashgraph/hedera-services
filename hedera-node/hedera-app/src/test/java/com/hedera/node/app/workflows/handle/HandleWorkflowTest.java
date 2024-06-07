@@ -256,6 +256,7 @@ class HandleWorkflowTest extends AppTestBase {
 
     @BeforeEach
     void setup() throws PreCheckException {
+
         setupStandardStates();
 
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
@@ -341,6 +342,7 @@ class HandleWorkflowTest extends AppTestBase {
                 initTrigger,
                 hederaVersion,
                 userTxnProvider);
+        workflow.setUseV1HandleTxn();
     }
 
     @SuppressWarnings("ConstantConditions")
