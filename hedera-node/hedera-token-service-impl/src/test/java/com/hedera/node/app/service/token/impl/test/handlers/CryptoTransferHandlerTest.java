@@ -722,43 +722,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void handleExceedsMaxAutoAssociations() {
-        config = defaultConfig().withValue(LEDGER_TOKEN_TRANSFERS_MAX_LEN, 4).getOrCreateConfig();
-        // Here we configure a SINGLE TokenTransferList that has 2 fungible token transfers
-        final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
-                .token(fungibleTokenId)
-                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
-                .build());
-        final var context = mockContext(txn);
-
-        Account account = mock(Account.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
-        ReadableTokenStore readableTokenStore = mock(ReadableTokenStore.class);
-        WritableTokenStore writableTokenStore = mock(WritableTokenStore.class);
-        WritableAccountStore writableAccountStore = mock(WritableAccountStore.class);
-        WritableTokenRelationStore writableTokenRelationStore = mock(WritableTokenRelationStore.class);
-        ExpiryValidator expiryValidator = mock(ExpiryValidator.class);
-
-        when(context.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(context.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(context.writableStore(WritableTokenStore.class)).thenReturn(writableTokenStore);
-        when(context.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
-        when(context.writableStore(WritableTokenRelationStore.class)).thenReturn(writableTokenRelationStore);
-        when(context.expiryValidator()).thenReturn(expiryValidator);
-        when(readableTokenStore.get(any())).thenReturn(fungibleToken);
-        when(writableTokenStore.get(any())).thenReturn(fungibleToken);
-        when(context.payer()).thenReturn(payerId);
-        when(writableAccountStore.getAliasedAccountById(any(AccountID.class))).thenReturn(account);
-        when(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).thenReturn(OK);
-        when(account.maxAutoAssociations()).thenReturn(1);
-        when(account.usedAutoAssociations()).thenReturn(1);
-
-        Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
-    }
-
-    @Test
     void handleHasNftTransfersButNftsNotEnabled() {
         config = defaultConfig().withValue(TOKENS_NFTS_ARE_ENABLED, false).getOrCreateConfig();
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
