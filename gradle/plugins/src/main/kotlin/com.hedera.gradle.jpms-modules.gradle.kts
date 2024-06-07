@@ -218,11 +218,11 @@ extraJavaModuleInfo {
     // Need to use Jar file names here as there is currently no other way to address Jar with
     // classifier directly for patching
     module(
-        "netty-transport-native-epoll-4.1.87.Final-linux-x86_64.jar",
+        "netty-transport-native-epoll-4.1.110.Final-linux-x86_64.jar",
         "io.netty.transport.epoll.linux.x86_64"
     )
     module(
-        "netty-transport-native-epoll-4.1.87.Final-linux-aarch_64.jar",
+        "netty-transport-native-epoll-4.1.110.Final-linux-aarch_64.jar",
         "io.netty.transport.epoll.linux.aarch_64"
     )
 
