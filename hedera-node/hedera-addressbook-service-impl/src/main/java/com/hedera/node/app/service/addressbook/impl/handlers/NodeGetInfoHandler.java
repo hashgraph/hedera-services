@@ -72,7 +72,7 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         final var nodeStore = context.createStore(ReadableNodeStore.class);
         final NodeGetInfoQuery op = query.nodeGetInfoOrThrow();
         final long nodeId = op.nodeId();
-        if (nodeId > 0) {
+        if (nodeId >= 0) {
             // The node must exist
             final var node = nodeStore.get(nodeId);
             mustExist(node, INVALID_NODE_ID);
