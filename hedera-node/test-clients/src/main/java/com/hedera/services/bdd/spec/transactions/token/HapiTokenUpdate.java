@@ -544,16 +544,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
             registry.forgetMetadataKey(token);
         }
         newMemo.ifPresent(m -> registry.saveMemo(token, m));
-        newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));
+        newAdminKey.ifPresent(n -> registry.saveTokenKey(token, "Admin", registry.getKey(n)));
         newSymbol.ifPresent(s -> registry.saveSymbol(token, s));
         newName.ifPresent(s -> registry.saveName(token, s));
-        newFreezeKey.ifPresent(n -> registry.saveFreezeKey(token, registry.getKey(n)));
-        newSupplyKey.ifPresent(n -> registry.saveSupplyKey(token, registry.getKey(n)));
-        newWipeKey.ifPresent(n -> registry.saveWipeKey(token, registry.getKey(n)));
-        newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
-        newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
-        newPauseKey.ifPresent(n -> registry.savePauseKey(token, registry.getKey(n)));
-        newMetadataKey.ifPresent(n -> registry.saveMetadataKey(token, registry.getKey(n)));
+        newFreezeKey.ifPresent(n -> registry.saveTokenKey(token, "Freeze", registry.getKey(n)));
+        newSupplyKey.ifPresent(n -> registry.saveTokenKey(token, "Supply", registry.getKey(n)));
+        newWipeKey.ifPresent(n -> registry.saveTokenKey(token, "Wipe", registry.getKey(n)));
+        newKycKey.ifPresent(n -> registry.saveTokenKey(token, "Kyc", registry.getKey(n)));
+        newFeeScheduleKey.ifPresent(n -> registry.saveTokenKey(token, "FeeSchedule", registry.getKey(n)));
+        newPauseKey.ifPresent(n -> registry.saveTokenKey(token, "Pause", registry.getKey(n)));
+        newMetadataKey.ifPresent(n -> registry.saveTokenKey(token, "Metadata", registry.getKey(n)));
         newMetadata.ifPresent(n -> registry.saveMetadata(token, n));
     }
 

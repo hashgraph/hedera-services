@@ -107,7 +107,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
-                .getKycKey(token));
+                .getTokenKey(token, "Kyc"));
     }
 
     @Override

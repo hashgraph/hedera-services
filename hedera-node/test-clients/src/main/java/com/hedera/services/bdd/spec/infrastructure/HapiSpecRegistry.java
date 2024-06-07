@@ -231,20 +231,20 @@ public class HapiSpecRegistry {
         put(name, key, Key.class);
     }
 
+    public void saveTokenKey(String name, String role, Key key) {
+        put(name + role, key, Optional.empty(), Key.class);
+    }
+
+    public Key getTokenKey(String name, String role) {
+        return get(name + role, Key.class);
+    }
+
     public void forgetAdminKey(String name) {
         remove(name + "Admin", Key.class);
     }
 
-    public void saveAdminKey(String name, Key key) {
-        put(name + "Admin", key, Key.class);
-    }
-
     public boolean hasAdminKey(String name) {
         return has(name + "Admin", Key.class);
-    }
-
-    public void saveFreezeKey(String name, Key key) {
-        put(name + "Freeze", key, Key.class);
     }
 
     public boolean hasFeeScheduleKey(String name) {
@@ -255,24 +255,8 @@ public class HapiSpecRegistry {
         remove(name + "FeeSchedule", Key.class);
     }
 
-    public void saveFeeScheduleKey(String name, Key key) {
-        put(name + "FeeSchedule", key, Key.class);
-    }
-
-    public Key getFeeScheduleKey(String name) {
-        return get(name + "FeeSchedule", Key.class);
-    }
-
-    public void savePauseKey(String name, Key key) {
-        put(name + "Pause", key, Key.class);
-    }
-
     public boolean hasPauseKey(String name) {
         return has(name + "Pause", Key.class);
-    }
-
-    public Key getPauseKey(String name) {
-        return get(name + "Pause", Key.class);
     }
 
     public void forgetPauseKey(String name) {
@@ -295,16 +279,8 @@ public class HapiSpecRegistry {
         put(name + "CreationTime", value, Timestamp.class);
     }
 
-    public void saveSupplyKey(String name, Key key) {
-        put(name + "Supply", key, Key.class);
-    }
-
     public boolean hasSupplyKey(String name) {
         return has(name + "Supply", Key.class);
-    }
-
-    public void saveWipeKey(String name, Key key) {
-        put(name + "Wipe", key, Key.class);
     }
 
     public boolean hasWipeKey(String name) {
@@ -321,10 +297,6 @@ public class HapiSpecRegistry {
 
     public boolean hasKycKey(String name) {
         return has(name + "Kyc", Key.class);
-    }
-
-    public void saveKycKey(String name, Key key) {
-        put(name + "Kyc", key, Key.class);
     }
 
     public void forgetKycKey(String name) {
@@ -381,22 +353,6 @@ public class HapiSpecRegistry {
 
     public Key getAdminKey(String name) {
         return get(name + "Admin", Key.class);
-    }
-
-    public Key getFreezeKey(String name) {
-        return get(name + "Freeze", Key.class);
-    }
-
-    public Key getSupplyKey(String name) {
-        return get(name + "Supply", Key.class);
-    }
-
-    public Key getWipeKey(String name) {
-        return get(name + "Wipe", Key.class);
-    }
-
-    public Key getKycKey(String name) {
-        return get(name + "Kyc", Key.class);
     }
 
     public Long getExpiry(String name) {
@@ -902,14 +858,6 @@ public class HapiSpecRegistry {
 
     public void forgetMetadataKey(String name) {
         remove(name + "Metadata", Key.class);
-    }
-
-    public void saveMetadataKey(String name, Key metadataKey) {
-        put(name + "Metadata", metadataKey, Key.class);
-    }
-
-    public Key getMetadataKey(String name) {
-        return get(name + "Metadata", Key.class);
     }
 
     public boolean hasMetadataKey(String name) {

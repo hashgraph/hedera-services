@@ -107,7 +107,7 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
-                .getSupplyKey(token));
+                .getTokenKey(token, "Supply"));
     }
 
     @Override

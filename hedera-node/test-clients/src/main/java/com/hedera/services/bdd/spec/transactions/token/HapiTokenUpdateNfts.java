@@ -133,7 +133,7 @@ public class HapiTokenUpdateNfts extends HapiTxnOp<HapiTokenUpdateNfts> {
         final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         if (metadataKey.isPresent()) {
-            signers.add(spec -> spec.registry().getMetadataKey(token));
+            signers.add(spec -> spec.registry().getTokenKey(token, "Metadata"));
         }
         return signers;
     }

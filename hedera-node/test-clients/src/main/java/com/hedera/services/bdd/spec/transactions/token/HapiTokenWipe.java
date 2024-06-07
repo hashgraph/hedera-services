@@ -145,7 +145,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
-                .getWipeKey(token));
+                .getTokenKey(token, "Wipe"));
     }
 
     @Override

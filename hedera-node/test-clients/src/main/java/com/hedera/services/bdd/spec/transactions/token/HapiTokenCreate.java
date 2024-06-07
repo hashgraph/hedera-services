@@ -425,28 +425,28 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             final var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
             final var op = submittedBody.getTokenCreation();
             if (op.hasKycKey()) {
-                registry.saveKycKey(token, op.getKycKey());
+                registry.saveTokenKey(token, "Kyc", op.getKycKey());
             }
             if (op.hasWipeKey()) {
-                registry.saveWipeKey(token, op.getWipeKey());
+                registry.saveTokenKey(token, "Wipe", op.getWipeKey());
             }
             if (op.hasAdminKey()) {
-                registry.saveAdminKey(token, op.getAdminKey());
+                registry.saveTokenKey(token, "Admin", op.getAdminKey());
             }
             if (op.hasSupplyKey()) {
-                registry.saveSupplyKey(token, op.getSupplyKey());
+                registry.saveTokenKey(token, "Supply", op.getSupplyKey());
             }
             if (op.hasFreezeKey()) {
-                registry.saveFreezeKey(token, op.getFreezeKey());
+                registry.saveTokenKey(token, "Freeze", op.getFreezeKey());
             }
             if (op.hasFeeScheduleKey()) {
-                registry.saveFeeScheduleKey(token, op.getFeeScheduleKey());
+                registry.saveTokenKey(token, "FeeSchedule", op.getFeeScheduleKey());
             }
             if (op.hasPauseKey()) {
-                registry.savePauseKey(token, op.getPauseKey());
+                registry.saveTokenKey(token, "Pause", op.getPauseKey());
             }
             if (op.hasMetadataKey()) {
-                registry.saveMetadataKey(token, op.getMetadataKey());
+                registry.saveTokenKey(token, "Metadata", op.getMetadataKey());
             }
         } catch (final InvalidProtocolBufferException impossible) {
         }

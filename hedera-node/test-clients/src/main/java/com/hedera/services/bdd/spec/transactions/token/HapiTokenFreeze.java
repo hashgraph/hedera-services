@@ -109,7 +109,7 @@ public class HapiTokenFreeze extends HapiTxnOp<HapiTokenFreeze> {
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
-                .getFreezeKey(token));
+                .getTokenKey(token, "Freeze"));
     }
 
     @Override

@@ -112,7 +112,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         signers.add(spec -> {
             final var registry = spec.registry();
-            return registry.hasFeeScheduleKey(token) ? registry.getFeeScheduleKey(token) : Key.getDefaultInstance();
+            return registry.hasFeeScheduleKey(token) ? registry.getTokenKey(token, "FeeSchedule") : Key.getDefaultInstance();
         });
         return signers;
     }

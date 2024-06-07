@@ -205,27 +205,27 @@ public class SpecKey {
         }
 
         public static RegistryForms asKycKeyFor(String token) {
-            return new RegistryForms(kycKeyFor(token), (registry, key) -> registry.saveKycKey(token, key));
+            return new RegistryForms(kycKeyFor(token), (registry, key) -> registry.saveTokenKey(token, "Kyc", key));
         }
 
         public static RegistryForms asWipeKeyFor(String token) {
-            return new RegistryForms(wipeKeyFor(token), (registry, key) -> registry.saveWipeKey(token, key));
+            return new RegistryForms(wipeKeyFor(token), (registry, key) -> registry.saveTokenKey(token, "Wipe", key));
         }
 
         public static RegistryForms asSupplyKeyFor(String token) {
-            return new RegistryForms(supplyKeyFor(token), (registry, key) -> registry.saveSupplyKey(token, key));
+            return new RegistryForms(supplyKeyFor(token), (registry, key) -> registry.saveTokenKey(token, "Supply", key));
         }
 
         public static RegistryForms asFreezeKeyFor(String token) {
-            return new RegistryForms(freezeKeyFor(token), (registry, key) -> registry.saveFreezeKey(token, key));
+            return new RegistryForms(freezeKeyFor(token), (registry, key) -> registry.saveTokenKey(token, "Freeze", key));
         }
 
         public static RegistryForms asAdminKeyFor(String entity) {
-            return new RegistryForms(adminKeyFor(entity), (registry, key) -> registry.saveAdminKey(entity, key));
+            return new RegistryForms(adminKeyFor(entity), (registry, key) -> registry.saveTokenKey(entity, "Admin", key));
         }
 
         public static RegistryForms asPauseKeyFor(String token) {
-            return new RegistryForms(pauseKeyFor(token), (registry, key) -> registry.savePauseKey(token, key));
+            return new RegistryForms(pauseKeyFor(token), (registry, key) -> registry.saveTokenKey(token, "Pause", key));
         }
 
         public String name() {

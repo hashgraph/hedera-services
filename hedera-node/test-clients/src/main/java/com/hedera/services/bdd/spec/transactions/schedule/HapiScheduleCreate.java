@@ -273,7 +273,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         var registry = spec.registry();
         registry.saveScheduleId(scheduleEntity, lastReceipt.getScheduleID());
         adminKey.ifPresent(
-                k -> registry.saveAdminKey(scheduleEntity, spec.registry().getKey(k)));
+                k -> registry.saveTokenKey(scheduleEntity, "Admin", spec.registry().getKey(k)));
         if (saveExpectedScheduledTxnId) {
             if (verboseLoggingOn) {
                 log.info("Returned receipt for scheduled txn is {}", lastReceipt.getScheduledTransactionID());

@@ -478,7 +478,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getFreezeKey(),
                     expectedFreezeKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFreezeKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "Freeze"),
                     "Wrong token freeze key!",
                     registry);
         }
@@ -504,7 +504,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getWipeKey(),
                     expectedWipeKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getWipeKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "Wipe"),
                     "Wrong token wipe key!",
                     registry);
         }
@@ -517,7 +517,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getKycKey(),
                     expectedKycKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getKycKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "Kyc"),
                     "Wrong token KYC key!",
                     registry);
         }
@@ -530,7 +530,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getSupplyKey(),
                     expectedSupplyKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getSupplyKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "Supply"),
                     "Wrong token supply key!",
                     registry);
         }
@@ -543,7 +543,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getFeeScheduleKey(),
                     expectedFeeScheduleKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getFeeScheduleKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "FeeSchedule"),
                     "Wrong token fee schedule key!",
                     registry);
         }
@@ -556,7 +556,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getPauseKey(),
                     expectedPauseKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getPauseKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "Pause"),
                     "Wrong token pause key!",
                     registry);
         }
@@ -569,7 +569,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertFor(
                     actualInfo.getMetadataKey(),
                     expectedMetadataKey,
-                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getMetadataKey(n),
+                    (n, r) -> searchKeysGlobally ? r.getKey(n) : r.getTokenKey(n, "Metadata"),
                     "Wrong token metadata key!",
                     registry);
         }
