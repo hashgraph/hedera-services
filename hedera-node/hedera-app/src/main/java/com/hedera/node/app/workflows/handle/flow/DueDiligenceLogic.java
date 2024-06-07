@@ -20,9 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -54,9 +56,11 @@ public class DueDiligenceLogic {
         if (dispatch.dueDiligenceInfo().dueDiligenceStatus() != ResponseCodeEnum.OK) {
             return new ErrorReport(null, dispatch.dueDiligenceInfo(), false);
         } else {
-            final var response = checkIfExpired(dispatch);
-            if (response != OK) {
-                return new ErrorReport(null, dispatch.dueDiligenceInfo().withReplacementStatus(response), false);
+            if (dispatch.txnCategory() == HandleContext.TransactionCategory.USER) {
+                final var response = checkIfExpired(dispatch);
+                if (response != OK) {
+                    return new ErrorReport(null, dispatch.dueDiligenceInfo().withReplacementStatus(response), false);
+                }
             }
 
             final var payer = getPayer(dispatch);
@@ -69,10 +73,11 @@ public class DueDiligenceLogic {
                 }
             }
 
-            // TODO: Check if dispatch txnBody has txnId
-            final var duplicateCheckResult = recordCache.hasDuplicate(
-                    dispatch.txnInfo().txBody().transactionIDOrThrow(),
-                    dispatch.creatorInfo().nodeId());
+            final var duplicateCheckResult = dispatch.txnCategory() != HandleContext.TransactionCategory.USER
+                    ? NO_DUPLICATE
+                    : recordCache.hasDuplicate(
+                            dispatch.txnInfo().txBody().transactionIDOrThrow(),
+                            dispatch.creatorInfo().nodeId());
             return switch (duplicateCheckResult) {
                 case NO_DUPLICATE -> checkSolvencyOfPayer(payer, false, dispatch);
                 case SAME_NODE -> new ErrorReport(

@@ -42,7 +42,6 @@ import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.records.UserRecordInitializer;
@@ -58,7 +57,7 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
-@Module(subcomponents = {ChildDispatchComponent.class})
+@Module(subcomponents = {})
 public interface UserDispatchModule {
     @Binds
     @UserDispatchScope

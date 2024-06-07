@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.process;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
@@ -40,6 +41,7 @@ public class ProcessRunner {
     private final GenesisHandleProcess genesisHandleProcess;
     final UserTransactionComponent userTxn;
     private final BlockRecordManager blockRecordManager;
+    private final HederaRecordCache recordCache;
 
     @Inject
     public ProcessRunner(
@@ -50,7 +52,8 @@ public class ProcessRunner {
             @NonNull final DefaultHandleProcess defaultHandleProcess,
             final GenesisHandleProcess genesisHandleProcess,
             @NonNull final UserTransactionComponent userTxn,
-            final BlockRecordManager blockRecordManager) {
+            final BlockRecordManager blockRecordManager,
+            final HederaRecordCache recordCache) {
         this.version = version;
         this.initTrigger = initTrigger;
         this.recordListBuilder = recordListBuilder;
@@ -59,6 +62,7 @@ public class ProcessRunner {
         this.genesisHandleProcess = genesisHandleProcess;
         this.userTxn = userTxn;
         this.blockRecordManager = blockRecordManager;
+        this.recordCache = recordCache;
     }
 
     public Stream<SingleTransactionRecord> execute() {
@@ -70,7 +74,9 @@ public class ProcessRunner {
             }
             defaultHandleProcess.processUserTransaction(userTxn);
         }
-        return recordListBuilder.build().records().stream();
+        final var result = recordListBuilder.build();
+        recordCache.add(userTxn.creator().nodeId(), userTxn.txnInfo().payerID(), result.records());
+        return result.records().stream();
     }
 
     private boolean isOlderSoftwareEvent() {

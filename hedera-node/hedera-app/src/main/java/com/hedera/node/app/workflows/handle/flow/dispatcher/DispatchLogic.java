@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
 import com.hedera.node.app.workflows.handle.flow.ErrorReport;
 import com.hedera.node.app.workflows.handle.flow.infra.HandleLogic;
@@ -47,20 +46,17 @@ public class DispatchLogic {
     private final DueDiligenceLogic dueDiligenceLogic;
     private final HandleLogic handleLogic;
     private final RecordFinalizerlogic recordFinalizerlogic;
-    private final HederaRecordCache recordCache;
 
     @Inject
     public DispatchLogic(
             final Authorizer authorizer,
             final DueDiligenceLogic dueDiligenceLogic,
             final HandleLogic handleLogic,
-            final RecordFinalizerlogic recordFinalizerlogic,
-            final HederaRecordCache recordCache) {
+            final RecordFinalizerlogic recordFinalizerlogic) {
         this.authorizer = authorizer;
         this.dueDiligenceLogic = dueDiligenceLogic;
         this.handleLogic = handleLogic;
         this.recordFinalizerlogic = recordFinalizerlogic;
-        this.recordCache = recordCache;
     }
 
     /**
@@ -86,11 +82,6 @@ public class DispatchLogic {
 
         recordFinalizerlogic.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
-
-        recordCache.add(
-                dispatch.creatorInfo().nodeId(),
-                chargedAccountId,
-                recordListBuilder.build().records());
     }
 
     /**

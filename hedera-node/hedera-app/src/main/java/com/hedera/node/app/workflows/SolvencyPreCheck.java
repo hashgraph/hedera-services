@@ -160,8 +160,8 @@ public class SolvencyPreCheck {
 
         long additionalCosts = 0L;
         try {
-            final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
             if (ingestCheck) {
+                final var now = txBody.transactionIDOrThrow().transactionValidStartOrThrow();
                 additionalCosts = Math.max(0, estimateAdditionalCosts(txBody, functionality, HapiUtils.asInstant(now)));
             }
         } catch (final NullPointerException ex) {

@@ -65,19 +65,16 @@ import javax.inject.Provider;
 public interface ChildDispatchModule {
     @Binds
     @ChildDispatchScope
-    @ChildQualifier
     HandleContext bindHandleContext(FlowHandleContext handleContext);
 
     @Binds
     @ChildDispatchScope
-    @ChildQualifier
     FeeContext bindFeeContext(FlowHandleContext feeContext);
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static Fees provideFees(
-            @ChildQualifier @NonNull FeeContext feeContext,
+            @NonNull FeeContext feeContext,
             @NonNull HandleContext.TransactionCategory childCategory,
             @NonNull TransactionDispatcher dispatcher) {
         if (childCategory != HandleContext.TransactionCategory.SCHEDULED) {
@@ -95,24 +92,20 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static FeeAccumulator provideFeeAccumulator(
-            @ChildQualifier @NonNull SingleTransactionRecordBuilderImpl recordBuilder,
-            @ChildQualifier @NonNull ServiceApiFactory serviceApiFactory) {
+            @NonNull SingleTransactionRecordBuilderImpl recordBuilder, @NonNull ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static DueDiligenceInfo provideDueDiligenceInfo(NodeInfo creator) {
         return new DueDiligenceInfo(creator.accountId(), ResponseCodeEnum.OK);
     }
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static ServiceApiFactory provideServiceApiFactory(
             @ChildQualifier @NonNull final SavepointStackImpl stack,
             @NonNull final Configuration configuration,
@@ -129,7 +122,6 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static WritableEntityIdStore provideEntityIdStore(
             @ChildQualifier SavepointStackImpl stack,
             Configuration configuration,
@@ -141,7 +133,6 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static WritableStoreFactory provideWritableStoreFactory(
             @ChildQualifier SavepointStackImpl stack,
             @ChildQualifier TransactionInfo txnInfo,
@@ -154,11 +145,10 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
     static FinalizeContext provideTriggeredFinalizeContext(
             @ChildQualifier @NonNull final ReadableStoreFactory readableStoreFactory,
-            @ChildQualifier @NonNull final WritableStoreFactory writableStoreFactory,
-            @ChildQualifier @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Instant consensusNow,
             @NonNull final Configuration configuration) {
         return new TriggeredFinalizeContext(
@@ -167,31 +157,30 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    @ChildQualifier
-    static HandleContext provideFlowHandleContext(
+    static FlowHandleContext provideFlowHandleContext(
             final Instant consensusNow,
-            @ChildQualifier @NonNull final TransactionInfo transactionInfo,
+            @NonNull @ChildQualifier final TransactionInfo transactionInfo,
             final Configuration configuration,
             final Authorizer authorizer,
             final BlockRecordManager blockRecordManager,
             final FeeManager feeManager,
-            @ChildQualifier @NonNull final ReadableStoreFactory storeFactory,
-            @ChildQualifier @NonNull final AccountID syntheticPayer,
-            @ChildQualifier @NonNull final KeyVerifier verifier,
-            @ChildQualifier @NonNull final Key payerkey,
-            @ChildQualifier @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull @ChildQualifier final ReadableStoreFactory storeFactory,
+            @NonNull final AccountID syntheticPayer,
+            @NonNull final KeyVerifier verifier,
+            @NonNull @ChildQualifier final Key payerkey,
+            @NonNull final FeeAccumulator feeAccumulator,
             final ExchangeRateManager exchangeRateManager,
-            @ChildQualifier @NonNull final SavepointStackImpl stack,
-            @ChildQualifier @NonNull final WritableEntityIdStore entityIdStore,
+            @NonNull @ChildQualifier final SavepointStackImpl stack,
+            @NonNull final WritableEntityIdStore entityIdStore,
             final TransactionDispatcher dispatcher,
             final RecordCache recordCache,
-            @ChildQualifier @NonNull final WritableStoreFactory writableStoreFactory,
-            @ChildQualifier @NonNull final ServiceApiFactory serviceApiFactory,
+            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final ServiceApiFactory serviceApiFactory,
             final NetworkInfo networkInfo,
-            @ChildQualifier @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             final ChildDispatchLogic childDispatchLogic,
-            @ChildQualifier @NonNull final ChildDispatchComponent dispatch,
+            @NonNull final ChildDispatchComponent dispatch,
             @NonNull final DispatchLogic dispatchLogic) {
         return new FlowHandleContext(
                 consensusNow,

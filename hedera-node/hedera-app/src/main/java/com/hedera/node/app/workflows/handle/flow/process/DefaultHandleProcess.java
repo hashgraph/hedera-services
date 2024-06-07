@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
@@ -36,6 +37,7 @@ public class DefaultHandleProcess implements HandleProcess {
     private final ScheduleServiceCronLogic scheduleServiceCronLogic;
     private final DispatchLogic dispatchLogic;
     private final UserTxnLogger userTxnLogger;
+    private final HederaRecordCache recordCache;
 
     @Inject
     public DefaultHandleProcess(
@@ -43,12 +45,14 @@ public class DefaultHandleProcess implements HandleProcess {
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
             final DispatchLogic dispatchLogic,
-            final UserTxnLogger userTxnLogger) {
+            final UserTxnLogger userTxnLogger,
+            final HederaRecordCache recordCache) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
         this.dispatchLogic = dispatchLogic;
         this.userTxnLogger = userTxnLogger;
+        this.recordCache = recordCache;
     }
 
     @Override

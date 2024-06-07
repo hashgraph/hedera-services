@@ -43,15 +43,28 @@ public interface ChildDispatchComponent extends Dispatch {
     @Subcomponent.Factory
     interface Factory {
         ChildDispatchComponent create(
-                @BindsInstance @ChildQualifier SingleTransactionRecordBuilderImpl recordBuilder,
+                @BindsInstance SingleTransactionRecordBuilderImpl recordBuilder,
                 @BindsInstance @ChildQualifier TransactionInfo txnInfo,
                 @BindsInstance ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
-                @BindsInstance @ChildQualifier AccountID syntheticPayer,
-                @BindsInstance @ChildQualifier HandleContext.TransactionCategory childCategory,
+                @BindsInstance AccountID syntheticPayer,
+                @BindsInstance HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,
-                @BindsInstance @ChildQualifier Set<Key> requiredKeys,
-                @BindsInstance @ChildQualifier Set<Account> hollowAccounts,
-                @BindsInstance @ChildQualifier ResponseCodeEnum userError,
-                @BindsInstance @ChildQualifier KeyVerifier keyVerifier);
+                @BindsInstance Set<Key> requiredKeys,
+                @BindsInstance Set<Account> hollowAccounts,
+                @BindsInstance ResponseCodeEnum userError,
+                @BindsInstance KeyVerifier keyVerifier);
     }
+    /**
+     * The savepoint stack for the transaction scope
+     * @return the savepoint stack
+     */
+    @ChildQualifier
+    SavepointStackImpl stack();
+
+    /**
+     * The transaction info for the transaction
+     * @return the transaction info
+     */
+    @ChildQualifier
+    TransactionInfo txnInfo();
 }

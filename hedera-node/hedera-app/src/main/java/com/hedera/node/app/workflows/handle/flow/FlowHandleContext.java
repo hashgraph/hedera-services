@@ -75,6 +75,7 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -87,6 +88,7 @@ import javax.inject.Provider;
 /**
  * The HandleContext Implementation
  */
+@Reusable
 public class FlowHandleContext implements HandleContext, FeeContext {
     private final Instant consensusNow;
     private final TransactionInfo txnInfo;
@@ -551,9 +553,9 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     }
 
     private <T> T dispatchForRecord(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
-            @Nullable final Predicate<Key> verifier,
+            @Nullable final Predicate<Key> childVerifier,
             final AccountID syntheticPayer,
             @NonNull ExternalizedRecordCustomizer customizer,
             TransactionCategory category,
@@ -561,8 +563,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             boolean commitStack) {
         final var childDispatch = childDispatchLogic.createChildDispatch(
                 parentDispatch,
-                txBody,
-                verifier,
+                childTxBody,
+                childVerifier,
                 syntheticPayer,
                 category,
                 childDispatchFactory,

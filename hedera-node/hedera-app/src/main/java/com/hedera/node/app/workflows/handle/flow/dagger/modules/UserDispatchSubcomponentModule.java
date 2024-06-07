@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.flow.dagger.modules;
 
+import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserDispatchComponent;
 import dagger.Module;
 
-@Module(subcomponents = {UserDispatchComponent.class})
+@Module(subcomponents = {UserDispatchComponent.class, ChildDispatchComponent.class})
 public interface UserDispatchSubcomponentModule {}
