@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,18 @@ package com.hedera.gradle.spotless
 import com.diffplug.spotless.FormatterFunc
 import com.diffplug.spotless.FormatterStep
 
-/*
- Removes the old copyright statements which were incorrectly located between the package and import statements.
- These legacy copyright blocks also uses with an unexpected opening comment tag. This FormatterStep removes those
- comment blocks using a very conservative approach to avoid mutilating actual code.
+/**
+ * Removes the old copyright statements which were incorrectly located between the package and
+ * import statements. These legacy copyright blocks also uses with an unexpected opening comment
+ * tag. This FormatterStep removes those comment blocks using a very conservative approach to avoid
+ * mutilating actual code.
  */
 class StripOldLicenseFormatterStep {
     companion object {
         private const val NAME = "StripOldLicense"
 
         fun create(): FormatterStep {
-            return FormatterStep.create(
-                NAME,
-                State(),
-                State::toFormatter
-            )
+            return FormatterStep.create(NAME, State(), State::toFormatter)
         }
     }
 

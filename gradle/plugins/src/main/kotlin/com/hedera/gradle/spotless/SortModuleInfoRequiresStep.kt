@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,7 @@ class SortModuleInfoRequiresStep {
         private val OWN_PACKAGES = listOf("com.swirlds.", "com.hedera.node.", "com.hedera.storage.")
 
         fun create(): FormatterStep {
-            return FormatterStep.create(
-                NAME,
-                State(),
-                State::toFormatter
-            )
+            return FormatterStep.create(NAME, State(), State::toFormatter)
         }
     }
 
@@ -53,25 +49,35 @@ class SortModuleInfoRequiresStep {
 
                     lines.subList(blockStartIndex, blockEndIndex + 1).forEach { line ->
                         when {
-                            line.trim().startsWith("requires static transitive") -> requiresStaticTransitive.add(line)
+                            line.trim().startsWith("requires static transitive") ->
+                                requiresStaticTransitive.add(line)
                             line.trim().startsWith("requires static") -> requiresStatic.add(line)
-                            line.trim().startsWith("requires transitive") -> requiresTransitive.add(line)
+                            line.trim().startsWith("requires transitive") ->
+                                requiresTransitive.add(line)
                             line.trim().startsWith("requires") -> requires.add(line)
-                            line.isNotBlank() && !line.trim().startsWith("requires") -> nonRequiresLines.add(line)
+                            line.isNotBlank() && !line.trim().startsWith("requires") ->
+                                nonRequiresLines.add(line)
                         }
                     }
 
-                    val comparator = Comparator<String> { a, b ->
-                        val nameA = a.split(" ").first { it.endsWith(";") }
-                        val nameB = b.split(" ").first { it.endsWith(";") }
-                        if (OWN_PACKAGES.any { nameA.startsWith(it) } && OWN_PACKAGES.none { nameB.startsWith(it) }) {
-                            -1
-                        } else if (OWN_PACKAGES.none { nameA.startsWith(it) } && OWN_PACKAGES.any { nameB.startsWith(it) }) {
-                            1
-                        } else {
-                            nameA.compareTo(nameB)
+                    val comparator =
+                        Comparator<String> { a, b ->
+                            val nameA = a.split(" ").first { it.endsWith(";") }
+                            val nameB = b.split(" ").first { it.endsWith(";") }
+                            if (
+                                OWN_PACKAGES.any { nameA.startsWith(it) } &&
+                                    OWN_PACKAGES.none { nameB.startsWith(it) }
+                            ) {
+                                -1
+                            } else if (
+                                OWN_PACKAGES.none { nameA.startsWith(it) } &&
+                                    OWN_PACKAGES.any { nameB.startsWith(it) }
+                            ) {
+                                1
+                            } else {
+                                nameA.compareTo(nameB)
+                            }
                         }
-                    }
 
                     requiresTransitive.sortWith(comparator)
                     requires.sortWith(comparator)
@@ -81,14 +87,14 @@ class SortModuleInfoRequiresStep {
                     val blockStart = lines.subList(0, blockStartIndex)
                     val blockEnd = lines.subList(blockEndIndex + 1, lines.size)
 
-                    (blockStart
-                            + nonRequiresLines
-                            + requiresTransitive
-                            + requires
-                            + requiresStaticTransitive
-                            + requiresStatic
-                            + blockEnd
-                    ).joinToString("\n")
+                    (blockStart +
+                            nonRequiresLines +
+                            requiresTransitive +
+                            requires +
+                            requiresStaticTransitive +
+                            requiresStatic +
+                            blockEnd)
+                        .joinToString("\n")
                 }
             }
         }
