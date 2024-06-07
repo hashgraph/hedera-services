@@ -183,27 +183,6 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
         assertEquals(expectedInfo, nodeInfoResponse.nodeInfo());
     }
 
-    //    @Test
-    //    @DisplayName("failed response is correctly handled in findResponse")
-    //    void getsResponseIfFailedResponse() {
-    //        final var responseHeader = ResponseHeader.newBuilder()
-    //                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
-    //                .build();
-    //
-    //        final var query = createGeNodeInfoQuery(nodeId.number());
-    //        when(context.query()).thenReturn(query);
-    //        when(context.createStore(ReadableNodeStore.class)).thenReturn(readableStore);
-    //
-    //        final var config =
-    //                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
-    //        given(context.configuration()).willReturn(config);
-    //
-    //        final var response = subject.findResponse(context, responseHeader);
-    //        final var op = response.nodeGetInfoOrThrow();
-    //        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
-    //        assertNull(op.nodeInfo());
-    //    }
-
     @Test
     @DisplayName("OK response is correctly handled in findResponse")
     void getsResponseIfOkResponse() {
