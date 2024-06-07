@@ -53,7 +53,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.GrpcConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -167,10 +166,9 @@ public class V0490FileSchema extends Schema {
             final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
             final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
             final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
-            final var grpcConfig = ctx.configuration().getConfigData(GrpcConfig.class);
             final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
             createGenesisAddressBookAndNodeDetails(
-                    bootstrapConfig, hederaConfig, filesConfig, grpcConfig, files, ctx.networkInfo());
+                    bootstrapConfig, hederaConfig, filesConfig, files, ctx.networkInfo());
             createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
@@ -233,7 +231,6 @@ public class V0490FileSchema extends Schema {
             @NonNull final BootstrapConfig bootstrapConfig,
             @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
-            @NonNull final GrpcConfig grpcConfig,
             @NonNull final WritableKVState<FileID, File> files,
             @NonNull final NetworkInfo networkInfo) {
 
@@ -246,19 +243,13 @@ public class V0490FileSchema extends Schema {
                     .nodeId(nodeInfo.nodeId())
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     .nodeAccountId(nodeInfo.accountId())
-                    .serviceEndpoint(List.of(
+                    .serviceEndpoint(
+                            // we really don't have grpc proxy name and port for now. Temporary values are set.
+                            // Need to update when we have the correct values
                             ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(
-                                            nodeInfo.externalHostName())) // we can't get this field value, use
-                                    // externalHostName for now.
-                                    .port(grpcConfig.port())
-                                    .build(),
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(
-                                            nodeInfo.externalHostName())) // we can't get this field value, use
-                                    // externalHostName for now.
-                                    .port(grpcConfig.tlsPort())
-                                    .build()))
+                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                                    .port(0)
+                                    .build())
                     .build());
         }
 
@@ -299,19 +290,12 @@ public class V0490FileSchema extends Schema {
                     .nodeAccountId(nodeInfo.accountId())
                     .nodeId(nodeInfo.nodeId())
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    .serviceEndpoint(List.of(
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(
-                                            nodeInfo.externalHostName())) // we can't get this field value, use
-                                    // externalHostName for now.
-                                    .port(grpcConfig.port())
-                                    .build(),
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(
-                                            nodeInfo.externalHostName())) // we can't get this field value, use
-                                    // externalHostName for now.
-                                    .port(grpcConfig.port())
-                                    .build()))
+                    // we really don't have grpc proxy name and port for now.Temporary values are set.
+                    // Need to update when we have the correct values
+                    .serviceEndpoint(ServiceEndpoint.newBuilder()
+                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                            .port(0)
+                            .build())
                     .build());
         }
 
