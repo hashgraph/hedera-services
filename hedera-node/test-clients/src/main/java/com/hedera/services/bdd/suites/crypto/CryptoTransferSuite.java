@@ -93,6 +93,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
@@ -2368,8 +2369,11 @@ public class CryptoTransferSuite {
     final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
         final var tokenA = "tokenA";
         final var tokenB = "tokenB";
+        final var aliasKey = "aliasKey";
         final var transferTokenAToHollowAccountTxn = "transferTokenAToHollowAccountTxn";
+        final var transferTokenAToSecondHollowAccountTxn = "transferTokenAToSecondHollowAccountTxn";
         final var transferTokenBToHollowAccountTxn = "transferTokenBToHollowAccountTxn";
+        final var transferTokenBToSecondHollowAccountTxn = "transferTokenBToSecondHollowAccountTxn";
         final double expectedCreateHollowAccountAndNftATransferFeeUsd = 0.04828;
         final double expectedNftTransferUsd = 0.0001;
         final double autoAssocSlotPriceUsd = 0.0010316252;
@@ -2380,7 +2384,15 @@ public class CryptoTransferSuite {
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS))
+                        newKeyNamed(aliasKey),
+                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        withOpContext((spec, opLog) -> {
+                            final var key = spec.registry().getKey(aliasKey);
+                            cryptoCreate("tobedeleted")
+                                    .alias(key.toByteString())
+                                    .balance(0L);
+                            cryptoDelete("tobedeleted");
+                        }))
                 .when(
                         // Create NFT1
                         tokenCreate(tokenA)
@@ -2396,13 +2408,13 @@ public class CryptoTransferSuite {
                                 .treasury(TREASURY),
                         // Mint both NFTs
                         mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata4"))),
                         mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata2"))),
                         mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata3"))),
                         // Create hollow account
                         cryptoTransfer(movingUnique(tokenA, 1).between(TREASURY, MULTI_KEY))
                                 .payingWith(TREASURY)
                                 .signedBy(TREASURY)
-                                .fee(ONE_HBAR) // Temp workaround
                                 .via(transferTokenAToHollowAccountTxn),
                         // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT1
                         getAliasedAccountInfo(MULTI_KEY)
@@ -2412,17 +2424,46 @@ public class CryptoTransferSuite {
                         cryptoTransfer(movingUnique(tokenB, 1).between(TREASURY, MULTI_KEY))
                                 .payingWith(TREASURY)
                                 .signedBy(TREASURY)
-                                .fee(ONE_HBAR) // Temp workaround
                                 .via(transferTokenBToHollowAccountTxn),
-                        getAliasedAccountInfo(MULTI_KEY).hasToken(relationshipWith(tokenB))
-                        // TODO: finish the test according to the test plan
-                        )
+                        getAliasedAccountInfo(MULTI_KEY).hasToken(relationshipWith(tokenB)),
+                        // Send transfer to complete the hollow account
+                        cryptoTransfer(movingUnique(tokenA, 1).between(MULTI_KEY, TREASURY))
+                                .payingWith(TREASURY)
+                                .signedBy(MULTI_KEY, TREASURY),
+                        // Verify hollow account completion and keep max automatic associations to -1
+                        getAliasedAccountInfo(MULTI_KEY)
+                                .has(accountWith().key(MULTI_KEY).maxAutoAssociations(-1)),
+
+                        // Create hollow account
+                        cryptoTransfer(movingUnique(tokenA, 2).between(TREASURY, aliasKey))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenAToSecondHollowAccountTxn),
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT1
+                        getAliasedAccountInfo(aliasKey)
+                                .hasToken(relationshipWith(tokenA))
+                                .hasMaxAutomaticAssociations(-1),
+                        // Verify auto association to NFT2
+                        cryptoTransfer(movingUnique(tokenB, 2).between(TREASURY, aliasKey))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenBToSecondHollowAccountTxn),
+                        getAliasedAccountInfo(aliasKey).hasToken(relationshipWith(tokenB)),
+                        // Send transfer to complete the hollow account
+                        cryptoTransfer(movingUnique(tokenA, 2).between(aliasKey, TREASURY))
+                                .payingWith(TREASURY)
+                                .signedBy(aliasKey, TREASURY),
+                        // Verify hollow account completion and keep max automatic associations to -1
+                        getAliasedAccountInfo(aliasKey)
+                                .has(accountWith().key(aliasKey).maxAutoAssociations(-1)))
                 .then(
-                        validateChargedUsdWithin(
-                                transferTokenAToHollowAccountTxn,
-                                expectedCreateHollowAccountAndNftATransferFeeUsd,
-                                0.01),
-                        validateChargedUsdWithin(
-                                transferTokenBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd, 0.01));
+                        validateChargedUsd(
+                                transferTokenAToHollowAccountTxn, expectedCreateHollowAccountAndNftATransferFeeUsd),
+                        validateChargedUsd(transferTokenBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
+                        validateChargedUsd(
+                                transferTokenAToSecondHollowAccountTxn,
+                                expectedCreateHollowAccountAndNftATransferFeeUsd),
+                        validateChargedUsd(
+                                transferTokenBToSecondHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 }
