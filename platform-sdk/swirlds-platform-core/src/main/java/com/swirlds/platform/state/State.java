@@ -26,6 +26,7 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -114,6 +115,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      * @return the application state
      */
     @Override
+    @NonNull
     public SwirldState getSwirldState() {
         return getChild(ChildIndices.SWIRLD_STATE);
     }
@@ -132,6 +134,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      *
      * @return the platform state
      */
+    @NonNull
     @Override
     public PlatformState getPlatformState() {
         return getChild(ChildIndices.PLATFORM_STATE);
@@ -143,7 +146,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      * @param platformState the platform state
      */
     @Override
-    public void setPlatformState(final PlatformState platformState) {
+    public void setPlatformState(@NonNull final PlatformState platformState) {
         setChild(ChildIndices.PLATFORM_STATE, platformState);
     }
 
@@ -166,6 +169,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public MerkleRoot copy() {
         throwIfImmutable();
@@ -210,12 +214,21 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      *
      * @param hashDepth the depth of the tree to visit and print
      */
+    @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
         final PlatformState platformState = getPlatformState();
         return createInfoString(hashDepth, platformState, getHash(), this);
     }
 
+    /**
+     * Generate a string that describes this state.
+     *
+     * @param hashDepth the depth of the tree to visit and print
+     * @param platformState current platform state
+     * @param state current root node state
+     *
+     */
     public static String createInfoString(int hashDepth, PlatformState platformState, Hash rootHash, MerkleNode state) {
         final Hash epochHash = platformState.getNextEpochHash();
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();

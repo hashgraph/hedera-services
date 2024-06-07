@@ -18,6 +18,7 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.platform.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This interface represents the root node of Hedera Merkle tree.
@@ -28,6 +29,7 @@ public interface MerkleRoot extends MerkleInternal {
      *
      * @return the application state
      */
+    @NonNull
     SwirldState getSwirldState();
 
     /**
@@ -35,21 +37,24 @@ public interface MerkleRoot extends MerkleInternal {
      *
      * @return the platform state
      */
+    @NonNull
     PlatformState getPlatformState();
     /**
      * Set the platform state.
      *
      * @param platformState the platform state
      */
-    void setPlatformState(PlatformState platformState);
+    void setPlatformState(@NonNull final PlatformState platformState);
 
     /**
      * Generate a string that describes this state.
      *
      * @param hashDepth the depth of the tree to visit and print
      */
-    String getInfoString(int hashDepth);
+    @NonNull
+    String getInfoString(final int hashDepth);
 
     /** {@inheritDoc} */
+    @NonNull
     MerkleRoot copy();
 }

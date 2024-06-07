@@ -314,6 +314,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public MerkleHederaState copy() {
         throwIfImmutable();
@@ -791,25 +792,37 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     // FUTURE USE: the following code will become relevant with
     // https://github.com/hashgraph/hedera-services/issues/11773
+    @NonNull
     @Override
     public SwirldState getSwirldState() {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
     @Override
     public PlatformState getPlatformState() {
         throw new UnsupportedOperationException(
                 "To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void setPlatformState(PlatformState platformState) {
+    public void setPlatformState(@NonNull final PlatformState platformState) {
         throw new UnsupportedOperationException(
                 "To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
     @Override
-    public String getInfoString(int hashDepth) {
+    public String getInfoString(final int hashDepth) {
         return State.createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 }
