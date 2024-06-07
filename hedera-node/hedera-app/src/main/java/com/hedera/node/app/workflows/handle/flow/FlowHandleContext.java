@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -84,7 +85,7 @@ import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -124,6 +125,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private final Dispatch currentDispatch;
     private final DispatchLogic dispatchLogic;
     private final NetworkUtilizationManager networkUtilizationManager;
+    private Map<AccountID, Long> dispatchPaidRewards;
 
     @Inject
     public FlowHandleContext(
@@ -171,7 +173,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         this.currentDispatch = parentDispatch;
         this.dispatchLogic = dispatchLogic;
         this.networkUtilizationManager = networkUtilizationManager;
-        // TODO : Provide these two from UserTxnScope after deleting mono code
+        // FUTURE : Provide these two from UserTxnScope after deleting mono code
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = dispatcher;
@@ -591,8 +593,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public Map<AccountID, Long> dispatchPaidRewards() {
-        // TODO: Implement this
-        return Collections.emptyMap();
+        return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }
 
     private <T> T dispatchForRecord(
@@ -616,6 +617,14 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
         if (commitStack) {
             stack.commitFullStack();
+        }
+        // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
+        final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();
+        if (!paidStakingRewards.isEmpty()) {
+            if (dispatchPaidRewards == null) {
+                dispatchPaidRewards = new LinkedHashMap<>();
+            }
+            paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
         }
         return castRecordBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }

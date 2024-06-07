@@ -122,14 +122,24 @@ public class UserHandleWorkflow {
         if (isOlderSoftwareEvent()) {
             skipHandleProcess.processUserTransaction(userTxn);
         } else {
-            if (blockRecordManager.consTimeOfLastHandledTxn().equals(Instant.EPOCH)) {
+            final var isFirstTxn = blockRecordManager.consTimeOfLastHandledTxn().equals(Instant.EPOCH);
+            if (isFirstTxn) {
                 genesisHandleProcess.processUserTransaction(userTxn);
             }
             final var workDone = mainHandleProcess.processUserTransaction(userTxn);
+            updateMetrics(isFirstTxn);
             trackUsage(workDone);
         }
 
         return buildAndCacheResult(userTxn.recordListBuilder());
+    }
+
+    private void updateMetrics(final boolean isFirstTxn) {
+        if (isFirstTxn
+                || userTxn.consensusNow().getEpochSecond()
+                        > blockRecordManager.consTimeOfLastHandledTxn().getEpochSecond()) {
+            handleWorkflowMetrics.switchConsensusSecond();
+        }
     }
 
     private Stream<SingleTransactionRecord> buildAndCacheResult(RecordListBuilder builder) {
