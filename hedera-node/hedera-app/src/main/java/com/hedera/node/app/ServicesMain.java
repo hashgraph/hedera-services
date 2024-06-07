@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.info.CanonicalSelfNodeInfoExtractor.CANONICAL_SELF_NODE_INFO_EXTRACTOR;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -89,7 +90,7 @@ public class ServicesMain implements SwirldMain {
             final var constructableRegistry = ConstructableRegistry.getInstance();
             final var servicesRegistry =
                     new ServicesRegistryImpl(constructableRegistry, new GenesisRecordsConsensusHook());
-            delegate = new Hedera(constructableRegistry, servicesRegistry);
+            delegate = new Hedera(constructableRegistry, servicesRegistry, CANONICAL_SELF_NODE_INFO_EXTRACTOR);
         }
     }
 
@@ -164,7 +165,7 @@ public class ServicesMain implements SwirldMain {
         final var genesisRecordBuilder = new GenesisRecordsConsensusHook();
         final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordBuilder);
 
-        final Hedera hedera = new Hedera(constructableRegistry, servicesRegistry);
+        final Hedera hedera = new Hedera(constructableRegistry, servicesRegistry, CANONICAL_SELF_NODE_INFO_EXTRACTOR);
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book

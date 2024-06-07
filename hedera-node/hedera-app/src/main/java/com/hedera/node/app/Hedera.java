@@ -42,7 +42,7 @@ import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.NetworkInfoImpl;
-import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.info.SelfNodeInfoExtractor;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
@@ -152,6 +152,11 @@ public final class Hedera implements SwirldMain {
      */
     private final ConfigProvider bootstrapConfigProvider;
     /**
+     * The class responsible for remembering objects created in genesis cases
+     * */
+    private final GenesisRecordsBuilder genesisRecordsBuilder;
+
+    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -159,8 +164,6 @@ public final class Hedera implements SwirldMain {
      * The configuration for this node
      */
     private ConfigProviderImpl configProvider;
-    /** The class responsible for remembering objects created in genesis cases */
-    private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -173,6 +176,11 @@ public final class Hedera implements SwirldMain {
     private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
     private final SyntheticRecordsGenerator recordsGenerator;
+
+    /**
+     * The strategy for extracting self node info from the platform and version.
+     */
+    private final SelfNodeInfoExtractor selfNodeInfoExtractor;
 
     /**
      * The application name from the platform's perspective. This is currently locked in at the old main class name and
@@ -204,12 +212,12 @@ public final class Hedera implements SwirldMain {
      *                         This is useful for testing.
      */
     public Hedera(
-            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final ServicesRegistry registry) {
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final ServicesRegistry registry,
+            @NonNull final SelfNodeInfoExtractor selfNodeInfoExtractor) {
         requireNonNull(constructableRegistry);
-        // FUTURE : We need to extract OrderedServiceMigrator and ServicesRegistry into its own class
-        requireNonNull(registry);
-
-        this.servicesRegistry = registry;
+        this.servicesRegistry = requireNonNull(registry);
+        this.selfNodeInfoExtractor = requireNonNull(selfNodeInfoExtractor);
         this.genesisRecordsBuilder = registry.getGenesisRecords();
 
         // Print welcome message
@@ -469,9 +477,7 @@ public final class Hedera implements SwirldMain {
                 () -> HapiUtils.toString(currentVersion),
                 () -> trigger);
 
-        final var selfId = platform.getSelfId();
-        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
-        final var selfNodeInfo = SelfNodeInfoImpl.of(nodeAddress, version);
+        final var selfNodeInfo = selfNodeInfoExtractor.extractSelfNodeInfo(platform, version);
         final var networkInfo = new NetworkInfoImpl(selfNodeInfo, platform, bootstrapConfigProvider);
 
         final var migrator = new OrderedServiceMigrator(servicesRegistry);
@@ -877,9 +883,6 @@ public final class Hedera implements SwirldMain {
 
     private void initializeDagger(
             @NonNull final HederaState state, @NonNull final InitTrigger trigger, final PlatformState platformState) {
-        logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId();
-        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         // The Dagger component should be constructed every time we reach this point, even if
         // it exists. This avoids any problems with mutable singleton state by reconstructing
         // everything. But we must ensure the gRPC server in the old component is fully stopped.
@@ -892,7 +895,7 @@ public final class Hedera implements SwirldMain {
                 .softwareVersion(version)
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
-                .self(SelfNodeInfoImpl.of(nodeAddress, version))
+                .self(selfNodeInfoExtractor.extractSelfNodeInfo(platform, version))
                 .platform(platform)
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                 .crypto(CryptographyHolder.get())
