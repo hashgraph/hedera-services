@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -71,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXP
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -104,6 +106,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -175,13 +178,14 @@ public class AutoAccountCreationSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
+    protected static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
 
     @HapiTest
     final Stream<DynamicTest> aliasedPayerDoesntWork() {
         return propertyPreservingHapiSpec("aliasedPayerDoesntWork")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -205,9 +209,9 @@ public class AutoAccountCreationSuite {
     final Stream<DynamicTest> canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
         return propertyPreservingHapiSpec("canAutoCreateWithHbarAndTokenTransfers", EXPECT_STREAMLINED_INGEST_RECORDS)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
@@ -246,9 +250,9 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("repeatedAliasInSameTransferListFails", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -305,9 +309,9 @@ public class AutoAccountCreationSuite {
     final Stream<DynamicTest> autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return propertyPreservingHapiSpec("autoCreateWithNftFallBackFeeFails", HIGHLY_NON_DETERMINISTIC_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -366,7 +370,7 @@ public class AutoAccountCreationSuite {
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         // The expected fee to transfer four serial numbers of two token types to a receiver with
@@ -376,9 +380,9 @@ public class AutoAccountCreationSuite {
         final var multiNftTransfer = "multiNftTransfer";
 
         return propertyPreservingHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE_VALUE),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -455,7 +459,7 @@ public class AutoAccountCreationSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> canAutoCreateWithNftTransferToEvmAddress() {
         final var civilianBal = 10 * ONE_HBAR;
         final var nftTransfer = "multiNftTransfer";
@@ -463,9 +467,9 @@ public class AutoAccountCreationSuite {
         final AtomicBoolean hasNodeStakeUpdate = new AtomicBoolean(false);
 
         return propertyPreservingHapiSpec("canAutoCreateWithNftTransferToEvmAddress")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
@@ -508,15 +512,15 @@ public class AutoAccountCreationSuite {
                                                 parentConsTime.get(), hasNodeStakeUpdate.get() ? -2 : -1))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
 
         return propertyPreservingHapiSpec("multipleTokenTransfersSucceed")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -606,9 +610,9 @@ public class AutoAccountCreationSuite {
         final AtomicLong totalAutoCreationFees = new AtomicLong();
 
         return propertyPreservingHapiSpec("payerBalanceIsReflectsAllChangesBeforeFeeCharging")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(A_TOKEN)
@@ -650,7 +654,7 @@ public class AutoAccountCreationSuite {
                                                 : Optional.of("Payer was" + " over-charged!")));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
@@ -659,11 +663,10 @@ public class AutoAccountCreationSuite {
         // with the size of the sig map, depending on the lengths of the public key prefixes required
         final long approxTransferFee = 1163019L;
 
-        return propertyPreservingHapiSpec(
-                        "canAutoCreateWithFungibleTokenTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+        return propertyPreservingHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -741,9 +744,9 @@ public class AutoAccountCreationSuite {
         final var user = "user";
         final var contract = "contract";
         return propertyPreservingHapiSpec("noStakePeriodStartIfNotStakingToNode", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(ADMIN_KEY),
                         cryptoCreate(user).key(ADMIN_KEY).stakedNodeId(0L),
                         createDefaultContract(contract).adminKey(ADMIN_KEY).stakedNodeId(0L),
@@ -766,9 +769,9 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> civilianAlias = new AtomicReference<>();
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         return propertyPreservingHapiSpec("hollowAccountCreationWithCryptoTransfer", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -870,9 +873,9 @@ public class AutoAccountCreationSuite {
         final var secondTransferTxn = "SecondTransferTxn";
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
         return propertyPreservingHapiSpec("failureAfterHollowAccountCreationReclaimsAlias", ALLOW_SKIPPED_ENTITY_IDS)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoCreate(underfunded).balance(10 * ONE_HBAR))
@@ -923,9 +926,9 @@ public class AutoAccountCreationSuite {
         final var autoCreation = "autoCreation";
 
         return propertyPreservingHapiSpec("canGetBalanceAndInfoViaAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ed25519SourceKey).shape(ed25519Shape),
                         newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape))
@@ -968,9 +971,9 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> aliasCanBeUsedOnManyAccountsNotAsAlias() {
         return propertyPreservingHapiSpec("aliasCanBeUsedOnManyAccountsNotAsAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         /* have alias key on other accounts and tokens not as alias */
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(PAYER).key(VALID_ALIAS).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -1004,7 +1007,7 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> accountCreatedIfAliasUsedAsPubKey() {
         return propertyPreservingHapiSpec("accountCreatedIfAliasUsedAsPubKey")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
                         newKeyNamed(ALIAS),
                         cryptoCreate(PAYER_1)
@@ -1032,9 +1035,9 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
         return propertyPreservingHapiSpec("autoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1066,9 +1069,9 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> transferFromAliasToAlias() {
         return propertyPreservingHapiSpec("transferFromAliasToAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(ALIAS),
                         newKeyNamed(ALIAS_2),
                         cryptoCreate(PAYER_4).balance(INITIAL_BALANCE * ONE_HBAR))
@@ -1095,9 +1098,9 @@ public class AutoAccountCreationSuite {
         final var payer = PAYER_4;
         final var alias = ALIAS;
         return propertyPreservingHapiSpec("transferFromAliasToAccount")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(alias),
                         cryptoCreate(payer).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate("randomAccount").balance(0L).payingWith(payer))
@@ -1120,10 +1123,10 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> transferToAccountAutoCreatedUsingAccount() {
         return propertyPreservingHapiSpec("transferToAccountAutoCreatedUsingAccount")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(newKeyNamed(TRANSFER_ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
@@ -1154,9 +1157,9 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> transferToAccountAutoCreatedUsingAlias() {
         return propertyPreservingHapiSpec("transferToAccountAutoCreatedUsingAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(ALIAS),
                         cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1208,9 +1211,9 @@ public class AutoAccountCreationSuite {
                 .toByteString();
 
         return propertyPreservingHapiSpec("autoAccountCreationUnsupportedAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(PAYER, threshKeyAlias, ONE_HUNDRED_HBARS))
@@ -1245,9 +1248,9 @@ public class AutoAccountCreationSuite {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
         return propertyPreservingHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -1353,10 +1356,10 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> multipleAutoAccountCreations() {
         return propertyPreservingHapiSpec("multipleAutoAccountCreations")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed("alias1"),
                         newKeyNamed(ALIAS_2),
                         newKeyNamed("alias3"),
@@ -1393,9 +1396,9 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferHbarsToEVMAddressAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext((spec, opLog) -> {
@@ -1451,9 +1454,9 @@ public class AutoAccountCreationSuite {
         final var transferToECDSA = "transferToЕCDSA";
 
         return propertyPreservingHapiSpec("transferHbarsToECDSAKey", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {
@@ -1503,9 +1506,9 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferFungibleToEVMAddressAlias", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
@@ -1600,9 +1603,9 @@ public class AutoAccountCreationSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferNonFungibleToEVMAddressAlias")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).balance(INITIAL_BALANCE * ONE_HBAR).maxAutomaticTokenAssociations(2),
@@ -1698,9 +1701,9 @@ public class AutoAccountCreationSuite {
         final var longZeroAddress = ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
 
         return propertyPreservingHapiSpec("cannotAutoCreateWithTxnToLongZero")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         withOpContext((spec, opLog) -> {

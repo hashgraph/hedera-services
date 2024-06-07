@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.hapi.fees.pricing.BaseOperationUsage.THREE_MONTHS_IN_SECONDS;
@@ -279,9 +280,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             validateFalse(
                     entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-            // TODO: check for unlimited associations flag and include -1 as infinite associations
             validateFalse(
-                    newMax < updateAccount.usedAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+                    newMax < -1 && entitiesConfig.unlimitedAutoAssociationsEnabled()
+                            || newMax < 0 && !entitiesConfig.unlimitedAutoAssociationsEnabled(),
+                    INVALID_MAX_AUTO_ASSOCIATIONS);
+            validateFalse(
+                    newMax < updateAccount.usedAutoAssociations() && newMax != -1,
+                    EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
             validateFalse(
                     newMax > ledgerConfig.maxAutoAssociations(),
                     REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
@@ -348,14 +353,18 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      * @param keySize the size of the key
      * @return the calculated base size
      */
-    private static long baseSizeOf(final CryptoUpdateTransactionBody op, final long keySize) {
-        return BASIC_ENTITY_ID_SIZE
+    private static long baseSizeOf(
+            final CryptoUpdateTransactionBody op, final long keySize, final boolean unlimitedAutoAssociationsEnabled) {
+        var baseSize = BASIC_ENTITY_ID_SIZE
                 + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
                 + (op.hasExpirationTime() ? LONG_SIZE : 0L)
                 + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
                 + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
-                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
                 + keySize;
+        if (!unlimitedAutoAssociationsEnabled) {
+            baseSize += op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L;
+        }
+        return baseSize;
     }
 
     /**
@@ -404,10 +413,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // When dispatching transaction body for hollow account we don't have update account set
         final var account = accountStore.getAccountById(op.accountIDToUpdateOrElse(AccountID.DEFAULT));
         final var autoRenewconfig = configuration.getConfigData(AutoRenewConfig.class);
+        final var entityConfig = configuration.getConfigData(EntitiesConfig.class);
+        final var unlimitedAutoAssoc = entityConfig.unlimitedAutoAssociationsEnabled();
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
-        final var baseSize = baseSizeOf(op, keySize);
+        final var baseSize = baseSizeOf(op, keySize, unlimitedAutoAssoc);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
 
         final var accountMemoSize = (account == null || account.memo() == null)
@@ -431,7 +442,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 cryptoAutoRenewRb(account), oldLifetime, sharedFixedBytes + newVariableBytes, newLifetime);
 
         final var oldSlotsUsage = (account == null ? 0 : account.maxAutoAssociations()) * UPDATE_SLOT_MULTIPLIER;
-        final var newSlotsUsage = op.hasMaxAutomaticTokenAssociations()
+        final var newSlotsUsage = op.hasMaxAutomaticTokenAssociations() && !unlimitedAutoAssoc
                 ? op.maxAutomaticTokenAssociations().longValue() * UPDATE_SLOT_MULTIPLIER
                 : oldSlotsUsage;
         // If given an explicit auto-assoc slot lifetime, we use it as a lower bound for both old and new lifetimes

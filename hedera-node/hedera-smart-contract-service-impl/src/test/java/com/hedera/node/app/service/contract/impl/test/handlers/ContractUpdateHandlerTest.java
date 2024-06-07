@@ -305,7 +305,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var maxAutomaticTokenAssociations = 10;
 
         when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
         when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(true);
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
@@ -330,7 +332,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         final var maxAutomaticTokenAssociations = 10;
 
         when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
         when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(true);
         when(context.configuration()).thenReturn(configuration);
 
         when(accountStore.getContractById(targetContract)).thenReturn(contract);

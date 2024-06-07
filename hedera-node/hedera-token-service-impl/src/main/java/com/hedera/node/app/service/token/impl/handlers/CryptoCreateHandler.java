@@ -23,17 +23,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_NOT_PROVIDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.CREATE_SLOT_MULTIPLIER;
 import static com.hedera.node.app.hapi.fees.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
@@ -128,7 +127,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             validateTruePreCheck(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
         }
         // HIP 904 now allows for unlimited auto-associations
-        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= -1, INVALID_TRANSACTION_BODY);
+        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= -1, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
         // FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         validateTruePreCheck(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
@@ -345,7 +344,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         validateFalse(
                 cryptoCreateValidator.tooManyAutoAssociations(
                         op.maxAutomaticTokenAssociations(), ledgerConfig, entitiesConfig, tokensConfig),
-                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+                INVALID_MAX_AUTO_ASSOCIATIONS);
 
         // This proxy field has been deprecated. We do not allow people to use it.
         validateFalse(
@@ -442,14 +441,21 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // required.
         final var op = feeContext.body().cryptoCreateAccountOrThrow();
         final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
-        final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
+        final var unlimitedAutoAssociations =
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+        final var maxAutoAssociationsSize =
+                !unlimitedAutoAssociations && op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L;
+        final var baseSize = op.memo().length() + keySize + maxAutoAssociationsSize;
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
-        return feeCalculator
+        var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
+        feeCalculator = feeCalculator
                 .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
-                .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)
-                .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs())
-                .calculate();
+                .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        if (!unlimitedAutoAssociations) {
+            feeCalculator = feeCalculator.addRamByteSeconds(
+                    op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER);
+        }
+        return feeCalculator.calculate();
     }
 }
