@@ -19,13 +19,14 @@ package com.hedera.node.app.workflows.handle.flow.dispatcher;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
 import com.hedera.node.app.workflows.handle.flow.ErrorReport;
+import com.hedera.node.app.workflows.handle.flow.exceptions.ThrottleException;
 import com.hedera.node.app.workflows.handle.flow.infra.HandleLogic;
+import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import com.hedera.node.app.workflows.handle.flow.records.RecordFinalizerlogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -64,24 +65,25 @@ public class DispatchLogic {
      * guaranteeing that the changes committed to its stack are exactly reflected in its recordBuilder.
      * @param dispatch the dispatch to be processed
      */
-    public void dispatch(@NonNull Dispatch dispatch, @NonNull final RecordListBuilder recordListBuilder) {
+    public WorkDone dispatch(@NonNull Dispatch dispatch, @NonNull final RecordListBuilder recordListBuilder) {
         final var dueDiligenceReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
-        final AccountID chargedAccountId;
+        final WorkDone workDone;
         if (dueDiligenceReport.isDueDiligenceFailure()) {
             chargeCreator(dispatch, dueDiligenceReport);
-            chargedAccountId = dueDiligenceReport.dueDiligenceInfo().creator();
+            workDone = WorkDone.FEES_ONLY;
         } else {
             chargePayer(dispatch, dueDiligenceReport);
             if (dueDiligenceReport.payerSolvency() != OK) {
                 dispatch.recordBuilder().status(dueDiligenceReport.payerSolvency());
+                workDone = WorkDone.FEES_ONLY;
             } else {
-                handleTransaction(dispatch, dueDiligenceReport, recordListBuilder);
+                workDone = handleTransaction(dispatch, dueDiligenceReport, recordListBuilder);
             }
-            chargedAccountId = dispatch.syntheticPayer();
         }
 
         recordFinalizerlogic.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
+        return workDone;
     }
 
     /**
@@ -91,13 +93,14 @@ public class DispatchLogic {
      * @param dueDiligenceReport the due diligence report for the dispatch
      * @param recordListBuilder the record list builder for the dispatch
      */
-    private void handleTransaction(
+    private WorkDone handleTransaction(
             @NonNull final Dispatch dispatch,
             @NonNull final ErrorReport dueDiligenceReport,
             @NonNull final RecordListBuilder recordListBuilder) {
         try {
-            handleLogic.handle(dispatch);
+            final var workDone = handleLogic.handle(dispatch);
             dispatch.recordBuilder().status(SUCCESS);
+            return workDone;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
             rollback(
@@ -109,6 +112,11 @@ public class DispatchLogic {
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, dueDiligenceReport);
             }
+            return WorkDone.USER_TRANSACTION;
+        } catch (ThrottleException e) {
+            rollback(true, e.getStatus(), dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
+            chargePayer(dispatch, dueDiligenceReport.withoutServiceFee());
+            return WorkDone.FEES_ONLY;
         }
     }
 

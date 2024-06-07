@@ -24,18 +24,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class GenesisHandleProcess implements HandleProcess {
+public class GenesisUserTransactionProcess implements UserTransactionProcess {
 
-    private static final Logger logger = LogManager.getLogger(GenesisHandleProcess.class);
+    private static final Logger logger = LogManager.getLogger(GenesisUserTransactionProcess.class);
     private final GenesisRecordsConsensusHook genesisRecordsConsensusHook;
 
     @Inject
-    public GenesisHandleProcess(final GenesisRecordsConsensusHook genesisRecordsConsensusHook) {
+    public GenesisUserTransactionProcess(final GenesisRecordsConsensusHook genesisRecordsConsensusHook) {
         this.genesisRecordsConsensusHook = genesisRecordsConsensusHook;
     }
 
     @Override
-    public void processUserTransaction(UserTransactionComponent userTxn) {
+    public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
         genesisRecordsConsensusHook.process(userTxn.tokenContext());
+        return WorkDone.NONE;
     }
 }

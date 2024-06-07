@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
@@ -33,6 +36,7 @@ import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -59,6 +63,7 @@ import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
@@ -80,7 +85,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -114,8 +121,9 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final Provider<ChildDispatchComponent.Factory> childDispatchFactory;
     private final ChildDispatchLogic childDispatchLogic;
-    private final Dispatch parentDispatch;
+    private final Dispatch currentDispatch;
     private final DispatchLogic dispatchLogic;
+    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public FlowHandleContext(
@@ -142,7 +150,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             final ChildDispatchLogic childDispatchLogic,
             final Dispatch parentDispatch,
-            final DispatchLogic dispatchLogic) {
+            final DispatchLogic dispatchLogic,
+            final NetworkUtilizationManager networkUtilizationManager) {
         this.consensusNow = consensusNow;
         this.txnInfo = transactionInfo;
         this.configuration = configuration;
@@ -159,8 +168,9 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         this.entityIdStore = entityIdStore;
         this.childDispatchFactory = childDispatchFactory;
         this.childDispatchLogic = childDispatchLogic;
-        this.parentDispatch = parentDispatch;
+        this.currentDispatch = parentDispatch;
         this.dispatchLogic = dispatchLogic;
+        this.networkUtilizationManager = networkUtilizationManager;
         // TODO : Provide these two from UserTxnScope after deleting mono code
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
@@ -492,14 +502,14 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public <T> T addChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = parentDispatch.recordListBuilder().addChild(configuration(), CHILD);
+        final var result = currentDispatch.recordListBuilder().addChild(configuration(), CHILD);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = parentDispatch.recordListBuilder().addRemovableChild(configuration());
+        final var result = currentDispatch.recordListBuilder().addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -511,26 +521,59 @@ public class FlowHandleContext implements HandleContext, FeeContext {
 
     @Override
     public void revertRecordsFrom(@NonNull final RecordListCheckPoint recordListCheckPoint) {
-        parentDispatch.recordListBuilder().revertChildrenFrom(recordListCheckPoint);
+        currentDispatch.recordListBuilder().revertChildrenFrom(recordListCheckPoint);
     }
 
     @Override
     public boolean shouldThrottleNOfUnscaled(final int n, final HederaFunctionality function) {
-        // TODO: Implement this
-        return false;
+        return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, consensusNow);
     }
 
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
-        // TODO: Implement this
-        return true;
+        var isAllowed = true;
+        final var childRecords = currentDispatch.recordListBuilder().childRecordBuilders();
+        @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
+
+        for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
+            final var childRecord = childRecords.get(i);
+            if (Objects.equals(childRecord.status(), SUCCESS)) {
+                final var childTx = childRecord.transaction();
+                final var childTxBody = childRecord.transactionBody();
+                HederaFunctionality childTxFunctionality;
+                try {
+                    childTxFunctionality = functionOf(childTxBody);
+                } catch (UnknownHederaFunctionality e) {
+                    throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
+                }
+
+                if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
+                    continue;
+                }
+                if (snapshotsIfNeeded == null) {
+                    snapshotsIfNeeded = networkUtilizationManager.getUsageSnapshots();
+                }
+
+                final var childTxInfo = TransactionInfo.from(
+                        childTx, childTxBody, childTx.sigMap(), childTx.signedTransactionBytes(), childTxFunctionality);
+                final var shouldThrottleTxn = networkUtilizationManager.shouldThrottle(
+                        childTxInfo, currentDispatch.stack().peek(), consensusNow);
+                if (shouldThrottleTxn) {
+                    isAllowed = false;
+                }
+            }
+        }
+        if (!isAllowed) {
+            networkUtilizationManager.resetUsageThrottlesTo(snapshotsIfNeeded);
+        }
+        return isAllowed;
     }
 
     @NonNull
     @Override
     public RecordListCheckPoint createRecordListCheckPoint() {
-        final var precedingRecordBuilders = parentDispatch.recordListBuilder().precedingRecordBuilders();
-        final var childRecordBuilders = parentDispatch.recordListBuilder().childRecordBuilders();
+        final var precedingRecordBuilders = currentDispatch.recordListBuilder().precedingRecordBuilders();
+        final var childRecordBuilders = currentDispatch.recordListBuilder().childRecordBuilders();
 
         SingleTransactionRecordBuilder lastFollowing = null;
         SingleTransactionRecordBuilder firstPreceding = null;
@@ -562,7 +605,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             boolean commitStack) {
         final var childDispatch = childDispatchLogic.createChildDispatch(
-                parentDispatch,
+                currentDispatch,
                 childTxBody,
                 childVerifier,
                 syntheticPayer,
@@ -570,7 +613,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 childDispatchFactory,
                 customizer,
                 reversingBehavior);
-        dispatchLogic.dispatch(childDispatch, parentDispatch.recordListBuilder());
+        dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
         if (commitStack) {
             stack.commitFullStack();
         }

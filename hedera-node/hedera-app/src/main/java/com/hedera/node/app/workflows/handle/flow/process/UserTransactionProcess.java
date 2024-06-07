@@ -17,8 +17,9 @@
 package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface HandleProcess {
-
-    void processUserTransaction(UserTransactionComponent userTxn);
+public interface UserTransactionProcess {
+    @NonNull
+    WorkDone processUserTransaction(UserTransactionComponent userTxn);
 }

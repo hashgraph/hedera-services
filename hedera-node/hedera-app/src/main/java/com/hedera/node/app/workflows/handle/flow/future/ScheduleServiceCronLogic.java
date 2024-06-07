@@ -58,7 +58,7 @@ public class ScheduleServiceCronLogic {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxnContext.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
-                            userTxnContext.savepointStack(),
+                            userTxnContext.stack(),
                             ScheduleService.NAME,
                             userTxnContext.tokenContext().configuration(),
                             storeMetricsService)

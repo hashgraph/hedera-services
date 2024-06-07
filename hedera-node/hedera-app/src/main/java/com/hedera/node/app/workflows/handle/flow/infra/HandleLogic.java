@@ -18,16 +18,21 @@ package com.hedera.node.app.workflows.handle.flow.infra;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.isContractOperation;
 
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.exceptions.ThrottleException;
+import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -38,28 +43,38 @@ import javax.inject.Singleton;
 public class HandleLogic {
     private final Authorizer authorizer;
     private final TransactionDispatcher dispatcher;
+    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
-    public HandleLogic(final Authorizer authorizer, final TransactionDispatcher dispatcher) {
+    public HandleLogic(
+            final Authorizer authorizer,
+            final TransactionDispatcher dispatcher,
+            final NetworkUtilizationManager networkUtilizationManager) {
         this.authorizer = authorizer;
         this.dispatcher = dispatcher;
+        this.networkUtilizationManager = networkUtilizationManager;
     }
 
-    public void handle(Dispatch dispatch) {
-        if (isUnAuthorized(dispatch)) return;
+    public WorkDone handle(Dispatch dispatch) {
+        if (isUnAuthorized(dispatch)) return WorkDone.FEES_ONLY;
 
         if (dispatch.userError() != OK) {
             dispatch.recordBuilder().status(dispatch.userError());
-            return;
+            return WorkDone.FEES_ONLY;
         }
 
         if (hasInvalidSignature(dispatch)) {
             dispatch.recordBuilder().status(INVALID_SIGNATURE);
-            return;
+            return WorkDone.FEES_ONLY;
         }
-
+        if (isContractOperation(dispatch)) {
+            networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+            if (networkUtilizationManager.wasLastTxnGasThrottled()) {
+                throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
+            }
+        }
         dispatcher.dispatchHandle(dispatch.handleContext());
-        // Do business logic
+        return WorkDone.USER_TRANSACTION;
     }
 
     private boolean isUnAuthorized(final Dispatch dispatch) {

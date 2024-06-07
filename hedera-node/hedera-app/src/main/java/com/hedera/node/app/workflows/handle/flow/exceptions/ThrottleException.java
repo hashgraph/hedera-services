@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow;
+package com.hedera.node.app.workflows.handle.flow.exceptions;
 
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.ChildDispatchScope;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 
-@ChildDispatchScope
-public class SharedHandleFlow {
+public class ThrottleException extends RuntimeException {
+    private final ResponseCodeEnum status;
 
-    public SharedHandleFlow() {}
+    public ThrottleException(final ResponseCodeEnum status) {
+        this.status = status;
+    }
+
+    public ResponseCodeEnum getStatus() {
+        return status;
+    }
 }

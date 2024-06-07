@@ -206,6 +206,7 @@ public interface ChildDispatchModule {
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,
-                dispatchLogic);
+                dispatchLogic,
+                networkUtilizationManager);
     }
 }

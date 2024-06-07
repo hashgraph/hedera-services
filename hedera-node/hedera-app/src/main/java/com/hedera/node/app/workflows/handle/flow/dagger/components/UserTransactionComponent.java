@@ -27,10 +27,11 @@ import com.hedera.node.app.workflows.handle.flow.dagger.modules.ContextModule;
 import com.hedera.node.app.workflows.handle.flow.dagger.modules.PreHandleResultModule;
 import com.hedera.node.app.workflows.handle.flow.dagger.modules.StateModule;
 import com.hedera.node.app.workflows.handle.flow.dagger.modules.UserDispatchSubcomponentModule;
-import com.hedera.node.app.workflows.handle.flow.process.ProcessRunner;
+import com.hedera.node.app.workflows.handle.flow.process.UserHandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -73,7 +74,7 @@ public interface UserTransactionComponent {
      * The process runner for the user transaction to produce stream items
      * @return the process runner
      */
-    ProcessRunner processor();
+    UserHandleWorkflow processor();
 
     /**
      * The consensus time of the user transaction
@@ -133,7 +134,7 @@ public interface UserTransactionComponent {
      * The savepoint stack used for the user transaction
      * @return the savepoint stack
      */
-    SavepointStackImpl savepointStack();
+    SavepointStackImpl stack();
 
     /**
      * The prehandle result for the user transaction
@@ -152,4 +153,6 @@ public interface UserTransactionComponent {
      * @return the provider
      */
     Provider<UserDispatchComponent.Factory> userDispatchProvider();
+
+    Configuration configuration();
 }

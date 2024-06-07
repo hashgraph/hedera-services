@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
@@ -29,8 +31,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class DefaultHandleProcess implements HandleProcess {
-    private static final Logger logger = LogManager.getLogger(DefaultHandleProcess.class);
+public class MainUserTransactionProcess implements UserTransactionProcess {
+    private static final Logger logger = LogManager.getLogger(MainUserTransactionProcess.class);
 
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final BlockRecordManager blockRecordManager;
@@ -38,37 +40,43 @@ public class DefaultHandleProcess implements HandleProcess {
     private final DispatchLogic dispatchLogic;
     private final UserTxnLogger userTxnLogger;
     private final HederaRecordCache recordCache;
+    private final ThrottleServiceManager throttleServiceManager;
+    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
-    public DefaultHandleProcess(
+    public MainUserTransactionProcess(
             final StakingPeriodTimeHook stakingPeriodTimeHook,
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
             final DispatchLogic dispatchLogic,
             final UserTxnLogger userTxnLogger,
-            final HederaRecordCache recordCache) {
+            final HederaRecordCache recordCache,
+            final ThrottleServiceManager throttleServiceManager,
+            final NetworkUtilizationManager networkUtilizationManager) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
         this.dispatchLogic = dispatchLogic;
         this.userTxnLogger = userTxnLogger;
         this.recordCache = recordCache;
+        this.throttleServiceManager = throttleServiceManager;
+        this.networkUtilizationManager = networkUtilizationManager;
     }
 
     @Override
-    public void processUserTransaction(UserTransactionComponent userTxn) {
+    public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         scheduleServiceCronLogic.expireSchedules(blockRecordManager.consTimeOfLastHandledTxn(), userTxn);
         userTxnLogger.logUserTxn(userTxn);
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
-        dispatchLogic.dispatch(userDispatch, userTxn.recordListBuilder());
+        return dispatchLogic.dispatch(userDispatch, userTxn.recordListBuilder());
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {
         try {
-            stakingPeriodTimeHook.process(userTxn.savepointStack(), userTxn.tokenContext());
+            stakingPeriodTimeHook.process(userTxn.stack(), userTxn.tokenContext());
         } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);

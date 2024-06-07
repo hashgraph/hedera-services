@@ -30,15 +30,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class SkipHandleProcess implements HandleProcess {
+public class SkipUserTransactionProcess implements UserTransactionProcess {
 
-    private static final Logger logger = LogManager.getLogger(SkipHandleProcess.class);
+    private static final Logger logger = LogManager.getLogger(SkipUserTransactionProcess.class);
     private final TransactionChecker transactionChecker;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
 
     @Inject
-    public SkipHandleProcess(
+    public SkipUserTransactionProcess(
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager) {
@@ -48,7 +48,7 @@ public class SkipHandleProcess implements HandleProcess {
     }
 
     @Override
-    public void processUserTransaction(UserTransactionComponent userTxn) {
+    public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
         final TransactionInfo transactionInfo = userTxn.txnInfo();
         // Initialize record builder list and place a BUSY record in the cache
         final var parentRecord = userTxn.recordListBuilder()
@@ -61,5 +61,6 @@ public class SkipHandleProcess implements HandleProcess {
                 .status(ResponseCodeEnum.BUSY);
 
         recordCache.add(userTxn.creator().nodeId(), transactionInfo.payerID(), List.of(parentRecord.build()));
+        return WorkDone.NONE;
     }
 }

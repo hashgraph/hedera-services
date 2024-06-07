@@ -34,4 +34,8 @@ public record ErrorReport(
     public boolean isDueDiligenceFailure() {
         return dueDiligenceInfo.isDueDiligenceFailure();
     }
+
+    public ErrorReport withoutServiceFee() {
+        return new ErrorReport(payer, dueDiligenceInfo, isDuplicate, payerSolvency, true);
+    }
 }
