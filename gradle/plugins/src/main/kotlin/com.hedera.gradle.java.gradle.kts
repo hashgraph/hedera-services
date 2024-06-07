@@ -347,6 +347,9 @@ tasks.check { dependsOn(tasks.jacocoTestReport) }
 
 tasks.named("qualityGate") { dependsOn(tasks.checkAllModuleInfo) }
 
+// ordering check is done by SortModuleInfoRequiresStep
+tasks.checkModuleInfo { enabled = false }
+
 tasks.withType<JavaCompile>() {
     // When ding a 'qualityGate' run, make sure spotlessApply is done before doing compilation and
     // other checks based on compiled code

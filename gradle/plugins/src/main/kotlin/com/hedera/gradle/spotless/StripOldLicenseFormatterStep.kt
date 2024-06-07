@@ -37,10 +37,7 @@ class StripOldLicenseFormatterStep {
         }
     }
 
-    private class State() : java.io.Serializable {
-        companion object {
-            private const val serialVersionUID = -113
-        }
+    private class State : java.io.Serializable {
 
         fun toFormatter(): FormatterFunc {
             return FormatterFunc { unixStr ->
@@ -57,8 +54,7 @@ class StripOldLicenseFormatterStep {
                     }
                 }
 
-                val finalStr = result.joinToString("\n")
-                finalStr
+                result.joinToString("\n")
             }
         }
     }

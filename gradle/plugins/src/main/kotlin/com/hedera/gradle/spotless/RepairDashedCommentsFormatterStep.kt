@@ -42,10 +42,6 @@ class RepairDashedCommentsFormatterStep {
 
     private class State(val openingCommentRegex: Regex, val closingCommentRegex: Regex) :
         java.io.Serializable {
-        companion object {
-            private const val serialVersionUID = -113
-        }
-
 
         fun toFormatter(): FormatterFunc {
             return FormatterFunc { unixStr ->
