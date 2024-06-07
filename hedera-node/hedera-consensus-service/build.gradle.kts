@@ -25,4 +25,7 @@ description = "Hedera Consensus Service API"
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
-testModuleInfo { requires("org.assertj.core") }
+testModuleInfo {
+    requires("org.assertj.core")
+    requires("org.junit.jupiter.api")
+}
