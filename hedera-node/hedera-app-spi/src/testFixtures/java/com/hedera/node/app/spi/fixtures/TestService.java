@@ -19,10 +19,10 @@ package com.hedera.node.app.spi.fixtures;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;

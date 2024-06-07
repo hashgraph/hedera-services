@@ -19,8 +19,6 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -85,7 +83,6 @@ public class ContractCreateHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.contractCreateInstanceOrThrow();
 
-        validateTruePreCheck(op.gas() <= MAX_GAS_LIMIT, MAX_GAS_LIMIT_EXCEEDED);
         // FUTURE:Consider reading the init code from a file but this may be too much to do for pure checks
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.wrap(new byte[0]), true);
         validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);

@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.recordcache;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

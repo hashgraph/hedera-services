@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.RpcServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
@@ -28,7 +28,7 @@ import java.util.Set;
  * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze
  * Service</a>.
  */
-public interface FreezeService extends Service {
+public interface FreezeService extends RpcService {
 
     String NAME = "FreezeService";
 
@@ -51,6 +51,6 @@ public interface FreezeService extends Service {
      */
     @NonNull
     static FreezeService getInstance() {
-        return ServiceFactory.loadService(FreezeService.class, ServiceLoader.load(FreezeService.class));
+        return RpcServiceFactory.loadService(FreezeService.class, ServiceLoader.load(FreezeService.class));
     }
 }

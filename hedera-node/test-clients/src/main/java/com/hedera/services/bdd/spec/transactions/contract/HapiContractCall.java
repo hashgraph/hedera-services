@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
@@ -27,6 +28,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -39,6 +41,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,6 +64,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
 
     @Nullable
+    private List<ResponseCodeEnum> childStatuses;
+
+    @Nullable
     private Function<HapiSpec, Tuple> tupleFn = null;
 
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
@@ -75,6 +81,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     public HapiContractCall withExplicitRawParams(final byte[] params) {
         return withExplicitParams(() -> CommonUtils.hex(params));
+    }
+
+    public HapiContractCall hasKnownStatuses(@NonNull final ResponseCodeEnum... statuses) {
+        if (statuses.length < 1) {
+            throw new IllegalArgumentException("There must be at least a parent status");
+        }
+        childStatuses = List.of(Arrays.copyOfRange(statuses, 1, statuses.length));
+        return hasKnownStatus(statuses[0]);
     }
 
     public static HapiContractCall fromDetails(String actionable) {
@@ -324,6 +338,21 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
                         .toByteArray());
                 resultObserver.accept(result.toList().toArray());
             });
+        }
+    }
+
+    @Override
+    protected void assertExpectationsGiven(@NonNull final HapiSpec spec) throws Throwable {
+        if (childStatuses != null) {
+            final var lastTxnId = extractTxnId(txnSubmitted);
+            allRunFor(
+                    spec,
+                    getTxnRecord(lastTxnId)
+                            .assertingNothingAboutHashes()
+                            .andAllChildRecords()
+                            .hasChildRecords(childStatuses.stream()
+                                    .map(status -> recordWith().status(status))
+                                    .toArray(TransactionRecordAsserts[]::new)));
         }
     }
 
