@@ -18,8 +18,6 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -245,21 +243,17 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     }
 
     private Query createGeNodeInfoQuery(final long nodeId) {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = NodeGetInfoQuery.newBuilder()
                 .nodeId(nodeId)
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().build())
                 .build();
 
         return Query.newBuilder().nodeGetInfo(data).build();
     }
 
     private Query createEmptyGetNodeInfoQuery() {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = NodeGetInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().build())
                 .build();
 
         return Query.newBuilder().nodeGetInfo(data).build();
