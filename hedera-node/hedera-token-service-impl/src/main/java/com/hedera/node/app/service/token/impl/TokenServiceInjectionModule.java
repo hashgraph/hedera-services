@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
@@ -262,6 +263,10 @@ public interface TokenServiceInjectionModule {
      * @return the handler
      */
     TokenUpdateHandler tokenUpdateHandler();
+    /**
+     * Returns the {@link TokenAirdropsHandler}
+     */
+    TokenAirdropsHandler tokenAirdropHandler();
     /**
      * Returns the {@link TokenHandlers}
      * @return the handler

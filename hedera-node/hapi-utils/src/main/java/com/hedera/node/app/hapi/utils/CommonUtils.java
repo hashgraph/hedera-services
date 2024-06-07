@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSig
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAirdrop;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -217,6 +218,7 @@ public final class CommonUtils {
             case SCHEDULESIGN -> ScheduleSign;
             case UTIL_PRNG -> UtilPrng;
             case TOKEN_UPDATE_NFTS -> TokenUpdateNfts;
+            case TOKENAIRDROP -> TokenAirdrop;
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
     }

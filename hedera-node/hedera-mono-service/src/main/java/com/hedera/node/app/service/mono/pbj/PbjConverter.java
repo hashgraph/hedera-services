@@ -355,6 +355,7 @@ public final class PbjConverter {
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
             case TokenReject -> HederaFunctionality.TOKEN_REJECT;
+            case TokenAirdrop -> HederaFunctionality.TOKEN_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -460,6 +461,7 @@ public final class PbjConverter {
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
             case TOKEN_REJECT -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenReject;
+            case TOKEN_AIRDROP -> com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAirdrop;
         };
     }
 

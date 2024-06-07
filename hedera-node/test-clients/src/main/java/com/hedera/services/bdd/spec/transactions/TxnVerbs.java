@@ -74,6 +74,7 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -159,6 +160,10 @@ public class TxnVerbs {
 
     public static HapiCryptoTransfer cryptoTransfer(TokenMovement... sources) {
         return new HapiCryptoTransfer(sources);
+    }
+
+    public static HapiTokenAirdrop tokenAirdrop(TokenMovement... sources) {
+        return new HapiTokenAirdrop(sources);
     }
 
     public static HapiCryptoUpdate cryptoUpdate(String account) {

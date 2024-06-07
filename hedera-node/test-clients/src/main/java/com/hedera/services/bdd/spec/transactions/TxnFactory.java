@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -397,6 +398,10 @@ public class TxnFactory {
     }
 
     public Consumer<UtilPrngTransactionBody.Builder> defaultDefUtilPrngTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
         return builder -> {};
     }
 }

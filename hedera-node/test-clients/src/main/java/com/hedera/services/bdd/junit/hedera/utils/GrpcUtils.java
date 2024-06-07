@@ -185,6 +185,7 @@ public class GrpcUtils {
             case UtilPrng -> clients.getUtilSvcStub(nodeAccountId, false).prng(transaction);
             case TokenUpdateNfts -> clients.getTokenSvcStub(nodeAccountId, false)
                     .updateNfts(transaction);
+            case TokenAirdrop -> clients.getTokenSvcStub(nodeAccountId, false).airdropTokens(transaction);
             default -> throw new IllegalArgumentException(functionality + " is not a transaction");
         };
     }
