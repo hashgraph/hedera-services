@@ -17,8 +17,8 @@
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static java.util.stream.Collectors.toList;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -213,11 +213,12 @@ public class EntityManager {
         return Optional.ofNullable(createdEntityId);
     }
 
-    public List<HapiSpecOperation> requiredCreations() {
+    public List<SpecOperation> requiredCreations() {
         return entities.stream()
                 .filter(Entity::needsCreation)
                 .map(Entity::createOp)
-                .collect(toList());
+                .map(op -> (SpecOperation) op)
+                .toList();
     }
 
     static class EntityMeta {

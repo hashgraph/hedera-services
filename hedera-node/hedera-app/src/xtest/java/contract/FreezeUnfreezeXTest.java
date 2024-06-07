@@ -54,12 +54,12 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associ
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.freeze.FreezeUnfreezeTranslator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.swirlds.state.spi.ReadableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Exercises freeze and unfreeze a token via the following steps relative to an {@code OWNER} account:
@@ -259,7 +259,7 @@ public class FreezeUnfreezeXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedTokenRelations(@NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
+    protected void assertExpectedTokenRelations(@NonNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
         assertTokenBalance(tokenRels, OWNER_ID, 900L);
         assertTokenBalance(tokenRels, RECEIVER_ID, 100L);
     }

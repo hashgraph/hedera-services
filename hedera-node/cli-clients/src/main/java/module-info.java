@@ -10,13 +10,8 @@ module com.hedera.node.services.cli {
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.contract;
-    requires com.hedera.node.app.spi;
     requires com.hedera.node.app;
     requires com.hedera.node.hapi;
-    requires com.google.common;
-    requires com.google.protobuf;
-    requires com.hedera.evm;
-    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions;
@@ -24,6 +19,10 @@ module com.hedera.node.services.cli {
     requires com.swirlds.merkle;
     requires com.swirlds.state.api;
     requires com.swirlds.virtualmap;
+    requires com.google.common;
+    requires com.google.protobuf;
+    requires com.hedera.evm;
+    requires com.hedera.pbj.runtime;
     requires io.github.classgraph;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;
