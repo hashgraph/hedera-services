@@ -39,7 +39,7 @@ public class StatefulEventHasher implements EventHasher {
             event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
             return event;
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("An exception occurred while trying to hash an event!", e);
         }
     }
 }
