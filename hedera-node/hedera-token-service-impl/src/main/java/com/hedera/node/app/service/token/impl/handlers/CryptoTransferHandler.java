@@ -662,11 +662,11 @@ public class CryptoTransferHandler implements TransactionHandler {
             if (account == null && isAlias(accountId)) {
                 associationsRbs += calculateHollowAccountAssociationsRbs(associationsMap, accountId);
             } else {
-                if (account != null) {
+                if (account != null && account.maxAutoAssociations() != 0) {
                     autoRenewSeconds = account.autoRenewSeconds();
+                    associationsRbs +=
+                            calculateAccountAssociationsRbs(associationsMap, tokenRelStore, accountId, autoRenewSeconds);
                 }
-                associationsRbs +=
-                        calculateAccountAssociationsRbs(associationsMap, tokenRelStore, accountId, autoRenewSeconds);
             }
         }
 
