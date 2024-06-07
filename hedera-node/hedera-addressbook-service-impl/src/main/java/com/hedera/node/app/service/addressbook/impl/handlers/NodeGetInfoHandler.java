@@ -120,7 +120,7 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
         } else {
             final var info = NodeInfo.newBuilder();
             info.nodeId(meta.nodeId());
-            if (meta.accountId() != null) info.accountId(meta.accountId());
+            info.accountId(meta.accountId());
             info.description(meta.description());
             info.gossipEndpoint(meta.gossipEndpoint());
             info.serviceEndpoint(meta.serviceEndpoint());

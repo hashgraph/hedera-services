@@ -56,7 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NodeGeInfoHandlerTest extends AddressBookTestBase {
+class NodeGetInfoHandlerTest extends AddressBookTestBase {
 
     @Mock
     private QueryContext context;
@@ -71,7 +71,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     @Test
     @DisplayName("Query header is extracted correctly")
     void extractsHeader() {
-        final var query = createGeNodeInfoQuery(nodeId.number());
+        final var query = createGetNodeInfoQuery(nodeId.number());
         final var header = subject.extractHeader(query);
         final var op = query.nodeGetInfoOrThrow();
         assertEquals(op.header(), header);
@@ -113,7 +113,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
     void validatesQueryWhenValidNode() {
         givenValidNode();
 
-        final var query = createGeNodeInfoQuery(nodeId.number());
+        final var query = createGetNodeInfoQuery(nodeId.number());
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableNodeStore.class)).willReturn(readableStore);
 
@@ -129,7 +129,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(state);
         final var store = new ReadableNodeStoreImpl(readableStates);
 
-        final var query = createGeNodeInfoQuery(-5L);
+        final var query = createGetNodeInfoQuery(-5L);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNodeStore.class)).thenReturn(store);
 
@@ -173,7 +173,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
                 HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
-        final var query = createGeNodeInfoQuery(nodeId.number());
+        final var query = createGetNodeInfoQuery(nodeId.number());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNodeStore.class)).thenReturn(readableStore);
 
@@ -192,7 +192,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
                 .build();
         final var expectedInfo = getExpectedInfo(false);
 
-        final var query = createGeNodeInfoQuery(nodeId.number());
+        final var query = createGetNodeInfoQuery(nodeId.number());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNodeStore.class)).thenReturn(readableStore);
 
@@ -221,7 +221,7 @@ class NodeGeInfoHandlerTest extends AddressBookTestBase {
                 .build();
     }
 
-    private Query createGeNodeInfoQuery(final long nodeId) {
+    private Query createGetNodeInfoQuery(final long nodeId) {
         final var data = NodeGetInfoQuery.newBuilder()
                 .nodeId(nodeId)
                 .header(QueryHeader.newBuilder().build())
