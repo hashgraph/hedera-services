@@ -41,7 +41,7 @@ Describe any new or modified configuration. Mark this section as N/A if not appl
 Describe any new or modified behavior. What are the new or modified algorithms and protocols? What is the threading
 model being used? Mark this section as N/A if not applicable.
 
-### Metrics
+## Metrics
 
 Are there new metrics? Are the computation of existing metrics changing? Are there expected observable metric impacts
 that change how someone should relate to the metric? Mark this section as N/A if not applicable.
