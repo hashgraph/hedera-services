@@ -22,8 +22,8 @@ plugins { id("com.hedera.gradle.spotless") }
 
 spotless {
     java {
-        targetExclude("build/generated/sources/**/*.java")
-        targetExclude("build/generated/source/**/*.java")
+        targetExclude("build/generated/sources/**/*.java", "build/generated/source/**/*.java")
+
         // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)
         addStep(RepairDashedCommentsFormatterStep.create())
         // Remove the old license headers as the spotless licenseHeader formatter
