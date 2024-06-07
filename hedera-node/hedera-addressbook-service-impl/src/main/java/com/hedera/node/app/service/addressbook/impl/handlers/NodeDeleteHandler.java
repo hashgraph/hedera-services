@@ -57,7 +57,9 @@ public class NodeDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {}
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        // Empty method
+    }
 
     /**
      * Given the appropriate context, deletes a node.
