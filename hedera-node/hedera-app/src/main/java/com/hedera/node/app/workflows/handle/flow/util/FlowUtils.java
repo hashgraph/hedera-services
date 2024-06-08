@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Set;
 
-public class DispatchUtils {
+public class FlowUtils {
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
     public static final Set<HederaFunctionality> CONTRACT_OPERATIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);

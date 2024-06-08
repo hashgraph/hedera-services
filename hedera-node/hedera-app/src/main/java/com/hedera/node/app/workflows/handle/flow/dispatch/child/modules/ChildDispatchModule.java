@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.child.modules;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -43,7 +42,6 @@ import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
-import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatch.DispatchLogic;
@@ -54,7 +52,6 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -97,12 +94,6 @@ public interface ChildDispatchModule {
             @NonNull SingleTransactionRecordBuilderImpl recordBuilder, @NonNull ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
-    }
-
-    @Provides
-    @ChildDispatchScope
-    static DueDiligenceInfo provideDueDiligenceInfo(NodeInfo creator) {
-        return new DueDiligenceInfo(creator.accountId(), ResponseCodeEnum.OK);
     }
 
     @Provides

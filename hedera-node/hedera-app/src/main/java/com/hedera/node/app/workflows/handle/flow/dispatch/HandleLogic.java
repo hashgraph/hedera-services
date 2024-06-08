@@ -24,11 +24,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.isContractOperation;
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
@@ -55,16 +56,13 @@ public class HandleLogic {
     }
 
     public WorkDone handle(Dispatch dispatch) {
-        if (isUnAuthorized(dispatch)) return WorkDone.FEES_ONLY;
+        assertAuthorized(dispatch);
 
         if (dispatch.userError() != OK) {
-            dispatch.recordBuilder().status(dispatch.userError());
-            return WorkDone.FEES_ONLY;
+            throw new HandleException(dispatch.userError());
         }
-
         if (hasInvalidSignature(dispatch)) {
-            dispatch.recordBuilder().status(INVALID_SIGNATURE);
-            return WorkDone.FEES_ONLY;
+            throw new HandleException(INVALID_SIGNATURE);
         }
         if (isContractOperation(dispatch)) {
             networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
@@ -76,12 +74,11 @@ public class HandleLogic {
         return WorkDone.USER_TRANSACTION;
     }
 
-    private boolean isUnAuthorized(final Dispatch dispatch) {
+    private void assertAuthorized(final Dispatch dispatch) {
         if (!authorizer.isAuthorized(
                 dispatch.syntheticPayer(), dispatch.txnInfo().functionality())) {
-            dispatch.recordBuilder()
-                    .status(dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED);
-            return true;
+            throw new HandleException(
+                    dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED);
         }
 
         final var privileges = authorizer.hasPrivilegedAuthorization(
@@ -89,13 +86,10 @@ public class HandleLogic {
                 dispatch.txnInfo().functionality(),
                 dispatch.txnInfo().txBody());
         if (privileges == SystemPrivilege.UNAUTHORIZED) {
-            dispatch.recordBuilder().status(AUTHORIZATION_FAILED);
-            return true;
+            throw new HandleException(AUTHORIZATION_FAILED);
         } else if (privileges == SystemPrivilege.IMPERMISSIBLE) {
-            dispatch.recordBuilder().status(ENTITY_NOT_ALLOWED_TO_DELETE);
-            return true;
+            throw new HandleException(ENTITY_NOT_ALLOWED_TO_DELETE);
         }
-        return false;
     }
 
     private static boolean hasInvalidSignature(final Dispatch dispatch) {

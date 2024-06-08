@@ -17,8 +17,8 @@
 package com.hedera.node.app.workflows.handle.flow.process;
 
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
-import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.ALERT_MESSAGE;
-import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.CONTRACT_OPERATIONS;
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 

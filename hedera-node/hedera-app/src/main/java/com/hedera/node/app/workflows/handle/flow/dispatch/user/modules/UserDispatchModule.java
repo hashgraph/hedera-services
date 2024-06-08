@@ -38,7 +38,6 @@ import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
@@ -50,7 +49,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -62,16 +60,6 @@ public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
     Dispatch bindDispatch(UserDispatchComponent userDispatchComponent);
-
-    @Provides
-    @UserDispatchScope
-    static DueDiligenceInfo provideDueDiligenceInfo(PreHandleResult preHandleResult, NodeInfo creator) {
-        return new DueDiligenceInfo(
-                creator.accountId(),
-                preHandleResult.status() != PreHandleResult.Status.SO_FAR_SO_GOOD
-                        ? preHandleResult.responseCode()
-                        : ResponseCodeEnum.OK);
-    }
 
     @Provides
     @UserDispatchScope

@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.ALERT_MESSAGE;
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -26,8 +25,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
-import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
-import com.hedera.node.app.workflows.handle.flow.ErrorReport;
 import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import com.hedera.node.app.workflows.handle.flow.records.RecordFinalizerlogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -49,7 +46,7 @@ import org.apache.logging.log4j.Logger;
 public class DispatchLogic {
     private static final Logger logger = LogManager.getLogger(DispatchLogic.class);
     private final Authorizer authorizer;
-    private final DueDiligenceLogic dueDiligenceLogic;
+    private final ErrorReportingLogic errorReportingLogic;
     private final HandleLogic handleLogic;
     private final RecordFinalizerlogic recordFinalizerlogic;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
@@ -59,14 +56,14 @@ public class DispatchLogic {
     @Inject
     public DispatchLogic(
             final Authorizer authorizer,
-            final DueDiligenceLogic dueDiligenceLogic,
+            final ErrorReportingLogic errorReportingLogic,
             final HandleLogic handleLogic,
             final RecordFinalizerlogic recordFinalizerlogic,
             final SystemFileUpdateFacility systemFileUpdateFacility,
             final PlatformStateUpdateFacility platformStateUpdateFacility,
             final ExchangeRateManager exchangeRateManager) {
         this.authorizer = authorizer;
-        this.dueDiligenceLogic = dueDiligenceLogic;
+        this.errorReportingLogic = errorReportingLogic;
         this.handleLogic = handleLogic;
         this.recordFinalizerlogic = recordFinalizerlogic;
         this.systemFileUpdateFacility = systemFileUpdateFacility;
@@ -80,15 +77,15 @@ public class DispatchLogic {
      * @param dispatch the dispatch to be processed
      */
     public WorkDone dispatch(@NonNull Dispatch dispatch, @NonNull final RecordListBuilder recordListBuilder) {
-        final var errorReport = dueDiligenceLogic.dueDiligenceReportFor(dispatch);
+        final var errorReport = errorReportingLogic.errorReportFor(dispatch);
         final WorkDone workDone;
-        if (errorReport.isDueDiligenceFailure()) {
+        if (errorReport.isCreatorError()) {
             chargeCreator(dispatch, errorReport);
             workDone = WorkDone.FEES_ONLY;
         } else {
             chargePayer(dispatch, errorReport);
-            if (errorReport.payerSolvency() != OK) {
-                dispatch.recordBuilder().status(errorReport.payerSolvency());
+            if (errorReport.isPayerSolvencyError()) {
+                dispatch.recordBuilder().status(errorReport.payerSolvencyErrorOrThrow());
                 workDone = WorkDone.FEES_ONLY;
             } else {
                 workDone = handleTransaction(dispatch, errorReport, recordListBuilder);
@@ -117,7 +114,6 @@ public class DispatchLogic {
             handleSystemUpdates(dispatch);
             return workDone;
         } catch (HandleException e) {
-            logger.info("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
             rollback(
                     e.shouldRollbackStack(),
@@ -169,10 +165,9 @@ public class DispatchLogic {
      * @param report the due diligence report for the dispatch
      */
     private void chargeCreator(final Dispatch dispatch, ErrorReport report) {
-        dispatch.recordBuilder().status(report.dueDiligenceInfo().dueDiligenceStatus());
+        dispatch.recordBuilder().status(report.creatorErrorOrThrow());
         dispatch.feeAccumulator()
-                .chargeNetworkFee(
-                        report.dueDiligenceInfo().creator(), dispatch.fees().networkFee());
+                .chargeNetworkFee(report.creatorId(), dispatch.fees().networkFee());
     }
 
     /**
@@ -192,15 +187,12 @@ public class DispatchLogic {
         if (report.unableToPayServiceFee() || report.isDuplicate()) {
             dispatch.feeAccumulator()
                     .chargeFees(
-                            report.payer().accountIdOrThrow(),
-                            report.dueDiligenceInfo().creator(),
+                            report.payerOrThrow().accountIdOrThrow(),
+                            report.creatorId(),
                             dispatch.fees().withoutServiceComponent());
         } else {
             dispatch.feeAccumulator()
-                    .chargeFees(
-                            report.payer().accountIdOrThrow(),
-                            report.dueDiligenceInfo().creator(),
-                            dispatch.fees());
+                    .chargeFees(report.payerOrThrow().accountIdOrThrow(), report.creatorId(), dispatch.fees());
         }
     }
 

@@ -27,14 +27,15 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * The context needed for executing business logic of a service. This has two implementations - one for user transactions scope
@@ -70,12 +71,6 @@ public interface Dispatch {
      * @return the store factory
      */
     ReadableStoreFactory readableStoreFactory();
-
-    /**
-     * The due diligence info for the transaction.
-     * @return the due diligence info
-     */
-    DueDiligenceInfo dueDiligenceInfo();
 
     /**
      * The fee accumulator for the transaction
@@ -151,4 +146,7 @@ public interface Dispatch {
     RecordListBuilder recordListBuilder();
 
     PlatformState platformState();
+
+    @Nullable // Dagger requires javax.annotation.Nullable
+    PreHandleResult preHandleResult();
 }
