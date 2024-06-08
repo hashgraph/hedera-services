@@ -57,7 +57,7 @@ public class HandleLogic {
 
     public WorkDone handle(Dispatch dispatch) {
         assertAuthorized(dispatch);
-        assertPureChecksPassed(dispatch);
+        assertPreHandlePassed(dispatch);
 
         if (hasInvalidSignature(dispatch)) {
             throw new HandleException(INVALID_SIGNATURE);
@@ -90,7 +90,7 @@ public class HandleLogic {
         }
     }
 
-    private void assertPureChecksPassed(Dispatch dispatch) {
+    private void assertPreHandlePassed(Dispatch dispatch) {
         final var preHandleResult = dispatch.preHandleResult();
         if (preHandleResult.responseCode() != OK) {
             throw new HandleException(preHandleResult.responseCode());

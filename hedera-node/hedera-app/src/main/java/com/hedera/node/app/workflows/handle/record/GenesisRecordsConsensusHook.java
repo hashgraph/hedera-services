@@ -76,13 +76,6 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
      * It would be great if we could find a way to not have to invoke this method multiple times...
      */
     public void process(@NonNull final TokenContext context) {
-        final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
-
-        // This process should only run ONCE, when a node receives its first transaction after startup
-        if (!shouldStreamRecords(blockStore, context)) {
-            return;
-        }
-
         final var consensusTime = context.consensusTime();
         boolean recordsStreamed = false;
 

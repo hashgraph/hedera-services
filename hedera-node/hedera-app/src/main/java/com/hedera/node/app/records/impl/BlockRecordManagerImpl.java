@@ -40,6 +40,7 @@ import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -378,6 +379,13 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
         // Cache the updated block info
         this.lastBlockInfo = newBlockInfo;
+    }
+
+    @Override
+    public boolean isGenesisTransaction() {
+        return lastBlockInfo.lastBlockNumber() == -1
+                && Objects.equals(
+                        lastBlockInfo.firstConsTimeOfCurrentBlock(), lastBlockInfo.consTimeOfLastHandledTxn());
     }
 
     /**

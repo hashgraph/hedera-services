@@ -19,11 +19,13 @@ package com.hedera.node.app.workflows.handle.flow.dispatch;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -58,19 +60,17 @@ public class ErrorReportingLogic {
             return ErrorReport.withCreatorError(dispatch.creatorInfo().accountId(), creatorError);
         } else {
             final var payer = getPayer(dispatch);
-
-            final var isPayerHollow = isHollow(payer);
-            if (!isPayerHollow) {
-                // We skip payer verification for hollow accounts because ingest only submits valid signatures for
-                // hollow payers, and if it is still hollow account at consensus its alias cannot have changed
-                // since ingest.
+            final var category = dispatch.txnCategory();
+            final var requiresPayerSig = category == USER || category == SCHEDULED;
+            if (requiresPayerSig && !isHollow(payer)) {
+                // Skip payer verification for hollow accounts because ingest only submits valid signatures
+                // for hollow payers; and if an account is still hollow here, its alias cannot have changed
                 final var verification = dispatch.keyVerifier().verificationFor(payer.keyOrThrow());
                 if (verification.failed()) {
                     return ErrorReport.withCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE);
                 }
             }
-
-            final var duplicateCheckResult = dispatch.txnCategory() != HandleContext.TransactionCategory.USER
+            final var duplicateCheckResult = category != USER
                     ? NO_DUPLICATE
                     : recordCache.hasDuplicate(
                             dispatch.txnInfo().txBody().transactionIDOrThrow(),
@@ -102,7 +102,8 @@ public class ErrorReportingLogic {
 
     private Account getPayer(final Dispatch dispatch) {
         try {
-            return solvencyPreCheck.getPayerAccount(dispatch.readableStoreFactory(), dispatch.syntheticPayer());
+            return solvencyPreCheck.getPayerAccount(
+                    dispatch.readableStoreFactory(), dispatch.syntheticPayer(), dispatch.txnCategory() == CHILD);
         } catch (Exception e) {
             throw new IllegalStateException("Missing payer should be a due diligence failure", e);
         }
@@ -119,7 +120,7 @@ public class ErrorReportingLogic {
 
     @Nullable
     private ResponseCodeEnum getExpiryError(final @NonNull Dispatch dispatch) {
-        if (dispatch.txnCategory() != HandleContext.TransactionCategory.USER) {
+        if (dispatch.txnCategory() != USER) {
             return null;
         }
         try {

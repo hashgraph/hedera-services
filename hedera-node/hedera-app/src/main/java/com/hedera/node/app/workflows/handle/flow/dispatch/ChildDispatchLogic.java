@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -113,7 +115,7 @@ public class ChildDispatchLogic {
             return new PreHandleResult(
                     null,
                     null,
-                    null,
+                    SO_FAR_SO_GOOD,
                     OK,
                     null,
                     preHandleContext.requiredNonPayerKeys(),
@@ -126,7 +128,7 @@ public class ChildDispatchLogic {
             return new PreHandleResult(
                     null,
                     null,
-                    null,
+                    PRE_HANDLE_FAILURE,
                     e.responseCode(),
                     null,
                     Collections.emptySet(),

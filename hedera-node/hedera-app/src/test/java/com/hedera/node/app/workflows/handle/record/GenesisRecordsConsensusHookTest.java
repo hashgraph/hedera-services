@@ -203,39 +203,6 @@ class GenesisRecordsConsensusHookTest {
         verify(context, never()).markMigrationRecordsStreamed();
     }
 
-    @Test
-    void processCreatesNoRecordsWhenNotFirstTransaction() {
-        given(context.isFirstTransaction()).willReturn(false);
-
-        // Add a single account, so we know the subject isn't skipping processing because there's no data
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        subject.stakingAccounts(accts);
-
-        subject.process(context);
-
-        verifyNoInteractions(genesisAccountRecordBuilder);
-        verify(context, never()).markMigrationRecordsStreamed();
-    }
-
-    @Test
-    void processCreatesNoRecordsWhenMigrationRecordsStreamed() {
-        given(blockStore.getLastBlockInfo())
-                .willReturn(defaultStartupBlockInfo()
-                        .copyBuilder()
-                        .migrationRecordsStreamed(true)
-                        .build());
-        // Add a single account, so we know the subject isn't skipping processing because there's no data
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        subject.stakingAccounts(accts);
-
-        subject.process(context);
-
-        verifyNoInteractions(genesisAccountRecordBuilder);
-        verify(context, never()).markMigrationRecordsStreamed();
-    }
-
     @SuppressWarnings("DataFlowIssue")
     @Test
     void systemAccountsNullParam() {

@@ -620,10 +620,10 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 customizer,
                 reversingBehavior);
         dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
-        //        logger.info(
-        //                "Dispatched child transaction {}, status {}",
-        //                childTxBody,
-        //                childDispatch.recordBuilder().status());
+        //                logger.error(
+        //                        "Dispatched child transaction {}, status {}",
+        //                        childTxBody,
+        //                        childDispatch.recordBuilder().status());
         if (commitStack) {
             stack.commitFullStack();
         }

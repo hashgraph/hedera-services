@@ -122,20 +122,21 @@ class SolvencyPreCheckTest extends AppTestBase {
             final var payerID = ALICE.accountID();
 
             // then
-            assertThatThrownBy(() -> subject.getPayerAccount(null, payerID)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, null))
+            assertThatThrownBy(() -> subject.getPayerAccount(null, payerID, false))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, null, false))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void testGetPayerAccountSuccess() {
-            assertThatCode(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
+            assertThatCode(() -> subject.getPayerAccount(storeFactory, ALICE.accountID(), false))
                     .doesNotThrowAnyException();
         }
 
         @Test
         void testGetUnknownPayerAccountFails() {
-            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, BOB.accountID()))
+            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, BOB.accountID(), false))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
         }
@@ -148,7 +149,7 @@ class SolvencyPreCheckTest extends AppTestBase {
                     ALICE.account().copyBuilder().deleted(true).build());
 
             // then
-            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
+            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID(), false))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_DELETED));
         }
@@ -161,7 +162,7 @@ class SolvencyPreCheckTest extends AppTestBase {
                     ALICE.account().copyBuilder().smartContract(true).build());
 
             // then
-            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
+            assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID(), false))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
         }

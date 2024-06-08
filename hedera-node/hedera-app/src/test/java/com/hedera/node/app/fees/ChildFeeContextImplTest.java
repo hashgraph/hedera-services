@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.fees;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -138,8 +139,6 @@ class ChildFeeContextImplTest {
 
     @Test
     void delegatesAuthorizer() {
-        given(context.authorizer()).willReturn(authorizer);
-
         assertSame(authorizer, subject.authorizer());
     }
 }

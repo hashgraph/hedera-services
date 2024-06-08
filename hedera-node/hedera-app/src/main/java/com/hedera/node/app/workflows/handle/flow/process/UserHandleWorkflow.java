@@ -43,7 +43,6 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -106,6 +105,22 @@ public class UserHandleWorkflow {
         }
     }
 
+    private Stream<SingleTransactionRecord> getComputedRecordStream() {
+        if (isOlderSoftwareEvent()) {
+            skipHandleProcess.processUserTransaction(userTxn);
+        } else {
+            final var isGenesisTxn = blockRecordManager.isGenesisTransaction();
+            if (isGenesisTxn) {
+                genesisHandleProcess.processUserTransaction(userTxn);
+            }
+            final var workDone = mainHandleProcess.processUserTransaction(userTxn);
+            updateMetrics(isGenesisTxn);
+            trackUsage(workDone);
+        }
+
+        return buildAndCacheResult(userTxn.recordListBuilder());
+    }
+
     private Stream<SingleTransactionRecord> getFailInvalidRecordStream() {
         final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
         final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
@@ -113,22 +128,6 @@ public class UserHandleWorkflow {
         recordBuilder.status(ResponseCodeEnum.FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
         return buildAndCacheResult(failInvalidRecordListBuilder);
-    }
-
-    private Stream<SingleTransactionRecord> getComputedRecordStream() {
-        if (isOlderSoftwareEvent()) {
-            skipHandleProcess.processUserTransaction(userTxn);
-        } else {
-            final var isFirstTxn = blockRecordManager.consTimeOfLastHandledTxn().equals(Instant.EPOCH);
-            if (isFirstTxn) {
-                genesisHandleProcess.processUserTransaction(userTxn);
-            }
-            final var workDone = mainHandleProcess.processUserTransaction(userTxn);
-            updateMetrics(isFirstTxn);
-            trackUsage(workDone);
-        }
-
-        return buildAndCacheResult(userTxn.recordListBuilder());
     }
 
     private void updateMetrics(final boolean isFirstTxn) {
