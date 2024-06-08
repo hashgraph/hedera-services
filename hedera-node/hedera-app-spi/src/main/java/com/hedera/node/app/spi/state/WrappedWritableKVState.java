@@ -22,8 +22,6 @@ import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link WritableKVState} that delegates to another {@link WritableKVState} as
@@ -34,7 +32,6 @@ import org.apache.logging.log4j.Logger;
  * @param <V> The value
  */
 public class WrappedWritableKVState<K, V> extends WritableKVStateBase<K, V> {
-    private static final Logger logger = LogManager.getLogger(WrappedWritableKVState.class);
     /**
      * The {@link WritableKVState} to delegate to for all read operations on cache miss, and for
      * committing changes

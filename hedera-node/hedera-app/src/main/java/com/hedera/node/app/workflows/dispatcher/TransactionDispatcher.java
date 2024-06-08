@@ -31,8 +31,6 @@ import com.hedera.node.app.spi.workflows.WarmupContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
@@ -44,7 +42,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class TransactionDispatcher {
-    private static final Logger logger = LogManager.getLogger(TransactionDispatcher.class);
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
     public static final String SYSTEM_DELETE_WITHOUT_ID_CASE = "SystemDelete without IdCase";
     public static final String SYSTEM_UNDELETE_WITHOUT_ID_CASE = "SystemUndelete without IdCase";

@@ -411,7 +411,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 syntheticPayerId,
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
-                numTxnSignatures()));
+                0));
     }
 
     @NonNull

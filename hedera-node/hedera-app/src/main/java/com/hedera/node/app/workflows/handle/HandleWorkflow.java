@@ -1036,6 +1036,9 @@ public class HandleWorkflow {
         return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);
     }
 
+    private record ValidationResult(
+            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}
+
     /**
      * Rolls back the stack and sets the status of the transaction in case of a failure.
      *

@@ -112,7 +112,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -191,7 +190,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
      * @param synchronizedThrottleAccumulator The {@link SynchronizedThrottleAccumulator} used to manage the tracking of frontend network throttling
      * @param platformState The {@link PlatformState} of the node
      */
-    @Inject
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaFunctionality functionality,
@@ -530,7 +528,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 syntheticPayerId,
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
-                numTxnSignatures()));
+                0));
     }
 
     @Override

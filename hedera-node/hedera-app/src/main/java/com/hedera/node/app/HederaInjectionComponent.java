@@ -48,7 +48,6 @@ import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -93,8 +92,6 @@ public interface HederaInjectionComponent {
     Provider<QueryInjectionComponent.Factory> queryComponentFactory();
 
     Provider<IngestInjectionComponent.Factory> ingestComponentFactory();
-
-    Provider<UserTransactionComponent.Factory> userTxnComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
 
