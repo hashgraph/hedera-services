@@ -22,7 +22,6 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -43,17 +42,12 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     /** The set of registered services */
     private final SortedSet<Registration> entries;
 
-    private final GenesisRecordsBuilder genesisRecords;
-
     /**
      * Creates a new registry.
      */
     @Inject
-    public ServicesRegistryImpl(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @NonNull final GenesisRecordsBuilder genesisRecords) {
+    public ServicesRegistryImpl(@NonNull final ConstructableRegistry constructableRegistry) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
-        this.genesisRecords = requireNonNull(genesisRecords);
         this.entries = new TreeSet<>();
     }
 
@@ -67,8 +61,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
-        final var registry =
-                new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords, new SchemaApplications());
+        final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, new SchemaApplications());
         service.registerSchemas(registry);
 
         entries.add(new Registration(service, registry));
@@ -79,11 +72,5 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     @Override
     public SortedSet<Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
-    }
-
-    @NonNull
-    @Override
-    public GenesisRecordsBuilder getGenesisRecords() {
-        return genesisRecords;
     }
 }

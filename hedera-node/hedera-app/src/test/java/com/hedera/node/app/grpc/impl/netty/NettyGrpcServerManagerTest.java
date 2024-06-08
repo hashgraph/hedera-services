@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -52,8 +51,7 @@ final class NettyGrpcServerManagerTest {
 
         this.configProvider = () -> new VersionedConfigImpl(config, 1);
         this.metrics = metrics;
-        this.services = new ServicesRegistryImpl(
-                ConstructableRegistry.getInstance(), new NoOpGenesisRecordsBuilder()); // An empty set of services
+        this.services = new ServicesRegistryImpl(ConstructableRegistry.getInstance()); // An empty set of services
         this.ingestWorkflow = (req, res) -> {};
         this.queryWorkflow = (req, res) -> {};
     }

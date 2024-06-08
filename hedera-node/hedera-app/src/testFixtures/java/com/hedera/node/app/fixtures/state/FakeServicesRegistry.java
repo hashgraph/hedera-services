@@ -17,9 +17,7 @@
 package com.hedera.node.app.fixtures.state;
 
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -36,7 +34,6 @@ public class FakeServicesRegistry implements ServicesRegistry {
     /** The set of registered services */
     private final SortedSet<ServicesRegistry.Registration> entries;
 
-    private final GenesisRecordsBuilder genesisRecordsBuilder = new NoOpGenesisRecordsBuilder();
     /**
      * Creates a new registry.
      */
@@ -68,11 +65,5 @@ public class FakeServicesRegistry implements ServicesRegistry {
     @Override
     public SortedSet<FakeServicesRegistry.Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
-    }
-
-    @NonNull
-    @Override
-    public GenesisRecordsBuilder getGenesisRecords() {
-        return genesisRecordsBuilder;
     }
 }

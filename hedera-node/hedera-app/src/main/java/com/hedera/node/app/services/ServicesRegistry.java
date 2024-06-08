@@ -20,16 +20,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Set;
-import javax.inject.Singleton;
 
 /**
  * A registry providing access to all services registered with the application.
  */
-@Singleton
 public interface ServicesRegistry {
     /**
      * A record of a service registration.
@@ -61,13 +58,6 @@ public interface ServicesRegistry {
      */
     @NonNull
     Set<Registration> registrations();
-
-    /**
-     * Gets the genesis records builder.
-     * @return The genesis records builder
-     */
-    @NonNull
-    GenesisRecordsBuilder getGenesisRecords();
 
     /**
      * Register a service with the registry.

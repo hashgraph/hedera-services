@@ -58,8 +58,6 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
@@ -187,10 +185,6 @@ public interface BaseScaffoldingModule {
     @Singleton
     Authorizer bindAuthorizer(AuthorizerImpl authorizer);
 
-    @Binds
-    @Singleton
-    ServicesRegistry bindServicesRegistry(ServicesRegistryImpl servicesRegistry);
-
     @Provides
     @Singleton
     static Signer provideSigner() {
@@ -242,7 +236,6 @@ public interface BaseScaffoldingModule {
             @NonNull final Configuration configuration,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
-        final var consensusTime = Instant.now();
         return (query, payerId) -> new QueryContextImpl(
                 state,
                 new ReadableStoreFactory(state),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,25 @@
 
 package com.hedera.node.app.info;
 
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * Provides information about the network, including the ledger ID, which may be
+ * Provides information about the network, but NOT the ledger ID, which may be
  * overridden by configuration in state and cannot be used during state migrations
  * that precede loading configuration sources from state.
  */
-@Singleton
-public class NetworkInfoImpl extends AbstractNetworkInfoImpl implements NetworkInfo {
-    private final Bytes ledgerId;
-
-    @Inject
-    public NetworkInfoImpl(
-            @NonNull final SelfNodeInfo selfNode,
-            @NonNull final Platform platform,
-            @NonNull final ConfigProvider configProvider) {
+public class UnavailableLedgerIdNetworkInfo extends AbstractNetworkInfoImpl implements NetworkInfo {
+    public UnavailableLedgerIdNetworkInfo(@NonNull final SelfNodeInfo selfNode, @NonNull final Platform platform) {
         super(selfNode, platform);
-        // Load the ledger ID from configuration
-        final var config = configProvider.getConfiguration();
-        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
-        ledgerId = ledgerConfig.id();
     }
 
     @NonNull
     @Override
     public Bytes ledgerId() {
-        return ledgerId;
+        throw new UnsupportedOperationException("Ledger ID is not available");
     }
 }

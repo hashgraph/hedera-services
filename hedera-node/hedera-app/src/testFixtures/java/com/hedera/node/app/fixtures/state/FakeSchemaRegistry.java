@@ -20,7 +20,6 @@ import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -33,7 +32,6 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -107,12 +105,6 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 @Override
                 public Configuration configuration() {
                     return ConfigurationBuilder.create().build();
-                }
-
-                @NonNull
-                @Override
-                public GenesisRecordsBuilder genesisRecordsBuilder() {
-                    return new NoOpGenesisRecordsBuilder();
                 }
 
                 @Override

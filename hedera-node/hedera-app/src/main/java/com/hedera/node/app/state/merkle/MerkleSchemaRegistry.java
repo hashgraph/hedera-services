@@ -56,7 +56,6 @@ import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -97,10 +96,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     private final SortedSet<Schema> schemas = new TreeSet<>();
     /**
-     * Stores system entities created during genesis until the node can build synthetic records
-     */
-    private final GenesisRecordsBuilder genesisRecordsBuilder;
-    /**
      * The analysis to use when determining how to apply a schema.
      */
     private final SchemaApplications schemaApplications;
@@ -111,17 +106,14 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param constructableRegistry The {@link ConstructableRegistry} to register states with for
      * deserialization
      * @param serviceName The name of the service using this registry.
-     * @param genesisRecordsBuilder class used to store entities created at genesis
      * @param schemaApplications the analysis to use when determining how to apply a schema
      */
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final String serviceName,
-            @NonNull final GenesisRecordsBuilder genesisRecordsBuilder,
             @NonNull final SchemaApplications schemaApplications) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
-        this.genesisRecordsBuilder = requireNonNull(genesisRecordsBuilder);
         this.schemaApplications = requireNonNull(schemaApplications);
     }
 
@@ -240,14 +232,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 newStates = writableStates = state.getWritableStates(serviceName);
             }
             final var migrationContext = new MigrationContextImpl(
-                    previousStates,
-                    newStates,
-                    config,
-                    networkInfo,
-                    genesisRecordsBuilder,
-                    entityIdStore,
-                    previousVersion,
-                    sharedValues);
+                    previousStates, newStates, config, networkInfo, entityIdStore, previousVersion, sharedValues);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }
@@ -259,8 +244,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 mws.commit();
             }
             // And finally we can remove any states we need to remove
-            schema.statesToRemove()
-                    .forEach(stateKey -> ((MerkleHederaState) state).removeServiceState(serviceName, stateKey));
+            schema.statesToRemove().forEach(stateKey -> state.removeServiceState(serviceName, stateKey));
         }
     }
 

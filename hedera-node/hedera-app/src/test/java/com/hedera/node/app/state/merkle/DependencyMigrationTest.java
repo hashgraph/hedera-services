@@ -26,7 +26,6 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.OrderedServiceMigrator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -135,7 +134,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @DisplayName("Genesis inter-service dependency migration works")
     void genesisWithNullVersion() {
         // Given: register the EntityIdService and the DependentService (order of registration shouldn't matter)
-        final var servicesRegistry = new ServicesRegistryImpl(registry, new NoOpGenesisRecordsBuilder());
+        final var servicesRegistry = new ServicesRegistryImpl(registry);
         final var entityService = new EntityIdService() {
             @Override
             public void registerSchemas(@NonNull final SchemaRegistry registry) {
@@ -191,7 +190,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         // Given: register four services, each with their own schema migration, that will add an object to
         // orderedInvocations during migration. We'll do this to track the order of the service migrations
-        final var servicesRegistry = new ServicesRegistryImpl(registry, new NoOpGenesisRecordsBuilder());
+        final var servicesRegistry = new ServicesRegistryImpl(registry);
         // Define the Entity ID Service:
         final EntityIdService entityIdService = new EntityIdService() {
             @Override

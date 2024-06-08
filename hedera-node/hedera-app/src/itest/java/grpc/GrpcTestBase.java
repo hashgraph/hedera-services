@@ -23,7 +23,6 @@ import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -181,8 +180,7 @@ abstract class GrpcTestBase extends TestBase {
             }
         };
 
-        final var servicesRegistry =
-                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), new NoOpGenesisRecordsBuilder());
+        final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance());
         servicesRegistry.register(testService);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(

@@ -29,7 +29,6 @@ import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -74,14 +73,7 @@ final class FileSchemaTest {
 
         // When we migrate
         schema.migrate(new MigrationContextImpl(
-                prevStates,
-                newStates,
-                config,
-                networkInfo,
-                new GenesisRecordsConsensusHook(),
-                mock(WritableEntityIdStore.class),
-                null,
-                new HashMap<>()));
+                prevStates, newStates, config, networkInfo, mock(WritableEntityIdStore.class), null, new HashMap<>()));
 
         // Then the new state has empty bytes for files 151-158 and proper values
         final var files = newStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);

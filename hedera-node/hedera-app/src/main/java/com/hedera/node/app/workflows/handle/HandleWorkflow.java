@@ -388,9 +388,10 @@ public class HandleWorkflow {
                 recordListBuilder,
                 blockRecordManager,
                 isFirstTransaction);
-        // Do any one-time work for the first transaction after genesis;
-        // overhead for all following transactions is effectively zero
-        genesisRecordsTimeHook.process(tokenServiceContext);
+        // Export synthetic records for the system accounts created in GENESIS onStateInitialized()
+        if (isFirstTransaction) {
+            genesisRecordsTimeHook.process(tokenServiceContext);
+        }
         try {
             // If this is the first user transaction after midnight, then handle staking updates prior to handling the
             // transaction itself.

@@ -29,10 +29,9 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
@@ -49,7 +48,7 @@ import org.apache.logging.log4j.Logger;
  * the corresponding synthetic records when a consensus time becomes available.
  */
 @Singleton
-public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
+public class GenesisRecordsConsensusHook {
     private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHook.class);
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
@@ -62,97 +61,82 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
     private SortedSet<Account> miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
+    private final SyntheticAccountCreator syntheticAccountCreator;
 
     @Inject
-    public GenesisRecordsConsensusHook() {}
+    public GenesisRecordsConsensusHook(@NonNull final SyntheticAccountCreator syntheticAccountCreator) {
+        this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
+    }
 
     /**
-     * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,
-     * the records created by this class should only be created once.</b> After each data structure's
-     * account records are created, each corresponding data structure is intentionally emptied ⚠️⚠️
-     * <p>
-     * It would be great if we could find a way to not have to invoke this method multiple times...
+     * Called only once, before handling the first transaction in network history.
+     *
+     * @throws NullPointerException if called more than once
      */
     public void process(@NonNull final TokenContext context) {
-        final var blockStore = context.readableStore(ReadableBlockRecordStore.class);
+        final var firstConsensusTime = context.consensusTime();
+        log.info("Exporting genesis records at {}", firstConsensusTime);
+        // The account creator registers all its synthetics accounts based on the
+        // given genesis configuration via callbacks on this object, so following
+        // references to our field sets are guaranteed to be non-empty as appropriate
+        syntheticAccountCreator.generateSyntheticAccounts(
+                context.configuration(),
+                this::systemAccounts,
+                this::stakingAccounts,
+                this::treasuryClones,
+                this::miscAccounts,
+                this::blocklistAccounts);
 
-        // This process should only run ONCE, when a node receives its first transaction after startup
-        if (!shouldStreamRecords(blockStore, context)) {
-            return;
-        }
-
-        final var consensusTime = context.consensusTime();
-        boolean recordsStreamed = false;
-
-        final var numSysAccts = systemAccounts.size();
         if (!systemAccounts.isEmpty()) {
             createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
-            systemAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
-            recordsStreamed = true;
+            log.info(" - Queued {} system account records", systemAccounts.size());
+            systemAccounts = null;
         }
-        log.info("Queued {} system account records with consTime {}", numSysAccts, consensusTime);
 
-        final var numStakingAccts = stakingAccounts.size();
         if (!stakingAccounts.isEmpty()) {
-            final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - consensusTime.getEpochSecond();
+            final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - firstConsensusTime.getEpochSecond();
             createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
-            stakingAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
-            recordsStreamed = true;
+            log.info("Queued {} staking account records", stakingAccounts.size());
+            stakingAccounts = null;
         }
-        log.info("Queued {} staking account records with consTime {}", numStakingAccts, consensusTime);
 
-        final var numMiscAccts = miscAccounts.size();
         if (!miscAccounts.isEmpty()) {
             createAccountRecordBuilders(miscAccounts, context, null);
-            miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
-            recordsStreamed = true;
+            log.info("Queued {} misc account records", miscAccounts.size());
+            miscAccounts = null;
         }
-        log.info("Queued {} misc account records with consTime {}", numMiscAccts, consensusTime);
 
-        final var numTreasuryClones = treasuryClones.size();
         if (!treasuryClones.isEmpty()) {
             createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
-            treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
-            recordsStreamed = true;
+            log.info("Queued {} treasury clone account records", treasuryClones.size());
+            treasuryClones = null;
         }
-        log.info("Queued {} treasury clone account records with consTime {}", numTreasuryClones, consensusTime);
 
-        final var numBlocklistAccts = blocklistAccounts.size();
         if (!blocklistAccounts.isEmpty()) {
             createAccountRecordBuilders(blocklistAccounts, context, null);
-            blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
-            recordsStreamed = true;
-        }
-        log.info("Queued {} blocklist account records with consTime {}", numBlocklistAccts, consensusTime);
-
-        if (recordsStreamed) {
-            context.markMigrationRecordsStreamed();
+            log.info("Queued {} blocklist account records", blocklistAccounts.size());
+            blocklistAccounts = null;
         }
     }
 
-    @Override
     public void systemAccounts(@NonNull final SortedSet<Account> accounts) {
-        systemAccounts.addAll(requireNonNull(accounts));
+        requireNonNull(systemAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    @Override
     public void stakingAccounts(@NonNull final SortedSet<Account> accounts) {
-        stakingAccounts.addAll(requireNonNull(accounts));
+        requireNonNull(stakingAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    @Override
     public void miscAccounts(@NonNull final SortedSet<Account> accounts) {
-        miscAccounts.addAll(requireNonNull(accounts));
+        requireNonNull(miscAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    @Override
     public void treasuryClones(@NonNull final SortedSet<Account> accounts) {
-        treasuryClones.addAll(requireNonNull(accounts));
+        requireNonNull(treasuryClones, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    @Override
     public void blocklistAccounts(@NonNull final SortedSet<Account> accounts) {
-        blocklistAccounts.addAll(requireNonNull(accounts));
+        requireNonNull(blocklistAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
     private void createAccountRecordBuilders(
@@ -214,13 +198,5 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
                         .build())
                 .initialBalance(account.tinybarBalance())
                 .alias(account.alias());
-    }
-
-    private static boolean shouldStreamRecords(
-            @NonNull final ReadableBlockRecordStore blockStore, @NonNull final TokenContext context) {
-        // ONLY stream actual records when:
-        // 1. This is the first transaction after startup, and
-        // 2. We haven't streamed any migration records yet
-        return context.isFirstTransaction() && !blockStore.getLastBlockInfo().migrationRecordsStreamed();
     }
 }

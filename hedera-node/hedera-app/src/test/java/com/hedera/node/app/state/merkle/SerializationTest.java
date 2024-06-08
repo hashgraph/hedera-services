@@ -42,7 +42,6 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig_;
@@ -229,8 +228,7 @@ class SerializationTest extends MerkleTestBase {
 
     private MerkleHederaState loadeMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
-        final var newRegistry = new MerkleSchemaRegistry(
-                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
+        final var newRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, new SchemaApplications());
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -257,8 +255,7 @@ class SerializationTest extends MerkleTestBase {
     private MerkleHederaState createMerkleHederaState(Schema schemaV1) {
         final var v1 = version(1, 0, 0);
         final var originalTree = new MerkleHederaState(lifecycles);
-        final var originalRegistry = new MerkleSchemaRegistry(
-                registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications());
+        final var originalRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, new SchemaApplications());
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(
                 originalTree,

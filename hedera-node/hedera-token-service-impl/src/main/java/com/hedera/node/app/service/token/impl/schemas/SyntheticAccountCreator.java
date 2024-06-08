@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.schemas;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
@@ -30,20 +31,23 @@ import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.LongStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * This class generates synthetic records for all reserved system accounts
  */
-public class SyntheticRecordsGenerator {
-    private static final Logger log = LogManager.getLogger(SyntheticRecordsGenerator.class);
+@Singleton
+public class SyntheticAccountCreator {
+    private static final Logger log = LogManager.getLogger(SyntheticAccountCreator.class);
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;
     private static final long LAST_RESERVED_SYSTEM_CONTRACT = 399L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
@@ -58,7 +62,8 @@ public class SyntheticRecordsGenerator {
     /**
      * Create a new instance
      */
-    public SyntheticRecordsGenerator() {
+    @Inject
+    public SyntheticAccountCreator() {
         blocklistParser = new BlocklistParser();
     }
 
@@ -66,7 +71,7 @@ public class SyntheticRecordsGenerator {
      * Returns the synthetic records for system accounts
      * @return the set of accounts for which records are generated
      */
-    public SortedSet<Account> sysAcctRecords() {
+    public SortedSet<Account> systemAccounts() {
         return systemAcctRcds;
     }
 
@@ -74,7 +79,7 @@ public class SyntheticRecordsGenerator {
      * Returns the synthetic records for staking accounts
      * @return the set of accounts for which records are generated
      */
-    public SortedSet<Account> stakingAcctRecords() {
+    public SortedSet<Account> stakingAccounts() {
         return stakingAcctRcds;
     }
 
@@ -82,7 +87,7 @@ public class SyntheticRecordsGenerator {
      * Returns the synthetic records for treasury accounts
      * @return the set of accounts for which records are generated
      */
-    public SortedSet<Account> treasuryAcctRecords() {
+    public SortedSet<Account> treasuryClones() {
         return treasuryAcctRcds;
     }
 
@@ -90,7 +95,7 @@ public class SyntheticRecordsGenerator {
      * Returns the synthetic records for multi-use accounts
      * @return the set of accounts for which records are generated
      */
-    public SortedSet<Account> multiUseAcctRecords() {
+    public SortedSet<Account> multiUseAccounts() {
         return multiUseAcctRcds;
     }
 
@@ -98,7 +103,7 @@ public class SyntheticRecordsGenerator {
      * Returns the synthetic records for blocklist accounts
      * @return the set of accounts for which records are generated
      */
-    public SortedSet<Account> blocklistAcctRecords() {
+    public SortedSet<Account> blocklistAccounts() {
         return blocklistAcctRcds;
     }
 
@@ -107,10 +112,26 @@ public class SyntheticRecordsGenerator {
      * Actually, this method creates {@link Account} objects; since these objects will ultimately be
      * written to the record stream later, we'll refer to them as "records" throughout this method.
      * @param configuration the current configuration of the node
-     * @param recordsKeeper the record builder that tracks the synthetic records
+     * @param systemAccountsCb a callback to receive the system accounts
+     * @param stakingAccountsCb a callback to receive the staking accounts
+     * @param treasuryClonesCb a callback to receive the treasury clones
+     * @param multiUseAccountsCb a callback to receive the multi-use accounts
+     * @param blocklistAccountsCb a callback to receive the blocklist accounts
      */
-    public void createRecords(
-            @NonNull final Configuration configuration, @NonNull final GenesisRecordsBuilder recordsKeeper) {
+    public void generateSyntheticAccounts(
+            @NonNull final Configuration configuration,
+            @NonNull final Consumer<SortedSet<Account>> systemAccountsCb,
+            @NonNull final Consumer<SortedSet<Account>> stakingAccountsCb,
+            @NonNull final Consumer<SortedSet<Account>> treasuryClonesCb,
+            @NonNull final Consumer<SortedSet<Account>> multiUseAccountsCb,
+            @NonNull final Consumer<SortedSet<Account>> blocklistAccountsCb) {
+        requireNonNull(configuration);
+        requireNonNull(systemAccountsCb);
+        requireNonNull(stakingAccountsCb);
+        requireNonNull(treasuryClonesCb);
+        requireNonNull(multiUseAccountsCb);
+        requireNonNull(blocklistAccountsCb);
+
         // We will use these various configs for creating accounts. It would be nice to consolidate them somehow
         final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
         final var bootstrapConfig = configuration.getConfigData(BootstrapConfig.class);
@@ -135,8 +156,8 @@ public class SyntheticRecordsGenerator {
             final var account = createAccount(id, accountTinyBars, bootstrapConfig.systemEntityExpiry(), superUserKey);
             systemAcctRcds.add(account);
         }
-        recordsKeeper.systemAccounts(systemAcctRcds);
-        log.info("Created {} synthetic system records", sysAcctRecords().size());
+        systemAccountsCb.accept(systemAcctRcds);
+        log.info("Created {} synthetic system records", systemAccounts().size());
 
         // ---------- Create staking fund records -------------------------
         final var stakingRewardAccountId = asAccountId(accountsConfig.stakingRewardAccount(), hederaConfig);
@@ -146,7 +167,7 @@ public class SyntheticRecordsGenerator {
             final var stakingFundAccount = createAccount(id, 0, FUNDING_ACCOUNT_EXPIRY, EMPTY_KEY_LIST);
             stakingAcctRcds.add(stakingFundAccount);
         }
-        recordsKeeper.stakingAccounts(stakingAcctRcds);
+        stakingAccountsCb.accept(stakingAcctRcds);
         log.info("Created {} synthetic staking records", stakingAcctRcds.size());
 
         // ---------- Create multi-use records -------------------------
@@ -155,7 +176,7 @@ public class SyntheticRecordsGenerator {
             final var account = createAccount(id, 0, bootstrapConfig.systemEntityExpiry(), superUserKey);
             multiUseAcctRcds.add(account);
         }
-        recordsKeeper.miscAccounts(multiUseAcctRcds);
+        multiUseAccountsCb.accept(multiUseAcctRcds);
         log.info("Created {} synthetic multi-use records", multiUseAcctRcds.size());
 
         // ---------- Create treasury clones -------------------------
@@ -174,7 +195,7 @@ public class SyntheticRecordsGenerator {
                     treasury.declineReward());
             treasuryAcctRcds.add(nextClone);
         }
-        recordsKeeper.treasuryClones(treasuryAcctRcds);
+        treasuryClonesCb.accept(treasuryAcctRcds);
         log.info(
                 "Created {} zero-balance synthetic records cloning treasury properties in the {}-{} range",
                 treasuryAcctRcds.size(),
@@ -186,11 +207,13 @@ public class SyntheticRecordsGenerator {
             final var blocklistResourceName = accountsConfig.blocklistResource();
             final var blocklist = blocklistParser.parse(blocklistResourceName);
             if (!blocklist.isEmpty()) {
-                int counter = 0;
+                long nextUserIdNum = hederaConfig.firstUserEntity();
                 for (final var blockedInfo : blocklist) {
                     final var acctBldr = blockedAccountWith(blockedInfo, bootstrapConfig)
-                            // add a PLACEHOLDER account ID
-                            .accountId(asAccountId(++counter, hederaConfig));
+                            // This must be the first number assigned by the entity id store
+                            // during genesis migration of the token service schemas; we will
+                            // throw there if this invariant is violated
+                            .accountId(asAccountId(nextUserIdNum++, hederaConfig));
                     blocklistAcctRcds.add(acctBldr.build());
                 }
             } else if (log.isDebugEnabled()) {
@@ -199,7 +222,7 @@ public class SyntheticRecordsGenerator {
         }
         // Note: These account objects don't yet have CORRECT IDs! We will create or look up the real entity IDs when
         // the EntityIDService becomes available
-        recordsKeeper.blocklistAccounts(blocklistAcctRcds);
+        blocklistAccountsCb.accept(blocklistAcctRcds);
         log.info("Created {} PLACEHOLDER synthetic blocklist records", blocklistAcctRcds.size());
     }
 

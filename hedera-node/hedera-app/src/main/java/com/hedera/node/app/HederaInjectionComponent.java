@@ -44,7 +44,6 @@ import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
@@ -156,9 +155,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
-
-        @BindsInstance
-        Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
 
         @BindsInstance
         Builder softwareVersion(SoftwareVersion softwareVersion);

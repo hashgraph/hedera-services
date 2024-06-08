@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -39,7 +38,6 @@ import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -72,8 +70,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         // We don't need a real registry, and the unit tests are much
         // faster if we use a mocked one
         registry = mock(ConstructableRegistry.class);
-        schemaRegistry = new MerkleSchemaRegistry(
-                registry, FIRST_SERVICE, new NoOpGenesisRecordsBuilder(), new SchemaApplications());
+        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, new SchemaApplications());
         config = mock(Configuration.class);
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -87,8 +84,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null ConstructableRegistry throws")
         void nullRegistryThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(
-                            null, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), new SchemaApplications()))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(null, FIRST_SERVICE, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -96,8 +92,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null serviceName throws")
         void nullServiceNameThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(
-                            registry, null, mock(GenesisRecordsBuilder.class), new SchemaApplications()))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -105,7 +100,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null genesisRecordsBuilder throws")
         void nullGenesisRecordsBuilderThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, null, new SchemaApplications()))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -113,8 +108,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null schemaUseAnalysis throws")
         void nullSchemaUseAnalysisBuilderThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() ->
-                            new MerkleSchemaRegistry(registry, FIRST_SERVICE, mock(GenesisRecordsBuilder.class), null))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
