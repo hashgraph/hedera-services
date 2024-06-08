@@ -69,7 +69,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
@@ -85,9 +84,6 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -96,6 +92,8 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Provider;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The HandleContext Implementation
@@ -199,7 +197,6 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public TransactionBody body() {
-        logger.info("Transaction body {}", txnInfo);
         return txnInfo.txBody();
     }
 
@@ -332,7 +329,8 @@ public class FlowHandleContext implements HandleContext, FeeContext {
 
     @Override
     public boolean isSuperUser() {
-        throw new UnsupportedOperationException("This method should be deleted");
+        // FUTURE stop explicitly charging fees in CryptoTransferHandler, delete this method
+        return true;
     }
 
     @Override
@@ -622,11 +620,10 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 customizer,
                 reversingBehavior);
         dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
-        logger.info(
-                "Dispatched child transaction {}, status {}",
-                childTxBody,
-                childDispatch.recordBuilder().status()
-        );
+        //        logger.info(
+        //                "Dispatched child transaction {}, status {}",
+        //                childTxBody,
+        //                childDispatch.recordBuilder().status());
         if (commitStack) {
             stack.commitFullStack();
         }

@@ -234,7 +234,7 @@ public class PrivilegesVerifier {
         final var targetId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
         final long targetNum = targetId.accountNumOrElse(0L);
         final var treasury = accountsConfig.treasury();
-        final var payerNum = payerId.accountNumOrThrow();
+        final var payerNum = payerId.accountNumOrElse(0L);
 
         if (!isSystemEntity(targetNum)) {
             return UNNECESSARY;

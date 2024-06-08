@@ -28,13 +28,11 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
@@ -147,7 +145,6 @@ public class TransactionDispatcher {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
         try {
-            logger.error("Dispatching handle for transaction: {}", context.body());
             final var handler = getHandler(context.body());
             handler.handle(context);
         } catch (UnsupportedOperationException ex) {
