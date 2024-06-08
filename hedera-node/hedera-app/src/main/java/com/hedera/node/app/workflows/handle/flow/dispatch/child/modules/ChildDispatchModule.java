@@ -25,6 +25,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -142,10 +143,13 @@ public interface ChildDispatchModule {
     @ChildDispatchScope
     static FinalizeContext provideTriggeredFinalizeContext(
             @ChildQualifier @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @ChildQualifier @NonNull final SavepointStackImpl stack,
             @NonNull final Instant consensusNow,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
+        final var writableStoreFactory =
+                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
         return new TriggeredFinalizeContext(
                 readableStoreFactory, writableStoreFactory, recordBuilder, consensusNow, configuration);
     }

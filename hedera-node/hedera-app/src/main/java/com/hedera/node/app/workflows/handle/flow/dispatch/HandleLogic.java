@@ -62,6 +62,7 @@ public class HandleLogic {
         if (hasInvalidSignature(dispatch)) {
             throw new HandleException(INVALID_SIGNATURE);
         }
+
         if (isContractOperation(dispatch)) {
             networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {

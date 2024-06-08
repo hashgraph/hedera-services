@@ -42,6 +42,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -70,6 +72,8 @@ import javax.inject.Inject;
  */
 @UserTxnScope
 public final class RecordListBuilder {
+    private static final Logger logger = LogManager.getLogger(RecordListBuilder.class);
+
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
     private static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
             ResponseCodeEnum.OK,
@@ -360,6 +364,16 @@ public final class RecordListBuilder {
             // or close to it.
             index = childRecordBuilders.lastIndexOf(recordBuilder) + 1;
             if (index == 0) {
+                if (precedingTxnRecordBuilders.contains(recordBuilder)) {
+                    return;
+                }
+                logger.info(
+                        " this {}, doesn't have child {} in list {}",
+                        System.identityHashCode(this),
+                        System.identityHashCode(recordBuilder),
+                        childRecordBuilders.stream()
+                                .map(System::identityHashCode)
+                                .toList());
                 throw new IllegalArgumentException("recordBuilder not found");
             }
         }

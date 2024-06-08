@@ -24,15 +24,18 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -59,7 +62,8 @@ public class ErrorReportingLogic {
         if (creatorError != null) {
             return ErrorReport.withCreatorError(dispatch.creatorInfo().accountId(), creatorError);
         } else {
-            final var payer = getPayer(dispatch);
+            final var payer =
+                    getPayerAccount(dispatch.readableStoreFactory(), dispatch.syntheticPayer(), dispatch.txnCategory());
             final var category = dispatch.txnCategory();
             final var requiresPayerSig = category == USER || category == SCHEDULED;
             if (requiresPayerSig && !isHollow(payer)) {
@@ -100,22 +104,14 @@ public class ErrorReportingLogic {
         return ErrorReport.withNoError(creatorId, payer);
     }
 
-    private Account getPayer(final Dispatch dispatch) {
-        try {
-            return solvencyPreCheck.getPayerAccount(
-                    dispatch.readableStoreFactory(), dispatch.syntheticPayer(), dispatch.txnCategory() == CHILD);
-        } catch (Exception e) {
-            throw new IllegalStateException("Missing payer should be a due diligence failure", e);
-        }
-    }
-
     @Nullable
     private ResponseCodeEnum creatorErrorIfKnown(@NonNull final Dispatch dispatch) {
         final var preHandleResult = dispatch.preHandleResult();
-        if (preHandleResult == null || preHandleResult.status() == PreHandleResult.Status.SO_FAR_SO_GOOD) {
-            return getExpiryError(dispatch);
-        }
-        return preHandleResult.responseCode();
+        return switch (preHandleResult.status()) {
+            case NODE_DUE_DILIGENCE_FAILURE -> preHandleResult.responseCode();
+            case SO_FAR_SO_GOOD -> getExpiryError(dispatch);
+            case UNKNOWN_FAILURE, PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, PRE_HANDLE_FAILURE -> null;
+        };
     }
 
     @Nullable
@@ -132,5 +128,30 @@ public class ErrorReportingLogic {
             return e.responseCode();
         }
         return null;
+    }
+
+    Account getPayerAccount(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final AccountID accountID,
+            @NonNull final HandleContext.TransactionCategory category) {
+        final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+        final var account = accountStore.getAccountById(accountID);
+        return switch (category) {
+            case USER -> {
+                if (account == null || account.deleted() || account.smartContract()) {
+                    throw new IllegalStateException(
+                            "Category " + category + " Payer account should have been rejected " + account);
+                }
+                yield account;
+            }
+            case CHILD, PRECEDING -> account == null ? Account.DEFAULT : account;
+            case SCHEDULED -> {
+                if (account == null || account.smartContract()) {
+                    throw new IllegalStateException(
+                            "Category " + category + " Payer account should have been rejected " + account);
+                }
+                yield account;
+            }
+        };
     }
 }

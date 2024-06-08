@@ -30,12 +30,15 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provider of the child record builder based on the dispatched child transaction category
  */
 @Singleton
 public class ChildRecordBuilderFactory {
+    private static final Logger logger = LogManager.getLogger(ChildRecordBuilderFactory.class);
     private final ChildRecordInitializer childRecordInitializer;
 
     @Inject
@@ -61,6 +64,12 @@ public class ChildRecordBuilderFactory {
             HandleContext.TransactionCategory childCategory,
             SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable final ExternalizedRecordCustomizer customizer) {
+        logger.info(
+                "Creating record builder for child category: {} and reversing behavior: {} , "
+                        + "using recordListBuilder {}",
+                childCategory,
+                reversingBehavior,
+                System.identityHashCode(recordListBuilder));
         final SingleTransactionRecordBuilderImpl recordBuilder;
         if (childCategory == PRECEDING) {
             recordBuilder = switch (reversingBehavior) {

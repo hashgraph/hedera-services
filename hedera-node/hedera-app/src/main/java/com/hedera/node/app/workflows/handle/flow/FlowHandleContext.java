@@ -619,11 +619,15 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 childDispatchFactory,
                 customizer,
                 reversingBehavior);
+        logger.info(
+                "Dispatched child transaction {}, recordBuilder identity hashcode {}",
+                childTxBody,
+                System.identityHashCode(childDispatch.recordBuilder()));
         dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
-        //                logger.error(
-        //                        "Dispatched child transaction {}, status {}",
-        //                        childTxBody,
-        //                        childDispatch.recordBuilder().status());
+        logger.info(
+                "Dispatched child transaction {}, status {}",
+                childTxBody,
+                childDispatch.recordBuilder().status());
         if (commitStack) {
             stack.commitFullStack();
         }

@@ -49,8 +49,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @UserTxnScope
-public class UserHandleWorkflow {
-    private static final Logger logger = LogManager.getLogger(UserHandleWorkflow.class);
+public class UserTxnWorkflow {
+    private static final Logger logger = LogManager.getLogger(UserTxnWorkflow.class);
 
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
@@ -67,7 +67,7 @@ public class UserHandleWorkflow {
     private final UserRecordInitializer userRecordInitializer;
 
     @Inject
-    public UserHandleWorkflow(
+    public UserTxnWorkflow(
             @NonNull final SoftwareVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final SkipUserTransactionProcess skipHandleProcess,
@@ -149,10 +149,15 @@ public class UserHandleWorkflow {
         if (workDone == WorkDone.FEES_ONLY) {
             networkUtilizationManager.trackFeePayments(userTxn.consensusNow(), userTxn.stack());
         } else if (workDone == WorkDone.USER_TRANSACTION) {
-            networkUtilizationManager.trackTxn(userTxn.txnInfo(), userTxn.consensusNow(), userTxn.stack());
-            if (CONTRACT_OPERATIONS.contains(userTxn.txnInfo().functionality())) {
+            final var isContractOperation =
+                    CONTRACT_OPERATIONS.contains(userTxn.txnInfo().functionality());
+            if (!isContractOperation) {
+                // we track utilization for contract operations in HandleLogic
+                networkUtilizationManager.trackTxn(userTxn.txnInfo(), userTxn.consensusNow(), userTxn.stack());
+            } else {
                 leakUnusedGas(userTxn.recordListBuilder().userTransactionRecordBuilder());
-            } else if (canAutoCreate(userTxn.functionality())) {
+            }
+            if (canAutoCreate(userTxn.functionality())) {
                 reclaimCryptoCreateThrottle(userTxn.recordListBuilder().userTransactionRecordBuilder());
             }
         }
