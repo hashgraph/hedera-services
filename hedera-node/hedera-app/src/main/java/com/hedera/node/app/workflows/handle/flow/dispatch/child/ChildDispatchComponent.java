@@ -17,9 +17,6 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -28,9 +25,9 @@ import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.modules.ChildDispatchModule;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
-import java.util.Set;
 
 /**
  * The Dagger subcomponent to provide the bindings for the child transaction dispatch scope.
@@ -47,9 +44,7 @@ public interface ChildDispatchComponent extends Dispatch {
                 @BindsInstance AccountID syntheticPayer,
                 @BindsInstance HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,
-                @BindsInstance Set<Key> requiredKeys,
-                @BindsInstance Set<Account> hollowAccounts,
-                @BindsInstance ResponseCodeEnum userError,
+                @BindsInstance @ChildQualifier PreHandleResult preHandleResult,
                 @BindsInstance KeyVerifier keyVerifier);
     }
     /**
@@ -65,4 +60,7 @@ public interface ChildDispatchComponent extends Dispatch {
      */
     @ChildQualifier
     TransactionInfo txnInfo();
+
+    @ChildQualifier
+    PreHandleResult preHandleResult();
 }

@@ -20,8 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -39,11 +37,11 @@ import com.hedera.node.app.workflows.handle.flow.records.ChildTxnFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
-import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -76,11 +74,7 @@ public class ChildDispatchLogic {
             @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior) {
-        var result = ChildPreHandleResult.userError(checkUserError(txBody));
-
-        if (result.userError() == OK) {
-            result = dispatchPreHandle(parentDispatch, txBody, syntheticPayerId);
-        }
+        final var preHandleResult = dispatchPreHandle(parentDispatch, txBody, syntheticPayerId);
         final var childTxnInfo = childTxnFactory.getTxnInfoFrom(txBody);
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
                 childTxnInfo,
@@ -99,17 +93,16 @@ public class ChildDispatchLogic {
                         syntheticPayerId,
                         category,
                         new SavepointStackImpl(parentDispatch.stack().peek()),
-                        result.requiredKeys(),
-                        result.requiredHollowAccounts(),
-                        result.userError(),
+                        preHandleResult,
                         getKeyVerifier(callback));
     }
 
-    private ChildPreHandleResult dispatchPreHandle(
+    private PreHandleResult dispatchPreHandle(
             final @NonNull Dispatch parentDispatch,
             final @NonNull TransactionBody txBody,
             final @NonNull AccountID syntheticPayerId) {
         try {
+            dispatcher.dispatchPureChecks(txBody);
             final var preHandleContext = new PreHandleContextImpl(
                     parentDispatch.readableStoreFactory(),
                     txBody,
@@ -117,10 +110,31 @@ public class ChildDispatchLogic {
                     parentDispatch.handleContext().configuration(),
                     dispatcher);
             dispatcher.dispatchPreHandle(preHandleContext);
-            return new ChildPreHandleResult(
-                    preHandleContext.requiredHollowAccounts(), preHandleContext.requiredNonPayerKeys(), OK);
+            return new PreHandleResult(
+                    null,
+                    null,
+                    null,
+                    OK,
+                    null,
+                    preHandleContext.requiredNonPayerKeys(),
+                    null,
+                    preHandleContext.requiredHollowAccounts(),
+                    null,
+                    null,
+                    0);
         } catch (final PreCheckException e) {
-            return new ChildPreHandleResult(Collections.emptySet(), Collections.emptySet(), e.responseCode());
+            return new PreHandleResult(
+                    null,
+                    null,
+                    null,
+                    e.responseCode(),
+                    null,
+                    Collections.emptySet(),
+                    null,
+                    Collections.emptySet(),
+                    null,
+                    null,
+                    0);
         }
     }
 
@@ -133,24 +147,6 @@ public class ChildDispatchLogic {
         return category == HandleContext.TransactionCategory.SCHEDULED
                 ? ComputeDispatchFeesAsTopLevel.YES
                 : ComputeDispatchFeesAsTopLevel.NO;
-    }
-
-    private ResponseCodeEnum checkUserError(TransactionBody txBody) {
-        try {
-            // Synthetic transaction bodies do not have transaction ids, node account
-            // ids, and so on; hence we don't need to validate them with the checker
-            dispatcher.dispatchPureChecks(txBody);
-        } catch (final PreCheckException e) {
-            return e.responseCode();
-        }
-        return OK;
-    }
-
-    private record ChildPreHandleResult(
-            Set<Account> requiredHollowAccounts, Set<Key> requiredKeys, ResponseCodeEnum userError) {
-        public static ChildPreHandleResult userError(ResponseCodeEnum userError) {
-            return new ChildPreHandleResult(Collections.emptySet(), Collections.emptySet(), userError);
-        }
     }
 
     private static class NoOpKeyVerifier implements KeyVerifier {

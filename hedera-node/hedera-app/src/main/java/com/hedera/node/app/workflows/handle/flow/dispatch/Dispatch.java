@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.flow.dispatch;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.KeyVerifier;
@@ -35,7 +34,6 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * The context needed for executing business logic of a service. This has two implementations - one for user transactions scope
@@ -109,13 +107,6 @@ public interface Dispatch {
     Set<Account> hollowAccounts();
 
     /**
-     * If there is a user error when running pureChecks in preHandle.
-     * This will be the error code of the user error.
-     * @return the user error
-     */
-    ResponseCodeEnum userError();
-
-    /**
      * The handle context for the transaction scope
      * @return the handle context
      */
@@ -147,6 +138,5 @@ public interface Dispatch {
 
     PlatformState platformState();
 
-    @Nullable // Dagger requires javax.annotation.Nullable
     PreHandleResult preHandleResult();
 }

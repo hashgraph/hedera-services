@@ -57,10 +57,8 @@ public class HandleLogic {
 
     public WorkDone handle(Dispatch dispatch) {
         assertAuthorized(dispatch);
+        assertPureChecksPassed(dispatch);
 
-        if (dispatch.userError() != OK) {
-            throw new HandleException(dispatch.userError());
-        }
         if (hasInvalidSignature(dispatch)) {
             throw new HandleException(INVALID_SIGNATURE);
         }
@@ -89,6 +87,13 @@ public class HandleLogic {
             throw new HandleException(AUTHORIZATION_FAILED);
         } else if (privileges == SystemPrivilege.IMPERMISSIBLE) {
             throw new HandleException(ENTITY_NOT_ALLOWED_TO_DELETE);
+        }
+    }
+
+    private void assertPureChecksPassed(Dispatch dispatch) {
+        final var preHandleResult = dispatch.preHandleResult();
+        if (preHandleResult.responseCode() != OK) {
+            throw new HandleException(preHandleResult.responseCode());
         }
     }
 

@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.user.modules;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
@@ -71,12 +70,6 @@ public interface UserDispatchModule {
     @UserDispatchScope
     static Set<Account> provideHollowAccounts(PreHandleResult preHandleResult) {
         return preHandleResult.hollowAccounts();
-    }
-
-    @Provides
-    @UserDispatchScope
-    static ResponseCodeEnum provideUserError(PreHandleResult preHandleResult) {
-        return preHandleResult.responseCode();
     }
 
     @Provides

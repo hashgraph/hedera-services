@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.child.modules;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
@@ -50,6 +51,7 @@ import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchSco
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildQualifier;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Binds;
@@ -57,6 +59,7 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Set;
 import javax.inject.Provider;
 
 @Module
@@ -145,6 +148,18 @@ public interface ChildDispatchModule {
             @NonNull final Configuration configuration) {
         return new TriggeredFinalizeContext(
                 readableStoreFactory, writableStoreFactory, recordBuilder, consensusNow, configuration);
+    }
+
+    @Provides
+    @ChildDispatchScope
+    static Set<Key> provideRequiredKeys(@ChildQualifier PreHandleResult preHandleResult) {
+        return preHandleResult.requiredKeys();
+    }
+
+    @Provides
+    @ChildDispatchScope
+    static Set<Account> provideHollowAccounts(@ChildQualifier PreHandleResult preHandleResult) {
+        return preHandleResult.hollowAccounts();
     }
 
     @Provides
