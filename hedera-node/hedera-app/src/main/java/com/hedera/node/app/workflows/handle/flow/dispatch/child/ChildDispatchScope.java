@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.annotations;
+package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -27,19 +27,10 @@ import java.lang.annotation.Target;
 import javax.inject.Scope;
 
 /**
- * Scope for bindings whose lifetime consists of a single platform transaction.
- * This scope contains the following bindings:
- * <ol>
- *     <li>HederaState</li>
- *     <li>configuration</li>
- *     <li>TokenContext</li>
- *     <li>RecordListBuilder</li>
- *     <li>PreHandleResult</li>
- *     <li></li>
- *  </ol>
+ * Scope for bindings whose lifetime is only for a child transaction dispatch.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
 @Scope
-public @interface UserTxnScope {}
+public @interface ChildDispatchScope {}

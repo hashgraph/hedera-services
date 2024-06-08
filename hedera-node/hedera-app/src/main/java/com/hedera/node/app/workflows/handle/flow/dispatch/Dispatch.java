@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.dispatch;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -51,7 +51,7 @@ public interface Dispatch {
      * The fees calculated for the transaction
      * @return the fees
      */
-    Fees calculatedFees();
+    Fees fees();
 
     /**
      * The transaction info for the transaction

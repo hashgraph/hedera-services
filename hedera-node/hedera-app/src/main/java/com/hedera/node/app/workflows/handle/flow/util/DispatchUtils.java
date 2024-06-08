@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.util;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Set;

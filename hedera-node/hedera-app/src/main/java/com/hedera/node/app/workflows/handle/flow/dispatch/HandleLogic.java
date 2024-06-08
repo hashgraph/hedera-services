@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra;
+package com.hedera.node.app.workflows.handle.flow.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -26,12 +26,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.workflows.handle.flow.util.DispatchUtils.isContractOperation;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.exceptions.ThrottleException;
 import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -114,5 +113,17 @@ public class HandleLogic {
             }
         }
         return false;
+    }
+
+    public static class ThrottleException extends RuntimeException {
+        private final ResponseCodeEnum status;
+
+        public ThrottleException(final ResponseCodeEnum status) {
+            this.status = status;
+        }
+
+        public ResponseCodeEnum getStatus() {
+            return status;
+        }
     }
 }

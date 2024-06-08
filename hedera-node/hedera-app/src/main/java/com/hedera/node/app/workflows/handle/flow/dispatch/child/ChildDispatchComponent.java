@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.components;
+package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -24,10 +24,8 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.ChildDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dagger.modules.ChildDispatchModule;
-import com.hedera.node.app.workflows.handle.flow.dagger.qualifiers.ChildQualifier;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.modules.ChildDispatchModule;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import dagger.BindsInstance;

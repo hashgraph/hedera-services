@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -28,8 +28,6 @@ import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceLogic;
 import com.hedera.node.app.workflows.handle.flow.ErrorReport;
-import com.hedera.node.app.workflows.handle.flow.exceptions.ThrottleException;
-import com.hedera.node.app.workflows.handle.flow.infra.HandleLogic;
 import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import com.hedera.node.app.workflows.handle.flow.records.RecordFinalizerlogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -131,7 +129,7 @@ public class DispatchLogic {
                 chargePayer(dispatch, errorReport);
             }
             return WorkDone.USER_TRANSACTION;
-        } catch (ThrottleException e) {
+        } catch (HandleLogic.ThrottleException e) {
             return handleException(dispatch, errorReport, recordListBuilder, e.getStatus());
         } catch (Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
@@ -174,8 +172,7 @@ public class DispatchLogic {
         dispatch.recordBuilder().status(report.dueDiligenceInfo().dueDiligenceStatus());
         dispatch.feeAccumulator()
                 .chargeNetworkFee(
-                        report.dueDiligenceInfo().creator(),
-                        dispatch.calculatedFees().networkFee());
+                        report.dueDiligenceInfo().creator(), dispatch.fees().networkFee());
     }
 
     /**
@@ -197,13 +194,13 @@ public class DispatchLogic {
                     .chargeFees(
                             report.payer().accountIdOrThrow(),
                             report.dueDiligenceInfo().creator(),
-                            dispatch.calculatedFees().withoutServiceComponent());
+                            dispatch.fees().withoutServiceComponent());
         } else {
             dispatch.feeAccumulator()
                     .chargeFees(
                             report.payer().accountIdOrThrow(),
                             report.dueDiligenceInfo().creator(),
-                            dispatch.calculatedFees());
+                            dispatch.fees());
         }
     }
 

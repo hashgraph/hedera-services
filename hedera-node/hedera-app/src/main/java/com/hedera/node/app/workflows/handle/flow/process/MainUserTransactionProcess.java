@@ -18,11 +18,11 @@ package com.hedera.node.app.workflows.handle.flow.process;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.DispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.future.ScheduleServiceCronLogic;
-import com.hedera.node.app.workflows.handle.flow.infra.HollowAccountFinalizationLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatch.DispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
+import com.hedera.node.app.workflows.handle.flow.txn.HollowAccountFinalizationLogic;
+import com.hedera.node.app.workflows.handle.flow.txn.ScheduleServiceCronLogic;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

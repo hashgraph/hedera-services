@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.components;
+package com.hedera.node.app.workflows.handle.flow.dispatch.user;
 
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dagger.modules.UserDispatchModule;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.modules.UserDispatchModule;
 import dagger.Subcomponent;
-import javax.inject.Provider;
 
 /**
  * The Dagger subcomponent to provide the bindings for the user transaction dispatch scope.
@@ -32,10 +30,4 @@ public interface UserDispatchComponent extends Dispatch {
     interface Factory {
         UserDispatchComponent create();
     }
-
-    /**
-     * The provider for the child dispatch component
-     * @return the provider
-     */
-    Provider<ChildDispatchComponent.Factory> childDispatchComponentFactory();
 }

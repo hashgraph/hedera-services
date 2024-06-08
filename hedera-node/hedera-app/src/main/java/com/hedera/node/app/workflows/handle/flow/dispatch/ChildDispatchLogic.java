@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatcher;
+package com.hedera.node.app.workflows.handle.flow.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
@@ -25,17 +25,21 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.records.ChildRecordBuilderFactory;
 import com.hedera.node.app.workflows.handle.flow.records.ChildTxnFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -47,20 +51,19 @@ import javax.inject.Singleton;
 
 @Singleton
 public class ChildDispatchLogic {
+    private static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
+
     private final ChildTxnFactory childTxnFactory;
     private final TransactionDispatcher dispatcher;
-    private final NoOpKeyVerifier noOpKeyVerifier;
     private final ChildRecordBuilderFactory recordBuilderFactory;
 
     @Inject
     public ChildDispatchLogic(
             final ChildTxnFactory childTxnFactory,
             final TransactionDispatcher dispatcher,
-            final NoOpKeyVerifier noOpKeyVerifier,
             final ChildRecordBuilderFactory recordBuilderFactory) {
         this.childTxnFactory = childTxnFactory;
         this.dispatcher = dispatcher;
-        this.noOpKeyVerifier = noOpKeyVerifier;
         this.recordBuilderFactory = recordBuilderFactory;
     }
 
@@ -122,7 +125,7 @@ public class ChildDispatchLogic {
     }
 
     private KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
-        return callback == null ? noOpKeyVerifier : new DelegateKeyVerifier(callback);
+        return callback == null ? NO_OP_KEY_VERIFIER : new DelegateKeyVerifier(callback);
     }
 
     @NonNull
@@ -147,6 +150,35 @@ public class ChildDispatchLogic {
             Set<Account> requiredHollowAccounts, Set<Key> requiredKeys, ResponseCodeEnum userError) {
         public static ChildPreHandleResult userError(ResponseCodeEnum userError) {
             return new ChildPreHandleResult(Collections.emptySet(), Collections.emptySet(), userError);
+        }
+    }
+
+    private static class NoOpKeyVerifier implements KeyVerifier {
+        private static final SignatureVerification PASSED_VERIFICATION =
+                new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
+
+        @NonNull
+        @Override
+        public SignatureVerification verificationFor(@NonNull final Key key) {
+            return PASSED_VERIFICATION;
+        }
+
+        @NonNull
+        @Override
+        public SignatureVerification verificationFor(
+                @NonNull final Key key, @NonNull final VerificationAssistant callback) {
+            return PASSED_VERIFICATION;
+        }
+
+        @NonNull
+        @Override
+        public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
+            return PASSED_VERIFICATION;
+        }
+
+        @Override
+        public int numSignaturesVerified() {
+            return 0;
         }
     }
 }

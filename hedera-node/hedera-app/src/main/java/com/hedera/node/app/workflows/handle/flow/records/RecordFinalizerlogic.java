@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

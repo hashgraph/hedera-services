@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.qualifiers;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -24,10 +24,22 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import javax.inject.Scope;
 
+/**
+ * Scope for bindings whose lifetime consists of a single platform transaction.
+ * This scope contains the following bindings:
+ * <ol>
+ *     <li>HederaState</li>
+ *     <li>configuration</li>
+ *     <li>TokenContext</li>
+ *     <li>RecordListBuilder</li>
+ *     <li>PreHandleResult</li>
+ *     <li></li>
+ *  </ol>
+ */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
-@Qualifier
-public @interface ChildQualifier {}
+@Scope
+public @interface UserTxnScope {}

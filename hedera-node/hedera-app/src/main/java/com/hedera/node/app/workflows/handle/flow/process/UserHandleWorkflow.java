@@ -32,9 +32,9 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.records.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -55,7 +55,6 @@ public class UserHandleWorkflow {
 
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
-    private final RecordListBuilder recordListBuilder;
     private final SkipUserTransactionProcess skipHandleProcess;
     private final MainUserTransactionProcess mainHandleProcess;
     private final GenesisUserTransactionProcess genesisHandleProcess;
@@ -72,7 +71,6 @@ public class UserHandleWorkflow {
     public UserHandleWorkflow(
             @NonNull final SoftwareVersion version,
             @NonNull final InitTrigger initTrigger,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SkipUserTransactionProcess skipHandleProcess,
             @NonNull final MainUserTransactionProcess mainHandleProcess,
             final GenesisUserTransactionProcess genesisHandleProcess,
@@ -86,7 +84,6 @@ public class UserHandleWorkflow {
             final UserRecordInitializer userRecordInitializer) {
         this.version = version;
         this.initTrigger = initTrigger;
-        this.recordListBuilder = recordListBuilder;
         this.skipHandleProcess = skipHandleProcess;
         this.mainHandleProcess = mainHandleProcess;
         this.genesisHandleProcess = genesisHandleProcess;

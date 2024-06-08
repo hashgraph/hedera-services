@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.modules;
+package com.hedera.node.app.workflows.handle.flow.dispatch.user.modules;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -40,9 +40,9 @@ import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.DueDiligenceInfo;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.UserDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchScope;
 import com.hedera.node.app.workflows.handle.flow.records.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;

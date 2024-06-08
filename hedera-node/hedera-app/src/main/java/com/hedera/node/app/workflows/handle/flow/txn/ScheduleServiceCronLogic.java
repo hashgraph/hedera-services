@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.future;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
-import com.hedera.node.app.workflows.handle.flow.dagger.components.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;

@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.modules;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
-import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.workflows.handle.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
-import dagger.Binds;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import dagger.Module;
 
-@Module
-public interface ContextModule {
-    @Binds
-    @UserTxnScope
-    TokenContext bindTokenContext(TokenContextImpl tokenContext);
-}
+@Module(subcomponents = {UserDispatchComponent.class, ChildDispatchComponent.class})
+public interface UserDispatchSubcomponentModule {}

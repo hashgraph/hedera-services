@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dagger.modules;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.dagger.annotations.UserTxnScope;
 import com.hedera.node.app.workflows.handle.flow.infra.PreHandleLogic;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.spi.info.NodeInfo;

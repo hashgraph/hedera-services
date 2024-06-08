@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.exceptions;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.workflows.handle.TokenContextImpl;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
+import dagger.Binds;
+import dagger.Module;
 
-public class ThrottleException extends RuntimeException {
-    private final ResponseCodeEnum status;
-
-    public ThrottleException(final ResponseCodeEnum status) {
-        this.status = status;
-    }
-
-    public ResponseCodeEnum getStatus() {
-        return status;
-    }
+@Module
+public interface ContextModule {
+    @Binds
+    @UserTxnScope
+    TokenContext bindTokenContext(TokenContextImpl tokenContext);
 }

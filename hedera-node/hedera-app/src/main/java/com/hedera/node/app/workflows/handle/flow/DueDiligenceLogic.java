@@ -31,7 +31,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.handle.flow.dispatcher.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -90,7 +90,7 @@ public class DueDiligenceLogic {
     @NonNull
     private ErrorReport checkSolvencyOfPayer(final Account payer, boolean isDuplicate, final Dispatch dispatch) {
         try {
-            solvencyPreCheck.checkSolvency(dispatch.txnInfo(), payer, dispatch.calculatedFees(), false);
+            solvencyPreCheck.checkSolvency(dispatch.txnInfo(), payer, dispatch.fees(), false);
         } catch (final InsufficientServiceFeeException e) {
             return new ErrorReport(payer, dispatch.dueDiligenceInfo(), isDuplicate, e.responseCode(), true);
         } catch (final InsufficientNonFeeDebitsException e) {
