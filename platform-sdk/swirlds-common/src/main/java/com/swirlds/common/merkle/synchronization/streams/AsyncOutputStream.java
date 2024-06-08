@@ -28,13 +28,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,7 +63,7 @@ public class AsyncOutputStream implements AutoCloseable {
     /**
      * A queue that need to be written to the output stream.
      */
-    private final BlockingQueue<QueueItem> streamQueue;
+    private final Queue<QueueItem> streamQueue;
 
     /**
      * The time that has elapsed since the last flush was attempted.
@@ -113,7 +110,7 @@ public class AsyncOutputStream implements AutoCloseable {
 
         this.outputStream = Objects.requireNonNull(outputStream, "outputStream must not be null");
         this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
-        this.streamQueue = new LinkedBlockingQueue<>(config.asyncStreamBufferSize() * 32);
+        this.streamQueue = new ConcurrentLinkedQueue<>();
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
         this.flushInterval = config.asyncOutputStreamFlush();
@@ -197,8 +194,8 @@ public class AsyncOutputStream implements AutoCloseable {
         sendAsync(new QueueItem(run));
     }
 
-    private void sendAsync(final QueueItem item) throws InterruptedException {
-        final boolean success = streamQueue.offer(item, timeout.toMillis(), TimeUnit.MILLISECONDS);
+    private void sendAsync(final QueueItem item) {
+        final boolean success = streamQueue.offer(item);
         if (!success) {
             try {
                 outputStream.close();
@@ -228,30 +225,29 @@ public class AsyncOutputStream implements AutoCloseable {
      * @return true if a message was sent.
      */
     private boolean handleQueuedMessages() {
-        if (!streamQueue.isEmpty()) {
-            final int size = streamQueue.size();
-            final List<QueueItem> localQueue = new ArrayList<>(size);
-            streamQueue.drainTo(localQueue, size);
-            for (final QueueItem item : localQueue) {
-                if (item.toNotify() != null) {
-                    assert item.messageBytes() == null;
-                    item.toNotify().run();
-                } else {
-                    final int viewId = item.viewId();
-                    final byte[] messageBytes = item.messageBytes();
-                    try {
-                        outputStream.writeInt(viewId);
-                        outputStream.writeInt(messageBytes.length);
-                        outputStream.write(messageBytes);
-                    } catch (final IOException e) {
-                        throw new MerkleSynchronizationException(e);
-                    }
-                    bufferedMessageCount += 1;
-                }
-            }
-            return true;
+        QueueItem item = streamQueue.poll();
+        if (item == null) {
+            return false;
         }
-        return false;
+        while (item != null) {
+            if (item.toNotify() != null) {
+                assert item.messageBytes() == null;
+                item.toNotify().run();
+            } else {
+                final int viewId = item.viewId();
+                final byte[] messageBytes = item.messageBytes();
+                try {
+                    outputStream.writeInt(viewId);
+                    outputStream.writeInt(messageBytes.length);
+                    outputStream.write(messageBytes);
+                } catch (final IOException e) {
+                    throw new MerkleSynchronizationException(e);
+                }
+                bufferedMessageCount += 1;
+            }
+            item = streamQueue.poll();
+        }
+        return true;
     }
 
     protected void serializeMessage(final SelfSerializable message) throws IOException {

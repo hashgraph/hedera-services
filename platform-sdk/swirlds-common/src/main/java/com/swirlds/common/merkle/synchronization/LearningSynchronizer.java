@@ -79,6 +79,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     private volatile AsyncOutputStream out;
 
     private final Queue<MerkleNode> rootsToReceive;
+    private boolean processingNullStartingRoot;
     // All root/custom tree views, by view ID
     private final Map<Integer, LearnerTreeView<?>> views;
     private final Deque<LearnerTreeView<?>> viewsToInitialize;
@@ -137,7 +138,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             @NonNull final ThreadManager threadManager,
             @NonNull final MerkleDataInputStream in,
             @NonNull final MerkleDataOutputStream out,
-            @NonNull final MerkleNode root,
+            final MerkleNode root,
             @NonNull final Runnable breakConnection,
             @NonNull final ReconnectConfig reconnectConfig) {
 
@@ -152,7 +153,12 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         views.put(viewId, nodeTreeView(root));
         viewsToInitialize = new ConcurrentLinkedDeque<>();
         rootsToReceive = new ConcurrentLinkedQueue<>();
-        rootsToReceive.add(root);
+        if (root == null) {
+            processingNullStartingRoot = true;
+        } else {
+            processingNullStartingRoot = false;
+            rootsToReceive.add(root);
+        }
 
         this.breakConnection = breakConnection;
     }
@@ -294,11 +300,18 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             return false;
         }
 
-        if (rootsToReceive.isEmpty()) {
-            viewsInProgress.decrementAndGet();
-            return false;
+        final MerkleNode root;
+        if (processingNullStartingRoot) {
+            assert rootsToReceive.isEmpty();
+            root = null;
+            processingNullStartingRoot = false;
+        } else {
+            if (rootsToReceive.isEmpty()) {
+                viewsInProgress.decrementAndGet();
+                return false;
+            }
+            root = rootsToReceive.poll();
         }
-        final MerkleNode root = rootsToReceive.poll();
         final String route = root == null ? "[]" : root.getRoute().toString();
 
         final int viewId = nextViewId++;
