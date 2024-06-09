@@ -79,7 +79,6 @@ class GenesisRecordsConsensusHookTest {
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
         given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
-        given(context.isFirstTransaction()).willReturn(true);
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());

@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.workflows.handle.flow.process;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
-import com.hedera.node.app.workflows.handle.flow.dispatch.DispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.infra.UserTxnLogger;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.txn.HollowAccountFinalizationLogic;
 import com.hedera.node.app.workflows.handle.flow.txn.ScheduleServiceCronLogic;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
@@ -36,7 +39,6 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
     private final BlockRecordManager blockRecordManager;
     private final ScheduleServiceCronLogic scheduleServiceCronLogic;
     private final DispatchLogic dispatchLogic;
-    private final UserTxnLogger userTxnLogger;
     private final HollowAccountFinalizationLogic hollowAccountFinalization;
 
     @Inject
@@ -45,13 +47,11 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
             final BlockRecordManager blockRecordManager,
             final ScheduleServiceCronLogic scheduleServiceCronLogic,
             final DispatchLogic dispatchLogic,
-            final UserTxnLogger userTxnLogger,
             final HollowAccountFinalizationLogic hollowAccountFinalization) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
         this.scheduleServiceCronLogic = scheduleServiceCronLogic;
         this.dispatchLogic = dispatchLogic;
-        this.userTxnLogger = userTxnLogger;
         this.hollowAccountFinalization = hollowAccountFinalization;
     }
 
@@ -61,7 +61,7 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         scheduleServiceCronLogic.expireSchedules(userTxn);
 
-        userTxnLogger.logUserTxn(userTxn);
+        logUserTxn(userTxn);
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
         hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
@@ -76,5 +76,15 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
         }
+    }
+
+    public void logUserTxn(UserTransactionComponent userTxn) {
+        // Log start of user transaction to transaction state log
+        logStartUserTransaction(
+                userTxn.platformTxn(),
+                userTxn.txnInfo().txBody(),
+                userTxn.txnInfo().payerID());
+        logStartUserTransactionPreHandleResultP2(userTxn.preHandleResult());
+        logStartUserTransactionPreHandleResultP3(userTxn.preHandleResult());
     }
 }

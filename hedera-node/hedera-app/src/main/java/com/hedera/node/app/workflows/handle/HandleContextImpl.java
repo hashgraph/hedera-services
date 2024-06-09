@@ -437,11 +437,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
-    public boolean isSuperUser() {
-        return authorizer.isSuperUser(topLevelPayer);
-    }
-
-    @Override
     public SystemPrivilege hasPrivilegedAuthorization() {
         return authorizer.hasPrivilegedAuthorization(payer, functionality, txBody);
     }

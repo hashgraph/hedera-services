@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch;
+package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
@@ -25,6 +25,8 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.ErrorReport;
 import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import com.hedera.node.app.workflows.handle.flow.records.RecordFinalizerlogic;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;

@@ -413,13 +413,7 @@ public class HandleWorkflow {
         final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
 
         final var tokenServiceContext = new TokenContextImpl(
-                configuration,
-                state,
-                storeMetricsService,
-                stack,
-                recordListBuilder,
-                blockRecordManager,
-                isFirstTransaction);
+                configuration, state, storeMetricsService, stack, recordListBuilder, blockRecordManager);
         // Do any one-time work for the first transaction after genesis;
         // overhead for all following transactions is effectively zero
         genesisRecordsTimeHook.process(tokenServiceContext);

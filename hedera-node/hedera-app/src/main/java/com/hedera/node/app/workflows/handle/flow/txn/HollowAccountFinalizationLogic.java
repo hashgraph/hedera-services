@@ -130,7 +130,7 @@ public class HollowAccountFinalizationLogic {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
         for (final var hollowAccount : accounts) {
-            if (recordListBuilder.precedingRecordBuilders().size() >= maxRecords) {
+            if (recordListBuilder.precedingRecordBuilders().size() == maxRecords) {
                 break;
             }
             if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {

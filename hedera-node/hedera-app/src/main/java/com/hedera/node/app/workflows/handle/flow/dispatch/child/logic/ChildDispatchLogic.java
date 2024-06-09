@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch;
+package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.records.ChildRecordBuilderFactory;
 import com.hedera.node.app.workflows.handle.flow.records.ChildTxnFactory;

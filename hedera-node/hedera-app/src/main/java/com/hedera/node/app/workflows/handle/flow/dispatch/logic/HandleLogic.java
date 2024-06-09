@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch;
+package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -32,6 +32,7 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.process.WorkDone;
 import javax.inject.Inject;
 import javax.inject.Singleton;

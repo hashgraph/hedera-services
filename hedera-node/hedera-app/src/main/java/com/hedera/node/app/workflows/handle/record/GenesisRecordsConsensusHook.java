@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
@@ -209,13 +208,5 @@ public class GenesisRecordsConsensusHook implements GenesisRecordsBuilder {
                         .build())
                 .initialBalance(account.tinybarBalance())
                 .alias(account.alias());
-    }
-
-    private static boolean shouldStreamRecords(
-            @NonNull final ReadableBlockRecordStore blockStore, @NonNull final TokenContext context) {
-        // ONLY stream actual records when:
-        // 1. This is the first transaction after startup, and
-        // 2. We haven't streamed any migration records yet
-        return context.isFirstTransaction() && !blockStore.getLastBlockInfo().migrationRecordsStreamed();
     }
 }

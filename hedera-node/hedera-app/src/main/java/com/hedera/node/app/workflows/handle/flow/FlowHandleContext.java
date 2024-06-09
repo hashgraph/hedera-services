@@ -69,10 +69,10 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.dispatch.ChildDispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.dispatch.DispatchLogic;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchLogic;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -331,12 +331,6 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
         requireNonNull(evmAlias, "evmAlias must not be null");
         return verifier.verificationFor(evmAlias);
-    }
-
-    @Override
-    public boolean isSuperUser() {
-        // FUTURE stop explicitly charging fees in CryptoTransferHandler, delete this method
-        return true;
     }
 
     @Override
@@ -632,15 +626,15 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 childDispatchFactory,
                 customizer,
                 reversingBehavior);
-        //        logger.info(
-        //                "Dispatched child transaction {}, recordBuilder identity hashcode {}",
-        //                childTxBody,
-        //                System.identityHashCode(childDispatch.recordBuilder()));
+        logger.info(
+                "Dispatched child transaction {}, recordBuilder identity hashcode {}",
+                childTxBody,
+                System.identityHashCode(childDispatch.recordBuilder()));
         dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
-        //        logger.info(
-        //                "Dispatched child transaction {}, status {}",
-        //                childTxBody,
-        //                childDispatch.recordBuilder().status());
+        logger.info(
+                "Dispatched child transaction {}, status {}",
+                childTxBody,
+                childDispatch.recordBuilder().status());
         if (commitStack) {
             stack.commitFullStack();
         }

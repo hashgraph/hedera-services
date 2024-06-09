@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.infra;
+package com.hedera.node.app.workflows.handle.flow.dispatch.user.logic;
 
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.workflows.SolvencyPreCheck;

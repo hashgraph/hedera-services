@@ -121,11 +121,4 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      */
     @NonNull
     Instant consTimeOfLastHandledTxn();
-
-    /**
-     * Returns whether the in-flight user transaction is the first ever handled.
-     *
-     * @return {@code true} if the transaction is the first ever handled, {@code false} otherwise
-     */
-    boolean isGenesisTransaction();
 }

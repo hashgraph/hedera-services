@@ -546,9 +546,7 @@ public class HollowAccountFinalizationSuite {
                         newKeyNamed(ECDSA_KEY_4).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(PAY_RECEIVABLE),
-                        contractCreate(PAY_RECEIVABLE).adminKey(ADMIN_KEY))
+                        newKeyNamed(ADMIN_KEY))
                 .when()
                 .then(withOpContext((spec, opLog) -> {
                     // create hollow accounts

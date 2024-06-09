@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
 import static java.util.Collections.emptyList;
@@ -61,6 +62,11 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
     private static final Logger logger = LogManager.getLogger(FinalizeParentRecordHandler.class);
+    public static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
+    private static final List<AccountAmount> GENESIS_TREASURY_CREDIT = List.of(AccountAmount.newBuilder()
+            .amount(LEDGER_TOTAL_TINY_BAR_FLOAT)
+            .accountID(asAccount(2))
+            .build());
 
     private final StakingRewardsHandler stakingRewardsHandler;
 
@@ -180,6 +186,12 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
                     : childRecord.transferList().accountAmounts();
+            if (childHbarChangesFromRecord.size() == 1) {
+                if (!childHbarChangesFromRecord.equals(GENESIS_TREASURY_CREDIT)) {
+                    throw new IllegalStateException("Invalid hbar changes from child record");
+                }
+                return;
+            }
             for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {

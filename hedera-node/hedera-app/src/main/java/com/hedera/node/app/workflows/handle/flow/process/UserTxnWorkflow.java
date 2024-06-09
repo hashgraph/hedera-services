@@ -43,6 +43,7 @@ import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -109,7 +110,7 @@ public class UserTxnWorkflow {
         if (isOlderSoftwareEvent()) {
             skipHandleProcess.processUserTransaction(userTxn);
         } else {
-            final var isGenesisTxn = blockRecordManager.isGenesisTransaction();
+            final var isGenesisTxn = userTxn.lastHandledConsensusTime().equals(Instant.EPOCH);
             if (isGenesisTxn) {
                 genesisHandleProcess.processUserTransaction(userTxn);
             }

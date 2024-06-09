@@ -48,7 +48,6 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final WritableStoreFactory writableStoreFactory;
     private final RecordListBuilder recordListBuilder;
     private final BlockRecordManager blockRecordManager;
-    private final boolean isFirstTransaction;
 
     @Inject
     public TokenContextImpl(
@@ -58,23 +57,11 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final BlockRecordManager blockRecordManager) {
-        this(configuration, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, false);
-    }
-
-    public TokenContextImpl(
-            @NonNull final Configuration configuration,
-            @NonNull final HederaState state,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final BlockRecordManager blockRecordManager,
-            final boolean isFirstTransaction) {
         this.state = requireNonNull(state, "state must not be null");
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
-        this.isFirstTransaction = isFirstTransaction;
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
@@ -151,11 +138,6 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
         return recordBuilderClass.cast(recordBuilder);
-    }
-
-    @Override
-    public boolean isFirstTransaction() {
-        return isFirstTransaction;
     }
 
     @Override
