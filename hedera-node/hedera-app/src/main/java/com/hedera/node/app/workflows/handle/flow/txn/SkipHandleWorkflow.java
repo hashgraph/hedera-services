@@ -14,40 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.process;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class SkipUserTransactionProcess implements UserTransactionProcess {
-
-    private static final Logger logger = LogManager.getLogger(SkipUserTransactionProcess.class);
-    private final TransactionChecker transactionChecker;
-    private final HederaRecordCache recordCache;
+public class SkipHandleWorkflow {
     private final ExchangeRateManager exchangeRateManager;
 
     @Inject
-    public SkipUserTransactionProcess(
-            @NonNull final TransactionChecker transactionChecker,
-            @NonNull final HederaRecordCache recordCache,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
-        this.transactionChecker = transactionChecker;
-        this.recordCache = recordCache;
+    public SkipHandleWorkflow(@NonNull final ExchangeRateManager exchangeRateManager) {
         this.exchangeRateManager = exchangeRateManager;
     }
 
-    @Override
-    public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
+    public void execute(UserTransactionComponent userTxn) {
         final TransactionInfo transactionInfo = userTxn.txnInfo();
         // Initialize record builder list and place a BUSY record in the cache
         userTxn.recordListBuilder()
@@ -58,6 +43,5 @@ public class SkipUserTransactionProcess implements UserTransactionProcess {
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .memo(transactionInfo.txBody().memo())
                 .status(ResponseCodeEnum.BUSY);
-        return WorkDone.NONE;
     }
 }

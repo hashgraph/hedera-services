@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.txn;
+package com.hedera.node.app.workflows.handle.flow.txn.logic;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -31,12 +32,12 @@ import javax.inject.Singleton;
  * handle process for the user transaction
  */
 @Singleton
-public class ScheduleServiceCronLogic {
+public class SchedulePurger {
     private final ScheduleExpirationHook scheduleExpirationHook;
     private final StoreMetricsService storeMetricsService;
 
     @Inject
-    public ScheduleServiceCronLogic(
+    public SchedulePurger(
             @NonNull final ScheduleExpirationHook scheduleExpirationHook,
             @NonNull final StoreMetricsService storeMetricsService) {
         this.scheduleExpirationHook = scheduleExpirationHook;

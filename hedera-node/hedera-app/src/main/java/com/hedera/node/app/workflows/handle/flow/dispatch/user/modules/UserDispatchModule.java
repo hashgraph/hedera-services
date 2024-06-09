@@ -41,7 +41,7 @@ import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.records.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;

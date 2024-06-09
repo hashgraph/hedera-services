@@ -50,9 +50,8 @@ import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildQualifier;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchFactory;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -204,9 +203,9 @@ public interface ChildDispatchModule {
             final NetworkInfo networkInfo,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
-            final ChildDispatchLogic childDispatchLogic,
+            final ChildDispatchFactory childDispatchLogic,
             @NonNull final ChildDispatchComponent dispatch,
-            @NonNull final DispatchLogic dispatchLogic,
+            @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         return new FlowHandleContext(
                 consensusNow,
@@ -232,7 +231,7 @@ public interface ChildDispatchModule {
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,
-                dispatchLogic,
+                dispatchProcessor,
                 networkUtilizationManager);
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch;
+package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static java.util.Objects.requireNonNull;
 

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
@@ -37,20 +36,19 @@ import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.dispatch.ErrorReport;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class ErrorReportingLogic {
+public class ErrorReporter {
     private final SolvencyPreCheck solvencyPreCheck;
     private final HederaRecordCache recordCache;
     private final TransactionChecker transactionChecker;
 
     @Inject
-    public ErrorReportingLogic(
+    public ErrorReporter(
             final SolvencyPreCheck solvencyPreCheck,
             final HederaRecordCache recordCache,
             final TransactionChecker transactionChecker) {

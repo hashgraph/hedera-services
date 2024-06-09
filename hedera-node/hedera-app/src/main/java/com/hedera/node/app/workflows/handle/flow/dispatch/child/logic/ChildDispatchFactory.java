@@ -35,8 +35,6 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.records.ChildRecordBuilderFactory;
-import com.hedera.node.app.workflows.handle.flow.records.ChildTxnFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -51,19 +49,19 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 @Singleton
-public class ChildDispatchLogic {
+public class ChildDispatchFactory {
     private static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
 
-    private final ChildTxnFactory childTxnFactory;
+    private final ChildTxnInfoFactory childTxnInfoFactory;
     private final TransactionDispatcher dispatcher;
     private final ChildRecordBuilderFactory recordBuilderFactory;
 
     @Inject
-    public ChildDispatchLogic(
-            final ChildTxnFactory childTxnFactory,
+    public ChildDispatchFactory(
+            final ChildTxnInfoFactory childTxnInfoFactory,
             final TransactionDispatcher dispatcher,
             final ChildRecordBuilderFactory recordBuilderFactory) {
-        this.childTxnFactory = childTxnFactory;
+        this.childTxnInfoFactory = childTxnInfoFactory;
         this.dispatcher = dispatcher;
         this.recordBuilderFactory = recordBuilderFactory;
     }
@@ -78,7 +76,7 @@ public class ChildDispatchLogic {
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior) {
         final var preHandleResult = dispatchPreHandle(parentDispatch, txBody, syntheticPayerId);
-        final var childTxnInfo = childTxnFactory.getTxnInfoFrom(txBody);
+        final var childTxnInfo = childTxnInfoFactory.getTxnInfoFrom(txBody);
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
                 childTxnInfo,
                 parentDispatch.recordListBuilder(),

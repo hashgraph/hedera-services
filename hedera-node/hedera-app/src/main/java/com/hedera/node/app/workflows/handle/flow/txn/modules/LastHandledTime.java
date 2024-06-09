@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.txn;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;

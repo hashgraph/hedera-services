@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.records;
+package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
@@ -30,21 +30,15 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provider of the child record builder based on the dispatched child transaction category
  */
 @Singleton
 public class ChildRecordBuilderFactory {
-    private static final Logger logger = LogManager.getLogger(ChildRecordBuilderFactory.class);
-    private final ChildRecordInitializer childRecordInitializer;
 
     @Inject
-    public ChildRecordBuilderFactory(final ChildRecordInitializer childRecordInitializer) {
-        this.childRecordInitializer = childRecordInitializer;
-    }
+    public ChildRecordBuilderFactory() {}
 
     /**
      * Provides the record builder for the child transaction category and initializes it.
@@ -80,7 +74,24 @@ public class ChildRecordBuilderFactory {
         } else {
             recordBuilder = recordListBuilder.addChild(configuration, childCategory);
         }
-        childRecordInitializer.initializeUserRecord(recordBuilder, txnInfo);
+        initializeUserRecord(recordBuilder, txnInfo);
         return recordBuilder;
+    }
+
+    /**
+     * Initializes the user record with the transaction information.
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
+    private void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
+        recordBuilder
+                .transaction(txnInfo.transaction())
+                .transactionBytes(txnInfo.signedBytes())
+                .memo(txnInfo.txBody().memo());
+        // Set the transactionId if provided
+        final var transactionID = txnInfo.txBody().transactionID();
+        if (transactionID != null) {
+            recordBuilder.transactionID(transactionID);
+        }
     }
 }

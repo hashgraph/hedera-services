@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.process;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public interface UserTransactionProcess {
-    @NonNull
-    WorkDone processUserTransaction(UserTransactionComponent userTxn);
+public enum WorkDone {
+    FEES_ONLY,
+    USER_TRANSACTION
 }

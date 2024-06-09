@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.process;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
@@ -22,51 +22,49 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.txn.HollowAccountFinalizationLogic;
-import com.hedera.node.app.workflows.handle.flow.txn.ScheduleServiceCronLogic;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
+import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class MainUserTransactionProcess implements UserTransactionProcess {
-    private static final Logger logger = LogManager.getLogger(MainUserTransactionProcess.class);
+public class DefaultHandleWorkflow {
+    private static final Logger logger = LogManager.getLogger(DefaultHandleWorkflow.class);
 
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final BlockRecordManager blockRecordManager;
-    private final ScheduleServiceCronLogic scheduleServiceCronLogic;
-    private final DispatchLogic dispatchLogic;
-    private final HollowAccountFinalizationLogic hollowAccountFinalization;
+    private final SchedulePurger schedulePurger;
+    private final DispatchProcessor dispatchProcessor;
+    private final HollowAccountCompleter hollowAccountFinalization;
 
     @Inject
-    public MainUserTransactionProcess(
+    public DefaultHandleWorkflow(
             final StakingPeriodTimeHook stakingPeriodTimeHook,
             final BlockRecordManager blockRecordManager,
-            final ScheduleServiceCronLogic scheduleServiceCronLogic,
-            final DispatchLogic dispatchLogic,
-            final HollowAccountFinalizationLogic hollowAccountFinalization) {
+            final SchedulePurger schedulePurger,
+            final DispatchProcessor dispatchProcessor,
+            final HollowAccountCompleter hollowAccountFinalization) {
         this.stakingPeriodTimeHook = stakingPeriodTimeHook;
         this.blockRecordManager = blockRecordManager;
-        this.scheduleServiceCronLogic = scheduleServiceCronLogic;
-        this.dispatchLogic = dispatchLogic;
+        this.schedulePurger = schedulePurger;
+        this.dispatchProcessor = dispatchProcessor;
         this.hollowAccountFinalization = hollowAccountFinalization;
     }
 
-    @Override
-    public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
+    public WorkDone execute(UserTransactionComponent userTxn) {
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-        scheduleServiceCronLogic.expireSchedules(userTxn);
+        schedulePurger.expireSchedules(userTxn);
 
         logUserTxn(userTxn);
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
         hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
 
-        return dispatchLogic.dispatch(userDispatch, userTxn.recordListBuilder());
+        return dispatchProcessor.processDispatch(userDispatch);
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {

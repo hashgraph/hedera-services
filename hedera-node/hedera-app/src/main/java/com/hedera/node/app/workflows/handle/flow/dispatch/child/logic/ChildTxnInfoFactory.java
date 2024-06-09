@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.records;
+package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 
@@ -34,9 +34,9 @@ import javax.inject.Singleton;
  * Factory for providing all needed information for a child transaction.
  */
 @Singleton
-public class ChildTxnFactory {
+public class ChildTxnInfoFactory {
     @Inject
-    public ChildTxnFactory() {}
+    public ChildTxnInfoFactory() {}
 
     /**
      * Provides the transaction information for the given dispatched transaction body.

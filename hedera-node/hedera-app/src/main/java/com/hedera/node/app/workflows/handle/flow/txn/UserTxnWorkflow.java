@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.process;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
@@ -32,10 +32,9 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.workflows.handle.flow.records.UserRecordInitializer;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.data.ContractsConfig;
@@ -55,9 +54,9 @@ public class UserTxnWorkflow {
 
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
-    private final SkipUserTransactionProcess skipHandleProcess;
-    private final MainUserTransactionProcess mainHandleProcess;
-    private final GenesisUserTransactionProcess genesisHandleProcess;
+    private final SkipHandleWorkflow skipHandleWorkflow;
+    private final DefaultHandleWorkflow defaultHandleWorkflow;
+    private final GenesisRecordsConsensusHook genesisRecordsHook;
     final UserTransactionComponent userTxn;
     private final BlockRecordManager blockRecordManager;
     private final HederaRecordCache recordCache;
@@ -71,9 +70,9 @@ public class UserTxnWorkflow {
     public UserTxnWorkflow(
             @NonNull final SoftwareVersion version,
             @NonNull final InitTrigger initTrigger,
-            @NonNull final SkipUserTransactionProcess skipHandleProcess,
-            @NonNull final MainUserTransactionProcess mainHandleProcess,
-            final GenesisUserTransactionProcess genesisHandleProcess,
+            @NonNull final SkipHandleWorkflow skipHandleWorkflow,
+            @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
+            final GenesisRecordsConsensusHook genesisRecordsHook,
             @NonNull final UserTransactionComponent userTxn,
             final BlockRecordManager blockRecordManager,
             final HederaRecordCache recordCache,
@@ -84,9 +83,9 @@ public class UserTxnWorkflow {
             final UserRecordInitializer userRecordInitializer) {
         this.version = version;
         this.initTrigger = initTrigger;
-        this.skipHandleProcess = skipHandleProcess;
-        this.mainHandleProcess = mainHandleProcess;
-        this.genesisHandleProcess = genesisHandleProcess;
+        this.skipHandleWorkflow = skipHandleWorkflow;
+        this.defaultHandleWorkflow = defaultHandleWorkflow;
+        this.genesisRecordsHook = genesisRecordsHook;
         this.userTxn = userTxn;
         this.blockRecordManager = blockRecordManager;
         this.recordCache = recordCache;
@@ -108,13 +107,13 @@ public class UserTxnWorkflow {
 
     private Stream<SingleTransactionRecord> getComputedRecordStream() {
         if (isOlderSoftwareEvent()) {
-            skipHandleProcess.processUserTransaction(userTxn);
+            skipHandleWorkflow.execute(userTxn);
         } else {
             final var isGenesisTxn = userTxn.lastHandledConsensusTime().equals(Instant.EPOCH);
             if (isGenesisTxn) {
-                genesisHandleProcess.processUserTransaction(userTxn);
+                genesisRecordsHook.process(userTxn.tokenContext());
             }
-            final var workDone = mainHandleProcess.processUserTransaction(userTxn);
+            final var workDone = defaultHandleWorkflow.execute(userTxn);
             updateMetrics(isGenesisTxn);
             trackUsage(workDone);
         }

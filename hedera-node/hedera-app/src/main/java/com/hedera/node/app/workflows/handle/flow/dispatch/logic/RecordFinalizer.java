@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.records;
+package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptySet;
@@ -41,12 +41,12 @@ import javax.inject.Singleton;
  * parent or child record finalizer.
  */
 @Singleton
-public class RecordFinalizerlogic {
+public class RecordFinalizer {
     private final ParentRecordFinalizer parentRecordFinalizer;
     private final ChildRecordFinalizer childRecordFinalizer;
 
     @Inject
-    public RecordFinalizerlogic(
+    public RecordFinalizer(
             final ParentRecordFinalizer parentRecordFinalizer, final ChildRecordFinalizer childRecordFinalizer) {
         this.parentRecordFinalizer = parentRecordFinalizer;
         this.childRecordFinalizer = childRecordFinalizer;

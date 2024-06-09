@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.txn;
+package com.hedera.node.app.workflows.handle.flow.txn.logic;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
@@ -35,6 +35,7 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -49,11 +50,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class HollowAccountFinalizationLogic {
-    private static final Logger logger = LogManager.getLogger(HollowAccountFinalizationLogic.class);
+public class HollowAccountCompleter {
+    private static final Logger logger = LogManager.getLogger(HollowAccountCompleter.class);
 
     @Inject
-    public HollowAccountFinalizationLogic() {
+    public HollowAccountCompleter() {
         // do nothing
     }
 

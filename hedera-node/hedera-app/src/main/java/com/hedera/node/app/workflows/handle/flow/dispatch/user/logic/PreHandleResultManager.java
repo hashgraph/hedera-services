@@ -30,13 +30,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class PreHandleLogic {
-    private static final Logger logger = LogManager.getLogger(PreHandleLogic.class);
+public class PreHandleResultManager {
+    private static final Logger logger = LogManager.getLogger(PreHandleResultManager.class);
     final PreHandleWorkflow preHandleWorkflow;
     final SolvencyPreCheck solvencyPreCheck;
 
     @Inject
-    public PreHandleLogic(
+    public PreHandleResultManager(
             @NonNull final PreHandleWorkflow preHandleWorkflow, @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.preHandleWorkflow = preHandleWorkflow;
         this.solvencyPreCheck = solvencyPreCheck;

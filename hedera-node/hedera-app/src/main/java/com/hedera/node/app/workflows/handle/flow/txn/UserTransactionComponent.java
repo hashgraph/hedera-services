@@ -21,9 +21,9 @@ import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.process.UserTxnWorkflow;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ContextModule;
+import com.hedera.node.app.workflows.handle.flow.txn.modules.LastHandledTime;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.PreHandleResultModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.StateModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.UserDispatchSubcomponentModule;
@@ -75,7 +75,7 @@ public interface UserTransactionComponent {
      * The process runner for the user transaction to produce stream items
      * @return the process runner
      */
-    UserTxnWorkflow processor();
+    UserTxnWorkflow workflow();
 
     /**
      * The consensus time of the user transaction

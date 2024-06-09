@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.records;
+package com.hedera.node.app.workflows.handle.flow.dispatch.user.logic;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.fees.ExchangeRateManager;

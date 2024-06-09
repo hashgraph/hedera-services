@@ -21,7 +21,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.PreHandleLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.PreHandleResultManager;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -38,9 +38,9 @@ public interface PreHandleResultModule {
     static PreHandleResult providePreHandleResult(
             @NonNull NodeInfo creator,
             @NonNull ConsensusTransaction platformTxn,
-            @NonNull PreHandleLogic preHandleLogic,
+            @NonNull PreHandleResultManager preHandleResultManager,
             @NonNull final ReadableStoreFactory storeFactory) {
-        return preHandleLogic.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
+        return preHandleResultManager.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
     }
 
     @Provides

@@ -71,8 +71,8 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchLogic;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchLogic;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchFactory;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -124,10 +124,10 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private final ServiceApiFactory serviceApiFactory;
     private final NetworkInfo networkInfo;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
-    private final Provider<ChildDispatchComponent.Factory> childDispatchFactory;
-    private final ChildDispatchLogic childDispatchLogic;
+    private final Provider<ChildDispatchComponent.Factory> childDispatchProvider;
+    private final ChildDispatchFactory childDispatchFactory;
     private final Dispatch currentDispatch;
-    private final DispatchLogic dispatchLogic;
+    private final DispatchProcessor dispatchProcessor;
     private final NetworkUtilizationManager networkUtilizationManager;
     private Map<AccountID, Long> dispatchPaidRewards;
 
@@ -153,10 +153,10 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             final ServiceApiFactory serviceApiFactory,
             final NetworkInfo networkInfo,
             final SingleTransactionRecordBuilderImpl recordBuilder,
-            final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
-            final ChildDispatchLogic childDispatchLogic,
+            final Provider<ChildDispatchComponent.Factory> childDispatchProvider,
+            final ChildDispatchFactory childDispatchLogic,
             final Dispatch parentDispatch,
-            final DispatchLogic dispatchLogic,
+            final DispatchProcessor dispatchProcessor,
             final NetworkUtilizationManager networkUtilizationManager) {
         this.consensusNow = consensusNow;
         this.txnInfo = transactionInfo;
@@ -172,10 +172,10 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         this.exchangeRateManager = exchangeRateManager;
         this.stack = stack;
         this.entityIdStore = entityIdStore;
-        this.childDispatchFactory = childDispatchFactory;
-        this.childDispatchLogic = childDispatchLogic;
+        this.childDispatchProvider = childDispatchProvider;
+        this.childDispatchFactory = childDispatchLogic;
         this.currentDispatch = parentDispatch;
-        this.dispatchLogic = dispatchLogic;
+        this.dispatchProcessor = dispatchProcessor;
         this.networkUtilizationManager = networkUtilizationManager;
         // FUTURE : Provide these two from UserTxnScope after deleting mono code
         this.attributeValidator = new AttributeValidatorImpl(this);
@@ -617,24 +617,16 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             TransactionCategory category,
             SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             boolean commitStack) {
-        final var childDispatch = childDispatchLogic.createChildDispatch(
+        final var childDispatch = childDispatchFactory.createChildDispatch(
                 currentDispatch,
                 childTxBody,
                 childVerifier,
                 syntheticPayer,
                 category,
-                childDispatchFactory,
+                childDispatchProvider,
                 customizer,
                 reversingBehavior);
-        logger.info(
-                "Dispatched child transaction {}, recordBuilder identity hashcode {}",
-                childTxBody,
-                System.identityHashCode(childDispatch.recordBuilder()));
-        dispatchLogic.dispatch(childDispatch, currentDispatch.recordListBuilder());
-        logger.info(
-                "Dispatched child transaction {}, status {}",
-                childTxBody,
-                childDispatch.recordBuilder().status());
+        dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
             stack.commitFullStack();
         }

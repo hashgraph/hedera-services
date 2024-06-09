@@ -335,23 +335,22 @@ public class HandleWorkflow {
     private void handlePlatformTransactionV2(
             @NonNull final HederaState state,
             @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn) {
+            @NonNull final ConsensusTransaction txn) {
         final var handleStart = System.nanoTime();
-        final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
-        final var lastHandledConsensusTime = blockRecordManager.consTimeOfLastHandledTxn();
 
+        final var lastHandledConsTime = blockRecordManager.consTimeOfLastHandledTxn();
+        final var consTime = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
         // FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
-        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var userTxnContext = userTxnProvider
-                .get()
-                .create(platformState, platformEvent, creator, platformTxn, consensusNow, lastHandledConsensusTime);
-        final var recordStream = userTxnContext.processor().execute();
+        blockRecordManager.startUserTransaction(consTime, state, platformState);
+        final var userTxn =
+                userTxnProvider.get().create(platformState, event, creator, txn, consTime, lastHandledConsTime);
+        final var recordStream = userTxn.workflow().execute();
         blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
-                userTxnContext.functionality(), (int) (System.nanoTime() - handleStart));
+                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
 
     private void handleUserTransaction(
