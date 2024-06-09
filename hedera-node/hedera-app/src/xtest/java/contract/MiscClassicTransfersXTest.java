@@ -67,7 +67,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Exercises some miscellaneous classic transfers, emphasizing slightly more exotic behaviors. These include,
@@ -133,7 +132,7 @@ public class MiscClassicTransfersXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAccounts(@NotNull ReadableKVState<AccountID, Account> accounts) {
+    protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts) {
         final var lazyCreation = requireNonNull(accounts.get(LAZY_CREATED_ID));
         assertEquals(1, lazyCreation.maxAutoAssociations());
         assertEquals(1, lazyCreation.usedAutoAssociations());

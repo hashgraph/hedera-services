@@ -24,8 +24,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

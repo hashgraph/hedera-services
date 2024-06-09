@@ -190,9 +190,9 @@ public class BlocklistAccountCreator {
      * Parses a line from the blocklist resource and returns blocked account info record.
      *
      * The line should have the following format:
-     * <private key>,<memo>
-     *     where <private key> is a hex-encoded private key
-     *     and <memo> is a memo for the blocked account
+     * &lt;private key&gt;,&lt;memo&gt;
+     *     where &lt;private key&gt; is a hex-encoded private key
+     *     and &lt;memo&gt; is a memo for the blocked account
      *     and both values are comma-separated.
      *
      * The resulting blocked account info record contains the EVM address derived from the private key, and the memo.
