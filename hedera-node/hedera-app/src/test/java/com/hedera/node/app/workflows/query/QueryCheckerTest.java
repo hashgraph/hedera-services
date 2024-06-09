@@ -58,6 +58,7 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,6 +88,9 @@ class QueryCheckerTest extends AppTestBase {
 
     @Mock
     private FeeManager feeManager;
+
+    @Mock
+    private TransactionDispatcher dispatcher;
 
     private QueryChecker checker;
 
