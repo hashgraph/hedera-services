@@ -181,7 +181,7 @@ public class HandleWorkflow {
     private final InitTrigger initTrigger;
     private final SoftwareVersion softwareVersion;
     private final Provider<UserTransactionComponent.Factory> userTxnProvider;
-    private boolean useV2HandleTxn = true;
+    private boolean useV2HandleTxn = false;
 
     @Inject
     public HandleWorkflow(
@@ -340,11 +340,13 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction platformTxn) {
         final var handleStart = System.nanoTime();
         final var consensusNow = platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
+        final var lastHandledConsensusTime = blockRecordManager.consTimeOfLastHandledTxn();
 
         // FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var userTxnContext =
-                userTxnProvider.get().create(platformState, platformEvent, creator, platformTxn, consensusNow);
+        final var userTxnContext = userTxnProvider
+                .get()
+                .create(platformState, platformEvent, creator, platformTxn, consensusNow, lastHandledConsensusTime);
         final var recordStream = userTxnContext.processor().execute();
         blockRecordManager.endUserTransaction(recordStream, state);
 

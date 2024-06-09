@@ -61,7 +61,8 @@ public interface UserTransactionComponent {
                 @BindsInstance ConsensusEvent platformEvent,
                 @BindsInstance NodeInfo creator,
                 @BindsInstance ConsensusTransaction platformTxn,
-                @BindsInstance Instant consensusTime);
+                @BindsInstance Instant consensusTime,
+                @BindsInstance @LastHandledTime final Instant lastHandledConsensusTime);
     }
 
     /**
@@ -155,4 +156,7 @@ public interface UserTransactionComponent {
     Provider<UserDispatchComponent.Factory> userDispatchProvider();
 
     Configuration configuration();
+
+    @LastHandledTime
+    Instant lastHandledConsensusTime();
 }

@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -133,10 +132,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         if (context.hasChildRecords()) {
             // All the above changes maps are mutable
             deductChangesFromChildRecords(context, tokenRelChanges, nftChanges, hbarChanges);
-            // In the current system a parent transaction that has child transactions cannot
-            // *itself* cause any net fungible or NFT transfers; fail fast if that happens
-            validateTrue(tokenRelChanges.isEmpty(), FAIL_INVALID);
-            validateTrue(nftChanges.isEmpty(), FAIL_INVALID);
         }
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written

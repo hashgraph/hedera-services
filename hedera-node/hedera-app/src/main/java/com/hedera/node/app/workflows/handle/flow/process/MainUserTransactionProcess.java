@@ -59,7 +59,10 @@ public class MainUserTransactionProcess implements UserTransactionProcess {
     public WorkDone processUserTransaction(UserTransactionComponent userTxn) {
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-        scheduleServiceCronLogic.expireSchedules(blockRecordManager.consTimeOfLastHandledTxn(), userTxn);
+        logger.info("UserTxn stack {}", System.identityHashCode(userTxn.stack()));
+        scheduleServiceCronLogic.expireSchedules(userTxn);
+        //        userTxn.stack().commitFullStack();
+
         userTxnLogger.logUserTxn(userTxn);
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();

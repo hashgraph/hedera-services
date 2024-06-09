@@ -86,21 +86,6 @@ public class PrivilegesVerifier {
                     payerId, txBody.fileUpdateOrThrow().fileIDOrThrow().fileNum());
             case FILE_APPEND -> checkFileChange(
                     payerId, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
-            case CONTRACT_UPDATE -> {
-                var contractId = txBody.contractUpdateInstanceOrThrow().contractIDOrThrow();
-
-                if (contractId.hasEvmAddress()) {
-                    var contractIdFromEvmAddress =
-                            contractIdFromEvmAddress(contractId.evmAddress().toByteArray());
-                    yield checkFileChange(payerId, contractIdFromEvmAddress.contractNumOrThrow());
-                } else {
-                    yield checkFileChange(
-                            payerId,
-                            txBody.contractUpdateInstanceOrThrow()
-                                    .contractIDOrThrow()
-                                    .contractNumOrThrow());
-                }
-            }
 
                 // Authorization for crypto updates
             case CRYPTO_UPDATE -> checkCryptoUpdate(payerId, txBody.cryptoUpdateAccountOrThrow());
@@ -110,19 +95,6 @@ public class PrivilegesVerifier {
                     txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
             case CRYPTO_DELETE -> checkEntityDelete(
                     txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
-            case CONTRACT_DELETE -> {
-                var contractId = txBody.contractDeleteInstanceOrThrow().contractIDOrThrow();
-
-                if (contractId.hasEvmAddress()) {
-                    var contractIdFromEvmAddress =
-                            contractIdFromEvmAddress(contractId.evmAddress().toByteArray());
-                    yield checkEntityDelete(contractIdFromEvmAddress.contractNumOrThrow());
-                } else {
-                    yield checkEntityDelete(txBody.contractDeleteInstanceOrThrow()
-                            .contractIDOrThrow()
-                            .contractNumOrThrow());
-                }
-            }
 
             default -> SystemPrivilege.UNNECESSARY;
         };

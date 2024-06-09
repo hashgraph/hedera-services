@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
@@ -35,8 +34,8 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -76,7 +75,8 @@ public class HollowAccountFinalizationLogic {
                 userTxn.configuration(),
                 hollowAccounts,
                 dispatch.keyVerifier(),
-                maybeEthTxVerification);
+                maybeEthTxVerification,
+                userTxn.recordListBuilder());
     }
 
     @Nullable
@@ -125,50 +125,47 @@ public class HollowAccountFinalizationLogic {
             @NonNull final Configuration configuration,
             @NonNull final Set<Account> accounts,
             @NonNull final KeyVerifier verifier,
-            @Nullable SignatureVerification ethTxVerification) {
+            @Nullable SignatureVerification ethTxVerification,
+            @NonNull final RecordListBuilder recordListBuilder) {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-        final var precedingHollowAccountRecords = accounts.size();
         final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        // If the hollow accounts that need to be finalized is greater than the max preceding
-        // records allowed throw an exception
-        if (precedingHollowAccountRecords >= maxRecords) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
-        } else {
-            for (final var hollowAccount : accounts) {
-                if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {
-                    // The CryptoCreateHandler uses a "hack" to validate that a CryptoCreate with
-                    // an EVM address has signed with that alias's ECDSA key; that is, it adds a
-                    // dummy "hollow account" with the EVM address as an alias. But we don't want
-                    // to try to finalize such a dummy account, so skip it here.
-                    continue;
+        for (final var hollowAccount : accounts) {
+            if (recordListBuilder.precedingRecordBuilders().size() >= maxRecords) {
+                break;
+            }
+            if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {
+                // The CryptoCreateHandler uses a "hack" to validate that a CryptoCreate with
+                // an EVM address has signed with that alias's ECDSA key; that is, it adds a
+                // dummy "hollow account" with the EVM address as an alias. But we don't want
+                // to try to finalize such a dummy account, so skip it here.
+                continue;
+            }
+            // get the verified key for this hollow account
+            final var verification =
+                    ethTxVerification != null && hollowAccount.alias().equals(ethTxVerification.evmAlias())
+                            ? ethTxVerification
+                            : requireNonNull(
+                                    verifier.verificationFor(hollowAccount.alias()),
+                                    "Required hollow account verified signature did not exist");
+            if (verification.key() != null) {
+                if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
+                    logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
+                    return;
                 }
-                // get the verified key for this hollow account
-                final var verification =
-                        ethTxVerification != null && hollowAccount.alias().equals(ethTxVerification.evmAlias())
-                                ? ethTxVerification
-                                : requireNonNull(
-                                        verifier.verificationFor(hollowAccount.alias()),
-                                        "Required hollow account verified signature did not exist");
-                if (verification.key() != null) {
-                    if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
-                        logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
-                        return;
-                    }
-                    // dispatch synthetic update transaction for updating key on this hollow account
-                    final var syntheticUpdateTxn = TransactionBody.newBuilder()
-                            .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                                    .accountIDToUpdate(hollowAccount.accountId())
-                                    .key(verification.key())
-                                    .build())
-                            .build();
-                    // Note the null key verification callback below; we bypass signature
-                    // verifications when doing hollow account finalization
-                    final var recordBuilder = context.dispatchPrecedingTransaction(
-                            syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
-                    // For some reason update accountId is set only for the hollow account finalizations and not
-                    // for top level crypto update transactions. So we set it here.
-                    recordBuilder.accountID(hollowAccount.accountId());
-                }
+                // dispatch synthetic update transaction for updating key on this hollow account
+                final var syntheticUpdateTxn = TransactionBody.newBuilder()
+                        .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                                .accountIDToUpdate(hollowAccount.accountId())
+                                .key(verification.key())
+                                .build())
+                        .build();
+                // Note the null key verification callback below; we bypass signature
+                // verifications when doing hollow account finalization
+                final var recordBuilder = context.dispatchPrecedingTransaction(
+                        syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
+                // For some reason update accountId is set only for the hollow account finalizations and not
+                // for top level crypto update transactions. So we set it here.
+                recordBuilder.accountID(hollowAccount.accountId());
             }
         }
     }

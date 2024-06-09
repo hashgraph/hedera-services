@@ -140,10 +140,6 @@ public class ChildDispatchLogic {
         }
     }
 
-    private KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
-        return callback == null ? NO_OP_KEY_VERIFIER : new DelegateKeyVerifier(callback);
-    }
-
     @NonNull
     private static ComputeDispatchFeesAsTopLevel isScheduled(final HandleContext.TransactionCategory category) {
         return category == HandleContext.TransactionCategory.SCHEDULED
@@ -178,5 +174,37 @@ public class ChildDispatchLogic {
         public int numSignaturesVerified() {
             return 0;
         }
+    }
+
+    private static KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
+        return callback == null
+                ? NO_OP_KEY_VERIFIER
+                : new KeyVerifier() {
+                    private final KeyVerifier verifier = new DelegateKeyVerifier(callback);
+
+                    @NonNull
+                    @Override
+                    public SignatureVerification verificationFor(@NonNull final Key key) {
+                        return callback.test(key) ? NoOpKeyVerifier.PASSED_VERIFICATION : verifier.verificationFor(key);
+                    }
+
+                    @NonNull
+                    @Override
+                    public SignatureVerification verificationFor(
+                            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
+                        throw new UnsupportedOperationException("Should never be called!");
+                    }
+
+                    @NonNull
+                    @Override
+                    public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
+                        throw new UnsupportedOperationException("Should never be called!");
+                    }
+
+                    @Override
+                    public int numSignaturesVerified() {
+                        return 0;
+                    }
+                };
     }
 }

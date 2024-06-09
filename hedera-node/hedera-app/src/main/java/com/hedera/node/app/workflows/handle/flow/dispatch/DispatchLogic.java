@@ -94,6 +94,7 @@ public class DispatchLogic {
 
         recordFinalizerlogic.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
+        logger.info("Committed stack {}", System.identityHashCode(dispatch.stack()));
         return workDone;
     }
 

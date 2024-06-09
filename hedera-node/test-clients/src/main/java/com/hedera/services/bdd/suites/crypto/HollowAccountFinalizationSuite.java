@@ -68,6 +68,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
@@ -84,8 +85,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -534,6 +537,7 @@ public class HollowAccountFinalizationSuite {
         final var ECDSA_KEY_3 = "ECDSA_KEY_3";
         final var ECDSA_KEY_4 = "ECDSA_KEY_4";
         final var RECIPIENT_KEY = "ECDSA_KEY_5";
+        final AtomicInteger numHollow = new AtomicInteger(0);
         return defaultHapiSpec("tooManyHollowAccountFinalizationsShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ECDSA_KEY_1).shape(SECP_256K1_SHAPE),
@@ -571,18 +575,22 @@ public class HollowAccountFinalizationSuite {
                                     uniqueWithFullPrefixesFor(ECDSA_KEY_1, ECDSA_KEY_2, ECDSA_KEY_3, ECDSA_KEY_4))
                             .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
                             .via(TRANSFER_TXN_2);
-                    // no finalization child records should be exported, since too
-                    // many finalizations
-                    // were requested
-                    final var op3 = emptyChildRecordsCheck(TRANSFER_TXN_2, MAX_CHILD_RECORDS_EXCEEDED);
+                    final var op3 =
+                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().hasChildRecordCount(3);
+                    final Consumer<Boolean> consumer = b -> {
+                        if (b) {
+                            numHollow.incrementAndGet();
+                        }
+                    };
                     allRunFor(
                             spec,
                             op2,
                             op3,
-                            assertStillHollow(spec, ECDSA_KEY_1),
-                            assertStillHollow(spec, ECDSA_KEY_2),
-                            assertStillHollow(spec, ECDSA_KEY_3),
-                            assertStillHollow(spec, ECDSA_KEY_4));
+                            checkHollowStatus(spec, ECDSA_KEY_1, consumer),
+                            checkHollowStatus(spec, ECDSA_KEY_2, consumer),
+                            checkHollowStatus(spec, ECDSA_KEY_3, consumer),
+                            checkHollowStatus(spec, ECDSA_KEY_4, consumer));
+                    assertTrue(numHollow.get() == 1 || numHollow.get() == 2);
                 }));
     }
 
@@ -952,5 +960,19 @@ public class HollowAccountFinalizationSuite {
         final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
         return getAliasedAccountInfo(evmAddress)
                 .has(accountWith().hasEmptyKey().evmAddress(evmAddress).noAlias());
+    }
+
+    private HapiGetAccountInfo checkHollowStatus(final HapiSpec spec, final String key, Consumer<Boolean> callback) {
+        final var ecdsaKey = spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+        final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+        return getAliasedAccountInfo(evmAddress).exposingKeyTo(k -> {
+            callback.accept(EMPTY_KEY.equals(k));
+        });
+    }
+
+    private HapiGetAccountInfo assertNotHollow(final HapiSpec spec, final String key) {
+        final var ecdsaKey = spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+        final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+        return getAliasedAccountInfo(evmAddress).has(accountWith().hasNonEmptyKey());
     }
 }

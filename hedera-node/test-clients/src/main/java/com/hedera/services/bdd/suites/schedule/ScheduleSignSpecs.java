@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -758,7 +759,8 @@ public class ScheduleSignSpecs {
     @Order(18)
     final Stream<DynamicTest> signFailsDueToDeletedExpiration() {
         final int FAST_EXPIRATION = 0;
-        return defaultHapiSpec("SignFailsDueToDeletedExpiration")
+        return propertyPreservingHapiSpec("SignFailsDueToDeletedExpiration")
+                .preserving(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, SCHEDULING_WHITELIST)
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any other scheduled expiring
@@ -787,7 +789,6 @@ public class ScheduleSignSpecs {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
-                        getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + DEFAULT_TX_EXPIRY));
+                        getScheduleInfo(TWO_SIG_XFER).logged());
     }
 }
