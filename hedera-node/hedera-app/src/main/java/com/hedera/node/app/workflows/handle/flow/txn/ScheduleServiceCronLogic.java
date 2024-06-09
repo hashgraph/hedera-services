@@ -25,8 +25,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * The logic for the schedule service cron that purges expired schedules which runs as a part of default
@@ -34,8 +32,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class ScheduleServiceCronLogic {
-    private static final Logger logger = LogManager.getLogger(ScheduleServiceCronLogic.class);
-
     private final ScheduleExpirationHook scheduleExpirationHook;
     private final StoreMetricsService storeMetricsService;
 
@@ -53,15 +49,10 @@ public class ScheduleServiceCronLogic {
      * @param userTxnContext the user transaction component
      */
     public void expireSchedules(@NonNull UserTransactionComponent userTxnContext) {
-        logger.info("Processing expired schedules");
         final var lastHandledTxnTime = userTxnContext.lastHandledConsensusTime();
         if (lastHandledTxnTime == Instant.EPOCH) {
             return;
         }
-        logger.info(
-                "Processing expired schedules between {} and {}",
-                lastHandledTxnTime.getEpochSecond(),
-                userTxnContext.consensusNow().getEpochSecond());
         if (userTxnContext.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxnContext.consensusNow().getEpochSecond() - 1;
@@ -73,6 +64,7 @@ public class ScheduleServiceCronLogic {
                     .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
+            userTxnContext.stack().commitFullStack();
         }
     }
 }

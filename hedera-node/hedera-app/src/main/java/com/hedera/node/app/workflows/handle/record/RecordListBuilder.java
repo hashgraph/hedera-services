@@ -367,13 +367,6 @@ public final class RecordListBuilder {
                 if (precedingTxnRecordBuilders.contains(recordBuilder)) {
                     return;
                 }
-                logger.info(
-                        " this {}, doesn't have child {} in list {}",
-                        System.identityHashCode(this),
-                        System.identityHashCode(recordBuilder),
-                        childRecordBuilders.stream()
-                                .map(System::identityHashCode)
-                                .toList());
                 throw new IllegalArgumentException("recordBuilder not found");
             }
         }

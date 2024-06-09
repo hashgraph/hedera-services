@@ -64,12 +64,6 @@ public class ChildRecordBuilderFactory {
             HandleContext.TransactionCategory childCategory,
             SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable final ExternalizedRecordCustomizer customizer) {
-        logger.info(
-                "Creating record builder for child category: {} and reversing behavior: {} , "
-                        + "using recordListBuilder {}",
-                childCategory,
-                reversingBehavior,
-                System.identityHashCode(recordListBuilder));
         final SingleTransactionRecordBuilderImpl recordBuilder;
         if (childCategory == PRECEDING) {
             recordBuilder = switch (reversingBehavior) {

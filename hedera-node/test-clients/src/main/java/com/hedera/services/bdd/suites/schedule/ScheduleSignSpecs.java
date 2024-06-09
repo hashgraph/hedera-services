@@ -789,6 +789,6 @@ public class ScheduleSignSpecs {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
-                        getScheduleInfo(TWO_SIG_XFER).logged());
+                        getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 }
