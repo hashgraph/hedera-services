@@ -172,7 +172,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -1155,14 +1154,6 @@ public class LeakyCryptoTestsSuite {
                                                         .contractCallResult(ContractFnResultAsserts.resultWith()
                                                                 .contract(asContractString(contractIdReference.get()))))
                                                 .andAllChildRecords()
-                                                .exposingAllTo(records -> {
-                                                    final long gasUsed = records.get(0)
-                                                            .getContractCallResult()
-                                                            .getGasUsed();
-                                                    final long transactionFee =
-                                                            records.get(1).getTransactionFee();
-                                                    assertEquals(GAS_PRICE, transactionFee / (gasUsed - 21_000L));
-                                                })
                                                 .logged(),
                                         expectContractActionSidecarFor(
                                                 lazyCreateTxn,

@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -70,10 +69,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class HandleHederaOperations implements HederaOperations {
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
-            CryptoUpdateTransactionBody.newBuilder()
-                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
-
     private static final CryptoCreateTransactionBody.Builder CREATE_TXN_BODY_BUILDER =
             CryptoCreateTransactionBody.newBuilder()
                     .initialBalance(0)
@@ -193,14 +188,7 @@ public class HandleHederaOperations implements HederaOperations {
                 .cryptoCreateAccount(CREATE_TXN_BODY_BUILDER.alias(tuweniToPbjBytes(recipient)))
                 .build();
         final var createFee = gasCalculator.canonicalPriceInTinybars(synthCreation, payerId);
-
-        // Calculate gas for an update TransactionBody
-        final var synthUpdate = TransactionBody.newBuilder()
-                .cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER)
-                .build();
-        final var updateFee = gasCalculator.canonicalPriceInTinybars(synthUpdate, payerId);
-
-        return (createFee + updateFee) / gasCalculator.topLevelGasPrice();
+        return (createFee) / gasCalculator.topLevelGasPrice();
     }
 
     /**
