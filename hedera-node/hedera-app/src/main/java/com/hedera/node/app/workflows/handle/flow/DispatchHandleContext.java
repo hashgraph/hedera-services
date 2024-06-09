@@ -99,8 +99,8 @@ import org.apache.logging.log4j.Logger;
  * The HandleContext Implementation
  */
 @Reusable
-public class FlowHandleContext implements HandleContext, FeeContext {
-    private static final Logger logger = LogManager.getLogger(FlowHandleContext.class);
+public class DispatchHandleContext implements HandleContext, FeeContext {
+    private static final Logger logger = LogManager.getLogger(DispatchHandleContext.class);
 
     private final Instant consensusNow;
     private final TransactionInfo txnInfo;
@@ -132,7 +132,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     private Map<AccountID, Long> dispatchPaidRewards;
 
     @Inject
-    public FlowHandleContext(
+    public DispatchHandleContext(
             final Instant consensusNow,
             final TransactionInfo transactionInfo,
             final Configuration configuration,

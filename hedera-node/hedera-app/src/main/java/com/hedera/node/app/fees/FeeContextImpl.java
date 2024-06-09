@@ -36,7 +36,7 @@ import java.time.Instant;
  * Simple implementation of {@link FeeContext} without any addition functionality.
  *
  * <p>This class is intended to be used during ingest. In the handle-workflow we use
- * {@link com.hedera.node.app.workflows.handle.HandleContextImpl}, which also implements{@link FeeContext}
+ * {@link com.hedera.node.app.workflows.handle.flow.DispatchHandleContext}, which also implements{@link FeeContext}
  */
 public class FeeContextImpl implements FeeContext {
     private final Instant consensusTime;

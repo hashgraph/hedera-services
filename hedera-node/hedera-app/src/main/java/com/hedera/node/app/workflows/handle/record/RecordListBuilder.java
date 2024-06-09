@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -155,7 +154,7 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addPreceding(
             @NonNull final Configuration configuration,
-            final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
+            final HandleContext.PrecedingTransactionCategory precedingTxnCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         return doAddPreceding(configuration, ReversingBehavior.IRREVERSIBLE, precedingTxnCategory);
     }
@@ -173,7 +172,7 @@ public final class RecordListBuilder {
     public SingleTransactionRecordBuilderImpl doAddPreceding(
             @NonNull final Configuration configuration,
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
+            @NonNull final HandleContext.PrecedingTransactionCategory precedingTxnCategory) {
         // Lazily create. FUTURE: We should reuse the RecordListBuilder between handle calls, and we should
         // reuse these lists. Then we can omit this lazy create entirely and produce less garbage overall.
         if (precedingTxnRecordBuilders == null) {

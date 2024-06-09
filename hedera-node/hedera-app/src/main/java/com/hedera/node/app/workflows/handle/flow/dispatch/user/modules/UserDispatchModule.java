@@ -37,7 +37,7 @@ import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
+import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchScope;
@@ -94,11 +94,11 @@ public interface UserDispatchModule {
 
     @Binds
     @UserDispatchScope
-    HandleContext bindHandleContext(FlowHandleContext handleContext);
+    HandleContext bindHandleContext(DispatchHandleContext handleContext);
 
     @Binds
     @UserDispatchScope
-    FeeContext bindFeeContext(FlowHandleContext handleContext);
+    FeeContext bindFeeContext(DispatchHandleContext handleContext);
 
     @Provides
     @UserDispatchScope

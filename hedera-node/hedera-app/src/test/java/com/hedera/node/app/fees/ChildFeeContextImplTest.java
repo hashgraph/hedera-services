@@ -34,8 +34,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
@@ -77,7 +77,7 @@ class ChildFeeContextImplTest {
     private FeeCalculator feeCalculator;
 
     @Mock
-    private HandleContextImpl context;
+    private FeeContext context;
 
     @Mock
     private ReadableAccountStore readableAccountStore;

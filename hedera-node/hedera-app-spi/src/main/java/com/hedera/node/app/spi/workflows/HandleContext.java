@@ -78,6 +78,11 @@ public interface HandleContext {
         SCHEDULED
     }
 
+    public enum PrecedingTransactionCategory {
+        UNLIMITED_CHILD_RECORDS,
+        LIMITED_CHILD_RECORDS
+    }
+
     /**
      * Returns the current consensus time.
      *

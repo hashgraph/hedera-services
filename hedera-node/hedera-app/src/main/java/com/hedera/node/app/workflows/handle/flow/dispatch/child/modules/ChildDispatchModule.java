@@ -47,7 +47,7 @@ import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
-import com.hedera.node.app.workflows.handle.flow.FlowHandleContext;
+import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchScope;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchFactory;
@@ -69,11 +69,11 @@ import javax.inject.Provider;
 public interface ChildDispatchModule {
     @Binds
     @ChildDispatchScope
-    HandleContext bindHandleContext(FlowHandleContext handleContext);
+    HandleContext bindHandleContext(DispatchHandleContext handleContext);
 
     @Binds
     @ChildDispatchScope
-    FeeContext bindFeeContext(FlowHandleContext feeContext);
+    FeeContext bindFeeContext(DispatchHandleContext feeContext);
 
     @Provides
     @ChildDispatchScope
@@ -181,7 +181,7 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    static FlowHandleContext provideFlowHandleContext(
+    static DispatchHandleContext provideFlowHandleContext(
             final Instant consensusNow,
             @NonNull @ChildQualifier final TransactionInfo transactionInfo,
             final Configuration configuration,
@@ -207,7 +207,7 @@ public interface ChildDispatchModule {
             @NonNull final ChildDispatchComponent dispatch,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
-        return new FlowHandleContext(
+        return new DispatchHandleContext(
                 consensusNow,
                 transactionInfo,
                 configuration,
