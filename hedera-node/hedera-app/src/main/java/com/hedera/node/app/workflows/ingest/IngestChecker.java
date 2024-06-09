@@ -221,7 +221,8 @@ public final class IngestChecker {
                 storeFactory,
                 configuration,
                 authorizer,
-                numSigs);
+                numSigs,
+                dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
 

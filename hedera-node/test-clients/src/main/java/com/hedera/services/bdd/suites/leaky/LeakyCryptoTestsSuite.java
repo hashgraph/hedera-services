@@ -814,7 +814,7 @@ public class LeakyCryptoTestsSuite {
                     // balance to pay for the finalization (CryptoUpdate) fee
                     final var op5 = cryptoTransfer(tinyBarsFromTo(payer, secondEvmAddress, ONE_HUNDRED_HBARS))
                             .payingWith(payer)
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                            .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
                             .via(TRANSFER_TXN);
                     final var op5FeeAssertion = getTxnRecord(TRANSFER_TXN)
                             .logged()
@@ -834,9 +834,9 @@ public class LeakyCryptoTestsSuite {
                             .via(TRANSFER_TXN);
                     final var op7FeeAssertion = getTxnRecord(TRANSFER_TXN)
                             .logged()
+                            .andAllChildRecords()
                             .exposingTo(record -> {
-                                Assertions.assertEquals(
-                                        REDUCED_TOTAL_FEE + 2 * REDUCED_TOTAL_FEE, record.getTransactionFee());
+                                Assertions.assertEquals(REDUCED_TOTAL_FEE, record.getTransactionFee());
                             });
                     final var op8 = getAliasedAccountInfo(secondKey)
                             .has(accountWith()

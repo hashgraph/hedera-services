@@ -345,6 +345,11 @@ public class HandleContextImpl implements HandleContext, FeeContext {
     }
 
     @Override
+    public Fees dispatchComputeFees(@NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
+        return dispatchComputeFees(txBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.NO);
+    }
+
+    @Override
     @NonNull
     public BlockRecordInfo blockRecordInfo() {
         return blockRecordInfo;
@@ -528,7 +533,9 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 syntheticPayerId,
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
-                0));
+                0,
+                readableStoreFactory,
+                consensusNow()));
     }
 
     @Override
@@ -839,7 +846,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     .build();
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
             solvencyPreCheck.checkSolvency(
-                    transactionBody, syntheticPayerId, function, payerAccount, serviceFee, false);
+                    transactionBody, syntheticPayerId, function, payerAccount, serviceFee, false, true);
 
             // Note we do NOT want to enforce the "time box" on valid start for
             // transaction ids dispatched by the schedule service, since these ids derive from their

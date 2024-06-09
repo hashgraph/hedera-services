@@ -133,7 +133,7 @@ public class SolvencyPreCheck {
             // FUTURE ('#9550')
             final boolean ingestCheck)
             throws PreCheckException {
-        checkSolvency(txInfo.txBody(), txInfo.payerID(), txInfo.functionality(), account, fees, ingestCheck);
+        checkSolvency(txInfo.txBody(), txInfo.payerID(), txInfo.functionality(), account, fees, ingestCheck, true);
     }
 
     public void checkSolvency(
@@ -144,7 +144,8 @@ public class SolvencyPreCheck {
             @NonNull final Fees fees,
             // This is to match mono and pass HapiTest. Should reconsider later.
             // FUTURE ('#9550')
-            final boolean ingestCheck)
+            final boolean ingestCheck,
+            final boolean checkOfferedFee)
             throws PreCheckException {
         // Skip solvency check for privileged transactions or superusers
         if (authorizer.hasWaivedFees(payerID, functionality, txBody)) {
@@ -154,13 +155,13 @@ public class SolvencyPreCheck {
         final var availableBalance = account.tinybarBalance();
         final var offeredFee = txBody.transactionFee();
 
-        if (offeredFee < fees.networkFee()) {
+        if (checkOfferedFee && offeredFee < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
         if (availableBalance < fees.networkFee()) {
             throw new InsufficientNetworkFeeException(INSUFFICIENT_PAYER_BALANCE, totalFee);
         }
-        if (offeredFee < totalFee) {
+        if (checkOfferedFee && offeredFee < totalFee) {
             throw new InsufficientServiceFeeException(INSUFFICIENT_TX_FEE, totalFee);
         }
 

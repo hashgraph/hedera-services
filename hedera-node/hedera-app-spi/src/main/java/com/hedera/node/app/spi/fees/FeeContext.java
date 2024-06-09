@@ -84,4 +84,6 @@ public interface FeeContext {
      * @return the number of signatures
      */
     int numTxnSignatures();
+
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
 }

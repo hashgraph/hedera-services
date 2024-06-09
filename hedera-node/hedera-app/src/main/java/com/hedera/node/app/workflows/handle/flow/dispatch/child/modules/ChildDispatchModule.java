@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.modules;
 
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
+
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -78,11 +81,22 @@ public interface ChildDispatchModule {
     static Fees provideFees(
             @NonNull FeeContext feeContext,
             @NonNull HandleContext.TransactionCategory childCategory,
-            @NonNull TransactionDispatcher dispatcher) {
-        if (childCategory != HandleContext.TransactionCategory.SCHEDULED) {
-            return Fees.FREE;
-        }
-        return dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
+            @NonNull TransactionDispatcher dispatcher,
+            @NonNull HederaFunctionality topLevelFunction,
+            @NonNull @ChildQualifier TransactionInfo childTxnInfo) {
+        return switch (childCategory) {
+            case SCHEDULED -> dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
+            case PRECEDING -> {
+                if (CONTRACT_OPERATIONS.contains(topLevelFunction)
+                        || childTxnInfo.functionality() == HederaFunctionality.CRYPTO_UPDATE) {
+                    yield Fees.FREE;
+                } else {
+                    yield dispatcher.dispatchComputeFees(feeContext);
+                }
+            }
+            case CHILD -> Fees.FREE;
+            case USER -> throw new IllegalStateException("Should not dispatch child with user transaction category");
+        };
     }
 
     @Provides

@@ -92,7 +92,14 @@ public class ErrorReportingLogic {
     private ErrorReport checkSolvencyOfPayer(final Account payer, boolean isDuplicate, final Dispatch dispatch) {
         final var creatorId = dispatch.creatorInfo().accountId();
         try {
-            solvencyPreCheck.checkSolvency(dispatch.txnInfo(), payer, dispatch.fees(), false);
+            solvencyPreCheck.checkSolvency(
+                    dispatch.txnInfo().txBody(),
+                    payer.accountIdOrThrow(),
+                    dispatch.txnInfo().functionality(),
+                    payer,
+                    dispatch.fees(),
+                    false,
+                    dispatch.txnCategory() == USER);
         } catch (final InsufficientServiceFeeException e) {
             return ErrorReport.withPayerError(creatorId, payer, e.responseCode(), true, isDuplicate);
         } catch (final InsufficientNonFeeDebitsException e) {

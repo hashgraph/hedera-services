@@ -223,6 +223,12 @@ public class FlowHandleContext implements HandleContext, FeeContext {
         return verifier.numSignaturesVerified();
     }
 
+    @Override
+    public Fees dispatchComputeFees(
+            @NonNull final TransactionBody childTxBody, @NonNull final AccountID syntheticPayerId) {
+        return dispatchComputeFees(childTxBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.NO);
+    }
+
     @NonNull
     @Override
     public BlockRecordInfo blockRecordInfo() {
@@ -242,7 +248,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
     @Override
     public FeeCalculator feeCalculator(@NonNull final SubType subType) {
         return feeManager.createFeeCalculator(
-                txnInfo.txBody(),
+                ensureTxnId(txnInfo.txBody()),
                 payerkey,
                 txnInfo.functionality(),
                 numTxnSignatures(),
@@ -383,18 +389,7 @@ public class FlowHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel) {
-        var bodyToDispatch = txBody;
-        if (!txBody.hasTransactionID()) {
-            // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
-            // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
-            bodyToDispatch = txBody.copyBuilder()
-                    .transactionID(TransactionID.newBuilder()
-                            .accountID(syntheticPayerId)
-                            .transactionValidStart(Timestamp.newBuilder()
-                                    .seconds(consensusNow().getEpochSecond())
-                                    .nanos(consensusNow().getNano())))
-                    .build();
-        }
+        final var bodyToDispatch = ensureTxnId(txBody);
         try {
             // If the payer is authorized to waive fees, then we can skip the fee calculation.
             if (authorizer.hasWaivedFees(syntheticPayerId, functionOf(txBody), bodyToDispatch)) {
@@ -411,7 +406,25 @@ public class FlowHandleContext implements HandleContext, FeeContext {
                 syntheticPayerId,
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
-                0));
+                0,
+                readableStoreFactory,
+                consensusNow));
+    }
+
+    @NonNull
+    private TransactionBody ensureTxnId(final @NonNull TransactionBody txBody) {
+        if (!txBody.hasTransactionID()) {
+            // Legacy mono fee calculators frequently estimate an entity's lifetime using the epoch second of the
+            // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
+            return txBody.copyBuilder()
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(syntheticPayer)
+                            .transactionValidStart(Timestamp.newBuilder()
+                                    .seconds(consensusNow().getEpochSecond())
+                                    .nanos(consensusNow().getNano())))
+                    .build();
+        }
+        return txBody;
     }
 
     @NonNull

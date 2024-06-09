@@ -84,11 +84,15 @@ class ChildFeeContextImplTest {
     @Mock
     private ReadableAccountStore readableAccountStore;
 
+    @Mock
+    private ReadableStoreFactory storeFactory;
+
     private ChildFeeContextImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, PAYER_ID, true, authorizer, 0);
+        subject = new ChildFeeContextImpl(
+                feeManager, context, SAMPLE_BODY, PAYER_ID, true, authorizer, 0, storeFactory, NOW);
     }
 
     @Test
@@ -117,7 +121,8 @@ class ChildFeeContextImplTest {
     @Test
     void propagatesInvalidBodyAsIllegalStateException() {
         given(context.savepointStack()).willReturn(new SavepointStackImpl(new FakeHederaState()));
-        subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, PAYER_ID, true, authorizer, 0);
+        subject = new ChildFeeContextImpl(
+                feeManager, context, TransactionBody.DEFAULT, PAYER_ID, true, authorizer, 0, storeFactory, NOW);
         assertThrows(
                 IllegalStateException.class,
                 () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));

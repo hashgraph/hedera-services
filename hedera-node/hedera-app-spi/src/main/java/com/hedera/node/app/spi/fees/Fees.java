@@ -107,6 +107,10 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
         return new Builder().nodeFee(nodeFee).networkFee(networkFee).serviceFee(serviceFee);
     }
 
+    public Fees plus(Fees fees) {
+        return new Fees(nodeFee + fees.nodeFee(), networkFee + fees.networkFee(), serviceFee + fees.serviceFee());
+    }
+
     /**
      * A builder for {@link Fees} objects.
      */
