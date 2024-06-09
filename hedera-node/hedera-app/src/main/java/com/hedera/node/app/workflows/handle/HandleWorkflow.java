@@ -181,7 +181,7 @@ public class HandleWorkflow {
     private final InitTrigger initTrigger;
     private final SoftwareVersion softwareVersion;
     private final Provider<UserTransactionComponent.Factory> userTxnProvider;
-    private boolean useV2HandleTxn = false;
+    private boolean useV2HandleTxn = true;
 
     @Inject
     public HandleWorkflow(
