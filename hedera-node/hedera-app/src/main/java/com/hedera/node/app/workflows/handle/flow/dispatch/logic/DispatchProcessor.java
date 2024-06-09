@@ -228,8 +228,8 @@ public class DispatchProcessor {
 
     private WorkDone handle(Dispatch dispatch, ErrorReport errorReport) {
         assertPayerSolvency(errorReport);
-        assertAuthorized(dispatch);
         assertPreHandlePassed(dispatch);
+        assertAuthorized(dispatch);
         assertValidSignatures(dispatch);
         if (isContractOperation(dispatch)) {
             networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());

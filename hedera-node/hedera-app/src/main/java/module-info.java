@@ -80,8 +80,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.services;
     exports com.hedera.node.app.workflows.handle.flow to
             com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.process to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.dispatch to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to

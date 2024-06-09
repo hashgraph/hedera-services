@@ -99,7 +99,7 @@ public class ErrorReporter {
                     payer,
                     dispatch.fees(),
                     false,
-                    dispatch.txnCategory() == USER);
+                    dispatch.txnCategory() == USER || dispatch.txnCategory() == SCHEDULED);
         } catch (final InsufficientServiceFeeException e) {
             return ErrorReport.withPayerError(creatorId, payer, e.responseCode(), true, isDuplicate);
         } catch (final InsufficientNonFeeDebitsException e) {
