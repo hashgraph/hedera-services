@@ -38,7 +38,13 @@ Remove this section if not applicable.
 
 Describe any public API changes or additions. Include stakeholders of the API.
 
-Code can be included in the proposal directory, but not submitted to the code base.
+Examples of public API include:
+
+* Anything defined in protobuf
+* Any functional API that is available for use outside the module that provides it.
+* Anything written or read from disk
+
+Code can be included in the proposal directory, but not committed to the code base.
 
 Remove this section if not applicable.
 
@@ -85,8 +91,12 @@ Remove this section if not applicable.
 
 ## Unit Tests
 
-Describe the core behaviors that need new unit tests and any special considerations in test design, such as subtle edge
-cases and complex component interactions.
+Describe critical test scenarios and any higher level functionality tests that can run at the unit test level.
+
+Examples:
+
+* subtle edge cases that might be overlooked.
+* Use of simulators or frameworks to test complex component interaction.
 
 Remove this section if not applicable.
 
