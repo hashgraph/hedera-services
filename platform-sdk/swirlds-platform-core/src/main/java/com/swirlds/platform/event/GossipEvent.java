@@ -97,6 +97,11 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
     private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
+    /**
+     * The actual birth round to return. May not be the original birth round if this event was created in the software
+     * version right before the birth round migration.
+     */
+    private long birthRoundOverride;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -122,6 +127,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         if (hashedData.getHash() != null) {
             setHash(hashedData.getHash());
         }
+        this.birthRoundOverride = hashedData.getBirthRound();
     }
 
     /**
@@ -181,6 +187,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
         this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
+        this.birthRoundOverride = hashedData.getBirthRound();
     }
 
     /**
@@ -243,7 +250,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return hashedData.getBirthRound();
+        return birthRoundOverride;
     }
 
     /**
@@ -335,6 +342,16 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      */
     public void signalPrehandleCompletion() {
         prehandleCompleted.countDown();
+    }
+
+    /**
+     * Override the birth round for this event. This will only be called for events created in the software version
+     * right before the birth round migration.
+     *
+     * @param birthRoundOverride the birth round that has been assigned to this event
+     */
+    public void setBirthRoundOverride(final long birthRoundOverride) {
+        this.birthRoundOverride = birthRoundOverride;
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.resubmitter;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
@@ -23,8 +24,10 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -63,20 +66,19 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
         }
 
         final List<ConsensusTransactionImpl> transactionsToResubmit = new ArrayList<>();
-        for (final ConsensusTransactionImpl transaction : event.getHashedData().getTransactions()) {
-            if (transaction.isSystem()) {
-                if (transaction instanceof final StateSignatureTransaction signatureTransaction) {
+        final Iterator<Transaction> iterator = event.transactionIterator();
+        while (iterator.hasNext()) {
+            final Transaction transaction = iterator.next();
+            if (transaction.getPayload().kind().equals(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD)) {
+                final StateSignaturePayload payload =
+                        transaction.getPayload().as();
+                final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
-                    final StateSignaturePayload payload =
-                            signatureTransaction.getPayload().as();
-                    final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
-
-                    if (transactionAge <= maxSignatureResubmitAge) {
-                        transactionsToResubmit.add(signatureTransaction);
-                        metrics.reportResubmittedSystemTransaction();
-                    } else {
-                        metrics.reportAbandonedSystemTransaction();
-                    }
+                if (transactionAge <= maxSignatureResubmitAge) {
+                    transactionsToResubmit.add(new StateSignatureTransaction(payload));
+                    metrics.reportResubmittedSystemTransaction();
+                } else {
+                    metrics.reportAbandonedSystemTransaction();
                 }
             }
         }

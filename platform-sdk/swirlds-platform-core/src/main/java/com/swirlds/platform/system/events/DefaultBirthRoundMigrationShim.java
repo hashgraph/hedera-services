@@ -104,19 +104,19 @@ public class DefaultBirthRoundMigrationShim implements BirthRoundMigrationShim {
     @Override
     @NonNull
     public GossipEvent migrateEvent(@NonNull final GossipEvent event) {
-        if (CompareTo.isLessThan(event.getHashedData().getSoftwareVersion(), firstVersionInBirthRoundMode)) {
+        if (CompareTo.isLessThan(event.getSoftwareVersion(), firstVersionInBirthRoundMode)) {
             // The event was created before the birth round mode was enabled.
             // We need to migrate the event's birth round.
 
             if (event.getGeneration() >= lowestJudgeGenerationBeforeBirthRoundMode) {
                 // Any event with a generation greater than or equal to the lowest pre-migration judge generation
                 // is given a birth round that will be non-ancient at migration time.
-                event.getHashedData().setBirthRoundOverride(lastRoundBeforeBirthRoundMode);
+                event.setBirthRoundOverride(lastRoundBeforeBirthRoundMode);
                 shimBarelyNonAncientEvents.cycle();
             } else {
                 // All other pre-migration events are given a birth round that will
                 // cause them to be immediately ancient.
-                event.getHashedData().setBirthRoundOverride(ROUND_FIRST);
+                event.setBirthRoundOverride(ROUND_FIRST);
                 shimAncientEvents.cycle();
             }
         }
