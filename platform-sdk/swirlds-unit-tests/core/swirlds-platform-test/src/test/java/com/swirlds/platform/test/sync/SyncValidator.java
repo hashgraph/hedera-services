@@ -200,11 +200,7 @@ public class SyncValidator {
             boolean foundMatch = false;
 
             for (final GossipEvent actual : actualList) {
-                final BaseEventHashedData actualHashedData = actual.getHashedData();
-                final Bytes actualSignature = actual.getSignature();
-
-                if (expected.getHashedData().equals(actualHashedData)
-                        && expected.getBaseEvent().getSignature().equals(actualSignature)) {
+                if (expected.getBaseEvent().equalsGossipedData(actual)) {
                     foundMatch = true;
                     break;
                 }
