@@ -65,7 +65,7 @@ public final class SyntheticSnapshot {
                 .toList();
         return new ConsensusSnapshot(
                 round,
-                List.of(judge.getHashedData().getHash()),
+                List.of(judge.getHash()),
                 minimumJudgeInfos,
                 lastConsensusOrder + 1,
                 ConsensusUtils.calcMinTimestampForNextEvent(roundTimestamp));

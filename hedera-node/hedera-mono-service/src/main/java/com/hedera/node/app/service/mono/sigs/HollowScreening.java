@@ -145,13 +145,13 @@ public class HollowScreening {
 
     /**
      * Given a list of {@link TransactionSignature}, go through the signatures, and construct a
-     * look-up table for all present evm address <-> ECDSA key pairs in the sigs.
+     * look-up table for all present evm address &lt;-&gt; ECDSA key pairs in the sigs.
      *
      * <p>Serves as an efficient way of obtaining a {@link JECDSASecp256k1Key} corresponding to {@link JWildcardECDSAKey}
      * in subsequent logic.
      *
      * @param txnSigs a list of {@link TransactionSignature}
-     * @return a {@code Map} of all present evm addresses <-> {@link JECDSASecp256k1Key} pairs in the {@code txnSigs}
+     * @return a {@code Map} of all present evm addresses &lt;-&gt; {@link JECDSASecp256k1Key} pairs in the {@code txnSigs}
      */
     private static Map<Bytes, JECDSASecp256k1Key> createEvmAddressToEcdsaKeyIndexFrom(
             final List<TransactionSignature> txnSigs) {

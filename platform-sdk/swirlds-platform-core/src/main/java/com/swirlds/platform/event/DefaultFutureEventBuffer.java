@@ -81,15 +81,13 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
         if (eventWindow.isAncient(event)) {
             // we can safely ignore ancient events
             return null;
-        } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+        } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
             // this is not a future event, no need to buffer it
             return List.of(event);
         }
 
         // this is a future event, buffer it
-        futureEvents
-                .computeIfAbsent(event.getHashedData().getBirthRound(), BUILD_LIST)
-                .add(event);
+        futureEvents.computeIfAbsent(event.getBirthRound(), BUILD_LIST).add(event);
         bufferedEventCount.incrementAndGet();
         return null;
     }
