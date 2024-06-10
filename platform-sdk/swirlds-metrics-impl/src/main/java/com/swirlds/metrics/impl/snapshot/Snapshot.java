@@ -23,15 +23,22 @@ import com.swirlds.metrics.api.snapshot.SnapshotEntry;
 import com.swirlds.metrics.api.snapshot.SnapshotableMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * An instance of {@code Snapshot} contains the data of a single snapshot of a {@link Metric}.
  */
 public record Snapshot(
         @NonNull Metric metric, @NonNull List<SnapshotEntry> entries, @NonNull Collection<Label> labels) {
+
+    public Snapshot(@NonNull Metric metric, @NonNull List<SnapshotEntry> entries, @NonNull Collection<Label> labels) {
+        this.metric = Objects.requireNonNull(metric, "metric must not be null");
+        this.entries = Objects.requireNonNull(entries, "entries must not be null");
+        Objects.requireNonNull(labels, "labels must not be null");
+        this.labels = Collections.unmodifiableCollection(labels);
+    }
 
     /**
      * Create a {@code Snapshot} of a {@link SnapshotableMetric}
@@ -43,7 +50,7 @@ public record Snapshot(
     @NonNull
     public static Snapshot of(final SnapshotableMetric metric) {
         Objects.requireNonNull(metric, "metric must not be null");
-        return new Snapshot(metric, metric.takeSnapshot(), Set.of());
+        return new Snapshot(metric, metric.takeSnapshot(), metric.getLabels());
     }
 
     /**

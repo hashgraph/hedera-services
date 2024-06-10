@@ -16,8 +16,10 @@
 
 package com.swirlds.metrics.api;
 
+import com.swirlds.metrics.api.snapshot.Label;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * A single metric that is monitored here.
@@ -157,4 +159,6 @@ public interface Metric {
      */
     @Override
     int hashCode();
+
+    Set<Label> getLabels();
 }

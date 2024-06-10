@@ -26,6 +26,7 @@ import com.swirlds.metrics.api.snapshot.Subscription;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,7 +44,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class SnapshotServiceImpl implements Startable, Stoppable {
 
@@ -134,9 +134,8 @@ public class SnapshotServiceImpl implements Startable, Stoppable {
         metrics.getAll().forEach(m -> {
             if (m instanceof SnapshotableMetric metric) {
                 final String identifier = metric.getIdentifier();
-                final Set<Label> labels = labelFactories.stream()
-                        .map(factory -> factory.apply(metric))
-                        .collect(Collectors.toSet());
+                final Set<Label> labels = new HashSet<>(metric.getLabels());
+                labelFactories.stream().map(factory -> factory.apply(metric)).forEach(labels::add);
                 final Snapshot snapshot = new Snapshot(metric, metric.takeSnapshot(), labels);
                 allSnapshots.put(identifier, snapshot);
             }
