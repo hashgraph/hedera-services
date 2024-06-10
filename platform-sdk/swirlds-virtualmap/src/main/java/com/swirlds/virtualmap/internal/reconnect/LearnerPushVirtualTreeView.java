@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getChildPath;
 import static com.swirlds.virtualmap.internal.Path.getParentPath;
@@ -48,6 +49,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link LearnerTreeView} for the virtual merkle. The learner during reconnect
@@ -62,6 +65,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends VirtualValue>
         extends VirtualTreeViewBase<K, V> implements LearnerTreeView<Long> {
+
+    private static final Logger logger = LogManager.getLogger(LearnerPushVirtualTreeView.class);
 
     /**
      * Some reasonable default initial capacity for the {@link BooleanBitSetQueue}s used for
@@ -295,8 +300,11 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public void close() {
+        logger.info(RECONNECT.getMarker(), "call nodeRemover.allNodesReceived()");
         nodeRemover.allNodesReceived();
+        logger.info(RECONNECT.getMarker(), "call root.endLearnerReconnect()");
         root.endLearnerReconnect();
+        logger.info(RECONNECT.getMarker(), "close() complete");
     }
 
     /**
