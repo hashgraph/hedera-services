@@ -10,7 +10,6 @@
     - [ConsensusCreateTopicTransactionBody](#ConsensusCreateTopicTransactionBody)
     - [ConsensusUpdateTopicTransactionBody](#ConsensusUpdateTopicTransactionBody)
     - [ConsensusDeleteTopicTransactionBody](#ConsensusDeleteTopicTransactionBody)
-    - [SystemUndeleteTransactionBody](#SystemUndeleteTransactionBody)
     - [ConsensusGetContentsTransactionBody](#ConsensusGetContentsTransactionBody)
     - [ConsensusGetInfoQuery](#ConsensusGetInfoQuery)
 - [Handlers](#Handlers)
