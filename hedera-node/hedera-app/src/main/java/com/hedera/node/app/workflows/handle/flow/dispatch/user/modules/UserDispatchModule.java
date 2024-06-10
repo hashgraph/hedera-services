@@ -54,6 +54,9 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
+/**
+ * The module that provides the dependencies for the user dispatch.
+ */
 @Module(subcomponents = {})
 public interface UserDispatchModule {
     @Binds

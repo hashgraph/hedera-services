@@ -49,6 +49,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Completes the hollow accounts by finalizing them.
+ */
 @Singleton
 public class HollowAccountCompleter {
     private static final Logger logger = LogManager.getLogger(HollowAccountCompleter.class);
@@ -58,6 +61,15 @@ public class HollowAccountCompleter {
         // do nothing
     }
 
+    /**
+     * Finalizes the hollow accounts by updating the key on the hollow accounts that need to be finalized.
+     * This is done by dispatching a preceding synthetic update transaction. The key is derived from the signature
+     * expansion, by looking up the ECDSA key for the alias.
+     * The hollow accounts that need to be finalized are determined by the set of hollow accounts that are returned
+     * by the pre-handle result.
+     * @param userTxn the user transaction component
+     * @param dispatch the dispatch
+     */
     public void finalizeHollowAccounts(@NonNull UserTransactionComponent userTxn, @NonNull Dispatch dispatch) {
         // Any hollow accounts that must sign to have all needed signatures, need to be finalized
         // as a result of transaction being handled.
@@ -80,6 +92,11 @@ public class HollowAccountCompleter {
                 userTxn.recordListBuilder());
     }
 
+    /**
+     * Finds the hollow account that needs to be finalized for the Ethereum transaction.
+     * @param userTxn the user transaction component
+     * @return the hollow account that needs to be finalized for the Ethereum transaction
+     */
     @Nullable
     private EthFinalization findEthHollowAccount(UserTransactionComponent userTxn) {
         final var maybeEthTxSigs = CONTRACT_SERVICE
@@ -171,5 +188,10 @@ public class HollowAccountCompleter {
         }
     }
 
+    /**
+     * A record that contains the hollow account and the Ethereum verification.
+     * @param hollowAccount the hollow account
+     * @param ethVerification the Ethereum verification
+     */
     private record EthFinalization(Account hollowAccount, SignatureVerification ethVerification) {}
 }

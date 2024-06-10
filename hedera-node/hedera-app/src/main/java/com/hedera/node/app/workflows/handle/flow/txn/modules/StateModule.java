@@ -25,6 +25,9 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * The module that provides the state dependencies in UserTxnScope.
+ */
 @Module
 public interface StateModule {
     @Provides

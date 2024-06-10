@@ -135,9 +135,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         // represent the changes for Mint or Wipe of NFTs in the token relation changes.
         final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, tokenRelChanges);
 
-        if (context.hasChildRecords()) {
+        if (context.hasChildOrPrecedingRecords()) {
             // All the above changes maps are mutable
-            deductChangesFromChildRecords(context, tokenRelChanges, nftChanges, hbarChanges);
+            deductChangesFromChildOrPrecedingRecords(context, tokenRelChanges, nftChanges, hbarChanges);
         }
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
@@ -176,7 +176,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                         .collect(Collectors.joining("%n")));
     }
 
-    private void deductChangesFromChildRecords(
+    private void deductChangesFromChildOrPrecedingRecords(
             @NonNull final FinalizeContext context,
             @NonNull final Map<EntityIDPair, Long> fungibleChanges,
             @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,

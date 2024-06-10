@@ -48,6 +48,10 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+/**
+ * A factory for constructing child dispatches.This also gets the pre-handle result for the child transaction,
+ * and signature verifications for the child transaction.
+ */
 @Singleton
 public class ChildDispatchFactory {
     private static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
@@ -66,6 +70,19 @@ public class ChildDispatchFactory {
         this.recordBuilderFactory = recordBuilderFactory;
     }
 
+    /**
+     * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
+     * transaction.
+     * @param parentDispatch the parent dispatch
+     * @param txBody the transaction body
+     * @param callback the key verifier for child dispatch
+     * @param syntheticPayerId  the synthetic payer id
+     * @param category the transaction category
+     * @param childDispatchFactory the child dispatch factory
+     * @param customizer the externalized record customizer
+     * @param reversingBehavior the reversing behavior
+     * @return the child dispatch
+     */
     public Dispatch createChildDispatch(
             @NonNull final Dispatch parentDispatch,
             @NonNull final TransactionBody txBody,
@@ -98,6 +115,14 @@ public class ChildDispatchFactory {
                         getKeyVerifier(callback));
     }
 
+    /**
+     * Dispatches the pre-handle checks for the child transaction. This runs pureChecks and then dispatches pre-handle
+     * for child transaction.
+     * @param parentDispatch the parent dispatch
+     * @param txBody the transaction body
+     * @param syntheticPayerId the synthetic payer id
+     * @return the pre-handle result
+     */
     private PreHandleResult dispatchPreHandle(
             final @NonNull Dispatch parentDispatch,
             final @NonNull TransactionBody txBody,
@@ -139,6 +164,11 @@ public class ChildDispatchFactory {
         }
     }
 
+    /**
+     * Returns whether the transaction is scheduled or not.
+     * @param category the transaction category
+     * @return the compute dispatch fees as top level
+     */
     @NonNull
     private static ComputeDispatchFeesAsTopLevel isScheduled(final HandleContext.TransactionCategory category) {
         return category == HandleContext.TransactionCategory.SCHEDULED
@@ -146,6 +176,10 @@ public class ChildDispatchFactory {
                 : ComputeDispatchFeesAsTopLevel.NO;
     }
 
+    /**
+     * A {@link KeyVerifier} that always returns {@link SignatureVerificationImpl} with a
+     * passed verification.
+     */
     private static class NoOpKeyVerifier implements KeyVerifier {
         private static final SignatureVerification PASSED_VERIFICATION =
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
@@ -175,6 +209,14 @@ public class ChildDispatchFactory {
         }
     }
 
+    /**
+     * Returns a {@link KeyVerifier} based on the callback. If the callback is null, then it returns a
+     * {@link NoOpKeyVerifier}. Otherwise, it returns a {@link DelegateKeyVerifier} with the callback.
+     * The callback is null if the signature verification is not required. This is the case for hollow account
+     * completion and auto account creation.
+     * @param callback the callback
+     * @return the key verifier
+     */
     private static KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
         return callback == null
                 ? NO_OP_KEY_VERIFIER

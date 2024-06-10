@@ -441,24 +441,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody childTxBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> childCallback,
-            final AccountID childSyntheticPayer) {
-        return dispatchForRecord(
-                childTxBody,
-                recordBuilderClass,
-                childCallback,
-                childSyntheticPayer,
-                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
-                TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
-                false);
-    }
-
-    @NonNull
-    @Override
     public <T> T dispatchRemovablePrecedingTransaction(
             @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,

@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * This class has the common logic that is executed for a user dispatch and a child dispatch transactions.
  * This will charge the fees to the creator if there is a node due diligence failure. Otherwise, charges the fees to the
  * payer and executes the business logic for the given dispatch, guaranteeing that the changes committed to its stack
- * are exactly reflected in its recordBuilder.
+ * are exactly reflected in its recordBuilder. At the end, it will finalize the record and commit the stack.
  */
 @Singleton
 public class DispatchProcessor {
@@ -89,8 +89,10 @@ public class DispatchProcessor {
     }
 
     /**
-     * This method is responsible for charging the fees and executing the business logic for the given dispatch,
+     * This method is responsible for charging the fees and tries to execute the business logic for the given dispatch,
      * guaranteeing that the changes committed to its stack are exactly reflected in its recordBuilder.
+     * At the end, it will finalize the record and commit the stack. The WorkDone returned will be used track the
+     * network utilization. It will be FEE_ONLY if the transaction has node errors, otherwise it will be USER_TRANSACTION.
      * @param dispatch the dispatch to be processed
      * @return the work done by the dispatch
      */
@@ -110,10 +112,15 @@ public class DispatchProcessor {
     }
 
     /**
-     * Handles the transaction logic for the given dispatch. If the logic fails, it will rollback the stack and charge
-     * the payer for the fees.
+     * Tries to the transaction logic for the given dispatch. If the logic fails and throws HandleException, it will
+     * rollback the stack and charge the payer for the fees.
+     * If it is throttled, it will charge the payer for the fees and return FEE_ONLY as work done.
+     * If it catches an unexpected exception, it will charge the payer for the fees and return FEE_ONLY as work done.
      * @param dispatch the dispatch to be processed
      * @param errorReport the due diligence report for the dispatch
+     * @throws HandleException if the transaction logic fails
+     * @throws ThrottleException if the transaction is throttled
+     * @thorws Exception if there is an unexpected error
      */
     private WorkDone tryHandle(@NonNull final Dispatch dispatch, @NonNull final ErrorReport errorReport) {
         try {
@@ -141,6 +148,11 @@ public class DispatchProcessor {
         }
     }
 
+    /**
+     * Handles the system updates for the dispatch. It will notify the responsible system file update facility if
+     * any system file was uploaded. It will also notify if the platform state was updated.
+     * @param dispatch
+     */
     private void handleSystemUpdates(final Dispatch dispatch) {
         // Notify responsible facility if system-file was uploaded.
         // Returns SUCCESS if no system-file was uploaded
@@ -156,6 +168,15 @@ public class DispatchProcessor {
                 dispatch.stack(), dispatch.platformState(), dispatch.txnInfo().txBody());
     }
 
+    /**
+     * Handles the exception for the dispatch. It will rollback the stack, charge the payer for the fees and return
+     * FEE_ONLY as work done.
+     * @param dispatch the dispatch to be processed
+     * @param errorReport the due diligence report for the dispatch
+     * @param recordListBuilder the record list builder
+     * @param status the status to set
+     * @return the work done by the dispatch
+     */
     @NonNull
     private WorkDone handleException(
             final @NonNull Dispatch dispatch,
@@ -241,12 +262,20 @@ public class DispatchProcessor {
         return USER_TRANSACTION;
     }
 
+    /**
+     * Asserts that the payer is solvent. If the payer is not solvent, it will throw a {@link HandleException}.
+     * @param errorReport the error report for the dispatch
+     */
     private void assertPayerSolvency(final ErrorReport errorReport) {
         if (errorReport.isPayerSolvencyError()) {
             throw new HandleException(errorReport.payerSolvencyErrorOrThrow());
         }
     }
 
+    /**
+     * Asserts that the dispatch is authorized. If the dispatch is not authorized, it will throw a {@link HandleException}.
+     * @param dispatch the dispatch to be processed
+     */
     private void assertAuthorized(final Dispatch dispatch) {
         if (!authorizer.isAuthorized(
                 dispatch.syntheticPayer(), dispatch.txnInfo().functionality())) {
@@ -265,6 +294,11 @@ public class DispatchProcessor {
         }
     }
 
+    /**
+     * Asserts that the pre-handle checks have passed. If the pre-handle checks have not passed, it will throw a
+     * {@link HandleException}.
+     * @param dispatch the dispatch to be processed
+     */
     private void assertPreHandlePassed(Dispatch dispatch) {
         final var preHandleResult = dispatch.preHandleResult();
         if (preHandleResult.responseCode() != OK) {
@@ -272,6 +306,10 @@ public class DispatchProcessor {
         }
     }
 
+    /**
+     * Asserts that the signatures are valid. If the signatures are not valid, it will throw a {@link HandleException}.
+     * @param dispatch the dispatch to be processed
+     */
     private void assertValidSignatures(final Dispatch dispatch) {
         for (final var key : dispatch.requiredKeys()) {
             final var verification = dispatch.keyVerifier().verificationFor(key);
@@ -288,6 +326,9 @@ public class DispatchProcessor {
         }
     }
 
+    /**
+     * This class is used to throw a {@link ThrottleException} when a transaction is gas throttled.
+     */
     private static class ThrottleException extends RuntimeException {
         private final ResponseCodeEnum status;
 

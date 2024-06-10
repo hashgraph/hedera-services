@@ -20,5 +20,8 @@ import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchCom
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import dagger.Module;
 
+/**
+ * The module that adds the user dispatch and child dispatch subcomponents under user transaction component.
+ */
 @Module(subcomponents = {UserDispatchComponent.class, ChildDispatchComponent.class})
 public interface UserDispatchSubcomponentModule {}

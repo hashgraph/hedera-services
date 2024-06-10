@@ -26,6 +26,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * Qualifier to distinguish between two Instant values provided by Dagger.
+ * We annotate this qualifier for the last handled time.
+ */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented

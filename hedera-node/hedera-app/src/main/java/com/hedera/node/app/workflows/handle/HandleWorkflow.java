@@ -133,6 +133,16 @@ public class HandleWorkflow {
         }
     }
 
+    /**
+     * Handles a platform transaction. This method is responsible for creating a {@link UserTransactionComponent} and
+     * executing the workflow for the transaction. This produces a stream of records that are then passed to the
+     * {@link BlockRecordManager} to be externalized.
+     * @param state the writable {@link HederaState} that this transaction will work on
+     * @param platformState the {@link PlatformState} that this transaction will work on
+     * @param event the {@link ConsensusEvent} that this transaction belongs to
+     * @param creator the {@link NodeInfo} of the creator of the transaction
+     * @param txn the {@link ConsensusTransaction} to be handled
+     */
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final PlatformState platformState,

@@ -41,12 +41,23 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * A class that reports errors that occurred during the processing of a transaction.
+ * This includes the creator error, the payer error, and whether the payer was unable to pay the service fee.
+ * It also records whether the transaction is a duplicate.
+ */
 @Singleton
 public class ErrorReporter {
     private final SolvencyPreCheck solvencyPreCheck;
     private final HederaRecordCache recordCache;
     private final TransactionChecker transactionChecker;
 
+    /**
+     * Creates an error reporter with the given dependencies.
+     * @param solvencyPreCheck the solvency pre-check
+     * @param recordCache the record cache
+     * @param transactionChecker the transaction checker
+     */
     @Inject
     public ErrorReporter(
             final SolvencyPreCheck solvencyPreCheck,
@@ -57,6 +68,13 @@ public class ErrorReporter {
         this.transactionChecker = transactionChecker;
     }
 
+    /**
+     * Reports an error for the given dispatch. This first checks if there is a creator error, and if so, returns it.
+     * Otherwise, checks signatures for non-hollow payer. Also checks if the user transaction is duplicate and if payer
+     * can pay the fees.
+     * @param dispatch the dispatch
+     * @return the error report
+     */
     public ErrorReport errorReportFor(@NonNull final Dispatch dispatch) {
         final var creatorError = creatorErrorIfKnown(dispatch);
         if (creatorError != null) {
@@ -88,6 +106,13 @@ public class ErrorReporter {
         }
     }
 
+    /**
+     * Checks payer solvency for Schedule and User transactions. If the payer is a super-user, it will not be checked.
+     * @param payer the payer account
+     * @param isDuplicate whether the transaction is a duplicate
+     * @param dispatch the dispatch
+     * @return the error report
+     */
     @NonNull
     private ErrorReport checkSolvencyOfPayer(final Account payer, boolean isDuplicate, final Dispatch dispatch) {
         final var creatorId = dispatch.creatorInfo().accountId();
@@ -111,6 +136,12 @@ public class ErrorReporter {
         return ErrorReport.withNoError(creatorId, payer);
     }
 
+    /**
+     * Returns the response code if there is any error in pre-handle. If there is no error, checks the
+     * transaction expiry.
+     * @param dispatch the dispatch
+     * @return the response code
+     */
     @Nullable
     private ResponseCodeEnum creatorErrorIfKnown(@NonNull final Dispatch dispatch) {
         final var preHandleResult = dispatch.preHandleResult();
@@ -121,6 +152,11 @@ public class ErrorReporter {
         };
     }
 
+    /**
+     * Checks the transaction expiry only for user transactions. If the transaction is expired, returns the response code.
+     * @param dispatch the dispatch
+     * @return the response code
+     */
     @Nullable
     private ResponseCodeEnum getExpiryError(final @NonNull Dispatch dispatch) {
         if (dispatch.txnCategory() != USER) {
@@ -137,7 +173,18 @@ public class ErrorReporter {
         return null;
     }
 
-    Account getPayerAccount(
+    /**
+     * Returns the payer account for the given account ID. For the user transaction, the account should not be null,
+     * deleted, or a smart contract. For the scheduled transaction, the account should not be null or a smart contract,
+     * can be deleted.
+     * For the child and preceding transactions, the payer account can be null. Because the payer for contract
+     * operations can be a token address.
+     * @param storeFactory the store factory
+     * @param accountID the account ID
+     * @param category the transaction category
+     * @return the payer account
+     */
+    private Account getPayerAccount(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final AccountID accountID,
             @NonNull final HandleContext.TransactionCategory category) {

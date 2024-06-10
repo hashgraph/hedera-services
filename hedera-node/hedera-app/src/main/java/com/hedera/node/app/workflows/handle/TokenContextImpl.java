@@ -102,7 +102,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     }
 
     @Override
-    public boolean hasChildRecords() {
+    public boolean hasChildOrPrecedingRecords() {
         return !recordListBuilder.childRecordBuilders().isEmpty()
                 || !recordListBuilder.precedingRecordBuilders().isEmpty();
     }

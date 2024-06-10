@@ -31,6 +31,9 @@ import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
+/**
+ * The module that provides the pre-handle result and related information in UserTxnScope.
+ */
 @Module
 public interface PreHandleResultModule {
     @Provides

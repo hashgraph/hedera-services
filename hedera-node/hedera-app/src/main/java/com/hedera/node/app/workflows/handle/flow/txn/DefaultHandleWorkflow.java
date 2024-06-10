@@ -30,6 +30,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * The default implementation of the handle workflow.
+ */
 @Singleton
 public class DefaultHandleWorkflow {
     private static final Logger logger = LogManager.getLogger(DefaultHandleWorkflow.class);
@@ -54,6 +57,13 @@ public class DefaultHandleWorkflow {
         this.hollowAccountFinalization = hollowAccountFinalization;
     }
 
+    /**
+     * Executes the handle workflow. This method is the entry point for handling a user transaction.
+     * It processes the staking period time hook, advances the consensus clock, expires schedules, logs the
+     * user transaction,
+     * @param userTxn the user transaction component
+     * @return the work done
+     */
     public WorkDone execute(UserTransactionComponent userTxn) {
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());

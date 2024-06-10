@@ -36,6 +36,11 @@ public class SchedulePurger {
     private final ScheduleExpirationHook scheduleExpirationHook;
     private final StoreMetricsService storeMetricsService;
 
+    /**
+     * Constructs the SchedulePurger with the given dependencies.
+     * @param scheduleExpirationHook the schedule expiration hook
+     * @param storeMetricsService the store metrics service
+     */
     @Inject
     public SchedulePurger(
             @NonNull final ScheduleExpirationHook scheduleExpirationHook,
@@ -65,6 +70,7 @@ public class SchedulePurger {
                     .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
+            // commit the stack
             userTxnContext.stack().commitFullStack();
         }
     }

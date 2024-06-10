@@ -24,6 +24,10 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * The module that provides the active configuration dependencies. This should be the same in UserTxnScope and
+ * can be accessed by ChildDispatchScope and UserDispatchScope.
+ */
 @Module
 public interface ActiveConfigModule {
     @Provides

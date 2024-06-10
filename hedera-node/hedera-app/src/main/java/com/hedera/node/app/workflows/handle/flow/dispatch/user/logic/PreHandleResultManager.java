@@ -29,6 +29,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A class that manages the pre-handle result for a transaction.
+ */
 @Singleton
 public class PreHandleResultManager {
     private static final Logger logger = LogManager.getLogger(PreHandleResultManager.class);
@@ -42,11 +45,15 @@ public class PreHandleResultManager {
         this.solvencyPreCheck = solvencyPreCheck;
     }
 
-    /*
+    /**
      * This method gets all the verification data for the current transaction. If pre-handle was previously ran
      * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
      * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
      * its verification data.
+     * @param creator the node that created the transaction
+     * @param platformTxn the transaction to be verified
+     * @param storeFactory the store factory
+     * @return the verification data for the transaction
      */
     @NonNull
     public PreHandleResult getCurrentPreHandleResult(

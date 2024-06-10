@@ -26,6 +26,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * Qualifier for the child transaction. If any dependencies are injected in multiple scopes, dagger needs a
+ * qualifier to differentiate between them. This qualifier is used to differentiate dependencies for
+ * the child transaction.
+ */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented

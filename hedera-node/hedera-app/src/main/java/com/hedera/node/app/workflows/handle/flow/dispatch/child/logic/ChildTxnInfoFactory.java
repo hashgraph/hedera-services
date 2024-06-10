@@ -35,6 +35,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ChildTxnInfoFactory {
+    /**
+     * Constructs the {@link ChildTxnInfoFactory} instance.
+     */
     @Inject
     public ChildTxnInfoFactory() {}
 

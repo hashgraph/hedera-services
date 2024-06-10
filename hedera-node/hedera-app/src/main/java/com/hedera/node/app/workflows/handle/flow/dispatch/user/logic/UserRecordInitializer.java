@@ -31,6 +31,10 @@ import javax.inject.Singleton;
 public class UserRecordInitializer {
     private final ExchangeRateManager exchangeRateManager;
 
+    /**
+     * Creates a user record initializer with the given exchange rate manager.
+     * @param exchangeRateManager the exchange rate manager
+     */
     @Inject
     public UserRecordInitializer(final ExchangeRateManager exchangeRateManager) {
         this.exchangeRateManager = exchangeRateManager;

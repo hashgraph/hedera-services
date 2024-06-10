@@ -22,6 +22,9 @@ import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import dagger.Binds;
 import dagger.Module;
 
+/**
+ * The module that provides the token context in UserTxnScope.
+ */
 @Module
 public interface ContextModule {
     @Binds

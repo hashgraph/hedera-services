@@ -36,7 +36,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ChildRecordBuilderFactory {
-
+    /**
+     * Constructs the {@link ChildRecordBuilderFactory} instance.
+     */
     @Inject
     public ChildRecordBuilderFactory() {}
 

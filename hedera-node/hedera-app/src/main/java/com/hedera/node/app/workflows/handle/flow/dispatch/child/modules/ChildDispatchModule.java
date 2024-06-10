@@ -65,6 +65,9 @@ import java.time.Instant;
 import java.util.Set;
 import javax.inject.Provider;
 
+/**
+ * Module for providing the child dispatch dependencies required for {@link ChildDispatchComponent}.
+ */
 @Module
 public interface ChildDispatchModule {
     @Binds
