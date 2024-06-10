@@ -11,6 +11,7 @@ module com.hedera.node.app.service.addressbook.impl {
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.config;
     requires com.hedera.pbj.runtime;
+    requires com.swirlds.platform.core;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler;
