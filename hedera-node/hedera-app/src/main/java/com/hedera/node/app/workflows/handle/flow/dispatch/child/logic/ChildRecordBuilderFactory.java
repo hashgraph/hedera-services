@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -27,6 +28,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -65,18 +67,20 @@ public class ChildRecordBuilderFactory {
             recordBuilder = switch (reversingBehavior) {
                 case REMOVABLE -> recordListBuilder.addRemovablePreceding(configuration);
                 case REVERSIBLE -> recordListBuilder.addReversiblePreceding(configuration);
-                default -> recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);};
+                case IRREVERSIBLE -> recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);};
         } else if (childCategory == CHILD) {
             recordBuilder = switch (reversingBehavior) {
                 case REMOVABLE -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(
                         configuration, requireNonNull(customizer));
                 case REVERSIBLE -> recordListBuilder.addChild(configuration, childCategory);
-                default -> throw new IllegalArgumentException("Unsupported reversing behavior: " + reversingBehavior
-                        + " for child category: " + childCategory);};
-        } else {
+                case IRREVERSIBLE -> throw new IllegalArgumentException("Unsupported reversing behavior: "
+                        + reversingBehavior + " for child category: " + childCategory);};
+        } else if (childCategory == SCHEDULED) {
             recordBuilder = recordListBuilder.addChild(configuration, childCategory);
+        } else {
+            throw new IllegalArgumentException("Unsupported child category: " + childCategory);
         }
-        initializeUserRecord(recordBuilder, txnInfo);
+        initializeRecord(recordBuilder, txnInfo);
         return recordBuilder;
     }
 
@@ -85,12 +89,12 @@ public class ChildRecordBuilderFactory {
      * @param recordBuilder the record builder
      * @param txnInfo the transaction info
      */
-    private void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
+    private void initializeRecord(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
         recordBuilder
                 .transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());
-        // Set the transactionId if provided
         final var transactionID = txnInfo.txBody().transactionID();
         if (transactionID != null) {
             recordBuilder.transactionID(transactionID);

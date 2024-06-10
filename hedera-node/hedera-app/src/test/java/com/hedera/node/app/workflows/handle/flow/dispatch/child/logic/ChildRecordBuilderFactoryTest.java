@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -52,11 +54,11 @@ class ChildRecordBuilderFactoryTest {
     private ChildRecordBuilderFactory factory;
     private RecordListBuilder recordListBuilder;
     private Configuration configuration;
-    private TransactionInfo txnInfo;
     private ExternalizedRecordCustomizer customizer;
 
-    private final AccountID payerId = AccountID.newBuilder().accountNum(1_234L).build();
-    private final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
+    private static final AccountID payerId =
+            AccountID.newBuilder().accountNum(1_234L).build();
+    private static final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
             .tokenTransfers(TokenTransferList.newBuilder()
                     .token(TokenID.DEFAULT)
                     .nftTransfers(NftTransfer.newBuilder()
@@ -66,7 +68,13 @@ class ChildRecordBuilderFactoryTest {
                             .build())
                     .build())
             .build();
-    private final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
+    private static final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
+    private static final TransactionInfo txnInfo = new TransactionInfo(
+            Transaction.newBuilder().body(txBody).build(),
+            txBody,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            HederaFunctionality.CRYPTO_TRANSFER);
 
     @BeforeEach
     void setUp() {
@@ -74,12 +82,6 @@ class ChildRecordBuilderFactoryTest {
         configuration = HederaTestConfigBuilder.createConfig();
         customizer = NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
         factory = new ChildRecordBuilderFactory();
-        txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(txBody).build(),
-                txBody,
-                SignatureMap.DEFAULT,
-                Bytes.EMPTY,
-                HederaFunctionality.CRYPTO_UPDATE);
     }
 
     @Test
@@ -152,6 +154,33 @@ class ChildRecordBuilderFactoryTest {
     }
 
     @Test
+    void testRecordBuilderForScheduled() {
+        var recordBuilder = factory.recordBuilderFor(
+                txnInfo,
+                recordListBuilder,
+                configuration,
+                SCHEDULED,
+                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                customizer);
+
+        assertNotNull(recordBuilder);
+        assertTrue(recordListBuilder.childRecordBuilders().contains(recordBuilder));
+    }
+
+    @Test
+    void testRecordBuilderForUser() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> factory.recordBuilderFor(
+                        txnInfo,
+                        recordListBuilder,
+                        configuration,
+                        USER,
+                        SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
+                        customizer));
+    }
+
+    @Test
     void testInitializeUserRecord() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
@@ -164,6 +193,10 @@ class ChildRecordBuilderFactoryTest {
         assertNotNull(recordBuilder);
         assertEquals(txnInfo.transaction(), recordBuilder.transaction());
         assertEquals(txnInfo.txBody().transactionID(), recordBuilder.transactionID());
+        assertEquals(
+                txnInfo.txBody().memo(),
+                recordBuilder.build().transaction().body().memo());
+        assertEquals(txnInfo.signedBytes(), recordBuilder.build().transaction().signedTransactionBytes());
     }
 
     public static TransactionBody asTxn(
@@ -175,6 +208,7 @@ class ChildRecordBuilderFactoryTest {
                                 .seconds(consensusTimestamp.getEpochSecond())
                                 .build())
                         .build())
+                .memo("test memo")
                 .cryptoTransfer(body)
                 .build();
     }
