@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 
@@ -68,5 +69,10 @@ public abstract class AbstractNode implements HederaNode {
     @Override
     public Path getApplicationLogPath() {
         return metadata.workingDir().resolve(OUTPUT_DIR).resolve(APPLICATION_LOG_FILE);
+    }
+
+    @Override
+    public Path getAddressBookPath() {
+        return metadata.workingDir().resolve(CONFIG_TXT);
     }
 }

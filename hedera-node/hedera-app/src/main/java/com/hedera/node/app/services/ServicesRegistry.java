@@ -45,6 +45,10 @@ public interface ServicesRegistry {
             requireNonNull(registry);
         }
 
+        public String serviceName() {
+            return service.getServiceName();
+        }
+
         @Override
         public int compareTo(@NonNull final Registration that) {
             return COMPARATOR.compare(this, that);

@@ -34,7 +34,6 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -93,7 +92,6 @@ class IngestComponentTest {
                         0));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var genesisRecordBuilder = new GenesisRecordsConsensusHook();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
@@ -105,7 +103,6 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
-                .genesisRecordsConsensusHook(genesisRecordBuilder)
                 .softwareVersion(mock(HederaSoftwareVersion.class))
                 .build();
 

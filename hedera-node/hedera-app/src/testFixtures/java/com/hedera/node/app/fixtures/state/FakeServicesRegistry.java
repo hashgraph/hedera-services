@@ -50,15 +50,11 @@ public class FakeServicesRegistry implements ServicesRegistry {
     public void register(@NonNull final Service service) {
         final var serviceName = service.getServiceName();
 
-        logger.debug("FakeServicesRegistry registering schemas for service {}", serviceName);
         final var registry = new FakeSchemaRegistry();
         service.registerSchemas(registry);
 
         entries.add(new FakeServicesRegistry.Registration(service, registry));
-        logger.info(
-                "FakeServicesRegistry registered service {} with implementation {}",
-                service.getServiceName(),
-                service.getClass());
+        logger.info("FakeServicesRegistry registered service {}", service.getServiceName());
     }
 
     @NonNull

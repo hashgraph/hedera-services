@@ -17,10 +17,10 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -28,6 +28,7 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,10 +50,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static final int FIRST_CANDIDATE_PORT = 30000;
     private static final int LAST_CANDIDATE_PORT = 40000;
 
-    private static final long FIRST_NODE_ACCOUNT_NUM = 3;
     private static final String SUBPROCESS_HOST = "127.0.0.1";
-    private static final String SHARED_NETWORK_NAME = "LAUNCHER_SESSION_SCOPE";
-    private static final String[] NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
+    private static final String SHARED_NETWORK_NAME = "SHARED_NETWORK";
     private static final GrpcPinger GRPC_PINGER = new GrpcPinger();
     private static final PrometheusClient PROMETHEUS_CLIENT = new PrometheusClient();
 
@@ -71,7 +70,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
         super(networkName, nodes);
-        this.configTxt = configTxtFor(name(), nodes);
+        this.configTxt = configTxtForLocal(name(), nodes, nextGossipPort, nextGossipTlsPort);
     }
 
     /**
@@ -80,26 +79,13 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * @param size the number of nodes in the network
      * @return the shared network
      */
-    public static synchronized HederaNetwork newSharedSubProcessNetwork(final int size) {
+    public static synchronized HederaNetwork newSharedNetwork(final int size) {
         if (SHARED_NETWORK.get() != null) {
             throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
         }
         final var sharedNetwork = liveNetwork(SHARED_NETWORK_NAME, size);
         SHARED_NETWORK.set(sharedNetwork);
         return sharedNetwork;
-    }
-
-    /**
-     * Creates a network of sub-process nodes with the given name and size. Unlike the shared
-     * network, this network's nodes will have working directories scoped to the given name.
-     *
-     * @param name the name of the network
-     * @param size the number of nodes in the network
-     * @return the network
-     */
-    public static HederaNetwork newSubProcessNetwork(@NonNull final String name, final int size) {
-        requireNonNull(name);
-        return liveNetwork(name, size);
     }
 
     /**
@@ -166,39 +152,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         return network;
     }
 
-    private static String configTxtFor(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
-        final var sb = new StringBuilder();
-        sb.append("swirld, ")
-                .append(networkName)
-                .append("\n")
-                .append("\n# This next line is, hopefully, ignored.\n")
-                .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
-        for (final var node : nodes) {
-            sb.append("address, ")
-                    .append(node.getNodeId())
-                    .append(", ")
-                    .append(node.getName().charAt(0))
-                    .append(", ")
-                    .append(node.getName())
-                    .append(", 1, 127.0.0.1, ")
-                    .append(nextGossipPort + (node.getNodeId() * 2))
-                    .append(", 127.0.0.1, ")
-                    .append(nextGossipTlsPort + (node.getNodeId() * 2))
-                    .append(", ")
-                    .append("0.0.")
-                    .append(node.getAccountId().accountNumOrThrow())
-                    .append("\n");
-        }
-        sb.append("\nnextNodeId, ").append(nodes.size()).append("\n");
-        return sb.toString();
-    }
-
     private static NodeMetadata metadataFor(final int nodeId, @NonNull final String networkName) {
         return new NodeMetadata(
                 nodeId,
-                NODE_NAMES[nodeId],
+                AddressBookUtils.CLASSIC_NODE_NAMES[nodeId],
                 AccountID.newBuilder()
-                        .accountNum(FIRST_NODE_ACCOUNT_NUM + nodeId)
+                        .accountNum(AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
                         .build(),
                 SUBPROCESS_HOST,
                 nextGrpcPort + nodeId * 2,

@@ -44,7 +44,9 @@ import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
+import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -105,13 +107,15 @@ public interface HederaInjectionComponent {
 
     HandleWorkflow handleWorkflow();
 
+    IngestWorkflow ingestWorkflow();
+
+    QueryWorkflow queryWorkflow();
+
     BlockRecordManager blockRecordManager();
 
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
-
-    InitTrigger initTrigger();
 
     ThrottleServiceManager throttleServiceManager();
 

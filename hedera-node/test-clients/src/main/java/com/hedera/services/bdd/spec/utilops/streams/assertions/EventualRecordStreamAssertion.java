@@ -80,6 +80,11 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
             case SHARED_HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
             case CI_DOCKER_NETWORK -> TEST_CONTAINER_NODE0_STREAMS;
             case STANDALONE_MONO_NETWORK -> spec.setup().defaultRecordLoc();
+            case EMBEDDED_NETWORK -> spec.targetNetworkOrThrow()
+                    .nodes()
+                    .getFirst()
+                    .getRecordStreamPath()
+                    .toString();
         };
     }
 

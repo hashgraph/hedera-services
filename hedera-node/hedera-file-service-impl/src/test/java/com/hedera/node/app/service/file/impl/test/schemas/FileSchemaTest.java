@@ -61,7 +61,7 @@ final class FileSchemaTest {
     void emptyFilesCreatedForUpdateFiles() {
         // Given a file GenesisSchema, and a configuration setting for the range that is unique, so we can make
         // sure to verify that the code in question is using the config values, (and same for key and expiry)
-        final var schema = new V0490FileSchema(configProvider);
+        final var schema = new V0490FileSchema();
         final var expiry = 1000;
         final var keyString = "0123456789012345678901234567890123456789012345678901234567890123";
         final var key = Key.newBuilder().ed25519(Bytes.wrap(unhex(keyString))).build();

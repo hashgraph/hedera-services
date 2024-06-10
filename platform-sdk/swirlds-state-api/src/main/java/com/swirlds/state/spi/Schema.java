@@ -18,6 +18,7 @@ package com.swirlds.state.spi;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.Codec;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;
@@ -69,6 +70,18 @@ public abstract class Schema implements Comparable<Schema> {
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate() {
         return Collections.emptySet();
+    }
+
+    /**
+     * A variant of {@link #statesToCreate()} that allows for the {@link Configuration} to be
+     * consulted when determining which states to create. This is useful if the schema needs to
+     * create different states based on the configuration.
+     *
+     * @param configuration The configuration to consult
+     * @return A map of all states to be created. Possibly empty.
+     */
+    public Set<StateDefinition> statesToCreate(@NonNull final Configuration configuration) {
+        return statesToCreate();
     }
 
     /**

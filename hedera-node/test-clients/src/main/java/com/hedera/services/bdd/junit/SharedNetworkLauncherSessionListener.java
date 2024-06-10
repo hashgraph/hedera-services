@@ -40,8 +40,7 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            SubProcessNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE)
-                    .start();
+            SubProcessNetwork.newSharedNetwork(DEFAULT_SHARED_NETWORK_SIZE).start();
         }
 
         @Override

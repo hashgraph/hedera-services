@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.test.fixtures.state.ListReadableQueueState;
@@ -43,9 +47,24 @@ public class FakeHederaState implements HederaState {
 
     /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
-        var serviceStates = this.states.computeIfAbsent(serviceName, k -> new HashMap<>());
+        final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new HashMap<>());
         serviceStates.putAll(dataSources);
         return this;
+    }
+
+    /**
+     * Removes the state with the given key for the service with the given name.
+     *
+     * @param serviceName the name of the service
+     * @param stateKey the key of the state
+     */
+    public void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
+        requireNonNull(serviceName);
+        requireNonNull(stateKey);
+        this.states.computeIfPresent(serviceName, (k, v) -> {
+            v.remove(stateKey);
+            return v;
+        });
     }
 
     @NonNull
@@ -53,20 +72,23 @@ public class FakeHederaState implements HederaState {
     @SuppressWarnings("java:S3740") // provide the parameterized type for the generic state variable
     public ReadableStates getReadableStates(@NonNull String serviceName) {
         return readableStates.computeIfAbsent(serviceName, s -> {
-            final var serviceStates = states.get(s);
-            final var data = new HashMap<String, Object>();
+            final var serviceStates = this.states.get(s);
+            if (serviceStates == null) {
+                return new EmptyReadableStates();
+            }
+            final var states = new HashMap<String, Object>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();
                 if (state instanceof Queue queue) {
-                    data.put(stateName, new ListReadableQueueState(stateName, queue));
+                    states.put(stateName, new ListReadableQueueState(stateName, queue));
                 } else if (state instanceof Map map) {
-                    data.put(stateName, new MapReadableKVState(stateName, map));
+                    states.put(stateName, new MapReadableKVState(stateName, map));
                 } else if (state instanceof AtomicReference ref) {
-                    data.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
+                    states.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
                 }
             }
-            return new MapReadableStates(data);
+            return new MapReadableStates(states);
         });
     }
 
@@ -76,6 +98,9 @@ public class FakeHederaState implements HederaState {
     public WritableStates getWritableStates(@NonNull String serviceName) {
         return writableStates.computeIfAbsent(serviceName, s -> {
             final var serviceStates = states.get(s);
+            if (serviceStates == null) {
+                return new EmptyWritableStates();
+            }
             final var data = new HashMap<String, Object>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
@@ -88,7 +113,7 @@ public class FakeHederaState implements HederaState {
                     data.put(stateName, new WritableSingletonStateBase(stateName, ref::get, ref::set));
                 }
             }
-            return new MapWritableStates(data);
+            return new MapWritableStates(data, () -> readableStates.remove(serviceName));
         });
     }
 }

@@ -16,11 +16,12 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
-import static java.util.Objects.requireNonNull;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
-import com.hedera.services.bdd.junit.hedera.AbstractNode;
+import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
@@ -29,7 +30,6 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -40,50 +40,62 @@ import java.util.function.Consumer;
  * but instead a {@code FakePlatform} which orders submitted transactions exactly as they
  * are received.
  */
-public class EmbeddedNode extends AbstractNode implements HederaNode {
-    private final Hedera hedera;
-    private final AtomicBoolean directoryInitialized;
-
-    public EmbeddedNode(
-            @NonNull final NodeMetadata metadata,
-            @NonNull final Hedera hedera,
-            @NonNull final AtomicBoolean directoryInitialized) {
+public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements HederaNode {
+    public EmbeddedNode(@NonNull final NodeMetadata metadata) {
         super(metadata);
-        this.hedera = requireNonNull(hedera);
-        this.directoryInitialized = requireNonNull(directoryInitialized);
-    }
-
-    @Override
-    public HederaNode initWorkingDir(@NonNull final String configTxt) {
-        if (directoryInitialized.compareAndSet(false, true)) {
-            recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
-        }
-        return this;
     }
 
     @Override
     public HederaNode start() {
-        return null;
+        assertWorkingDirInitialized();
+        return this;
     }
 
     @Override
     public boolean stop() {
-        return false;
+        throw new UnsupportedOperationException("Cannot stop a single node in an embedded network");
     }
 
     @Override
     public boolean terminate() {
-        return false;
+        throw new UnsupportedOperationException("Cannot terminate a single node in an embedded network");
     }
 
     @Override
     public CompletableFuture<Void> statusFuture(
-            @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
-        return null;
+            @NonNull final PlatformStatus status, @Nullable final Consumer<NodeStatus> nodeStatusObserver) {
+        throw new UnsupportedOperationException("Prefer awaiting status of the embedded network");
     }
 
     @Override
     public CompletableFuture<Void> stopFuture() {
-        return null;
+        throw new UnsupportedOperationException("Cannot stop a single node in an embedded network");
+    }
+
+    @Override
+    protected EmbeddedNode self() {
+        return this;
+    }
+
+    /**
+     * Returns this {@link EmbeddedNode} with classic book data for the given node ID for
+     * use in creating an address book.
+     *
+     * @param nodeId the node ID
+     * @return this {@link EmbeddedNode} with classic book data
+     */
+    public HederaNode withClassicBookDataFor(final int nodeId) {
+        return new EmbeddedNode(new NodeMetadata(
+                nodeId,
+                CLASSIC_NODE_NAMES[nodeId],
+                AccountID.newBuilder()
+                        .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
+                        .build(),
+                metadata.host(),
+                metadata.grpcPort(),
+                metadata.gossipPort(),
+                metadata.tlsGossipPort(),
+                metadata.prometheusPort(),
+                metadata.workingDir()));
     }
 }

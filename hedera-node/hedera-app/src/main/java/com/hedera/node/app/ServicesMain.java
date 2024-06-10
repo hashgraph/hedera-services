@@ -86,9 +86,7 @@ public class ServicesMain implements SwirldMain {
             delegate = new MonoServicesMain();
         } else {
             logger.info("One or more workflows enabled, using Hedera");
-            final var constructableRegistry = ConstructableRegistry.getInstance();
-            final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
-            delegate = new Hedera(constructableRegistry, servicesRegistry, CANONICAL_SELF_NODE_INFO_EXTRACTOR);
+            delegate = newHedera();
         }
     }
 
@@ -159,10 +157,7 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final var constructableRegistry = ConstructableRegistry.getInstance();
-        final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
-
-        final Hedera hedera = new Hedera(constructableRegistry, servicesRegistry, CANONICAL_SELF_NODE_INFO_EXTRACTOR);
+        final Hedera hedera = newHedera();
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
@@ -297,5 +292,13 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
+    }
+
+    private static Hedera newHedera() {
+        final var constructableRegistry = ConstructableRegistry.getInstance();
+        final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
+        final var servicesMigrator = new OrderedServiceMigrator(servicesRegistry);
+        return new Hedera(
+                constructableRegistry, servicesRegistry, servicesMigrator, CANONICAL_SELF_NODE_INFO_EXTRACTOR);
     }
 }

@@ -93,7 +93,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void stateRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            null, CURRENT_VERSION, null, VERSIONED_CONFIG, networkInfo, mock(Metrics.class)))
+                            null, null, CURRENT_VERSION, VERSIONED_CONFIG, networkInfo, mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -109,7 +109,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void versionedConfigRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, CURRENT_VERSION, null, null, networkInfo, mock(Metrics.class)))
+                            merkleTree, null, CURRENT_VERSION, null, networkInfo, mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -117,7 +117,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void networkInfoRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, CURRENT_VERSION, null, VERSIONED_CONFIG, null, mock(Metrics.class)))
+                            merkleTree, null, CURRENT_VERSION, VERSIONED_CONFIG, null, mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -125,7 +125,7 @@ class DependencyMigrationTest extends MerkleTestBase {
         void metricsRequired() {
             final var subject = new OrderedServiceMigrator(servicesRegistry);
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, CURRENT_VERSION, null, VERSIONED_CONFIG, networkInfo, null))
+                            merkleTree, null, CURRENT_VERSION, VERSIONED_CONFIG, networkInfo, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -159,8 +159,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         final var subject = new OrderedServiceMigrator(servicesRegistry);
         subject.doMigrations(
                 merkleTree,
-                SemanticVersion.newBuilder().major(2).build(),
                 null,
+                SemanticVersion.newBuilder().major(2).build(),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -259,8 +259,8 @@ class DependencyMigrationTest extends MerkleTestBase {
         final var subject = new OrderedServiceMigrator(servicesRegistry);
         subject.doMigrations(
                 merkleTree,
-                SemanticVersion.newBuilder().major(1).build(),
                 null,
+                SemanticVersion.newBuilder().major(1).build(),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));

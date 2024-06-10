@@ -74,6 +74,13 @@ public interface HederaNode {
     Path getApplicationLogPath();
 
     /**
+     * Gets the path to the node's address book.
+     *
+     * @return the path to the node's address book
+     */
+    Path getAddressBookPath();
+
+    /**
      * Initializes the working directory for the node. Must be called before the node is started.
      *
      * @param configTxt the address book the node should start with

@@ -28,7 +28,7 @@ import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
-import com.hedera.services.bdd.junit.hedera.AbstractNode;
+import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.swirlds.base.function.BooleanFunction;
@@ -47,7 +47,7 @@ import java.util.regex.Pattern;
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
-public class SubProcessNode extends AbstractNode implements HederaNode {
+public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements HederaNode {
     /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
@@ -72,10 +72,6 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
      */
     @Nullable
     private ProcessHandle processHandle;
-    /**
-     * Whether the working directory has been initialized.
-     */
-    private boolean workingDirInitialized;
 
     public SubProcessNode(
             @NonNull final NodeMetadata metadata,
@@ -83,7 +79,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
             @NonNull final PrometheusClient prometheusClient) {
         super(metadata);
         this.grpcPinger = requireNonNull(grpcPinger);
-        this.statusPattern = Pattern.compile(".*Hederanode#" + getNodeId() + " is (\\w+)");
+        this.statusPattern = Pattern.compile(".*HederaNode#" + getNodeId() + " is (\\w+)");
         this.prometheusClient = requireNonNull(prometheusClient);
         // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.app
         requireNonNull(Hedera.class);
@@ -150,6 +146,11 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         return "SubProcessNode{" + "metadata=" + metadata + ", workingDirInitialized=" + workingDirInitialized + '}';
     }
 
+    @Override
+    protected SubProcessNode self() {
+        return this;
+    }
+
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
         if (processHandle == null) {
             return false;
@@ -162,12 +163,6 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     private void assertStopped() {
         if (processHandle != null) {
             throw new IllegalStateException("Node is still running");
-        }
-    }
-
-    private void assertWorkingDirInitialized() {
-        if (!workingDirInitialized) {
-            throw new IllegalStateException("Working directory not initialized");
         }
     }
 

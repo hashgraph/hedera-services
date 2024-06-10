@@ -96,7 +96,7 @@ public class GenesisRecordsConsensusHook {
         if (!stakingAccounts.isEmpty()) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - firstConsensusTime.getEpochSecond();
             createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
-            log.info("Queued {} staking account records", stakingAccounts.size());
+            log.info(" - Queued {} staking account records", stakingAccounts.size());
             stakingAccounts = null;
         }
 

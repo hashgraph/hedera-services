@@ -24,22 +24,24 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
+    private static final Path BASE_WORKING_LOC = Path.of("./build/hapi-test");
     private static final String KEYS_FOLDER = "keys";
     private static final String CONFIG_FOLDER = "config";
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER);
-    private static final String CONFIG_TXT = "config.txt";
     private static final String LOG4J2_XML = "log4j2.xml";
-    private static final String BASE_WORKING_DIR = "./build/hapi-test/node";
-    private static final String BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
+    private static final String PROJECT_BOOTSTRAP_ASSETS_LOC = "hedera-node/configuration/dev";
+    private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
 
     public static final String DATA_DIR = "data";
     public static final String OUTPUT_DIR = "output";
+    public static final String CONFIG_TXT = "config.txt";
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -53,8 +55,8 @@ public class WorkingDirUtils {
      * @return the path to the working directory
      */
     public static Path workingDirFor(final long nodeId, @Nullable String scope) {
-        final var nodeWorkingDir = Path.of(BASE_WORKING_DIR + nodeId);
-        return (scope == null ? nodeWorkingDir : nodeWorkingDir.resolve(scope)).normalize();
+        final var baseDir = scope == null ? BASE_WORKING_LOC : BASE_WORKING_LOC.resolve(scope);
+        return baseDir.resolve("node" + nodeId).normalize();
     }
 
     /**
@@ -73,9 +75,15 @@ public class WorkingDirUtils {
         // Write the address book (config.txt)
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
         // Copy the bootstrap assets into the working directory
-        copyBootstrapAssets(Path.of(BOOTSTRAP_ASSETS_LOC).toAbsolutePath().normalize(), workingDir);
+        copyBootstrapAssets(bootstrapAssetsLoc(), workingDir);
         // Update the log4j2.xml file with the correct output directory
         updateLog4j2XmlOutputDir(workingDir);
+    }
+
+    private static Path bootstrapAssetsLoc() {
+        return Paths.get(System.getProperty("user.dir")).endsWith("hedera-services")
+                ? Path.of(PROJECT_BOOTSTRAP_ASSETS_LOC)
+                : Path.of(TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC);
     }
 
     private static void updateLog4j2XmlOutputDir(@NonNull final Path workingDir) {
@@ -174,6 +182,7 @@ public class WorkingDirUtils {
     }
 
     private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
+        System.out.println("Copying bootstrap assets from " + assetDir + " to " + workingDir);
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
                 if (file.getFileName().toString().endsWith(".properties")) {

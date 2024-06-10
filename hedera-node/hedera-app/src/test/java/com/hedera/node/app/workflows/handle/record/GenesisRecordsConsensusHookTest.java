@@ -31,6 +31,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import java.time.Instant;
@@ -84,7 +85,7 @@ class GenesisRecordsConsensusHookTest {
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
-        subject = new GenesisRecordsConsensusHook();
+        subject = new GenesisRecordsConsensusHook(new SyntheticAccountCreator());
     }
 
     @Test

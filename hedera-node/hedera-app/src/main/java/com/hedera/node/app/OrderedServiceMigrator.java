@@ -24,11 +24,12 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.config.VersionedConfiguration;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.ServiceMigrator;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -49,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * deterministic order_. In order to ensure the entity ID service is migrated before the token service,
  * we'll just migrate the entity ID service first.
  */
-public class OrderedServiceMigrator {
+public class OrderedServiceMigrator implements ServiceMigrator {
     private static final Logger logger = LogManager.getLogger(OrderedServiceMigrator.class);
     private final ServicesRegistry servicesRegistry;
 
@@ -60,16 +61,17 @@ public class OrderedServiceMigrator {
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
      */
+    @Override
     public void doMigrations(
             @NonNull final HederaState state,
-            @NonNull final SemanticVersion currentVersion,
             @Nullable final SemanticVersion previousVersion,
-            @NonNull final VersionedConfiguration versionedConfiguration,
+            @NonNull final SemanticVersion currentVersion,
+            @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
         requireNonNull(state);
         requireNonNull(currentVersion);
-        requireNonNull(versionedConfiguration);
+        requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
 
@@ -84,7 +86,7 @@ public class OrderedServiceMigrator {
                 state,
                 previousVersion,
                 currentVersion,
-                versionedConfiguration,
+                config,
                 networkInfo,
                 metrics,
                 // We call with null here because we're migrating the entity ID service itself
@@ -121,7 +123,7 @@ public class OrderedServiceMigrator {
                             state,
                             previousVersion,
                             currentVersion,
-                            versionedConfiguration,
+                            config,
                             networkInfo,
                             metrics,
                             // If we have reached this point in the code, entityIdStore should not be null because the

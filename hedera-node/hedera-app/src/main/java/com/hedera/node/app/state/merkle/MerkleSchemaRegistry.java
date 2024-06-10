@@ -206,7 +206,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(currentVersion),
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
-            final var applications = schemaApplications.computeApplications(previousVersion, latestVersion, schema);
+            final var applications =
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -225,7 +226,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(schema, metrics, state);
+                final var redefinedWritableStates = applyStateDefinitions(schema, config, metrics, state);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
@@ -250,11 +251,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
     private RedefinedWritableStates applyStateDefinitions(
             @NonNull final Schema schema,
+            @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final MerkleHederaState hederaState) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
-        schema.statesToCreate().stream()
+        schema.statesToCreate(configuration).stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
@@ -388,7 +390,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.singletonClassId(), md.stateDefinition().valueCodec())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
-            throw new RuntimeException(
+            throw new IllegalStateException(
                     "Failed to register with the system '"
                             + serviceName
                             + ":"

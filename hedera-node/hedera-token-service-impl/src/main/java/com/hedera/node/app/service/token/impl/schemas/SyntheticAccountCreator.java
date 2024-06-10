@@ -157,7 +157,7 @@ public class SyntheticAccountCreator {
             systemAcctRcds.add(account);
         }
         systemAccountsCb.accept(systemAcctRcds);
-        log.info("Created {} synthetic system records", systemAccounts().size());
+        log.info("Created {} synthetic system account models", systemAccounts().size());
 
         // ---------- Create staking fund records -------------------------
         final var stakingRewardAccountId = asAccountId(accountsConfig.stakingRewardAccount(), hederaConfig);
