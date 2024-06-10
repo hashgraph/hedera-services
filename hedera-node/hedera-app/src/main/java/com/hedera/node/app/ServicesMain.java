@@ -201,9 +201,6 @@ public class ServicesMain implements SwirldMain {
         final Configuration configuration = buildConfiguration();
         platformBuilder.withConfiguration(configuration);
 
-//        final Metrics metrics = new DefaultMetricsProvider(configuration).createPlatformMetrics(selfId);
-//        platformBuilder.withMetrics(metrics);
-
         platformBuilder.withCryptography(CryptographyFactory.create());
         platformBuilder.withTime(Time.getCurrent());
 
