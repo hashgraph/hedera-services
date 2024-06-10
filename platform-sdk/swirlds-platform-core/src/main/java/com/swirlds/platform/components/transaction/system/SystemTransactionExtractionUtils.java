@@ -73,10 +73,9 @@ public class SystemTransactionExtractionUtils {
         while (transactionIterator.hasNext()) {
             final Transaction transaction = transactionIterator.next();
             if (systemTransactionTypeClass.isInstance(transaction.getPayload().value())) {
-                scopedTransactions.add(new ScopedSystemTransaction<>(
-                        event.getCreatorId(),
-                        event.getSoftwareVersion(),
-                        (T) transaction.getPayload().value()));
+                scopedTransactions.add(
+                        new ScopedSystemTransaction<>(event.getCreatorId(), event.getSoftwareVersion(), (T)
+                                transaction.getPayload().value()));
             }
         }
 

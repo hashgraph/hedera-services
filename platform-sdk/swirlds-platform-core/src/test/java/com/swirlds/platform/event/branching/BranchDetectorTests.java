@@ -197,8 +197,7 @@ class BranchDetectorTests {
                 assertNull(result);
             } else {
                 if (event.getCreatorId().equals(branchingNode)) {
-                    if (event.getBirthRound()
-                            == branchingEvent.getBirthRound() + 1) {
+                    if (event.getBirthRound() == branchingEvent.getBirthRound() + 1) {
                         // The event that comes right after the branch should also be flagged as a branching event
                         assertSame(event, result);
                     } else {

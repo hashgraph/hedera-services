@@ -40,8 +40,7 @@ public abstract class ConsensusUtils {
         for (final Address address : generator.getAddressBook()) {
             final EventSource<?> source = generator.getSource(address.getNodeId());
             final List<GossipEvent> eventsByCreator = events.stream()
-                    .filter(e -> e.getHashedData().getCreatorId().id()
-                            == address.getNodeId().id())
+                    .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
                     .toList();
             eventsByCreator.forEach(e -> {
                 final IndexedEvent indexedEvent = new IndexedEvent(e);
@@ -49,7 +48,7 @@ public abstract class ConsensusUtils {
             });
             final Instant creatorMax = eventsByCreator.stream()
                     .max(Comparator.comparingLong(GossipEvent::getGeneration))
-                    .map(e -> e.getHashedData().getTimeCreated())
+                    .map(e -> e.getTimeCreated())
                     .orElse(Instant.MIN);
             lastTimestamp = Collections.max(Arrays.asList(lastTimestamp, creatorMax));
         }

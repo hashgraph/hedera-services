@@ -22,7 +22,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
