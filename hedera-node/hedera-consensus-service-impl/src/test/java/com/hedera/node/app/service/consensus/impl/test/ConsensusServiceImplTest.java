@@ -21,10 +21,8 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,39 +37,14 @@ public class ConsensusServiceImplTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void registerSchemasNullArgsThrow() {
-        assertThatThrownBy(() -> subject.registerSchemas(null, SemanticVersion.DEFAULT))
-                .isInstanceOf(NullPointerException.class);
-
-        assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class), null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.registerSchemas(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerSchemasRegistersTopicSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
-        subject.registerSchemas(schemaRegistry, SemanticVersion.DEFAULT);
+        subject.registerSchemas(schemaRegistry);
         verify(schemaRegistry).register(notNull());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void triesToSetStateWithoutRegisteredTopicSchema() {
-        final var mMap = mock(MerkleMap.class);
-
-        assertThatThrownBy(() -> subject.setFromState(mMap)).isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Test
-    void stateSetterDontThrow() {
-        final var registry = mock(SchemaRegistry.class);
-        // registerSchemas(...) is required to instantiate the token schema
-        subject.registerSchemas(registry, SemanticVersion.DEFAULT);
-
-        final var mMap = mock(MerkleMap.class);
-
-        subject.setFromState(null);
-        subject.setFromState(mMap);
     }
 }

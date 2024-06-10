@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.support;
 import static com.hedera.services.bdd.spec.HapiSpec.doTargetSpec;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -38,7 +39,7 @@ public class SpecManager {
         this.targetNetwork = requireNonNull(targetNetwork);
     }
 
-    public void setup(@NonNull final HapiSpecOperation... ops) throws Throwable {
+    public void setup(@NonNull final SpecOperation... ops) throws Throwable {
         final var spec = new HapiSpec(SPEC_NAME, ops);
         doTargetSpec(spec, targetNetwork);
         spec.setSpecStateObserver(sharedStates::add);

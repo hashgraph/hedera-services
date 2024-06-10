@@ -21,10 +21,9 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
-import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
-import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -35,16 +34,18 @@ import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.test.fixtures.state.TestBase;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.MethodDescriptor;
@@ -64,7 +65,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.assertj.core.api.Assumptions;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 
 /**
@@ -103,11 +103,11 @@ abstract class GrpcTestBase extends TestBase {
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
      * correctly for different types of calls.
      */
-    protected final Metrics metrics = new DefaultMetrics(
+    protected final Metrics metrics = new DefaultPlatformMetrics(
             nodeSelfId,
             new MetricKeyRegistry(),
             METRIC_EXECUTOR,
-            new DefaultMetricsFactory(configuration.getConfigData(MetricsConfig.class)),
+            new PlatformMetricsFactoryImpl(configuration.getConfigData(MetricsConfig.class)),
             configuration.getConfigData(MetricsConfig.class));
     /** The query method to set up on the server. Only one method supported today */
     private String queryMethodName;
@@ -142,7 +142,7 @@ abstract class GrpcTestBase extends TestBase {
 
     /** Starts the grpcServer and sets up the clients. */
     protected void startServer() {
-        final var testService = new Service() {
+        final var testService = new RpcService() {
             @NonNull
             @Override
             public String getServiceName() {
@@ -174,18 +174,19 @@ abstract class GrpcTestBase extends TestBase {
                     }
                 });
             }
+
+            @Override
+            public void registerSchemas(@NonNull SchemaRegistry registry) {
+                // no-op
+            }
         };
 
-        final var cr = ConstructableRegistry.getInstance();
-        final var registry = new MerkleSchemaRegistry(cr, "TestService", new NoOpGenesisRecordsBuilder());
-        final var registration = new ServicesRegistry.Registration(testService, registry);
+        final var servicesRegistry =
+                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), new NoOpGenesisRecordsBuilder());
+        servicesRegistry.register(testService);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(
-                () -> new VersionedConfigImpl(config, 1),
-                () -> Set.of(registration),
-                ingestWorkflow,
-                queryWorkflow,
-                metrics);
+                () -> new VersionedConfigImpl(config, 1), servicesRegistry, ingestWorkflow, queryWorkflow, metrics);
 
         grpcServer.start();
 

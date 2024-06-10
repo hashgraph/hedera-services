@@ -50,7 +50,7 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
         assertNotNull(node);
 
         assertEquals(1L, node.nodeId());
-        assertEquals(payerId, node.accountId());
+        assertEquals(accountId, node.accountId());
         assertEquals("description", node.description());
         assertArrayEquals(gossipCaCertificate, asBytes(node.gossipCaCertificate()));
         assertArrayEquals(grpcCertificateHash, asBytes(node.grpcCertificateHash()));

@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -115,7 +116,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .key(GENESIS)
                                 .logging(),
                         withOpContext((spec, opLog) -> {
-                            List<HapiSpecOperation> ops = new ArrayList<>();
+                            List<SpecOperation> ops = new ArrayList<>();
                             var stakedNodeId = settings.getNodeToStake();
                             for (int i = 0; i < STAKED_CREATIONS; i++) {
                                 var stakedAccount = "stakedAccount" + i;

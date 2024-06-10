@@ -27,6 +27,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -96,5 +97,13 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
      */
     public Set<EntityNumber> modifiedNodes() {
         return nodesState().modifiedKeys();
+    }
+
+    /**
+     * Returns an iterator over the keys in the state.
+     * @return
+     */
+    public Iterator<EntityNumber> keys() {
+        return nodesState().keys();
     }
 }

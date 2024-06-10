@@ -18,6 +18,7 @@ package com.swirlds.common.utility;
 
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.awt.Dialog;
 import java.awt.GraphicsEnvironment;
 import java.awt.Window;
@@ -212,6 +213,28 @@ public class CommonUtils {
         for (int i = 0, j = 0; i < length; i++) {
             out[j++] = DIGITS_LOWER[(0xF0 & bytes[i]) >>> 4];
             out[j++] = DIGITS_LOWER[0x0F & bytes[i]];
+        }
+
+        return new String(out);
+    }
+
+    /**
+     * Converts Bytes to a lowercase hexadecimal string.
+     *
+     * @param bytes  the bytes to hexadecimal
+     * @param length the length of the array to convert to hex
+     * @return a {@link String} containing the lowercase hexadecimal representation of the byte array
+     */
+    public static String hex(final Bytes bytes, final int length) {
+        if (bytes == null) {
+            return "null";
+        }
+        throwRangeInvalid("length", length, 0, (int) bytes.length());
+
+        final char[] out = new char[length << 1];
+        for (int i = 0, j = 0; i < length; i++) {
+            out[j++] = DIGITS_LOWER[(0xF0 & bytes.getByte(i)) >>> 4];
+            out[j++] = DIGITS_LOWER[0x0F & bytes.getByte(i)];
         }
 
         return new String(out);

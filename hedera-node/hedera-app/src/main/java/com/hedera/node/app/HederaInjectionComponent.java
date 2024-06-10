@@ -38,8 +38,6 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
@@ -59,6 +57,9 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
@@ -174,6 +175,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
+
+        @BindsInstance
+        Builder softwareVersion(SoftwareVersion softwareVersion);
 
         HederaInjectionComponent build();
     }

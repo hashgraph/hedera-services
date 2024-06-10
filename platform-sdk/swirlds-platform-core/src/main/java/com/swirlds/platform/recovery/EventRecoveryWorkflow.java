@@ -24,7 +24,6 @@ import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -43,6 +42,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -376,7 +376,7 @@ public final class EventRecoveryWorkflow {
         previousState.get().getState().throwIfImmutable();
         final State newState = previousState.get().getState().copy();
         final EventImpl lastEvent = (EventImpl) getLastEvent(round);
-        CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
+        new StatefulEventHasher().hashEvent(lastEvent.getBaseEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 
@@ -414,6 +414,7 @@ public final class EventRecoveryWorkflow {
                         newState,
                         "EventRecoveryWorkflow.handleNextRound()",
                         isFreezeState,
+                        false,
                         false)
                 .reserve("recovery");
         previousState.close();

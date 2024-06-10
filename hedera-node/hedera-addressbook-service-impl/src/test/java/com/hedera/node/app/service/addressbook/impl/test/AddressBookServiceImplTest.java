@@ -21,9 +21,8 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.swirlds.state.spi.SchemaRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,18 +36,14 @@ class AddressBookServiceImplTest {
 
     @Test
     void registerSchemasNullArgsThrow() {
-        assertThatThrownBy(() -> subject.registerSchemas(null, SemanticVersion.DEFAULT))
-                .isInstanceOf(NullPointerException.class);
-
-        assertThatThrownBy(() -> subject.registerSchemas(mock(SchemaRegistry.class), null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.registerSchemas(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerSchemasRegistersNodesSchema() {
         final var schemaRegistry = mock(SchemaRegistry.class);
 
-        subject.registerSchemas(schemaRegistry, SemanticVersion.DEFAULT);
+        subject.registerSchemas(schemaRegistry);
         verify(schemaRegistry).register(notNull());
     }
 }

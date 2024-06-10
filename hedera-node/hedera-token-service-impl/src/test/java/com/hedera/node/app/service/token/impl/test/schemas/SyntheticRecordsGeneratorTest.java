@@ -31,11 +31,11 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.token.impl.schemas.InitialModServiceTokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -124,8 +124,8 @@ final class SyntheticRecordsGeneratorTest {
         Assertions.assertThat(treasuryCloneAcctsResult.stream()
                         .map(Account::accountId)
                         .map(AccountID::accountNum))
-                .allMatch(acctNum -> Arrays.contains(
-                        InitialModServiceTokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES), acctNum));
+                .allMatch(acctNum ->
+                        Arrays.contains(V0490TokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES), acctNum));
 
         // Verify blocklist records created
         verify(genesisRecordsBuilder).blocklistAccounts(blocklistAcctRcdsCaptor.capture());

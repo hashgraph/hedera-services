@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.networkadmin;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +42,9 @@ public final class NetworkServiceDefinition implements RpcServiceDefinition {
             new RpcMethodDefinition<>("getAccountDetails", Query.class, Response.class));
 
     private NetworkServiceDefinition() {
-        // Forbid instantiation
+        // Just something to keep the Gradle build believing we have a non-transitive
+        // "requires" and hence preserving our module-info.class in the compiled JAR
+        requireNonNull(CommonUtils.class);
     }
 
     @Override

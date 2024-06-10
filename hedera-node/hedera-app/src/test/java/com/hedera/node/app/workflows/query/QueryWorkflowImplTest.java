@@ -438,6 +438,38 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
+    void testSuccessIfPaymentRequiredAndNotProvided() throws ParseException, PreCheckException {
+        final var queryHeader =
+                QueryHeader.newBuilder().payment((Transaction) null).build();
+        final var query = Query.newBuilder()
+                .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
+                .build();
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
+        when(handler.extractHeader(query)).thenReturn(queryHeader);
+        when(dispatcher.getHandler(query)).thenReturn(handler);
+        given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
+        given(handler.requiresNodePayment(any())).willReturn(true);
+        when(handler.findResponse(any(), any()))
+                .thenReturn(Response.newBuilder()
+                        .fileGetInfo(FileGetInfoResponse.newBuilder()
+                                .header(ResponseHeader.newBuilder().build())
+                                .build())
+                        .build());
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
+        final var responseBuffer = newEmptyBuffer();
+
+        // when
+        workflow.handleQuery(requestBuffer, responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
+        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        assertThat(header.cost()).isZero();
+    }
+
+    @Test
     void testSuccessIfCostOnly() throws ParseException {
         // given
         final var queryHeader =

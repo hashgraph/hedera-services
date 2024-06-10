@@ -29,6 +29,10 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.branching.BranchDetector;
+import com.swirlds.platform.event.branching.BranchReporter;
+import com.swirlds.platform.event.branching.DefaultBranchDetector;
+import com.swirlds.platform.event.branching.DefaultBranchReporter;
 import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
@@ -47,19 +51,21 @@ import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesWriter;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
+import com.swirlds.platform.event.resubmitter.DefaultTransactionResubmitter;
+import com.swirlds.platform.event.resubmitter.TransactionResubmitter;
 import com.swirlds.platform.event.signing.DefaultSelfEventSigner;
 import com.swirlds.platform.event.signing.SelfEventSigner;
 import com.swirlds.platform.event.stale.DefaultStaleEventDetector;
-import com.swirlds.platform.event.stale.DefaultTransactionResubmitter;
 import com.swirlds.platform.event.stale.StaleEventDetector;
-import com.swirlds.platform.event.stale.TransactionResubmitter;
 import com.swirlds.platform.event.stream.ConsensusEventStream;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.event.validation.DefaultEventSignatureValidator;
 import com.swirlds.platform.event.validation.DefaultInternalEventValidator;
 import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
+import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.internal.EventImpl;
@@ -79,6 +85,8 @@ import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
+import com.swirlds.platform.state.signer.DefaultStateSigner;
+import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
@@ -140,6 +148,10 @@ public class PlatformComponentBuilder {
     private StateHasher stateHasher;
     private StateSnapshotManager stateSnapshotManager;
     private HashLogger hashLogger;
+    private BranchDetector branchDetector;
+    private BranchReporter branchReporter;
+    private StateSigner stateSigner;
+    private TransactionHandler transactionHandler;
 
     private boolean metricsDocumentationEnabled = true;
 
@@ -242,7 +254,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher(blocks.platformContext());
+            eventHasher = new DefaultEventHasher();
         }
         return eventHasher;
     }
@@ -949,7 +961,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public TransactionResubmitter buildTransactionResubmitter() {
         if (transactionResubmitter == null) {
-            transactionResubmitter = new DefaultTransactionResubmitter();
+            transactionResubmitter = new DefaultTransactionResubmitter(blocks.platformContext());
         }
         return transactionResubmitter;
     }
@@ -1022,7 +1034,6 @@ public class PlatformComponentBuilder {
                     blocks.swirldStateManager(),
                     () -> blocks.getLatestCompleteStateReference().get().get(),
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
-                    () -> blocks.platformStatusSupplierReference().get().get(),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
                     blocks.intakeEventCounter());
@@ -1127,5 +1138,135 @@ public class PlatformComponentBuilder {
             hashLogger = new DefaultHashLogger(blocks.platformContext());
         }
         return hashLogger;
+    }
+
+    /**
+     * Provide a branch detector in place of the platform's default branch detector.
+     *
+     * @param branchDetector the branch detector to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withBranchDetector(@NonNull final BranchDetector branchDetector) {
+        throwIfAlreadyUsed();
+        if (this.branchDetector != null) {
+            throw new IllegalStateException("Branch detector has already been set");
+        }
+        this.branchDetector = Objects.requireNonNull(branchDetector);
+        return this;
+    }
+
+    /**
+     * Build the branch detector if it has not yet been built. If one has been provided via
+     * {@link #withBranchDetector(BranchDetector)}, that detector will be used. If this method is called more than once,
+     * only the first call will build the branch detector. Otherwise, the default detector will be created and
+     * returned.
+     *
+     * @return the branch detector
+     */
+    @NonNull
+    public BranchDetector buildBranchDetector() {
+        if (branchDetector == null) {
+            branchDetector = new DefaultBranchDetector(blocks.initialAddressBook());
+        }
+        return branchDetector;
+    }
+
+    /**
+     * Provide a branch reporter in place of the platform's default branch reporter.
+     *
+     * @param branchReporter the branch reporter to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withBranchReporter(@NonNull final BranchReporter branchReporter) {
+        throwIfAlreadyUsed();
+        if (this.branchReporter != null) {
+            throw new IllegalStateException("Branch reporter has already been set");
+        }
+        this.branchReporter = Objects.requireNonNull(branchReporter);
+        return this;
+    }
+
+    /**
+     * Build the branch reporter if it has not yet been built. If one has been provided via
+     * {@link #withBranchReporter(BranchReporter)}, that reporter will be used. If this method is called more than once,
+     * only the first call will build the branch reporter. Otherwise, the default reporter will be created and
+     * returned.
+     *
+     * @return the branch reporter
+     */
+    @NonNull
+    public BranchReporter buildBranchReporter() {
+        if (branchReporter == null) {
+            branchReporter = new DefaultBranchReporter(blocks.platformContext(), blocks.initialAddressBook());
+        }
+        return branchReporter;
+    }
+
+    /**
+     * Provide a state signer in place of the platform's default state signer.
+     *
+     * @param stateSigner the state signer to use
+     * @return this builder
+     */
+    public PlatformComponentBuilder withStateSigner(@NonNull final StateSigner stateSigner) {
+        throwIfAlreadyUsed();
+        if (this.stateSigner != null) {
+            throw new IllegalStateException("State signer has already been set");
+        }
+        this.stateSigner = Objects.requireNonNull(stateSigner);
+        return this;
+    }
+
+    /**
+     * Build the state signer if it has not yet been built. If one has been provided via
+     * {@link #withStateSigner(StateSigner)}, that signer will be used. If this method is called more than once, only
+     * the first call will build the state signer. Otherwise, the default signer will be created and returned.
+     *
+     * @return the state signer
+     */
+    @NonNull
+    public StateSigner buildStateSigner() {
+        if (stateSigner == null) {
+            stateSigner = new DefaultStateSigner(new PlatformSigner(blocks.keysAndCerts()));
+        }
+        return stateSigner;
+    }
+
+    /**
+     * Provide a transaction handler in place of the platform's default transaction handler.
+     *
+     * @param transactionHandler the transaction handler to use
+     * @return this builder
+     */
+    @NonNull
+    public PlatformComponentBuilder withTransactionHandler(@NonNull final TransactionHandler transactionHandler) {
+        throwIfAlreadyUsed();
+        if (this.transactionHandler != null) {
+            throw new IllegalStateException("Transaction handler has already been set");
+        }
+        this.transactionHandler = Objects.requireNonNull(transactionHandler);
+        return this;
+    }
+
+    /**
+     * Build the transaction handler if it has not yet been built. If one has been provided via
+     * {@link #withTransactionHandler(TransactionHandler)}, that handler will be used. If this method is called more
+     * than once, only the first call will build the transaction handler. Otherwise, the default handler will be created
+     * and returned.
+     *
+     * @return the transaction handler
+     */
+    @NonNull
+    public TransactionHandler buildTransactionHandler() {
+        if (transactionHandler == null) {
+            transactionHandler = new DefaultTransactionHandler(
+                    blocks.platformContext(),
+                    blocks.swirldStateManager(),
+                    blocks.statusActionSubmitterReference().get(),
+                    blocks.appVersion());
+        }
+        return transactionHandler;
     }
 }

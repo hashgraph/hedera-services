@@ -790,6 +790,12 @@ public final class PbjConverter {
             case INVALID_GOSSIP_CAE_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
             case INVALID_GRPC_CERTIFICATE -> ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
+            case MAX_NODES_CREATED -> ResponseCodeEnum.MAX_NODES_CREATED;
+            case IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT -> ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
+            case GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN -> ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
+            case FQDN_SIZE_TOO_LARGE -> ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
+            case INVALID_ENDPOINT -> ResponseCodeEnum.INVALID_ENDPOINT;
+            case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1340,6 +1346,16 @@ public final class PbjConverter {
                     .INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .INVALID_MAX_AUTO_ASSOCIATIONS;
+            case MAX_NODES_CREATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NODES_CREATED;
+            case IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
+            case GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
+            case FQDN_SIZE_TOO_LARGE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
+            case INVALID_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ENDPOINT;
+            case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
+
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }

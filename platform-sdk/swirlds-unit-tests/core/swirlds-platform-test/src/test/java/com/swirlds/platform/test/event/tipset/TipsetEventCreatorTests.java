@@ -45,7 +45,6 @@ import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
-import com.swirlds.platform.event.creation.tipset.TipsetUtils;
 import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -53,7 +52,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -237,16 +235,12 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final BaseEventHashedData event) {
 
-        eventCreators
-                .get(event.getCreatorId())
-                .tipsetTracker
-                .addEvent(event.getDescriptor(), TipsetUtils.getParentDescriptors(event));
+        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
 
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
 
-        final EventImpl eventImpl =
-                new EventImpl(new GossipEvent(event, new byte[0]), new ConsensusData(), selfParent, otherParent);
+        final EventImpl eventImpl = new EventImpl(new GossipEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
 
         return eventImpl;
@@ -262,7 +256,7 @@ class TipsetEventCreatorTests {
             eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(),
-                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent().getHashedData()));
+                    eventImpl.getBaseEvent().getAllParents());
         }
     }
 

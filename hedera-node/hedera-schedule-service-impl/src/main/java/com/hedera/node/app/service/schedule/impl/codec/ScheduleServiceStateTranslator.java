@@ -42,11 +42,24 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Utility class used for conversion of schedule virtual values to schedules.
+ * @deprecated Since there should not be anymore ScheduleVirtualValue objects in state,
+ * this class should no longer be required and will be removed in a future release
+ */
+@Deprecated(forRemoval = true)
 public final class ScheduleServiceStateTranslator {
     private static final int ED25519_KEY_LENGTH = 32;
 
     private ScheduleServiceStateTranslator() {}
 
+    /**
+     * Convert schedule virtual value to schedule.
+     *
+     * @param virtualValue the virtual value
+     * @return the schedule
+     * @throws ParseException if there is an error parsing the TransactionBody message
+     */
     public static Schedule convertScheduleVirtualValueToSchedule(
             @NonNull final com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue virtualValue)
             throws ParseException {
@@ -142,6 +155,14 @@ public final class ScheduleServiceStateTranslator {
         else return null;
     }
 
+    /**
+     * Migrates the state of the schedule service from the scheduleId to the schedule virtual value
+     * using the readableStore and the ScheduleId.
+     *
+     * @param scheduleID the schedule id
+     * @param readableScheduleStore the readable schedule store
+     * @return the schedule virtual value
+     */
     @NonNull
     public static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue pbjToState(
             @NonNull final ScheduleID scheduleID, @NonNull final ReadableScheduleStore readableScheduleStore) {
@@ -154,6 +175,12 @@ public final class ScheduleServiceStateTranslator {
         return pbjToState(optionalSchedule);
     }
 
+    /**
+     * Converts a {@link Schedule} object to a {@link ScheduleVirtualValue}
+     * *
+     * @param schedule the schedule
+     * @return the schedule virtual value
+     */
     @NonNull
     public static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue pbjToState(
             @NonNull final Schedule schedule) {

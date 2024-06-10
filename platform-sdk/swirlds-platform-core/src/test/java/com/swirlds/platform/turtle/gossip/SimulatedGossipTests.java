@@ -34,6 +34,7 @@ import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -65,7 +66,7 @@ class SimulatedGossipTests {
     private static Set<EventDescriptor> getUniqueDescriptors(@NonNull final List<GossipEvent> events) {
         final HashSet<EventDescriptor> uniqueDescriptors = new HashSet<>();
         for (final GossipEvent event : events) {
-            uniqueDescriptors.add(event.getHashedData().getDescriptor());
+            uniqueDescriptors.add(event.getDescriptor());
         }
         return uniqueDescriptors;
     }
@@ -130,6 +131,8 @@ class SimulatedGossipTests {
                             eventOutputWire,
                             mock(BindableInputWire.class),
                             mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
+                            mock(BindableInputWire.class),
                             mock(BindableInputWire.class));
         }
 
@@ -141,7 +144,7 @@ class SimulatedGossipTests {
             final NodeId creator = addressBook.getNodeId(randotron.nextInt(networkSize));
             final GossipEvent event =
                     new TestingEventBuilder(randotron).setCreatorId(creator).build();
-            context.getCryptography().digestSync(event.getHashedData());
+            new StatefulEventHasher().hashEvent(event);
 
             eventsToGossip.add(event);
         }
@@ -151,7 +154,7 @@ class SimulatedGossipTests {
             final GossipEvent event = eventsToGossip.get(eventIndex);
 
             for (final NodeId nodeId : addressBook.getNodeIdSet()) {
-                if (event.getHashedData().getCreatorId().equals(nodeId) || randotron.nextBoolean(0.1)) {
+                if (event.getCreatorId().equals(nodeId) || randotron.nextBoolean(0.1)) {
                     eventSubmitters.get(nodeId).accept(event);
 
                     // When a node sends out an event, add it to the list of events that node knows about.

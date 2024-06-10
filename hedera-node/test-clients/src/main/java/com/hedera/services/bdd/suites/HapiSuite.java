@@ -16,13 +16,15 @@
 
 package com.hedera.services.bdd.suites;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -53,6 +55,7 @@ public abstract class HapiSuite {
     public static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     public static final String EVM_VERSION_046 = "v0.46";
     public static final String EVM_VERSION_050 = "v0.50";
+    public static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
     protected static String ALICE = "ALICE";
     protected static String BOB = "BOB";
     protected static String CAROL = "CAROL";
@@ -265,7 +268,7 @@ public abstract class HapiSuite {
         finalSpecs = specs;
         summarizeResults(getResultsLogger());
         if (tearDownClientsAfter) {
-            HapiApiClients.tearDown();
+            HapiClients.tearDown();
         }
         return finalOutcomeFor(finalSpecs);
     }

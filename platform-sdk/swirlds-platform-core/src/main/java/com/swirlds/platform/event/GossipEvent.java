@@ -18,12 +18,16 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.AbstractSerializableHashable;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.Event;
@@ -35,13 +39,16 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements Event, SelfSerializable {
+public class GossipEvent extends AbstractSerializableHashable implements Event {
+    private static final EventConsensusData NO_CONSENSUS =
+            new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
 
     private static final class ClassVersion {
@@ -78,6 +85,14 @@ public class GossipEvent implements Event, SelfSerializable {
      */
     private NodeId senderId;
 
+    /** The consensus data for this event */
+    private EventConsensusData consensusData = NO_CONSENSUS;
+    /**
+     * The consensus timestamp of this event (if it has reached consensus). This is the same timestamp that is stored in
+     * {@link #consensusData}, but converted to an {@link Instant}.
+     */
+    private Instant consensusTimestamp = null;
+
     /**
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
@@ -103,6 +118,20 @@ public class GossipEvent implements Event, SelfSerializable {
         this.signature = signature;
         this.timeReceived = Instant.now();
         this.senderId = null;
+        this.consensusData = NO_CONSENSUS;
+        if (hashedData.getHash() != null) {
+            setHash(hashedData.getHash());
+        }
+    }
+
+    /**
+     * Create a copy of this event while populating only the data received via gossip. Consensus data will not be
+     * copied.
+     *
+     * @return a copy of this event
+     */
+    public GossipEvent copyGossipedData() {
+        return new GossipEvent(hashedData, signature);
     }
 
     /**
@@ -130,8 +159,15 @@ public class GossipEvent implements Event, SelfSerializable {
     }
 
     /**
-     * {@inheritDoc}
+     * Since events are being migrated to protobuf, calculating the hash of an event will change. This method serializes
+     * the bytes that make up an event's hash prior to migration.
+     * @param out the stream to write the bytes to
      */
+    public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
+        Objects.requireNonNull(out);
+        out.writeSerializable(hashedData, true);
+    }
+
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hashedData, false);
@@ -139,9 +175,6 @@ public class GossipEvent implements Event, SelfSerializable {
         signature.writeTo(out);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
@@ -205,6 +238,15 @@ public class GossipEvent implements Event, SelfSerializable {
     }
 
     /**
+     * Get the birth round of the event.
+     *
+     * @return the birth round of the event
+     */
+    public long getBirthRound() {
+        return hashedData.getBirthRound();
+    }
+
+    /**
      * @return the number of payloads this event contains
      */
     public int getPayloadCount() {
@@ -249,6 +291,46 @@ public class GossipEvent implements Event, SelfSerializable {
     }
 
     /**
+     * @return this event's consensus data, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public EventConsensusData getConsensusData() {
+        return consensusData;
+    }
+
+    /**
+     * @return the consensus timestamp for this event, this will be null if the event has not reached consensus
+     */
+    @Nullable
+    public Instant getConsensusTimestamp() {
+        return consensusTimestamp;
+    }
+
+    /**
+     * @return the consensus order for this event, this will be
+     * {@link com.swirlds.platform.consensus.ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
+     * consensus
+     */
+    public long getConsensusOrder() {
+        return consensusData.consensusOrder();
+    }
+
+    /**
+     * Set the consensus data for this event
+     *
+     * @param consensusData the consensus data for this event
+     */
+    public void setConsensusData(@NonNull final EventConsensusData consensusData) {
+        if (this.consensusData != NO_CONSENSUS) {
+            throw new IllegalStateException("Consensus data already set");
+        }
+        Objects.requireNonNull(consensusData, "consensusData");
+        Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
+        this.consensusData = consensusData;
+        this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
+    }
+
+    /**
      * Signal that all transactions have been prehandled for this event.
      */
     public void signalPrehandleCompletion() {
@@ -262,17 +344,11 @@ public class GossipEvent implements Event, SelfSerializable {
         abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getVersion() {
         return ClassVersion.BIRTH_ROUND;
@@ -284,8 +360,31 @@ public class GossipEvent implements Event, SelfSerializable {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the event descriptor for the self parent.
+     *
+     * @return the event descriptor for the self parent
      */
+    @Nullable
+    public EventDescriptor getSelfParent() {
+        return hashedData.getSelfParent();
+    }
+
+    /**
+     * Get the event descriptors for the other parents.
+     *
+     * @return the event descriptors for the other parents
+     */
+    @NonNull
+    public List<EventDescriptor> getOtherParents() {
+        return hashedData.getOtherParents();
+    }
+
+    /** @return a list of all parents, self parent (if any), + all other parents */
+    @NonNull
+    public List<EventDescriptor> getAllParents() {
+        return hashedData.getAllParents();
+    }
+
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
@@ -323,6 +422,9 @@ public class GossipEvent implements Event, SelfSerializable {
      */
     @Override
     public boolean equals(final Object o) {
+        // FUTURE WORK:
+        // this method seems to be exclusively used for testing purposes. if that is the case, it would be better to
+        // have a separate method for testing equality that is only used in the unit tests.
         if (this == o) {
             return true;
         }
@@ -332,15 +434,19 @@ public class GossipEvent implements Event, SelfSerializable {
         }
 
         final GossipEvent that = (GossipEvent) o;
-        return Objects.equals(getHashedData(), that.getHashedData());
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(consensusData, that.consensusData);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int hashCode() {
-        return hashedData.getHash().hashCode();
+        return getHash().hashCode();
+    }
+
+    @Override
+    public void setHash(final Hash hash) {
+        super.setHash(hash);
+        hashedData.setHash(hash);
     }
 
     /**

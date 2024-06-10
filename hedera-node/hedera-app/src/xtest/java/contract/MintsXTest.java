@@ -62,11 +62,11 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
 import com.swirlds.state.spi.ReadableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Exercises mint on a fungible and non-fungible token via the following steps relative to an {@code OWNER} account:
@@ -420,7 +420,7 @@ public class MintsXTest extends AbstractContractXTest {
 
     @Override
     protected void assertExpectedTokenRelations(
-            @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRelationships) {
+            @NonNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRelationships) {
         final var tokenRelation = tokenRelationships.get(EntityIDPair.newBuilder()
                 .tokenId(ERC20_TOKEN_ID)
                 .accountId(OWNER_ID)

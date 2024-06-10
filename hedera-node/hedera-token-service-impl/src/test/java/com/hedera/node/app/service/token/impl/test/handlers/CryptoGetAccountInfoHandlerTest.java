@@ -20,11 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.NETWORK_REWARDS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -484,10 +484,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private void setupConfig(boolean balancesInQueriesEnabled) {
         final var configBuilder = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
-                .withValue("ledger.id", "0x03");
-        if (balancesInQueriesEnabled) {
-            configBuilder.withValue("tokens.balancesInQueries.enabled", true);
-        }
+                .withValue("ledger.id", "0x03")
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled);
         given(context.configuration()).willReturn(configBuilder.getOrCreateConfig());
     }
 

@@ -28,7 +28,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
-import static com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl.SCHEDULES_BY_ID_KEY;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema.SCHEDULES_BY_ID_KEY;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 import static com.hedera.pbj.runtime.ProtoTestTools.getThreadLocalDataBuffer;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,13 +85,13 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -2027,7 +2027,7 @@ class ThrottleAccumulatorTest {
         verify(throttleMetrics).updateAllMetrics();
     }
 
-    @NotNull
+    @NonNull
     private static Bytes keyToBytes(Key key) throws IOException, ParseException {
         final var dataBuffer = getThreadLocalDataBuffer();
         Key.PROTOBUF.write(key, dataBuffer);
