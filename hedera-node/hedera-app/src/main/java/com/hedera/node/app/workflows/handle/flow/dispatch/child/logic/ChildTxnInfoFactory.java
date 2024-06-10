@@ -54,7 +54,10 @@ public class ChildTxnInfoFactory {
         final var transaction = Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
-
+        // Since in the current systems the synthetic transactions need not have a transaction ID
+        // Payer will be injected as synthetic payer in dagger subcomponent, since the payer could be different
+        // for schedule dispatches. Also, there will not be signature verifications for synthetic transactions.
+        // So these fields are set to default values and will not be used.
         return new TransactionInfo(
                 transaction,
                 txBody,

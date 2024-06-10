@@ -92,7 +92,7 @@ public class ChildDispatchFactory {
             @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior) {
-        final var preHandleResult = dispatchPreHandle(parentDispatch, txBody, syntheticPayerId);
+        final var preHandleResult = dispatchPreHandleForChildTxn(parentDispatch, txBody, syntheticPayerId);
         final var childTxnInfo = childTxnInfoFactory.getTxnInfoFrom(txBody);
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
                 childTxnInfo,
@@ -123,7 +123,7 @@ public class ChildDispatchFactory {
      * @param syntheticPayerId the synthetic payer id
      * @return the pre-handle result
      */
-    private PreHandleResult dispatchPreHandle(
+    private PreHandleResult dispatchPreHandleForChildTxn(
             final @NonNull Dispatch parentDispatch,
             final @NonNull TransactionBody txBody,
             final @NonNull AccountID syntheticPayerId) {
@@ -180,7 +180,7 @@ public class ChildDispatchFactory {
      * A {@link KeyVerifier} that always returns {@link SignatureVerificationImpl} with a
      * passed verification.
      */
-    private static class NoOpKeyVerifier implements KeyVerifier {
+    static class NoOpKeyVerifier implements KeyVerifier {
         private static final SignatureVerification PASSED_VERIFICATION =
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
 
@@ -217,7 +217,7 @@ public class ChildDispatchFactory {
      * @param callback the callback
      * @return the key verifier
      */
-    private static KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
+    static KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
         return callback == null
                 ? NO_OP_KEY_VERIFIER
                 : new KeyVerifier() {

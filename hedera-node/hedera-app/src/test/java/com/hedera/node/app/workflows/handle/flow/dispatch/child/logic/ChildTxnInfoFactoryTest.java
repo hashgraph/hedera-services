@@ -31,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ChildTxnInfoFactoryTest {
-    private static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+    static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
     private static final AccountID payerId =
             AccountID.newBuilder().accountNum(1_234L).build();
     private static final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
@@ -51,12 +51,6 @@ class ChildTxnInfoFactoryTest {
             SignatureMap.DEFAULT,
             Bytes.EMPTY,
             HederaFunctionality.CRYPTO_TRANSFER);
-    private static final TransactionID txnId = TransactionID.newBuilder()
-            .accountID(payerId)
-            .transactionValidStart(Timestamp.newBuilder()
-                    .seconds(consensusTime.getEpochSecond())
-                    .build())
-            .build();
 
     private ChildTxnInfoFactory subject;
 
