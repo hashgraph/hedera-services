@@ -33,15 +33,16 @@ import org.junit.jupiter.api.Test;
 class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
     private static final double CREATE_AUTO_ASSOC_ALLOWED_DEVIATION = 0.0001;
     private static final double UPDATE_AUTO_ASSOC_ALLOWED_DEVIATION = 0.01;
+    private static final double TRANSFER_AUTO_ASSOC_DEVIATION = 0.0000001;
     private static final BigDecimal APPROX_AUTO_ASSOC_SLOT_PRICE = BigDecimal.valueOf(0.0018);
 
     @Test
     void computesExpectedPriceForCryptoTransferSubyptes() throws IOException {
         testCanonicalPriceFor(CryptoTransfer, DEFAULT);
-        testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON);
-        testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-        testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE);
-        testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+        testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON, TRANSFER_AUTO_ASSOC_DEVIATION);
+        testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, TRANSFER_AUTO_ASSOC_DEVIATION);
+        testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE, TRANSFER_AUTO_ASSOC_DEVIATION);
+        testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, TRANSFER_AUTO_ASSOC_DEVIATION);
     }
 
     @Test
