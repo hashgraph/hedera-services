@@ -17,29 +17,26 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.addressbook.NodeCreateTransactionBody;
+import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -61,7 +58,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NodeCreateHandlerTest extends AddressBookTestBase {
+class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
@@ -82,28 +79,31 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private StoreMetricsService storeMetricsService;
 
     private TransactionBody txn;
-    private NodeCreateHandler subject;
+    private NodeUpdateHandler subject;
 
     private AddressBookValidator addressBookValidator;
 
     @BeforeEach
     void setUp() {
         addressBookValidator = new AddressBookValidator();
-        subject = new NodeCreateHandler(addressBookValidator);
+        subject = new NodeUpdateHandler(addressBookValidator);
     }
 
     @Test
-    @DisplayName("pureChecks fail when accountId is null")
-    void accountIdCannotNull() {
-        txn = new NodeCreateBuilder().build();
+    @DisplayName("pureChecks fail when nodeId is negagive")
+    void nodeIdCannotNegative() {
+        txn = new NodeUpdateBuilder().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
+        assertThat(INVALID_NODE_ID).isEqualTo(msg.responseCode());
     }
 
     @Test
     @DisplayName("pureChecks fail when accountId not set")
     void accountIdNeedSet() {
-        txn = new NodeCreateBuilder().withAccountId(AccountID.DEFAULT).build();
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(AccountID.DEFAULT)
+                .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
     }
@@ -111,41 +111,18 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     @Test
     @DisplayName("pureChecks fail when accountId is alias")
     void accountIdCannotAlias() {
-        txn = new NodeCreateBuilder().withAccountId(alias).build();
+        txn = new NodeUpdateBuilder().withNodeId(1).withAccountId(alias).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
     }
 
     @Test
-    @DisplayName("pureChecks fail when gossip_endpoint not specified")
-    void gossipEndpointNeedSet() {
-        txn = new NodeCreateBuilder()
+    @DisplayName("pureChecks fail when gossipCaCertificate empty")
+    void gossipCaCertificateCannotEmpty() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
                 .withAccountId(accountId)
-                .withGossipEndpoint(List.of())
-                .build();
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_GOSSIP_ENDPOINT).isEqualTo(msg.responseCode());
-    }
-
-    @Test
-    @DisplayName("pureChecks fail when service_endpoint not specified")
-    void serviceEndpointNeedSet() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1))
-                .withServiceEndpoint(List.of())
-                .build();
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_SERVICE_ENDPOINT).isEqualTo(msg.responseCode());
-    }
-
-    @Test
-    @DisplayName("pureChecks fail when gossipCaCertificate not specified")
-    void gossipCaCertificateNeedSet() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1))
-                .withServiceEndpoint(List.of(endpoint2))
+                .withGossipCaCertificate(Bytes.EMPTY)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
         assertThat(INVALID_GOSSIP_CAE_CERTIFICATE).isEqualTo(msg.responseCode());
@@ -154,35 +131,33 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     @Test
     @DisplayName("pureChecks succeeds when expected attributes are specified")
     void pureCheckPass() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
                 .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1))
-                .withServiceEndpoint(List.of(endpoint2))
                 .withGossipCaCertificate(Bytes.wrap("cert"))
                 .build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
     }
 
     @Test
-    void failsWhenMaxNodesExceeds() {
-        txn = new NodeCreateBuilder().withAccountId(accountId).build();
+    void nodetIdMustInState() {
+        txn = new NodeUpdateBuilder().withNodeId(2L).build();
         given(handleContext.body()).willReturn(txn);
         refreshStoresWithCurrentNodeInWritable();
         final var config = HederaTestConfigBuilder.create()
-                .withValue("nodes.maxNumber", 1L)
+                .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
-        assertEquals(1, writableStore.sizeOfState());
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.MAX_NODES_CREATED, msg.getStatus());
-        assertEquals(0, writableStore.modifiedNodes().size());
+        assertEquals(ResponseCodeEnum.INVALID_NODE_ID, msg.getStatus());
     }
 
     @Test
     void accountIdMustInState() {
-        txn = new NodeCreateBuilder().withAccountId(accountId).build();
+        txn = new NodeUpdateBuilder().withNodeId(1L).withAccountId(accountId).build();
         given(accountStore.contains(accountId)).willReturn(false);
         given(handleContext.body()).willReturn(txn);
         refreshStoresWithCurrentNodeInWritable();
@@ -199,7 +174,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void failsWhenDescriptionTooLarge() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withDescription("Description")
                 .build();
@@ -217,7 +193,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void failsWhenDescriptionContainZeroByte() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withDescription("Des\0cription")
                 .build();
@@ -233,7 +210,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void failsWhenGossipEndpointTooLarge() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint2, endpoint3))
                 .build();
@@ -244,32 +222,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void failsWhenGossipEndpointNull() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(null)
-                .build();
-        setupHandle();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT, msg.getStatus());
-    }
-
-    @Test
-    void failsWhenGossipEndpointEmpty() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of())
-                .build();
-        setupHandle();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT, msg.getStatus());
-    }
-
-    @Test
     void failsWhenGossipEndpointTooSmall() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1))
                 .build();
@@ -281,7 +236,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void failsWhenGossipEndpointHaveIPAndFQDN() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint4))
                 .build();
@@ -293,7 +249,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void failsWhenEndpointHaveEmptyIPAndFQDN() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint5))
                 .build();
@@ -304,20 +261,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void failsWhenEndpointHaveNullIp() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1, endpoint7))
-                .build();
-        setupHandle();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_ENDPOINT, msg.getStatus());
-    }
-
-    @Test
     void failsWhenEndpointHaveZeroIp() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint6))
                 .build();
@@ -328,20 +274,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void failsWhenEndpointHaveInvalidIp() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1, endpoint8))
-                .build();
-        setupHandle();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
-    }
-
-    @Test
     void failsWhenServiceEndpointTooLarge() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
                 .withServiceEndpoint(List.of(endpoint1, endpoint2, endpoint3))
@@ -358,34 +293,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void failsWhenServiceEndpointNull() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1, endpoint2))
-                .withServiceEndpoint(null)
-                .build();
-        setupHandle();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_SERVICE_ENDPOINT, msg.getStatus());
-    }
-
-    @Test
-    void failsWhenServiceEndpointEmpty() {
-        txn = new NodeCreateBuilder()
-                .withAccountId(accountId)
-                .withGossipEndpoint(List.of(endpoint1, endpoint2))
-                .withServiceEndpoint(List.of())
-                .build();
-        setupHandle();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_SERVICE_ENDPOINT, msg.getStatus());
-    }
-
-    @Test
     void failsWhenEndpointHaveIPAndFQDN() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
                 .withServiceEndpoint(List.of(endpoint1, endpoint4))
@@ -404,7 +314,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void failsWhenEndpointFQDNTooLarge() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
                 .withServiceEndpoint(List.of(endpoint1, endpoint3))
@@ -424,7 +335,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     void hanldeWorkAsExpected() {
-        txn = new NodeCreateBuilder()
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1L)
                 .withAccountId(accountId)
                 .withDescription("Description")
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
@@ -441,24 +353,38 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
         given(accountStore.contains(accountId)).willReturn(true);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
-        final var createdNode = writableStore.get(4L);
-        assertNotNull(createdNode);
-        verify(recordBuilder).nodeID(4L);
-        assertEquals(4, createdNode.nodeId());
-        assertEquals("Description", createdNode.description());
+        final var updatedNode = writableStore.get(1L);
+        assertNotNull(updatedNode);
+        assertEquals(1, updatedNode.nodeId());
+        assertEquals("Description", updatedNode.description());
         assertArrayEquals(
                 (List.of(endpoint1, endpoint2)).toArray(),
-                createdNode.gossipEndpoint().toArray());
+                updatedNode.gossipEndpoint().toArray());
         assertArrayEquals(
                 (List.of(endpoint1, endpoint3)).toArray(),
-                createdNode.serviceEndpoint().toArray());
-        assertArrayEquals("cert".getBytes(), createdNode.gossipCaCertificate().toByteArray());
-        assertArrayEquals("hash".getBytes(), createdNode.grpcCertificateHash().toByteArray());
+                updatedNode.serviceEndpoint().toArray());
+        assertArrayEquals("cert".getBytes(), updatedNode.gossipCaCertificate().toByteArray());
+        assertArrayEquals("hash".getBytes(), updatedNode.grpcCertificateHash().toByteArray());
+    }
+
+    @Test
+    void nothingHappensIfUpdateHasNoop() {
+        txn = new NodeUpdateBuilder().withNodeId(1L).build();
+        given(handleContext.body()).willReturn(txn);
+        refreshStoresWithCurrentNodeInWritable();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.maxGossipEndpoint", 2)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+
+        assertDoesNotThrow(() -> subject.handle(handleContext));
+        final var updatedNode = writableStore.get(1L);
+        assertEquals(node, updatedNode);
     }
 
     @Test
@@ -478,7 +404,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
     }
 
-    private class NodeCreateBuilder {
+    private class NodeUpdateBuilder {
+        private long nodeId = -1L;
         private AccountID accountId = null;
         private String description = null;
         private List<ServiceEndpoint> gossipEndpoint = null;
@@ -489,11 +416,12 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
         private Bytes grpcCertificateHash = null;
 
-        private NodeCreateBuilder() {}
+        private NodeUpdateBuilder() {}
 
         public TransactionBody build() {
             final var txnId = TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
-            final var txnBody = NodeCreateTransactionBody.newBuilder();
+            final var txnBody = NodeUpdateTransactionBody.newBuilder();
+            txnBody.nodeId(nodeId);
             if (accountId != null) {
                 txnBody.accountId(accountId);
             }
@@ -515,36 +443,41 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
             return TransactionBody.newBuilder()
                     .transactionID(txnId)
-                    .nodeCreate(txnBody.build())
+                    .nodeUpdate(txnBody.build())
                     .build();
         }
 
-        public NodeCreateBuilder withAccountId(final AccountID accountId) {
+        public NodeUpdateBuilder withNodeId(final long nodeId) {
+            this.nodeId = nodeId;
+            return this;
+        }
+
+        public NodeUpdateBuilder withAccountId(final AccountID accountId) {
             this.accountId = accountId;
             return this;
         }
 
-        public NodeCreateBuilder withDescription(final String description) {
+        public NodeUpdateBuilder withDescription(final String description) {
             this.description = description;
             return this;
         }
 
-        public NodeCreateBuilder withGossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
+        public NodeUpdateBuilder withGossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
             this.gossipEndpoint = gossipEndpoint;
             return this;
         }
 
-        public NodeCreateBuilder withServiceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
+        public NodeUpdateBuilder withServiceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
             this.serviceEndpoint = serviceEndpoint;
             return this;
         }
 
-        public NodeCreateBuilder withGossipCaCertificate(final Bytes gossipCaCertificate) {
+        public NodeUpdateBuilder withGossipCaCertificate(final Bytes gossipCaCertificate) {
             this.gossipCaCertificate = gossipCaCertificate;
             return this;
         }
 
-        public NodeCreateBuilder withGrpcCertificateHash(final Bytes grpcCertificateHash) {
+        public NodeUpdateBuilder withGrpcCertificateHash(final Bytes grpcCertificateHash) {
             this.grpcCertificateHash = grpcCertificateHash;
             return this;
         }
