@@ -255,7 +255,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher(blocks.platformContext());
+            eventHasher = new DefaultEventHasher();
         }
         return eventHasher;
     }
@@ -1026,7 +1026,6 @@ public class PlatformComponentBuilder {
         if (gossip == null) {
             gossip = new SyncGossip(
                     blocks.platformContext(),
-                    blocks.randomBuilder().buildNonCryptographicRandom(),
                     AdHocThreadManager.getStaticThreadManager(),
                     blocks.keysAndCerts(),
                     blocks.initialAddressBook(),

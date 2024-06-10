@@ -21,8 +21,9 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLog
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.AbstractSerializableHashable;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -38,13 +39,14 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent implements Event, SelfSerializable {
+public class GossipEvent extends AbstractSerializableHashable implements Event {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
@@ -117,6 +119,19 @@ public class GossipEvent implements Event, SelfSerializable {
         this.timeReceived = Instant.now();
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
+        if (hashedData.getHash() != null) {
+            setHash(hashedData.getHash());
+        }
+    }
+
+    /**
+     * Create a copy of this event while populating only the data received via gossip. Consensus data will not be
+     * copied.
+     *
+     * @return a copy of this event
+     */
+    public GossipEvent copyGossipedData() {
+        return new GossipEvent(hashedData, signature);
     }
 
     /**
@@ -144,8 +159,15 @@ public class GossipEvent implements Event, SelfSerializable {
     }
 
     /**
-     * {@inheritDoc}
+     * Since events are being migrated to protobuf, calculating the hash of an event will change. This method serializes
+     * the bytes that make up an event's hash prior to migration.
+     * @param out the stream to write the bytes to
      */
+    public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
+        Objects.requireNonNull(out);
+        out.writeSerializable(hashedData, true);
+    }
+
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hashedData, false);
@@ -153,9 +175,6 @@ public class GossipEvent implements Event, SelfSerializable {
         signature.writeTo(out);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hashedData = in.readSerializable(false, BaseEventHashedData::new);
@@ -216,6 +235,15 @@ public class GossipEvent implements Event, SelfSerializable {
      */
     public long getGeneration() {
         return hashedData.getGeneration();
+    }
+
+    /**
+     * Get the birth round of the event.
+     *
+     * @return the birth round of the event
+     */
+    public long getBirthRound() {
+        return hashedData.getBirthRound();
     }
 
     /**
@@ -316,17 +344,11 @@ public class GossipEvent implements Event, SelfSerializable {
         abortAndLogIfInterrupted(prehandleCompleted::await, "interrupted while waiting for prehandle completion");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int getVersion() {
         return ClassVersion.BIRTH_ROUND;
@@ -338,8 +360,31 @@ public class GossipEvent implements Event, SelfSerializable {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the event descriptor for the self parent.
+     *
+     * @return the event descriptor for the self parent
      */
+    @Nullable
+    public EventDescriptor getSelfParent() {
+        return hashedData.getSelfParent();
+    }
+
+    /**
+     * Get the event descriptors for the other parents.
+     *
+     * @return the event descriptors for the other parents
+     */
+    @NonNull
+    public List<EventDescriptor> getOtherParents() {
+        return hashedData.getOtherParents();
+    }
+
+    /** @return a list of all parents, self parent (if any), + all other parents */
+    @NonNull
+    public List<EventDescriptor> getAllParents() {
+        return hashedData.getAllParents();
+    }
+
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
@@ -393,12 +438,15 @@ public class GossipEvent implements Event, SelfSerializable {
                 && Objects.equals(consensusData, that.consensusData);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int hashCode() {
-        return hashedData.getHash().hashCode();
+        return getHash().hashCode();
+    }
+
+    @Override
+    public void setHash(final Hash hash) {
+        super.setHash(hash);
+        hashedData.setHash(hash);
     }
 
     /**

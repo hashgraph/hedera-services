@@ -33,6 +33,7 @@ import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.stats.AverageStat;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
@@ -157,8 +158,12 @@ public class AddedEventMetrics {
     public void eventAdded(final EventImpl event) {
         if (event.isCreatedBy(selfId)) {
             eventsCreatedPerSecond.cycle();
-            if (event.getHashedData().hasOtherParent()) {
-                averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
+            if (!event.getBaseEvent().getOtherParents().isEmpty()) {
+                averageOtherParentAgeDiff.update(event.getGeneration()
+                        - event.getBaseEvent().getOtherParents().stream()
+                                .map(EventDescriptor::getGeneration)
+                                .max(Long::compareTo)
+                                .orElse(0L));
             }
         } else {
             avgCreatedReceivedTime.update(

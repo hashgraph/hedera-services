@@ -93,7 +93,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -156,7 +155,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
      * @param platformContext               the platform context
-     * @param random                        a source of randomness, does not need to be cryptographically secure
      * @param threadManager                 the thread manager
      * @param keysAndCerts                  private keys and public certificates
      * @param addressBook                   the current address book
@@ -173,7 +171,6 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Random random,
             @NonNull final ThreadManager threadManager,
             @NonNull final KeysAndCerts keysAndCerts,
             @NonNull final AddressBook addressBook,
@@ -199,9 +196,9 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        topology = new StaticTopology(random, addressBook, selfId, basicConfig.numConnections());
         final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, selfId);
+
+        topology = new StaticTopology(peers, selfId);
         final NetworkPeerIdentifier peerIdentifier = new NetworkPeerIdentifier(platformContext, peers);
         final SocketFactory socketFactory =
                 NetworkUtils.createSocketFactory(selfId, peers, keysAndCerts, platformContext.getConfiguration());
@@ -231,7 +228,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
         fallenBehindManager = new FallenBehindManagerImpl(
                 addressBook,
                 selfId,
-                topology.getConnectionGraph(),
+                topology,
                 statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));

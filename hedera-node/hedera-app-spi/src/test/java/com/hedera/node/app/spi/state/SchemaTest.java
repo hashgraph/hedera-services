@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.spi.Schema;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.junit.jupiter.api.Disabled;

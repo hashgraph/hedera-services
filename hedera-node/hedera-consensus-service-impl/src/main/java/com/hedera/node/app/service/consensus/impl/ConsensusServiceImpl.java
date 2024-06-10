@@ -18,12 +18,12 @@ package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.schemas.V0490ConsensusSchema;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.RpcService;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Standard implementation of the {@link ConsensusService} {@link Service}.
+ * Standard implementation of the {@link ConsensusService} {@link RpcService}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;

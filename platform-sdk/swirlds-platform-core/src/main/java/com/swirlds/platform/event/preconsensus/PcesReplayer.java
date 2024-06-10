@@ -173,7 +173,7 @@ public class PcesReplayer {
                 final GossipEvent event = eventIterator.next();
 
                 eventCount++;
-                transactionCount += event.getHashedData().getTransactions().length;
+                transactionCount += event.getPayloadCount();
 
                 eventOutputWire.forward(event);
             }
