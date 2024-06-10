@@ -12,6 +12,7 @@
     - [ConsensusDeleteTopicTransactionBody](#ConsensusDeleteTopicTransactionBody)
     - [ConsensusGetContentsTransactionBody](#ConsensusGetContentsTransactionBody)
     - [ConsensusGetInfoQuery](#ConsensusGetInfoQuery)
+    - [ConsensusSubmitMessageTransactionBody](#ConsensusSubmitMessageTransactionBody)
 - [Handlers](#Handlers)
   - [ConsensusCreateHandler](#ConsensusCreateHandler)
   - [ConsensusUpdateHandler](#ConsensusUpdateHandler)
@@ -147,6 +148,18 @@ The `ConsensusGetInfoQuery` message includes the following fields:
 
 - `header`: Standard info sent from client to node, including the signed payment, and what kind of response is requested (cost, state proof, both, or neither).
 - `topicID`: Represents the identifier of the topic for which information is being requested.
+
+
+#### ConsensusSubmitMessageTransactionBody
+
+`ConsensusSubmitMessageTransactionBody` is used in a transaction that submits a topic message to the Hedera network. Once the transaction is successfully executed, the receipt of the transaction will include the topic's updated sequence number and topic running hash.
+In terms of transaction signing requirements, anyone can submit a message to a public topic, but the submitKey is required to sign the transaction for a private topic.
+
+The `ConsensusSubmitMessageTransactionBody` message includes the following fields:
+
+- `message`: Message to be submitted. Max size of the Transaction (including signatures) is 6KiB.
+- `topicID`: Represents the identifier of the topic to submit message to.
+- `chunkInfo`: Optional information of the current chunk in a fragmented message.
 
 
 ## Handlers
