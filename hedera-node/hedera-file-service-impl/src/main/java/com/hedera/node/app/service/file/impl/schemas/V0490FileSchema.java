@@ -242,13 +242,14 @@ public class V0490FileSchema extends Schema {
             nodeAddresses.add(NodeAddress.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    .nodeAccountId(nodeInfo.accountId())
+                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
                     .serviceEndpoint(
                             // we really don't have grpc proxy name and port for now. Temporary values are set.
-                            // Need to update when we have the correct values
+                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
+                            // here.
                             ServiceEndpoint.newBuilder()
                                     .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                                    .port(0)
+                                    .port(1)
                                     .build())
                     .build());
         }
@@ -291,10 +292,10 @@ public class V0490FileSchema extends Schema {
                     .nodeId(nodeInfo.nodeId())
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     // we really don't have grpc proxy name and port for now.Temporary values are set.
-                    // Need to update when we have the correct values
+                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
                     .serviceEndpoint(ServiceEndpoint.newBuilder()
                             .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                            .port(0)
+                            .port(1)
                             .build())
                     .build());
         }
