@@ -9,7 +9,6 @@
   - [Transaction Body's](#Transaction-Bodys)
     - [ConsensusCreateTopicTransactionBody](#ConsensusCreateTopicTransactionBody)
     - [ConsensusUpdateTopicTransactionBody](#ConsensusUpdateTopicTransactionBody)
-    - [ConsensusAppendTransactionBody](#ConsensusAppendTransactionBody)
     - [ConsensusDeleteTopicTransactionBody](#ConsensusDeleteTopicTransactionBody)
     - [SystemDeleteTransactionBody](#SystemDeleteTransactionBody)
     - [SystemUndeleteTransactionBody](#SystemUndeleteTransactionBody)
