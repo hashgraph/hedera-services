@@ -4,7 +4,7 @@
 module com.hedera.node.app.service.token.test.fixtures {
     exports com.hedera.node.app.service.token.fixtures;
 
-    requires com.hedera.node.hapi;
     requires transitive com.hedera.node.app.service.token;
+    requires com.hedera.node.hapi;
     requires static com.github.spotbugs.annotations;
 }

@@ -22,7 +22,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
@@ -43,7 +43,9 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.test.fixtures.state.TestBase;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.MethodDescriptor;
@@ -63,7 +65,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.assertj.core.api.Assumptions;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 
 /**
@@ -141,7 +142,7 @@ abstract class GrpcTestBase extends TestBase {
 
     /** Starts the grpcServer and sets up the clients. */
     protected void startServer() {
-        final var testService = new Service() {
+        final var testService = new RpcService() {
             @NonNull
             @Override
             public String getServiceName() {
@@ -172,6 +173,11 @@ abstract class GrpcTestBase extends TestBase {
                         return set;
                     }
                 });
+            }
+
+            @Override
+            public void registerSchemas(@NonNull SchemaRegistry registry) {
+                // no-op
             }
         };
 

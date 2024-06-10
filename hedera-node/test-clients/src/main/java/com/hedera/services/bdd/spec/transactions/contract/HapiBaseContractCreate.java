@@ -177,4 +177,8 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
     }
+
+    public Optional<Key> getAdminKey() {
+        return (!omitAdminKey && !useDeprecatedAdminKey) ? Optional.of(adminKey) : Optional.empty();
+    }
 }

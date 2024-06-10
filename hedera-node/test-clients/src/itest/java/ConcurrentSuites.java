@@ -59,7 +59,6 @@ import com.hedera.services.bdd.suites.contract.precompile.SigningReqsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
@@ -157,7 +156,6 @@ public class ConcurrentSuites {
             TokenAndTypeCheckSuite::new,
             TokenExpiryInfoSuite::new,
             TokenInfoHTSSuite::new,
-            TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
             ContractMintHTSV2SecurityModelSuite::new,
             AssociatePrecompileV2SecurityModelSuite::new,
@@ -204,8 +202,6 @@ public class ConcurrentSuites {
             TokenAndTypeCheckSuite::new,
             TokenExpiryInfoSuite::new,
             TokenInfoHTSSuite::new,
-            TokenUpdatePrecompileSuite::new,
-            WipeTokenAccountPrecompileSuite::new,
             // contract opcodes
             CreateOperationSuite::new,
             GlobalPropertiesSuite::new,

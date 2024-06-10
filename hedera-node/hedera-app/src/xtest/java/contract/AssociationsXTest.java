@@ -50,11 +50,11 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.swirlds.state.spi.ReadableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Exercises both classic and HRC associations via the following steps relative to an {@code OWNER} account:
@@ -122,7 +122,7 @@ public class AssociationsXTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedTokenRelations(@NotNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
+    protected void assertExpectedTokenRelations(@NonNull ReadableKVState<EntityIDPair, TokenRelation> tokenRels) {
         // The owner should be associated with A_TOKEN and E_TOKEN
         assertPresentTokenAssociation(tokenRels, OWNER_ID, A_TOKEN_ID);
         assertMissingTokenAssociation(tokenRels, OWNER_ID, B_TOKEN_ID);
@@ -132,23 +132,23 @@ public class AssociationsXTest extends AbstractContractXTest {
     }
 
     private void assertMissingTokenAssociation(
-            @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels,
-            @NotNull final AccountID accountId,
-            @NotNull final TokenID tokenId) {
+            @NonNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels,
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId) {
         assertTokenAssociation(tokenRels, accountId, tokenId, false);
     }
 
     private void assertPresentTokenAssociation(
-            @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels,
-            @NotNull final AccountID accountId,
-            @NotNull final TokenID tokenId) {
+            @NonNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels,
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId) {
         assertTokenAssociation(tokenRels, accountId, tokenId, true);
     }
 
     private void assertTokenAssociation(
-            @NotNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels,
-            @NotNull final AccountID accountId,
-            @NotNull final TokenID tokenId,
+            @NonNull final ReadableKVState<EntityIDPair, TokenRelation> tokenRels,
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
             final boolean shouldBePresent) {
         final var tokenRel = tokenRels.get(
                 EntityIDPair.newBuilder().tokenId(tokenId).accountId(accountId).build());

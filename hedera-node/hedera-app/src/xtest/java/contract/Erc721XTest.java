@@ -58,7 +58,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * <p><b>GIVEN</b>
@@ -160,8 +159,8 @@ public class Erc721XTest extends AbstractContractXTest {
 
     @Override
     protected void assertExpectedStorage(
-            @NotNull final ReadableKVState<SlotKey, SlotValue> storage,
-            @NotNull final ReadableKVState<AccountID, Account> accounts) {
+            @NonNull final ReadableKVState<SlotKey, SlotValue> storage,
+            @NonNull final ReadableKVState<AccountID, Account> accounts) {
         assertEquals(EXPECTED_STORAGE.size(), storage.size());
         EXPECTED_STORAGE.forEach((key, value) -> {
             final var slot = storage.get(new SlotKey(ERC721_FULL_CONTRACT_ID, key));
@@ -173,19 +172,19 @@ public class Erc721XTest extends AbstractContractXTest {
     }
 
     @Override
-    protected void assertExpectedAliases(@NotNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
+    protected void assertExpectedAliases(@NonNull final ReadableKVState<ProtoBytes, AccountID> aliases) {
         // No aliases change in this test
     }
 
     @Override
-    protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
+    protected void assertExpectedAccounts(@NonNull final ReadableKVState<AccountID, Account> accounts) {
         final var contract = accounts.get(ERC721_FULL_ID);
         assertNotNull(contract);
         assertTrue(contract.smartContract());
     }
 
     @Override
-    protected void assertExpectedBytecodes(@NotNull final ReadableKVState<EntityNumber, Bytecode> bytecodes) {
+    protected void assertExpectedBytecodes(@NonNull final ReadableKVState<EntityNumber, Bytecode> bytecodes) {
         final var actualBytecode = bytecodes.get(new EntityNumber(ERC721_FULL_ID.accountNumOrThrow()));
         assertNotNull(actualBytecode);
         assertEquals(resourceAsBytes("bytecode/ERC721Full.bin"), actualBytecode.code());
