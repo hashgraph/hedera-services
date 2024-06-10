@@ -38,11 +38,13 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.CommandLineArgs;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
@@ -200,6 +202,9 @@ public class ServicesMain implements SwirldMain {
         // Add additional configuration to the platform
         final Configuration configuration = buildConfiguration();
         platformBuilder.withConfiguration(configuration);
+
+        final Metrics metrics = new DefaultMetricsProvider(configuration).createPlatformMetrics(selfId);
+        platformBuilder.withMetrics(metrics);
 
         platformBuilder.withCryptography(CryptographyFactory.create());
         platformBuilder.withTime(Time.getCurrent());
