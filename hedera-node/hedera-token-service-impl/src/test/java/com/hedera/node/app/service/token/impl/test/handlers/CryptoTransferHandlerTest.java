@@ -60,7 +60,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -361,6 +360,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeCalculator.calculate()).thenReturn(fees);
         when(readableAccountStore.getAccountById(any())).thenReturn(account);
         when(account.autoRenewSeconds()).thenReturn(THREE_MONTHS_IN_SECONDS);
+        when(account.maxAutoAssociations()).thenReturn(1);
 
         subject.calculateFees(feeContext);
 
@@ -410,6 +410,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeCalculator.calculate()).thenReturn(fees);
         when(readableAccountStore.getAccountById(any())).thenReturn(account);
         when(account.autoRenewSeconds()).thenReturn(THREE_MONTHS_IN_SECONDS);
+        when(account.maxAutoAssociations()).thenReturn(1);
 
         subject.calculateFees(feeContext);
 
@@ -635,8 +636,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
         when(readableAccountStore.getAccountById(any())).thenReturn(account);
-        when(readableTokenRelStore.get(ACCOUNT_4444, fungibleTokenId)).thenReturn(TokenRelation.DEFAULT);
-        when(readableTokenRelStore.get(ACCOUNT_4444, nonFungibleTokenId)).thenReturn(TokenRelation.DEFAULT);
 
         subject.calculateFees(feeContext);
 

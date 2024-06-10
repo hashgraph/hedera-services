@@ -236,13 +236,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
         final var topLevelPayer = context.payer();
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var unlimitedAutoAssociations =
-                context.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
         validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
