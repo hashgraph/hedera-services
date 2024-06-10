@@ -34,11 +34,12 @@ import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
@@ -231,8 +232,8 @@ public abstract class HapiSpecOperation implements SpecOperation {
     }
 
     private AccountID randomNodeFrom(final HapiSpec spec) {
-        final List<NodeConnectInfo> nodes = spec.setup().nodes();
-        return nodes.get(r.nextInt(nodes.size())).getAccount();
+        final List<HederaNode> nodes = spec.targetNetworkOrThrow().nodes();
+        return PbjConverter.fromPbj(nodes.get(r.nextInt(nodes.size())).getAccountId());
     }
 
     public Optional<Throwable> execFor(final HapiSpec spec) {

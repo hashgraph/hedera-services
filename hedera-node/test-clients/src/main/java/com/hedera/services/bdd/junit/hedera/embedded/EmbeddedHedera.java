@@ -24,12 +24,13 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
@@ -96,29 +97,37 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An embedded Hedera node that can be used in tests.
  */
 public class EmbeddedHedera {
+    private static final Logger LOG = LogManager.getLogger(EmbeddedHedera.class);
+
     private static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
+
     private static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
+    private static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
+            new PlatformStatusChangeNotification(ACTIVE);
 
     private final Hedera hedera;
     private final NodeId defaultNodeId;
     private final AddressBook addressBook;
-    private final ToyPlatform platform = new ToyPlatform();
+    private final ToyPlatform platform;
     private final PlatformState platformState = new PlatformState();
     private final Map<AccountID, NodeId> nodeIds;
     private final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
     private final FakeHederaState state = new FakeHederaState();
     private final ThreadLocal<NodeId> submittingNodeId = new ThreadLocal<>();
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     @Nullable
     private HederaSoftwareVersion version;
@@ -131,24 +140,36 @@ public class EmbeddedHedera {
                 .collect(toMap(EmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
+        platform = new ToyPlatform();
         final var servicesRegistry = new FakeServicesRegistry();
         final var servicesMigrator = new FakeServiceMigrator(servicesRegistry);
         hedera = new Hedera(
-                ConstructableRegistry.getInstance(), servicesRegistry, servicesMigrator, (ignore, nodeVersion) -> {
+                ConstructableRegistry.getInstance(),
+                servicesRegistry,
+                servicesMigrator,
+                (ignore, nodeVersion) -> {
                     this.version = nodeVersion;
                     return new ChameleonSelfNodeInfo(nodeVersion);
-                });
+                },
+                IsEmbeddedTest.YES);
+        Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
     /**
      * Starts the embedded Hedera node.
      */
     public void start() {
-        platform.start();
         hedera.onStateInitialized(state, platform, platformState, GENESIS, null);
         hedera.init(platform, defaultNodeId);
-        requireNonNull(platform.notificationEngine.statusChangeListener)
-                .notify(new PlatformStatusChangeNotification(ACTIVE));
+        platform.start();
+        platform.notificationEngine.statusChangeListeners.forEach(l -> l.notify(ACTIVE_NOTIFICATION));
+    }
+
+    /**
+     * Stops the embedded Hedera node.
+     */
+    public void stop() {
+        executorService.shutdownNow();
     }
 
     /**
@@ -165,7 +186,8 @@ public class EmbeddedHedera {
         final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
         hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
         submittingNodeId.remove();
-        return parseTransactionResponse(responseBuffer);
+        final var response = parseTransactionResponse(responseBuffer);
+        return response;
     }
 
     /**
@@ -182,7 +204,8 @@ public class EmbeddedHedera {
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
         hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
         submittingNodeId.remove();
-        return parseQueryResponse(responseBuffer);
+        final var response = parseQueryResponse(responseBuffer);
+        return response;
     }
 
     private void setSubmittingNodeId(@NonNull final AccountID nodeAccountId) {
@@ -198,27 +221,28 @@ public class EmbeddedHedera {
         private static final int MIN_CAPACITY = 5_000;
         private static final long NANOS_BETWEEN_CONS_EVENTS = 1_000;
         private static final Duration ROUND_DURATION = Duration.ofMillis(1);
+        //        private static final Duration ROUND_DURATION = Duration.ofSeconds(3);
 
         private final AtomicLong roundNo = new AtomicLong(1);
         private final AtomicLong consensusOrder = new AtomicLong(1);
+        private final List<ToyEvent> events = new ArrayList<>();
         private final PlatformContext platformContext = new ToyPlatformContext();
-        private final ExecutorService executor = newSingleThreadExecutor();
-        private final AtomicBoolean timeToStop = new AtomicBoolean(false);
         private final ToyNotificationEngine notificationEngine = new ToyNotificationEngine();
         private final BlockingQueue<ToyEvent> queue = new ArrayBlockingQueue<>(MIN_CAPACITY);
 
+        private Instant then = Instant.now();
+
         @Override
         public void start() {
-            executor.execute(this::handleTransactions);
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                timeToStop.set(true);
-                executor.shutdown();
-            }));
+            executorService.scheduleWithFixedDelay(
+                    this::handleTransactions, 0, ROUND_DURATION.toMillis(), MILLISECONDS);
         }
 
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
-            return queue.add(new ToyEvent(effectiveNodeId(), Instant.now(), new SwirldTransaction(transaction)));
+            final var answer =
+                    queue.add(new ToyEvent(effectiveNodeId(), Instant.now(), new SwirldTransaction(transaction)));
+            return answer;
         }
 
         @NonNull
@@ -258,38 +282,31 @@ public class EmbeddedHedera {
         }
 
         private void handleTransactions() {
-            Instant then = Instant.now();
-            final List<ToyEvent> events = new ArrayList<>();
-            while (!timeToStop.get()) {
+            try {
                 final var now = Instant.now();
-                try {
-                    if (Duration.between(then, now).compareTo(ROUND_DURATION) >= 0) {
-                        final var firstConsTime = then;
-                        final var consensusEvents = IntStream.range(0, events.size())
-                                .<ConsensusEvent>mapToObj(i -> new ToyConsensusEvent(
-                                        events.get(i),
-                                        consensusOrder.getAndIncrement(),
-                                        firstConsTime.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS)))
-                                .toList();
-                        final var round = new ToyRound(roundNo.getAndIncrement(), now, consensusEvents);
-                        then = Instant.now();
-                        hedera.handleWorkflow().handleRound(state, platformState, round);
-                        events.clear();
-                    }
-                    final var event = queue.take();
-                    hedera.onPreHandle(event, state);
-                    events.add(event);
-                } catch (final InterruptedException e) {
-                    // Thread interrupted because of shutdown.
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                final var consensusEvents = IntStream.range(0, events.size())
+                        .<ConsensusEvent>mapToObj(i -> new ToyConsensusEvent(
+                                events.get(i),
+                                consensusOrder.getAndIncrement(),
+                                then.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS)))
+                        .toList();
+                final var round = new ToyRound(roundNo.getAndIncrement(), now, consensusEvents);
+                hedera.handleWorkflow().handleRound(state, platformState, round);
+                events.clear();
+
+                then = now;
+                final List<ToyEvent> newEvents = new ArrayList<>();
+                queue.drainTo(newEvents);
+                newEvents.forEach(event -> hedera.onPreHandle(event, state));
+                events.addAll(newEvents);
+            } catch (Exception e) {
+                LOG.warn("Error handling transactions", e);
             }
         }
     }
 
     private class ToyPlatformContext implements PlatformContext {
-        private final Configuration configuration = ConfigurationBuilder.create()
+        private final Configuration platformConfig = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(TransactionConfig.class)
                 .build();
@@ -297,11 +314,11 @@ public class EmbeddedHedera {
         private final Metrics metrics;
 
         public ToyPlatformContext() {
-            final var metricsConfig = configuration.getConfigData(MetricsConfig.class);
+            final var metricsConfig = platformConfig.getConfigData(MetricsConfig.class);
             this.metrics = new DefaultPlatformMetrics(
                     defaultNodeId,
                     new MetricKeyRegistry(),
-                    Executors.newSingleThreadScheduledExecutor(),
+                    executorService,
                     new PlatformMetricsFactoryImpl(metricsConfig),
                     metricsConfig);
         }
@@ -309,9 +326,7 @@ public class EmbeddedHedera {
         @NonNull
         @Override
         public Configuration getConfiguration() {
-            return ConfigurationBuilder.create()
-                    .withConfigDataType(TransactionConfig.class)
-                    .build();
+            return platformConfig;
         }
 
         @NonNull
@@ -408,8 +423,7 @@ public class EmbeddedHedera {
     }
 
     private class ToyNotificationEngine implements NotificationEngine {
-        @Nullable
-        private PlatformStatusChangeListener statusChangeListener;
+        private final List<PlatformStatusChangeListener> statusChangeListeners = new CopyOnWriteArrayList<>();
 
         @Override
         public void initialize() {
@@ -432,7 +446,7 @@ public class EmbeddedHedera {
         @Override
         public <L extends Listener<?>> boolean register(Class<L> listenerClass, L callback) {
             if (listenerClass == PlatformStatusChangeListener.class) {
-                this.statusChangeListener = (PlatformStatusChangeListener) callback;
+                return statusChangeListeners.add((PlatformStatusChangeListener) callback);
             }
             return false;
         }
@@ -457,9 +471,9 @@ public class EmbeddedHedera {
                 @NonNull final NodeId creatorId,
                 @NonNull final Instant timeCreated,
                 @NonNull final SwirldTransaction transaction) {
-            this.creatorId = creatorId;
-            this.timeCreated = timeCreated;
-            this.transaction = transaction;
+            this.creatorId = requireNonNull(creatorId);
+            this.timeCreated = requireNonNull(timeCreated);
+            this.transaction = requireNonNull(transaction);
         }
 
         @Override
@@ -495,6 +509,7 @@ public class EmbeddedHedera {
             super(event.creatorId, event.timeCreated, event.transaction);
             this.consensusOrder = consensusOrder;
             this.consensusTimestamp = requireNonNull(consensusTimestamp);
+            event.transaction.setConsensusTimestamp(consensusTimestamp);
         }
 
         @Override
@@ -574,23 +589,26 @@ public class EmbeddedHedera {
     }
 
     private static TransactionResponse parseTransactionResponse(@NonNull final BufferedData responseBuffer) {
-        responseBuffer.flip();
         try {
-            return TransactionResponse.parseFrom(responseBuffer.asInputStream());
+            return TransactionResponse.parseFrom(usedBytesFrom(responseBuffer));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     private static Response parseQueryResponse(@NonNull final BufferedData responseBuffer) {
-        final byte[] bytes = new byte[Math.toIntExact(responseBuffer.position())];
-        responseBuffer.resetPosition();
-        responseBuffer.readBytes(bytes);
         try {
-            return Response.parseFrom(responseBuffer.asInputStream());
+            return Response.parseFrom(usedBytesFrom(responseBuffer));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static byte[] usedBytesFrom(@NonNull final BufferedData responseBuffer) {
+        final byte[] bytes = new byte[Math.toIntExact(responseBuffer.position())];
+        responseBuffer.resetPosition();
+        responseBuffer.readBytes(bytes);
+        return bytes;
     }
 
     private static AccountID accountIdOf(@NonNull final Address address) {

@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
-    private static final Path BASE_WORKING_LOC = Path.of("./build/hapi-test");
+    private static final Path BASE_WORKING_LOC = Path.of("./build");
+    private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";
     private static final String CONFIG_FOLDER = "config";
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER);
@@ -55,8 +56,11 @@ public class WorkingDirUtils {
      * @return the path to the working directory
      */
     public static Path workingDirFor(final long nodeId, @Nullable String scope) {
-        final var baseDir = scope == null ? BASE_WORKING_LOC : BASE_WORKING_LOC.resolve(scope);
-        return baseDir.resolve("node" + nodeId).normalize();
+        scope = scope == null ? DEFAULT_SCOPE : scope;
+        return BASE_WORKING_LOC
+                .resolve(scope + "-test")
+                .resolve("node" + nodeId)
+                .normalize();
     }
 
     /**
@@ -182,7 +186,6 @@ public class WorkingDirUtils {
     }
 
     private static void copyBootstrapAssets(@NonNull final Path assetDir, @NonNull final Path workingDir) {
-        System.out.println("Copying bootstrap assets from " + assetDir + " to " + workingDir);
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
                 if (file.getFileName().toString().endsWith(".properties")) {

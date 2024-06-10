@@ -120,6 +120,29 @@ tasks.test {
     modularity.inferModulePath.set(false)
 }
 
+// Runs a test against an embedded network
+tasks.register<Test>("testEmbedded") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform {
+        // Exclude tests that start and stop nodes, hence must run against a subprocess network
+        excludeTags("RESTART|ND_RECONNECT")
+    }
+
+    // Disable parallel execution; embedded tests emphasize determinism
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    // Tell our launcher to target an embedded network
+    systemProperty("hapi.spec.embedded.mode", true)
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
 tasks.itest {
     systemProperty("itests", System.getProperty("itests"))
     systemProperty("junit.jupiter.execution.parallel.enabled", false)

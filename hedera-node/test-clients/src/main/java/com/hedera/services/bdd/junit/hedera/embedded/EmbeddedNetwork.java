@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
@@ -52,6 +53,17 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public static void main(String... args) {
         final var subject = new EmbeddedNetwork(4);
         subject.start();
+        subject.terminate();
+    }
+
+    /**
+     * Creates an embedded "network" of with the given size.
+     *
+     * @param size the number of nodes in the network
+     * @return the embedded network
+     */
+    public static synchronized HederaNetwork newEmbeddedNetwork(final int size) {
+        return new EmbeddedNetwork(size);
     }
 
     public EmbeddedNetwork(final int size) {
@@ -78,7 +90,18 @@ public class EmbeddedNetwork extends AbstractNetwork {
     }
 
     @Override
-    public void awaitReady(@NonNull Duration timeout) {}
+    public void terminate() {
+        if (embeddedHedera != null) {
+            embeddedHedera.stop();
+        }
+    }
+
+    @Override
+    public void awaitReady(@NonNull Duration timeout) {
+        if (embeddedHedera == null) {
+            throw new IllegalStateException("EmbeddedNetwork is meant for single-threaded startup, please start it");
+        }
+    }
 
     @NonNull
     @Override
@@ -101,11 +124,6 @@ public class EmbeddedNetwork extends AbstractNetwork {
     @Override
     public TargetNetworkType type() {
         return EMBEDDED_NETWORK;
-    }
-
-    @Override
-    public void terminate() {
-        // No-op, the only thread started by EmbeddedHedera has a shutdown hook already
     }
 
     private static NodeMetadata ghostMetadata() {

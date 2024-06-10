@@ -24,6 +24,7 @@ import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -62,8 +63,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static int nextPrometheusPort;
     private static boolean nextPortsInitialized = false;
 
-    public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
-
     private final String configTxt;
 
     private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
@@ -80,11 +79,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * @return the shared network
      */
     public static synchronized HederaNetwork newSharedNetwork(final int size) {
-        if (SHARED_NETWORK.get() != null) {
+        if (NetworkTargetingExtension.SHARED_NETWORK.get() != null) {
             throw new UnsupportedOperationException("Only one shared network allowed per launcher session");
         }
         final var sharedNetwork = liveNetwork(SHARED_NETWORK_NAME, size);
-        SHARED_NETWORK.set(sharedNetwork);
+        NetworkTargetingExtension.SHARED_NETWORK.set(sharedNetwork);
         return sharedNetwork;
     }
 

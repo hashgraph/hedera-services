@@ -17,14 +17,13 @@
 package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.config.IsEmbeddedTest.NO;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -35,6 +34,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
@@ -163,6 +163,8 @@ public final class Hedera implements SwirldMain {
      */
     private final SelfNodeInfoExtractor selfNodeInfoExtractor;
 
+    private final IsEmbeddedTest isEmbeddedTest;
+
     /**
      * The Hashgraph Platform. This is set during state initialization.
      */
@@ -203,17 +205,19 @@ public final class Hedera implements SwirldMain {
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      * @param registry the registry to register services with
-     * @param serviceMigrator the migrator to use with the services
+     * @param migrator the migrator to use with the services
      * @param selfNodeInfoExtractor the strategy for extracting self node info from the platform and version
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry registry,
-            @NonNull final ServiceMigrator serviceMigrator,
-            @NonNull final SelfNodeInfoExtractor selfNodeInfoExtractor) {
+            @NonNull final ServiceMigrator migrator,
+            @NonNull final SelfNodeInfoExtractor selfNodeInfoExtractor,
+            @NonNull final IsEmbeddedTest isEmbeddedTest) {
         requireNonNull(constructableRegistry);
+        this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
+        this.serviceMigrator = requireNonNull(migrator);
         this.servicesRegistry = requireNonNull(registry);
-        this.serviceMigrator = requireNonNull(serviceMigrator);
         this.selfNodeInfoExtractor = requireNonNull(selfNodeInfoExtractor);
         logger.info(
                 """
@@ -254,24 +258,6 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * Indicates whether this node is UP and ready for business.
-     *
-     * @return True if the platform is active and the gRPC server is running.
-     */
-    public boolean isActive() {
-        return platformStatus == ACTIVE && daggerApp.grpcServerManager().isRunning();
-    }
-
-    /**
-     * Indicates whether this node is FROZEN.
-     *
-     * @return True if the platform is frozen
-     */
-    public boolean isFrozen() {
-        return platformStatus == FREEZE_COMPLETE;
     }
 
     /**
@@ -588,7 +574,7 @@ public final class Hedera implements SwirldMain {
      * Start the gRPC Server if it is not already running.
      */
     void startGrpcServer() {
-        if (!daggerApp.grpcServerManager().isRunning()) {
+        if (isEmbeddedTest == NO && !daggerApp.grpcServerManager().isRunning()) {
             daggerApp.grpcServerManager().start();
         }
     }
@@ -597,7 +583,9 @@ public final class Hedera implements SwirldMain {
      * Called to perform orderly shutdown of the gRPC servers.
      */
     public void shutdownGrpcServer() {
-        daggerApp.grpcServerManager().stop();
+        if (isEmbeddedTest == NO) {
+            daggerApp.grpcServerManager().stop();
+        }
     }
 
     /*==================================================================================================================

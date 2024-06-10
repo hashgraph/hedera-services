@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.junit;
 
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,15 +41,31 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     }
 
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
+        private boolean isEmbedded = false;
+
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            SubProcessNetwork.newSharedNetwork(DEFAULT_SHARED_NETWORK_SIZE).start();
+            isEmbedded = embeddedModeRequested();
+            final HederaNetwork targetNetwork;
+            if (embeddedModeRequested()) {
+                targetNetwork = EmbeddedNetwork.newEmbeddedNetwork(DEFAULT_SHARED_NETWORK_SIZE);
+            } else {
+                targetNetwork = SubProcessNetwork.newSharedNetwork(DEFAULT_SHARED_NETWORK_SIZE);
+            }
+            targetNetwork.start();
+            NetworkTargetingExtension.SHARED_NETWORK.set(targetNetwork);
         }
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
-            HapiClients.tearDown();
-            SubProcessNetwork.SHARED_NETWORK.get().terminate();
+            if (!isEmbedded) {
+                HapiClients.tearDown();
+                NetworkTargetingExtension.SHARED_NETWORK.get().terminate();
+            }
         }
+    }
+
+    private static boolean embeddedModeRequested() {
+        return "true".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"));
     }
 }
