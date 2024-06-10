@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -176,7 +177,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.tokenRejectEnabled(), NOT_SUPPORTED);
-        validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), INVALID_TRANSACTION_BODY);
+        validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
 
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var rejectingAccount = getIfUsableForAliasedId(

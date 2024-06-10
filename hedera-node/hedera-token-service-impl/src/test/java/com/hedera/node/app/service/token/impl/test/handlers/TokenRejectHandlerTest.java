@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
@@ -188,7 +189,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED));
     }
 
     @Test

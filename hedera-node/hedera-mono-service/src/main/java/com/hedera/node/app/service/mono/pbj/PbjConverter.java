@@ -54,7 +54,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle.UsageSnapshot;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -64,6 +64,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -78,7 +79,7 @@ public final class PbjConverter {
         requireNonNull(accountID);
         final var builder =
                 AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
-        if (accountID.getAccountCase() == com.hederahashgraph.api.proto.java.AccountID.AccountCase.ALIAS) {
+        if (accountID.getAccountCase() == AccountCase.ALIAS) {
             builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
         } else {
             builder.accountNum(accountID.getAccountNum());
@@ -799,6 +800,7 @@ public final class PbjConverter {
             case INVALID_ENDPOINT -> ResponseCodeEnum.INVALID_ENDPOINT;
             case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
             case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
@@ -1361,6 +1363,8 @@ public final class PbjConverter {
                     .GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
             case TOKEN_REFERENCE_REPEATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .TOKEN_REFERENCE_REPEATED;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case INVALID_OWNER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
@@ -1636,16 +1640,16 @@ public final class PbjConverter {
         return protoToPbj(query, NetworkGetExecutionTimeQuery.class);
     }
 
-    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
+    public static UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
         final var lastDecisionTime = snapshot.lastDecisionTime();
         if (lastDecisionTime == null) {
-            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
+            return new UsageSnapshot(snapshot.used(), null);
         } else {
-            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
+            return new UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
         }
     }
 
-    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
+    public static ThrottleUsageSnapshot toPbj(UsageSnapshot snapshot) {
         final var lastDecisionTime = snapshot.lastDecisionTime();
         if (lastDecisionTime == null) {
             return new ThrottleUsageSnapshot(snapshot.used(), null);
