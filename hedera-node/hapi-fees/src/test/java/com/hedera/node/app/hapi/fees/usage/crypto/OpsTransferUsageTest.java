@@ -63,7 +63,8 @@ class OpsTransferUsageTest {
                         .setBpt(18047)
                         .setVpt(1)
                         .setBpr(4))
-                .setServicedata(FeeComponents.newBuilder().setConstant(1).setRbh(904 + rbsForAutoAssociations / HRS_DIVISOR))
+                .setServicedata(
+                        FeeComponents.newBuilder().setConstant(1).setRbh(904 + rbsForAutoAssociations / HRS_DIVISOR))
                 .build();
 
         // when:

@@ -42,7 +42,8 @@ class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
         testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON, TRANSFER_AUTO_ASSOC_DEVIATION);
         testCanonicalPriceFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, TRANSFER_AUTO_ASSOC_DEVIATION);
         testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE, TRANSFER_AUTO_ASSOC_DEVIATION);
-        testCanonicalPriceFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, TRANSFER_AUTO_ASSOC_DEVIATION);
+        testCanonicalPriceFor(
+                CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, TRANSFER_AUTO_ASSOC_DEVIATION);
     }
 
     @Test
