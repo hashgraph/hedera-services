@@ -3,6 +3,11 @@
 `hedera-app-spi` defines the SPI (service provider interface) for service modules. This section gives a brief outline
 of what each of the different APIs are intended for.
 
+### Table of Contents
+- [Service](#Service)
+  - [File Service](file-service/file-service.md)
+  - [Schedule Service](schedule-service/schedule-service.md)
+
 ## Service
 
 The `Service` interface is implemented by each service module, for each conceptual "service" it provides. Typically, a

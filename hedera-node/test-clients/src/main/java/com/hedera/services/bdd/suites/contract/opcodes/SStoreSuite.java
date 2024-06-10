@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
@@ -69,7 +70,7 @@ public class SStoreSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(withOpContext((spec, opLog) -> {
                     final var step = 16;
-                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    final List<SpecOperation> subOps = new ArrayList<>();
 
                     for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
                         final var subOp1 = contractCall(contract, "growTo", BigInteger.valueOf(sizeNow))
@@ -81,7 +82,7 @@ public class SStoreSuite {
                 }))
                 .then(withOpContext((spec, opLog) -> {
                     final var numberOfIterations = 10;
-                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    final List<SpecOperation> subOps = new ArrayList<>();
 
                     for (int i = 0; i < numberOfIterations; i++) {
                         final var subOp1 = contractCall(

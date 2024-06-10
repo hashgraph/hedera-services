@@ -24,8 +24,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_RECEIVER_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -72,14 +72,14 @@ public class UtilStateChange {
         return additions;
     }
 
-    public static List<HapiSpecOperation> createEthereumAccountForSpec(final HapiSpec spec) {
+    public static List<SpecOperation> createEthereumAccountForSpec(final HapiSpec spec) {
         final var acc1 = createEthereumAccount(SECP_256K1_SOURCE_KEY, DEFAULT_CONTRACT_SENDER);
         final var acc2 = createEthereumAccount(SECP_256K1_RECEIVER_SOURCE_KEY, DEFAULT_CONTRACT_RECEIVER);
         specToInitializedEthereumAccount.putIfAbsent(spec.getSuitePrefix() + spec.getName(), true);
         return Stream.concat(acc1.stream(), acc2.stream()).toList();
     }
 
-    private static List<HapiSpecOperation> createEthereumAccount(final String secp256k1Key, final String txnName) {
+    private static List<SpecOperation> createEthereumAccount(final String secp256k1Key, final String txnName) {
         final var newSpecKey = new NewSpecKey(secp256k1Key).shape(secp256k1Shape);
         final var cryptoTransfer = new HapiCryptoTransfer(
                         tinyBarsFromAccountToAlias(GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))

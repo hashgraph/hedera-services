@@ -20,5 +20,3 @@ plugins {
 }
 
 group = "com.hedera.storage"
-
-tasks.checkModuleInfo { moduleNamePrefix = "com.hedera.storage" }

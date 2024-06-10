@@ -26,9 +26,7 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.SwirldState;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -171,16 +169,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         throwIfImmutable();
         throwIfDestroyed();
         return new State(this);
-    }
-
-    // Perhaps this belongs in a different file
-    public static void linkParents(final EventImpl[] events) {
-        final HashMap<Hash, EventImpl> eventsByHash = new HashMap<>();
-        for (final EventImpl event : events) {
-            eventsByHash.put(event.getBaseHash(), event);
-            event.setSelfParent(eventsByHash.get(event.getSelfParentHash()));
-            event.setOtherParent(eventsByHash.get(event.getOtherParentHash()));
-        }
     }
 
     /**

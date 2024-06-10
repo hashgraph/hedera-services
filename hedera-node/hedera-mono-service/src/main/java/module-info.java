@@ -36,7 +36,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.services.cli,
             com.hedera.node.app.service.file.impl,
-            com.hedera.node.app.service.network.admin.impl;
+            com.hedera.node.app.service.network.admin.impl,
+            com.hedera.node.app.service.addressbook.impl;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
@@ -256,11 +257,6 @@ module com.hedera.node.app.service.mono {
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.google.common;
-    requires transitive com.google.protobuf;
-    requires transitive com.hedera.evm;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
     requires transitive com.swirlds.fcqueue;
@@ -270,6 +266,11 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.virtualmap;
+    requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.google.common;
+    requires transitive com.google.protobuf;
+    requires transitive com.hedera.evm;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive grpc.netty;
     requires transitive grpc.stub;
@@ -283,11 +284,11 @@ module com.hedera.node.app.service.mono {
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
-    requires com.fasterxml.jackson.core;
-    requires com.sun.jna;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.logging;
+    requires com.fasterxml.jackson.core;
+    requires com.sun.jna;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
