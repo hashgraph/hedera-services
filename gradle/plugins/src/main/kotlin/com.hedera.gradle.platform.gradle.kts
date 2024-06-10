@@ -21,8 +21,6 @@ plugins {
 
 group = "com.swirlds"
 
-tasks.checkModuleInfo { moduleNamePrefix = "com.swirlds" }
-
 // All below configuration should eventually be removed once all 'sdk' tests in 'src/test'
 // are able to run in parallel without restrictions.
 tasks.test {

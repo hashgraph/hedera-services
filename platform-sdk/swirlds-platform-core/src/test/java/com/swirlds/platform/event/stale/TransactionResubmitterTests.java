@@ -56,7 +56,8 @@ class TransactionResubmitterTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final long currentRound = randotron.nextLong(1, 1000);
+        // the round must be high enough to allow events to be too old
+        final long currentRound = randotron.nextLong(1000, 2000);
         final EventWindow eventWindow = new EventWindow(
                 currentRound,
                 1 /* ignored by resubmitter */,

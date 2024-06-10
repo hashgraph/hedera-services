@@ -63,6 +63,6 @@ public class SerializationTests {
 
     static Stream<Arguments> selfSerializableProvider() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        return Stream.of(arguments(new TestingEventBuilder(random).build().getHashedData()));
+        return Stream.of(arguments(new TestingEventBuilder(random).build()));
     }
 }
