@@ -30,6 +30,12 @@ public class ReturnOnceConnectionManager implements ConnectionManager {
     private volatile boolean connectionReturned = false;
     private final NodeId nodeId;
 
+    /**
+     * Create a new connection manager that returns the given connection once
+     *
+     * @param nodeId     the node id
+     * @param connection the connection to return
+     */
     public ReturnOnceConnectionManager(@NonNull final NodeId nodeId, @NonNull final Connection connection) {
         this.nodeId = Objects.requireNonNull(nodeId);
         this.connection = Objects.requireNonNull(connection);
@@ -57,6 +63,9 @@ public class ReturnOnceConnectionManager implements ConnectionManager {
         return nodeId;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void newConnection(final Connection connection) {
         throw new IllegalStateException("unsupported");

@@ -138,7 +138,7 @@ class ConnectivityManagerTest {
         final ConnectivityManager factory = new ConnectivityManager(topology, connectionCreator);
 
         final NodeId testNode1 = addressBook.getNodeId(3);
-        PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
+        final PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
         final List<PeerInfo> peers = List.of(peer1);
         // keep a reference to the manager for the testPeer. We don't know if it's an inbound or outbound
         final ConnectionManager manager5 = factory.getManager(testNode1, true);
@@ -166,11 +166,11 @@ class ConnectivityManagerTest {
         final ConnectivityManager factory = new ConnectivityManager(topology, connectionCreator);
 
         final NodeId testNode1 = addressBook.getNodeId(9);
-        PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
+        final PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
 
         // we add a new peer and ensure that the manager is created for all peers, including peer2
         final NodeId testPeer2 = addressBook.getNodeId(10);
-        PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
+        final PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
         final List<PeerInfo> peers2 = List.of(peer1, peer2);
         final List<ConnectionManager> updatedManagers2 = factory.updatePeers(peers2);
         assertNotNull(updatedManagers2);
@@ -192,9 +192,9 @@ class ConnectivityManagerTest {
         final ConnectivityManager factory = new ConnectivityManager(topology, connectionCreator);
 
         final NodeId testNode1 = addressBook.getNodeId(4);
-        PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
+        final PeerInfo peer1 = new PeerInfo(testNode1, "localhost", "testHost1", Mockito.mock(Certificate.class));
         final NodeId testPeer2 = addressBook.getNodeId(5);
-        PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
+        final PeerInfo peer2 = new PeerInfo(testPeer2, "localhost", "testHost2", Mockito.mock(Certificate.class));
         final List<PeerInfo> peers2 = List.of(peer1, peer2);
         final List<ConnectionManager> updatedManagers2 = factory.updatePeers(peers2);
         assertNotNull(updatedManagers2);

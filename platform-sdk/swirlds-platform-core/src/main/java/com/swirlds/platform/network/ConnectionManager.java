@@ -42,7 +42,7 @@ public interface ConnectionManager {
     Connection getConnection();
 
     /**
-     * Returns the id of the node that this connection manager is responsible for
+     * Get the node id that this connection manager is responsible for
      *
      * @return the id of the node that this connection manager is responsible for
      */

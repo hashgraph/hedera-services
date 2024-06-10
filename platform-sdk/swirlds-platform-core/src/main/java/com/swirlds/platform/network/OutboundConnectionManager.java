@@ -37,6 +37,12 @@ public class OutboundConnectionManager implements ConnectionManager {
     /** locks the connection managed by this instance */
     private final AutoClosableResourceLock<Connection> lock = Locks.createResourceLock(currentConn);
 
+    /**
+     * Constructs a new {@link OutboundConnectionManager} instance
+     *
+     * @param peerId            the id of the peer node
+     * @param connectionCreator the creator of the outbound connection
+     */
     public OutboundConnectionManager(
             @NonNull final NodeId peerId, @NonNull final OutboundConnectionCreator connectionCreator) {
         this.peerId = Objects.requireNonNull(peerId);
