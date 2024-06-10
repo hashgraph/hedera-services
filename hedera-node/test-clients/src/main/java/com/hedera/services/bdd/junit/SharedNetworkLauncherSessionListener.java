@@ -60,8 +60,8 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
             if (!isEmbedded) {
                 HapiClients.tearDown();
-                NetworkTargetingExtension.SHARED_NETWORK.get().terminate();
             }
+            NetworkTargetingExtension.SHARED_NETWORK.get().terminate();
         }
     }
 

@@ -69,6 +69,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
@@ -133,6 +134,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
 public class HapiSpec implements Runnable, Executable {
+    private static final int EMBEDDED_STATUS_WAIT_SLEEP_MS = 1;
     private static final String CI_CHECK_NAME_SYSTEM_PROPERTY = "ci.check.name";
     private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
     private static final Duration NETWORK_ACTIVE_TIMEOUT = Duration.ofSeconds(300);
@@ -1145,7 +1147,7 @@ public class HapiSpec implements Runnable, Executable {
                 targetNetwork.nodes().stream().map(HederaNode::hapiSpecInfo).collect(joining(","));
         spec.addOverrideProperties(Map.of("nodes", specNodes));
         if (targetNetwork.type() == EMBEDDED_NETWORK) {
-            spec.addOverrideProperties(Map.of("status.wait.sleep.ms", "10"));
+            spec.addOverrideProperties(Map.of("status.wait.sleep.ms", "" + EMBEDDED_STATUS_WAIT_SLEEP_MS));
         }
     }
 
@@ -1306,9 +1308,9 @@ public class HapiSpec implements Runnable, Executable {
 
     private String costSnapshotFilePath() {
         String dir = "cost-snapshots";
-        ensureDir(dir);
+        WorkingDirUtils.ensureDir(dir);
         dir += ("/" + hapiSetup.costSnapshotDir());
-        ensureDir(dir);
+        WorkingDirUtils.ensureDir(dir);
         return String.format("cost-snapshots/%s/%s", hapiSetup.costSnapshotDir(), costSnapshotFile());
     }
 
@@ -1320,17 +1322,6 @@ public class HapiSpec implements Runnable, Executable {
      */
     public void addOverrideProperties(final Map<String, Object> props) {
         hapiSetup.addOverrides(props);
-    }
-
-    public static void ensureDir(String path) {
-        File f = new File(path);
-        if (!f.exists()) {
-            if (f.mkdirs()) {
-                log.info("Created directory: {}", f.getAbsolutePath());
-            } else {
-                throw new IllegalStateException("Failed to create directory: " + f.getAbsolutePath());
-            }
-        }
     }
 
     private void nullOutInfrastructure() {

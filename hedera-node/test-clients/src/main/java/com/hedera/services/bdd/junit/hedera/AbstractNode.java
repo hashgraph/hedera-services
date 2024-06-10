@@ -17,9 +17,11 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,7 +62,7 @@ public abstract class AbstractNode implements HederaNode {
 
     @Override
     public Path getRecordStreamPath() {
-        return metadata.workingDir()
+        return requireNonNull(metadata.workingDir())
                 .resolve(DATA_DIR)
                 .resolve(OVERRIDE_RECORD_STREAM_FOLDER)
                 .resolve("record0.0." + getAccountId().accountNumOrThrow());
@@ -68,11 +70,16 @@ public abstract class AbstractNode implements HederaNode {
 
     @Override
     public Path getApplicationLogPath() {
-        return metadata.workingDir().resolve(OUTPUT_DIR).resolve(APPLICATION_LOG_FILE);
+        return requireNonNull(metadata.workingDir()).resolve(OUTPUT_DIR).resolve(APPLICATION_LOG_FILE);
     }
 
     @Override
     public Path getAddressBookPath() {
-        return metadata.workingDir().resolve(CONFIG_TXT);
+        return requireNonNull(metadata.workingDir()).resolve(CONFIG_TXT);
+    }
+
+    @Override
+    public Path getConfigSourcesPath() {
+        return requireNonNull(metadata.workingDir()).resolve(DATA_DIR).resolve(CONFIG_DIR);
     }
 }

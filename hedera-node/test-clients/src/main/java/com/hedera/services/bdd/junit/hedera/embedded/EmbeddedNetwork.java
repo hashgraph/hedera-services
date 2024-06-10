@@ -70,22 +70,20 @@ public class EmbeddedNetwork extends AbstractNetwork {
         super(
                 EMBEDDED_NETWORK_NAME,
                 Stream.<HederaNode>of(new EmbeddedNode(ghostMetadata()))
-                        .flatMap(node -> IntStream.range(0, size).mapToObj(i -> node))
+                        .flatMap(node ->
+                                IntStream.range(0, size).mapToObj(((EmbeddedNode) node)::withClassicBookDataFor))
                         .toList());
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
-        this.configTxt = configTxtForLocal(
-                name(),
-                IntStream.range(0, size)
-                        .mapToObj(embeddedNode::withClassicBookDataFor)
-                        .toList(),
-                0,
-                0);
+        this.configTxt = configTxtForLocal(name(), nodes(), 0, 0);
     }
 
     @Override
     public void start() {
+        // Initialize the working directory
         embeddedNode.initWorkingDir(configTxt);
-        embeddedHedera = new EmbeddedHedera(embeddedNode.getAddressBookPath());
+        embeddedNode.start();
+        // Start the embedded Hedera "network"
+        embeddedHedera = new EmbeddedHedera(embeddedNode);
         embeddedHedera.start();
     }
 

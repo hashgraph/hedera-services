@@ -22,6 +22,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,6 +50,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -113,10 +115,12 @@ public class EmbeddedHedera {
     private static final Logger LOG = LogManager.getLogger(EmbeddedHedera.class);
 
     private static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
-
     private static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
+    private static final Signature TOY_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
     private static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
             new PlatformStatusChangeNotification(ACTIVE);
+    private static final PlatformStatusChangeNotification FREEZE_COMPLETE_NOTIFICATION =
+            new PlatformStatusChangeNotification(FREEZE_COMPLETE);
 
     private final Hedera hedera;
     private final NodeId defaultNodeId;
@@ -132,15 +136,29 @@ public class EmbeddedHedera {
     @Nullable
     private HederaSoftwareVersion version;
 
-    public EmbeddedHedera(@NonNull final Path bookPath) {
-        requireNonNull(bookPath);
-        addressBook = loadAddressBook(bookPath);
+    public EmbeddedHedera(@NonNull final EmbeddedNode node) {
+        requireNonNull(node);
+        addressBook = loadAddressBook(node.getAddressBookPath());
         defaultNodeId = addressBook.getNodeId(0);
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(EmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         platform = new ToyPlatform();
+
+        final var configSourcesPath = node.getConfigSourcesPath();
+        System.setProperty(
+                "hedera.app.properties.path",
+                configSourcesPath
+                        .resolve("application.properties")
+                        .toAbsolutePath()
+                        .toString());
+        System.setProperty(
+                "hedera.genesis.properties.path",
+                configSourcesPath.resolve("genesis.properties").toAbsolutePath().toString());
+        System.setProperty(
+                "hedera.recordStream.logDir",
+                node.getRecordStreamPath().getParent().toString());
         final var servicesRegistry = new FakeServicesRegistry();
         final var servicesMigrator = new FakeServiceMigrator(servicesRegistry);
         hedera = new Hedera(
@@ -169,6 +187,7 @@ public class EmbeddedHedera {
      * Stops the embedded Hedera node.
      */
     public void stop() {
+        platform.notificationEngine.statusChangeListeners.forEach(l -> l.notify(FREEZE_COMPLETE_NOTIFICATION));
         executorService.shutdownNow();
     }
 
@@ -221,7 +240,6 @@ public class EmbeddedHedera {
         private static final int MIN_CAPACITY = 5_000;
         private static final long NANOS_BETWEEN_CONS_EVENTS = 1_000;
         private static final Duration ROUND_DURATION = Duration.ofMillis(1);
-        //        private static final Duration ROUND_DURATION = Duration.ofSeconds(3);
 
         private final AtomicLong roundNo = new AtomicLong(1);
         private final AtomicLong consensusOrder = new AtomicLong(1);
@@ -240,15 +258,13 @@ public class EmbeddedHedera {
 
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
-            final var answer =
-                    queue.add(new ToyEvent(effectiveNodeId(), Instant.now(), new SwirldTransaction(transaction)));
-            return answer;
+            return queue.add(new ToyEvent(effectiveNodeId(), Instant.now(), new SwirldTransaction(transaction)));
         }
 
         @NonNull
         @Override
-        public Signature sign(@NonNull byte[] data) {
-            throw new AssertionError("Not implemented");
+        public Signature sign(@NonNull final byte[] data) {
+            return TOY_SIGNATURE;
         }
 
         @NonNull

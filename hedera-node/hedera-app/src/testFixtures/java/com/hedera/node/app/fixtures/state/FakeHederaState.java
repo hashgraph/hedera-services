@@ -33,21 +33,21 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures. */
 public class FakeHederaState implements HederaState {
     // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
-    private final Map<String, Map<String, Object>> states = new HashMap<>();
-    private final Map<String, ReadableStates> readableStates = new HashMap<>();
-    private final Map<String, WritableStates> writableStates = new HashMap<>();
+    private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
+    private final Map<String, ReadableStates> readableStates = new ConcurrentHashMap<>();
+    private final Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
 
     /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
-        final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new HashMap<>());
+        final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         serviceStates.putAll(dataSources);
         return this;
     }
@@ -76,7 +76,7 @@ public class FakeHederaState implements HederaState {
             if (serviceStates == null) {
                 return new EmptyReadableStates();
             }
-            final var states = new HashMap<String, Object>();
+            final Map<String, Object> states = new ConcurrentHashMap<>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();
@@ -101,7 +101,7 @@ public class FakeHederaState implements HederaState {
             if (serviceStates == null) {
                 return new EmptyWritableStates();
             }
-            final var data = new HashMap<String, Object>();
+            final Map<String, Object> data = new ConcurrentHashMap<>();
             for (final var entry : serviceStates.entrySet()) {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();

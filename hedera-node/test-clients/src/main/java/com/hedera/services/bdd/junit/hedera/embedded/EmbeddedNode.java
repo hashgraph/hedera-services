@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
@@ -48,6 +49,8 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     @Override
     public HederaNode start() {
         assertWorkingDirInitialized();
+        // Without the normal lag of node startup, record stream assertions may check this directory too fast
+        ensureDir(getRecordStreamPath().normalize().toString());
         return this;
     }
 

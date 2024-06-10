@@ -120,7 +120,8 @@ tasks.test {
     modularity.inferModulePath.set(false)
 }
 
-// Runs a test against an embedded network
+// Runs a test against an embedded network; when we have deterministic clients
+// we will add a testDeterministicEmbedded for completely reproducible streams
 tasks.register<Test>("testEmbedded") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
@@ -130,8 +131,18 @@ tasks.register<Test>("testEmbedded") {
         excludeTags("RESTART|ND_RECONNECT")
     }
 
-    // Disable parallel execution; embedded tests emphasize determinism
-    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
     // Tell our launcher to target an embedded network
     systemProperty("hapi.spec.embedded.mode", true)
 

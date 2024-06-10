@@ -81,6 +81,13 @@ public interface HederaNode {
     Path getAddressBookPath();
 
     /**
+     * Gets the path to the node's config sources.
+     *
+     * @return the path to the node's config sources
+     */
+    Path getConfigSourcesPath();
+
+    /**
      * Initializes the working directory for the node. Must be called before the node is started.
      *
      * @param configTxt the address book the node should start with

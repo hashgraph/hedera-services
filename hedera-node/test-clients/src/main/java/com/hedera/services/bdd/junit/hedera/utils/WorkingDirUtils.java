@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -41,6 +43,7 @@ public class WorkingDirUtils {
     private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
 
     public static final String DATA_DIR = "data";
+    public static final String CONFIG_DIR = "config";
     public static final String OUTPUT_DIR = "output";
     public static final String CONFIG_TXT = "config.txt";
 
@@ -209,6 +212,19 @@ public class WorkingDirUtils {
             Files.copy(source, target);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Ensure a directory exists at the given path, creating it if necessary.
+     *
+     * @param path The path to ensure exists as a directory.
+     */
+    public static void ensureDir(@NonNull final String path) {
+        requireNonNull(path);
+        final var f = new File(path);
+        if (!f.exists() && !f.mkdirs()) {
+            throw new IllegalStateException("Failed to create directory: " + f.getAbsolutePath());
         }
     }
 }
