@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
@@ -381,7 +382,7 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull Path streamsLoc(@NonNull final NodeSelector selector) {
         requireNonNull(selector);
-        return targetNetworkOrThrow().getRequiredNode(selector).getRecordStreamPath();
+        return targetNetworkOrThrow().getRequiredNode(selector).getExternalPath(STREAMS_DIR);
     }
 
     public @NonNull HederaNetwork targetNetworkOrThrow() {

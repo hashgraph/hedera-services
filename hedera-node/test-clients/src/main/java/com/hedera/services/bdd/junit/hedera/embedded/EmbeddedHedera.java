@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -138,7 +139,7 @@ public class EmbeddedHedera {
 
     public EmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
-        addressBook = loadAddressBook(node.getAddressBookPath());
+        addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
         defaultNodeId = addressBook.getNodeId(0);
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(EmbeddedHedera::accountIdOf, Address::getNodeId));
@@ -146,19 +147,6 @@ public class EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         platform = new ToyPlatform();
 
-        final var configSourcesPath = node.getConfigSourcesPath();
-        System.setProperty(
-                "hedera.app.properties.path",
-                configSourcesPath
-                        .resolve("application.properties")
-                        .toAbsolutePath()
-                        .toString());
-        System.setProperty(
-                "hedera.genesis.properties.path",
-                configSourcesPath.resolve("genesis.properties").toAbsolutePath().toString());
-        System.setProperty(
-                "hedera.recordStream.logDir",
-                node.getRecordStreamPath().getParent().toString());
         final var servicesRegistry = new FakeServicesRegistry();
         final var servicesMigrator = new FakeServiceMigrator(servicesRegistry);
         hedera = new Hedera(

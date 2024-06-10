@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -168,7 +169,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     private StatusLookupAttempt statusFromLog() {
         final AtomicReference<String> status = new AtomicReference<>();
-        try (final var lines = Files.lines(getApplicationLogPath())) {
+        try (final var lines = Files.lines(getExternalPath(APPLICATION_LOG))) {
             lines.map(statusPattern::matcher).filter(Matcher::matches).forEach(matcher -> status.set(matcher.group(1)));
             return newLogAttempt(status.get(), status.get() == null ? "No status line in log" : null);
         } catch (IOException e) {

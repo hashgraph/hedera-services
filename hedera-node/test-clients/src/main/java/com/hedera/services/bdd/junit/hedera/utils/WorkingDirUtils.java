@@ -46,6 +46,8 @@ public class WorkingDirUtils {
     public static final String CONFIG_DIR = "config";
     public static final String OUTPUT_DIR = "output";
     public static final String CONFIG_TXT = "config.txt";
+    public static final String GENESIS_PROPERTIES = "genesis.properties";
+    public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
