@@ -18,12 +18,15 @@ package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.addressbook.NodeGetInfoQuery;
@@ -41,6 +44,8 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeGetInfoHandler;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
@@ -204,6 +209,18 @@ class NodeGetInfoHandlerTest extends AddressBookTestBase {
         final var nodeInfoResponse = response.nodeGetInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, nodeInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, nodeInfoResponse.nodeInfo());
+    }
+
+    @Test
+    @DisplayName("check that fees are 1 for delete node trx")
+    public void testCalculateFeesInvocations() {
+        final var queryContext = mock(QueryContext.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(queryContext.feeCalculator()).willReturn(feeCalc);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn( new Fees(1,0,0));
+
+        assertThat(subject.computeFees(queryContext)).isEqualTo(new Fees(1,0,0));
     }
 
     private NodeInfo getExpectedInfo(boolean deleted) {

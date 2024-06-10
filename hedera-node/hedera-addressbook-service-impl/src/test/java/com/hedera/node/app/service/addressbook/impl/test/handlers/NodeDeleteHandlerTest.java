@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
@@ -110,14 +111,15 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    @DisplayName("check that fees are free for delete node trx")
+    @DisplayName("check that fees are 1 for delete node trx")
     public void testCalculateFeesInvocations() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalc = mock(FeeCalculator.class);
         given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn(Fees.FREE);
+        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn( new Fees(1,0,0));
 
-        assertThat(subject.calculateFees(feeCtx)).isEqualTo(Fees.FREE);
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1,0,0));
     }
 
     @Test
