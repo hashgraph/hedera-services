@@ -112,7 +112,6 @@ public class EventImpl extends EventMetadata
             final EventImpl otherParent) {
         super(selfParent, otherParent);
         Objects.requireNonNull(baseEvent, "baseEvent");
-        Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
         Objects.requireNonNull(baseEvent.getSignature(), "signature");
         Objects.requireNonNull(consensusData, "consensusData");
 
@@ -304,10 +303,21 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * @return The hashed part of a base event
+     * Check if the event has a self parent.
+     *
+     * @return true if the event has a self parent
      */
-    public BaseEventHashedData getHashedData() {
-        return baseEvent.getHashedData();
+    public boolean hasSelfParent() {
+        return baseEvent.getSelfParent() != null;
+    }
+
+    /**
+     * Check if the event has other parents.
+     *
+     * @return true if the event has other parents
+     */
+    public boolean hasOtherParent() {
+        return !baseEvent.getOtherParents().isEmpty();
     }
 
     /**
