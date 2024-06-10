@@ -2,7 +2,7 @@
 
 Give a 1-3 sentence summary of the capability in the design proposal.
 
-| Interactions       | Entities                            | 
+| Metadata           | Entities                            | 
 |--------------------|-------------------------------------|
 | Last Updated       | 2024-06-07  (Edward)                |
 | Designers          | John, Mary, alpha-team              |
@@ -14,68 +14,96 @@ Give a 1-3 sentence summary of the capability in the design proposal.
 
 Why is the design proposal necessary? Describe the background and purpose of the design proposal at a high level.
 
+## Dependencies, Interactions, and Implications
+
+What are the dependencies and pre-requisites of this proposal?  
+What other proposals, capabilities, and teams are impacted by this proposal?
+What does the proposal enable once it is completed?
+
+Remove this section if not applicable.
+
 # Requirements
 
 Describe the requirements and acceptance criteria that the design proposal must satisfy.
 
 # Design Decisions
 
-Describe the high level options available, the trade-offs between them and the decisions made. Mark this section as N/A
-if not applicable.
+Describe the high level options available, the trade-offs between them and the decisions made.
+
+Remove this section if not applicable.
 
 # Changes
 
 ## Public API
 
-Describe any public API changes or additions. Include stakeholders of the API. Mark this section as N/A if not
-applicable.
+Describe any public API changes or additions. Include stakeholders of the API.
 
 Code can be included in the proposal directory, but not submitted to the code base.
 
+Remove this section if not applicable.
+
 ## Configuration
 
-Describe any new or modified configuration. Mark this section as N/A if not applicable.
+Describe any new or modified configuration.
+
+Remove this section if not applicable.
 
 ## Core Behaviors
 
-Describe any new or modified behavior. What are the new or modified algorithms and protocols? What is the threading
-model being used? Mark this section as N/A if not applicable.
+Describe any new or modified behavior. What are the new or modified algorithms and protocols? Include any diagrams that
+help explain the behavior.
+
+Remove this section if not applicable.
+
+## Components and Architecture
+
+Describe any new or modified components or architectural changes. This includes thread management changes, state
+changes, disk I/O changes, platform wiring changes, etc. Include diagrams of architecture changes.
+
+Remove this section if not applicable.
 
 ## Metrics
 
 Are there new metrics? Are the computation of existing metrics changing? Are there expected observable metric impacts
-that change how someone should relate to the metric? Mark this section as N/A if not applicable.
+that change how someone should relate to the metric?
+
+Remove this section if not applicable.
 
 ## Performance
 
-Describe any expected performance impacts. This section is mandatory for platform wiring changes. Mark this section as
-N/A if not applicable.
+Describe any expected performance impacts. This section is mandatory for platform wiring changes.
+
+Remove this section if not applicable.
 
 ## Modules and Repos
 
-Describe any new or modified modules or repositories. Mark this section as N/A if not applicable.
+Describe any new or modified modules or repositories.
+
+Remove this section if not applicable.
 
 # Test Plan
 
 ## Unit Tests
 
-Describe any unit tests needed. Mark this section as N/A if not applicable.
+Describe the core behaviors that need new unit tests and any special considerations in test design, such as subtle edge
+cases and complex component interactions.
 
-Unit tests should cover all IO for methods and component wiring, and any end-to-end tests that are possible.
+Remove this section if not applicable.
 
 ## Integration Tests
 
-Describe any integration tests needed. Mark this section as N/A if not applicable.
+Describe any integration tests needed. Integration tests include migration, reconnect, restart, etc.
 
-Integration tests include migration, reconnect, restart, etc.
+Remove this section if not applicable.
 
 ## Performance Tests
 
-Describe any performance tests needed, or delete this section if not applicable.
+Describe any performance tests needed. Performance tests include high TPS, specific work loads that stress the system,
+JMH benchmarks, or longevity tests.
 
-Performance tests include high TPS, specific work loads that stress the system, or longevity tests.
+Remove this section if not applicable.
 
 # Implementation and Delivery Plan
 
-How should the proposal be implemented? Is there a necessary order to implementation?
-What are the stages or phases needed for the delivery of capabilities?
+How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
+needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability? 
