@@ -20,7 +20,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 
 public class InputEventsValidation {

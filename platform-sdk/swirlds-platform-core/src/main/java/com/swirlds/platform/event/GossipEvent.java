@@ -456,7 +456,8 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
     }
 
     public boolean equalsGossipedData(@NonNull final GossipEvent that) {
-        return Objects.equals(getHashedData(), that.getHashedData()) && Objects.equals(getSignature(), that.getSignature());
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(getSignature(), that.getSignature());
     }
 
     @Override

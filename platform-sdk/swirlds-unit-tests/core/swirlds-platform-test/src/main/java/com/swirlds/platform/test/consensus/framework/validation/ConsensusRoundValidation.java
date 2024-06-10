@@ -99,8 +99,7 @@ public class ConsensusRoundValidation {
      * @param e2 the second event
      */
     private static void assertConsensusEvents(final String description, final EventImpl e1, final EventImpl e2) {
-        final boolean equal = Objects.equals(e1.getBaseEvent(), e2.getBaseEvent())
-                && e1.isWitness() == e2.isWitness();
+        final boolean equal = Objects.equals(e1.getBaseEvent(), e2.getBaseEvent()) && e1.isWitness() == e2.isWitness();
         if (!equal) {
             final StringBuilder sb = new StringBuilder();
             sb.append(description).append("\n");
