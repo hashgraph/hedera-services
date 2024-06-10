@@ -107,6 +107,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -181,6 +182,7 @@ public class Create2OperationSuite {
     private static final String ADMIN_KEY = "adminKey";
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
+    private static final String HBAR_XFER = "hbarXfer";
 
     @SuppressWarnings("java:S5669")
     @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
@@ -1304,6 +1306,224 @@ public class Create2OperationSuite {
                                 .via(CREATION)));
     }
 
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> canMergeCreate2ChildWithHollowAccountUnlimitedAssociations() {
+        final var tcValue = 1_234L;
+        final var contract = "Create2Factory";
+
+        final var creation = CREATION;
+        final var salt = BigInteger.valueOf(42);
+        final var adminKey = ADMIN_KEY;
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "CanMergeCreate2ChildWithHollowAccountUnlimitedAssociations",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_LOG_DATA)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(MULTI_KEY),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .payingWith(GENESIS)
+                                .adminKey(adminKey)
+                                .entityMemo(ENTITY_MEMO)
+                                .via(CREATE_2_TXN)
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2))
+                .when(
+                        // GET BYTECODE OF THE CREATE2 CONTRACT
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
+
+                        // Now create a hollow account at the desired address
+                        lazyCreateAccountWithHbarTransfer(creation, expectedCreate2Address),
+                        getTxnRecord(creation)
+                                .andAllChildRecords()
+                                .logged()
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                        sourcing(() -> getAccountInfo(hollowCreationAddress.get())
+                                .hasMaxAutomaticAssociations(-1)
+                                .logged()))
+                .then(
+                        // deploy create2
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via("TEST2")),
+                        getTxnRecord("TEST2").andAllChildRecords().logged(),
+                        captureOneChildCreate2MetaFor(
+                                "Merged deployed contract with hollow account",
+                                "TEST2",
+                                mergedMirrorAddr,
+                                mergedAliasAddr),
+
+                        // check failure when trying to deploy again
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                /* Cannot repeat CREATE2
+                                with same args without destroying the existing contract */
+                                .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
+
+                        // check created contract
+                        sourcing(() -> getContractInfo(mergedAliasAddr.get())
+                                .has(contractWith()
+                                        .hasStandinContractKey()
+                                        // fix here
+                                        .maxAutoAssociations(0)
+                                        .memo(LAZY_MEMO)
+                                        .balance(ONE_HBAR + tcValue))
+                                .logged()),
+                        sourcing(
+                                () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
+                        sourcing(() ->
+                                assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> canMergeCreate2ChildWithHollowAccountFungibleTransferUnlimitedAssociations() {
+        final var tcValue = 1_234L;
+        final var contract = "Create2Factory";
+
+        final var creation = CREATION;
+        final var salt = BigInteger.valueOf(42);
+        final var adminKey = ADMIN_KEY;
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        final var initialTokenSupply = 1000;
+        final AtomicReference<TokenID> ftId = new AtomicReference<>();
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+        final AtomicReference<TokenID> nftId = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "CanMergeCreate2ChildWithHollowAccountFungibleTransferUnlimitedAssociations",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_LOG_DATA)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(MULTI_KEY),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .payingWith(GENESIS)
+                                .adminKey(adminKey)
+                                .entityMemo(ENTITY_MEMO)
+                                .via(CREATE_2_TXN)
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
+                                .treasury(PARTY)
+                                .via(TOKEN_A_CREATE),
+                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(PARTY)
+                                .via(NFT_CREATE),
+                        mintToken(
+                                NFT_INFINITE_SUPPLY_TOKEN,
+                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                        setIdentifiers(ftId, nftId, partyId, partyAlias))
+                .when(
+                        // GET BYTECODE OF THE CREATE2 CONTRACT
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
+
+                        // Now create a hollow account at the desired address
+                        lazyCreateAccountWithHbarAndFungibleTransfer(
+                                creation, expectedCreate2Address, ftId, partyAlias),
+                        getTxnRecord(creation)
+                                .andAllChildRecords()
+                                .logged()
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                        sourcing(() -> getAccountInfo(hollowCreationAddress.get())
+                                .hasMaxAutomaticAssociations(-1)
+                                .logged()))
+                .then(
+                        // deploy create2
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via("TEST2")),
+                        getTxnRecord("TEST2").andAllChildRecords().logged(),
+                        captureOneChildCreate2MetaFor(
+                                "Merged deployed contract with hollow account",
+                                "TEST2",
+                                mergedMirrorAddr,
+                                mergedAliasAddr),
+
+                        // check failure when trying to deploy again
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                /* Cannot repeat CREATE2
+                                with same args without destroying the existing contract */
+                                .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
+
+                        // check created contract
+                        sourcing(() -> getContractInfo(mergedAliasAddr.get())
+                                .has(contractWith()
+                                        .hasStandinContractKey()
+                                        // fix here
+                                        .maxAutoAssociations(1)
+                                        .hasAlreadyUsedAutomaticAssociations(1)
+                                        .memo(LAZY_MEMO)
+                                        .balance(ONE_HBAR + tcValue))
+                                .hasToken(relationshipWith(A_TOKEN).balance(500))
+                                .logged()),
+                        sourcing(
+                                () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
+                        sourcing(() ->
+                                assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
+    }
+
     @SuppressWarnings("java:S5669")
     public static HapiContractCallLocal setExpectedCreate2Address(
             String contract,
@@ -1348,6 +1568,44 @@ public class Create2OperationSuite {
                                             accountId(ByteString.copyFrom(
                                                     CommonUtils.unhex(expectedCreate2Address.get()))),
                                             1L)));
+                })
+                .signedBy(DEFAULT_PAYER, PARTY)
+                .fee(ONE_HBAR)
+                .via(creation);
+    }
+
+    private HapiCryptoTransfer lazyCreateAccountWithHbarTransfer(
+            String creation, AtomicReference<String> expectedCreate2Address) {
+        return cryptoTransfer((spec, b) -> {
+                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                    b.setTransfers(TransferList.newBuilder()
+                            .addAccountAmounts(aaWith(
+                                    ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())), +ONE_HBAR))
+                            .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)));
+                })
+                .signedBy(DEFAULT_PAYER, PARTY)
+                .fee(ONE_HBAR)
+                .via(creation);
+    }
+
+    private HapiCryptoTransfer lazyCreateAccountWithHbarAndFungibleTransfer(
+            String creation,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<TokenID> ftId,
+            AtomicReference<ByteString> partyAlias) {
+        return cryptoTransfer((spec, b) -> {
+                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                    b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(
+                                            ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())),
+                                            +ONE_HBAR))
+                                    .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)))
+                            .addTokenTransfers(TokenTransferList.newBuilder()
+                                    .setToken(ftId.get())
+                                    .addTransfers(aaWith(partyAlias.get(), -500))
+                                    .addTransfers(aaWith(
+                                            ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())),
+                                            +500)));
                 })
                 .signedBy(DEFAULT_PAYER, PARTY)
                 .fee(ONE_HBAR)
