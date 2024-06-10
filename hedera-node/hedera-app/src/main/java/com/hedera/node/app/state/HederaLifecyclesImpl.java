@@ -59,7 +59,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class HederaLifecyclesImpl implements HederaLifecycles {
     private static final Logger logger = LogManager.getLogger(HederaLifecyclesImpl.class);
-    private static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
+    public static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
     private static final int NUM_REWARD_HISTORY_STORED_PERIODS = 365;
 
     private static final BiConsumer<
