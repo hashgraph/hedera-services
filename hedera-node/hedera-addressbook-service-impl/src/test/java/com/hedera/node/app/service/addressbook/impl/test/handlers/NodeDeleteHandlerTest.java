@@ -117,9 +117,9 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         final var feeCalc = mock(FeeCalculator.class);
         given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn( new Fees(1,0,0));
+        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
 
-        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1,0,0));
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
     }
 
     @Test
