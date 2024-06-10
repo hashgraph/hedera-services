@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -149,6 +150,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
@@ -207,6 +209,8 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
+    private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
+            EnumSet.of(SHARED_HAPI_TEST_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -287,11 +291,15 @@ public class UtilVerbs {
     }
 
     public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.of(SHARED_HAPI_TEST_NETWORK), ops);
+        return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
     }
 
     public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(SHARED_HAPI_TEST_NETWORK)), ops);
+        return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
+    }
+
+    public static NetworkTypeFilterOp ifNotEmbeddedTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(EMBEDDED_NETWORK)), ops);
     }
 
     public static EnvFilterOp ifCi(@NonNull final HapiSpecOperation... ops) {
@@ -979,8 +987,6 @@ public class UtilVerbs {
                 Thread.sleep(20000);
                 return;
             }
-            opLog.info("Sleeping so not to spoil/fail the fee initializations on other" + " clients...");
-            Thread.sleep(10000);
             opLog.info("Reducing fee for {}...", functions);
             var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
             allRunFor(spec, query);

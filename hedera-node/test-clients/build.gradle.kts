@@ -145,6 +145,8 @@ tasks.register<Test>("testEmbedded") {
     )
     // Tell our launcher to target an embedded network
     systemProperty("hapi.spec.embedded.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
 
     // Limit heap and number of processors
     maxHeapSize = "8g"

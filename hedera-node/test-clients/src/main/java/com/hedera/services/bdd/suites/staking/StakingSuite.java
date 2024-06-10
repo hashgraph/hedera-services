@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.crypto.staking;
+package com.hedera.services.bdd.suites.staking;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS;
 import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;

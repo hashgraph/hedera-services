@@ -28,7 +28,7 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.transactions.consensus;
     exports com.hedera.services.bdd.spec.transactions.contract;
     exports com.hedera.services.bdd.spec.transactions.system;
-    exports com.hedera.services.bdd.suites.crypto.staking;
+    exports com.hedera.services.bdd.suites.staking;
     exports com.hedera.services.bdd.spec.fees;
     exports com.hedera.services.bdd.spec.verification.traceability;
     exports com.hedera.services.bdd.spec.assertions;
