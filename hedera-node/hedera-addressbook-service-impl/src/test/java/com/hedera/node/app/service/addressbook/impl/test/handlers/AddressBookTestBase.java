@@ -79,6 +79,9 @@ public class AddressBookTestBase {
     protected final ServiceEndpoint endpoint5 = new ServiceEndpoint(Bytes.EMPTY, 2345, null);
 
     protected final ServiceEndpoint endpoint6 = new ServiceEndpoint(Bytes.EMPTY, 0, null);
+    protected final ServiceEndpoint endpoint7 = new ServiceEndpoint(null, 123, null);
+
+    protected final ServiceEndpoint endpoint8 = new ServiceEndpoint(Bytes.wrap("345.0.0.1"), 1234, null);
 
     protected Node node;
 
