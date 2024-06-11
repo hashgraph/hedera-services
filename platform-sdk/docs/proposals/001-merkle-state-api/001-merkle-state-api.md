@@ -49,7 +49,7 @@ There is one more change that can be relevant in the context of public APIs. Thi
 
 ### Platform State
 
-Currently `PlatformState` is a special case node of the merkle tree. As a part of the simplification effort **it should be refacored to a singleton state**.
+Currently `PlatformState` is a special case node of the merkle tree. As a part of the simplification effort **it should be refactored to a singleton state**.
 
 ### KV Node
 
@@ -59,16 +59,16 @@ We need to have a class that represents key-value node in the tree, as we have i
 
 - Move `PlatformState` from the root to `MerkleHederaState`
 - Replace usage of existing root of `State` type with `MerkleHederaState`
-  - It would be much easier to do, if they implemented the same interface (e.g. `RootNode`). Currently there is now direct relation between these classes.
+  - It would be much easier to do, if they implemented the same interface (e.g. `RootNode`). Currently, there is now direct relation between these classes.
 - Make sure that the state migration happens properly during the version update
 
 ## Test plan
 
-This design doesn't add any new functionality. Therefore, the assumption is that as long as all existing tests are passing (unit tests, itegration tests, and performace tests), the change is cosidered to be tested.
+This design doesn't add any new functionality. Therefore, the assumption is that as long as all existing tests are passing (unit tests, integration tests, and performance tests), the change is considered to be tested.
 
 ## Implementation and delivery plan
 
-- Move State API imeplementation classes from `swirlds-platform-core` to `swirlds-state-impl`.
+- Move State API implementation classes from `swirlds-platform-core` to `swirlds-state-impl`.
 - Add common interface for `MerkleHederaState` and `State` to make the migration easier.
 - Make `MerkleHederaState` a root of the Merkle tree.
 - Implement a class that represents KV node.
