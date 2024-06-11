@@ -100,7 +100,7 @@ public class ServiceScopeLookup {
                     TOKEN_PAUSE,
                     TOKEN_UNPAUSE,
                     TOKEN_UPDATE_NFTS,
-                    TOKEN_AIRDROP-> TokenService.NAME;
+                    TOKEN_AIRDROP -> TokenService.NAME;
 
             case UTIL_PRNG -> UtilService.NAME;
 

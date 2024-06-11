@@ -135,7 +135,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         requireNonNull(transactions);
 
         // Used for looking up payer account information.
-         final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
+        final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
 
         // In parallel, we will pre-handle each transaction.
         transactions.parallel().forEach(tx -> {

@@ -192,7 +192,8 @@ public class TokenHandlers {
                 Objects.requireNonNull(tokenGetNftInfosHandler, "tokenGetNftInfosHandler must not be null");
         this.tokenUpdateNftsHandler =
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
-        this.tokenAirdropsHandler = Objects.requireNonNull(tokenAirdropsHandler, "tokenAirdropsHandler must not be null");
+        this.tokenAirdropsHandler =
+                Objects.requireNonNull(tokenAirdropsHandler, "tokenAirdropsHandler must not be null");
     }
 
     /**
