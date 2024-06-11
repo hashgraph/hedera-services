@@ -48,7 +48,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ChildRecordBuilderFactoryTest {
+public class ChildRecordBuilderFactoryTest {
     private static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 
     private ChildRecordBuilderFactory factory;
