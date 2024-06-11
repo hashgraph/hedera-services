@@ -109,6 +109,9 @@ public final class HandlerUtility {
                 case TOKEN_FEE_SCHEDULE_UPDATE -> ordinary.tokenFeeScheduleUpdate(
                         scheduledTransaction.tokenFeeScheduleUpdateOrThrow());
                 case UTIL_PRNG -> ordinary.utilPrng(scheduledTransaction.utilPrngOrThrow());
+                case NODE_CREATE -> ordinary.nodeCreate(scheduledTransaction.nodeCreateOrThrow());
+                case NODE_UPDATE -> ordinary.nodeUpdate(scheduledTransaction.nodeUpdateOrThrow());
+                case NODE_DELETE -> ordinary.nodeDelete(scheduledTransaction.nodeDeleteOrThrow());
                 case UNSET -> throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
             }
         }

@@ -34,7 +34,7 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
@@ -99,7 +99,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private final State state;
+    private final MerkleRoot state;
 
     /**
      * The timestamp of when this object was created.
@@ -181,7 +181,7 @@ public class SignedState implements SignedStateInfo {
     public SignedState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final State state,
+            @NonNull final MerkleRoot state,
             @NonNull final String reason,
             final boolean freezeState,
             final boolean deleteOnBackgroundThread,
@@ -268,7 +268,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public @NonNull State getState() {
+    public @NonNull MerkleRoot getState() {
         return state;
     }
 

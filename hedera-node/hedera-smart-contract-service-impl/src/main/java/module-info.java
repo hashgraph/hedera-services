@@ -8,9 +8,9 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive headlong;
     requires transitive javax.inject;
@@ -19,13 +19,13 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
+    requires com.swirlds.base;
+    requires com.swirlds.common;
+    requires com.swirlds.platform.core;
     requires com.github.benmanes.caffeine;
     requires com.google.common;
     requires com.google.protobuf;
     requires com.hedera.evm;
-    requires com.swirlds.base;
-    requires com.swirlds.common;
-    requires com.swirlds.platform.core;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated

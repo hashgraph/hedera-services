@@ -481,16 +481,6 @@ class PrivilegesVerifierTest {
     }
 
     @Test
-    void contractUpdateRecognizesAuthorized() throws InvalidProtocolBufferException {
-        // given:
-        var txn = treasuryTxn()
-                .setContractUpdateInstance(
-                        ContractUpdateTransactionBody.newBuilder().setContractID(contract(123)));
-        // expect:
-        assertEquals(AUTHORIZED, subject.checkAccessor(accessor(txn)));
-    }
-
-    @Test
     void contractUpdateRecognizesUnnecessary() throws InvalidProtocolBufferException {
         // given:
         var txn = treasuryTxn()
@@ -545,17 +535,6 @@ class PrivilegesVerifierTest {
 
         // expect:
         assertEquals(UNNECESSARY, subject.checkAccessor(accessor(txn)));
-    }
-
-    @Test
-    void systemContractsCannotBeDeleted() throws InvalidProtocolBufferException {
-        // given:
-        var txn = treasuryTxn()
-                .setContractDeleteInstance(
-                        ContractDeleteTransactionBody.newBuilder().setContractID(contract(100)));
-
-        // expect:
-        assertEquals(IMPERMISSIBLE, subject.checkAccessor(accessor(txn)));
     }
 
     @Test

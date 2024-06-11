@@ -87,6 +87,7 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
 
+            case NODE_GET_INFO -> throw new UnsupportedOperationException("Not implemented yet");
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
             //todo: fill in
             case NODE_GET_INFO -> throw new UnsupportedOperationException(QUERY_NOT_SET);

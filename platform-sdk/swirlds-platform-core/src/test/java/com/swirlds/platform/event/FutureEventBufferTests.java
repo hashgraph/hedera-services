@@ -82,7 +82,7 @@ class FutureEventBufferTests {
             events.add(event);
         }
         // Put the events in topological order
-        events.sort(Comparator.comparingLong(a -> a.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(a -> a.getBirthRound()));
 
         final List<GossipEvent> futureEvents = new ArrayList<>();
         for (final GossipEvent event : events) {
@@ -92,7 +92,7 @@ class FutureEventBufferTests {
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
-            } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+            } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
                 // Non-future events should be returned immediately.
                 assertSame(event, returnedEvent);
             } else {
@@ -114,7 +114,7 @@ class FutureEventBufferTests {
             final List<GossipEvent> bufferedEvents = futureEventBuffer.updateEventWindow(newEventWindow);
 
             for (final GossipEvent event : bufferedEvents) {
-                assertEquals(newPendingConsensusRound, event.getHashedData().getBirthRound());
+                assertEquals(newPendingConsensusRound, event.getBirthRound());
                 unBufferedEvents.add(event);
             }
         }
@@ -167,7 +167,7 @@ class FutureEventBufferTests {
             events.add(event);
         }
         // Put the events in topological order
-        events.sort(Comparator.comparingLong(a -> a.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(a -> a.getBirthRound()));
 
         for (final GossipEvent event : events) {
             final List<GossipEvent> returnedEvents = futureEventBuffer.addEvent(event);
@@ -176,7 +176,7 @@ class FutureEventBufferTests {
             if (eventWindow.isAncient(event)) {
                 // Ancient events should be discarded.
                 assertNull(returnedEvent);
-            } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+            } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
                 // Non-future events should be returned immediately.
                 assertSame(event, returnedEvent);
             } else {

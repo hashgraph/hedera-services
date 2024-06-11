@@ -319,6 +319,10 @@ public final class PbjConverter {
             case NetworkGetExecutionTime -> HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
             case NONE -> HederaFunctionality.NONE;
             case NodeStakeUpdate -> HederaFunctionality.NODE_STAKE_UPDATE;
+            case NodeCreate -> HederaFunctionality.NODE_CREATE;
+            case NodeUpdate -> HederaFunctionality.NODE_UPDATE;
+            case NodeDelete -> HederaFunctionality.NODE_DELETE;
+            case NodeGetInfo -> HederaFunctionality.NODE_GET_INFO;
             case ScheduleCreate -> HederaFunctionality.SCHEDULE_CREATE;
             case ScheduleDelete -> HederaFunctionality.SCHEDULE_DELETE;
             case ScheduleGetInfo -> HederaFunctionality.SCHEDULE_GET_INFO;
@@ -350,10 +354,6 @@ public final class PbjConverter {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
-            case NodeCreate -> HederaFunctionality.NODE_CREATE;
-            case NodeUpdate -> HederaFunctionality.NODE_UPDATE;
-            case NodeDelete -> HederaFunctionality.NODE_DELETE;
-            case NodeGetInfo -> HederaFunctionality.NODE_GET_INFO;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -415,6 +415,10 @@ public final class PbjConverter {
                     .NetworkGetExecutionTime;
             case NONE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
             case NODE_STAKE_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
+            case NODE_CREATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeCreate;
+            case NODE_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
+            case NODE_DELETE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeDelete;
+            case NODE_GET_INFO -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeGetInfo;
             case SCHEDULE_CREATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
             case SCHEDULE_DELETE -> com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
             case SCHEDULE_GET_INFO -> com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
@@ -454,10 +458,6 @@ public final class PbjConverter {
                     .TransactionGetFastRecord;
             case UNCHECKED_SUBMIT -> com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
             case UTIL_PRNG -> com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
-            case NODE_CREATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeCreate;
-            case NODE_UPDATE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
-            case NODE_DELETE -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeDelete;
-            case NODE_GET_INFO -> com.hederahashgraph.api.proto.java.HederaFunctionality.NodeGetInfo;
         };
     }
 
@@ -1330,10 +1330,14 @@ public final class PbjConverter {
             case INVALID_NODE_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
             case INVALID_GOSSIP_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
             case INVALID_NODE_ACCOUNT_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
-            case INVALID_NODE_DESCRIPTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
-            case INVALID_SERVICE_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
-            case INVALID_GOSSIP_CAE_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
-            case INVALID_GRPC_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
+            case INVALID_NODE_DESCRIPTION -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_NODE_DESCRIPTION;
+            case INVALID_SERVICE_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_SERVICE_ENDPOINT;
+            case INVALID_GOSSIP_CAE_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_GOSSIP_CAE_CERTIFICATE;
+            case INVALID_GRPC_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .INVALID_MAX_AUTO_ASSOCIATIONS;
                 //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");

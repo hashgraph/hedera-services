@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
-import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.SortedMap;
@@ -36,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  * A schema that ensures the first contract storage key of each account matches what
  * is set in the shared migration context at key {@code "V0500_FIRST_STORAGE_KEYS"}.
  */
-public class V0500TokenSchema extends Schema {
+public class V0500TokenSchema extends StakingInfoManagementSchema {
     private static final Logger log = LogManager.getLogger(V0500TokenSchema.class);
     private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
 

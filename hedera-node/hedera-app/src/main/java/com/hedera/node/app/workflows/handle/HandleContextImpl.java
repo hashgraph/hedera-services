@@ -22,11 +22,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.extraRewardReceivers;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
@@ -297,12 +297,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return payer;
     }
 
-    @Nullable
-    @Override
-    public Key payerKey() {
-        return payerKey;
-    }
-
     @NonNull
     @Override
     public FeeCalculator feeCalculator(@NonNull final SubType subType) {
@@ -551,19 +545,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         stack.commitFullStack();
 
         return result;
-    }
-
-    @Override
-    @NonNull
-    public <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId) {
-        final Supplier<SingleTransactionRecordBuilderImpl> recordBuilderFactory =
-                () -> recordListBuilder.addReversiblePreceding(configuration());
-        return doDispatchPrecedingTransaction(
-                syntheticPayerId, txBody, recordBuilderFactory, recordBuilderClass, callback);
     }
 
     @Override
@@ -937,13 +918,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @Override
     @NonNull
-    public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @Override
-    @NonNull
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
@@ -1036,17 +1010,6 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return isAllowed;
     }
 
-    @Override
-    public boolean isSelfSubmitted() {
-        return Objects.equals(
-                body().nodeAccountID(), networkInfo().selfNodeInfo().accountId());
-    }
-
-    public enum PrecedingTransactionCategory {
-        UNLIMITED_CHILD_RECORDS,
-        LIMITED_CHILD_RECORDS
-    }
-
     /**
      * Given the transaction category of a synthetic dispatch, returns whether
      * the category requires the synthetic payer to pass standard HAPI-style
@@ -1070,11 +1033,5 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     private void setTopLevelPayer(@NonNull AccountID topLevelPayer) {
         this.topLevelPayer = requireNonNull(topLevelPayer, "payer must not be null");
-    }
-
-    @Nullable
-    @Override
-    public Instant freezeTime() {
-        return platformState.getFreezeTime();
     }
 }

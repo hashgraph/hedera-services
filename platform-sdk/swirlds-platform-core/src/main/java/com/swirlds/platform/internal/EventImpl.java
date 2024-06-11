@@ -342,23 +342,11 @@ public class EventImpl extends EventMetadata
     //////////////////////////////////////////
 
     public Instant getTimeCreated() {
-        return baseEvent.getHashedData().getTimeCreated();
-    }
-
-    public long getOtherParentGen() {
-        return baseEvent.getHashedData().getOtherParentGen();
-    }
-
-    public Hash getSelfParentHash() {
-        return baseEvent.getHashedData().getSelfParentHash();
-    }
-
-    public Hash getOtherParentHash() {
-        return baseEvent.getHashedData().getOtherParentHash();
+        return baseEvent.getTimeCreated();
     }
 
     public Hash getBaseHash() {
-        return baseEvent.getHashedData().getHash();
+        return baseEvent.getHash();
     }
 
     /**
@@ -423,7 +411,7 @@ public class EventImpl extends EventMetadata
      * @return the generation of this event
      */
     public long getGeneration() {
-        return baseEvent.getHashedData().getGeneration();
+        return baseEvent.getGeneration();
     }
 
     /**
@@ -432,7 +420,7 @@ public class EventImpl extends EventMetadata
      * @return the birth round of this event
      */
     public long getBirthRound() {
-        return baseEvent.getHashedData().getBirthRound();
+        return baseEvent.getBirthRound();
     }
 
     /**
@@ -441,7 +429,7 @@ public class EventImpl extends EventMetadata
     @Override
     @Nullable
     public SoftwareVersion getSoftwareVersion() {
-        return baseEvent.getHashedData().getSoftwareVersion();
+        return baseEvent.getSoftwareVersion();
     }
 
     /**
@@ -450,7 +438,7 @@ public class EventImpl extends EventMetadata
     @Override
     @NonNull
     public NodeId getCreatorId() {
-        return baseEvent.getHashedData().getCreatorId();
+        return baseEvent.getCreatorId();
     }
 
     /**

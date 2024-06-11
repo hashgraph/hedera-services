@@ -27,7 +27,14 @@ plugins {
     id("com.autonomousapps.dependency-analysis")
 }
 
-spotless { kotlinGradle { target("gradle/plugins/**/*.gradle.kts") } }
+spotless {
+    kotlinGradle { target("gradle/plugins/**/*.gradle.kts") }
+    kotlin {
+        // For the Kotlin classes (*.kt files)
+        ktfmt().kotlinlangStyle()
+        target("gradle/plugins/**/*.kt")
+    }
+}
 
 val productVersion = layout.projectDirectory.versionTxt().asFile.readText().trim()
 

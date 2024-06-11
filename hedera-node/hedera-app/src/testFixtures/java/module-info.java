@@ -13,11 +13,11 @@ module com.hedera.node.app.test.fixtures {
     requires com.hedera.node.config.test.fixtures;
     requires com.hedera.node.config;
     requires com.hedera.node.hapi;
-    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.metrics.api;
+    requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
     requires org.assertj.core;
     requires static com.github.spotbugs.annotations;

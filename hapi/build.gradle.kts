@@ -30,8 +30,7 @@ tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
-//    tag = "v0.51.0"
-
+    //    tag = "v0.51.0"
     // uncomment below to use a specific branch
     branch = "block-node"
 }
