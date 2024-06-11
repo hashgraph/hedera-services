@@ -39,10 +39,11 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -230,8 +231,10 @@ public class StressTestingToolMain implements SwirldMain {
     }
 
     @Override
-    public SwirldState newState() {
-        return new StressTestingToolState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new StressTestingToolState());
+        return state;
     }
 
     /**

@@ -46,6 +46,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.LegacyFileConfigSource;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -356,7 +357,8 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
 
         ReservedSignedState rss;
         try {
-            rss = SignedStateFileReader.readStateFile(platformContext, swhPath).reservedSignedState();
+            rss = SignedStateFileReader.readStateFile(platformContext, swhPath, SignedStateFileUtils::readState)
+                    .reservedSignedState();
             StaticSoftwareVersion.setSoftwareVersion(
                     rss.get().getState().getPlatformState().getCreationSoftwareVersion());
         } catch (final IOException ex) {

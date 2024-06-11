@@ -27,12 +27,14 @@ import com.swirlds.platform.Browser;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +44,7 @@ import org.apache.logging.log4j.Logger;
  * Implementation of {@link SwirldMain} for the mono-service.
  */
 public class MonoServicesMain implements SwirldMain {
+
     private static final Logger log = LogManager.getLogger(MonoServicesMain.class);
 
     /** Stores information related to the running of services in the mono-repo */
@@ -72,9 +75,12 @@ public class MonoServicesMain implements SwirldMain {
         }
     }
 
+    @NonNull
     @Override
-    public SwirldState newState() {
-        return new ServicesState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new ServicesState());
+        return state;
     }
 
     @Override

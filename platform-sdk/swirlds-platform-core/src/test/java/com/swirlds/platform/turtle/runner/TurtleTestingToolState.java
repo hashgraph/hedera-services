@@ -21,7 +21,9 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -110,5 +112,17 @@ public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldS
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         state = in.readLong();
+    }
+
+    /**
+     * Creates a merkle node to act as a state tree root.
+     *
+     * @return merkle tree root
+     */
+    public static MerkleRoot getStateRootNode() {
+        final TurtleTestingToolState turtleState = new TurtleTestingToolState();
+        final State root = new State();
+        root.setSwirldState(turtleState);
+        return root;
     }
 }

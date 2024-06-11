@@ -82,14 +82,15 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -253,8 +254,9 @@ public final class Hedera implements SwirldMain {
         // constructor to make sure it has the config and other info it needs to be created correctly.
         try {
             logger.debug("Register MerkleHederaState with ConstructableRegistry");
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
+            // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    MerkleHederaState.class, () -> new MerkleHederaState(new HederaLifecyclesImpl(this))));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
@@ -345,8 +347,12 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new MerkleHederaState(new HederaLifecyclesImpl(this));
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new MerkleHederaState(new HederaLifecyclesImpl(this)));
+        return state;
+        // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+        // return new MerkleHederaState(new HederaLifecyclesImpl(this));
     }
 
     /*==================================================================================================================
@@ -358,7 +364,7 @@ public final class Hedera implements SwirldMain {
 
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
-     * {@link #init(Platform, NodeId)} and after {@link #newState()}.
+     * {@link #init(Platform, NodeId)} and after {@link #newMerkleStateRoot()} ()}.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     public void onStateInitialized(
@@ -530,8 +536,8 @@ public final class Hedera implements SwirldMain {
      * {@inheritDoc}
      *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
-     * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
-     * state).
+     * {@link #newMerkleStateRoot()} ()} or an instance of {@link MerkleHederaState} created by the platform and
+     * loaded from the saved state).
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     @Override

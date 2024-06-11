@@ -42,10 +42,11 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -271,8 +272,10 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new StatsSigningTestingToolState(() -> sttTransactionPool);
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new StatsSigningTestingToolState(() -> sttTransactionPool));
+        return state;
     }
 
     /**

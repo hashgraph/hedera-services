@@ -44,7 +44,6 @@ import com.hedera.node.app.service.mono.stats.ServicesStatsManager;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
@@ -55,6 +54,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.state.notifications.IssListener;
@@ -267,9 +267,11 @@ final class ServicesMainTest {
     }
 
     @Test
-    void createsNewState() {
+    void createsNewMerkleStateRoot() {
         // expect:
-        assertThat(subject.newState(), instanceOf(MerkleHederaState.class));
+        assertThat(subject.newMerkleStateRoot(), instanceOf(State.class));
+        // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+        // assertThat(subject.newMerkleStateRoot(), instanceOf(MerkleHederaState.class));
     }
 
     @Test

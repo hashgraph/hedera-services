@@ -17,10 +17,10 @@
 package com.swirlds.platform.state.snapshot;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
-import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.MAX_MERKLE_NODES_IN_STATE;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 import static java.nio.file.Files.exists;
 
+import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
@@ -70,11 +70,15 @@ public final class SignedStateFileReader {
      *
      * @param platformContext               the platform context
      * @param stateFile                     the file to read from
+     * @param snapshotStateReader           state snapshot reading function
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
      */
     public static @NonNull DeserializedSignedState readStateFile(
-            @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Path stateFile,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader)
+            throws IOException {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(stateFile);
@@ -92,7 +96,7 @@ public final class SignedStateFileReader {
 
                     final Path directory = stateFile.getParent();
 
-                    final MerkleRoot state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
+                    final MerkleRoot state = snapshotStateReader.apply(in, directory);
                     final Hash hash = in.readSerializable();
                     final SigSet sigSet = in.readSerializable();
 
