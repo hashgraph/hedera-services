@@ -1520,7 +1520,7 @@ public class Evm46ValidationSuite {
                 .then(opsArray);
     }
 
-    private HapiSpecOperation[] getCallOperationsOnSystemAccounts(String contract, String functionName) {
+    private HapiSpecOperation[] getCallOperationsOnSystemAccounts(final String contract, final String functionName) {
         final HapiSpecOperation[] opsArray = new HapiSpecOperation[callOperationsSuccessSystemAccounts.size()];
         for (int i = 0; i < callOperationsSuccessSystemAccounts.size(); i++) {
             int finalI = i;
