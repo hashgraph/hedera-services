@@ -452,7 +452,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
                 .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        if (!unlimitedAutoAssociations) {
+        if (!unlimitedAutoAssociations && op.maxAutomaticTokenAssociations() > 0) {
             feeCalculator = feeCalculator.addRamByteSeconds(
                     op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER);
         }

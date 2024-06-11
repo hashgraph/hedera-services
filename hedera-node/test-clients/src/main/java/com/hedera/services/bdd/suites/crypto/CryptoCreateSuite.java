@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -284,6 +285,31 @@ public class CryptoCreateSuite {
                         getAccountInfo(tenAutoAssocSlots).hasMaxAutomaticAssociations(10),
                         validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd),
                         getAccountInfo(unlimitedAutoAssocSlots).hasMaxAutomaticAssociations(-1));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> createFailsIfMaxAutoAssocIsNegativeAndUnlimitedFlagDisabled() {
+        return propertyPreservingHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+                .given(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE_VALUE))
+                .when()
+                .then(
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-1)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-2)
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-1000)
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(Integer.MIN_VALUE)
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS));
     }
 
     @HapiTest
