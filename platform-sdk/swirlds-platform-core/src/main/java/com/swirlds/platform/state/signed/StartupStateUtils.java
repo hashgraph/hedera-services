@@ -32,7 +32,7 @@ import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
@@ -162,7 +162,7 @@ public final class StartupStateUtils {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(initialSignedState);
 
-        final State stateCopy = initialSignedState.getState().copy();
+        final MerkleRoot stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy = new SignedState(
                 platformContext,
                 CryptoStatic::verifySignature,
@@ -254,7 +254,8 @@ public final class StartupStateUtils {
             }
         }
 
-        final State state = deserializedSignedState.reservedSignedState().get().getState();
+        final MerkleRoot state =
+                deserializedSignedState.reservedSignedState().get().getState();
 
         final Hash oldHash = deserializedSignedState.originalHash();
         final Hash newHash = rehashTree(state);
