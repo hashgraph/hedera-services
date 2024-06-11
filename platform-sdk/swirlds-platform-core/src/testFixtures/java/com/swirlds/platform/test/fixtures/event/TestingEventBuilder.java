@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -33,9 +35,11 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Stream;
 
 /**
  * A builder for creating event instances for testing purposes.
@@ -100,11 +104,9 @@ public class TestingEventBuilder {
     private GossipEvent selfParent;
 
     /**
-     * The other parent of the event.
-     * <p>
-     * Future work: add support for multiple other parents.
+     * The other parents of the event.
      */
-    private GossipEvent otherParent;
+    private List<GossipEvent> otherParents;
 
     /**
      * Overrides the generation of the configured self parent.
@@ -148,6 +150,24 @@ public class TestingEventBuilder {
      * If not set, defaults to {@link #DEFAULT_SOFTWARE_VERSION}.
      */
     private SoftwareVersion softwareVersion;
+
+    /**
+     * The consensus timestamp of the event.
+     * <p>
+     * If consensus order is set, and consensus timestamp is not set, it will be a random timestamp.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     */
+    private Instant consensusTimestamp;
+
+    /**
+     * The consensus order of the event.
+     * <p>
+     * If consensus timestamp is set, and consensus order is not set, it will be a random positive long.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     */
+    private Long consensusOrder;
 
     /**
      * Constructor
@@ -283,15 +303,28 @@ public class TestingEventBuilder {
     }
 
     /**
-     * Set the other-parent of an event
+     * Set an other-parent of an event
      * <p>
-     * If not set, an other parent will NOT be generated: the output event will have a null other parent.
+     * If not set, no other-parent will be generated: the output event will have a no other-parents.
      *
      * @param otherParent the other-parent
      * @return this instance
      */
     public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
-        this.otherParent = otherParent;
+        this.otherParents = otherParent == null ? null : List.of(otherParent);
+        return this;
+    }
+
+    /**
+     * Set a list of other-parents of an event
+     * <p>
+     * If not set, no other-parents will be generated: the output event will have a no other-parents.
+     *
+     * @param otherParents the other-parents
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setOtherParents(@NonNull final List<GossipEvent> otherParents) {
+        this.otherParents = otherParents;
         return this;
     }
 
@@ -358,6 +391,36 @@ public class TestingEventBuilder {
      */
     public @NonNull TestingEventBuilder setBirthRound(final long birthRound) {
         this.birthRound = birthRound;
+        return this;
+    }
+
+    /**
+     * Set the consensus timestamp of an event.
+     * <p>
+     * If consensus order is set, and consensus timestamp is not set, it will be a random timestamp.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     *
+     * @param consensusTimestamp the consensus timestamp
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setConsensusTimestamp(@Nullable final Instant consensusTimestamp) {
+        this.consensusTimestamp = consensusTimestamp;
+        return this;
+    }
+
+    /**
+     * Set the consensus order of an event.
+     * <p>
+     * If consensus timestamp is set, and consensus order is not set, it will be a random positive long.
+     * <p>
+     * If neither are set, defaults null, meaning this event will not be a consensus event.
+     *
+     * @param consensusOrder the consensus order
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setConsensusOrder(@Nullable final Long consensusOrder) {
+        this.consensusOrder = consensusOrder;
         return this;
     }
 
@@ -456,17 +519,20 @@ public class TestingEventBuilder {
 
         final EventDescriptor selfParentDescriptor =
                 createDescriptorFromParent(selfParent, selfParentGenerationOverride, selfParentBirthRoundOverride);
-        final EventDescriptor otherParentDescriptor =
-                createDescriptorFromParent(otherParent, otherParentGenerationOverride, otherParentBirthRoundOverride);
+        final List<EventDescriptor> otherParentDescriptors = Stream.ofNullable(otherParents)
+                .flatMap(List::stream)
+                .map(parent -> createDescriptorFromParent(
+                        parent, otherParentGenerationOverride, otherParentBirthRoundOverride))
+                .toList();
 
         if (this.birthRound == null) {
-            final long maxParentBirthRound = Math.max(
-                    selfParent == null
-                            ? BIRTH_ROUND_UNDEFINED
-                            : selfParent.getHashedData().getBirthRound(),
-                    otherParent == null
-                            ? BIRTH_ROUND_UNDEFINED
-                            : otherParent.getHashedData().getBirthRound());
+
+            final long maxParentBirthRound = Stream.concat(
+                            Stream.ofNullable(selfParent),
+                            Stream.ofNullable(otherParents).flatMap(List::stream))
+                    .mapToLong(GossipEvent::getBirthRound)
+                    .max()
+                    .orElse(MINIMUM_ROUND_CREATED);
 
             // randomly add between 0 and 2 to max parent birth round
             birthRound = maxParentBirthRound + random.nextLong(0, 3);
@@ -489,19 +555,25 @@ public class TestingEventBuilder {
                 softwareVersion,
                 creatorId,
                 selfParentDescriptor,
-                // Future work: add support for multiple other parents
-                otherParentDescriptor == null
-                        ? Collections.emptyList()
-                        : Collections.singletonList(otherParentDescriptor),
+                otherParentDescriptors,
                 birthRound,
                 timeCreated,
                 transactions);
-        hashedData.setHash(RandomUtils.randomHash(random));
 
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
         final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
+
+        gossipEvent.setHash(RandomUtils.randomHash(random));
+
+        if (consensusTimestamp != null || consensusOrder != null) {
+            gossipEvent.setConsensusData(new EventConsensusData.Builder()
+                    .consensusTimestamp(HapiUtils.asTimestamp(
+                            Optional.ofNullable(consensusTimestamp).orElse(RandomUtils.randomInstant(random))))
+                    .consensusOrder(Optional.ofNullable(consensusOrder).orElse(random.nextLong(1, Long.MAX_VALUE)))
+                    .build());
+        }
 
         return gossipEvent;
     }

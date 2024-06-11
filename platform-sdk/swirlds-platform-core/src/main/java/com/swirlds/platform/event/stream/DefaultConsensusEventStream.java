@@ -60,7 +60,7 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
     private static final Logger logger = LogManager.getLogger(DefaultConsensusEventStream.class);
 
     /**
-     * receives consensus events from ConsensusRoundHandler.addEvent(), then passes to hashQueueThread and
+     * receives consensus events then passes to hashQueueThread and
      * writeQueueThread
      */
     private final MultiStream<EventImpl> multiStream;
@@ -187,7 +187,7 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
 
     /**
      * @param time                     provides wall clock time
-     * @param multiStream              the instance which receives consensus events from ConsensusRoundHandler, then
+     * @param multiStream              the instance which receives consensus events from the transaction handler, then
      *                                 passes to nextStreams
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
      */

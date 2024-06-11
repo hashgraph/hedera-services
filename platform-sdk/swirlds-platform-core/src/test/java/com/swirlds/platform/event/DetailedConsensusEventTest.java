@@ -16,23 +16,19 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.platform.event.DetGenerateUtils.generateRandomByteArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -74,12 +70,11 @@ public class DetailedConsensusEventTest {
     }
 
     private DetailedConsensusEvent generateConsensusEvent() {
-        Randotron random = Randotron.create(68651684861L);
-        BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
-        ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
-        return new DetailedConsensusEvent(
-                new GossipEvent(
-                        hashedData, Bytes.wrap(generateRandomByteArray(random, SignatureType.RSA.signatureLength()))),
-                consensusData);
+        final Randotron random = Randotron.create(68651684861L);
+        final GossipEvent gossipEvent = new TestingEventBuilder(random)
+                .setConsensusTimestamp(random.nextInstant())
+                .build();
+
+        return new DetailedConsensusEvent(gossipEvent, random.nextPositiveLong(), random.nextBoolean());
     }
 }

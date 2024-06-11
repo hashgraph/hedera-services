@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,10 @@
 
 package com.hedera.gradle.utils
 
-import org.gradle.api.Task
-import org.gradle.api.file.Directory
-import org.gradle.api.file.RegularFile
-import org.gradle.api.tasks.testing.TestDescriptor
-import org.gradle.api.tasks.testing.TestListener
-import org.gradle.api.tasks.testing.TestResult
 import java.io.OutputStream
 import java.io.PrintStream
-import java.text.SimpleDateFormat
-import java.util.Date
+import org.gradle.api.file.Directory
+import org.gradle.api.file.RegularFile
 
 object Utils {
     // Find the version.txt in the root of the repository, independent of

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -59,7 +59,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class HederaLifecyclesImpl implements HederaLifecycles {
     private static final Logger logger = LogManager.getLogger(HederaLifecyclesImpl.class);
-    private static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
+    public static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
     private static final int NUM_REWARD_HISTORY_STORED_PERIODS = 365;
 
     private static final BiConsumer<
@@ -113,7 +113,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onStateInitialized(
-            @NonNull final MerkleHederaState state,
+            @NonNull final HederaState state,
             @NonNull final Platform platform,
             @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,

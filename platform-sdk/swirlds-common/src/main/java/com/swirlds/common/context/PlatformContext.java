@@ -18,13 +18,12 @@ package com.swirlds.common.context;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
-import com.swirlds.common.context.internal.DefaultPlatformContext;
 import com.swirlds.common.context.internal.PlatformUncaughtExceptionHandler;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
-import com.swirlds.common.io.filesystem.FileSystemManagerFactory;
 import com.swirlds.common.io.utility.NoOpRecycleBin;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -57,10 +56,9 @@ public interface PlatformContext {
     static PlatformContext create(@NonNull final Configuration configuration) {
         final Metrics metrics = new NoOpMetrics();
         final Cryptography cryptography = CryptographyHolder.get();
-        final FileSystemManager fileSystemManager =
-                FileSystemManagerFactory.getInstance().createFileSystemManager(configuration, new NoOpRecycleBin());
-
-        return create(configuration, metrics, cryptography, fileSystemManager);
+        final FileSystemManager fileSystemManager = FileSystemManager.create(configuration);
+        final Time time = Time.getCurrent();
+        return create(configuration, time, metrics, cryptography, fileSystemManager, new NoOpRecycleBin());
     }
 
     /**
@@ -69,22 +67,26 @@ public interface PlatformContext {
      * The instance uses the static {@link Time#getCurrent()} call to get the time.
      *
      * @param configuration     the configuration
+     * @param time              the time
      * @param metrics           the metrics
      * @param cryptography      the cryptography
      * @param fileSystemManager the fileSystemManager
+     * @param recycleBin        the recycleBin
      * @return the platform context
      */
     @NonNull
     static PlatformContext create(
             @NonNull final Configuration configuration,
+            @NonNull final Time time,
             @NonNull final Metrics metrics,
             @NonNull final Cryptography cryptography,
-            @NonNull final FileSystemManager fileSystemManager) {
-        final Time time = Time.getCurrent();
+            @NonNull final FileSystemManager fileSystemManager,
+            @NonNull final RecycleBin recycleBin) {
+
         final UncaughtExceptionHandler handler = new PlatformUncaughtExceptionHandler();
         final ExecutorFactory executorFactory = ExecutorFactory.create("platform", null, handler);
         return new DefaultPlatformContext(
-                configuration, metrics, cryptography, time, executorFactory, fileSystemManager);
+                configuration, metrics, cryptography, time, executorFactory, fileSystemManager, recycleBin);
     }
 
     /**
@@ -132,5 +134,14 @@ public interface PlatformContext {
      *
      * @return the {@link ExecutorFactory} for this node
      */
+    @NonNull
     ExecutorFactory getExecutorFactory();
+
+    /**
+     * Returns the {@link RecycleBin} for this node
+     *
+     * @return the {@link RecycleBin} for this node
+     */
+    @NonNull
+    RecycleBin getRecycleBin();
 }

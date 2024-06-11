@@ -24,7 +24,7 @@ public final class MerkleProtoUtils {
         int size = 0;
         size += ProtoWriterTools.sizeOfTag(FIELD_HASH_DIGESTTYPE) +
                 ProtoWriterTools.sizeOfVarInt32(hash.getDigestType().id());
-        size += ProtoWriterTools.sizeOfDelimited(FIELD_HASH_DATA, hash.getValue().length);
+        size += ProtoWriterTools.sizeOfDelimited(FIELD_HASH_DATA, hash.getDigestType().digestLength());
         return ProtoWriterTools.sizeOfDelimited(FIELD_NODE_HASH, size);
     }
 
@@ -33,16 +33,15 @@ public final class MerkleProtoUtils {
             return;
         }
         ProtoWriterTools.writeDelimited(out, FIELD_NODE_HASH, getHashSizeInBytes(hash), w -> {
-            final int hashDigestType = hash.getDigestType().id();
+            final DigestType digestType = hash.getDigestType();
             // Hash digest type
-            if (hashDigestType != 0) {
+            if (digestType.id() != 0) {
                 ProtoWriterTools.writeTag(w, FIELD_HASH_DIGESTTYPE);
-                w.writeVarInt(hashDigestType, false);
+                w.writeVarInt(digestType.id(), false);
             }
             // Hash value
-            final byte[] value = hash.getValue();
             // TODO: completelyWrite ?
-            ProtoWriterTools.writeDelimited(w, FIELD_HASH_DATA, value.length, x -> x.writeBytes(value));
+            ProtoWriterTools.writeDelimited(w, FIELD_HASH_DATA, digestType.digestLength(), hash.getBytes()::writeTo);
         });
     }
 

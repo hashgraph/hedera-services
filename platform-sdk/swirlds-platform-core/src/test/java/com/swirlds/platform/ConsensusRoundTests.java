@@ -50,7 +50,7 @@ class ConsensusRoundTests {
         final List<EventImpl> events = List.of(e1, e2, e3);
 
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class), events, mock(EventImpl.class), g, mock(EventWindow.class), snapshot);
+                mock(AddressBook.class), events, mock(EventImpl.class), g, mock(EventWindow.class), snapshot, false);
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
@@ -78,7 +78,8 @@ class ConsensusRoundTests {
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
-                mock(ConsensusSnapshot.class));
+                mock(ConsensusSnapshot.class),
+                false);
 
         assertEquals(
                 numActualTransactions, round.getNumAppTransactions(), "Incorrect number of application transactions.");

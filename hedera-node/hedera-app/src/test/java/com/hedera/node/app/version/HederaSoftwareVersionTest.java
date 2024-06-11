@@ -17,6 +17,7 @@
 package com.hedera.node.app.version;
 
 import static com.hedera.node.app.version.HederaSoftwareVersion.RELEASE_027_VERSION;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,6 +71,18 @@ final class HederaSoftwareVersionTest {
             case "<" -> assertThat(versionA).isLessThan(versionB);
             case "=" -> assertThat(versionA).isEqualByComparingTo(versionB);
             case ">" -> assertThat(versionA).isGreaterThan(versionB);
+            default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
+        }
+        // Ensure that the PBJ versions are also ordered correctly.
+        final SemanticVersion pbjA = versionA.getPbjSemanticVersion();
+        final SemanticVersion pbjB = versionB.getPbjSemanticVersion();
+        switch (expected) {
+            case "<" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isLessThan(0);
+            case "=" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isEqualTo(0);
+            case ">" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isGreaterThan(0);
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
     }
@@ -173,6 +186,7 @@ final class HederaSoftwareVersionTest {
 
         assertThat(deserializedVersion.getHapiVersion()).isEqualTo(version.getHapiVersion());
         assertThat(deserializedVersion.getServicesVersion()).isEqualTo(version.getServicesVersion());
+        assertThat(deserializedVersion.getPbjSemanticVersion()).isEqualTo(version.getPbjSemanticVersion());
     }
 
     private SemanticVersion semver(@NonNull final String s) {

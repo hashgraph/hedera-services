@@ -20,20 +20,19 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.common.sequence.set.SequenceSet;
-import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.sequence.set.SequenceSet;
+import com.swirlds.platform.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -201,9 +200,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     private List<EventDescriptor> getMissingParents(@NonNull final GossipEvent event) {
         final List<EventDescriptor> missingParents = new ArrayList<>();
 
-        final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
-        while (parentIterator.hasNext()) {
-            final EventDescriptor parent = parentIterator.next();
+        for (final EventDescriptor parent : event.getAllParents()) {
             if (!eventsWithParents.contains(parent) && !eventWindow.isAncient(parent)) {
                 missingParents.add(parent);
             }

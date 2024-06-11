@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -24,16 +25,12 @@ import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Waits for the selected node or nodes specified by the {@link NodeSelector} to
  * reach the specified status within the given timeout.
  */
 public class WaitForStatusOp extends AbstractLifecycleOp {
-    private static final Logger log = LogManager.getLogger(WaitForStatusOp.class);
-
     private final Duration timeout;
     private final PlatformStatus status;
 
@@ -45,10 +42,10 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     }
 
     @Override
+    // assertion in production code
+    @SuppressWarnings("java:S5960")
     public void run(@NonNull final HederaNode node) {
-        log.info("Waiting for node '{}' to be {} within {}", node.getName(), status, timeout);
-        node.statusFuture(status, timeout).join();
-        log.info("Node '{}' is {}", node.getName(), status);
+        awaitStatus(node, status, timeout);
     }
 
     @Override

@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.SchedulingConfig;
@@ -65,9 +66,9 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        schedulesByIdMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
-        schedulesByEqualityMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
-        schedulesByExpirationMutable = states.get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        schedulesByIdMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
+        schedulesByEqualityMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
+        schedulesByExpirationMutable = states.get(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
 
         final long maxCapacity =
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();

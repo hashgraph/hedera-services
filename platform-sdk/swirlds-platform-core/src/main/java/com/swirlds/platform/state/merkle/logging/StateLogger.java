@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.merkle.logging;
 
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandler.TRANSACTION_HANDLING_THREAD_NAME;
+import static com.swirlds.platform.eventhandling.DefaultTransactionHandler.TRANSACTION_HANDLING_THREAD_NAME;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;

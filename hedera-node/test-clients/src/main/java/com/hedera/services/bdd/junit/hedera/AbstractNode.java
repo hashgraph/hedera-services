@@ -16,18 +16,25 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import static com.hedera.services.bdd.junit.hedera.live.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
-import static com.hedera.services.bdd.junit.hedera.live.WorkingDirUtils.DATA_DIR;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.OVERRIDE_RECORD_STREAM_FOLDER;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
 public abstract class AbstractNode implements HederaNode {
+    private static final String APPLICATION_LOG_FILE = "hgcaa.log";
     protected final NodeMetadata metadata;
 
     protected AbstractNode(@NonNull final NodeMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    @Override
+    public String getHost() {
+        return metadata.host();
     }
 
     @Override
@@ -56,5 +63,10 @@ public abstract class AbstractNode implements HederaNode {
                 .resolve(DATA_DIR)
                 .resolve(OVERRIDE_RECORD_STREAM_FOLDER)
                 .resolve("record0.0." + getAccountId().accountNumOrThrow());
+    }
+
+    @Override
+    public Path getApplicationLogPath() {
+        return metadata.workingDir().resolve(OUTPUT_DIR).resolve(APPLICATION_LOG_FILE);
     }
 }

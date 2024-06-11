@@ -31,7 +31,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
@@ -103,42 +102,10 @@ public class StartupStateUtilsTests {
                 .withValue(StateConfig_.DELETE_INVALID_STATE_FILES, deleteInvalidStateFiles)
                 .getOrCreateConfig();
 
-        // FUTURE WORK do this more elegantly when we have a better test implementation
-        final FileSystemManager fileSystemManager = new FileSystemManager() {
-            @NonNull
-            @Override
-            public Path resolve(@NonNull final Path relativePath) {
-                throw new UnsupportedOperationException();
-            }
-
-            @NonNull
-            @Override
-            public Path resolveNewTemp(@Nullable final String tag) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void recycle(@NonNull final Path path) throws IOException {
-                recycleBin.recycle(path);
-            }
-
-            @Override
-            public void start() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void stop() {
-                throw new UnsupportedOperationException();
-            }
-        };
-
-        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+        return TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
-                .withFileSystemManager((x, y) -> fileSystemManager)
+                .withRecycleBin(recycleBin)
                 .build();
-
-        return platformContext;
     }
 
     /**

@@ -20,8 +20,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -29,7 +27,8 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -135,12 +134,11 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
             return null;
         }
 
-        final BaseEventHashedData hashedData = event.getHashedData();
-        final EventImpl selfParent = getParentToLink(event, hashedData.getSelfParent());
+        final EventImpl selfParent = getParentToLink(event, event.getSelfParent());
 
         // FUTURE WORK: Extend other parent linking to support multiple other parents.
         // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = hashedData.getOtherParents();
+        final List<EventDescriptor> otherParents = event.getOtherParents();
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
@@ -320,9 +318,8 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
             return null;
         }
 
-        final Instant parentTimeCreated =
-                candidateParent.getBaseEvent().getHashedData().getTimeCreated();
-        final Instant childTimeCreated = child.getHashedData().getTimeCreated();
+        final Instant parentTimeCreated = candidateParent.getBaseEvent().getTimeCreated();
+        final Instant childTimeCreated = child.getTimeCreated();
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time
         // when deciding on the event creation time

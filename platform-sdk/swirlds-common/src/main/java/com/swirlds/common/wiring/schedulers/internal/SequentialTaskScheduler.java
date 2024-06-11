@@ -45,6 +45,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     private final FractionalTimer busyTimer;
     private final UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ForkJoinPool pool;
+    private final long capacity;
 
     /**
      * Constructor.
@@ -57,6 +58,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param offRamp                  an object counter that is decremented when data is removed from the task
      *                                 scheduler
      * @param busyTimer                a timer that tracks the amount of time the scheduler is busy
+     * @param capacity                 the maximum desired capacity for this task scheduler
      * @param flushEnabled             if true, then {@link #flush()} will be enabled, otherwise it will throw.
      * @param squelchingEnabled        if true, then squelching will be enabled, otherwise trying to squelch will throw
      * @param insertionIsBlocking      when data is inserted into this task scheduler, will it block until capacity is
@@ -70,6 +72,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
             @NonNull final ObjectCounter onRamp,
             @NonNull final ObjectCounter offRamp,
             @NonNull final FractionalTimer busyTimer,
+            final long capacity,
             final boolean flushEnabled,
             final boolean squelchingEnabled,
             final boolean insertionIsBlocking) {
@@ -81,6 +84,7 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
         this.onRamp = Objects.requireNonNull(onRamp);
         this.offRamp = Objects.requireNonNull(offRamp);
         this.busyTimer = Objects.requireNonNull(busyTimer);
+        this.capacity = capacity;
 
         this.nextTaskPlaceholder =
                 new AtomicReference<>(new SequentialTask(pool, offRamp, busyTimer, uncaughtExceptionHandler, true));
@@ -141,6 +145,14 @@ public class SequentialTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     public long getUnprocessedTaskCount() {
         return onRamp.getCount();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getCapacity() {
+        return capacity;
     }
 
     /**

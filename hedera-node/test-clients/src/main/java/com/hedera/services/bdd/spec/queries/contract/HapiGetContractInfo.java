@@ -42,8 +42,9 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.util.ArrayList;
@@ -195,10 +196,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractInfoQuery(spec, payment, false), spec);
-        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
-        ContractInfo contractInfo = response.getContractGetInfo().getContractInfo();
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
+        final var contractInfo = response.getContractGetInfo().getContractInfo();
         if (verboseLoggingOn) {
             LOG.info("Info: {}", contractInfo);
         }
@@ -212,14 +211,6 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (exposingContractId != null) {
             exposingContractId.accept(contractInfo.getContractID());
         }
-    }
-
-    @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = maybeModified(getContractInfoQuery(spec, payment, true), spec);
-        Response response =
-                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
-        return costFrom(response);
     }
 
     private String specScopedDir(HapiSpec spec, Optional<String> prefix) {
@@ -282,6 +273,17 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             LOG.error("Something wrong with the expected ContractInfo file", e);
             return null;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getContractInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getContractInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

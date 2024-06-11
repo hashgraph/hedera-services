@@ -20,9 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.state.HederaState;
@@ -44,7 +44,7 @@ public final class LedgerValidatorImpl implements LedgerValidator {
         final var config = configProvider.getConfiguration().getConfigData(LedgerConfig.class);
         final var expectedTotalTinyBar = config.totalTinyBarFloat();
         final var tokenStates = state.getReadableStates(TokenService.NAME);
-        final ReadableKVState<AccountID, Account> accounts = tokenStates.get(TokenServiceImpl.ACCOUNTS_KEY);
+        final ReadableKVState<AccountID, Account> accounts = tokenStates.get(V0490TokenSchema.ACCOUNTS_KEY);
         final var total = new AtomicLong(0L);
 
         // FUTURE: This would be more efficient if we got the values instead of keys. We also should look at returning

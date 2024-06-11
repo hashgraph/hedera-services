@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * The Addressbook Service provides the ability for Hedera Hashgraph to provide facilitate changes to the nodes used across the Hedera network.
+ * The Addressbook Service provides the ability for Hedera Hashgraph to facilitate changes to the nodes used across the Hedera network.
  */
 @SuppressWarnings("java:S6548")
 public final class AddressBookServiceDefinition implements RpcServiceDefinition {
@@ -38,7 +38,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
             // When a valid council member initiates a HAPI transaction to add a new node,
             // then the network should acknowledge the transaction and update the network’s Address Book within 24
             // hours.
-            // The added node will not be active until the network is upgradede
+            // The added node will not be active until the network is upgraded
             // Request is [NodeCreateTransactionBody](#proto.NodeCreateTransactionBody)
             //
             new RpcMethodDefinition<>("createNode", Transaction.class, TransactionResponse.class),
@@ -47,7 +47,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
             // Request is [NodeUpdateTransactionBody](#proto.NodeUpdateTransactionBody)
             //
             new RpcMethodDefinition<>("updateNode", Transaction.class, TransactionResponse.class),
-            // Prepare to delete the node to the network.
+            // Prepare to delete the node from the network.
             // The deleted node will not be deleted until the network is upgraded.
             // Such a deleted node can never be reused.
             // Request is [NodeDeleteTransactionBody](#proto.NodeDeleteTransactionBody)

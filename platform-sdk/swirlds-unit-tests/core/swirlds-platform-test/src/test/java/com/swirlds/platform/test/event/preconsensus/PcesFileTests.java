@@ -36,10 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.fixtures.TestFileSystemManager;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
@@ -320,14 +320,13 @@ class PcesFileTests {
         final Path streamDirectory = testDirectory.resolve("data");
         final Path recycleDirectory = testDirectory.resolve("recycle");
 
-        TestFileSystemManager fsm = new TestFileSystemManager(testDirectory);
-        fsm.setBin(new RecycleBinImpl(
+        RecycleBin bin = new RecycleBinImpl(
                 new NoOpMetrics(),
                 getStaticThreadManager(),
                 Time.getCurrent(),
                 recycleDirectory,
                 TestRecycleBin.MAXIMUM_FILE_AGE,
-                TestRecycleBin.MINIMUM_PERIOD));
+                TestRecycleBin.MINIMUM_PERIOD);
 
         Files.createDirectories(streamDirectory);
         Files.createDirectories(recycleDirectory);
@@ -370,11 +369,11 @@ class PcesFileTests {
                 }
             }
 
-            file.deleteFile(streamDirectory, fsm);
+            file.deleteFile(streamDirectory, bin);
 
             if (random.nextBoolean()) {
                 // Deleting twice shouldn't have any ill effects
-                file.deleteFile(streamDirectory, fsm);
+                file.deleteFile(streamDirectory, bin);
             }
 
             deletedFiles.add(file);

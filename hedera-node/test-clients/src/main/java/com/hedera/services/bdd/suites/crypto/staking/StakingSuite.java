@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNextStakePeriodStartsWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
@@ -66,6 +67,7 @@ import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -81,6 +83,7 @@ import org.junit.jupiter.api.Tag;
 @Tag(LONG_RUNNING)
 @HapiTestLifecycle
 public class StakingSuite {
+    private static final Duration MIN_TIME_TO_NEXT_PERIOD = Duration.ofSeconds(10);
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
     private static final long SUITE_PER_HBAR_REWARD_RATE = 3_333_333L;
     private static final String ALICE = "alice";
@@ -176,6 +179,13 @@ public class StakingSuite {
 
         return defaultHapiSpec("StakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries")
                 .given(
+                        // If we are even close to a period boundary crossing,
+                        // wait until the next one so our accounts aren't eligible
+                        // for more than the expected rewards
+                        ifNextStakePeriodStartsWithin(
+                                MIN_TIME_TO_NEXT_PERIOD,
+                                STAKING_PERIOD_MINS,
+                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)),
                         cryptoCreate(alice).stakedNodeId(0).balance(ONE_MILLION_HBARS),
                         cryptoCreate(baldwin).stakedNodeId(0).balance(0L),
                         // Reach a period where stakers can collect rewards
@@ -284,7 +294,14 @@ public class StakingSuite {
     @HapiTest
     final Stream<DynamicTest> pendingRewardsPaidBeforeStakedToMeUpdates() {
         return defaultHapiSpec("PendingRewardsPaidBeforeStakedToMeUpdates")
-                .given()
+                .given(
+                        // If we are even close to a period boundary crossing,
+                        // wait until the next one so our accounts aren't eligible
+                        // for more than the expected rewards
+                        ifNextStakePeriodStartsWithin(
+                                MIN_TIME_TO_NEXT_PERIOD,
+                                STAKING_PERIOD_MINS,
+                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)))
                 .when( // period 1
                         cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(CAROL).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
@@ -376,7 +393,14 @@ public class StakingSuite {
     @HapiTest
     final Stream<DynamicTest> stakingMetadataUpdateIsRewardOpportunity() {
         return defaultHapiSpec("stakingMetadataUpdateIsRewardOpportunity")
-                .given()
+                .given(
+                        // If we are even close to a period boundary crossing,
+                        // wait until the next one so our accounts aren't eligible
+                        // for more than the expected rewards
+                        ifNextStakePeriodStartsWithin(
+                                MIN_TIME_TO_NEXT_PERIOD,
+                                STAKING_PERIOD_MINS,
+                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)))
                 .when(
                         cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(PAYABLE_CONTRACT),
@@ -428,16 +452,26 @@ public class StakingSuite {
         final var bob = "bob";
         final var deletion = "deletion";
         return defaultHapiSpec("RewardsOfDeletedAreRedirectedToBeneficiary")
-                .given()
+                .given(
+                        // If we are even close to a period boundary crossing,
+                        // wait until the next one so our accounts aren't eligible
+                        // for more than the expected rewards
+                        ifNextStakePeriodStartsWithin(
+                                MIN_TIME_TO_NEXT_PERIOD,
+                                STAKING_PERIOD_MINS,
+                                waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS)))
                 .when(
-                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(bob).balance(0L),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
+                        // Alice will be first eligible for rewards in the just-started period
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
                         waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
                 .then(
                         cryptoDelete(ALICE).transfer(bob).via(deletion),
-                        getTxnRecord(deletion).hasPaidStakingRewards(List.of(Pair.of(bob, 3333333000000L))));
+                        getTxnRecord(deletion)
+                                .logged()
+                                .hasPaidStakingRewards(List.of(Pair.of(bob, 100 * SUITE_PER_HBAR_REWARD_RATE))));
     }
 
     /**

@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.version;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -206,5 +206,10 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
         // alpha versions come before everything else
         return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
+    }
+
+    @Override
+    public SemanticVersion getPbjSemanticVersion() {
+        return toUpgradeComparableSemVer(configVersion, servicesVersion);
     }
 }

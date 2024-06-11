@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
@@ -174,7 +175,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
                     amount,
-                    newPendingRewards);
+                    newPendingRewards,
+                    nodeId);
             newPendingRewards = 0;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -209,7 +211,7 @@ public class StakingRewardsHelper {
      * @param currStakingInfo    The current staking info
      * @return The clamped pending rewards
      */
-    StakingNodeInfo increasePendingRewardsBy(
+    public StakingNodeInfo increasePendingRewardsBy(
             final WritableNetworkStakingRewardsStore stakingRewardsStore,
             long amount,
             final StakingNodeInfo currStakingInfo) {
@@ -220,8 +222,8 @@ public class StakingRewardsHelper {
         long newNodePendingRewards;
         // Only increase the pending rewards if the node is not deleted
         if (!currStakingInfo.deleted()) {
-            newNetworkPendingRewards = currentPendingRewards + amount;
-            newNodePendingRewards = nodePendingRewards + amount;
+            newNetworkPendingRewards = clampedAdd(currentPendingRewards, amount);
+            newNodePendingRewards = clampedAdd(nodePendingRewards, amount);
         } else {
             newNetworkPendingRewards = currentPendingRewards;
             newNodePendingRewards = 0L;
@@ -237,8 +239,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards increased by {} to an un-payable {} for node {}, fixing to 50B hbar",
                     amount,
-                    newNetworkPendingRewards,
-                    nodePendingRewards);
+                    newNodePendingRewards,
+                    currStakingInfo.nodeNumber());
             newNodePendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();

@@ -33,6 +33,8 @@ include(":app-hapi-utils", "hedera-node/hapi-utils")
 
 include(":app-service-addressbook", "hedera-node/hedera-addressbook-service")
 
+include(":app-service-addressbook-impl", "hedera-node/hedera-addressbook-service-impl")
+
 include(":app-service-consensus", "hedera-node/hedera-consensus-service")
 
 include(":app-service-consensus-impl", "hedera-node/hedera-consensus-service-impl")
@@ -98,6 +100,8 @@ include(":swirlds-config-impl", "platform-sdk/swirlds-config-impl")
 
 include(":swirlds-metrics-api", "platform-sdk/swirlds-metrics-api")
 
+include(":swirlds-metrics-impl", "platform-sdk/swirlds-metrics-impl")
+
 include(":swirlds-config-extensions", "platform-sdk/swirlds-config-extensions")
 
 include(":swirlds-fchashmap", "platform-sdk/swirlds-fchashmap")
@@ -155,7 +159,8 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.50.0"
+val hapiProtoVersion = "0.51.0"
+
 
 dependencyResolutionManagement {
     // Protobuf tool versions

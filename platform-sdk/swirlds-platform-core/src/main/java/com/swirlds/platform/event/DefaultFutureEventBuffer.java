@@ -20,10 +20,10 @@ import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -81,15 +81,13 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
         if (eventWindow.isAncient(event)) {
             // we can safely ignore ancient events
             return null;
-        } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+        } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
             // this is not a future event, no need to buffer it
             return List.of(event);
         }
 
         // this is a future event, buffer it
-        futureEvents
-                .computeIfAbsent(event.getHashedData().getBirthRound(), BUILD_LIST)
-                .add(event);
+        futureEvents.computeIfAbsent(event.getBirthRound(), BUILD_LIST).add(event);
         bufferedEventCount.incrementAndGet();
         return null;
     }
