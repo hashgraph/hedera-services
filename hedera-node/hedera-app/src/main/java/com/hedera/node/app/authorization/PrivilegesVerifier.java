@@ -22,9 +22,7 @@ import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNAUTHORIZED
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
@@ -36,7 +34,6 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 /**
@@ -111,10 +108,6 @@ public class PrivilegesVerifier {
 
     private boolean isTreasury(@NonNull final AccountID accountID) {
         return accountID.accountNumOrThrow() == accountsConfig.treasury();
-    }
-
-    private boolean isSystemAdmin(@NonNull final AccountID accountID) {
-        return accountID.accountNumOrThrow() == accountsConfig.systemAdmin();
     }
 
     private boolean hasSoftwareUpdatePrivilege(@NonNull final AccountID accountID) {
@@ -223,12 +216,5 @@ public class PrivilegesVerifier {
 
     private SystemPrivilege checkEntityDelete(final long entityNum) {
         return isSystemEntity(entityNum) ? IMPERMISSIBLE : UNNECESSARY;
-    }
-
-    // move to somewhere else
-    private ContractID contractIdFromEvmAddress(final byte[] bytes) {
-        return ContractID.newBuilder()
-                .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
-                .build();
     }
 }
