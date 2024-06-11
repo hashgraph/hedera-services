@@ -193,8 +193,7 @@ public class EmbeddedHedera {
         final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
         hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
         submittingNodeId.remove();
-        final var response = parseTransactionResponse(responseBuffer);
-        return response;
+        return parseTransactionResponse(responseBuffer);
     }
 
     /**
@@ -211,8 +210,7 @@ public class EmbeddedHedera {
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
         hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
         submittingNodeId.remove();
-        final var response = parseQueryResponse(responseBuffer);
-        return response;
+        return parseQueryResponse(responseBuffer);
     }
 
     private void setSubmittingNodeId(@NonNull final AccountID nodeAccountId) {
