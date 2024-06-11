@@ -99,6 +99,7 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
         assertThat(logCaptor.warnLogs()).contains("Address book contains more nodes 2 than the migrated count 1");
+        assertThat(logCaptor.infoLogs()).contains("Migrated 1 nodes from address book");
     }
 
     private void setupMigrationContext() {

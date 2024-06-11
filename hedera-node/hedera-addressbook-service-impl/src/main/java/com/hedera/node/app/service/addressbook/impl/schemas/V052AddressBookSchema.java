@@ -96,11 +96,10 @@ public class V052AddressBookSchema extends Schema {
                     "Address book contains more nodes {} than the migrated count {}",
                     addressBook.size(),
                     migratedCount);
-        } else {
-            if (writableNodes.isModified()) {
-                ((WritableKVStateBase) writableNodes).commit();
-            }
-            log.info("Migrated {} nodes from address book", migratedCount);
         }
+        if (writableNodes.isModified()) {
+            ((WritableKVStateBase) writableNodes).commit();
+        }
+        log.info("Migrated {} nodes from address book", migratedCount);
     }
 }
