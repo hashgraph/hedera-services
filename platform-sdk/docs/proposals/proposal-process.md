@@ -55,7 +55,7 @@ against.
 
 # Acceptance of A Proposal
 
-After 3 business days of voting, if the proposal has 3 or more votes in favor with no vetos and the proposal has not
+After 3 business days of voting, if the proposal has 3 or more +1 votes in favor with no vetos and the proposal has not
 been withdrawn or superseded, then the proposal becomes accepted. Once accepted, implementation may begin.
 
 ---
