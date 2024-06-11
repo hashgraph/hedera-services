@@ -95,7 +95,7 @@ Describe critical test scenarios and any higher level functionality tests that c
 
 Examples:
 
-* subtle edge cases that might be overlooked.
+* Subtle edge cases that might be overlooked.
 * Use of simulators or frameworks to test complex component interaction.
 
 Remove this section if not applicable.
