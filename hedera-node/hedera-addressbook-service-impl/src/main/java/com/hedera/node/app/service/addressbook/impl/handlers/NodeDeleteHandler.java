@@ -62,7 +62,7 @@ public class NodeDeleteHandler implements TransactionHandler {
     }
 
     /**
-     * Given the appropriate context, deletes a topic.
+     * Given the appropriate context, deletes a node.
      *
      * @param context the {@link HandleContext} of the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
