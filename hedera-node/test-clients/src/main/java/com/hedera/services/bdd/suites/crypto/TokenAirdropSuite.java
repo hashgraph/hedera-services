@@ -17,11 +17,12 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
@@ -32,6 +33,8 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
 public class TokenAirdropSuite {
+
+    private static final String AIRDROPS_ENABLED = "tokens.airdrops.enabled";
     private static final String SENDER = "sender";
     private static final String RECEIVER = "receiver";
 
@@ -41,8 +44,10 @@ public class TokenAirdropSuite {
         final var nonTreasurySender = "nonTreasurySender";
         final var fungibleToken = "fungibleToken";
 
-        return defaultHapiSpec("tokenAirdrop")
+        return propertyPreservingHapiSpec("tokenAirdrop")
+                .preserving(AIRDROPS_ENABLED)
                 .given(
+                        overriding(AIRDROPS_ENABLED, "true"),
                         cryptoCreate(nonTreasurySender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER),

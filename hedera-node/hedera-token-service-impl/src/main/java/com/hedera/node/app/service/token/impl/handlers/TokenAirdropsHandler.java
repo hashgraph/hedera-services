@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -27,8 +29,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -63,17 +63,9 @@ public class TokenAirdropsHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenAirdrop();
-        final var topLevelPayer = context.payer();
-
-        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
-        // todo add validations
-        // validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
-
-        // todo add handle logic
-        //        final var recordBuilder = context.recordBuilder(TokenAirdropRecordBuilder.class);
+        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
     }
 
     @NonNull
