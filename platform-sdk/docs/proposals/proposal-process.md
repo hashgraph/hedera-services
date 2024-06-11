@@ -1,5 +1,4 @@
-Platform Design Proposal Process
-================================
+# Platform Design Proposal Process
 
 This document describes the process for creating and reviewing platform design proposals.
 
@@ -8,14 +7,14 @@ at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/vie
 
 ---
 
-# Creating A Proposal Draft
+## Creating A Proposal Draft
 
-All proposals must be presented in the form of a PR containing the proposal in a sub-directory
+All proposals must be presented in the form of a PR containing the proposal in a subdirectory
 of `platform-sdk/docs/proposals/`.
 
 1. Create an issue in the github repository for the creation of the proposal.
 2. Create a new branch for the proposal.
-3. Copy the template `temaplate.md` into a subdirectory of `platform-sdk/docs/proposals/` with the name of the
+3. Copy the template `template.md` into a subdirectory of `platform-sdk/docs/proposals/` with the name of the
    proposal.
 4. Fill out the template with the details of the proposal, removing any irrelevant sections.
     * Images and other files may be included in the proposal directory and linked from the proposal.
@@ -32,7 +31,7 @@ errors should be caught during this phase.
 
 ---
 
-# Voting on A Proposal
+## Voting on A Proposal
 
 When a proposal is ready for a vote, the PR is marked as ready for review. The proposal must stay in the Voting state
 for 3 business days and cannot be altered during this time.
@@ -53,14 +52,14 @@ against.
 
 ---
 
-# Acceptance of A Proposal
+## Acceptance of A Proposal
 
 After 3 business days of voting, if the proposal has 3 or more +1 votes in favor with no vetos and the proposal has not
 been withdrawn or superseded, then the proposal becomes accepted. Once accepted, implementation may begin.
 
 ---
 
-# Superseding A Proposal
+## Superseding A Proposal
 
 A proposal may be superseded by a new proposal. The old proposal must link to the new proposal and indicate that it is
 being superseded. After the proposal has been updated, the PR's status in the proposal project should be changed
@@ -68,14 +67,14 @@ to `Superseded`.
 
 ---
 
-# Withdrawing A Proposal
+## Withdrawing A Proposal
 
 A proposal may be withdrawn. The proposal must be updated with a reason for the withdrawal. After the proposal has been
 updated, the PR's status in the proposal project should be changed to `Withdrawn`.
 
 ---
 
-# Delivery of A Proposal
+## Delivery of A Proposal
 
 Once an accepted proposal has been completely implemented and the code merged into develop, the proposal's content
 should be used to update the documentation of the platform. Once the platform documentation is updated, the status of
