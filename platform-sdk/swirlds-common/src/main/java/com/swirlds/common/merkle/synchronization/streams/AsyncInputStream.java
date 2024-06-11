@@ -125,6 +125,7 @@ public class AsyncInputStream implements AutoCloseable {
      * queue.
      */
     private void run() {
+        logger.info(RECONNECT.getMarker(), this.toString() + " start run()");
         try {
             while (alive.get() && !Thread.currentThread().isInterrupted()) {
                 final int viewId = inputStream.readInt();
@@ -157,11 +158,12 @@ public class AsyncInputStream implements AutoCloseable {
         } catch (final IOException e) {
             workGroup.handleError(e);
         } catch (final InterruptedException e) {
-            logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
+            logger.warn(RECONNECT.getMarker(), this.toString() + " interrupted");
             Thread.currentThread().interrupt();
         } finally {
             finishedLatch.countDown();
         }
+        logger.info(RECONNECT.getMarker(), this.toString() + " finish run()");
     }
 
     /**

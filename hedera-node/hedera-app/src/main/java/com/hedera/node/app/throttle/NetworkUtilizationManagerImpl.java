@@ -35,11 +35,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Implementation of {@link NetworkUtilizationManager}  that delegates to injected
  * {@link ThrottleAccumulator} and {@link CongestionMultipliers}.
  */
+@Singleton
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;

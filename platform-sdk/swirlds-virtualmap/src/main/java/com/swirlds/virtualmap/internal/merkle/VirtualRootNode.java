@@ -1556,17 +1556,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     public void endLearnerReconnect() {
         try {
+            logger.info(RECONNECT.getMarker(), "call reconnectIterator.close()");
             reconnectIterator.close();
             if (reconnectHashingStarted.get()) {
                 // Only block on future if the hashing thread is known to have been started.
+                logger.info(RECONNECT.getMarker(), "call setHashPrivate()");
                 setHashPrivate(reconnectHashingFuture.get());
             } else {
                 logger.warn(RECONNECT.getMarker(), "virtual map hashing thread was never started");
             }
             nodeRemover = null;
             originalMap = null;
+            logger.info(RECONNECT.getMarker(), "call postInit()");
             postInit(fullyReconnectedState);
             // Start up data source compaction now
+            logger.info(RECONNECT.getMarker(), "call dataSource.enableBackgroundCompaction()");
             dataSource.enableBackgroundCompaction();
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during learner reconnect";
@@ -1576,6 +1580,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final var message = "VirtualMap@" + getRoute() + " interrupted while ending learner reconnect";
             throw new MerkleSynchronizationException(message, e);
         }
+        logger.info(RECONNECT.getMarker(), "endLearnerReconnect() complete");
     }
 
     /**

@@ -276,5 +276,7 @@ public class LearnerPushTask<T> {
         } finally {
             completeListener.accept(success);
         }
+
+        logger.info(RECONNECT.getMarker(), "learner thread closed input, output, and view for the current subtree");
     }
 }
