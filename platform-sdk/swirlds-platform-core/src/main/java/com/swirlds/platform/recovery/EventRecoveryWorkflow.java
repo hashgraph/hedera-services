@@ -24,7 +24,6 @@ import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -43,6 +42,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -51,8 +51,8 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -182,7 +182,7 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             // Make one more copy to force the state in recoveredState to be immutable.
-            final State mutableStateCopy =
+            final MerkleRoot mutableStateCopy =
                     recoveredState.state().get().getState().copy();
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
@@ -374,9 +374,9 @@ public final class EventRecoveryWorkflow {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         previousState.get().getState().throwIfImmutable();
-        final State newState = previousState.get().getState().copy();
+        final MerkleRoot newState = previousState.get().getState().copy();
         final EventImpl lastEvent = (EventImpl) getLastEvent(round);
-        CryptographyHolder.get().digestSync(lastEvent.getBaseEvent().getHashedData());
+        new StatefulEventHasher().hashEvent(lastEvent.getBaseEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 

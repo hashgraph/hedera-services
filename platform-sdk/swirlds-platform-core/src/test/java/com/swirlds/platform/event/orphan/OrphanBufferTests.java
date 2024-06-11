@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -34,8 +34,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,6 +42,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -175,10 +174,8 @@ class OrphanBufferTests {
             @NonNull final GossipEvent event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
-        assertTrue(eventEmittedOrAncient(event.getHashedData().getSelfParent(), eventWindow, emittedEvents));
-
-        for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
-            assertTrue(eventEmittedOrAncient(otherParent, eventWindow, emittedEvents));
+        for (final EventDescriptor parent : event.getAllParents()) {
+            assertTrue(eventEmittedOrAncient(parent, eventWindow, emittedEvents));
         }
     }
 
@@ -270,7 +267,7 @@ class OrphanBufferTests {
 
             for (final GossipEvent unorphanedEvent : unorphanedEvents) {
                 assertValidParents(unorphanedEvent, eventWindow, emittedEvents);
-                emittedEvents.add(unorphanedEvent.getHashedData().getHash());
+                emittedEvents.add(unorphanedEvent.getHash());
             }
         }
 
@@ -281,31 +278,32 @@ class OrphanBufferTests {
     }
 
     @Test
-    @DisplayName("Test Parent Iterator")
+    @DisplayName("Test All Parents Iterator")
     void testParentIterator() {
-        final GossipEvent event = mock(GossipEvent.class);
+        final Random random = Randotron.create();
 
-        final EventDescriptor selfParent =
-                new EventDescriptor(new Hash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent1 =
-                new EventDescriptor(new Hash(), new NodeId(1), 1, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent2 =
-                new EventDescriptor(new Hash(), new NodeId(2), 2, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent3 =
-                new EventDescriptor(new Hash(), new NodeId(3), 3, EventConstants.BIRTH_ROUND_UNDEFINED);
+        final GossipEvent selfParent =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(0)).build();
+        final GossipEvent otherParent1 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
+        final GossipEvent otherParent2 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
+        final GossipEvent otherParent3 =
+                new TestingEventBuilder(random).setCreatorId(new NodeId(3)).build();
+
+        final GossipEvent event = new TestingEventBuilder(random)
+                .setSelfParent(selfParent)
+                .setOtherParents(List.of(otherParent1, otherParent2, otherParent3))
+                .build();
+
         final List<EventDescriptor> otherParents = new ArrayList<>();
-        otherParents.add(otherParent1);
-        otherParents.add(otherParent2);
-        otherParents.add(otherParent3);
+        otherParents.add(otherParent1.getDescriptor());
+        otherParents.add(otherParent2.getDescriptor());
+        otherParents.add(otherParent3.getDescriptor());
 
-        final BaseEventHashedData eventBase = mock(BaseEventHashedData.class);
-        when(eventBase.getSelfParent()).thenReturn(selfParent);
-        when(eventBase.getOtherParents()).thenReturn(otherParents);
-        when(event.getHashedData()).thenReturn(eventBase);
+        final Iterator<EventDescriptor> iterator = event.getAllParents().iterator();
 
-        final ParentIterator iterator = new ParentIterator(event);
-
-        assertEquals(selfParent, iterator.next(), "The first parent should be the self parent");
+        assertEquals(selfParent.getDescriptor(), iterator.next(), "The first parent should be the self parent");
         int index = 0;
         while (iterator.hasNext()) {
             assertEquals(otherParents.get(index++), iterator.next(), "The next parent should be the next other parent");

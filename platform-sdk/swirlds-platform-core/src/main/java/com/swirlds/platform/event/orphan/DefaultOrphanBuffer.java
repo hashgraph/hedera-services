@@ -33,7 +33,6 @@ import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -201,9 +200,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     private List<EventDescriptor> getMissingParents(@NonNull final GossipEvent event) {
         final List<EventDescriptor> missingParents = new ArrayList<>();
 
-        final Iterator<EventDescriptor> parentIterator = new ParentIterator(event);
-        while (parentIterator.hasNext()) {
-            final EventDescriptor parent = parentIterator.next();
+        for (final EventDescriptor parent : event.getAllParents()) {
             if (!eventsWithParents.contains(parent) && !eventWindow.isAncient(parent)) {
                 missingParents.add(parent);
             }

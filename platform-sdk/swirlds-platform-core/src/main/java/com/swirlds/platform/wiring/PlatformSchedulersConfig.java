@@ -127,7 +127,7 @@ public record PlatformSchedulersConfig(
                 TaskSchedulerConfiguration gossip,
         @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration eventHasher,
-        @ConfigProperty(defaultValue = "CONCURRENT CAPACITY(-1) UNHANDLED_TASK_METRIC")
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(-1) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration postHashCollector,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(500) FLUSHABLE UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration branchDetector,

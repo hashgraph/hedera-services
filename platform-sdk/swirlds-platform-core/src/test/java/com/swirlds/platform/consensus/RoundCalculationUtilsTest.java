@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -69,7 +70,7 @@ class RoundCalculationUtilsTest {
         final Map<Long, Long> map =
                 LongStream.range(1, 50).collect(HashMap::new, (m, l) -> m.put(l, l * 10), HashMap::putAll);
         final SignedState signedState = Mockito.mock(SignedState.class);
-        final State state = Mockito.mock(State.class);
+        final MerkleRoot state = Mockito.mock(State.class);
         final PlatformState platformState = Mockito.mock(PlatformState.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);

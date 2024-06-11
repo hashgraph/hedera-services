@@ -51,11 +51,11 @@ public class AddressBookTestBase {
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
     protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
-    protected final AccountID invalidId =
-            AccountID.newBuilder().accountNum(Long.MAX_VALUE).build();
     protected final byte[] grpcCertificateHash = "grpcCertificateHash".getBytes();
     protected final byte[] gossipCaCertificate = "gossipCaCertificate".getBytes();
-    protected final EntityNumber nodeId = EntityNumber.newBuilder().number(1L).build();
+    protected final long WELL_KNOWN_NODE_ID = 1L;
+    protected final EntityNumber nodeId =
+            EntityNumber.newBuilder().number(WELL_KNOWN_NODE_ID).build();
     protected final EntityNumber nodeId2 = EntityNumber.newBuilder().number(3L).build();
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
@@ -79,6 +79,9 @@ public class AddressBookTestBase {
     protected final ServiceEndpoint endpoint5 = new ServiceEndpoint(Bytes.EMPTY, 2345, null);
 
     protected final ServiceEndpoint endpoint6 = new ServiceEndpoint(Bytes.EMPTY, 0, null);
+    protected final ServiceEndpoint endpoint7 = new ServiceEndpoint(null, 123, null);
+
+    protected final ServiceEndpoint endpoint8 = new ServiceEndpoint(Bytes.wrap("345.0.0.1"), 1234, null);
 
     protected Node node;
 
@@ -106,6 +109,16 @@ public class AddressBookTestBase {
     protected void refreshStoresWithCurrentNodeInReadable() {
         readableNodeState = readableNodeState();
         writableNodeState = emptyWritableNodeState();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
+        readableStore = new ReadableNodeStoreImpl(readableStates);
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+    }
+
+    protected void refreshStoresWithCurrentNodeInBothReadableAndWritable() {
+        readableNodeState = readableNodeState();
+        writableNodeState = writableNodeStateWithOneKey();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         readableStore = new ReadableNodeStoreImpl(readableStates);
@@ -160,6 +173,10 @@ public class AddressBookTestBase {
     }
 
     protected void givenValidNode() {
+        givenValidNode(false);
+    }
+
+    protected void givenValidNode(boolean deleted) {
         node = new Node(
                 nodeId.number(),
                 accountId,
@@ -169,7 +186,7 @@ public class AddressBookTestBase {
                 Bytes.wrap(gossipCaCertificate),
                 Bytes.wrap(grpcCertificateHash),
                 0,
-                false);
+                deleted);
     }
 
     protected Node createNode() {
