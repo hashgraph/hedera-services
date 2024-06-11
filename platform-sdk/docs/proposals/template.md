@@ -1,14 +1,20 @@
+Title Goes Here
+===============
+
+---
+
 # Summary
 
 Give a 1-3 sentence summary of the capability in the design proposal.
 
 | Metadata           | Entities                            | 
 |--------------------|-------------------------------------|
-| Last Updated       | 2024-06-07  (Edward)                |
 | Designers          | John, Mary, alpha-team              |
 | Functional Impacts | Services, DevOps, Mirror Node, etc. |
 | Related Proposals  | Proposal-1, Proposal-2              |
 | HIPS               | HIP-1, HIP-2,                       |
+
+---
 
 # Purpose and Context
 
@@ -22,17 +28,44 @@ What does the proposal enable once it is completed?
 
 Remove this section if not applicable.
 
-# Requirements
+## Requirements
 
 Describe the requirements and acceptance criteria that the design proposal must satisfy.
 
-# Design Decisions
+## Design Decisions
 
-Describe the high level options available, the trade-offs between them and the decisions made.
+Describe the decisions made and the reasons why.
+
+### Alternatives Considered
+
+Describe any alternatives considered and why they were not chosen.
+
+If possible, provide a table illustrating the options, evaluation criteria, and scores that factored into the decision.
+
+
+---
+
+# Changes
+
+## Architecture and/or Components
+
+Describe any new or modified components or architectural changes. This includes thread management changes, state
+changes, disk I/O changes, platform wiring changes, etc. Include diagrams of architecture changes.
 
 Remove this section if not applicable.
 
-# Changes
+## Module Organization and Repositories
+
+Describe any new or modified modules or repositories.
+
+Remove this section if not applicable.
+
+## Core Behaviors
+
+Describe any new or modified behavior. What are the new or modified algorithms and protocols? Include any diagrams that
+help explain the behavior.
+
+Remove this section if not applicable.
 
 ## Public API
 
@@ -54,20 +87,6 @@ Describe any new or modified configuration.
 
 Remove this section if not applicable.
 
-## Core Behaviors
-
-Describe any new or modified behavior. What are the new or modified algorithms and protocols? Include any diagrams that
-help explain the behavior.
-
-Remove this section if not applicable.
-
-## Components and Architecture
-
-Describe any new or modified components or architectural changes. This includes thread management changes, state
-changes, disk I/O changes, platform wiring changes, etc. Include diagrams of architecture changes.
-
-Remove this section if not applicable.
-
 ## Metrics
 
 Are there new metrics? Are the computation of existing metrics changing? Are there expected observable metric impacts
@@ -81,11 +100,7 @@ Describe any expected performance impacts. This section is mandatory for platfor
 
 Remove this section if not applicable.
 
-## Modules and Repos
-
-Describe any new or modified modules or repositories.
-
-Remove this section if not applicable.
+---
 
 # Test Plan
 
