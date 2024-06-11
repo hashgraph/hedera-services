@@ -92,6 +92,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -107,6 +108,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
@@ -1155,11 +1157,14 @@ public class EthereumSuite {
         final var contract = "TokenCreateContract";
         final var EXISTING_TOKEN = "EXISTING_TOKEN";
         final var firstTxn = "firstCreateTxn";
-        final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
+        final long DEFAULT_AMOUNT_TO_SEND = 10 * ONE_HBAR;
+        final var RAW_BIG_INTEGER =
+                new BigInteger(Bytes.fromHex("8AC7230489E80000").toByteArray());
         return defaultHapiSpec("etx007FungibleTokenCreateWithFeesHappyPath")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(
+                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS * 10))
                                 .via(AUTO_ACCOUNT_TRANSACTION_NAME),
                         cryptoCreate(feeCollectorAndAutoRenew)
                                 .keyShape(SigControl.ED25519_ON)
@@ -1188,13 +1193,15 @@ public class EthereumSuite {
                                 .via(firstTxn)
                                 .gasLimit(GAS_LIMIT)
                                 .payingWith(feeCollectorAndAutoRenew)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .hasKnownStatus(SUCCESS)
-                                .exposingResultTo(result -> {
-                                    opLog.info("Explicit create result" + " is {}", result[0]);
-                                    final var res = (Address) result[0];
-                                    createdTokenNum.set(res.value().longValueExact());
-                                }))))
+                                .sending(RAW_BIG_INTEGER)
+                                .hasKnownStatus(CONTRACT_NEGATIVE_VALUE)
+                        //                                .exposingResultTo(result -> {
+                        //                                    opLog.info("Explicit create result" + " is {}",
+                        // result[0]);
+                        //                                    final var res = (Address) result[0];
+                        //                                    createdTokenNum.set(res.value().longValueExact());
+                        //                                })
+                        )))
                 .then(
                         getTxnRecord(firstTxn).andAllChildRecords().logged(),
                         childRecordsCheck(

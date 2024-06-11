@@ -219,6 +219,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         return this;
     }
 
+    public HapiEthereumCall sending(BigInteger amount) {
+        valueSent = Optional.of(amount);
+        return this;
+    }
+
     public HapiEthereumCall maxGasAllowance(long maxGasAllowance) {
         this.maxGasAllowance = Optional.of(maxGasAllowance);
         return this;
