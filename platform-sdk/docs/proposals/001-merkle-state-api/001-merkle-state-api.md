@@ -18,7 +18,7 @@ Therefore, the number of hashes in the state proof will be minimized.
 
 ## Requirements
 
-- `PlatformState` to a singleton object as defined by the State API.
+- `PlatformState` should be refactored to a singleton object as defined by the State API.
 - the Merkle tree should be reshaped so that `MerkleHederaState` becomes the root of the tree and `PlatformState` becomes its child.
 - there should be a new module - `swirlds-state-api` - to host a set of interfaces, records, and abstract classes that represent the Hedera state.
   This module should have a minimal set of dependencies. Ideally, the Block Node should not have a compile-time dependency
@@ -42,8 +42,6 @@ Note that the `swirlds-state-api` is already created and has a set of classes by
 There is one more change that can be relevant in the context of public APIs. This is the proposed change to the Merkle tree structure.
 
 ![new-merkle-tree-structure.png](assets/new-merkle-tree-structure.png)
-
-``
 
 ## Components and Architecture
 
