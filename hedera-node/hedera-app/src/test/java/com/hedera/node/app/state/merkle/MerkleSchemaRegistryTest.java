@@ -97,14 +97,6 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("A null genesisRecordsBuilder throws")
-        void nullGenesisRecordsBuilderThrows() {
-            //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, new SchemaApplications()))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
         @DisplayName("A null schemaUseAnalysis throws")
         void nullSchemaUseAnalysisBuilderThrows() {
             //noinspection ConstantConditions

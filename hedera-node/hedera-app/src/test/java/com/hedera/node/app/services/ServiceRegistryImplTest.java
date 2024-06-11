@@ -51,7 +51,7 @@ final class ServicesRegistryImplTest {
     @Test
     void nullGenesisRecordsThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(cr)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

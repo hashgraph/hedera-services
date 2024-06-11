@@ -119,23 +119,23 @@ public class GenesisRecordsConsensusHook {
         }
     }
 
-    public void systemAccounts(@NonNull final SortedSet<Account> accounts) {
+    private void systemAccounts(@NonNull final SortedSet<Account> accounts) {
         requireNonNull(systemAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    public void stakingAccounts(@NonNull final SortedSet<Account> accounts) {
+    private void stakingAccounts(@NonNull final SortedSet<Account> accounts) {
         requireNonNull(stakingAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    public void miscAccounts(@NonNull final SortedSet<Account> accounts) {
+    private void miscAccounts(@NonNull final SortedSet<Account> accounts) {
         requireNonNull(miscAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    public void treasuryClones(@NonNull final SortedSet<Account> accounts) {
+    private void treasuryClones(@NonNull final SortedSet<Account> accounts) {
         requireNonNull(treasuryClones, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
-    public void blocklistAccounts(@NonNull final SortedSet<Account> accounts) {
+    private void blocklistAccounts(@NonNull final SortedSet<Account> accounts) {
         requireNonNull(blocklistAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 

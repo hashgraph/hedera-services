@@ -64,7 +64,10 @@ module com.hedera.node.test.clients {
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
+    requires com.swirlds.metrics.api;
+    requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.platform.core;
+    requires com.swirlds.state.api;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;

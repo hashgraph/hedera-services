@@ -63,7 +63,7 @@ class SchemaApplicationsTest {
     @Test
     void genesisUseWithCreatedStatesIsStateDefsAndMigrateIfNotCurrent() {
         given(schema.getVersion()).willReturn(PRECEDING_VERSION);
-        given(schema.statesToCreate()).willReturn(Set.of(STATE_DEFINITION));
+        given(schema.statesToCreate(config)).willReturn(Set.of(STATE_DEFINITION));
         assertThat(subject.computeApplications(null, LATEST_VERSION, schema, config))
                 .containsExactly(STATE_DEFINITIONS, MIGRATION);
     }
