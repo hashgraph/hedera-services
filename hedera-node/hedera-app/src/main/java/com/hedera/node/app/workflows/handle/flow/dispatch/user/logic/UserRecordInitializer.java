@@ -21,7 +21,6 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

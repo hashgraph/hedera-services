@@ -24,11 +24,10 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A class that manages the pre-handle result for a transaction.
