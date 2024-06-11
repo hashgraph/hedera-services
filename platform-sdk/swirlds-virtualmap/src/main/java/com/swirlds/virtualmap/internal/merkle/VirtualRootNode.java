@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VRNODE_CACHE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VRNODE_CACHE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
@@ -39,9 +41,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.ExternalSelfSerializable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -88,9 +95,14 @@ import com.swirlds.virtualmap.internal.reconnect.TwoPhasePessimisticTraversalOrd
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -99,6 +111,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -207,6 +220,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     private VirtualDataSource<K, V> dataSource;
 
+    // Only used during deserialization construction
+    private Function<ReadableSequentialData, K> keyReader;
+    private Function<ReadableSequentialData, V> valueReader;
+
     /**
      * A cache for virtual tree nodes. This cache is very specific for this use case. The elements
      * in the cache are those nodes that were modified by this root node, or any copy of this node, that have
@@ -270,7 +287,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush,
      * the threshold is not taken into consideration.
      *
-     * By default, the threshold is set to {@link VirtualMapConfig#copyFlushThreshold()}. The
+     * <p>By default, the threshold is set to {@link VirtualMapConfig#copyFlushThreshold()}. The
      * threshold is inherited by all copies.
      */
     private final AtomicLong flushThreshold = new AtomicLong();
@@ -393,6 +410,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
 
         // All other fields are initialized in postInit()
+    }
+
+    public VirtualRootNode(
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir,
+            final VirtualMapState state,
+            final @NonNull VirtualDataSourceBuilder<K, V> dataSourceBuilder,
+            final @NonNull Function<ReadableSequentialData, K> keyReader,
+            final @NonNull Function<ReadableSequentialData, V> valueReader)
+            throws MerkleSerializationException {
+        this(dataSourceBuilder);
+        this.dataSource = dataSourceBuilder.restore(state.getLabel(), artifactsDir);
+        this.keyReader = Objects.requireNonNull(keyReader);
+        this.valueReader = Objects.requireNonNull(valueReader);
+        protoDeserialize(in, artifactsDir);
     }
 
     /**
@@ -1206,11 +1238,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
-        final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, outputDirectory);
-        assert detachedRecords.getDataSource() == null : "No data source should be created.";
-        out.writeNormalisedString(state.getLabel());
-        out.writeSerializable(dataSourceBuilder, true);
-        out.writeSerializable(detachedRecords.getCache(), true);
+        throw new UnsupportedOperationException("This method should no longer be used");
     }
 
     /**
@@ -1223,6 +1251,74 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         dataSourceBuilder = in.readSerializable();
         dataSource = dataSourceBuilder.restore(label, inputDirectory);
         cache = in.readSerializable();
+    }
+
+    // Protobuf serialization
+
+    @Override
+    protected int getProtoChildSizeInBytes(final int index) {
+        // Virtual nodes are never serialized
+        return 0;
+    }
+
+    @Override
+    protected int getProtoSelfSizeInBytes() {
+        int size = 0;
+        // Cache
+        size += ProtoWriterTools.sizeOfDelimited(FIELD_VRNODE_CACHE, cache.getProtoSizeInBytes());
+        return size;
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir) {
+        throw new UnsupportedOperationException("Virtual nodes must never be deserialized");
+    }
+
+    @Override
+    protected boolean protoDeserializeField(
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir,
+            int fieldTag)
+            throws MerkleSerializationException {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) {
+            return true;
+        }
+        final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        if (fieldNum == NUM_VRNODE_CACHE) {
+            cache = new VirtualNodeCache<>(in, keyReader, valueReader);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void protoSerializeChild(
+            final WritableSequentialData out,
+            final Path artifactsDir,
+            final int index) {
+        // No-op: virtual nodes are never serialized
+    }
+
+    @Override
+    public void protoSerializeSelf(final WritableSequentialData out, final Path artifactsDir)
+            throws MerkleSerializationException {
+        // Data source snapshot
+        final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, artifactsDir);
+        assert detachedRecords.getDataSource() == null : "No data source should be created.";
+        // Node cache
+        final AtomicReference<MerkleSerializationException> ex = new AtomicReference<>();
+        ProtoWriterTools.writeDelimited(out, FIELD_VRNODE_CACHE, cache.getProtoSizeInBytes(), o -> {
+            try {
+                cache.protoSerialize(o);
+            } catch (final MerkleSerializationException e) {
+                ex.set(e);
+            }
+        });
+        if (ex.get() != null) {
+            throw ex.get();
+        }
     }
 
     /*

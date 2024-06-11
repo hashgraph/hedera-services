@@ -16,8 +16,11 @@
 
 package com.swirlds.common.merkle.impl;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.internal.AbstractMerkleNode;
+import java.nio.file.Path;
 
 /**
  * This abstract implements boilerplate functionality for a {@link MerkleLeaf}. Classes that implement
@@ -41,6 +44,11 @@ public non-sealed class PartialMerkleLeaf extends AbstractMerkleNode {
      */
     protected PartialMerkleLeaf(final PartialMerkleLeaf that) {
         super(that);
+    }
+
+    protected PartialMerkleLeaf(final ReadableSequentialData in, final Path artifactsDir)
+            throws MerkleSerializationException {
+        super(in, artifactsDir);
     }
 
     /**

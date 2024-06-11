@@ -69,120 +69,136 @@ public class VirtualMapFactory {
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> newVirtualizedBlobs() {
         final VirtualDataSourceBuilder<VirtualBlobKey, VirtualBlobValue> dsBuilder;
+        final var keySerializer = new VirtualBlobKeySerializer();
+        final var valueSerializer = new VirtualBlobValueSerializer();
         final MerkleDbTableConfig<VirtualBlobKey, VirtualBlobValue> tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new VirtualBlobKeySerializer(),
+                keySerializer,
                 CURRENT_SERIALIZATION_VERSION,
-                new VirtualBlobValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(MAX_BLOBS);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(BLOBS_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<ContractKey, IterableContractValue> newVirtualizedIterableStorage() {
         final VirtualDataSourceBuilder<ContractKey, IterableContractValue> dsBuilder;
+        final var keySerializer = new ContractKeySerializer();
+        final var valueSerialzer = new IterableContractValueSerializer();
         final MerkleDbTableConfig<ContractKey, IterableContractValue> tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new ContractKeySerializer(),
+                keySerializer,
                 CURRENT_SERIALIZATION_VERSION,
-                new IterableContractValueSerializer());
+                valueSerialzer);
         tableConfig.maxNumberOfKeys(MAX_STORAGE_ENTRIES);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerialzer, tableConfig);
         return new VirtualMap<>(ITERABLE_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> newScheduleListStorage() {
+        final var keySerializer = new EntityNumVirtualKeySerializer();
+        final var valueSerializer = new ScheduleVirtualValueSerializer();
         final var tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new EntityNumVirtualKeySerializer(),
+                keySerializer,
                 CURRENT_SERIALIZATION_VERSION,
-                new ScheduleVirtualValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(MAX_SCHEDULES);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         final MerkleDbDataSourceBuilder<EntityNumVirtualKey, ScheduleVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+                new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(SCHEDULE_LIST_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> newScheduleTemporalStorage() {
+        final var keySerializer = new SecondSinceEpocVirtualKeySerializer();
+        final var valueSerializer = new ScheduleSecondVirtualValueSerializer();
         final var tableConfig = new MerkleDbTableConfig<>(
                         CURRENT_SERIALIZATION_VERSION,
                         DigestType.SHA_384,
                         CURRENT_SERIALIZATION_VERSION,
-                        new SecondSinceEpocVirtualKeySerializer(),
+                        keySerializer,
                         CURRENT_SERIALIZATION_VERSION,
-                        new ScheduleSecondVirtualValueSerializer())
+                        valueSerializer)
                 .maxNumberOfKeys(MAX_SCHEDULE_SECONDS)
                 .preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-        final var dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        final var dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(SCHEDULE_TEMPORAL_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> newScheduleEqualityStorage() {
+        final var keySerializer = new ScheduleEqualityVirtualKeySerializer();
+        final var valueSerializer = new ScheduleEqualityVirtualValueSerializer();
         final var tableConfig = new MerkleDbTableConfig<>(
                         CURRENT_SERIALIZATION_VERSION,
                         DigestType.SHA_384,
                         CURRENT_SERIALIZATION_VERSION,
-                        new ScheduleEqualityVirtualKeySerializer(),
+                        keySerializer,
                         CURRENT_SERIALIZATION_VERSION,
-                        new ScheduleEqualityVirtualValueSerializer())
+                        valueSerializer)
                 .maxNumberOfKeys(MAX_SCHEDULES)
                 .preferDiskIndices(PREFER_DISK_BASED_INDICIES);
         final MerkleDbDataSourceBuilder<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+                new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(SCHEDULE_EQUALITY_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskAccount> newOnDiskAccountStorage() {
+        final var keySerializer = new EntityNumVirtualKeySerializer();
+        final var valueSerializer = new OnDiskAccountValueSerializer();
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskAccount> dsBuilder;
         final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskAccount> tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new EntityNumVirtualKeySerializer(),
+                keySerializer,
                 CURRENT_SERIALIZATION_VERSION,
-                new OnDiskAccountValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(MAX_ACCOUNTS);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(ON_DISK_ACCOUNT_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> newOnDiskTokenRels() {
+        final var keySerializer = new EntityNumVirtualKeySerializer();
+        final var valueSerializer = new OnDiskTokenRelValueSerializer();
         final VirtualDataSourceBuilder<EntityNumVirtualKey, OnDiskTokenRel> dsBuilder;
         final MerkleDbTableConfig<EntityNumVirtualKey, OnDiskTokenRel> tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new EntityNumVirtualKeySerializer(),
+                keySerializer,
                 CURRENT_SERIALIZATION_VERSION,
-                new OnDiskTokenRelValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(MAX_TOKEN_RELS);
         tableConfig.preferDiskIndices(PREFER_DISK_BASED_INDICIES);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(ON_DISK_TOKEN_RELS_STORAGE_VM_NAME, dsBuilder);
     }
 
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
+        final var keySerializer = new UniqueTokenKeySerializer();
+        final var valueSerializer = new UniqueTokenValueSerializer();
         final VirtualDataSourceBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder;
         final MerkleDbTableConfig<UniqueTokenKey, UniqueTokenValue> tableConfig = new MerkleDbTableConfig<>(
                 CURRENT_SERIALIZATION_VERSION,
                 DigestType.SHA_384,
                 CURRENT_SERIALIZATION_VERSION,
-                new UniqueTokenKeySerializer(),
+                keySerializer,
                 CURRENT_SERIALIZATION_VERSION,
-                new UniqueTokenValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(MAX_MINTABLE_NFTS);
         tableConfig.preferDiskIndices(false);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(UNIQUE_TOKENS_VM_NAME, dsBuilder);
     }
 }

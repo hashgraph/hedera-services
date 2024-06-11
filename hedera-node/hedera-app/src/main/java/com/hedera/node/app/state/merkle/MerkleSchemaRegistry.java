@@ -40,6 +40,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
@@ -235,26 +237,24 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                 return map;
                             });
                         } else {
-
+                            final MerkleDbConfig merkleDbConfig = config.getConfigData(MerkleDbConfig.class);
                             hederaState.putServiceStateIfAbsent(md, () -> {
-                                // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
-                                // PREFER_DISK_BASED_INDICES = false
+                                final var keySerializer = new OnDiskKeySerializer<>(
+                                        md.onDiskKeySerializerClassId(),
+                                        md.onDiskKeyClassId(),
+                                        md.stateDefinition().keyCodec());
+                                final var valueSerializer = new OnDiskValueSerializer<>(
+                                        md.onDiskValueSerializerClassId(),
+                                        md.onDiskValueClassId(),
+                                        md.stateDefinition().valueCodec());
                                 final var tableConfig = new MerkleDbTableConfig<>(
-                                                (short) 1,
-                                                DigestType.SHA_384,
-                                                (short) 1,
-                                                new OnDiskKeySerializer<>(
-                                                        md.onDiskKeySerializerClassId(),
-                                                        md.onDiskKeyClassId(),
-                                                        md.stateDefinition().keyCodec()),
-                                                (short) 1,
-                                                new OnDiskValueSerializer<>(
-                                                        md.onDiskValueSerializerClassId(),
-                                                        md.onDiskValueClassId(),
-                                                        md.stateDefinition().valueCodec()))
-                                        .maxNumberOfKeys(def.maxKeysHint());
+                                        DigestType.SHA_384,
+                                        def.maxKeysHint(),
+                                        merkleDbConfig.hashesRamToDiskThreshold(),
+                                        false);
                                 final var label = StateUtils.computeLabel(serviceName, stateKey);
-                                final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+                                final var dsBuilder =
+                                        new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
                                 final var virtualMap = new VirtualMap<>(label, dsBuilder);
                                 virtualMap.registerMetrics(metrics);
                                 return virtualMap;

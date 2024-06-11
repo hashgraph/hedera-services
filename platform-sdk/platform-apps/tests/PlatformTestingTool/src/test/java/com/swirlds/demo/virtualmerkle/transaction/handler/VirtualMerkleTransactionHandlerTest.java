@@ -55,7 +55,7 @@ public class VirtualMerkleTransactionHandlerTest {
                 .hashesRamToDiskThreshold(0)
                 .preferDiskIndices(false);
         final MerkleDbDataSourceBuilder<SmartContractMapKey, SmartContractMapValue> dataSourceBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
 
         smartContract = new VirtualMap<>("smartContracts", dataSourceBuilder);
 
@@ -72,7 +72,7 @@ public class VirtualMerkleTransactionHandlerTest {
                         .hashesRamToDiskThreshold(0)
                         .preferDiskIndices(false);
         final MerkleDbDataSourceBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> dataSourceBuilder2 =
-                new MerkleDbDataSourceBuilder<>(tableConfig2);
+                new MerkleDbDataSourceBuilder<>(keySerializer2, valueSerializer2, tableConfig2);
 
         smartContractByteCodeVM = new VirtualMap<>("smartContractByteCode", dataSourceBuilder2);
     }

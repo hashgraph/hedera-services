@@ -63,8 +63,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     static final FieldDefinition FIELD_LEAFRECORD_VALUE =
             new FieldDefinition("value", FieldType.BYTES, false, true, false, 3);
 
-    private final long currentVersion;
-
     private final KeySerializer<K> keySerializer;
 
     private final ValueSerializer<V> valueSerializer;
@@ -75,8 +73,6 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     private final int hashSize;
 
     public VirtualLeafRecordSerializer(MerkleDbTableConfig<K, V> tableConfig) {
-        currentVersion = ((0x000000000000FFFFL & tableConfig.getKeyVersion()) << 16)
-                | ((0x000000000000FFFFL & tableConfig.getValueVersion()) << 32);
         keySerializer = tableConfig.getKeySerializer();
         valueSerializer = tableConfig.getValueSerializer();
         final boolean variableSize = keySerializer.isVariableSize() || valueSerializer.isVariableSize();
@@ -91,7 +87,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     @Override
     public long getCurrentDataVersion() {
-        return currentVersion;
+        return 1;
     }
 
     @Override

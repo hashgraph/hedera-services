@@ -16,17 +16,25 @@
 
 package com.swirlds.common.merkle;
 
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.ExternalSelfSerializable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
+import com.swirlds.common.merkle.proto.ProtoSerializableNode;
 import java.io.IOException;
 import java.nio.file.Path;
 
 /**
  * A Merkle Leaf has only data and does not have children.
  */
-public interface MerkleLeaf extends MerkleNode, SerializableHashable, ExternalSelfSerializable {
+public interface MerkleLeaf
+        extends MerkleNode,
+                ProtoSerializable,
+                SerializableHashable,
+                ExternalSelfSerializable {
 
     /**
      * {@inheritDoc}
@@ -51,5 +59,12 @@ public interface MerkleLeaf extends MerkleNode, SerializableHashable, ExternalSe
             throws IOException {
         // Default implementation ignores the provided directory. Override this method to utilize the directory.
         deserialize(in, version);
+    }
+
+    @Override
+    default void protoSerialize(final WritableSequentialData out, final Path artifactsDir)
+            throws MerkleSerializationException {
+        // Default implementation ignores the provided directory. Override this method to utilize the directory.
+        protoSerialize(out);
     }
 }

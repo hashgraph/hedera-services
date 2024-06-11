@@ -17,17 +17,31 @@
 package com.swirlds.common.merkle.impl.internal;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_NODE_CHILD;
 
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.exceptions.IllegalChildTypeException;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.interfaces.MerkleParent;
+import com.swirlds.common.merkle.proto.MerkleNodeProtoFields;
+import com.swirlds.common.merkle.proto.MerkleProtoUtils;
+import com.swirlds.common.merkle.proto.ProtoSerializableNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.common.utility.ValueReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * This abstract class implements boiler plate functionality for a binary {@link MerkleInternal} (i.e. an internal
@@ -35,7 +49,8 @@ import java.util.List;
  * abstract class such as this or {@link PartialNaryMerkleInternal}, but absent a reason it is recommended to do so
  * in order to avoid re-implementation of this code.
  */
-public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode implements MerkleParent
+public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
+        implements MerkleParent, ProtoSerializableNode
         permits PartialBinaryMerkleInternal, PartialNaryMerkleInternal {
 
     /**
@@ -44,18 +59,23 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode i
     protected AbstractMerkleInternal() {}
 
     /**
+     * Copy constructor. Initializes internal variables and copies the route. Does not copy children or other metadata.
+     */
+    protected AbstractMerkleInternal(final AbstractMerkleInternal that) {
+        super(that);
+    }
+
+    protected AbstractMerkleInternal(final @NonNull ReadableSequentialData in, final Path artifactsDir)
+            throws MerkleSerializationException {
+        super(in, artifactsDir);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public boolean isLeaf() {
         return false;
-    }
-
-    /**
-     * Copy constructor. Initializes internal variables and copies the route. Does not copy children or other metadata.
-     */
-    protected AbstractMerkleInternal(final AbstractMerkleInternal that) {
-        super(that);
     }
 
     /**
@@ -270,4 +290,123 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode i
             }
         }
     }
+
+    // Protobuf serialization
+
+    @Override
+    public int getProtoSizeInBytes() {
+        int size = 0;
+        // Hash
+        size += MerkleProtoUtils.getHashSizeInBytes(getHash());
+        // Children
+        for (int i = 0; i < getNumberOfChildren(); i++) {
+            size += getProtoChildSizeInBytes(i);
+        }
+        // Own data
+        size += getProtoSelfSizeInBytes();
+        return size;
+    }
+
+    protected int getProtoChildSizeInBytes(final int index) {
+        final MerkleNode child = getChild(index);
+        if (child != null) {
+            final int childSize = child.getProtoSizeInBytes();
+            if (childSize != 0) {
+                return ProtoWriterTools.sizeOfDelimited(FIELD_NODE_CHILD, childSize);
+            }
+        }
+        return 0;
+    }
+
+    protected int getProtoSelfSizeInBytes() {
+        // Must be in sync with protoSerializeSelf()
+        return 0;
+    }
+
+    @Override
+    protected boolean protoDeserializeField(
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir,
+            final int fieldTag)
+            throws MerkleSerializationException {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) {
+            return true;
+        }
+        final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        if (fieldNum == MerkleNodeProtoFields.NUM_NODE_CHILD) {
+            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+            final int length = in.readVarInt(false);
+            final long oldLimit = in.limit();
+            try {
+                in.limit(in.position() + length);
+                final MerkleNode child = protoDeserializeNextChild(in, artifactsDir);
+                if (child == null) {
+                    throw new MerkleSerializationException("Unknown child node: " + fieldTag);
+                }
+                // Assuming this method is called in the same order as children are in the stream
+                setChild(getNumberOfChildren(), child);
+            } finally {
+                in.limit(oldLimit);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // TODO: current assumption is internals can't have null child nodes
+    protected MerkleNode protoDeserializeNextChild(
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        throw new UnsupportedOperationException("TO IMPLEMENT: " + getClass().getName() + ".protoDeserializeNextChild()");
+    }
+
+    @Override
+    public void protoSerialize(final @NonNull WritableSequentialData out, final Path artifactsDir)
+            throws MerkleSerializationException {
+        final long startPos = out.position();
+        // Node hash
+        MerkleProtoUtils.protoWriteHash(out, getHash());
+        // Children
+        for (int i = 0; i < getNumberOfChildren(); i++) {
+            protoSerializeChild(out, artifactsDir, i);
+        }
+        // Own data
+        protoSerializeSelf(out, artifactsDir);
+        assert out.position() == startPos + getProtoSizeInBytes();
+    }
+
+    protected void protoSerializeChild(
+            final @NonNull WritableSequentialData out,
+            final Path artifactsDir,
+            final int index)
+            throws MerkleSerializationException {
+        final MerkleNode child = getChild(index);
+        if (child == null) {
+            throw new MerkleSerializationException("Cannot serialize internal node, child is null");
+        }
+        final int childSize = child.getProtoSizeInBytes();
+        if (childSize != 0) {
+            final ValueReference<MerkleSerializationException> error = new ValueReference<>();
+            // TODO: improve writeDelimited() to throw a checked exception
+            ProtoWriterTools.writeDelimited(out, FIELD_NODE_CHILD, child.getProtoSizeInBytes(),
+                    w -> {
+                        try {
+                            child.protoSerialize(w, artifactsDir);
+                        } catch (final MerkleSerializationException e) {
+                            error.setValue(e);
+                        }
+                    });
+            final MerkleSerializationException e = error.getValue();
+            if (e != null) {
+                throw e;
+            }
+        }
+    }
+
+    protected void protoSerializeSelf(final @NonNull WritableSequentialData out, final Path artifactsDir)
+            throws MerkleSerializationException {
+        // No op by default. Must be in sync with getProtoSelfSizeInBytes()
+    }
+
 }

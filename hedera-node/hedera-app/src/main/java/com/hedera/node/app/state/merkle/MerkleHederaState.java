@@ -22,8 +22,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -66,6 +68,7 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -179,6 +182,23 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
         this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
+    }
+
+    public MerkleHederaState(
+            final @NonNull HederaLifecycles lifecycles,
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        this(lifecycles);
+        protoDeserialize(in, artifactsDir);
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(
+            final @NonNull ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        return super.protoDeserializeNextChild(in, artifactsDir);
     }
 
     /**

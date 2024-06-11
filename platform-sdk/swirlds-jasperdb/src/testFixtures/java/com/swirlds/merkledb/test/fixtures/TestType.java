@@ -223,13 +223,7 @@ public enum TestType {
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
             final MerkleDbTableConfig<? extends VirtualLongKey, ? extends ExampleByteArrayVirtualValue> tableConfig =
-                    new MerkleDbTableConfig<>(
-                                    (short) 1, DigestType.SHA_384,
-                                    (short) keySerializer.getCurrentDataVersion(), keySerializer,
-                                    (short) valueSerializer.getCurrentDataVersion(), valueSerializer)
-                            .preferDiskIndices(preferDiskBasedIndexes)
-                            .maxNumberOfKeys(size * 10L)
-                            .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
+                    new MerkleDbTableConfig<>(DigestType.SHA_384, size * 10L, hashesRamToDiskThreshold,false);
             MerkleDbDataSource dataSource =
                     database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
             dataSource.registerMetrics(getMetrics());

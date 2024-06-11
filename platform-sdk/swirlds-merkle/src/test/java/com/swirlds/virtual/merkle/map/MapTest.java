@@ -47,19 +47,23 @@ import org.junit.jupiter.api.Test;
 final class MapTest {
 
     VirtualDataSourceBuilder<TestKey, TestValue> createLongBuilder() {
+        final var keySerializer = new TestKeySerializer();
+        final var valueSerializer = new TestValueSerializer();
         final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1, DigestType.SHA_384,
-                (short) 1, new TestKeySerializer(),
-                (short) 1, new TestValueSerializer());
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+                (short) 1, keySerializer,
+                (short) 1, valueSerializer);
+        return new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
     }
 
     VirtualDataSourceBuilder<TestObjectKey, TestValue> createGenericBuilder() {
+        final var keySerializer = new TestObjectKeySerializer();
+        final var valueSerializer = new TestValueSerializer();
         final MerkleDbTableConfig<TestObjectKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1, DigestType.SHA_384,
-                (short) 1, new TestObjectKeySerializer(),
-                (short) 1, new TestValueSerializer());
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+                (short) 1, keySerializer,
+                (short) 1, valueSerializer);
+        return new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
     }
 
     VirtualMap<TestKey, TestValue> createLongMap(String label) {

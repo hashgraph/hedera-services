@@ -74,7 +74,7 @@ class MerkleDbBuilderTest {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 createTableConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(tableConfig.getKeySerializer(), tableConfig.getValueSerializer(), tableConfig);
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {
             dataSource = builder.build("test1", false);
@@ -95,7 +95,7 @@ class MerkleDbBuilderTest {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 createTableConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(tableConfig.getKeySerializer(), tableConfig.getValueSerializer(), tableConfig);
         final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance();
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {
@@ -131,7 +131,7 @@ class MerkleDbBuilderTest {
                 createTableConfig();
         tableConfig.preferDiskIndices(true).maxNumberOfKeys(1999).hashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(tableConfig.getKeySerializer(), tableConfig.getValueSerializer(), tableConfig);
         final Path defaultDbPath = testDirectory.resolve("defaultDatabasePath");
         MerkleDb.setDefaultPath(defaultDbPath);
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;

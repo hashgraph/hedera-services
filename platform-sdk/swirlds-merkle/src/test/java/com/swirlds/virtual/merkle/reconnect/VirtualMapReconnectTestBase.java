@@ -100,12 +100,14 @@ public class VirtualMapReconnectTestBase {
         // MerkleDb instance, so let's use a new (temp) database location for every run
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile();
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
+        final var keySerializer = new TestKeySerializer();
+        final var valueSerializer = new TestValueSerializer();
         final MerkleDbTableConfig<TestKey, TestValue> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1, DigestType.SHA_384,
-                (short) 1, new TestKeySerializer(),
-                (short) 1, new TestValueSerializer());
+                (short) 1, keySerializer,
+                (short) 1, valueSerializer);
         tableConfig.hashesRamToDiskThreshold(0);
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        return new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
     }
 
     BrokenBuilder createBrokenBuilder(final VirtualDataSourceBuilder<TestKey, TestValue> delegate) {

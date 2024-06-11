@@ -16,14 +16,29 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VMSTATE_FIRSTLEAFPATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VMSTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VMSTATE_LASTLEAFPATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VMSTATE_FIRSTLEAFPATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VMSTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VMSTATE_LASTLEAFPATH;
+
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.Path;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -31,6 +46,7 @@ import java.util.Objects;
  * the first (left) child of the VFCMap / {@link VirtualMap}.
  */
 public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
+
     public static final long CLASS_ID = 0x9e698c13a408250dL;
     private static final int CLASS_VERSION = 1;
 
@@ -79,6 +95,11 @@ public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
         this.firstLeafPath = source.firstLeafPath;
         this.lastLeafPath = source.lastLeafPath;
         this.label = source.label;
+    }
+
+    public VirtualMapState(final @NonNull ReadableSequentialData in, final java.nio.file.Path artifactsDir)
+            throws MerkleSerializationException {
+        protoDeserialize(in, artifactsDir);
     }
 
     /**
@@ -193,6 +214,71 @@ public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
         firstLeafPath = in.readLong();
         lastLeafPath = in.readLong();
         label = in.readNormalisedString(MAX_LABEL_LENGTH);
+    }
+
+    @Override
+    public int getProtoSizeInBytes() {
+        int size = 0;
+        if (firstLeafPath != 0) {
+            size += ProtoWriterTools.sizeOfTag(FIELD_VMSTATE_FIRSTLEAFPATH);
+            size += ProtoWriterTools.sizeOfVarInt64(firstLeafPath);
+        }
+        if (lastLeafPath != 0) {
+            size += ProtoWriterTools.sizeOfTag(FIELD_VMSTATE_LASTLEAFPATH);
+            size += ProtoWriterTools.sizeOfVarInt64(lastLeafPath);
+        }
+        if (label != null) {
+            final int labelLength = label.getBytes(StandardCharsets.UTF_8).length;
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_VMSTATE_LABEL, labelLength);
+        }
+        return size;
+    }
+
+    @Override
+    protected boolean protoDeserializeField(
+            final @NonNull ReadableSequentialData in,
+            final java.nio.file.Path artifactsDir,
+            final int fieldTag)
+            throws MerkleSerializationException {
+        final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        if (fieldNum == NUM_VMSTATE_FIRSTLEAFPATH) {
+            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal();
+            firstLeafPath = in.readVarInt(false);
+            return true;
+        }
+        if (fieldNum == NUM_VMSTATE_LASTLEAFPATH) {
+            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal();
+            lastLeafPath = in.readVarInt(false);
+            return true;
+        }
+        if (fieldNum == NUM_VMSTATE_LABEL) {
+            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+            final int length = in.readVarInt(false);
+            final byte[] labelBytes = new byte[length];
+            if (in.readBytes(labelBytes) != length) {
+                throw new MerkleSerializationException("Failed to read VirtualMap state label bytes");
+            }
+            label = new String(labelBytes, StandardCharsets.UTF_8);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void protoSerialize(final @NonNull WritableSequentialData out, final java.nio.file.Path artifactsDir) {
+        if (firstLeafPath != 0) {
+            ProtoWriterTools.writeTag(out, FIELD_VMSTATE_FIRSTLEAFPATH);
+            out.writeVarLong(firstLeafPath, false);
+        }
+        if (lastLeafPath != 0) {
+            ProtoWriterTools.writeTag(out, FIELD_VMSTATE_LASTLEAFPATH);
+            out.writeVarLong(lastLeafPath, false);
+        }
+        if (label != null) {
+            final byte[] labelBytes = label.getBytes(StandardCharsets.UTF_8);
+            ProtoWriterTools.writeDelimited(out, FIELD_VMSTATE_LABEL, labelBytes.length,
+                    t -> t.writeBytes(labelBytes));
+        }
     }
 
     /**

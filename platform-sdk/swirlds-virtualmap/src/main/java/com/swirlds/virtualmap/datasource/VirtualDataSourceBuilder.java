@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.datasource;
 
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import java.nio.file.Path;
@@ -26,8 +27,8 @@ import java.nio.file.Path;
  * to every {@link com.swirlds.virtualmap.VirtualMap} and used to get a reference to underlying
  * virtual data source.
  *
- * Virtual data source builder configuration is not a part of this interface. For example, some
- * implementations that store data on disk may have "storage directory" config, which is used,
+ * <p></p>Virtual data source builder configuration is not a part of this interface. For example,
+ * some implementations that store data on disk may have "storage directory" config, which is used,
  * together with requested data source labels, to build full data source disk paths.
  *
  * @param <K>
@@ -35,6 +36,7 @@ import java.nio.file.Path;
  * @param <V>
  * 		The value
  */
+// FUTURE WORK: don't extend from SelfSerializable
 public interface VirtualDataSourceBuilder<K extends VirtualKey, V extends VirtualValue> extends SelfSerializable {
 
     /**

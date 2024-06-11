@@ -18,6 +18,7 @@ package com.swirlds.virtualmap;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import java.nio.ByteBuffer;
 
 /**
@@ -26,7 +27,7 @@ import java.nio.ByteBuffer;
  * and {@link FastCopyable}. To enhance performance, serialization methods that work with
  * {@link ByteBuffer} are required on a VValue.
  */
-public interface VirtualValue extends SelfSerializable, FastCopyable {
+public interface VirtualValue extends ProtoSerializable, SelfSerializable, FastCopyable {
 
     @Override
     VirtualValue copy();

@@ -88,16 +88,19 @@ class VirtualMapLikeTest {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void setupRealAndSubject() throws IOException {
+        final var keySerializer = new EntityNumVirtualKeySerializer();
+        final var valueSerializer = new ScheduleVirtualValueSerializer();
         final var tableConfig = new MerkleDbTableConfig<>(
                         (short) 1,
                         DigestType.SHA_384,
                         (short) 1,
-                        new EntityNumVirtualKeySerializer(),
+                        keySerializer,
                         (short) 1,
-                        new ScheduleVirtualValueSerializer())
+                        valueSerializer)
                 .maxNumberOfKeys(1_024);
 
-        final var ds = new MerkleDbDataSourceBuilder<>(buildTemporaryDirectory("merkleDbTest"), tableConfig);
+        final var ds = new MerkleDbDataSourceBuilder<>(
+                buildTemporaryDirectory("merkleDbTest"), keySerializer, valueSerializer, tableConfig);
 
         real = new VirtualMap<>("REAL", ds);
         subject = VirtualMapLike.from(real);

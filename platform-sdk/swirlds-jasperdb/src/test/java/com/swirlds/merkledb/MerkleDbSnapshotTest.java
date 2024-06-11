@@ -126,7 +126,7 @@ class MerkleDbSnapshotTest {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(tableConfig.getKeySerializer(), tableConfig.getValueSerializer(), tableConfig);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, dsBuilder);
@@ -182,7 +182,7 @@ class MerkleDbSnapshotTest {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(tableConfig.getKeySerializer(), tableConfig.getValueSerializer(), tableConfig);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, dsBuilder);
@@ -263,7 +263,7 @@ class MerkleDbSnapshotTest {
     void testSnapshotAfterReconnect() throws Exception {
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(tableConfig.getKeySerializer(), tableConfig.getValueSerializer(), tableConfig);
         final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> original =
                 dsBuilder.build("vm", false);
         // Simulate reconnect as a learner

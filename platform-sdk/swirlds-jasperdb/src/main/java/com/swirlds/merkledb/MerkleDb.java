@@ -33,6 +33,8 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -352,7 +354,11 @@ public final class MerkleDb {
      *     in the database instance
      */
     public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> createDataSource(
-            final String label, final MerkleDbTableConfig<K, V> tableConfig, final boolean dbCompactionEnabled)
+            final String label,
+            // final KeySerializer<K> keySerializer,
+            // final ValueSerializer<V> valueSerializer,
+            final MerkleDbTableConfig<K, V> tableConfig,
+            final boolean dbCompactionEnabled)
             throws IOException {
         // This method should be synchronized, as between tableExists() and tableConfigs.set()
         // a new data source can be created in a parallel thread. However, the current assumption

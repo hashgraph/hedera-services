@@ -107,13 +107,15 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap(String label) {
+        final var keySerializer = new BenchmarkKeySerializer();
+        final var valueSerializer = new BenchmarkValueSerializer();
         MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
                         (short) 1, DigestType.SHA_384,
-                        (short) 1, new BenchmarkKeySerializer(),
-                        (short) 1, new BenchmarkValueSerializer())
+                        (short) 1, keySerializer,
+                        (short) 1, valueSerializer)
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>(label, dataSourceBuilder);
     }
 

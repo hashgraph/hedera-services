@@ -91,7 +91,7 @@ public final class StartupStateUtils {
         Objects.requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState =
-                StartupStateUtils.loadStateFile(platformContext, selfId, mainClassName, swirldName, softwareVersion);
+                loadStateFile(platformContext, selfId, mainClassName, swirldName, softwareVersion);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {

@@ -32,6 +32,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
 import com.swirlds.platform.state.merkle.disk.OnDiskKeySerializer;
@@ -278,17 +280,14 @@ public class MerkleTestBase extends StateTestBase {
             long valueSerializerClassId,
             long valueClassId,
             Codec<String> valueCodec) {
-        final var merkleDbTableConfig = new MerkleDbTableConfig<>(
-                (short) 1,
-                DigestType.SHA_384,
-                (short) 1,
-                new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec),
-                (short) 1,
-                new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec));
+        final KeySerializer<OnDiskKey<String>> keySerializer = new OnDiskKeySerializer<>(keySerializerClassId, keyClassId, keyCodec);
+        final ValueSerializer<OnDiskValue<String>> valueSerializer = new OnDiskValueSerializer<>(valueSerializerClassId, valueClassId, valueCodec);
+        final MerkleDbTableConfig<OnDiskKey<String>, OnDiskValue<String>> merkleDbTableConfig = new MerkleDbTableConfig<>(DigestType.SHA_384, 100, 0, true);
         merkleDbTableConfig.hashesRamToDiskThreshold(0);
         merkleDbTableConfig.maxNumberOfKeys(100);
         merkleDbTableConfig.preferDiskIndices(true);
-        final var builder = new MerkleDbDataSourceBuilder<>(virtualDbPath, merkleDbTableConfig);
+        final MerkleDbDataSourceBuilder<OnDiskKey<String>, OnDiskValue<String>> builder =
+                new MerkleDbDataSourceBuilder<>(virtualDbPath, keySerializer, valueSerializer, merkleDbTableConfig);
         return new VirtualMap<>(label, builder);
     }
 

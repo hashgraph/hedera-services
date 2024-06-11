@@ -54,21 +54,19 @@ public record StateDefinition<K, V>(
         if (singleton && queue) {
             throw new IllegalArgumentException("A state cannot both be 'singleton' and 'queue'");
         }
-
         if (singleton && onDisk) {
             throw new IllegalArgumentException("A state cannot both be 'singleton' and 'onDisk'");
+        }
+        if (queue && onDisk) {
+            throw new IllegalArgumentException("A state cannot both be 'queue' and 'onDisk'");
         }
 
         if (onDisk && maxKeysHint <= 0) {
             throw new IllegalArgumentException("You must specify the maxKeysHint when onDisk. Please see docs.");
         }
 
-        if (queue && onDisk) {
-            throw new IllegalArgumentException("A state cannot both be 'queue' and 'onDisk'");
-        }
-
         if (keyCodec == null && !singleton && !queue) {
-            throw new NullPointerException("keyCodec must be specified when using singleton or queue types");
+            throw new NullPointerException("keyCodec must be specified unless using singleton or queue types");
         }
     }
 
