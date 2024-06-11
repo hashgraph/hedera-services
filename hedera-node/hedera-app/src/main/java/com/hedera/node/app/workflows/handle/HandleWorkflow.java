@@ -704,7 +704,6 @@ public class HandleWorkflow {
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         try {
             transactionFinalizer.finalizeParentRecord(
-                    payer,
                     tokenServiceContext,
                     functionality,
                     extraRewardReceivers(txBody, functionality, recordBuilder),

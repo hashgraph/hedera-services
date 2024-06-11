@@ -768,7 +768,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     consensusNow(),
                     configuration);
             parentRecordFinalizer.finalizeParentRecord(
-                    payer, finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
+                    finalizeContext, function, extraRewardReceivers(txBody, function, childRecordBuilder));
             final var paidStakingRewards = childRecordBuilder.getPaidStakingRewards();
             if (!paidStakingRewards.isEmpty()) {
                 if (dispatchPaidRewards == null) {
@@ -823,7 +823,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                     .build();
             final var payerAccount = solvencyPreCheck.getPayerAccount(readableStoreFactory(), syntheticPayerId);
             solvencyPreCheck.checkSolvency(
-                    transactionBody, syntheticPayerId, function, payerAccount, serviceFee, false);
+                    transactionBody, syntheticPayerId, function, payerAccount, serviceFee, false, true);
 
             // Note we do NOT want to enforce the "time box" on valid start for
             // transaction ids dispatched by the schedule service, since these ids derive from their
