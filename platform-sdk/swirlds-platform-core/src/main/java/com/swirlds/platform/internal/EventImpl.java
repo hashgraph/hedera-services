@@ -457,7 +457,7 @@ public class EventImpl extends EventMetadata
      * @return true iff this event has no transactions
      */
     public boolean isEmpty() {
-        return getTransactions() == null || getTransactions().length == 0;
+        return baseEvent.getPayloadCount() == 0;
     }
 
     @Override

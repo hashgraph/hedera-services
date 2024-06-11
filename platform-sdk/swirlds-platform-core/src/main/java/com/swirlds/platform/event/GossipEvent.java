@@ -455,6 +455,13 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
                 && Objects.equals(consensusData, that.consensusData);
     }
 
+    /**
+     * Check if the gossiped data of this event is equal to the gossiped data of another event. Ignores the consensus
+     * data.
+     *
+     * @param that the other event
+     * @return true if the gossiped data of this event is equal to the gossiped data of the other event
+     */
     public boolean equalsGossipedData(@NonNull final GossipEvent that) {
         return Objects.equals(getHashedData(), that.getHashedData())
                 && Objects.equals(getSignature(), that.getSignature());
