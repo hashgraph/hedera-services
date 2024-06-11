@@ -38,12 +38,16 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.metrics.PlatformMetricsProvider;
+import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.extensions.sources.SystemEnvironmentConfigSource;
 import com.swirlds.config.extensions.sources.SystemPropertiesConfigSource;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.CommandLineArgs;
+import com.swirlds.platform.CryptoMetrics;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -201,6 +205,9 @@ public class ServicesMain implements SwirldMain {
         final Configuration configuration = buildConfiguration();
         platformBuilder.withConfiguration(configuration);
 
+        final Metrics metrics = buildMetrics(configuration, selfId);
+        platformBuilder.withMetrics(metrics);
+
         platformBuilder.withCryptography(CryptographyFactory.create());
         platformBuilder.withTime(Time.getCurrent());
 
@@ -231,6 +238,21 @@ public class ServicesMain implements SwirldMain {
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
+    }
+
+    /**
+     * Build the metrics for this node.
+     *
+     * @param configuration the configuration
+     * @param selfId        the node id
+     * @return the metrics
+     */
+    @NonNull
+    private static Metrics buildMetrics(Configuration configuration, NodeId selfId) {
+        final PlatformMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
+        final Metrics metrics = metricsProvider.createPlatformMetrics(selfId);
+        CryptoMetrics.registerMetrics(metrics);
+        return metrics;
     }
 
     /**
