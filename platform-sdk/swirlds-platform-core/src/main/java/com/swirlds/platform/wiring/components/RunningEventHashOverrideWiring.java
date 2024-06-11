@@ -16,7 +16,11 @@
 
 package com.swirlds.platform.wiring.components;
 
+import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+
 import com.swirlds.common.stream.RunningEventHashOverride;
+import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -36,12 +40,17 @@ public record RunningEventHashOverrideWiring(
     /**
      * Create a new wiring object
      *
-     * @param taskScheduler the task scheduler to use
+     * @param model the wiring model
      * @return the new wiring object
      */
     @NonNull
-    public static RunningEventHashOverrideWiring create(
-            @NonNull final TaskScheduler<RunningEventHashOverride> taskScheduler) {
+    public static RunningEventHashOverrideWiring create(@NonNull final WiringModel model) {
+
+        final TaskScheduler<RunningEventHashOverride> taskScheduler = model.schedulerBuilder("RunningEventHashOverride")
+                .withType(DIRECT_THREADSAFE)
+                .withHyperlink(platformCoreHyperlink(RunningEventHashOverrideWiring.class))
+                .build()
+                .cast();
 
         final BindableInputWire<RunningEventHashOverride, RunningEventHashOverride> inputWire =
                 taskScheduler.buildInputWire("hash override");
