@@ -45,9 +45,9 @@ public record NodeInfoImpl(
         final var sigCert = address.getSigCert();
         Bytes sigCertBytes;
         try {
-            sigCertBytes = sigCert == null ? null : Bytes.wrap(sigCert.getEncoded());
+            sigCertBytes = sigCert == null ? Bytes.EMPTY : Bytes.wrap(sigCert.getEncoded());
         } catch (CertificateEncodingException e) {
-            sigCertBytes = null;
+            sigCertBytes = Bytes.EMPTY;
         }
         return new NodeInfoImpl(
                 address.getNodeId().id(),

@@ -33,15 +33,12 @@ import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * General schema for the addressbook service
- * (FUTURE) When mod-service release is finalized, rename this class to e.g.
- * {@code Release47addressbookSchema} as it will no longer be appropriate to assume
- * this schema is always correct for the current version of the software.
+ * {@code V052AddressBookSchema} is used for migrating the address book on Version 0.52.0
  */
 public class V052AddressBookSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V052AddressBookSchema.class);
@@ -68,37 +65,42 @@ public class V052AddressBookSchema extends Schema {
         final var networkInfo = ctx.networkInfo();
         final var nodeConfig = ctx.configuration().getConfigData(NodesConfig.class);
         final var addressBook = networkInfo.addressBook();
-        AtomicInteger totalNodes = new AtomicInteger(0);
+        long migratedCount = 0;
         log.info("Started migrating nodes from address book");
 
-        addressBook.forEach(nodeInfo -> {
-            final var node = Node.newBuilder()
-                    .nodeId(nodeInfo.nodeId())
-                    .accountId(nodeInfo.accountId())
-                    .description(nodeInfo.memo())
-                    .gossipEndpoint(List.of(
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(nodeInfo.internalHostName()))
-                                    .port(nodeInfo.internalPort())
-                                    .build(),
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
-                                    .port(nodeInfo.externalPort())
-                                    .build()))
-                    .gossipCaCertificate(nodeInfo.sigCertBytes())
-                    .weight(nodeInfo.stake())
-                    .build();
-            writableNodes.put(
-                    EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
-            totalNodes.getAndIncrement();
-        });
-        if (totalNodes.get() > nodeConfig.maxNumber()) {
-            log.error("Address book contains more nodes than the configured maximum of {}", nodeConfig.maxNumber());
+        for (var nodeInfo : addressBook) {
+            while (migratedCount < nodeConfig.maxNumber()) {
+                final var node = Node.newBuilder()
+                        .nodeId(nodeInfo.nodeId())
+                        .accountId(nodeInfo.accountId())
+                        .description(nodeInfo.memo())
+                        .gossipEndpoint(List.of(
+                                ServiceEndpoint.newBuilder()
+                                        .ipAddressV4(Bytes.wrap(nodeInfo.internalHostName()))
+                                        .port(nodeInfo.internalPort())
+                                        .build(),
+                                ServiceEndpoint.newBuilder()
+                                        .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
+                                        .port(nodeInfo.externalPort())
+                                        .build()))
+                        .gossipCaCertificate(nodeInfo.sigCertBytes())
+                        .weight(nodeInfo.stake())
+                        .build();
+                writableNodes.put(
+                        EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
+                migratedCount++;
+            }
+        }
+        if (migratedCount < addressBook.size()) {
+            log.warn(
+                    "Address book contains more nodes {} than the migrated count {}",
+                    addressBook.size(),
+                    migratedCount);
         } else {
             if (writableNodes.isModified()) {
                 ((WritableKVStateBase) writableNodes).commit();
             }
-            log.info("Migrated {} nodes from address book", totalNodes.get());
+            log.info("Migrated {} nodes from address book", migratedCount);
         }
     }
 }

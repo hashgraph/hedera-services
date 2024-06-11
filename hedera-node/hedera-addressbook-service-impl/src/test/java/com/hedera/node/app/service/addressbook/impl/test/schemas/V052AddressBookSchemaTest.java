@@ -90,7 +90,7 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
     }
 
     @Test
-    void migrateLogError() {
+    void migrateLogWarn() {
         setupMigrationContext();
         final var config =
                 HederaTestConfigBuilder.create().withValue("nodes.maxNumber", 1).getOrCreateConfig();
@@ -98,7 +98,7 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.errorLogs()).contains("Address book contains more nodes than the configured maximum of 1");
+        assertThat(logCaptor.warnLogs()).contains("Address book contains more nodes 2 than the migrated count 1");
     }
 
     private void setupMigrationContext() {
