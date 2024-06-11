@@ -90,24 +90,18 @@ public interface NodeInfo {
      * The signing x509 certificate bytes of the member
      * @return the signing x509 certificate bytes
      */
-    default Bytes sigCertBytes() {
-        return Bytes.EMPTY;
-    }
+    Bytes sigCertBytes();
 
     /**
      * The host name of this node, as known by the internal world. This is an IP address.
      *
      * @return The host name (IP Address) of this node
      */
-    default String internalHostName() {
-        return null;
-    }
+    String internalHostName();
 
     /**
      * The internal port the node is listening on.
      * @return the port. Non-negative.
      */
-    default int internalPort() {
-        return 0;
-    }
+    int internalPort();
 }

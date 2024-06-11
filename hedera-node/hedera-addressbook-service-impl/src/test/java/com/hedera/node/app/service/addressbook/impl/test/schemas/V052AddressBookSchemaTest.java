@@ -29,7 +29,6 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
@@ -80,26 +79,10 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
     @Test
     void migrateAsExpected() {
         setupMigrationContext();
-        final var config =
-                HederaTestConfigBuilder.create().withValue("nodes.maxNumber", 2).getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
         assertThat(logCaptor.infoLogs()).contains("Migrated 2 nodes from address book");
-    }
-
-    @Test
-    void migrateLogWarn() {
-        setupMigrationContext();
-        final var config =
-                HederaTestConfigBuilder.create().withValue("nodes.maxNumber", 1).getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
-
-        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
-        assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.warnLogs()).contains("Address book contains more nodes 2 than the migrated count 1");
-        assertThat(logCaptor.infoLogs()).contains("Migrated 1 nodes from address book");
     }
 
     private void setupMigrationContext() {

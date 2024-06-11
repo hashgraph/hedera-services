@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
@@ -63,43 +62,33 @@ public class V052AddressBookSchema extends Schema {
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
         final var networkInfo = ctx.networkInfo();
-        final var nodeConfig = ctx.configuration().getConfigData(NodesConfig.class);
         final var addressBook = networkInfo.addressBook();
-        long migratedCount = 0;
         log.info("Started migrating nodes from address book");
 
-        for (var nodeInfo : addressBook) {
-            while (migratedCount < nodeConfig.maxNumber()) {
-                final var node = Node.newBuilder()
-                        .nodeId(nodeInfo.nodeId())
-                        .accountId(nodeInfo.accountId())
-                        .description(nodeInfo.memo())
-                        .gossipEndpoint(List.of(
-                                ServiceEndpoint.newBuilder()
-                                        .ipAddressV4(Bytes.wrap(nodeInfo.internalHostName()))
-                                        .port(nodeInfo.internalPort())
-                                        .build(),
-                                ServiceEndpoint.newBuilder()
-                                        .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
-                                        .port(nodeInfo.externalPort())
-                                        .build()))
-                        .gossipCaCertificate(nodeInfo.sigCertBytes())
-                        .weight(nodeInfo.stake())
-                        .build();
-                writableNodes.put(
-                        EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
-                migratedCount++;
-            }
-        }
-        if (migratedCount < addressBook.size()) {
-            log.warn(
-                    "Address book contains more nodes {} than the migrated count {}",
-                    addressBook.size(),
-                    migratedCount);
-        }
+        addressBook.forEach(nodeInfo -> {
+            final var node = Node.newBuilder()
+                    .nodeId(nodeInfo.nodeId())
+                    .accountId(nodeInfo.accountId())
+                    .description(nodeInfo.memo())
+                    .gossipEndpoint(List.of(
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(nodeInfo.internalHostName()))
+                                    .port(nodeInfo.internalPort())
+                                    .build(),
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
+                                    .port(nodeInfo.externalPort())
+                                    .build()))
+                    .gossipCaCertificate(nodeInfo.sigCertBytes())
+                    .weight(nodeInfo.stake())
+                    .build();
+            writableNodes.put(
+                    EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
+        });
+
         if (writableNodes.isModified()) {
             ((WritableKVStateBase) writableNodes).commit();
         }
-        log.info("Migrated {} nodes from address book", migratedCount);
+        log.info("Migrated {} nodes from address book", addressBook.size());
     }
 }
