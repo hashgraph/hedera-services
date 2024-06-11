@@ -22,9 +22,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -527,12 +527,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     synchronizedThrottleAccumulator,
                     platformState,
                     storeMetricsService);
-        }
-
-        @Test
-        void getsFreezeTime() {
-            given(platformState.getFreezeTime()).willReturn(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
-            assertThat(handleContext.freezeTime()).isEqualTo(DEFAULT_CONSENSUS_NOW.plusSeconds(1));
         }
     }
 
@@ -1078,11 +1072,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             ALICE.accountID())),
-                    Arguments.of((Consumer<HandleContext>) context -> context.dispatchReversiblePrecedingTransaction(
-                            defaultTransactionBody(),
-                            SingleTransactionRecordBuilder.class,
-                            VERIFIER_CALLBACK,
-                            ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
@@ -1195,12 +1184,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                                 VERIFIER_CALLBACK,
                                 AccountID.DEFAULT))
                         .isInstanceOf(IllegalArgumentException.class);
-                assertThatThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
-                                defaultTransactionBody(),
-                                SingleTransactionRecordBuilder.class,
-                                VERIFIER_CALLBACK,
-                                AccountID.DEFAULT))
-                        .isInstanceOf(IllegalArgumentException.class);
                 verify(recordListBuilder, never()).addPreceding(any(), eq(LIMITED_CHILD_RECORDS));
                 verify(dispatcher, never()).dispatchHandle(any());
                 assertThat(stack.getReadableStates(FOOD_SERVICE)
@@ -1221,12 +1204,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             // then
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
-                            defaultTransactionBody(),
-                            SingleTransactionRecordBuilder.class,
-                            VERIFIER_CALLBACK,
-                            AccountID.DEFAULT));
-            assertThatNoException()
-                    .isThrownBy(() -> context.dispatchReversiblePrecedingTransaction(
                             defaultTransactionBody(),
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
@@ -1329,7 +1306,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             // when
-            context.dispatchReversiblePrecedingTransaction(
+            context.dispatchPrecedingTransaction(
                     defaultTransactionBody(),
                     SingleTransactionRecordBuilder.class,
                     VERIFIER_CALLBACK,
