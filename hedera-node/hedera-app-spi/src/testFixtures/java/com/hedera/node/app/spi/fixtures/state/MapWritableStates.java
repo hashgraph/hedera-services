@@ -45,6 +45,11 @@ import java.util.Set;
 public class MapWritableStates implements WritableStates, CommittableWritableStates {
     private final Map<String, ?> states;
 
+    /**
+     * Need this callback so a {@code FakeHederaState} owning this writable states can
+     * invalidate its cache of {@link com.swirlds.state.spi.ReadableStates} when it is
+     * committed.
+     */
     @Nullable
     private final Runnable onCommit;
 
