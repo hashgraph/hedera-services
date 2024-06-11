@@ -121,15 +121,30 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("io.grpc:grpc-stub", "grpc.stub") {
+    module("io.grpc:grpc-stub", "io.grpc.stub") {
         exportAllPackages()
         requireAllDefinedDependencies()
         requires("java.logging")
     }
+    module("com.google.android:annotations", "com.google.android.annotations")
+    module("org.codehaus.mojo:animal-sniffer-annotations", "org.codehaus.mojo.animal.sniffer.annotations")
+    module("io.grpc:grpc-util", "io.grpc.util")
+
+    // Handle module conflicts by defining modules and allowing overrides
+    module("io.grpc:grpc-core", "io.grpc.internal") {
+        exportAllPackages()
+        requires("java.logging")
+    }
+    module("io.grpc:grpc-api", "io.grpc") {
+        exportAllPackages()
+        requires("java.logging")
+    }
+    module("io.grpc:grpc-context", "io.grpc.context")
+    module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
+    module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
+
     module("io.grpc:grpc-testing", "grpc.testing")
     module("io.grpc:grpc-services", "grpc.services")
-    module("io.grpc:grpc-protobuf", "grpc.protobuf")
-    module("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
     module("com.google.code.findbugs:jsr305", "java.annotation") {
         exportAllPackages()
@@ -218,11 +233,11 @@ extraJavaModuleInfo {
     // Need to use Jar file names here as there is currently no other way to address Jar with
     // classifier directly for patching
     module(
-        "netty-transport-native-epoll-4.1.87.Final-linux-x86_64.jar",
+        "netty-transport-native-epoll-4.1.110.Final-linux-x86_64.jar",
         "io.netty.transport.epoll.linux.x86_64"
     )
     module(
-        "netty-transport-native-epoll-4.1.87.Final-linux-aarch_64.jar",
+        "netty-transport-native-epoll-4.1.110.Final-linux-aarch_64.jar",
         "io.netty.transport.epoll.linux.aarch_64"
     )
 

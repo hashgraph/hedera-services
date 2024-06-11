@@ -68,8 +68,8 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
     requires com.hedera.evm;
-    requires grpc.netty;
-    requires grpc.stub;
+//    requires io.grpc.netty;
+    requires io.grpc.stub;
     requires io.netty.handler;
     requires java.desktop;
     requires java.net.http;
