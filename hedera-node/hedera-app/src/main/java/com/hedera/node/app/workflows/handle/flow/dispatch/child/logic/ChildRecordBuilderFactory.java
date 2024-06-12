@@ -17,9 +17,6 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -62,26 +59,24 @@ public class ChildRecordBuilderFactory {
             HandleContext.TransactionCategory childCategory,
             SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable final ExternalizedRecordCustomizer customizer) {
-        final SingleTransactionRecordBuilderImpl recordBuilder;
-        if (childCategory == PRECEDING) {
-            recordBuilder = switch (reversingBehavior) {
-                case REMOVABLE -> recordListBuilder.addRemovablePreceding(configuration);
-                case REVERSIBLE -> recordListBuilder.addReversiblePreceding(configuration);
-                case IRREVERSIBLE -> recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);};
-        } else if (childCategory == CHILD) {
-            recordBuilder = switch (reversingBehavior) {
-                case REMOVABLE -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(
-                        configuration, requireNonNull(customizer));
-                case REVERSIBLE -> recordListBuilder.addChild(configuration, childCategory);
-                case IRREVERSIBLE -> throw new IllegalArgumentException("Unsupported reversing behavior: "
-                        + reversingBehavior + " for child category: " + childCategory);};
-        } else if (childCategory == SCHEDULED) {
-            recordBuilder = recordListBuilder.addChild(configuration, childCategory);
-        } else {
-            throw new IllegalArgumentException("Unsupported child category: " + childCategory);
-        }
-        initializeRecord(recordBuilder, txnInfo);
-        return recordBuilder;
+        final var recordBuilder =
+                switch (childCategory) {
+                    case PRECEDING -> switch (reversingBehavior) {
+                        case REMOVABLE -> recordListBuilder.addRemovablePreceding(configuration);
+                        case REVERSIBLE -> recordListBuilder.addReversiblePreceding(configuration);
+                        case IRREVERSIBLE -> recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);
+                    };
+                    case CHILD -> switch (reversingBehavior) {
+                        case REMOVABLE -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(
+                                configuration, requireNonNull(customizer));
+                        case REVERSIBLE -> recordListBuilder.addChild(configuration, childCategory);
+                        case IRREVERSIBLE -> throw new IllegalArgumentException("Unsupported reversing behavior: "
+                                + reversingBehavior + " for child category: " + childCategory);
+                    };
+                    case SCHEDULED -> recordListBuilder.addChild(configuration, childCategory);
+                    default -> throw new IllegalArgumentException("Unsupported child category: " + childCategory);
+                };
+        return initializedForChild(recordBuilder, txnInfo);
     }
 
     /**
@@ -89,7 +84,7 @@ public class ChildRecordBuilderFactory {
      * @param recordBuilder the record builder
      * @param txnInfo the transaction info
      */
-    private void initializeRecord(
+    private SingleTransactionRecordBuilderImpl initializedForChild(
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
         recordBuilder
                 .transaction(txnInfo.transaction())
@@ -99,5 +94,6 @@ public class ChildRecordBuilderFactory {
         if (transactionID != null) {
             recordBuilder.transactionID(transactionID);
         }
+        return recordBuilder;
     }
 }

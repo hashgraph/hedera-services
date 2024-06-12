@@ -97,7 +97,7 @@ public class DispatchProcessor {
      */
     public WorkDone processDispatch(@NonNull Dispatch dispatch) {
         final var errorReport = errorReporter.errorReportFor(dispatch);
-        WorkDone workDone = FEES_ONLY;
+        var workDone = FEES_ONLY;
         if (errorReport.isCreatorError()) {
             chargeCreator(dispatch, errorReport);
         } else {
