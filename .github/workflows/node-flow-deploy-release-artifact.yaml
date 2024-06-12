@@ -72,7 +72,7 @@ jobs:
           HAPI_MAJOR="$(semver get major ${HAPI_VERSION})"
           HAPI_MINOR="$(semver get minor ${HAPI_VERSION})"
           echo "Verifying that the tag ${TAG_MAJOR}.${TAG_MINOR} matches the hapiProtoVersion ${HAPI_MAJOR}.${HAPI_MINOR} in settings.gradle.kts"
-          test "${TAG_MINOR}" = "${HAPI_MINOR}" && test "${TAG_MINOR}" = "${HAPI_MINOR}"
+          test "${TAG_MAJOR}" = "${HAPI_MAJOR}" && test "${TAG_MINOR}" = "${HAPI_MINOR}"
 
   release-tag:
     name: Release [Tag]
