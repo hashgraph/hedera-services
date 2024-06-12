@@ -58,8 +58,8 @@ class PreHandleResultManagerTest {
     @Mock
     private PreHandleResult previousResult;
 
-    private NodeInfo creator =
-            new NodeInfoImpl(0L, AccountID.newBuilder().accountNum(3).build(), 500, "", 50006, "", 60005, "", "", null);
+    private NodeInfo creator = new NodeInfoImpl(
+            0L, AccountID.newBuilder().accountNum(3).build(), 500, "localhost", 50006, "", 60005, "", "", null);
 
     @InjectMocks
     private PreHandleResultManager subject;
