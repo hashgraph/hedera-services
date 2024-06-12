@@ -187,8 +187,7 @@ public class MiscCryptoSuite {
                         // ConcurrentModificationException when iterating in the record cache
                         cryptoCreate("inert"))
                 .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords("inert")
-                        .nodePayment(ONE_HBAR)));
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords("inert")));
     }
 
     @HapiTest
