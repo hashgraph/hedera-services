@@ -1,7 +1,7 @@
 # Metric labels
 
-author: @hendrikEbbers  
-status: draft
++author: @hendrikEbbers
++status: draft
 
 ## Summary
 
@@ -32,7 +32,7 @@ platform module since it does not depend on the platform module's `nodeId` anymo
 
 ## Non-Goals
 
-Even with the new concept the metrics api should be only used in our internal code.
+Even with the new concept the metrics api should be only used in our (hashgraph) code.
 The metrics module should not be used by the end user.
 Here the preferred solution is still that we forward our metrics to a monitoring system that the custom application code uses.
 
