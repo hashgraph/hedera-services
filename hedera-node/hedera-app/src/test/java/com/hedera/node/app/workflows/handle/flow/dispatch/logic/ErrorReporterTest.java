@@ -16,15 +16,19 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.withCreatorError;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.withNoError;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.withPayerError;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,6 +64,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +75,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ErrorReporterTest {
+    private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
     private static final AccountID CREATOR_ACCOUNT_ID =
@@ -114,13 +120,29 @@ class ErrorReporterTest {
 
         final var report = subject.errorReportFor(dispatch);
 
-        assertEquals(withCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
+        assertEquals(creatorErrorReport(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
     }
 
     @Test
-    void solvencyCheckDoesNotLookAtOfferedFeesForChildDispatch() throws PreCheckException {
+    void invalidTransactionDurationIsCreatorError() throws PreCheckException {
         givenCreatorInfo();
-        givenChildDispatch();
+        givenUserDispatch();
+        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
+        doThrow(new PreCheckException(INVALID_TRANSACTION_DURATION))
+                .when(transactionChecker)
+                .checkTimeBox(TXN_BODY, CONSENSUS_NOW, TransactionChecker.RequireMinValidLifetimeBuffer.NO);
+
+        final var report = subject.errorReportFor(dispatch);
+
+        assertEquals(creatorErrorReport(dispatch.creatorInfo().accountId(), INVALID_TRANSACTION_DURATION), report);
+    }
+
+    @Test
+    void solvencyCheckDoesNotLookAtOfferedFeesForPrecedingDispatch() throws PreCheckException {
+        givenCreatorInfo();
+        givenPreceding();
         givenSolvencyCheckSetup();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(1L));
@@ -129,7 +151,24 @@ class ErrorReporterTest {
 
         verify(solvencyPreCheck)
                 .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, false);
-        assertEquals(withNoError(dispatch.creatorInfo().accountId(), payerAccount), report);
+        assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), payerAccount), report);
+    }
+
+    @Test
+    void solvencyCheckDoesNotLookAtOfferedFeesForChildDispatch() throws PreCheckException {
+        givenCreatorInfo();
+        givenChildDispatch();
+        givenSolvencyCheckSetup();
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        // The dispatching "contract" was a token account here for sake of argument
+        givenMissingPayer();
+
+        final var report = subject.errorReportFor(dispatch);
+
+        verify(solvencyPreCheck)
+                .checkSolvency(
+                        TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), Account.DEFAULT, FEES, false, false);
+        assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), Account.DEFAULT), report);
     }
 
     @Test
@@ -147,25 +186,77 @@ class ErrorReporterTest {
 
         verify(solvencyPreCheck)
                 .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, true);
-        assertEquals(withNoError(dispatch.creatorInfo().accountId(), payerAccount), report);
+        assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), payerAccount), report);
     }
 
     @Test
     void otherNodeDuplicateUserIsPayerError() throws PreCheckException {
         givenCreatorInfo();
         givenUserDispatch();
+        givenOtherNodeDuplicate();
+        givenSolvencyCheckSetup();
+        givenValidPayerSig();
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        final var payerAccount = givenPayer(payer -> payer.tinybarBalance(123L));
+
+        final var report = subject.errorReportFor(dispatch);
+
+        verify(solvencyPreCheck)
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES.withoutServiceComponent(),
+                        false,
+                        true);
+        assertEquals(
+                payerErrorReport(
+                        dispatch.creatorInfo().accountId(),
+                        payerAccount,
+                        DUPLICATE_TRANSACTION,
+                        false,
+                        IsDuplicate.YES),
+                report);
+    }
+
+    @Test
+    void sameNodeDuplicateUserIsCreatorError() {
+        givenCreatorInfo();
+        givenUserDispatch();
+        givenSameNodeDuplicate();
+        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        givenValidPayerSig();
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        givenPayer(payer -> payer.tinybarBalance(123L));
+
+        final var report = subject.errorReportFor(dispatch);
+
+        assertEquals(creatorErrorReport(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION), report);
+    }
+
+    @Test
+    void userPreHandleFailureIsPayerError() throws PreCheckException {
+        givenCreatorInfo();
+        givenUserDispatch();
         givenNonDuplicate();
         givenSolvencyCheckSetup();
-        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
-        final var payerAccount = givenPayer(payer -> payer.tinybarBalance(1L)
-                .alias(Bytes.fromHex("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"))
-                .key(IMMUTABILITY_SENTINEL_KEY));
+        givenValidPayerSig();
+        given(dispatch.preHandleResult()).willReturn(UNSUCCESSFUL_PREHANDLE);
+        final var payerAccount = givenPayer(payer -> payer.tinybarBalance(123L));
 
         final var report = subject.errorReportFor(dispatch);
 
         verify(solvencyPreCheck)
                 .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, true);
-        assertEquals(withNoError(dispatch.creatorInfo().accountId(), payerAccount), report);
+        assertEquals(
+                payerErrorReport(
+                        dispatch.creatorInfo().accountId(),
+                        payerAccount,
+                        UNSUCCESSFUL_PREHANDLE.responseCode(),
+                        false,
+                        IsDuplicate.NO),
+                report);
     }
 
     @Test
@@ -182,8 +273,12 @@ class ErrorReporterTest {
         final var report = subject.errorReportFor(dispatch);
 
         assertEquals(
-                withPayerError(
-                        dispatch.creatorInfo().accountId(), payerAccount, INSUFFICIENT_ACCOUNT_BALANCE, true, false),
+                payerErrorReport(
+                        dispatch.creatorInfo().accountId(),
+                        payerAccount,
+                        INSUFFICIENT_ACCOUNT_BALANCE,
+                        true,
+                        IsDuplicate.NO),
                 report);
     }
 
@@ -202,8 +297,12 @@ class ErrorReporterTest {
         final var report = subject.errorReportFor(dispatch);
 
         assertEquals(
-                withPayerError(
-                        dispatch.creatorInfo().accountId(), payerAccount, INSUFFICIENT_ACCOUNT_BALANCE, false, false),
+                payerErrorReport(
+                        dispatch.creatorInfo().accountId(),
+                        payerAccount,
+                        INSUFFICIENT_ACCOUNT_BALANCE,
+                        false,
+                        IsDuplicate.NO),
                 report);
     }
 
@@ -222,7 +321,7 @@ class ErrorReporterTest {
 
         final var report = subject.errorReportFor(dispatch);
 
-        assertEquals(withCreatorError(dispatch.creatorInfo().accountId(), INSUFFICIENT_PAYER_BALANCE), report);
+        assertEquals(creatorErrorReport(dispatch.creatorInfo().accountId(), INSUFFICIENT_PAYER_BALANCE), report);
     }
 
     @Test
@@ -231,6 +330,14 @@ class ErrorReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenPayer(payer -> payer.tinybarBalance(1L).deleted(true));
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        assertThrows(IllegalStateException.class, () -> subject.errorReportFor(dispatch));
+    }
+
+    @Test
+    void smartContractScheduledPayerIsFailInvalid() {
+        givenScheduledDispatch();
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        givenPayer(payer -> payer.tinybarBalance(1L).smartContract(true));
         assertThrows(IllegalStateException.class, () -> subject.errorReportFor(dispatch));
     }
 
@@ -252,6 +359,14 @@ class ErrorReporterTest {
         assertThrows(IllegalStateException.class, () -> subject.errorReportFor(dispatch));
     }
 
+    @Test
+    void missingScheduledPayerIsFailInvalid() {
+        givenScheduledDispatch();
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        givenMissingPayer();
+        assertThrows(IllegalStateException.class, () -> subject.errorReportFor(dispatch));
+    }
+
     private void givenMissingPayer() {
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.readableStoreFactory()).willReturn(storeFactory);
@@ -269,6 +384,18 @@ class ErrorReporterTest {
                 .willReturn(HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE);
     }
 
+    private void givenOtherNodeDuplicate() {
+        given(creatorInfo.nodeId()).willReturn(CREATOR_NODE_ID.id());
+        given(recordCache.hasDuplicate(TXN_BODY.transactionIDOrThrow(), CREATOR_NODE_ID.id()))
+                .willReturn(HederaRecordCache.DuplicateCheckResult.OTHER_NODE);
+    }
+
+    private void givenSameNodeDuplicate() {
+        given(creatorInfo.nodeId()).willReturn(CREATOR_NODE_ID.id());
+        given(recordCache.hasDuplicate(TXN_BODY.transactionIDOrThrow(), CREATOR_NODE_ID.id()))
+                .willReturn(HederaRecordCache.DuplicateCheckResult.SAME_NODE);
+    }
+
     private void givenValidPayerSig() {
         given(dispatch.keyVerifier()).willReturn(keyVerifier);
         given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(PASSED_VERIFICATION);
@@ -279,7 +406,7 @@ class ErrorReporterTest {
     }
 
     private void givenPreceding() {
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
+        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.PRECEDING);
     }
 
     private void givenUserDispatch() {
@@ -323,6 +450,18 @@ class ErrorReporterTest {
             null,
             SO_FAR_SO_GOOD,
             SUCCESS,
+            null,
+            Collections.emptySet(),
+            null,
+            Collections.emptySet(),
+            null,
+            null,
+            0);
+    private static final PreHandleResult UNSUCCESSFUL_PREHANDLE = new PreHandleResult(
+            null,
+            null,
+            PRE_HANDLE_FAILURE,
+            INVALID_ACCOUNT_ID,
             null,
             Collections.emptySet(),
             null,
