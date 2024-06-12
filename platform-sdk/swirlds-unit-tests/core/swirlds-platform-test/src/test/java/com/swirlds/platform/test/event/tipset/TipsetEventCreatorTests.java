@@ -210,8 +210,9 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
-        final List<OneOf<PayloadOneOfType>> hapiTransactions = Stream.of(newEvent.getTransactions()).map(
-                Transaction::getPayload).toList();
+        final List<OneOf<PayloadOneOfType>> hapiTransactions = Stream.of(newEvent.getTransactions())
+                .map(Transaction::getPayload)
+                .toList();
         // We should see the expected transactions
         assertEquals(expectedTransactions, hapiTransactions);
 

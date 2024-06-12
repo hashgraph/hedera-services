@@ -84,12 +84,11 @@ class IssDetectorTests extends PlatformTest {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
-                    final StateSignaturePayload signatureTransaction =
-                            StateSignaturePayload.newBuilder()
-                                    .round(roundNumber)
-                                    .signature(Bytes.EMPTY)
-                                    .hash(nodeHashInfo.nodeStateHash().getBytes())
-                                    .build();
+                    final StateSignaturePayload signatureTransaction = StateSignaturePayload.newBuilder()
+                            .round(roundNumber)
+                            .signature(Bytes.EMPTY)
+                            .hash(nodeHashInfo.nodeStateHash().getBytes())
+                            .build();
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
