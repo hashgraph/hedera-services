@@ -137,14 +137,15 @@ extraJavaModuleInfo {
     }
     module("io.grpc:grpc-api", "io.grpc") {
         exportAllPackages()
+        requireAllDefinedDependencies()
         requires("java.logging")
     }
     module("io.grpc:grpc-context", "io.grpc.context")
     module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
     module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
 
-    module("io.grpc:grpc-testing", "grpc.testing")
-    module("io.grpc:grpc-services", "grpc.services")
+    module("io.grpc:grpc-testing", "io.grpc.testing")
+    module("io.grpc:grpc-services", "io.grpc.services")
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
     module("com.google.code.findbugs:jsr305", "java.annotation") {
         exportAllPackages()
