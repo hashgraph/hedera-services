@@ -33,7 +33,7 @@ import org.junit.platform.launcher.TestPlan;
  * plan execution finishes.
  */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
-    public static final int DEFAULT_SHARED_NETWORK_SIZE = 4;
+    public static final int CLASSIC_HAPI_TEST_NETWORK_SIZE = 4;
 
     @Override
     public void launcherSessionOpened(@NonNull final LauncherSession session) {
@@ -48,9 +48,9 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
             isEmbedded = embeddedModeRequested();
             final HederaNetwork targetNetwork;
             if (embeddedModeRequested()) {
-                targetNetwork = EmbeddedNetwork.newEmbeddedNetwork(DEFAULT_SHARED_NETWORK_SIZE);
+                targetNetwork = EmbeddedNetwork.newEmbeddedNetwork();
             } else {
-                targetNetwork = SubProcessNetwork.newSharedNetwork(DEFAULT_SHARED_NETWORK_SIZE);
+                targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
             }
             targetNetwork.start();
             NetworkTargetingExtension.SHARED_NETWORK.set(targetNetwork);

@@ -127,8 +127,8 @@ tasks.register<Test>("testEmbedded") {
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform {
-        // Exclude tests that start and stop nodes, hence must run against a subprocess network
-        excludeTags("RESTART|ND_RECONNECT")
+        // Exclude tests that start and stop nodes, or explicitly preclude embedded mode
+        excludeTags("RESTART|ND_RECONNECT|IF_NOT_EMBEDDED")
     }
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)

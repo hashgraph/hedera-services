@@ -211,15 +211,13 @@ public class IssueRegressionTests {
 
     @HapiTest
     final Stream<DynamicTest> duplicatedTxnsSameTypeDifferentNodesDetected() {
-
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
                 .given(
-                        cryptoCreate("acct3").setNode("0.0.3").via("txnId1"),
+                        // This is an unchecked submit in embedded mode so we can test
+                        // precheck of the default node in what comes next
+                        cryptoCreate("acct3").setNode("0.0.5").via("txnId1"),
                         UtilVerbs.sleepFor(2000),
-                        cryptoCreate("acctWithDuplicateTxnId")
-                                .setNode("0.0.5")
-                                .txnId("txnId1")
-                                .hasPrecheck(DUPLICATE_TRANSACTION))
+                        cryptoCreate("acctWithDuplicateTxnId").txnId("txnId1").hasPrecheck(DUPLICATE_TRANSACTION))
                 .when()
                 .then(getTxnRecord("txnId1").logged());
     }
@@ -228,7 +226,7 @@ public class IssueRegressionTests {
     final Stream<DynamicTest> duplicatedTxnsDifferentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(
-                        cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),
+                        cryptoCreate("acct4").via("txnId4"),
                         newKeyNamed("key2"),
                         createTopic("topic2").setNode("0.0.5").submitKeyName("key2"))
                 .when(submitMessageTo("topic2")

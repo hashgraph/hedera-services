@@ -41,6 +41,7 @@ module com.hedera.node.test.clients {
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
+    requires transitive com.hedera.node.app;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
     requires transitive com.fasterxml.jackson.annotation;
@@ -58,8 +59,8 @@ module com.hedera.node.test.clients {
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.mono;
+    requires com.hedera.node.app.spi.test.fixtures;
     requires com.hedera.node.app.test.fixtures;
-    requires com.hedera.node.app;
     requires com.hedera.node.config;
     requires com.swirlds.base;
     requires com.swirlds.config.api;

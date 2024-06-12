@@ -16,8 +16,14 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -69,5 +75,44 @@ public class AddressBookUtils {
         }
         sb.append("\nnextNodeId, ").append(nodes.size()).append("\n");
         return sb.toString();
+    }
+
+    /**
+     * Returns the "classic" metadata for a node in the network, matching the names
+     * used by {@link #configTxtForLocal(String, List, int, int)} to generate the
+     * <i>config.txt</i> file.
+     *
+     * @param nodeId the ID of the node
+     * @param networkName the name of the network
+     * @param scope if non-null, an additional scope to use for the working directory
+     * @param nextGrpcPort the next gRPC port to use
+     * @param nextGossipPort the next gossip port to use
+     * @param nextGossipTlsPort the next gossip TLS port to use
+     * @param nextPrometheusPort the next Prometheus port to use
+     * @return the metadata for the node
+     */
+    public static NodeMetadata classicMetadataFor(
+            final int nodeId,
+            @NonNull final String networkName,
+            @NonNull final String host,
+            @Nullable String scope,
+            final int nextGrpcPort,
+            final int nextGossipPort,
+            final int nextGossipTlsPort,
+            final int nextPrometheusPort) {
+        requireNonNull(host);
+        requireNonNull(networkName);
+        return new NodeMetadata(
+                nodeId,
+                CLASSIC_NODE_NAMES[nodeId],
+                AccountID.newBuilder()
+                        .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
+                        .build(),
+                host,
+                nextGrpcPort + nodeId * 2,
+                nextGossipPort + nodeId * 2,
+                nextGossipTlsPort + nodeId * 2,
+                nextPrometheusPort + nodeId,
+                workingDirFor(nodeId, scope));
     }
 }

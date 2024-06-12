@@ -16,16 +16,15 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,11 +36,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.List;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class EmbeddedNetwork extends AbstractNetwork {
     private static final String WORKING_DIR_SCOPE = "embedded";
+    private static final String EMBEDDED_HOST = "127.0.0.1";
     private static final String EMBEDDED_NETWORK_NAME = WORKING_DIR_SCOPE.toUpperCase();
 
     private final String configTxt;
@@ -50,31 +50,33 @@ public class EmbeddedNetwork extends AbstractNetwork {
     @Nullable
     private EmbeddedHedera embeddedHedera;
 
-    public static void main(String... args) {
-        final var subject = new EmbeddedNetwork(4);
-        subject.start();
-        subject.terminate();
-    }
-
     /**
      * Creates an embedded "network" of with the given size.
      *
-     * @param size the number of nodes in the network
      * @return the embedded network
      */
-    public static synchronized HederaNetwork newEmbeddedNetwork(final int size) {
-        return new EmbeddedNetwork(size);
+    public static synchronized HederaNetwork newEmbeddedNetwork() {
+        return new EmbeddedNetwork();
     }
 
-    public EmbeddedNetwork(final int size) {
+    public EmbeddedNetwork() {
         super(
                 EMBEDDED_NETWORK_NAME,
-                Stream.<HederaNode>of(new EmbeddedNode(ghostMetadata()))
-                        .flatMap(node ->
-                                IntStream.range(0, size).mapToObj(((EmbeddedNode) node)::withClassicBookDataFor))
-                        .toList());
+                List.of(new EmbeddedNode(
+                        classicMetadataFor(0, EMBEDDED_NETWORK_NAME, EMBEDDED_HOST, WORKING_DIR_SCOPE, 0, 0, 0, 0))));
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
-        this.configTxt = configTxtForLocal(name(), nodes(), 0, 0);
+        // Even though we are only embedding node0, we generate an address book
+        // for a "classic" HapiTest network with 4 nodes so that tests can still
+        // submit transactions with different creator accounts; c.f. EmbeddedHedera,
+        // which skips ingest and directly submits transactions for other nodes
+        this.configTxt = configTxtForLocal(
+                name(),
+                IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
+                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(classicMetadataFor(
+                                nodeId, EMBEDDED_NETWORK_NAME, EMBEDDED_HOST, WORKING_DIR_SCOPE, 0, 0, 0, 0)))
+                        .toList(),
+                0,
+                0);
     }
 
     @Override
@@ -122,20 +124,5 @@ public class EmbeddedNetwork extends AbstractNetwork {
     @Override
     public TargetNetworkType type() {
         return EMBEDDED_NETWORK;
-    }
-
-    private static NodeMetadata ghostMetadata() {
-        return new NodeMetadata(
-                0,
-                "<GHOST>",
-                com.hedera.hapi.node.base.AccountID.newBuilder()
-                        .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM)
-                        .build(),
-                "0.0.0.0",
-                0,
-                0,
-                0,
-                0,
-                workingDirFor(0, WORKING_DIR_SCOPE));
     }
 }

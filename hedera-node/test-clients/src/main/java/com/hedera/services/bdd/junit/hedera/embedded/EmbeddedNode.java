@@ -20,11 +20,8 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROP
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM;
-import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -95,27 +92,5 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     @Override
     protected EmbeddedNode self() {
         return this;
-    }
-
-    /**
-     * Returns this {@link EmbeddedNode} with classic book data for the given node ID for
-     * use in creating an address book.
-     *
-     * @param nodeId the node ID
-     * @return this {@link EmbeddedNode} with classic book data
-     */
-    public HederaNode withClassicBookDataFor(final int nodeId) {
-        return new EmbeddedNode(new NodeMetadata(
-                nodeId,
-                CLASSIC_NODE_NAMES[nodeId],
-                AccountID.newBuilder()
-                        .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
-                        .build(),
-                metadata.host(),
-                metadata.grpcPort(),
-                metadata.gossipPort(),
-                metadata.tlsGossipPort(),
-                metadata.prometheusPort(),
-                metadata.workingDir()));
     }
 }

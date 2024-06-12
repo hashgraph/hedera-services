@@ -17,19 +17,16 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.hedera.NodeMetadata;
-import com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -144,26 +141,21 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         final var network = new SubProcessNetwork(
                 name,
                 IntStream.range(0, size)
-                        .<HederaNode>mapToObj(
-                                nodeId -> new SubProcessNode(metadataFor(nodeId, name), GRPC_PINGER, PROMETHEUS_CLIENT))
+                        .<HederaNode>mapToObj(nodeId -> new SubProcessNode(
+                                classicMetadataFor(
+                                        nodeId,
+                                        name,
+                                        SUBPROCESS_HOST,
+                                        SHARED_NETWORK_NAME.equals(name) ? null : name,
+                                        nextGrpcPort,
+                                        nextGossipPort,
+                                        nextGossipTlsPort,
+                                        nextPrometheusPort),
+                                GRPC_PINGER,
+                                PROMETHEUS_CLIENT))
                         .toList());
         Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
-    }
-
-    private static NodeMetadata metadataFor(final int nodeId, @NonNull final String networkName) {
-        return new NodeMetadata(
-                nodeId,
-                AddressBookUtils.CLASSIC_NODE_NAMES[nodeId],
-                AccountID.newBuilder()
-                        .accountNum(AddressBookUtils.CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
-                        .build(),
-                SUBPROCESS_HOST,
-                nextGrpcPort + nodeId * 2,
-                nextGossipPort + nodeId * 2,
-                nextGossipTlsPort + nodeId * 2,
-                nextPrometheusPort + nodeId,
-                workingDirFor(nodeId, SHARED_NETWORK_NAME.equals(networkName) ? null : networkName));
     }
 
     private static void initializeNextPortsForNetwork(final int size) {

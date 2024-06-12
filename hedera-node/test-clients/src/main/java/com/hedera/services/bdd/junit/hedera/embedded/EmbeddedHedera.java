@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -30,7 +29,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -83,7 +81,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -96,7 +93,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -113,11 +109,12 @@ import org.apache.logging.log4j.Logger;
  * An embedded Hedera node that can be used in tests.
  */
 public class EmbeddedHedera {
-    private static final Logger LOG = LogManager.getLogger(EmbeddedHedera.class);
+    private static final Logger LOGGER = LogManager.getLogger(EmbeddedHedera.class);
 
     private static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     private static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
     private static final Signature TOY_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
+    private static final TransactionResponse OK_RESPONSE = TransactionResponse.getDefaultInstance();
     private static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
             new PlatformStatusChangeNotification(ACTIVE);
     private static final PlatformStatusChangeNotification FREEZE_COMPLETE_NOTIFICATION =
@@ -125,37 +122,35 @@ public class EmbeddedHedera {
 
     private final Hedera hedera;
     private final NodeId defaultNodeId;
+    private final AccountID defaultNodeAccountId;
     private final AddressBook addressBook;
     private final ToyPlatform platform;
     private final PlatformState platformState = new PlatformState();
     private final Map<AccountID, NodeId> nodeIds;
     private final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
     private final FakeHederaState state = new FakeHederaState();
-    private final ThreadLocal<NodeId> submittingNodeId = new ThreadLocal<>();
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    @Nullable
+    @NonNull
     private HederaSoftwareVersion version;
 
     public EmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
         addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
-        defaultNodeId = addressBook.getNodeId(0);
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(EmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
+        defaultNodeId = addressBook.getNodeId(0);
+        defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
         platform = new ToyPlatform();
 
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
-                (ignore, nodeVersion) -> {
-                    this.version = nodeVersion;
-                    return new ChameleonSelfNodeInfo(nodeVersion);
-                },
                 IsEmbeddedTest.YES);
+        this.version = (HederaSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
@@ -187,11 +182,17 @@ public class EmbeddedHedera {
     public TransactionResponse submit(@NonNull final Transaction transaction, @NonNull final AccountID nodeAccountId) {
         requireNonNull(transaction);
         requireNonNull(nodeAccountId);
-        setSubmittingNodeId(nodeAccountId);
-        final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
-        hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
-        submittingNodeId.remove();
-        return parseTransactionResponse(responseBuffer);
+        if (defaultNodeAccountId.equals(nodeAccountId)) {
+            final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
+            hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
+            return parseTransactionResponse(responseBuffer);
+        } else {
+            final var nodeId = requireNonNull(nodeIds.get(nodeAccountId), "Missing node account id");
+            // Bypass ingest for any other node, but make a little noise to remind test author this happens
+            LOGGER.warn("Bypassing ingest checks for transaction to node {} ({})", nodeId, nodeAccountId);
+            platform.queue.add(new ToyEvent(nodeId, Instant.now(), new SwirldTransaction(transaction.toByteArray())));
+            return OK_RESPONSE;
+        }
     }
 
     /**
@@ -204,20 +205,13 @@ public class EmbeddedHedera {
     public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
         requireNonNull(query);
         requireNonNull(nodeAccountId);
-        setSubmittingNodeId(nodeAccountId);
+        if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
+            // It's possible this was intentional, but make a little noise to remind test author this happens
+            LOGGER.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
+        }
         final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
         hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
-        submittingNodeId.remove();
         return parseQueryResponse(responseBuffer);
-    }
-
-    private void setSubmittingNodeId(@NonNull final AccountID nodeAccountId) {
-        final var nodeId = requireNonNull(nodeIds.get(nodeAccountId));
-        submittingNodeId.set(nodeId);
-    }
-
-    private @NonNull NodeId effectiveNodeId() {
-        return Optional.ofNullable(submittingNodeId.get()).orElse(defaultNodeId);
     }
 
     private class ToyPlatform implements Platform {
@@ -242,7 +236,7 @@ public class EmbeddedHedera {
 
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
-            return queue.add(new ToyEvent(effectiveNodeId(), Instant.now(), new SwirldTransaction(transaction)));
+            return queue.add(new ToyEvent(defaultNodeId, Instant.now(), new SwirldTransaction(transaction)));
         }
 
         @NonNull
@@ -272,7 +266,7 @@ public class EmbeddedHedera {
         @NonNull
         @Override
         public NodeId getSelfId() {
-            throw new UnsupportedOperationException("Not used by Hedera");
+            return defaultNodeId;
         }
 
         @NonNull
@@ -300,7 +294,7 @@ public class EmbeddedHedera {
                 newEvents.forEach(event -> hedera.onPreHandle(event, state));
                 events.addAll(newEvents);
             } catch (Exception e) {
-                LOG.warn("Error handling transactions", e);
+                LOGGER.warn("Error handling transactions", e);
             }
         }
     }
@@ -363,62 +357,6 @@ public class EmbeddedHedera {
         @Override
         public RecycleBin getRecycleBin() {
             throw new UnsupportedOperationException("Not used by Hedera");
-        }
-    }
-
-    private class ChameleonSelfNodeInfo implements SelfNodeInfo {
-        private final HederaSoftwareVersion version;
-
-        public ChameleonSelfNodeInfo(@NonNull final HederaSoftwareVersion version) {
-            this.version = requireNonNull(version);
-        }
-
-        @NonNull
-        @Override
-        public SemanticVersion hapiVersion() {
-            return version.getHapiVersion();
-        }
-
-        @NonNull
-        @Override
-        public SemanticVersion appVersion() {
-            return version.getServicesVersion();
-        }
-
-        @Override
-        public long nodeId() {
-            return effectiveNodeId().id();
-        }
-
-        @Override
-        public com.hedera.hapi.node.base.AccountID accountId() {
-            return accountIds.get(effectiveNodeId());
-        }
-
-        @Override
-        public String memo() {
-            return addressBook.getAddress(effectiveNodeId()).getMemo();
-        }
-
-        @Override
-        public String externalHostName() {
-            return addressBook.getAddress(effectiveNodeId()).getHostnameExternal();
-        }
-
-        @Override
-        public int externalPort() {
-            return addressBook.getAddress(effectiveNodeId()).getPortExternal();
-        }
-
-        @Override
-        public String hexEncodedPublicKey() {
-            return hex(requireNonNull(addressBook.getAddress(effectiveNodeId()).getSigPublicKey())
-                    .getEncoded());
-        }
-
-        @Override
-        public long stake() {
-            return addressBook.getAddress(effectiveNodeId()).getWeight();
         }
     }
 
@@ -572,6 +510,10 @@ public class EmbeddedHedera {
         public Instant getConsensusTimestamp() {
             return now;
         }
+    }
+
+    private boolean isFree(@NonNull final Query query) {
+        return query.hasCryptogetAccountBalance() || query.hasTransactionGetReceipt();
     }
 
     private static AddressBook loadAddressBook(@NonNull final Path path) {

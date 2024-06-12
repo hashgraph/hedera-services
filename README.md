@@ -25,11 +25,6 @@ order for the `checkAllModuleInfo` task to succeed.
 ## Solidity
 Hedera Contracts support `pragma solidity <=0.8.9`.
 
-## Docker Compose quickstart
-
-The [Docker quickstart](hedera-node/docs/docker-quickstart.md) covers how to
-start a local network of Hedera Services nodes using Docker Compose.
-
 ## Developer IntelliJ quickstart
 
 The [IntelliJ quickstart](hedera-node/docs/intellij-quickstart.md) covers how to

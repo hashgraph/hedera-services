@@ -38,7 +38,7 @@ import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
-import com.hedera.node.app.info.SelfNodeInfoExtractor;
+import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
@@ -89,6 +89,7 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -159,10 +160,6 @@ public final class Hedera implements SwirldMain {
      * without restarting the process, so final.
      */
     private final HederaSoftwareVersion version;
-    /**
-     * The strategy for extracting self node info from the platform and version.
-     */
-    private final SelfNodeInfoExtractor selfNodeInfoExtractor;
 
     private final IsEmbeddedTest isEmbeddedTest;
 
@@ -199,27 +196,19 @@ public final class Hedera implements SwirldMain {
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleHederaState}.
      *
-     * <p>The {@link SelfNodeInfoExtractor} is injected for "embedded" Hedera, where we want a single instance
-     * of this class to be able to ingest transactions with node account ids for any node in a simulated network.
-     * We can accomplish this by passing in a fake extractor that returns an externally-controlled account id
-     * always changing to match the node id of the node being simulated.
-     *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      * @param registryFactory the factory to use for creating the services registry
      * @param migrator the migrator to use with the services
-     * @param selfNodeInfoExtractor the strategy for extracting self node info from the platform and version
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final SelfNodeInfoExtractor selfNodeInfoExtractor,
             @NonNull final IsEmbeddedTest isEmbeddedTest) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
         this.serviceMigrator = requireNonNull(migrator);
-        this.selfNodeInfoExtractor = requireNonNull(selfNodeInfoExtractor);
         logger.info(
                 """
 
@@ -390,7 +379,7 @@ public final class Hedera implements SwirldMain {
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion),
                 () -> trigger);
-        final var selfNodeInfo = selfNodeInfoExtractor.extractSelfNodeInfo(platform, version);
+        final var selfNodeInfo = extractSelfNodeInfo(platform, version);
         final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);
         // (FUTURE) In principle, the FileService could actually change the active configuration during a
         // migration, which implies we should be passing the config provider and not a static configuration
@@ -666,7 +655,7 @@ public final class Hedera implements SwirldMain {
                 .softwareVersion(version)
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
-                .self(selfNodeInfoExtractor.extractSelfNodeInfo(platform, version))
+                .self(extractSelfNodeInfo(platform, version))
                 .platform(platform)
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                 .crypto(CryptographyHolder.get())
@@ -769,5 +758,12 @@ public final class Hedera implements SwirldMain {
                     "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384", nodeId);
             daggerApp.systemExits().fail(1);
         }
+    }
+
+    private SelfNodeInfo extractSelfNodeInfo(
+            @NonNull final Platform platform, @NonNull final HederaSoftwareVersion version) {
+        final var selfId = platform.getSelfId();
+        final var nodeAddress = platform.getAddressBook().getAddress(selfId);
+        return SelfNodeInfoImpl.of(nodeAddress, version);
     }
 }

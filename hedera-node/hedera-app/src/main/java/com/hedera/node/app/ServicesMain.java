@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.info.CanonicalSelfNodeInfoExtractor.CANONICAL_SELF_NODE_INFO_EXTRACTOR;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
@@ -301,7 +300,6 @@ public class ServicesMain implements SwirldMain {
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
-                CANONICAL_SELF_NODE_INFO_EXTRACTOR,
                 IsEmbeddedTest.NO);
     }
 }
