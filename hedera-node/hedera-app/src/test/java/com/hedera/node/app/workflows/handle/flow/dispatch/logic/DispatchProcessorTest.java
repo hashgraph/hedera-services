@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -31,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -61,6 +64,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,6 +91,8 @@ class DispatchProcessorTest {
             .build();
     private static final TransactionInfo TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+    private static final TransactionInfo CONTRACT_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
 
     @Mock
     private Authorizer authorizer;
@@ -204,6 +210,27 @@ class DispatchProcessorTest {
     }
 
     @Test
+    void consGasExhaustedWaivesServiceFee() {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
+        given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
+        givenAuthorization(CONTRACT_TXN_INFO);
+        given(networkUtilizationManager.wasLastTxnGasThrottled()).willReturn(true);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(dispatcher, never()).dispatchHandle(context);
+        verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
+        verify(recordListBuilder).revertChildrenOf(recordBuilder);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        assertFinished();
+    }
+
+    @Test
     void unableToAffordServiceFeesChargesAccordingly() {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
@@ -222,9 +249,13 @@ class DispatchProcessorTest {
     }
 
     private void givenAuthorization() {
-        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, TXN_INFO.functionality()))
+        givenAuthorization(TXN_INFO);
+    }
+
+    private void givenAuthorization(@NonNull final TransactionInfo txnInfo) {
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, txnInfo.functionality()))
                 .willReturn(true);
-        given(authorizer.hasPrivilegedAuthorization(PAYER_ACCOUNT_ID, TXN_INFO.functionality(), TXN_BODY))
+        given(authorizer.hasPrivilegedAuthorization(PAYER_ACCOUNT_ID, txnInfo.functionality(), TXN_BODY))
                 .willReturn(UNNECESSARY);
     }
 
