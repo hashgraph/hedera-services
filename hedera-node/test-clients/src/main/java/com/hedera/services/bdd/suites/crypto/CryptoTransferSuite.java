@@ -1572,7 +1572,6 @@ public class CryptoTransferSuite {
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(secondUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(10))
                 .when(
@@ -1598,16 +1597,12 @@ public class CryptoTransferSuite {
                                 List.of(ByteString.copyFromUtf8("metadata1"), ByteString.copyFromUtf8("metadata2"))),
                         // Transfer fungible token
                         cryptoTransfer(moving(1, tokenA).between(firstUser, secondUser))
-                                .signedBy(TREASURY)
-                                .payingWith(TREASURY)
                                 .via(transferToFU),
                         getTxnRecord(transferToFU)
                                 .hasNewTokenAssociation(tokenA, secondUser)
                                 .logged(),
                         // Transfer NFT
                         cryptoTransfer(movingUnique(tokenB, 1).between(firstUser, secondUser))
-                                .signedBy(TREASURY)
-                                .payingWith(TREASURY)
                                 .via(transferToSU),
                         getTxnRecord(transferToSU)
                                 .hasNewTokenAssociation(tokenB, secondUser)
