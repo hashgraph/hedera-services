@@ -17,12 +17,10 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
@@ -33,7 +31,6 @@ import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContrac
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -45,6 +42,7 @@ import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -59,6 +57,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class DispatchProcessor {
     private static final Logger logger = LogManager.getLogger(DispatchProcessor.class);
+
     private final Authorizer authorizer;
     private final ErrorReporter errorReporter;
     private final RecordFinalizer recordFinalizer;
@@ -98,13 +97,14 @@ public class DispatchProcessor {
      */
     public WorkDone processDispatch(@NonNull Dispatch dispatch) {
         final var errorReport = errorReporter.errorReportFor(dispatch);
-        final WorkDone workDone;
+        WorkDone workDone = FEES_ONLY;
         if (errorReport.isCreatorError()) {
             chargeCreator(dispatch, errorReport);
-            workDone = FEES_ONLY;
         } else {
             chargePayer(dispatch, errorReport);
-            workDone = tryHandle(dispatch, errorReport);
+            if (!alreadyFailed(dispatch, errorReport)) {
+                workDone = tryHandle(dispatch, errorReport);
+            }
         }
         recordFinalizer.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
@@ -118,13 +118,11 @@ public class DispatchProcessor {
      * If it catches an unexpected exception, it will charge the payer for the fees and return FEE_ONLY as work done.
      * @param dispatch the dispatch to be processed
      * @param errorReport the due diligence report for the dispatch
-     * @throws HandleException if the transaction logic fails
-     * @throws ThrottleException if the transaction is throttled
-     * @thorws Exception if there is an unexpected error
+     * @return the work done by the dispatch
      */
     private WorkDone tryHandle(@NonNull final Dispatch dispatch, @NonNull final ErrorReport errorReport) {
         try {
-            final var workDone = handle(dispatch, errorReport);
+            final var workDone = handle(dispatch);
             dispatch.recordBuilder().status(SUCCESS);
             handleSystemUpdates(dispatch);
             return workDone;
@@ -151,7 +149,7 @@ public class DispatchProcessor {
     /**
      * Handles the system updates for the dispatch. It will notify the responsible system file update facility if
      * any system file was uploaded. It will also notify if the platform state was updated.
-     * @param dispatch
+     * @param dispatch the dispatch to be processed
      */
     private void handleSystemUpdates(final Dispatch dispatch) {
         // Notify responsible facility if system-file was uploaded.
@@ -213,7 +211,7 @@ public class DispatchProcessor {
         if (hasWaivedFees) {
             return;
         }
-        if (report.unableToPayServiceFee() || report.isDuplicate()) {
+        if (report.unableToPayServiceFee() || report.isDuplicate() == IsDuplicate.YES) {
             dispatch.feeAccumulator()
                     .chargeFees(
                             report.payerOrThrow().accountIdOrThrow(),
@@ -247,11 +245,7 @@ public class DispatchProcessor {
         recordListBuilder.revertChildrenOf(recordBuilder);
     }
 
-    private WorkDone handle(Dispatch dispatch, ErrorReport errorReport) {
-        assertPayerSolvency(errorReport);
-        assertPreHandlePassed(dispatch);
-        assertAuthorized(dispatch);
-        assertValidSignatures(dispatch);
+    private WorkDone handle(@NonNull final Dispatch dispatch) {
         if (isContractOperation(dispatch)) {
             networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
@@ -262,68 +256,62 @@ public class DispatchProcessor {
         return USER_TRANSACTION;
     }
 
-    /**
-     * Asserts that the payer is solvent. If the payer is not solvent, it will throw a {@link HandleException}.
-     * @param errorReport the error report for the dispatch
-     */
-    private void assertPayerSolvency(final ErrorReport errorReport) {
-        if (errorReport.isPayerSolvencyError()) {
-            throw new HandleException(errorReport.payerSolvencyErrorOrThrow());
+    private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final ErrorReport errorReport) {
+        if (errorReport.isPayerError()) {
+            dispatch.recordBuilder().status(errorReport.payerErrorOrThrow());
+            return true;
         }
+        final var authorizationFailure = maybeAuthorizationFailure(dispatch);
+        if (authorizationFailure != null) {
+            dispatch.recordBuilder().status(authorizationFailure);
+            return true;
+        }
+        if (failsSignatureVerification(dispatch)) {
+            dispatch.recordBuilder().status(INVALID_SIGNATURE);
+            return true;
+        }
+        return false;
     }
 
     /**
      * Asserts that the dispatch is authorized. If the dispatch is not authorized, it will throw a {@link HandleException}.
      * @param dispatch the dispatch to be processed
      */
-    private void assertAuthorized(final Dispatch dispatch) {
+    private @Nullable ResponseCodeEnum maybeAuthorizationFailure(final Dispatch dispatch) {
         if (!authorizer.isAuthorized(
                 dispatch.syntheticPayer(), dispatch.txnInfo().functionality())) {
-            throw new HandleException(
-                    dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED);
+            return dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
         }
-
-        final var privileges = authorizer.hasPrivilegedAuthorization(
+        final var failure = authorizer.hasPrivilegedAuthorization(
                 dispatch.syntheticPayer(),
                 dispatch.txnInfo().functionality(),
                 dispatch.txnInfo().txBody());
-        if (privileges == SystemPrivilege.UNAUTHORIZED) {
-            throw new HandleException(AUTHORIZATION_FAILED);
-        } else if (privileges == SystemPrivilege.IMPERMISSIBLE) {
-            throw new HandleException(ENTITY_NOT_ALLOWED_TO_DELETE);
-        }
-    }
-
-    /**
-     * Asserts that the pre-handle checks have passed. If the pre-handle checks have not passed, it will throw a
-     * {@link HandleException}.
-     * @param dispatch the dispatch to be processed
-     */
-    private void assertPreHandlePassed(Dispatch dispatch) {
-        final var preHandleResult = dispatch.preHandleResult();
-        if (preHandleResult.responseCode() != OK) {
-            throw new HandleException(preHandleResult.responseCode());
-        }
+        return switch (failure) {
+            case UNAUTHORIZED -> UNAUTHORIZED;
+            case IMPERMISSIBLE -> ENTITY_NOT_ALLOWED_TO_DELETE;
+            default -> null;
+        };
     }
 
     /**
      * Asserts that the signatures are valid. If the signatures are not valid, it will throw a {@link HandleException}.
      * @param dispatch the dispatch to be processed
      */
-    private void assertValidSignatures(final Dispatch dispatch) {
+    private boolean failsSignatureVerification(final Dispatch dispatch) {
         for (final var key : dispatch.requiredKeys()) {
             final var verification = dispatch.keyVerifier().verificationFor(key);
             if (verification.failed()) {
-                throw new HandleException(INVALID_SIGNATURE);
+                return true;
             }
         }
         // If there are any hollow accounts whose signatures need to be verified, verify them
         for (final var hollowAccount : dispatch.hollowAccounts()) {
             final var verification = dispatch.keyVerifier().verificationFor(hollowAccount.alias());
             if (verification.failed()) {
-                throw new HandleException(INVALID_SIGNATURE);
+                return true;
             }
         }
+        return false;
     }
 
     /**
