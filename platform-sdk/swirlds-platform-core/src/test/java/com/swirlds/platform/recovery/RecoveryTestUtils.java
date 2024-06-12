@@ -36,7 +36,6 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -151,7 +150,10 @@ public final class RecoveryTestUtils {
      * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
-            final Random random, final Path destination, final int secondsPerFile, final List<DetailedConsensusEvent> events)
+            final Random random,
+            final Path destination,
+            final int secondsPerFile,
+            final List<DetailedConsensusEvent> events)
             throws IOException {
 
         final Configuration configuration = new TestConfigBuilder()

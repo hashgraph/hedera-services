@@ -432,7 +432,8 @@ public final class EventRecoveryWorkflow {
      * @return the running event hash at the end of the current round
      */
     static Hash getHashEventsCons(final Hash previousRunningHash, final StreamedRound round) {
-        final RunningHashCalculatorForStream<DetailedConsensusEvent> hashCalculator = new RunningHashCalculatorForStream<>();
+        final RunningHashCalculatorForStream<DetailedConsensusEvent> hashCalculator =
+                new RunningHashCalculatorForStream<>();
         hashCalculator.setRunningHash(previousRunningHash);
 
         for (final ConsensusEvent event : round) {

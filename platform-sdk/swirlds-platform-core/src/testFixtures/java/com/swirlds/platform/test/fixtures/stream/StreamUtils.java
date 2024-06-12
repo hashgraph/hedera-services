@@ -24,7 +24,6 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.nio.file.Path;
 import java.time.Duration;

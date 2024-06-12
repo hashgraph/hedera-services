@@ -43,9 +43,7 @@ import java.util.TreeSet;
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.
  */
-public class EventImpl extends EventMetadata
-        implements Comparable<EventImpl>,
-                ConsensusEvent {
+public class EventImpl extends EventMetadata implements Comparable<EventImpl>, ConsensusEvent {
 
     /** The base event information, including some gossip specific information */
     private GossipEvent baseEvent;
@@ -75,7 +73,7 @@ public class EventImpl extends EventMetadata
      * Create an instance based on the given {@link DetailedConsensusEvent}
      * @param detailedConsensusEvent the detailed consensus event to build from
      */
-    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) {//TODO remove
+    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) { // TODO remove
         Objects.requireNonNull(detailedConsensusEvent);
         buildFromConsensusEvent(detailedConsensusEvent);
     }
@@ -274,8 +272,7 @@ public class EventImpl extends EventMetadata
     // ConsensusData
     //////////////////////////////////////////
 
-
-    //TODO probably remove these
+    // TODO probably remove these
     /**
      * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
      */

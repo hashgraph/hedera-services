@@ -40,7 +40,6 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -140,7 +139,8 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
                     false,
                     EventStreamType.getInstance());
 
-            writeQueueThread = new QueueThreadObjectStreamConfiguration<DetailedConsensusEvent>(getStaticThreadManager())
+            writeQueueThread = new QueueThreadObjectStreamConfiguration<DetailedConsensusEvent>(
+                            getStaticThreadManager())
                     .setNodeId(selfId)
                     .setComponent("event-stream")
                     .setThreadName("write-queue")
@@ -165,11 +165,13 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
                         .withUnit("count"));
 
         // receives consensus events from hashCalculator, calculates and set runningHash for this event
-        final RunningHashCalculatorForStream<DetailedConsensusEvent> runningHashCalculator = new RunningHashCalculatorForStream<>();
+        final RunningHashCalculatorForStream<DetailedConsensusEvent> runningHashCalculator =
+                new RunningHashCalculatorForStream<>();
 
         // receives consensus events from hashQueueThread, calculates this event's Hash, then passes to
         // runningHashCalculator
-        final HashCalculatorForStream<DetailedConsensusEvent> hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
+        final HashCalculatorForStream<DetailedConsensusEvent> hashCalculator =
+                new HashCalculatorForStream<>(runningHashCalculator);
         hashQueueThread = new QueueThreadObjectStreamConfiguration<DetailedConsensusEvent>(getStaticThreadManager())
                 .setNodeId(selfId)
                 .setComponent("event-stream")

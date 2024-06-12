@@ -23,7 +23,6 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -45,8 +44,8 @@ import java.util.Objects;
  * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
  * information.
  */
-public class DetailedConsensusEvent extends AbstractSerializableHashable implements RunningHashable, StreamAligned,
-        Timestamped, ConsensusEvent {
+public class DetailedConsensusEvent extends AbstractSerializableHashable
+        implements RunningHashable, StreamAligned, Timestamped, ConsensusEvent {
     /** Value used to indicate that it is undefined*/
     public static final long UNDEFINED = -1;
 
@@ -72,7 +71,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      *
      * @param event the event to copy the data from
      */
-    public DetailedConsensusEvent(@NonNull final EventImpl event) { //TODO remove
+    public DetailedConsensusEvent(@NonNull final EventImpl event) { // TODO remove
         Objects.requireNonNull(event);
         this.gossipEvent = event.getBaseEvent();
         this.roundReceived = event.getRoundReceived();

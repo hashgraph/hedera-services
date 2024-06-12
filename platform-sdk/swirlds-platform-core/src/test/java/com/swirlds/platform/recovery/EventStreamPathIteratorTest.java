@@ -28,7 +28,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
@@ -79,7 +78,8 @@ class EventStreamPathIteratorTest {
         final int secondsPerFile = 2;
         final int expectedFileCount = durationInSeconds / secondsPerFile;
 
-        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 

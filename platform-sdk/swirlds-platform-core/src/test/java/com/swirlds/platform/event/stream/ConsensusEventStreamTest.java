@@ -31,7 +31,6 @@ import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.util.List;
 import java.util.Random;

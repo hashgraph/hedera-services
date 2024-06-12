@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -77,10 +76,8 @@ class DefaultTransactionHandlerTests {
         final ArrayList<DetailedConsensusEvent> streamedEvents = new ArrayList<>();
         for (final Iterator<EventImpl> iterator = events.iterator(); iterator.hasNext(); ) {
             final EventImpl event = iterator.next();
-            final DetailedConsensusEvent detailedConsensusEvent = new DetailedConsensusEvent(
-                    event.getBaseEvent(),
-                    roundNumber,
-                    !iterator.hasNext());
+            final DetailedConsensusEvent detailedConsensusEvent =
+                    new DetailedConsensusEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
             streamedEvents.add(detailedConsensusEvent);
         }
 
@@ -102,7 +99,7 @@ class DefaultTransactionHandlerTests {
                 new TestingEventBuilder(random).setConsensusTimestamp(time.now()), null, null);
 
         event.getBaseEvent().signalPrehandleCompletion();
-        //event.getRunningHash().setHash(mock(Hash.class));
+        // event.getRunningHash().setHash(mock(Hash.class));
 
         return event;
     }
@@ -164,8 +161,12 @@ class DefaultTransactionHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
         verify(platformState)
-                .setLegacyRunningEventHash(
-                        consensusRound.getStreamedEvents().getLast().getRunningHash().getFutureHash().getAndRethrow());
+                .setLegacyRunningEventHash(consensusRound
+                        .getStreamedEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow());
 
         assertFalse(handlerOutput.reservedSignedState().get().isPcesRound());
     }
@@ -203,8 +204,12 @@ class DefaultTransactionHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
-                .setLegacyRunningEventHash(
-                        consensusRound.getStreamedEvents().getLast().getRunningHash().getFutureHash().getAndRethrow());
+                .setLegacyRunningEventHash(consensusRound
+                        .getStreamedEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow());
 
         final List<EventImpl> postFreezeEvents = List.of(buildEvent(), buildEvent(), buildEvent());
 
@@ -219,8 +224,12 @@ class DefaultTransactionHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager).savedStateInFreezePeriod();
         verify(platformState)
-                .setLegacyRunningEventHash(
-                        consensusRound.getStreamedEvents().getLast().getRunningHash().getFutureHash().getAndRethrow());
+                .setLegacyRunningEventHash(consensusRound
+                        .getStreamedEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow());
     }
 
     @Test
@@ -254,8 +263,12 @@ class DefaultTransactionHandlerTests {
         verify(swirldStateManager).handleConsensusRound(consensusRound);
         verify(swirldStateManager, never()).savedStateInFreezePeriod();
         verify(platformState)
-                .setLegacyRunningEventHash(
-                        consensusRound.getStreamedEvents().getLast().getRunningHash().getFutureHash().getAndRethrow());
+                .setLegacyRunningEventHash(consensusRound
+                        .getStreamedEvents()
+                        .getLast()
+                        .getRunningHash()
+                        .getFutureHash()
+                        .getAndRethrow());
 
         assertTrue(handlerOutput.reservedSignedState().get().isPcesRound());
     }

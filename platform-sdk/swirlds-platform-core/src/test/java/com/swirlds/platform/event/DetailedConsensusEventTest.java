@@ -20,11 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;

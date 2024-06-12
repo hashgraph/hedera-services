@@ -70,7 +70,6 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
@@ -587,7 +586,9 @@ public class PlatformComponentBuilder {
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
                     consensusEventStreamName,
                     (DetailedConsensusEvent event) -> event.isLastInRoundReceived()
-                            && blocks.isInFreezePeriodReference().get().test(event.getGossipEvent().getConsensusTimestamp()));
+                            && blocks.isInFreezePeriodReference()
+                                    .get()
+                                    .test(event.getGossipEvent().getConsensusTimestamp()));
         }
         return consensusEventStream;
     }

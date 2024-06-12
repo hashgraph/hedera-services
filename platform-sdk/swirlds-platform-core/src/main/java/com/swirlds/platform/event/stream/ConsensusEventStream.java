@@ -18,7 +18,6 @@ package com.swirlds.platform.event.stream;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;

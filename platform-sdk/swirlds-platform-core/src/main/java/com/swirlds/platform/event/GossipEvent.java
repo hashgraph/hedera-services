@@ -31,7 +31,6 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -310,7 +309,8 @@ public class GossipEvent extends AbstractSerializableHashable implements Consens
 
     @Override
     public Iterator<ConsensusTransaction> consensusTransactionIterator() {
-        return Arrays.asList((ConsensusTransaction[]) hashedData.getTransactions()).iterator();
+        return Arrays.asList((ConsensusTransaction[]) hashedData.getTransactions())
+                .iterator();
     }
 
     /**

@@ -35,7 +35,6 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -66,7 +65,8 @@ class ObjectStreamIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+    public static void assertEventsAreEqual(
+            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
         assertEquals(expected, actual);
     }
 

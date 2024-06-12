@@ -32,7 +32,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -63,7 +62,8 @@ class EventStreamSingleFileIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+    public static void assertEventsAreEqual(
+            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
         assertEquals(expected, actual);
     }
 
