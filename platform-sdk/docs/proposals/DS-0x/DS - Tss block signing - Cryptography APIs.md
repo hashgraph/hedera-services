@@ -13,73 +13,83 @@ Provide necessary pieces for signing blocks with TSS
 
 
 ## Purpose and Context
-The goal of a threshold signature scheme is to enable a group of participants (shareholders) to securely and efficiently perform signature generation while preserving security even in the presence of up to a threshold number of adversary parties.
+The goal of a threshold signature scheme is to enable a group of participants (shareholders) to securely and efficiently perform signature generation while preserving security when assuring the presence of up to a threshold number of honest parties.
 
-This proposal covers the implementation of all necessary pieces to provide the consensus-node and block-node, the functionality to sign and verify blocks using Threshold Signature Scheme (TSS), and EC Cryptography.
+This proposal covers the implementation of all necessary pieces to provide the consensus-node and block-node, the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS), and EC Cryptography.
 
-The overview of the process and background for TSS and how impacts functionally of the platform can be found [here](https://www.notion.so/swirldslabs/TSS-Threshold-Signature-Scheme-9e2676cc4f2a4650a8c0c33b774f3cf4).
+The overview of the process and background for TSS and how it impacts functionally of the platform can be found in the related proposal: [TODO Add Ed's Proposal].
 
-The proposal assumes no relation with the platform and defines a generic solution that can be adopted by any consumer, the only assumption the proposal is making is that exist a channel to connect each participant where the identity of the sender of a message has been previously validated.
+The proposal assumes no relation with the platform and defines a generic solution that can be adopted by any consumer, the only assumption the proposal is making is that there exists a channel to connect each participant where the identity of the sender of a message has been previously validated.
 
 Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, the distribution aspect, the loading and in memory interpretation from each node is also outside the scope of this proposal. 
 
 ### Glossary
-- **TSS (Threshold Signature Scheme)**: A threshold-based signing where a minimum number of parties (threshold) must collaborate to produce or verify a signature.
-- **Shamir’s Secret Sharing**: In Shamir’s SS, a secret s is divided into n shares by a dealer, and shares are sent to shareholders secretly. The secret "s" is shared among n shareholders in such a way that (a) with t or more than t shares can recover the secret, and (b) with fewer than t shares cannot obtain the secret. Shamir’s (t, n) SS is based on a linear polynomial and is unconditionally secure.
-- **Groth 21**: A zero-knowledge proof system developed by Jens Groth in 2021. It is a non-interactive zero-knowledge (zk-SNARK) protocol, which allows one party (the prover) to convince another party (the verifier) that a statement is true without revealing any information beyond the validity of the statement itself.
-- **ElGamal**: In 1985 ElGamal proposed a randomized signature scheme called ElGamal signature scheme. On a message and a random number chosen by a signer, ElGamal signature scheme produces a signature consisting of two numbers (r, s), where r is computed from a random number regardless of a message and then s is computed from a message, a signer's secret key, a chosen random number, and r.
-- **EC ([Elliptic-Curves](https://crypto.stanford.edu/pbc/notes/elliptic))**: "Elliptic" is not elliptic in the sense of an "oval circle". In the field "Fp", an EC is like a non-connected cloud of points. All points satisfy an equation and all operations are performed modulo p. Some elliptic curves are pairing-friendly.
+- **TSS (Threshold Signature Scheme)**: A threshold-based signing where a minimum number of parties (threshold) must collaborate to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
+- **Groth 21**:publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares, with many possible uses cases supporting applications in distributed key generation and threshold signatures. Uses Shamir's secret sharing and ElGamal.
+- **Shamir’s Secret Sharing**: In Shamir’s SS, a secret s is divided into n shares by a dealer, and shares are sent to shareholders secretly. The secret "s" is shared among n shareholders in such a way that
+(a) t or more than t shares can be used to recover the secret, and
+(b) fewer than t shares are not sufficient to obtain the secret
+Shamir’s (t, n) SS is based on a linear polynomial and is unconditionally secure.
+- **ElGamal**: On a message and a random number chosen by a signer, ElGamal signature scheme produces a signature consisting of two numbers (r, s),
+where r is computed from a random number regardless of a message and then s is computed from a message,
+a signer's secret key, a chosen random number, and r.
+- **EC (Elliptic Curve)**: "Elliptic" is not elliptic in the sense of an "oval circle". In the field "Fp", an EC is like a non-connected cloud of points. All points satisfy an equation and all operations are performed modulo p. Some elliptic curves are pairing-friendly.
 - **Bilinear Pairings**: Are mathematical functions used in cryptography to map two elements of different groups (in EC, the group is an elliptic curve) to a single value in another group in a way that preserves certain algebraic properties.
 - **Fields**: Mathematical structures where addition, subtraction, multiplication, and division are defined and behave as expected (excluding division by zero).
 - **Groups**: Sets equipped with an operation (like addition or multiplication) that satisfies certain conditions (closure, associativity, identity element, and inverses).
-- **Share**: Represents a piece of the public/private necessary elements to create or verify a signature. In TSS, a threshold number of shares is needed to validate a signature. To represent weight, any participant can have more than 1 share.
-- **Polynomial Commitment**: A polynomial commitment is a cryptographic commitment to a polynomial. It enables a committer to commit to a polynomial such that: a)The committer can later reveal the polynomial and prove that it was indeed the committed polynomial and b)The commitment allows verifying evaluations of the polynomial at specific points without revealing the entire polynomial.
+- **Share**: Represents a piece of the public/private necessary elements to create signatures. In TSS, a threshold number of shares is needed to produce an aggregate signature that can be then verified by the ledger public key.
+- **Polynomial Commitment**: A polynomial commitment is a cryptographic commitment to a polynomial. It enables a committer to commit to a polynomial such that the commitment allows verifying evaluations of the polynomial at specific points without revealing the entire polynomial.
 
 ### Goals
-- **Usability:** Design a user-friendly library that is easy to integrate with consensus-node code and block-node code.
+- **Usability:** Design a user-friendly library with a public API that is easy to integrate with other projects like consensus-node and block-node.
 - **EVM support:** Generated signature and public keys should be compatible with evm precompiled functions so that signature validation can be done on smart contracts without incurring in excessive gas cost. 
-- **Security:** Our APIS should use audited code and be able to pass security audits both internal and external.
+- **Security:** Our produced code should use audited code and be able to pass security audits both internal and external.
 - **Flexibility**: Minimize the impact of introducing support for other elliptic curves. 
 - **Independent Release:** Design release cycle independent components that can be used both in the consensus node and in the future block node.
 
 ### Non-Goals
-- Build our own cryptography library implementation that supports EC-curves from the gecko in Java.
+- Completely implement our own cryptography support/primitives/library implementation that supports EC-curves in Java.
 - Support any other different system/architecture other than: Windows amd64, Linux amd64 and arm64, and MacOS amd64 and arm64.
 - Make the library externally available and accessible.
 
-### External References
-- https://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/
-- https://www.iacr.org/archive/asiacrypt2001/22480516.pdf
-- https://hackmd.io/@benjaminion/bls12-381#Motivation
-- https://www.johannes-bauer.com/compsci/ecc/
+
 
 ## Changes
 
 ### Core Behaviors
 
-The proposed TSS solution combines EC-Cryptography primitives that allow for short aggregable signatures, assignation of multiple shares per shareholder to represent participants' weight,
-and combines Shamir's secret sharing with ElGamal public key encryption and groth21 for zero-knowledge proofs.
+The proposed TSS solution is based on Groth21 
 
 #### Description of the Scheme
 
-An operator will generate a long-living persisting ec private/public key pair for each participant of the scheme.
-The operator will distribute the public key of every participant to the other participants in the scheme.
+An external operator will generate a persistent EC private/public key pair for each participant of the scheme.
+Each external operator will distribute the key of the participant to the other participants in the scheme.
 
 The following section describes the process from a particular participant's point of view after the key distribution happened:
 
 ##### Input
-* Participant's lifelong persisting EC private key (Private to each participant)
+* Participant's persistent EC private key (Private to each participant)
 * Number of participants (Public)
-* Amount of shares per participant (Public)
-* All participants' lifelong persisting  EC public key (Public)
+* Number of shares per participant (Public)
+* All participants' persistent EC public key (Public)
 * A threshold value
 * A predefined `SignatureSchema` that defines the type of Curve to use, and which Group of the Pairing is used for PublicKey Generation (Public)
 
-#####  Bootstrap Stage
-
-E.g: In a scheme distributing 10 shares over 4 participants
 ```
-Directory:
+`Share`: An abstract concept having a unique identifier and an owner
+|_  `ProprietaryShare`: Represents a share owned by the executor of the scheme. Contains a secret value (Ec Private key) used for signing.
+|_  `ExternalShare`: Represents a share owned by other participants.
+```
+
+#####  Bootstrap Stage
+E.g: In a scheme distributing 10 shares over 4 participants
+
+Assuming Current Participant: (P₁;  P₁_EC_PrivateKey)
+
+Given
+
+The current participants' directory:
+```
 P   # shares
 -----------------------------
 P₁  5        P₁_EC_PublicKey
@@ -87,83 +97,67 @@ P₂  2        P₂_EC_PublicKey
 P₃  1        P₃_EC_PublicKey
 P₄  2        P₄_EC_PublicKey
 
-Current Participant: (P₁;  P₁_EC_PrivateKey)
-threshold: 5
 ```
-Create `ShareId` directory
+A threshold: 
+```
+ t = 5
+```
+
+And an ownership map: `ShareId`->`Participant`:
+
 ```
 sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
 P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  
 ```
 
-###### 1. Create ShamSecretShareMessage 
-(Shamir's secret-sharing: polynomial interpolation)
+###### 1. Create TssMessage 
+`TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share, and includes validation information like a commitment to `Pₖ` and a zk-SNARKs proof that can be used to verify the validity of the message and assemble an aggregate public key (referred as ledgerId).
 
+In the bootstrap process we create a random EC_PrivateKey out of the FieldElement of the `SignatureScheme` (the secret being shared).
 
-Given participant's `privateKey`: `k` (the secret being shared), each shareholder will produce `n` (n=total number of shares) values `xₛ` by introducing `k`'s EC field element in a polynomial `Pₖ` for each `ShareId`: `sidₛ` in the directory
+Then, each shareholder will produce `n` (n=total number of shares) values `xₛ` by evaluating a polynomial Pₖ at each `ShareId`: `sidₛ` in the ownership map
 
 ```
    xₛ=Pₖ(sidₛ) for privateKey: k and each ShareId: sidₛ
 ```
-Each `xₛ` constitutes points in the polynomial.
+Each `xₛ` constitutes points on the polynomial.
 
-The polynomial `Pₖ` is a polynomial with grade `t-1` (t=threshold) created with random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element in `aₒ` and `x` each `sidₛ`
-![img.png](img.png)
+The polynomial `Pₖ` is a polynomial with degree `t-1` (t=threshold) created with random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element in `aₒ` and `x` each `sidₛ`
 
-(ElGammal)
-Once each `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `SecretShareMessage`:`Mₛ` will be produced by encrypting `xₖ` using `sidₛ` owner's publicKey.
-
-
+Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `Mₛ` will be produced by encrypting `xₛ` using `sidₛ` owner's publicKey.
 
 ![img_4.png](img_4.png)
 
-`SecretShareMessage`: A data structure for distributing the secret among all participants.
-
-Non-encrypted public information is packed in the `SecretShareMessage`, including a commitment to `Pₖ` and a Groth21 zk-SNARKs proof.
+A TssMessage:
 
 ![img_5.png](img_5.png)
 
-###### 2. Distribution of SecretShareMessages
-Using a channel established outside the scope of the scheme, each participant will distribute a single message to the other participants in a limited time window.
+After created using a channel established outside the scope of the library, each participant will broadcast a single message to be received by all participants.
+While waiting for other participants' messages to arrive for a limited amount of time.
 
-###### 3. Collection of SecretShareMessages
-Each participant will be waiting for other participants' messages to arrive for a limited amount of time.
-
-###### 4. Validation of SecretShareMessages
+###### 2. Validation of TssMessage
 Each participant will validate the received message against the commitment and the zk-SNARKs proof. Invalid messages will be discarded.
 The validation is produced over the content of the message and does not include the sender's identity which is assumed to be provided by the external channel.
 
-###### 5. Processing of SecretShareMessages
-Using the EC Private Key, and the list of all validated `SecretShareMessage`,  each participant will decrypt all `Mₛ` for each owned  `sidₛ` in the directory.
-Once all `xₛ` values are recovered, an aggregated private key will be produced.
-This is the new share's private key that will be used in the rekeying stage.
+###### 3. Processing of TssMessage
+Given Participant's persistent EC PrivateKey, `n` number of validated messages (n=threshold), and the list of all validated `TssMessage`s,
+each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `ProprietaryShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
 
-###### 6. Creating Shares
-Given Participant's EC PrivateKey, `n` number of validated messages (n=threshold), for each `ShareId`: `sidₛ` belonging to the participant
-We will decrypt `n` amount of values and aggregate them to generate value `sₛ` (REVIEW! Did we just obtain Participant's Private key again ???)
 
 ![img_8.png](img_8.png)
 
-```
-`Share`: An abstract concept having a unique identifier and an owner
-|_  `ProprietaryShare`: Represents a share owned by the executor of the scheme. Contains a secret value (Ec Private key) used for signing.
-|_  `ExternalShare`: Represents a shares owned by other participants.
-```
-The value we just aggregated is converted to a `new Share s = ProprietaryShare(sidₛ, sₛ)` for each `ShareId`: `sidₛ` owned by the participant.
-
 At this point, the participant executing the scheme is able to start signing.
 Synchronization between all participants will be needed in order to determine if all of them have received and processed enough messages and determined each owns ProprietaryShares,
-But that is not covered by this library and should be done outside.
+but that is not covered by this library and should be done outside.
 
 #####  Sign Stage
 
 ###### 1. Sign
-Using the EC Private Key contained in each `ProprietaryShare` owned by the participant, a message can be signed.
-That will be collected in a `TssSignatureMessage`
-Using a channel established outside the scope of the scheme, each participant will distribute a `TssSignatureMessage` per `ProprietaryShare` to the other participants in a limited time window.
+Using each `ProprietaryShare` owned by the participant, a message can be signed producing a `TssSignature`
+Using a channel established outside the scope of the scheme and a message also created outside the scope of the library, each participant will broadcast a `TssSignature` per `ProprietaryShare` to the other participants.
 
 ###### 2. Aggregate Signature
-Each participant will wait for `n` number of messages (n=threshold), validate them (?) and process them in sequence (?).
+Once the participant has received a number of messages `n` (n=threshold), validate them (?) and process them in sequence (?).
 Extract the signature and aggregate the signature for all messages.
 (?)Synchronization between all participants will be needed in order to determine if all of them have received and processed enough messages and determined the AggregatedSignature,
 
@@ -171,7 +165,44 @@ Extract the signature and aggregate the signature for all messages.
 The aggregate signature can be persisted.
 
 #####  Rekey Stage
-Follows the same process as genesys does, but instead of creating 1 secret per participant, we use the secret in each `ProprietaryShare`.  
+The rekeying process is similar to the bootstrap process 
+
+.g: In a scheme distributing 10 shares over 4 participants
+
+Assuming Current Participant: (P₁;  P₁_EC_PrivateKey)
+
+Given
+
+The current participants' directory:
+```
+P   # shares
+-----------------------------
+P₁  3        P₁_EC_PublicKey
+P₂  2        P₂_EC_PublicKey
+P₃  1        P₃_EC_PublicKey
+P₄  2        P₄_EC_PublicKey
+P₅  1        P₅_EC_PublicKey
+P₆  1        P₆_EC_PublicKey
+```
+A threshold: 
+```
+5
+```
+
+An old ownership map: `ShareId`->`Participant`:
+```
+sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
+P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  
+```
+
+And a new ownership map: `ShareId`->`Participant`:
+```
+sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
+P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  	P₅  	P₆  
+```
+
+but instead, each participant will generate a `TssMessage` out of each `ProprietaryShare` owned by the participant.
+Once finished, the list of ProprietariesShares will be updated 
 
 
 ### Architecture
@@ -356,7 +387,7 @@ This API will expose general arithmetic operations to work with Billinear Pairin
 
 **Link**: [Curve.java](pairings-api%2FCurve.java)
 
-**Note**: This enum should list all possible types so changes in the implementation don't change the API, but as of now, the amount is limited.
+**Note**: This enum should list all possible types so changes in the implementation don't change the API, but as of now, the number is limited.
 
 ###### `BilinearPairing`
 
@@ -458,3 +489,11 @@ TBD
    *  Implementation of EC-key utility.
 3. Stage 3
    * Enable dynamic loading of Pairings API implementation using SPI.
+
+## External References
+- https://eprint.iacr.org/2021/339
+- https://crypto.stanford.edu/pbc/notes/elliptic
+- https://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/
+- https://www.iacr.org/archive/asiacrypt2001/22480516.pdf
+- https://hackmd.io/@benjaminion/bls12-381#Motivation
+- https://www.johannes-bauer.com/compsci/ecc/
