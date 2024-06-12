@@ -144,6 +144,8 @@ Here we need to check that a platform metric (that has a `nodeId` label) is stil
 
 ## Open Questions
 
+Please help me to answer the following questions before we can start with the implementation:
+
 - Should the `getLabels()` method return `Set`, `Collection` or `List`?
 - Should we add a new methods to the `Metrics` interface to get for example all metrics with a specific label?
 - How will a label with a `null` value be handled?
