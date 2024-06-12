@@ -17,6 +17,8 @@
 package com.hedera.node.app.fixtures.state;
 
 import com.hedera.node.app.services.ServicesRegistry;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -29,9 +31,14 @@ import org.apache.logging.log4j.Logger;
  * A fake implementation of the {@link ServicesRegistry} interface.
  */
 public class FakeServicesRegistry implements ServicesRegistry {
+    public static final ServicesRegistry.Factory FACTORY =
+            (@NonNull final ConstructableRegistry registry, @NonNull final Configuration configuration) ->
+                    new FakeServicesRegistry();
 
     private static final Logger logger = LogManager.getLogger(FakeServicesRegistry.class);
-    /** The set of registered services */
+    /**
+     * The set of registered services
+     */
     private final SortedSet<ServicesRegistry.Registration> entries;
 
     /**
@@ -48,13 +55,11 @@ public class FakeServicesRegistry implements ServicesRegistry {
      */
     @Override
     public void register(@NonNull final Service service) {
-        final var serviceName = service.getServiceName();
-
         final var registry = new FakeSchemaRegistry();
         service.registerSchemas(registry);
 
         entries.add(new FakeServicesRegistry.Registration(service, registry));
-        logger.info("FakeServicesRegistry registered service {}", service.getServiceName());
+        logger.info("Registered service {}", service.getServiceName());
     }
 
     @NonNull

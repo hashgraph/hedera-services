@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,19 +45,21 @@ final class ServicesRegistryImplTest {
     @Test
     void nullConstructableRegistryThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @DisplayName("The genesis record builder cannot be null")
     @Test
     void nullGenesisRecordsThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
-        final var registry = new ServicesRegistryImpl(cr);
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
         registry.register(TestService.newBuilder()
                 .name("registerCallsTheConstructableRegistryTest")
                 .schema(TestSchema.newBuilder()
@@ -70,7 +73,7 @@ final class ServicesRegistryImplTest {
 
     @Test
     void registrationsAreSortedByName() {
-        final var registry = new ServicesRegistryImpl(cr);
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
         registry.register(TestService.newBuilder().name("B").build());
         registry.register(TestService.newBuilder().name("C").build());
         registry.register(TestService.newBuilder().name("A").build());

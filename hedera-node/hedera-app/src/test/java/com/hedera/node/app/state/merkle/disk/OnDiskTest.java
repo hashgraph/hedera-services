@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -162,7 +163,7 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, new SchemaApplications());
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, DEFAULT_CONFIG, new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

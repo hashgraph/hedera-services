@@ -18,6 +18,8 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,6 +30,14 @@ import java.util.Set;
  * A registry providing access to all services registered with the application.
  */
 public interface ServicesRegistry {
+    /**
+     * A factory for creating a {@link ServicesRegistry}.
+     */
+    interface Factory {
+        ServicesRegistry create(
+                @NonNull ConstructableRegistry constructableRegistry, @NonNull Configuration bootstrapConfig);
+    }
+
     /**
      * A record of a service registration.
      *

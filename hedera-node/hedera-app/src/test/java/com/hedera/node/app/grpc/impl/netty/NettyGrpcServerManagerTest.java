@@ -51,7 +51,8 @@ final class NettyGrpcServerManagerTest {
 
         this.configProvider = () -> new VersionedConfigImpl(config, 1);
         this.metrics = metrics;
-        this.services = new ServicesRegistryImpl(ConstructableRegistry.getInstance()); // An empty set of services
+        this.services =
+                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), config); // An empty set of services
         this.ingestWorkflow = (req, res) -> {};
         this.queryWorkflow = (req, res) -> {};
     }

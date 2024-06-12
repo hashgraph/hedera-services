@@ -51,6 +51,7 @@ import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -71,6 +72,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -87,7 +89,6 @@ import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.state.HederaState;
-import com.swirlds.state.spi.ServiceMigrator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
@@ -204,20 +205,20 @@ public final class Hedera implements SwirldMain {
      * always changing to match the node id of the node being simulated.
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param registry the registry to register services with
+     * @param registryFactory the factory to use for creating the services registry
      * @param migrator the migrator to use with the services
      * @param selfNodeInfoExtractor the strategy for extracting self node info from the platform and version
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
-            @NonNull final ServicesRegistry registry,
+            @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
             @NonNull final SelfNodeInfoExtractor selfNodeInfoExtractor,
             @NonNull final IsEmbeddedTest isEmbeddedTest) {
+        requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
         this.serviceMigrator = requireNonNull(migrator);
-        this.servicesRegistry = requireNonNull(registry);
         this.selfNodeInfoExtractor = requireNonNull(selfNodeInfoExtractor);
         logger.info(
                 """
@@ -229,7 +230,9 @@ public final class Hedera implements SwirldMain {
 
                         """,
                 HEDERA);
-        version = getNodeStartupVersion();
+        final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+        version = getNodeStartupVersion(bootstrapConfig);
+        servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
                 () -> HapiUtils.toString(version.getServicesVersion()),
@@ -393,7 +396,13 @@ public final class Hedera implements SwirldMain {
         // migration, which implies we should be passing the config provider and not a static configuration
         // here; but this is a currently unneeded affordance
         serviceMigrator.doMigrations(
-                state, previousVersion, currentVersion, configProvider.getConfiguration(), networkInfo, metrics);
+                state,
+                servicesRegistry,
+                previousVersion,
+                currentVersion,
+                configProvider.getConfiguration(),
+                networkInfo,
+                metrics);
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         if (isUpgrade && !trigger.equals(RECONNECT)) {
             // (FUTURE) We should probably remove this mono-service vestige, as it not currently used anywhere and
@@ -669,8 +678,7 @@ public final class Hedera implements SwirldMain {
         daggerApp.platformStateAccessor().setPlatformState(platformState);
     }
 
-    private static HederaSoftwareVersion getNodeStartupVersion() {
-        final var startupConfig = new BootstrapConfigProviderImpl().getConfiguration();
+    private static HederaSoftwareVersion getNodeStartupVersion(@NonNull final Configuration startupConfig) {
         final var versionConfig = startupConfig.getConfigData(VersionConfig.class);
         return new HederaSoftwareVersion(
                 versionConfig.hapiVersion(),

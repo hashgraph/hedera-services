@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.spi;
+package com.hedera.node.app.services;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.Configuration;
@@ -34,6 +34,7 @@ public interface ServiceMigrator {
      * Perform the migrations on the given state.
      *
      * @param state The state to migrate
+     * @param servicesRegistry The services registry to use for the migrations
      * @param previousVersion The previous version of the state
      * @param currentVersion The current version of the state
      * @param config The configuration to use for the migrations
@@ -42,6 +43,7 @@ public interface ServiceMigrator {
      */
     void doMigrations(
             @NonNull HederaState state,
+            @NonNull ServicesRegistry servicesRegistry,
             @Nullable SemanticVersion previousVersion,
             @NonNull SemanticVersion currentVersion,
             @NonNull Configuration config,

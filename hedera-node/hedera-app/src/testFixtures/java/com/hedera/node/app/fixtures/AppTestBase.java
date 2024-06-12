@@ -94,6 +94,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     /** Used as a dependency to the {@link Metrics} system. */
     public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
     public static final String ALICE_ALIAS = "Alice Alias";

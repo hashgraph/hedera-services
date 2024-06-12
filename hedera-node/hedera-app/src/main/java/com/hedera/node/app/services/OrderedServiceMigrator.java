@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app;
+package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.config.api.Configuration;
@@ -29,7 +28,6 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.ServiceMigrator;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,11 +50,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class OrderedServiceMigrator implements ServiceMigrator {
     private static final Logger logger = LogManager.getLogger(OrderedServiceMigrator.class);
-    private final ServicesRegistry servicesRegistry;
-
-    public OrderedServiceMigrator(@NonNull final ServicesRegistry servicesRegistry) {
-        this.servicesRegistry = requireNonNull(servicesRegistry);
-    }
 
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
@@ -64,6 +57,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
     @Override
     public void doMigrations(
             @NonNull final HederaState state,
+            @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,

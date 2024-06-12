@@ -88,6 +88,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     private final String serviceName;
     /**
+     * The current bootstrap configuration of the network; note this ideally would be a
+     * provider of {@link com.hedera.node.config.VersionedConfiguration}s per version,
+     * in case a service's states evolved with changing config. But this is a very edge
+     * affordance that we have no example of needing.
+     */
+    private final Configuration bootstrapConfig;
+    /**
      * The registry to use when deserializing from saved states
      */
     private final ConstructableRegistry constructableRegistry;
@@ -111,9 +118,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final String serviceName,
+            @NonNull final Configuration bootstrapConfig,
             @NonNull final SchemaApplications schemaApplications) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.schemaApplications = requireNonNull(schemaApplications);
     }
 
@@ -132,7 +141,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> serviceName);
 
         // Any states being created, need to be registered for deserialization
-        schema.statesToCreate().forEach(def -> {
+        schema.statesToCreate(bootstrapConfig).forEach(def -> {
             //noinspection rawtypes,unchecked
             final var md = new StateMetadata<>(serviceName, schema, def);
             registerWithSystem(md);

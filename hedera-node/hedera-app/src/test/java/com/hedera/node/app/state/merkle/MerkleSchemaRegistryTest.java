@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
@@ -70,7 +71,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         // We don't need a real registry, and the unit tests are much
         // faster if we use a mocked one
         registry = mock(ConstructableRegistry.class);
-        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, new SchemaApplications());
+        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         config = mock(Configuration.class);
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -84,7 +85,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null ConstructableRegistry throws")
         void nullRegistryThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(null, FIRST_SERVICE, new SchemaApplications()))
+            assertThatThrownBy(() ->
+                            new MerkleSchemaRegistry(null, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -92,7 +94,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null serviceName throws")
         void nullServiceNameThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, new SchemaApplications()))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, DEFAULT_CONFIG, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -100,7 +102,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null schemaUseAnalysis throws")
         void nullSchemaUseAnalysisBuilderThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, null))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }

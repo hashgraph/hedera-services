@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.config.IsEmbeddedTest;
+import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.config.data.HederaConfig;
@@ -296,13 +297,10 @@ public class ServicesMain implements SwirldMain {
     }
 
     private static Hedera newHedera() {
-        final var constructableRegistry = ConstructableRegistry.getInstance();
-        final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry);
-        final var servicesMigrator = new OrderedServiceMigrator(servicesRegistry);
         return new Hedera(
-                constructableRegistry,
-                servicesRegistry,
-                servicesMigrator,
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
                 CANONICAL_SELF_NODE_INFO_EXTRACTOR,
                 IsEmbeddedTest.NO);
     }

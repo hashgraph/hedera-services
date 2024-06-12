@@ -42,7 +42,7 @@ final class NettyManagerTest extends GrpcTestBase {
         final var config = createConfig(testConfig);
         return new NettyGrpcServerManager(
                 () -> new VersionedConfigImpl(config, 1),
-                new ServicesRegistryImpl(ConstructableRegistry.getInstance()),
+                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), config),
                 (req, res) -> {},
                 (req, res) -> {},
                 metrics);

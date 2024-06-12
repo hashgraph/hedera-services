@@ -34,11 +34,11 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeServiceMigrator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -147,12 +147,10 @@ public class EmbeddedHedera {
                 .collect(toMap(Address::getNodeId, address -> parseAccount(address.getMemo())));
         platform = new ToyPlatform();
 
-        final var servicesRegistry = new FakeServicesRegistry();
-        final var servicesMigrator = new FakeServiceMigrator(servicesRegistry);
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
-                servicesRegistry,
-                servicesMigrator,
+                FakeServicesRegistry.FACTORY,
+                new FakeServiceMigrator(),
                 (ignore, nodeVersion) -> {
                     this.version = nodeVersion;
                     return new ChameleonSelfNodeInfo(nodeVersion);

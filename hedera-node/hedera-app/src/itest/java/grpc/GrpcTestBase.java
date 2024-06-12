@@ -180,7 +180,7 @@ abstract class GrpcTestBase extends TestBase {
             }
         };
 
-        final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance());
+        final var servicesRegistry = new ServicesRegistryImpl(ConstructableRegistry.getInstance(), configuration);
         servicesRegistry.register(testService);
         final var config = createConfig(new TestSource());
         this.grpcServer = new NettyGrpcServerManager(
