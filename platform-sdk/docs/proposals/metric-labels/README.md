@@ -153,7 +153,7 @@ Next to that all that ideas will end in having a hardcoded `nodeId` label in the
 ## Future Work
 
 As a next step we can think about labels next to `nodeId` that makes sense to have in our metrics.
-For example we can add a label called `type` that defines if a metric is a counter, gauge, or histogram.
+For example, we can add a label called `type` that defines if a metric is a counter, gauge, or histogram.
 Another option is to add labels for layers (like `base`, `consensus`, `services`, ...).
 By doing so we can add more information to the metrics that can be used by the monitoring system.
 
