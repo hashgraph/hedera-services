@@ -1,6 +1,6 @@
 # Metric labels
 
-author: @hendrikEbbers
+author: @hendrikEbbers  
 status: draft
 
 ## Summary
