@@ -426,7 +426,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
         do {
             Response response = statusResponse(spec, receiptQuery);
-            System.out.println("STATUS_RESPONSE: " + response);
             final var getReceiptResponse = response.getTransactionGetReceipt();
             lastReceipt = getReceiptResponse.getReceipt();
             final var lookupStatus = getReceiptResponse.getHeader().getNodeTransactionPrecheckCode();
