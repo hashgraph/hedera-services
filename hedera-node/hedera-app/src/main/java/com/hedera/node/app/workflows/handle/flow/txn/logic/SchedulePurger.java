@@ -65,7 +65,7 @@ public class SchedulePurger {
             final var scheduleStore = new WritableStoreFactory(
                             userTxnContext.stack(),
                             ScheduleService.NAME,
-                            userTxnContext.tokenContext().configuration(),
+                            userTxnContext.configuration(),
                             storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time
