@@ -21,7 +21,6 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -154,6 +153,11 @@ public class TeacherPullVirtualTreeView<K extends VirtualKey, V extends VirtualV
                 teacherReceiveTask.exec();
             }
         }
+    }
+
+    @Override
+    public boolean usesSharedInputQueue() {
+        return true;
     }
 
     public boolean isLeaf(final long path) {

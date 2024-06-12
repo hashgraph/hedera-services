@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -68,6 +69,8 @@ public class AsyncInputStream implements AutoCloseable {
     public final Map<Integer, Queue<byte[]>> viewQueues;
 
     private final Queue<SharedQueueItem> sharedQueue;
+
+    private final Set<Integer> useSharedQueue = ConcurrentHashMap.newKeySet();
 
     // Checking queue size on every received message may be expensive. Instead, track the
     // size manually using an atomic
@@ -140,18 +143,20 @@ public class AsyncInputStream implements AutoCloseable {
                     throw new MerkleSynchronizationException("Failed to read a message completely");
                 }
 
-                Queue<byte[]> viewQueue = viewQueues.get(viewId);
-                if (viewQueue != null) {
-                    final boolean accepted = viewQueue.add(messageBytes);
-                    if (!accepted) {
-                        throw new MerkleSynchronizationException(
-                                "Timed out waiting to add message to received messages queue");
-                    }
-                } else {
+                if (useSharedQueue.contains(viewId)) {
+                    assert !viewQueues.containsKey(viewId);
                     sharedQueue.add(new SharedQueueItem(viewId, messageBytes));
                     // Slow down reading from the stream, if handling threads can't keep up
                     if (sharedQueueSize.incrementAndGet() > sharedQueueSizeThreshold) {
                         Thread.sleep(0, 1);
+                    }
+                } else {
+                    final Queue<byte[]> viewQueue =
+                            viewQueues.computeIfAbsent(viewId, t -> new ConcurrentLinkedQueue<>());
+                    final boolean accepted = viewQueue.add(messageBytes);
+                    if (!accepted) {
+                        throw new MerkleSynchronizationException(
+                                "Timed out waiting to add message to received messages queue");
                     }
                 }
             }
@@ -188,9 +193,10 @@ public class AsyncInputStream implements AutoCloseable {
         return totalBytesRead;
     }
 
-    public void setNeedsDedicatedQueue(final int viewId) {
-        assert !viewQueues.containsKey(viewId) : "View " + viewId + " is already registered in this async input stream";
-        viewQueues.put(viewId, new ConcurrentLinkedQueue<>());
+    public void setNeedsSharedQueue(final int viewId) {
+        assert !viewQueues.containsKey(viewId) || viewQueues.get(viewId).isEmpty();
+        viewQueues.remove(viewId);
+        useSharedQueue.add(viewId);
     }
 
     public boolean isAlive() {
@@ -207,7 +213,8 @@ public class AsyncInputStream implements AutoCloseable {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends SelfSerializable> T readAnticipatedMessage(final Function<Integer, T> messageFactory) throws IOException {
+    public <T extends SelfSerializable> T readAnticipatedMessage(final Function<Integer, T> messageFactory)
+            throws IOException {
         final SharedQueueItem item = sharedQueue.poll();
         if (item != null) {
             sharedQueueSize.decrementAndGet();
@@ -225,8 +232,7 @@ public class AsyncInputStream implements AutoCloseable {
     @SuppressWarnings("unchecked")
     public <T extends SelfSerializable> T readAnticipatedMessage(final int viewId, final Supplier<T> messageFactory)
             throws IOException, InterruptedException {
-        final Queue<byte[]> viewQueue = viewQueues.get(viewId);
-        assert viewQueue != null;
+        final Queue<byte[]> viewQueue = viewQueues.computeIfAbsent(viewId, t -> new ConcurrentLinkedQueue<>());
         // Emulate blocking queue poll with a timeout
         byte[] data = viewQueue.poll();
         if (data == null) {

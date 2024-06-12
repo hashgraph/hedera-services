@@ -19,7 +19,6 @@ package com.swirlds.common.merkle.synchronization.views;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -28,7 +27,6 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.NodeToSend;
-import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -88,8 +86,6 @@ public class TeacherPushMerkleTreeView implements TeacherTreeView<NodeToSend> {
             final Map<Integer, TeacherTreeView<?>> views,
             final Consumer<Integer> completeListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
-
-        in.setNeedsDedicatedQueue(viewId);
 
         final TeacherPushSendTask<NodeToSend> teacherPushSendTask = new TeacherPushSendTask<>(
                 viewId, time, reconnectConfig, workGroup, in, out, subtreeListener, this, senderIsFinished);

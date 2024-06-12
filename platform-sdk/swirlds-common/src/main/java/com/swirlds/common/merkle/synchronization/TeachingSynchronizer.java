@@ -44,7 +44,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -59,15 +58,23 @@ public class TeachingSynchronizer {
 
     private static final Logger logger = LogManager.getLogger(TeachingSynchronizer.class);
 
+    private final StandardWorkGroup workGroup;
+
+    private volatile Throwable firstReconnectException;
+
     /**
      * Used to get data from the listener.
      */
     private final MerkleDataInputStream inputStream;
 
+    private volatile AsyncInputStream in;
+
     /**
      * Used to transmit data to the listener.
      */
     private final MerkleDataOutputStream outputStream;
+
+    private volatile AsyncOutputStream out;
 
     /**
      * <p>
@@ -90,13 +97,6 @@ public class TeachingSynchronizer {
     private final Map<Integer, TeacherSubtree> subtreesInProgress = new ConcurrentHashMap<>();
 
     private final Map<String, Object> viewMetadata = new ConcurrentHashMap<>();
-
-    private final Runnable breakConnection;
-
-    /**
-     * Responsible for creating and managing threads used by this object.
-     */
-    private final ThreadManager threadManager;
 
     protected final ReconnectConfig reconnectConfig;
 
@@ -140,7 +140,6 @@ public class TeachingSynchronizer {
             @NonNull final ReconnectConfig reconnectConfig) {
 
         this.time = Objects.requireNonNull(time);
-        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         inputStream = Objects.requireNonNull(in, "in must not be null");
         outputStream = Objects.requireNonNull(out, "out must not be null");
 
@@ -152,16 +151,10 @@ public class TeachingSynchronizer {
         final TeacherSubtree rootSubtree = new TeacherSubtree(root, viewId, view);
         subtrees.add(rootSubtree);
 
-        this.breakConnection = breakConnection;
         this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");
-    }
 
-    /**
-     * Perform synchronization in the role of the teacher.
-     */
-    public void synchronize() throws InterruptedException {
-        final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
-        final Function<Throwable, Boolean> reconnectExceptionListener = cause -> {
+        final Function<Throwable, Boolean> reconnectExceptionListener = e -> {
+            Throwable cause = e;
             while (cause != null) {
                 if (cause instanceof SocketException socketEx) {
                     if (socketEx.getMessage().equalsIgnoreCase("Connection reset by peer")) {
@@ -173,17 +166,23 @@ public class TeachingSynchronizer {
                 }
                 cause = cause.getCause();
             }
-            firstReconnectException.compareAndSet(null, cause);
+            if (firstReconnectException == null) {
+                firstReconnectException = e;
+            }
             // Let StandardWorkGroup log it as an error using the EXCEPTION marker
             return false;
         };
         // A future improvement might be to reuse threads between subtrees.
-        final StandardWorkGroup workGroup =
-                createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
+        workGroup = createStandardWorkGroup(threadManager, breakConnection, reconnectExceptionListener);
+    }
 
-        final AsyncInputStream in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
+    /**
+     * Perform synchronization in the role of the teacher.
+     */
+    public void synchronize() throws InterruptedException {
+        in = new AsyncInputStream(inputStream, workGroup, reconnectConfig);
         in.start();
-        final AsyncOutputStream out = buildOutputStream(workGroup, outputStream);
+        out = buildOutputStream(workGroup, outputStream);
         out.start();
 
         final boolean rootScheduled = synchronizeNextSubtree(workGroup, in, out);
@@ -211,8 +210,7 @@ public class TeachingSynchronizer {
             if (interruptException != null) {
                 throw interruptException;
             }
-            throw new MerkleSynchronizationException(
-                    "Synchronization failed with exceptions", firstReconnectException.get());
+            throw new MerkleSynchronizationException("Synchronization failed with exceptions", firstReconnectException);
         }
     }
 
@@ -222,6 +220,11 @@ public class TeachingSynchronizer {
         final TeacherSubtree subtree = new TeacherSubtree(root, viewId, view);
         subtrees.add(subtree);
         views.put(viewId, view);
+        if (view.usesSharedInputQueue()) {
+            in.setNeedsSharedQueue(viewId);
+        }
+
+        synchronizeNextSubtree(workGroup, in, out);
     }
 
     private synchronized boolean synchronizeNextSubtree(
@@ -253,14 +256,12 @@ public class TeachingSynchronizer {
             logger.info(RECONNECT.getMarker(), "Finished sending tree with route {}", rte);
 
             final int wasInProgress = viewsInProgress.decrementAndGet();
-
             boolean newScheduled = false;
             boolean nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
             while (nextViewScheduled) {
                 newScheduled = true;
                 nextViewScheduled = synchronizeNextSubtree(workGroup, in, out);
             }
-
             // Check if this was the last subtree to sync
             if ((wasInProgress == 0) && !newScheduled) {
                 try {

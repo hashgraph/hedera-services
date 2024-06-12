@@ -17,7 +17,6 @@
 package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
@@ -131,5 +130,15 @@ public interface TeacherTreeView<T>
     default void waitUntilReady() throws InterruptedException {
         // By default, a view is considered "ready" after constructed.
         // If that is not the case for a view implementation, override this method.
+    }
+
+    /**
+     * Indicates whether this teacher view uses a shared or a dedicated message queue when
+     * reading messages from an async input stream.
+     *
+     * @return true if this view uses a dedicated async input stream queue; false otherwise
+     */
+    default boolean usesSharedInputQueue() {
+        return false;
     }
 }

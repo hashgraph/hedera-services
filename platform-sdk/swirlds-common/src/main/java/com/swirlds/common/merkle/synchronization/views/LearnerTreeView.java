@@ -18,7 +18,6 @@ package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
@@ -164,7 +163,7 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      *
      * @return true if this view uses a dedicated async input stream queue; false otherwise
      */
-    default boolean needsDedicatedQueue() {
-        return true;
+    default boolean usesSharedInputQueue() {
+        return false;
     }
 }

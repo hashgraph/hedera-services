@@ -73,8 +73,6 @@ class AsyncStreamTest {
             final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
-            in.setNeedsDedicatedQueue(viewId);
-
             in.start();
             out.start();
 
@@ -108,8 +106,6 @@ class AsyncStreamTest {
 
             final AsyncInputStream in = new AsyncInputStream(streams.getTeacherInput(), workGroup, reconnectConfig);
             final AsyncOutputStream out = new AsyncOutputStream(streams.getLearnerOutput(), workGroup, reconnectConfig);
-
-            in.setNeedsDedicatedQueue(viewId);
 
             in.start();
             out.start();
@@ -231,8 +227,8 @@ class AsyncStreamTest {
 
         final BlockingInputStream blockingIn = new BlockingInputStream(new ByteArrayInputStream(data));
 
-        final AsyncInputStream in = new AsyncInputStream(new SerializableDataInputStream(blockingIn), workGroup, reconnectConfig);
-        in.setNeedsDedicatedQueue(viewId);
+        final AsyncInputStream in =
+                new AsyncInputStream(new SerializableDataInputStream(blockingIn), workGroup, reconnectConfig);
         in.start();
 
         // Give the stream some time to accept as much data as it wants. Stream will stop accepting when queue fills up.
@@ -301,7 +297,8 @@ class AsyncStreamTest {
                     new AsyncOutputStream(pairedStreams.getTeacherOutput(), workGroup, reconnectConfig);
 
             final int viewId = 15;
-            final AsyncInputStream learnerIn = new AsyncInputStream(pairedStreams.getLearnerInput(), workGroup, reconnectConfig);
+            final AsyncInputStream learnerIn =
+                    new AsyncInputStream(pairedStreams.getLearnerInput(), workGroup, reconnectConfig);
 
             final Runnable reader = () -> {
                 try {

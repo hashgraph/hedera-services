@@ -24,13 +24,11 @@ import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
-import com.swirlds.common.merkle.synchronization.task.QueryResponse;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushReceiveTask;
 import com.swirlds.common.merkle.synchronization.task.TeacherPushSendTask;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -187,8 +185,6 @@ public final class TeacherPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final Map<Integer, TeacherTreeView<?>> views,
             final Consumer<Integer> completeListener) {
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
-
-        in.setNeedsDedicatedQueue(viewId);
 
         // For testing purposes
         final TeacherTreeView<Long> thisView = (TeacherTreeView<Long>) views.getOrDefault(viewId, this);
