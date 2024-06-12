@@ -214,15 +214,21 @@ public class ErrorReporter {
             case USER -> {
                 if (account == null || account.deleted() || account.smartContract()) {
                     throw new IllegalStateException(
-                            "Category " + category + " Payer account should have been rejected " + account);
+                            "Category " + category + " payer account should have been rejected " + account);
                 }
                 yield account;
             }
-            case CHILD, PRECEDING -> account == null ? Account.DEFAULT : account;
+            case CHILD, PRECEDING -> {
+                if (account == null) {
+                    throw new IllegalStateException(
+                            "Category " + category + " payer account should have been rejected " + account);
+                }
+                yield account;
+            }
             case SCHEDULED -> {
                 if (account == null || account.smartContract()) {
                     throw new IllegalStateException(
-                            "Category " + category + " Payer account should have been rejected " + account);
+                            "Category " + category + " payer account should have been rejected " + account);
                 }
                 yield account;
             }

@@ -140,6 +140,20 @@ class ErrorReporterTest {
     }
 
     @Test
+    void invalidPayerSigIsCreatorError() throws PreCheckException {
+        givenCreatorInfo();
+        givenUserDispatch();
+        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        givenPayer(payer -> payer.tinybarBalance(1L));
+        givenInvalidPayerSig();
+
+        final var report = subject.errorReportFor(dispatch);
+
+        assertEquals(creatorErrorReport(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
+    }
+
+    @Test
     void solvencyCheckDoesNotLookAtOfferedFeesForPrecedingDispatch() throws PreCheckException {
         givenCreatorInfo();
         givenPreceding();
@@ -152,23 +166,6 @@ class ErrorReporterTest {
         verify(solvencyPreCheck)
                 .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, false);
         assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), payerAccount), report);
-    }
-
-    @Test
-    void solvencyCheckDoesNotLookAtOfferedFeesForChildDispatch() throws PreCheckException {
-        givenCreatorInfo();
-        givenChildDispatch();
-        givenSolvencyCheckSetup();
-        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
-        // The dispatching "contract" was a token account here for sake of argument
-        givenMissingPayer();
-
-        final var report = subject.errorReportFor(dispatch);
-
-        verify(solvencyPreCheck)
-                .checkSolvency(
-                        TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), Account.DEFAULT, FEES, false, false);
-        assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), Account.DEFAULT), report);
     }
 
     @Test
@@ -334,6 +331,14 @@ class ErrorReporterTest {
     }
 
     @Test
+    void missingPayerIsFailInvalidForChildDispatch() {
+        givenChildDispatch();
+        given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        givenMissingPayer();
+        assertThrows(IllegalStateException.class, () -> subject.errorReportFor(dispatch));
+    }
+
+    @Test
     void smartContractScheduledPayerIsFailInvalid() {
         givenScheduledDispatch();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
@@ -399,6 +404,11 @@ class ErrorReporterTest {
     private void givenValidPayerSig() {
         given(dispatch.keyVerifier()).willReturn(keyVerifier);
         given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(PASSED_VERIFICATION);
+    }
+
+    private void givenInvalidPayerSig() {
+        given(dispatch.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(FAILED_VERIFICATION);
     }
 
     private void givenChildDispatch() {
