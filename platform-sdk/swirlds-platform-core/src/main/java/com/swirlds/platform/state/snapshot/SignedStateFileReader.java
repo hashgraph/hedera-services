@@ -66,7 +66,8 @@ public final class SignedStateFileReader {
     }
 
     /**
-     * Reads a SignedState from disk
+     * Reads a SignedState from disk using the provided snapshot reader function. If the reader throws
+     * an exception, it is propagated by this method to the caller.
      *
      * @param platformContext               the platform context
      * @param stateFile                     the file to read from

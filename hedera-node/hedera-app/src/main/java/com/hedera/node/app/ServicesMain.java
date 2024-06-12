@@ -138,14 +138,14 @@ public class ServicesMain implements SwirldMain {
      *     <li>Create the application's {@link Hedera} singleton, which overrides
      *     the default factory for the stable {@literal 0x8e300b0dfdafbb1a} class
      *     id of the Services Merkle tree root with a reference to its
-     *     {@link Hedera#newMerkleStateRoot()} ()} method.</li>
+     *     {@link Hedera#newMerkleStateRoot()} method.</li>
      *     <li>Determine this node's <b>self id</b> by searching the <i>config.txt</i>
      *     in the working directory for any address book entries with IP addresses
      *     local to this machine; if there is there is more than one such entry,
      *     fail unless the command line args include a {@literal -local N} arg.</li>
      *     <li>Build a {@link Platform} instance from Services application metadata
      *     and the working directory <i>settings.txt</i>, providing the same
-     *     {@link Hedera#newMerkleStateRoot()} ()} method reference as the genesis state
+     *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
      *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
      *     {@link SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}
      *     on a {@link MerkleHederaState} instance that delegates the call back to our

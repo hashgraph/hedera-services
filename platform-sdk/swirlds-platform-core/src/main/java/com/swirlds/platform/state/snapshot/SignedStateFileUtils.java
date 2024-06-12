@@ -58,7 +58,9 @@ public final class SignedStateFileUtils {
      * {@link com.swirlds.common.io.SelfSerializable} mechanism. Used in {@link
      * com.swirlds.platform.builder.PlatformBuilder}
      */
-    public static MerkleRoot readState(@NonNull final MerkleDataInputStream in, final Path dir) throws IOException {
+    @NonNull
+    public static MerkleRoot readState(@NonNull final MerkleDataInputStream in, @NonNull final Path dir)
+            throws IOException {
         return in.readMerkleTree(dir, MAX_MERKLE_NODES_IN_STATE);
     }
 }

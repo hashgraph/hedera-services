@@ -162,6 +162,14 @@ public final class PlatformBuilder {
     /**
      * Create a new platform builder.
      *
+     * <p>When this builder is used to create a platform, it tries to load an existing app state from
+     * a snapshot on disk, if exists, using the provided {@code snapshotStateReader} function. If there
+     * is no snapshot on disk, or the reader throws an exception trying to load the snapshot, a new
+     * genesis state is created using {@code genesisStateBuilder} supplier.
+     *
+     * <p>Note: if an existing snapshot can't be loaded, or a new genesist state can't be created, the
+     * corresponding functions must throw an exception rather than return a null value.
+     *
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk

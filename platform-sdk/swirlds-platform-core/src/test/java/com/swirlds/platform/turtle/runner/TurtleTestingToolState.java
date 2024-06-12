@@ -119,6 +119,7 @@ public class TurtleTestingToolState extends PartialMerkleLeaf implements SwirldS
      *
      * @return merkle tree root
      */
+    @NonNull
     public static MerkleRoot getStateRootNode() {
         final TurtleTestingToolState turtleState = new TurtleTestingToolState();
         final State root = new State();
