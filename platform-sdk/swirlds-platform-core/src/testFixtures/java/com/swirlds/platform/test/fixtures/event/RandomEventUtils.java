@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
@@ -29,8 +31,11 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 public class RandomEventUtils {
     public static final Instant DEFAULT_FIRST_EVENT_TIME_CREATED = Instant.ofEpochMilli(1588771316678L);
@@ -87,6 +92,10 @@ public class RandomEventUtils {
                         otherParent.getGeneration(),
                         otherParent.getBaseEvent().getHashedData().getBirthRound());
 
+        final List<OneOf<PayloadOneOfType>> hapiTransactions = new ArrayList<>();
+        if (transactions != null) {
+            Stream.of(transactions).map(ConsensusTransactionImpl::getPayload).forEach(hapiTransactions::add);
+        }
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
@@ -94,7 +103,7 @@ public class RandomEventUtils {
                 otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
                 birthRound,
                 timestamp,
-                transactions);
+                hapiTransactions);
 
         if (fakeHash) {
             hashedData.setHash(RandomUtils.randomHash(random));

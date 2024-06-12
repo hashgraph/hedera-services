@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
@@ -25,6 +26,7 @@ import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateFor
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -80,7 +82,6 @@ import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -478,7 +479,7 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
-        return transactionPoolNexus.submitApplicationTransaction(new SwirldTransaction(transaction));
+        return transactionPoolNexus.submitApplicationTransaction(new OneOf<>(APPLICATION_PAYLOAD, transaction));
     }
 
     /**

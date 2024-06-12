@@ -18,6 +18,8 @@ package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -143,7 +145,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
             @NonNull final List<EventDescriptor> otherParents,
             final long birthRound,
             @NonNull final Instant timeCreated,
-            @Nullable final ConsensusTransactionImpl[] transactions) {
+            @NonNull final List<OneOf<PayloadOneOfType>> transactions) {
+        Objects.requireNonNull(transactions, "The transactions must not be null");
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParent = selfParent;
@@ -154,7 +157,14 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         this.birthRound = birthRound;
         this.birthRoundOverride = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
-        this.transactions = transactions;
+        this.transactions = transactions.stream()
+                .map(t -> switch (t.kind()) {
+                    case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
+                    case APPLICATION_PAYLOAD -> new SwirldTransaction(t.as());
+                    default -> throw new IllegalArgumentException("Unexpected value: " + t.kind());
+                })
+                .toList()
+                .toArray(new ConsensusTransactionImpl[0]);
     }
 
     @Override
@@ -421,7 +431,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     /**
      * @return array of transactions inside this event instance
      */
-    @Nullable
+    @NonNull
     public ConsensusTransactionImpl[] getTransactions() {
         return transactions;
     }

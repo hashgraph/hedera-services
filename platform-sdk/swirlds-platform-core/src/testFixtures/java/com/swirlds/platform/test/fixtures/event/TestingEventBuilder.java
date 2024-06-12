@@ -16,11 +16,15 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -29,12 +33,11 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -96,7 +99,7 @@ public class TestingEventBuilder {
      * <p>
      * If not set, transactions will be auto generated, based on configured settings.
      */
-    private ConsensusTransactionImpl[] transactions;
+    private List<OneOf<PayloadOneOfType>> transactions;
 
     /**
      * The self parent of the event.
@@ -278,7 +281,7 @@ public class TestingEventBuilder {
      * @param transactions the transactions
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setTransactions(@Nullable final ConsensusTransactionImpl[] transactions) {
+    public @NonNull TestingEventBuilder setTransactions(@Nullable final List<OneOf<PayloadOneOfType>> transactions) {
         if (appTransactionCount != null || systemTransactionCount != null || transactionSize != null) {
             throw new IllegalStateException(
                     "Cannot set transactions when app transaction count, system transaction count, or transaction "
@@ -432,7 +435,7 @@ public class TestingEventBuilder {
      * @return the generated transactions
      */
     @NonNull
-    private ConsensusTransactionImpl[] generateTransactions() {
+    private List<OneOf<PayloadOneOfType>> generateTransactions() {
         if (appTransactionCount == null) {
             appTransactionCount = DEFAULT_APP_TRANSACTION_COUNT;
         }
@@ -441,8 +444,7 @@ public class TestingEventBuilder {
             systemTransactionCount = DEFAULT_SYSTEM_TRANSACTION_COUNT;
         }
 
-        final ConsensusTransactionImpl[] generatedTransactions =
-                new ConsensusTransactionImpl[appTransactionCount + systemTransactionCount];
+        final List<OneOf<PayloadOneOfType>> generatedTransactions = new ArrayList<>();
 
         if (transactionSize == null) {
             transactionSize = DEFAULT_TRANSACTION_SIZE;
@@ -451,15 +453,17 @@ public class TestingEventBuilder {
         for (int i = 0; i < appTransactionCount; ++i) {
             final byte[] bytes = new byte[transactionSize];
             random.nextBytes(bytes);
-            generatedTransactions[i] = new SwirldTransaction(bytes);
+            generatedTransactions.add(new OneOf<>(APPLICATION_PAYLOAD, new SwirldTransaction(bytes)));
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
-            generatedTransactions[i] = new StateSignatureTransaction(StateSignaturePayload.newBuilder()
-                    .round(random.nextLong(0, Long.MAX_VALUE))
-                    .signature(RandomUtils.randomSignatureBytes(random))
-                    .hash(RandomUtils.randomHashBytes(random))
-                    .build());
+            generatedTransactions.add(new OneOf<>(
+                    STATE_SIGNATURE_PAYLOAD,
+                    StateSignaturePayload.newBuilder()
+                            .round(random.nextLong(0, Long.MAX_VALUE))
+                            .signature(RandomUtils.randomSignatureBytes(random))
+                            .hash(RandomUtils.randomHashBytes(random))
+                            .build()));
         }
 
         return generatedTransactions;

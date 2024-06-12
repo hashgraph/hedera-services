@@ -16,10 +16,14 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
@@ -91,18 +95,20 @@ public class TransactionUtils {
         return new SwirldTransaction(transBytes);
     }
 
-    public static SwirldTransaction incrementingSwirldTransaction() {
+    public static OneOf<PayloadOneOfType> incrementingSwirldTransaction() {
         final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(nextLong.getAndIncrement());
-        return new SwirldTransaction(buffer.array());
+        return new OneOf<>(APPLICATION_PAYLOAD, buffer.array());
     }
 
-    public static StateSignatureTransaction incrementingSystemTransaction() {
-        return new StateSignatureTransaction(StateSignaturePayload.newBuilder()
-                .round(0)
-                .signature(randomSignatureBytes(random))
-                .hash(randomHashBytes(random))
-                .build());
+    public static OneOf<PayloadOneOfType> incrementingSystemTransaction() {
+        return new OneOf<>(
+                STATE_SIGNATURE_PAYLOAD,
+                StateSignaturePayload.newBuilder()
+                        .round(0)
+                        .signature(randomSignatureBytes(random))
+                        .hash(randomHashBytes(random))
+                        .build());
     }
 
     public static StateSignatureTransaction randomStateSignatureTransaction(final RandomGenerator random) {

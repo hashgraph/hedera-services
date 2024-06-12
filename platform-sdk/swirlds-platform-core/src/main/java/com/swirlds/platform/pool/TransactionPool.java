@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.pool;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
@@ -34,7 +35,7 @@ public interface TransactionPool {
      * @param transaction the system transaction to submit
      */
     @InputWireLabel("submit transaction")
-    void submitSystemTransaction(@NonNull ConsensusTransactionImpl transaction);
+    void submitSystemTransaction(@NonNull OneOf<PayloadOneOfType> transaction);
 
     /**
      * Update the platform status.

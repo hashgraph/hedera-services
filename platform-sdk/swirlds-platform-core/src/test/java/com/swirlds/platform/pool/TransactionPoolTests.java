@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.pool;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,7 +26,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.swirlds.common.test.fixtures.RandomUtils;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,10 +39,10 @@ class TransactionPoolTests {
 
     @Test
     void addTransactionTest() {
-        final List<ConsensusTransactionImpl> transactionList = new ArrayList<>();
+        final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
         when(transactionPoolNexus.submitTransaction(any(), anyBoolean())).thenAnswer(invocation -> {
-            final ConsensusTransactionImpl transaction = invocation.getArgument(0);
+            final OneOf<PayloadOneOfType> transaction = invocation.getArgument(0);
             final boolean isPriority = invocation.getArgument(1);
             assertTrue(isPriority);
             transactionList.add(transaction);
@@ -46,7 +50,9 @@ class TransactionPoolTests {
         });
 
         final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
-        final ConsensusTransactionImpl transaction = mock(ConsensusTransactionImpl.class);
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(RandomUtils.nextLong());
+        final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, buffer.array());
 
         transactionPool.submitSystemTransaction(transaction);
         assertEquals(1, transactionList.size());
