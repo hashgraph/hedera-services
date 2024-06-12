@@ -127,6 +127,8 @@ JMH benchmarks, or longevity tests.
 
 Remove this section if not applicable.
 
+---
+
 ## Implementation and Delivery Plan
 
 How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
