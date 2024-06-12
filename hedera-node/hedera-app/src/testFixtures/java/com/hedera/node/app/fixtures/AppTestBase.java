@@ -37,6 +37,7 @@ import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
@@ -154,8 +155,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             10,
             "127.0.0.1",
             50211,
+            "127.0.0.4",
+            23456,
             "0123456789012345678901234567890123456789012345678901234567890123",
             "Node7",
+            Bytes.wrap("cert7"),
             softwareVersion);
 
     /**
@@ -328,8 +332,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         10,
                         "127.0.0.1",
                         50211,
+                        "127.0.0.4",
+                        23456,
                         "0123456789012345678901234567890123456789012345678901234567890123",
                         "Node7",
+                        Bytes.wrap("cert7"),
                         hederaSoftwareVersion);
             } else {
                 realSelfNodeInfo = new SelfNodeInfoImpl(
@@ -338,8 +345,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         selfNodeInfo.stake(),
                         selfNodeInfo.externalHostName(),
                         selfNodeInfo.externalPort(),
+                        selfNodeInfo.internalHostName(),
+                        selfNodeInfo.internalPort(),
                         selfNodeInfo.hexEncodedPublicKey(),
                         selfNodeInfo.memo(),
+                        selfNodeInfo.sigCertBytes(),
                         hederaSoftwareVersion);
             }
 
