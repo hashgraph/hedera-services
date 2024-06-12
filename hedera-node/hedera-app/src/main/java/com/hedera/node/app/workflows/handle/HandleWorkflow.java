@@ -143,7 +143,7 @@ public class HandleWorkflow {
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
      */
-    private void handlePlatformTransaction(
+    public void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,

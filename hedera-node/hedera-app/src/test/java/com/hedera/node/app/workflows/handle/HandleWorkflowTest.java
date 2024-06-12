@@ -16,77 +16,56 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
-import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.SolvencyPreCheck;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -94,20 +73,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleWorkflowTest extends AppTestBase {
 
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
-    private static final Instant TX_CONSENSUS_NOW = CONSENSUS_NOW.minusNanos(1000 - 3);
-
     private static final long CONFIG_VERSION = 11L;
 
     private static final PreHandleResult OK_RESULT = createPreHandleResult(Status.SO_FAR_SO_GOOD, ResponseCodeEnum.OK);
-
-    private static final PreHandleResult PRE_HANDLE_FAILURE_RESULT =
-            createPreHandleResult(Status.PRE_HANDLE_FAILURE, ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID);
-
-    private static final PreHandleResult DUE_DILIGENCE_RESULT = PreHandleResult.nodeDueDiligenceFailure(
-            NODE_1.nodeAccountID(),
-            ResponseCodeEnum.INVALID_TRANSACTION,
-            new TransactionScenarioBuilder().txInfo(),
-            1L);
 
     private static final ExchangeRateSet EXCHANGE_RATE_SET =
             ExchangeRateSet.newBuilder().build();
@@ -130,80 +98,26 @@ class HandleWorkflowTest extends AppTestBase {
                 CONFIG_VERSION);
     }
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private NetworkInfo networkInfo;
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private ThrottleServiceManager throttleServiceManager;
 
-    @Mock(strictness = LENIENT)
-    private PreHandleWorkflow preHandleWorkflow;
-
-    @Mock(strictness = LENIENT)
+    @Mock
     private TransactionDispatcher dispatcher;
 
     @Mock
     private BlockRecordManager blockRecordManager;
 
     @Mock
-    private TransactionChecker checker;
-
-    @Mock(strictness = LENIENT)
-    private ServiceScopeLookup serviceLookup;
-
-    @Mock(strictness = LENIENT)
-    private ConfigProvider configProvider;
-
-    @Mock(strictness = LENIENT)
     private Round round;
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private ConsensusEvent event;
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private SwirldTransaction platformTxn;
-
-    @Mock(strictness = LENIENT)
-    private HederaRecordCache recordCache;
-
-    @Mock
-    private GenesisRecordsConsensusHook genesisRecordsTimeHook;
-
-    @Mock
-    private ScheduleExpirationHook scheduleExpirationHook;
-
-    @Mock
-    private StakingPeriodTimeHook stakingPeriodTimeHook;
-
-    @Mock
-    private FeeManager feeManager;
-
-    @Mock(strictness = LENIENT)
-    private ExchangeRateManager exchangeRateManager;
-
-    @Mock
-    private ParentRecordFinalizer finalizer;
-
-    @Mock
-    private ChildRecordFinalizer childRecordFinalizer;
-
-    @Mock(strictness = LENIENT)
-    private SystemFileUpdateFacility systemFileUpdateFacility;
-
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
-
-    @Mock
-    private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
-
-    @Mock
-    private PlatformStateUpdateFacility platformStateUpdateFacility;
-
-    @Mock(strictness = LENIENT)
-    private SolvencyPreCheck solvencyPreCheck;
-
-    @Mock(strictness = LENIENT)
-    private Authorizer authorizer;
 
     @Mock
     private PlatformState platformState;
@@ -215,29 +129,32 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflowMetrics handleWorkflowMetrics;
 
     @Mock
-    private StoreMetricsService storeMetricsService;
-
-    @Mock
-    private TransactionChecker transactionChecker;
-
-    @Mock
-    private InitTrigger initTrigger;
-
-    @Mock
-    private SoftwareVersion softwareVersion;
-
-    @Mock
     private Provider<UserTransactionComponent.Factory> userTxnProvider;
 
+    @Mock
+    private HederaState state;
+
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private ConsensusTransactionImpl txn;
+
+    @Mock
+    private UserTransactionComponent.Factory userTxnFactory;
+
+    @Mock
+    private UserTransactionComponent userTxn;
+
+    @Mock
+    private UserTxnWorkflow userTxnWorkflow;
+
+    @InjectMocks
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setup() throws PreCheckException {
-
+    void setup() {
         setupStandardStates();
-
-        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
-        when(configProvider.getConfiguration()).thenReturn(config);
 
         accountsState.put(
                 ALICE.accountID(),
@@ -253,42 +170,6 @@ class HandleWorkflowTest extends AppTestBase {
                         .build());
         accountsState.commit();
 
-        when(round.iterator()).thenReturn(List.of(event).iterator());
-        when(event.consensusTransactionIterator())
-                .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
-        when(event.getCreatorId()).thenReturn(nodeSelfId);
-
-        final var hederaVersion =
-                new HederaSoftwareVersion(selfNodeInfo.hapiVersion(), selfNodeInfo.appVersion(), (int) CONFIG_VERSION);
-        when(event.getSoftwareVersion()).thenReturn(hederaVersion);
-
-        when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
-        when(platformTxn.getMetadata()).thenReturn(OK_RESULT);
-        lenient().when(blockRecordManager.consTimeOfLastHandledTxn()).thenReturn(CONSENSUS_NOW.minusSeconds(1));
-
-        when(serviceLookup.getServiceName(any())).thenReturn(TokenService.NAME);
-
-        when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
-
-        doAnswer(invocation -> {
-                    final var context = invocation.getArgument(0, HandleContext.class);
-                    context.writableStore(WritableAccountStore.class)
-                            .putAlias(Bytes.wrap(ALICE_ALIAS), ALICE.accountID());
-                    return null;
-                })
-                .when(dispatcher)
-                .dispatchHandle(any());
-
-        when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
-        when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
-        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
-        when(recordCache.hasDuplicate(any(), eq(nodeSelfId.id())))
-                .thenReturn(HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE);
-        when(authorizer.isAuthorized(eq(ALICE.accountID()), any())).thenReturn(true);
-        when(authorizer.hasPrivilegedAuthorization(eq(ALICE.accountID()), any(), any()))
-                .thenReturn(SystemPrivilege.UNNECESSARY);
-        when(systemFileUpdateFacility.handleTxBody(any(), any())).thenReturn(SUCCESS);
-
         workflow = new HandleWorkflow(
                 networkInfo,
                 blockRecordManager,
@@ -300,7 +181,7 @@ class HandleWorkflowTest extends AppTestBase {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testContructorWithInvalidArguments() {
+    void testConstructorWithInvalidArguments() {
         assertThatThrownBy(() -> new HandleWorkflow(
                         null,
                         blockRecordManager,
@@ -341,8 +222,18 @@ class HandleWorkflowTest extends AppTestBase {
     void testPlatformTxnIsSkipped() {
         // given
         when(platformTxn.isSystem()).thenReturn(true);
+        when(round.iterator()).thenReturn(List.of(event).iterator());
+        when(event.consensusTransactionIterator())
+                .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+        when(event.getCreatorId()).thenReturn(nodeSelfId);
+        when(round.iterator()).thenReturn(List.of(event).iterator());
+        when(event.consensusTransactionIterator())
+                .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+        when(event.getCreatorId()).thenReturn(nodeSelfId);
+        lenient().when(blockRecordManager.consTimeOfLastHandledTxn()).thenReturn(CONSENSUS_NOW.minusSeconds(1));
 
-        // when
+        when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
+
         workflow.handleRound(state, platformState, round);
 
         // then
@@ -359,59 +250,103 @@ class HandleWorkflowTest extends AppTestBase {
     final class AddMissingSignaturesTest {
         @Test
         @DisplayName("Add failing verification result, if a key was handled in preHandle")
-        void testRequiredExistingKeyWithFailingSignature() throws PreCheckException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
-                    bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            final var preHandleResult = new PreHandleResult(
-                    ALICE.accountID(),
-                    alicesKey,
-                    Status.SO_FAR_SO_GOOD,
-                    ResponseCodeEnum.OK,
-                    new TransactionScenarioBuilder().txInfo(),
-                    Set.of(bobsKey),
-                    Set.of(),
-                    Set.of(),
-                    verificationResults,
-                    null,
-                    CONFIG_VERSION);
-            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
+        void testRequiredExistingKeyWithFailingSignature() {
+            when(platformTxn.isSystem()).thenReturn(false);
+            when(round.iterator()).thenReturn(List.of(event).iterator());
+            when(event.consensusTransactionIterator())
+                    .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+            when(event.getCreatorId()).thenReturn(nodeSelfId);
+            when(round.iterator()).thenReturn(List.of(event).iterator());
+            when(event.consensusTransactionIterator())
+                    .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+            when(event.getCreatorId()).thenReturn(nodeSelfId);
+            when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
+            lenient().when(blockRecordManager.consTimeOfLastHandledTxn()).thenReturn(CONSENSUS_NOW.minusSeconds(1));
 
-            // when
             workflow.handleRound(state, platformState, round);
 
-            // then
             verify(dispatcher, never()).dispatchHandle(any());
         }
 
         @Test
         @DisplayName("Trigger failing verification, if new key was found")
-        void testRequiredNewKeyWithFailingSignature() throws PreCheckException {
-            // given
-            final var bobsKey = BOB.account().keyOrThrow();
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
+        void testRequiredNewKeyWithFailingSignature() {
+            when(platformTxn.isSystem()).thenReturn(false);
+            when(round.iterator()).thenReturn(List.of(event).iterator());
+            when(event.consensusTransactionIterator())
+                    .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+            when(event.getCreatorId()).thenReturn(nodeSelfId);
+            when(round.iterator()).thenReturn(List.of(event).iterator());
+            when(event.consensusTransactionIterator())
+                    .thenReturn(List.<ConsensusTransaction>of(platformTxn).iterator());
+            when(event.getCreatorId()).thenReturn(nodeSelfId);
+            when(networkInfo.nodeInfo(nodeSelfId.id())).thenReturn(selfNodeInfo);
+            lenient().when(blockRecordManager.consTimeOfLastHandledTxn()).thenReturn(CONSENSUS_NOW.minusSeconds(1));
 
-            // when
             workflow.handleRound(state, platformState, round);
 
-            // then
             verify(dispatcher, never()).dispatchHandle(any());
         }
+    }
+
+    @Test
+    void handleRoundNoUserTransactions() {
+        when(round.iterator()).thenReturn(mock(Iterator.class));
+
+        workflow.handleRound(state, platformState, round);
+
+        verify(cacheWarmer).warm(state, round);
+        verify(throttleServiceManager).updateAllMetrics();
+        verify(blockRecordManager, never()).endRound(any());
+    }
+
+    @Test
+    void handleRoundWithUserTransactions() {
+        Iterator<ConsensusEvent> eventIterator = mock(Iterator.class);
+        when(round.iterator()).thenReturn(eventIterator);
+        when(eventIterator.hasNext()).thenReturn(true, false);
+        when(eventIterator.next()).thenReturn(event);
+        when(networkInfo.nodeInfo(anyLong())).thenReturn(nodeInfo);
+
+        Iterator<ConsensusTransaction> txnIterator = mock(Iterator.class);
+        when(event.consensusTransactionIterator()).thenReturn(txnIterator);
+        when(txnIterator.hasNext()).thenReturn(true, false);
+        when(txnIterator.next()).thenReturn(txn);
+        when(txn.isSystem()).thenReturn(false);
+        when(userTxnProvider.get()).thenReturn(userTxnFactory);
+        when(userTxnFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(userTxn);
+        when(userTxn.workflow()).thenReturn(userTxnWorkflow);
+        when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
+        when(event.getCreatorId()).thenReturn(nodeSelfId);
+        when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
+
+        workflow.handleRound(state, platformState, round);
+
+        verify(blockRecordManager).startUserTransaction(any(), eq(state), eq(platformState));
+        verify(throttleServiceManager).updateAllMetrics();
+        verify(blockRecordManager).endRound(state);
+    }
+
+    @Test
+    void handleRoundEventCreatorNotInAddressBook() {
+        when(round.iterator()).thenReturn(mock(Iterator.class));
+
+        workflow.handleRound(state, platformState, round);
+        verifyNoInteractions(blockRecordManager);
+    }
+
+    @Test
+    void handlePlatformTransaction() {
+        when(userTxnProvider.get()).thenReturn(userTxnFactory);
+        when(userTxnFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(userTxn);
+        when(userTxn.workflow()).thenReturn(userTxnWorkflow);
+        when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
+        when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
+
+        workflow.handlePlatformTransaction(state, platformState, event, nodeInfo, txn);
+
+        verify(blockRecordManager).startUserTransaction(any(), eq(state), eq(platformState));
+        verify(blockRecordManager).endUserTransaction(any(), eq(state));
+        verify(handleWorkflowMetrics).updateTransactionDuration(any(), anyInt());
     }
 }
