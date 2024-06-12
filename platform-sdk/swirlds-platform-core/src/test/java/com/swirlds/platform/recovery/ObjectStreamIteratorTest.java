@@ -66,9 +66,8 @@ class ObjectStreamIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
-        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
-        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    public static void assertEventsAreEqual(final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -82,7 +81,7 @@ class ObjectStreamIteratorTest {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -101,10 +100,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent event) {
-
-                    // Convert to event impl to allow comparison
-                    final EventImpl e = new EventImpl(event);
+                } else if (object instanceof DetailedConsensusEvent e) {
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
@@ -150,7 +146,7 @@ class ObjectStreamIteratorTest {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -172,10 +168,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent event) {
-
-                    // Convert to event impl to allow comparison
-                    final EventImpl e = new EventImpl(event);
+                } else if (object instanceof DetailedConsensusEvent e) {
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {
@@ -207,7 +200,7 @@ class ObjectStreamIteratorTest {
         final Random random = getRandomPrintSeed();
         final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -230,10 +223,7 @@ class ObjectStreamIteratorTest {
                 if (object instanceof final Hash hash) {
                     lastHashFound = true;
                     assertFalse(iterator.hasNext(), "there should be no objects after the last hash");
-                } else if (object instanceof DetailedConsensusEvent event) {
-
-                    // Convert to event impl to allow comparison
-                    final EventImpl e = new EventImpl(event);
+                } else if (object instanceof DetailedConsensusEvent e) {
                     assertEventsAreEqual(e, events.get(eventIndex));
                     eventIndex++;
                 } else {

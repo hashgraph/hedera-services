@@ -30,8 +30,10 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,7 +48,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent extends AbstractSerializableHashable implements Event {
+public class GossipEvent extends AbstractSerializableHashable implements ConsensusEvent {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
@@ -304,6 +306,11 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
     @Nullable
     public Instant getConsensusTimestamp() {
         return consensusTimestamp;
+    }
+
+    @Override
+    public Iterator<ConsensusTransaction> consensusTransactionIterator() {
+        return Arrays.asList((ConsensusTransaction[]) hashedData.getTransactions()).iterator();
     }
 
     /**

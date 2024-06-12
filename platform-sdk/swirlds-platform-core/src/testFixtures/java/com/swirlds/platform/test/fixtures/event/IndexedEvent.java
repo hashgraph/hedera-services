@@ -41,14 +41,6 @@ public class IndexedEvent extends EventImpl {
         super(gossipEvent, selfParent, otherParent);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
     /** Get the index of this event with respect to the generator that created it. */
     public long getGeneratorIndex() {
         return generatorIndex;

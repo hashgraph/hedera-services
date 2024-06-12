@@ -35,6 +35,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -78,7 +79,7 @@ class EventStreamPathIteratorTest {
         final int secondsPerFile = 2;
         final int expectedFileCount = durationInSeconds / secondsPerFile;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -122,7 +123,7 @@ class EventStreamPathIteratorTest {
         final long startingRound = durationInSeconds * roundsPerSecond / 2;
         final int expectedFileCount = durationInSeconds / secondsPerFile / 2;
 
-        final List<EventImpl> events =
+        final List<DetailedConsensusEvent> events =
                 generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), roundsPerSecond, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
@@ -169,7 +170,7 @@ class EventStreamPathIteratorTest {
         final long firstRound = 100;
         final long requestedRound = 50;
 
-        final List<EventImpl> events =
+        final List<DetailedConsensusEvent> events =
                 generateRandomEvents(random, firstRound, Duration.ofSeconds(durationInSeconds), roundsPerSecond, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
@@ -197,7 +198,7 @@ class EventStreamPathIteratorTest {
         final long firstRound = 100;
         final int expectedFileCount = durationInSeconds / secondsPerFile;
 
-        final List<EventImpl> events =
+        final List<DetailedConsensusEvent> events =
                 generateRandomEvents(random, firstRound, Duration.ofSeconds(durationInSeconds), roundsPerSecond, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);

@@ -59,16 +59,6 @@ public class DetailedConsensusEventTest {
         }
     }
 
-    @Test
-    public void EventImplGetHashTest() {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
-        EventImpl event = new EventImpl(consensusEvent);
-        CryptographyHolder.get().digestSync(consensusEvent);
-        Hash expectedHash = consensusEvent.getHash();
-        CryptographyHolder.get().digestSync(event);
-        assertEquals(expectedHash, event.getHash());
-    }
-
     private DetailedConsensusEvent generateConsensusEvent() {
         final Randotron random = Randotron.create(68651684861L);
         final GossipEvent gossipEvent = new TestingEventBuilder(random)

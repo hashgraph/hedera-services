@@ -271,7 +271,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
             // here anyway, for when that changes in the future.
             if (!round.isEmpty()) {
-                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                previousRoundLegacyRunningEventHash = round.getStreamedEvents()
                         .getLast()
                         .getRunningHash()
                         .getFutureHash()

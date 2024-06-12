@@ -26,13 +26,19 @@ import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -40,7 +46,7 @@ import java.util.Objects;
  * information.
  */
 public class DetailedConsensusEvent extends AbstractSerializableHashable implements RunningHashable, StreamAligned,
-        Timestamped {
+        Timestamped, ConsensusEvent {
     /** Value used to indicate that it is undefined*/
     public static final long UNDEFINED = -1;
 
@@ -149,6 +155,43 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      */
     public GossipEvent getGossipEvent() {
         return gossipEvent;
+    }
+
+    @Override
+    public Iterator<ConsensusTransaction> consensusTransactionIterator() {
+        return gossipEvent.consensusTransactionIterator();
+    }
+
+    @Override
+    public long getConsensusOrder() {
+        return gossipEvent.getConsensusOrder();
+    }
+
+    @Override
+    public Instant getConsensusTimestamp() {
+        return gossipEvent.getConsensusTimestamp();
+    }
+
+    @Override
+    public Iterator<Transaction> transactionIterator() {
+        return gossipEvent.transactionIterator();
+    }
+
+    @Override
+    public Instant getTimeCreated() {
+        return gossipEvent.getTimeCreated();
+    }
+
+    @NonNull
+    @Override
+    public NodeId getCreatorId() {
+        return gossipEvent.getCreatorId();
+    }
+
+    @Nullable
+    @Override
+    public SoftwareVersion getSoftwareVersion() {
+        return null;
     }
 
     /**
