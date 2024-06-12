@@ -66,6 +66,10 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
         return new Fees(nodeFee, networkFee, 0);
     }
 
+    /**
+     * Returns this {@link Fees} with the node fee and network fee zeroed out.
+     * @return this {@link Fees} with the node fee and network fee zeroed out
+     */
     public Fees onlyServiceComponent() {
         return new Fees(0, 0, serviceFee);
     }
@@ -107,6 +111,11 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
         return new Builder().nodeFee(nodeFee).networkFee(networkFee).serviceFee(serviceFee);
     }
 
+    /**
+     * Add the fees from another {@link Fees} object to this one, and return the result.
+     * @param fees The fees to add to this one
+     * @return a new {@link Fees} object with the sum of the fees
+     */
     public Fees plus(Fees fees) {
         return new Fees(nodeFee + fees.nodeFee(), networkFee + fees.networkFee(), serviceFee + fees.serviceFee());
     }
