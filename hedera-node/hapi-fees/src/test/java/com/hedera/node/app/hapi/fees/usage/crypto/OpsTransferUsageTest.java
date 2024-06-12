@@ -40,17 +40,10 @@ import org.junit.jupiter.api.Test;
 
 class OpsTransferUsageTest {
     private final CryptoOpsUsage subject = new CryptoOpsUsage();
-    private final long CREATE_SLOT_MULTIPLIER = 1228;
-    private final long THREE_MONTHS_IN_SECONDS = 7776000L;
-    private final long HRS_DIVISOR = 3600;
 
     @Test
     void matchesWithLegacyEstimate() {
         givenOp();
-        final var numFungibleTokenTransfer = 7;
-        final var numNftOwnershipChanges = 0;
-        final var rbsForAutoAssociations =
-                (numFungibleTokenTransfer + numNftOwnershipChanges) * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER;
         // and given legacy estimate:
         final var expected = FeeData.newBuilder()
                 .setNetworkdata(FeeComponents.newBuilder()
@@ -63,15 +56,14 @@ class OpsTransferUsageTest {
                         .setBpt(18047)
                         .setVpt(1)
                         .setBpr(4))
-                .setServicedata(
-                        FeeComponents.newBuilder().setConstant(1).setRbh(904 + rbsForAutoAssociations / HRS_DIVISOR))
+                .setServicedata(FeeComponents.newBuilder().setConstant(1).setRbh(904))
                 .build();
 
         // when:
         final var accum = new UsageAccumulator();
         subject.cryptoTransferUsage(
                 sigUsage,
-                new CryptoTransferMeta(tokenMultiplier, 3, numFungibleTokenTransfer, numNftOwnershipChanges),
+                new CryptoTransferMeta(tokenMultiplier, 3, 7, 0),
                 new BaseTransactionMeta(memo.getBytes().length, 3),
                 accum);
 

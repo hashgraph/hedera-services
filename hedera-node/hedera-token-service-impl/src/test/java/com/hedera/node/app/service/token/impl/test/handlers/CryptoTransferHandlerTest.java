@@ -23,15 +23,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.CREATE_SLOT_MULTIPLIER;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_UNLIMITED_TOKEN_ASSOCIATIONS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
@@ -52,7 +49,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -230,8 +226,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         FeeContext feeContext = mock(HandleContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
-        Account account = mock(Account.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
@@ -246,11 +240,10 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
-        when(readableAccountStore.getAccountById(any())).thenReturn(account);
 
         subject.calculateFees(feeContext);
 
-        // Not interested in return value from calculate, just that it was called and bpt and rbs were set appropriately
+        // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
         InOrder inOrder = inOrder(feeContext, feeCalculator);
         inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(176L);
@@ -278,8 +271,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         FeeContext feeContext = mock(HandleContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
-        Account account = mock(Account.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
@@ -294,357 +285,15 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
-        when(readableAccountStore.getAccountById(any())).thenReturn(account);
 
         subject.calculateFees(feeContext);
 
-        // Not interested in return value from calculate, just that it was called and bpt and rbs were set appropriately
+        // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
         InOrder inOrder = inOrder(feeContext, feeCalculator);
         inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(104L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(136L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();
-    }
-
-    @Test
-    void calculateFeesFtChargeForAutoAssociationsForExistingAccountWithUnlimitedSlots() {
-        config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
-                .getOrCreateConfig();
-        List<AccountAmount> acctAmounts = new ArrayList<>();
-        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(fungibleToken.tokenId())
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-5)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(5)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-2)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(2)
-                                .build())
-                .build());
-
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                .tokenTransfers(tokenTransferLists)
-                .build();
-
-        FeeContext feeContext = mock(HandleContextImpl.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        Fees fees = mock(Fees.class);
-        Account account = mock(Account.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
-
-        when(feeContext.body())
-                .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                        .cryptoTransfer(cryptoTransfer)
-                        .build());
-        when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(fees);
-        when(readableAccountStore.getAccountById(any())).thenReturn(account);
-        when(account.autoRenewSeconds()).thenReturn(THREE_MONTHS_IN_SECONDS);
-        when(account.maxAutoAssociations()).thenReturn(1);
-
-        subject.calculateFees(feeContext);
-
-        verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-        verify(feeCalculator).addBytesPerTransaction(304L);
-        // 2 transfers of the same token -> 1 new association
-        verify(feeCalculator).addRamByteSeconds(1 * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER);
-        verify(feeCalculator).addRamByteSeconds(544L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(feeCalculator).calculate();
-    }
-
-    @Test
-    void calculateFeesNftChargeForAutoAssociationsForExistingAccountWithUnlimitedSlots() {
-        config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
-                .getOrCreateConfig();
-        List<AccountAmount> acctAmounts = new ArrayList<>();
-        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(nonFungibleTokenId)
-                .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
-                .build());
-
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                .tokenTransfers(tokenTransferLists)
-                .build();
-
-        FeeContext feeContext = mock(HandleContextImpl.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        Fees fees = mock(Fees.class);
-        Account account = mock(Account.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
-
-        when(feeContext.body())
-                .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                        .cryptoTransfer(cryptoTransfer)
-                        .build());
-        when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(fees);
-        when(readableAccountStore.getAccountById(any())).thenReturn(account);
-        when(account.autoRenewSeconds()).thenReturn(THREE_MONTHS_IN_SECONDS);
-        when(account.maxAutoAssociations()).thenReturn(1);
-
-        subject.calculateFees(feeContext);
-
-        verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
-        verify(feeCalculator).addBytesPerTransaction(104L);
-        // 2 transfers of the same token -> 1 new association
-        verify(feeCalculator).addRamByteSeconds(1 * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER);
-        verify(feeCalculator).addRamByteSeconds(136L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(feeCalculator).calculate();
-    }
-
-    @Test
-    void calculateFeesHbarTransferDoesNotChargeForAutoAssociations() {
-        config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
-                .getOrCreateConfig();
-        List<AccountAmount> acctAmounts = new ArrayList<>();
-        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        acctAmounts.add(aaWith(ACCOUNT_3333, -5));
-        acctAmounts.add(aaWith(ACCOUNT_4444, 5));
-
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                .tokenTransfers(tokenTransferLists)
-                .build();
-
-        FeeContext feeContext = mock(HandleContextImpl.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        Fees fees = mock(Fees.class);
-
-        when(feeContext.body())
-                .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                        .cryptoTransfer(cryptoTransfer)
-                        .build());
-        when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(fees);
-
-        subject.calculateFees(feeContext);
-
-        verify(feeContext, times(1)).feeCalculator(SubType.DEFAULT);
-        verify(feeCalculator).addBytesPerTransaction(64L);
-        // hbar transfers -> 0 new association
-        verify(feeCalculator).addRamByteSeconds(0);
-        verify(feeCalculator).addRamByteSeconds(64L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(feeCalculator).calculate();
-    }
-
-    @Test
-    void calculateFeesDoesNotChargeForAutoAssociationsWhenUnlimitedAutoAssociationsEnabledFlagIsFalse() {
-        config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
-                .withValue(ENTITIES_UNLIMITED_TOKEN_ASSOCIATIONS_ENABLED, false)
-                .getOrCreateConfig();
-        List<AccountAmount> acctAmounts = new ArrayList<>();
-        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(fungibleToken.tokenId())
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-5)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(5)
-                                .build())
-                .build());
-
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                .tokenTransfers(tokenTransferLists)
-                .build();
-
-        FeeContext feeContext = mock(HandleContextImpl.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        Fees fees = mock(Fees.class);
-
-        when(feeContext.body())
-                .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                        .cryptoTransfer(cryptoTransfer)
-                        .build());
-        when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(fees);
-
-        subject.calculateFees(feeContext);
-
-        verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-        verify(feeCalculator).addBytesPerTransaction(176L);
-        // the flag is disabled -> no new associations
-        verify(feeCalculator).addRamByteSeconds(0);
-        verify(feeCalculator).addRamByteSeconds(320L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(feeCalculator).calculate();
-    }
-
-    @Test
-    void calculateFeesChargeForAutoAssociationsForHollowAccount() {
-        config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
-                .getOrCreateConfig();
-        List<AccountAmount> acctAmounts = new ArrayList<>();
-        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(fungibleToken.tokenId())
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-5)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(unknownAliasedId)
-                                .amount(5)
-                                .build())
-                .build());
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(nonFungibleTokenId)
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(1)
-                        .senderAccountID(ACCOUNT_3333)
-                        .receiverAccountID(unknownAliasedId)
-                        .build())
-                .build());
-
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                .tokenTransfers(tokenTransferLists)
-                .build();
-
-        FeeContext feeContext = mock(HandleContextImpl.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        Fees fees = mock(Fees.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
-
-        when(feeContext.body())
-                .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                        .cryptoTransfer(cryptoTransfer)
-                        .build());
-        when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(fees);
-        when(readableAccountStore.getAccountById(any())).thenReturn(null);
-
-        subject.calculateFees(feeContext);
-
-        verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
-        verify(feeCalculator).addBytesPerTransaction(280L);
-        // 2 token transfers to hollow account -> 2 new associations
-        verify(feeCalculator).addRamByteSeconds(2 * THREE_MONTHS_IN_SECONDS * CREATE_SLOT_MULTIPLIER);
-        verify(feeCalculator).addRamByteSeconds(280L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(feeCalculator).calculate();
-    }
-
-    @Test
-    void calculateFeesDoesNotChargeForAutoAssociationsIfTokenRelationshipsAlreadyExist() {
-        config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
-                .getOrCreateConfig();
-        List<AccountAmount> acctAmounts = new ArrayList<>();
-        List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(fungibleToken.tokenId())
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-5)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(5)
-                                .build())
-                .build());
-        tokenTransferLists.add(TokenTransferList.newBuilder()
-                .token(nonFungibleTokenId)
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(1)
-                        .senderAccountID(ACCOUNT_3333)
-                        .receiverAccountID(ACCOUNT_4444)
-                        .build())
-                .build());
-
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                .tokenTransfers(tokenTransferLists)
-                .build();
-
-        FeeContext feeContext = mock(HandleContextImpl.class);
-        FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        Fees fees = mock(Fees.class);
-        Account account = mock(Account.class);
-        ReadableAccountStore readableAccountStore = mock(ReadableAccountStore.class);
-        ReadableTokenRelationStore readableTokenRelStore = mock(ReadableTokenRelationStore.class);
-
-        when(feeContext.body())
-                .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                        .cryptoTransfer(cryptoTransfer)
-                        .build());
-        when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
-        when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(fees);
-        when(readableAccountStore.getAccountById(any())).thenReturn(account);
-
-        subject.calculateFees(feeContext);
-
-        verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
-        verify(feeCalculator).addBytesPerTransaction(280L);
-        // 2 token transfers but the relationships exist -> no new associations
-        verify(feeCalculator).addRamByteSeconds(0);
-        verify(feeCalculator).addRamByteSeconds(456L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
-        verify(feeCalculator).calculate();
     }
 
     @Test
