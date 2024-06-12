@@ -53,8 +53,8 @@ The proposal assumes no relation with the platform and defines a generic solutio
 
 ### Core Behaviors
 
-The proposed TSS solution combines EC-Cryptography primitives that allow for short and aggregate signatures, multiple assignations of shares per shareholder to represent the participant's weight
-Combines Shamir's secret sharing with ElGamal public key encryption to create threshold decryption or signature schemes and in the signature, and groth21 for zero-knowledge proofs.
+The proposed TSS solution combines EC-Cryptography primitives that allow for short aggregable signatures, assignation of multiple shares per shareholder to represent participants' weight,
+and combines Shamir's secret sharing with ElGamal public key encryption and groth21 for zero-knowledge proofs.
 
 #### Description of the Scheme
 
