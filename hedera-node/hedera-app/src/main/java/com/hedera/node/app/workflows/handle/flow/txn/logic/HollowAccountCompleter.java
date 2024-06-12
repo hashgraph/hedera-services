@@ -136,7 +136,7 @@ public class HollowAccountCompleter {
      * @param configuration the configuration
      * @param accounts the set of hollow accounts that need to be finalized
      * @param verifier the key verifier
-     * @param ethTxVerification
+     * @param ethTxVerification the Ethereum transaction verification
      */
     private void finalizeHollowAccounts(
             @NonNull final HandleContext context,

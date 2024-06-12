@@ -136,7 +136,15 @@ public interface Dispatch {
      */
     RecordListBuilder recordListBuilder();
 
+    /**
+     * The platform state for the transaction
+     * @return the platform state
+     */
     PlatformState platformState();
 
+    /**
+     * The pre-handle result for the transaction
+     * @return
+     */
     PreHandleResult preHandleResult();
 }

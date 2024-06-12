@@ -45,7 +45,8 @@ import java.util.Set;
  * for the parent record (excluding changes from child transaction records)
  */
 public interface ParentRecordFinalizer {
-    /** This class is used to "finalize" hbar and token transfers for the parent transaction record.
+    /**
+     * This class is used to "finalize" hbar and token transfers for the parent transaction record.
      * It determines the net hbar transfers and token transfers based on the original value from readable state,
      * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
      * for the parent record. It also calculates staking rewards for the parent record.
