@@ -1,4 +1,4 @@
-# Design proposal TSS Cryptography API
+# 0X - Tss block signing - Cryptography APIs
 
 ## Summary
 
