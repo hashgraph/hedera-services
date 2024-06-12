@@ -33,7 +33,6 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -453,7 +452,7 @@ public class TestingEventBuilder {
         for (int i = 0; i < appTransactionCount; ++i) {
             final byte[] bytes = new byte[transactionSize];
             random.nextBytes(bytes);
-            generatedTransactions.add(new OneOf<>(APPLICATION_PAYLOAD, new SwirldTransaction(bytes)));
+            generatedTransactions.add(new OneOf<>(APPLICATION_PAYLOAD, bytes));
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {
