@@ -73,7 +73,6 @@ itestModuleInfo {
     requires("com.swirlds.metrics.api")
     requires("io.grpc.netty")
     requires("io.grpc.stub")
-    requires("io.grpc")
     requires("org.apache.logging.log4j")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")

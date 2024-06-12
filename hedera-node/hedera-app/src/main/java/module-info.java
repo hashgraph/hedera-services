@@ -24,6 +24,7 @@ module com.hedera.node.app {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive io.grpc.stub;
+    requires transitive io.grpc.netty;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.consensus;
@@ -41,8 +42,6 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.hedera.evm;
-//    requires io.grpc.netty;
-    requires io.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
