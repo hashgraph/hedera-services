@@ -26,6 +26,8 @@ import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.stream.StreamAligned;
+import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,7 +39,8 @@ import java.util.Objects;
  * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
  * information.
  */
-public class DetailedConsensusEvent extends AbstractSerializableHashable implements SelfSerializable, RunningHashable {
+public class DetailedConsensusEvent extends AbstractSerializableHashable implements RunningHashable, StreamAligned,
+        Timestamped {
     /** Value used to indicate that it is undefined*/
     public static final long UNDEFINED = -1;
 
@@ -63,7 +66,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
      *
      * @param event the event to copy the data from
      */
-    public DetailedConsensusEvent(@NonNull final EventImpl event) {
+    public DetailedConsensusEvent(@NonNull final EventImpl event) { //TODO remove
         Objects.requireNonNull(event);
         this.gossipEvent = event.getBaseEvent();
         this.roundReceived = event.getRoundReceived();
@@ -183,6 +186,14 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable impleme
     @Override
     public int getVersion() {
         return CLASS_VERSION;
+    }
+
+    //
+    // Timestamped
+    //
+    @Override
+    public Instant getTimestamp() {
+        return gossipEvent.getConsensusTimestamp();
     }
 
     /**

@@ -16,17 +16,8 @@
 
 package com.swirlds.platform.internal;
 
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.stream.StreamAligned;
-import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
@@ -41,7 +32,6 @@ import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,29 +43,14 @@ import java.util.TreeSet;
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.
  */
-@ConstructableIgnored
 public class EventImpl extends EventMetadata
         implements Comparable<EventImpl>,
-                ConsensusEvent,
-                SerializableHashable,
-                SelfSerializable,
-                RunningHashable,
-                StreamAligned,
-                Timestamped {
+                ConsensusEvent {
 
     /** The base event information, including some gossip specific information */
     private GossipEvent baseEvent;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
-    /**
-     * The consensus hash of this event. This hash includes all information for an event that was a result of it
-     * reaching consensus. So the hash includes the consensus timestamp, the consensus order and other consensus info.
-     * This hash should not be confused with the hash of the base event which is calculated before consensus is reached,
-     * right after the event is created.
-     */
-    private Hash hash = null;
-
-    private RunningHash runningHash;
 
     /**
      * An unmodifiable ordered set of system transaction indices in the array of all transactions, from lowest to
@@ -100,7 +75,7 @@ public class EventImpl extends EventMetadata
      * Create an instance based on the given {@link DetailedConsensusEvent}
      * @param detailedConsensusEvent the detailed consensus event to build from
      */
-    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) {
+    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) {//TODO remove
         Objects.requireNonNull(detailedConsensusEvent);
         buildFromConsensusEvent(detailedConsensusEvent);
     }
@@ -119,15 +94,7 @@ public class EventImpl extends EventMetadata
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;
 
-        setDefaultValues();
         findSystemTransactions();
-    }
-
-    /**
-     * initialize RunningHash instance
-     */
-    private void setDefaultValues() {
-        runningHash = new RunningHash();
     }
 
     /**
@@ -168,30 +135,6 @@ public class EventImpl extends EventMetadata
         return Long.compare(getGeneration(), other.getGeneration());
     }
 
-    //////////////////////////////////////////
-    // Serialization methods
-    // Note: this class serializes itself as a com.swirlds.common.event.ConsensusEvent object
-    //////////////////////////////////////////
-
-    /**
-     * This class serializes itself as a {@link DetailedConsensusEvent} object
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        DetailedConsensusEvent.serialize(
-                out, baseEvent, consensusData.getRoundReceived(), consensusData.isLastInRoundReceived());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final DetailedConsensusEvent consensusEvent = new DetailedConsensusEvent();
-        consensusEvent.deserialize(in, version);
-        buildFromConsensusEvent(consensusEvent);
-    }
-
     /**
      * build current Event from consensusEvent
      *
@@ -202,27 +145,10 @@ public class EventImpl extends EventMetadata
         // clears metadata in case there is any
         super.clear();
 
-        setDefaultValues();
         findSystemTransactions();
         consensusData = new ConsensusData();
         consensusData.setRoundReceived(consensusEvent.getRoundReceived());
         consensusData.setLastInRoundReceived(consensusEvent.isLastInRoundReceived());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return DetailedConsensusEvent.CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return DetailedConsensusEvent.CLASS_VERSION;
     }
 
     /**
@@ -348,6 +274,8 @@ public class EventImpl extends EventMetadata
     // ConsensusData
     //////////////////////////////////////////
 
+
+    //TODO probably remove these
     /**
      * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
      */
@@ -454,37 +382,5 @@ public class EventImpl extends EventMetadata
     @Override
     public String toString() {
         return baseEvent.toString();
-    }
-
-    //
-    // Timestamped
-    //
-
-    @Override
-    public Instant getTimestamp() {
-        return getConsensusTimestamp();
-    }
-
-    //
-    // RunningHashable
-    //
-
-    @Override
-    public RunningHash getRunningHash() {
-        return runningHash;
-    }
-
-    //
-    // Hashable
-    //
-
-    @Override
-    public Hash getHash() {
-        return hash;
-    }
-
-    @Override
-    public void setHash(final Hash hash) {
-        this.hash = hash;
     }
 }
