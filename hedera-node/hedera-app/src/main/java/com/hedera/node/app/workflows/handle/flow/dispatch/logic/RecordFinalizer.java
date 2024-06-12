@@ -99,7 +99,7 @@ public class RecordFinalizer {
      * @param recordBuilder the record builder
      * @return the set of extra account ids
      */
-    private Set<AccountID> extraRewardReceivers(
+    Set<AccountID> extraRewardReceivers(
             @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
@@ -121,7 +121,8 @@ public class RecordFinalizer {
      * @param explicitHbarAdjustments the list of explicit hbar adjustments
      * @return the set of account ids that have a zero amount
      */
-    private @NonNull Set<AccountID> zeroAdjustIdsFrom(@NonNull final List<AccountAmount> explicitHbarAdjustments) {
+    @NonNull
+    Set<AccountID> zeroAdjustIdsFrom(@NonNull final List<AccountAmount> explicitHbarAdjustments) {
         Set<AccountID> zeroAdjustmentAccounts = null;
         for (final var aa : explicitHbarAdjustments) {
             if (aa.amount() == 0) {

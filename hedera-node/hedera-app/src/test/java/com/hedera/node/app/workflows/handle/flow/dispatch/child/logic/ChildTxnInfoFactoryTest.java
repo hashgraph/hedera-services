@@ -24,8 +24,6 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
-import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,12 +43,6 @@ class ChildTxnInfoFactoryTest {
                     .build())
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
-    private static final TransactionInfo txnInfo = new TransactionInfo(
-            Transaction.newBuilder().body(txBody).build(),
-            txBody,
-            SignatureMap.DEFAULT,
-            Bytes.EMPTY,
-            HederaFunctionality.CRYPTO_TRANSFER);
 
     private ChildTxnInfoFactory subject;
 
