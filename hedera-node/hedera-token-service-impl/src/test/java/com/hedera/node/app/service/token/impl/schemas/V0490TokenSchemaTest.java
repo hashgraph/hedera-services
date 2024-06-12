@@ -134,7 +134,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 final class V0490TokenSchemaTest {
-
     private static final long BEGINNING_ENTITY_ID = 3000;
 
     private static final SemanticVersion VERSION =

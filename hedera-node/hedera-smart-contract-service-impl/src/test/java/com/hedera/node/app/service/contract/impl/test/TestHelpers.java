@@ -654,6 +654,10 @@ public class TestHelpers {
     public static final Account ALIASED_RECEIVER =
             Account.newBuilder().accountId(RECEIVER_ID).alias(RECEIVER_ADDRESS).build();
 
+    public static final String ADDRESS_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+    public static final String ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY =
+            "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
+
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
