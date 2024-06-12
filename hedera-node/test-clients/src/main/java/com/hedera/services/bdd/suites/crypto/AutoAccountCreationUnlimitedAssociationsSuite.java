@@ -249,14 +249,11 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
                             .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
                             .alias(counterAlias.get());
 
                     var getAccountInfo = getAccountInfo("testAccount")
-                            .has(
-                                    accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(0)
-                                    // enable this after integrating changes in crypto create
-                                    // .maxAutoAssociations(-1)
-                                    );
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(-1));
 
                     var accountDelete = cryptoDelete("testAccount").hasKnownStatus(SUCCESS);
 
@@ -374,15 +371,12 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
                             .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
                             .alias(counterAlias.get());
 
                     var getAccountInfo = getAccountInfo("testAccount")
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .has(
-                                    accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(0)
-                                    // enable this after integrating changes in crypto create
-                                    // .maxAutoAssociations(-1)
-                                    );
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(-1));
 
                     var accountDelete = cryptoDelete("testAccount").hasKnownStatus(SUCCESS);
 
@@ -495,15 +489,12 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
                             .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
                             .alias(counterAlias.get());
 
                     var getAccountInfo = getAccountInfo("testAccount")
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .has(
-                                    accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(0)
-                                    // enable this after integrating changes in crypto create
-                                    // .maxAutoAssociations(-1)
-                                    );
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(-1));
 
                     var accountDelete = cryptoDelete("testAccount").hasKnownStatus(SUCCESS);
 
