@@ -46,7 +46,7 @@ The metrics module will be extended by a new data type called `Label`.
 A label is a key-value pair that can be defined as a `record`:
 
 ```java
-record Label(String key, String value) {}
+record Label(@NonNull String key, @Nullable String value) {}
 ``` 
 
 The `Metric` interface will be extended by a new method called `getLabels()` that returns a list of labels:
@@ -56,6 +56,7 @@ interface Metric {
     
     //...
     
+    @NonNull
     List<Label> getLabels();
 }
 ```
@@ -71,7 +72,11 @@ abstract class MetricConfig {
     
     //...
     
-    MetricConfig withLabels(Label... labels) {...}
+    @NonNull
+    MetricConfig withLabels(@NonNull Label... labels) {...}
+    
+    @NonNull
+    MetricConfig withLabels(@NonNull Collection<Label> labels) {...}
 }
 ```
 
@@ -83,12 +88,13 @@ Based on that we need to modify the `Metrics` interface to use the labels as the
 interface Metrics {
     
     // old methods:
-    // Object getValue(final @NonNull String category, final @NonNull String name);
-    // void remove(final @NonNull String category, final @NonNull String name);
+    // Object getValue(@NonNull String category, @NonNull String name);
+    // void remove(@NonNull String category, @NonNull String name);
     
-    Object getValue(final @NonNull String category, final @NonNull String name, final @NonNull Set<Label> labels);
+    @Nullable
+    Object getValue(@NonNull String category, @NonNull String name, @NonNull Set<Label> labels);
     
-    void remove(final @NonNull String category, final @NonNull String name, final @NonNull Set<Label> labels);
+    void remove(@NonNull String category, @NonNull String name, @NonNull Set<Label> labels);
 }
 ```
 
@@ -140,6 +146,7 @@ Here we need to check that a platform metric (that has a `nodeId` label) is stil
 
 - Should the `getLabels()` method return `Set`, `Collection` or `List`?
 - Should we add a new methods to the `Metrics` interface to get for example all metrics with a specific label?
+- How will a label with a `null` value be handled?
 
 ## Alternatives
 
