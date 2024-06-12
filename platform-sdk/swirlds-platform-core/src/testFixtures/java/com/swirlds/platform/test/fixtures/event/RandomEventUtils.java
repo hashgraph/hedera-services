@@ -18,6 +18,7 @@ package com.swirlds.platform.test.fixtures.event;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
@@ -94,7 +95,10 @@ public class RandomEventUtils {
 
         final List<OneOf<PayloadOneOfType>> hapiTransactions = new ArrayList<>();
         if (transactions != null) {
-            Stream.of(transactions).map(ConsensusTransactionImpl::getPayload).forEach(hapiTransactions::add);
+            Stream.of(transactions)
+                    .map(ConsensusTransactionImpl::getPayload)
+                    .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, ((Bytes) one.as()).toByteArray()))
+                    .forEach(hapiTransactions::add);
         }
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
