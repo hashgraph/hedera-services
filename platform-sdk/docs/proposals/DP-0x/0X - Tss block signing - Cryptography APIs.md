@@ -99,9 +99,7 @@ P₄  2        P₄_EC_PublicKey
 
 ```
 A threshold: 
-```
- t = 5
-```
+`t = 5`
 
 And an ownership map: `ShareId`->`Participant`:
 
@@ -184,10 +182,8 @@ P₄  2        P₄_EC_PublicKey
 P₅  1        P₅_EC_PublicKey
 P₆  1        P₆_EC_PublicKey
 ```
-A threshold: 
-```
-5
-```
+A threshold:
+`5`
 
 An old ownership map: `ShareId`->`Participant`:
 ```
@@ -203,6 +199,8 @@ P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  	P₅  	P₆
 
 but instead, each participant will generate a `TssMessage` out of each `ProprietaryShare` owned by the participant.
 Once finished, the list of ProprietariesShares will be updated 
+
+[TODO]
 
 
 ### Architecture
@@ -365,15 +363,16 @@ There were unknowns that are worth investigating in a follow-up task:
  * What is the serialization format supported by arkworks?  Raw Key Bytes are formatted with PKCS#8 for private keys and X.509 for public keys. Should we define a custom format for bytes serialized with arkworks? Should we reformat? What do we do with our custom content.
 
 
-#### Swirlds Threshold Signature Scheme (TSS) Library 
-STILL WIP
+#### Swirlds Threshold Signature Scheme (TSS) Library
+[TODO]
 ##### Overview
+[TODO]
 ##### Constraints
+[TODO]
 ##### Public API
-###### `Tss`
-**Link**: [Tss](tss-library%2FTss.java)
-
+[TODO]
 ##### Example
+[TODO]
 
 
 #### Swirlds Cryptography Pairings API
