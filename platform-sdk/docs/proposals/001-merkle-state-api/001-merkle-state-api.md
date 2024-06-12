@@ -52,7 +52,6 @@ public interface WritableSingletonState<T> extends ReadableSingletonState<T> {
 - there should be a new module - `swirlds-state-api` - to host a set of interfaces, records, and abstract classes that represent the Hedera state.
   This module should have a minimal set of dependencies. The Block Node should not have a compile-time dependency
   on any other modules but this one to interact with the state.
-- there should be a new module - `swirlds-state-impl` module to host the implementation of these interfaces and helper classes.
 
 ## Changes
 
@@ -82,7 +81,8 @@ Note that the `swirlds-state-api` is already created and has a set of classes by
 
 ### Platform State
 
-Currently `PlatformState` is a special case node of the merkle tree. That is, it doesn't conform to State API. As a part of the simplification effort **it should be refactored to a singleton state**.
+Currently `PlatformState` is a special case node of the merkle tree. That is, it doesn't conform to State API. 
+As a part of the simplification effort **it should be refactored to a singleton state**.
 
 Protobuf definition:
 
@@ -295,6 +295,6 @@ Migration testing:
 
 ## Implementation and delivery plan
 
-- Move State API implementation classes from `swirlds-platform-core` to `swirlds-state-impl`.
+- Move State API implementation classes from `swirlds-platform-core` to `swirlds-state-api`.
 - Refactor `PlatformState` into a singleton. Migrate the data.
-- Move `MerlkeHederaState` to `swirlds-state-impl`
+- Move `MerlkeHederaState` to `swirlds-state-api`
