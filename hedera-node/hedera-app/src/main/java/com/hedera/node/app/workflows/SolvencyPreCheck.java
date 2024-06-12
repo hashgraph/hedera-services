@@ -136,6 +136,21 @@ public class SolvencyPreCheck {
         checkSolvency(txInfo.txBody(), txInfo.payerID(), txInfo.functionality(), account, fees, ingestCheck, true);
     }
 
+    /**
+     * Checks if the verified payer account of the given transaction can afford to cover its fees.
+     * It also checks if the offered fee is sufficient. If the payer account cannot afford the fees, an
+     * {@link InsufficientBalanceException} is thrown with the appropriate status and fee amount. If the offered fee
+     * is insufficient, an {@link InsufficientServiceFeeException} is thrown with the appropriate status and fee amount.
+     * @param txBody the {@link TransactionBody} to use during the check
+     * @param payerID the {@link AccountID} of the payer
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @param account the {@link Account} with the balance to check
+     * @param fees the fees to use for the check
+     * @param ingestCheck if true, the check is being performed during an ingest workflow.
+     * @param checkOfferedFee if true, the offered fee is checked against the total fee.
+     * @throws PreCheckException if the payer account cannot afford the fees. The exception will have a status of
+     * {@code INSUFFICIENT_PAYER_BALANCE} and the fee amount that would have satisfied the check.
+     */
     public void checkSolvency(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payerID,
