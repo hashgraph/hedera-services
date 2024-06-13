@@ -49,8 +49,7 @@ class ConsensusRoundTests {
         final List<EventImpl> events = List.of(
                 EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null),
                 EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null),
-                EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null)
-        );
+                EventImplTestUtils.createEventImpl(new TestingEventBuilder(r), null, null));
 
         final ConsensusRound round = new ConsensusRound(
                 mock(AddressBook.class), events, mock(EventImpl.class), g, mock(EventWindow.class), snapshot, false);
@@ -75,8 +74,7 @@ class ConsensusRoundTests {
                             .setAppTransactionCount(numTransactions)
                             .setSystemTransactionCount(0),
                     null,
-                    null
-            );
+                    null);
             events.add(event);
         }
 
