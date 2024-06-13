@@ -66,7 +66,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     public void setUp() {
         super.setUp();
         validator = new CryptoTransferValidator();
-        subject = new CryptoTransferHandler(validator);
+        subject = new CryptoTransferHandler(validator, assetsLoader);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {
