@@ -69,8 +69,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     }
 
     @Test
-    void associatesTokenRecepients() {
+    void associatesTokenRecipients() {
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(handleContext.dispatchRemovablePrecedingTransaction(any(), any(), any(), any()))
+                .willReturn(cryptoCreateRecordBuilder);
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
