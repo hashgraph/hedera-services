@@ -22,9 +22,18 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Utility class for calculating the size of a transaction.
+ */
 public final class TransactionSizeUtils {
     private TransactionSizeUtils() {}
 
+    /**
+     * Get the size of a transaction.
+     *
+     * @param transaction the transaction to get the size of
+     * @return the size of the transaction
+     */
     public static long getTransactionSize(@NonNull final OneOf<PayloadOneOfType> transaction) {
         if (PayloadOneOfType.APPLICATION_PAYLOAD.equals(transaction.kind())) {
             return Integer.BYTES // add the the size of array length field
