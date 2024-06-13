@@ -161,7 +161,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 .map(t -> switch (t.kind()) {
                     case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
                     case APPLICATION_PAYLOAD -> new SwirldTransaction(t.as());
-                    default -> throw new IllegalArgumentException("Unexpected value: " + t.kind());
+                    default -> throw new IllegalArgumentException("Unexpected transaction type: " + t.kind());
                 })
                 .toList()
                 .toArray(new ConsensusTransactionImpl[0]);

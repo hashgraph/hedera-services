@@ -177,7 +177,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
         return switch (transaction.kind()) {
             case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(transaction.as());
             case APPLICATION_PAYLOAD -> new SwirldTransaction(transaction.as());
-            default -> throw new IllegalArgumentException("Unexpected value: " + transaction.kind());
+            default -> throw new IllegalArgumentException("Unexpected transaction type: " + transaction.kind());
         };
     }
 
