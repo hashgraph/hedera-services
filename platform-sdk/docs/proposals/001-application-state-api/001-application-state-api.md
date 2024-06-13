@@ -51,7 +51,7 @@ public interface WritableSingletonState<T> extends ReadableSingletonState<T> {
 
 ## Requirements
 
-- `PlatformState` should be refactored to a singleton object as defined by the State API.
+- `PlatformState` should be accessible via the State API 
 - there should be a new module - `swirlds-state-api` - to host a set of interfaces, records, and abstract classes that represent the Hashgraph state.
   This module should have a minimal set of dependencies. The Block Node should not have a compile-time dependency
   on any other modules but this one to interact with the state.
