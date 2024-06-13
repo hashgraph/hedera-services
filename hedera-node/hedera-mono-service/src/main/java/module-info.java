@@ -272,9 +272,10 @@ module com.hedera.node.app.service.mono {
     requires transitive com.hedera.evm;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
+    requires transitive headlong;
     requires transitive io.grpc.netty;
     requires transitive io.grpc.stub;
-    requires transitive headlong;
+    requires transitive io.grpc;
     requires transitive javax.inject;
     requires transitive org.apache.commons.lang3;
     requires transitive org.apache.logging.log4j;

@@ -22,11 +22,6 @@ plugins {
 // Fix or enhance the metadata of third-party Modules. This is about the metadata in the
 // repositories: '*.pom' and '*.module' files.
 jvmDependencyConflicts.patch {
-    val grpcModule = "io.helidon.grpc:io.grpc"
-    // The following 'io.grpc' libraries are replaced with a singe dependency to
-    // 'io.helidon.grpc:io.grpc', which is a re-packaged Modular Jar of all the 'grpc' libraries.
-    val grpcComponents = listOf("io.grpc:grpc-api", "io.grpc:grpc-context", "io.grpc:grpc-core")
-
     // These compile time annotation libraries are not of interest in our setup and are thus removed
     // from the dependencies of all components that bring them in.
     val annotationLibraries =
@@ -45,38 +40,20 @@ jvmDependencyConflicts.patch {
         addFeature("linux-x86_64")
         addFeature("linux-aarch_64")
     }
-    module("io.grpc:grpc-netty") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
-    module("io.grpc:grpc-protobuf") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
+    module("io.grpc:grpc-api") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-core") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-context") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-netty") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-protobuf") { annotationLibraries.forEach { removeDependency(it) } }
     module("io.grpc:grpc-protobuf-lite") {
         annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
         removeDependency("com.google.protobuf:protobuf-javalite")
         addApiDependency("com.google.protobuf:protobuf-java")
     }
-    module("io.grpc:grpc-services") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
-    module("io.grpc:grpc-stub") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
-    module("io.grpc:grpc-testing") {
-        annotationLibraries.forEach { removeDependency(it) }
-        grpcComponents.forEach { removeDependency(it) }
-        addApiDependency(grpcModule)
-    }
+    module("io.grpc:grpc-services") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-stub") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-testing") { annotationLibraries.forEach { removeDependency(it) } }
+    module("io.grpc:grpc-util") { annotationLibraries.forEach { removeDependency(it) } }
     module("com.github.ben-manes.caffeine:caffeine") {
         annotationLibraries.forEach { removeDependency(it) }
     }
@@ -96,7 +73,6 @@ jvmDependencyConflicts.patch {
     module("com.google.protobuf:protobuf-java-util") {
         annotationLibraries.forEach { removeDependency(it) }
     }
-    module("io.helidon.grpc:io.grpc") { annotationLibraries.forEach { removeDependency(it) } }
     module("org.apache.tuweni:tuweni-bytes") { removeDependency("com.google.code.findbugs:jsr305") }
     module("org.apache.tuweni:tuweni-units") { removeDependency("com.google.code.findbugs:jsr305") }
     module("io.prometheus:simpleclient") {
@@ -116,7 +92,10 @@ jvmDependencyConflicts.patch {
 extraJavaModuleInfo {
     failOnAutomaticModules = true // Only allow Jars with 'module-info' on all module paths
 
-    module("io.grpc:grpc-netty", "grpc.netty") {
+    module("io.grpc:grpc-api", "io.grpc")
+    module("io.grpc:grpc-core", "io.grpc.internal")
+    module("io.grpc:grpc-context", "io.grpc.context")
+    module("io.grpc:grpc-netty", "io.grpc.netty") {
         exportAllPackages()
         requireAllDefinedDependencies()
         requires("java.logging")
@@ -126,26 +105,11 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
         requires("java.logging")
     }
-    module("com.google.android:annotations", "com.google.android.annotations")
-    module("org.codehaus.mojo:animal-sniffer-annotations", "org.codehaus.mojo.animal.sniffer.annotations")
-    module("io.grpc:grpc-util", "io.grpc.util")
-
-    // Handle module conflicts by defining modules and allowing overrides
-    module("io.grpc:grpc-core", "io.grpc.internal") {
-        exportAllPackages()
-        requires("java.logging")
-    }
-    module("io.grpc:grpc-api", "io.grpc") {
-        exportAllPackages()
-        requireAllDefinedDependencies()
-        requires("java.logging")
-    }
-    module("io.grpc:grpc-context", "io.grpc.context")
-    module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
-    module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
-
     module("io.grpc:grpc-testing", "io.grpc.testing")
     module("io.grpc:grpc-services", "io.grpc.services")
+    module("io.grpc:grpc-util", "io.grpc.util")
+    module("io.grpc:grpc-protobuf", "io.grpc.protobuf")
+    module("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations")
     module("com.google.code.findbugs:jsr305", "java.annotation") {
         exportAllPackages()
