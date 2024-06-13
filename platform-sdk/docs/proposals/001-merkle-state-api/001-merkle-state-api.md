@@ -11,7 +11,8 @@ Create a module that will provide a simple and easy-to-use API for the Merkle tr
 
 The Merkle tree is a rather complex data structure, and to make interaction easier, we need to hide this complexity behind the API.
 Another reason to have this API is to provide additional flexibility in changing the implementation details of the Merkle tree.
-As long as they are hidden, we are free to change them.
+As long as they are hidden, we are free to change them. This API will be critically important for the Block Node to 
+interact with the state without knowing the details of the Merkle tree.
 
 Note that this API is already implemented as a part of the Service Modularization project, but these classes will be moved
 to a separate module as a part of this proposal.
