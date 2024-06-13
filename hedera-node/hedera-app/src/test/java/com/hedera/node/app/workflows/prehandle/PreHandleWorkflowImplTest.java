@@ -293,7 +293,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Fail pre-handle with an attempt to parse invalid protobuf bytes")
         void preHandleBadBytes() throws PreCheckException {
             // Given a transaction that has bad bytes (and therefore fails to parse)
-            final Transaction platformTx = new SwirldTransaction(randomBytes(123));
+            final Transaction platformTx = new SwirldTransaction(randomByteArray(123));
             when(transactionChecker.parseAndCheck(any(Bytes.class)))
                     .thenThrow(new PreCheckException(INVALID_TRANSACTION));
 
@@ -315,7 +315,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Fail pre-handle with failed syntactic check with an unknown exception")
         void preHandleFailedSyntacticCheckWithUnknownException() throws PreCheckException {
             // Given a transaction that fails due-diligence checks for some random throwable
-            final Transaction platformTx = new SwirldTransaction(randomBytes(123));
+            final Transaction platformTx = new SwirldTransaction(randomByteArray(123));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new RuntimeException("Random"));
 
             // When we pre-handle the transaction
@@ -341,8 +341,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // (Erin doesn't exist yet)
             final var txInfo = scenario().withPayer(FRANK.accountID()).txInfo();
 
-            final Transaction platformTx = new SwirldTransaction(
-                    asBytes(com.hedera.hapi.node.base.Transaction.PROTOBUF, txInfo.transaction()));
+            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
@@ -369,8 +368,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // Given a transactionID that refers to an account that was deleted
             final var txInfo = scenario().withPayer(BOB.accountID()).txInfo();
 
-            final Transaction platformTx = new SwirldTransaction(
-                    asBytes(com.hedera.hapi.node.base.Transaction.PROTOBUF, txInfo.transaction()));
+            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
