@@ -496,11 +496,9 @@ public class TestingEventBuilder {
         }
 
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
-        final long birthRound =
-                birthRoundOverride == null ? parent.getHashedData().getBirthRound() : birthRoundOverride;
+        final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
-        return new EventDescriptor(
-                parent.getHashedData().getHash(), parent.getHashedData().getCreatorId(), generation, birthRound);
+        return new EventDescriptor(parent.getHash(), parent.getCreatorId(), generation, birthRound);
     }
 
     /**
@@ -515,7 +513,7 @@ public class TestingEventBuilder {
 
         if (creatorId == null) {
             if (selfParent != null) {
-                creatorId = selfParent.getHashedData().getCreatorId();
+                creatorId = selfParent.getCreatorId();
             } else {
                 creatorId = DEFAULT_CREATOR_ID;
             }
@@ -547,7 +545,7 @@ public class TestingEventBuilder {
                 timeCreated = DEFAULT_TIMESTAMP;
             } else {
                 // randomly add between 1 and 99 milliseconds to self parent time created
-                timeCreated = selfParent.getHashedData().getTimeCreated().plusMillis(random.nextLong(1, 100));
+                timeCreated = selfParent.getTimeCreated().plusMillis(random.nextLong(1, 100));
             }
         }
 

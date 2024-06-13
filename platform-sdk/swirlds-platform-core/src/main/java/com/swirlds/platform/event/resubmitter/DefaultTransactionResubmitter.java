@@ -25,8 +25,10 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -65,23 +67,22 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
         }
 
         final List<OneOf<PayloadOneOfType>> transactionsToResubmit = new ArrayList<>();
-        for (final ConsensusTransactionImpl transaction : event.getHashedData().getTransactions()) {
-            if (transaction.isSystem()) {
-                if (transaction instanceof final StateSignatureTransaction signatureTransaction) {
-
-                    final StateSignaturePayload payload =
-                            signatureTransaction.getPayload().as();
-                    final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
+        final Iterator<Transaction> iterator = event.transactionIterator();
+        while (iterator.hasNext()) {
+            final Transaction transaction = iterator.next();
+            if (Objects.equals(transaction.getPayload().kind(), PayloadOneOfType.STATE_SIGNATURE_PAYLOAD)) {
+                final StateSignaturePayload payload = transaction.getPayload().as();
+                final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
                     if (transactionAge <= maxSignatureResubmitAge) {
-                        transactionsToResubmit.add(signatureTransaction.getPayload());
+                        transactionsToResubmit.add(transaction.getPayload());
                         metrics.reportResubmittedSystemTransaction();
                     } else {
                         metrics.reportAbandonedSystemTransaction();
                     }
                 }
             }
-        }
+
         return transactionsToResubmit;
     }
 
