@@ -13,32 +13,45 @@ Provide necessary pieces for signing blocks with TSS
 
 
 ## Purpose and Context
-The goal of a threshold signature scheme is to enable a group of participants (shareholders) to securely and efficiently perform signature generation while preserving security when assuring the presence of up to a threshold number of honest parties.
+The goal of a threshold signature scheme is to enable a group of participants (shareholders) to securely and efficiently
+perform signature generation while preserving security when assuring the presence of up to a threshold number of honest parties.
 
-This proposal covers the implementation of all necessary pieces to provide the consensus-node and block-node, the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS), and EC Cryptography.
+This proposal covers the implementation of all necessary pieces to provide the consensus-node and block-node,
+the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS), and EC Cryptography.
 
 The overview of the process and background for TSS and how it impacts functionally of the platform can be found in the related proposal: [TODO Add Ed's Proposal].
 
-The proposal assumes no relation with the platform and defines a generic solution that can be adopted by any consumer, the only assumption the proposal is making is that there exists a channel to connect each participant where the identity of the sender of a message has been previously validated.
+The proposal assumes no relation with the platform and defines a generic solution that can be adopted by any consumer, 
+the only assumption the proposal is making is that there exists a channel to connect each participant where the identity of the sender of a message has been previously validated.
 
-Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, the distribution aspect, the loading and in memory interpretation from each node is also outside the scope of this proposal. 
+Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, 
+the distribution aspect, the loading and in memory interpretation from each node is also outside the scope of this proposal. 
 
 ### Glossary
-- **TSS (Threshold Signature Scheme)**: A threshold-based signing where a minimum number of parties (threshold) must collaborate to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
-- **Groth 21**:publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares, with many possible uses cases supporting applications in distributed key generation and threshold signatures. Uses Shamir's secret sharing and ElGamal.
-- **Shamir’s Secret Sharing**: In Shamir’s SS, a secret s is divided into n shares by a dealer, and shares are sent to shareholders secretly. The secret "s" is shared among n shareholders in such a way that
-(a) t or more than t shares can be used to recover the secret, and
-(b) fewer than t shares are not sufficient to obtain the secret
+- **TSS (Threshold Signature Scheme)**: A threshold-based signing where a minimum number of parties (threshold) must collaborate
+to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
+- **Groth 21**:publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
+with many possible uses cases supporting applications in distributed key generation and threshold signatures. 
+Uses Shamir's secret sharing, ElGamal and ZK-Snarks.
+- **Shamir’s Secret Sharing**: In Shamir’s SS, a secret s is divided into n shares by a dealer, and shares are sent to shareholders secretly. 
+The secret "s" is shared among n shareholders in such a way that (a) t or more than t shares can be used to recover the secret, and
+(b) fewer than t shares are not sufficient to obtain the secret.
 Shamir’s (t, n) SS is based on a linear polynomial and is unconditionally secure.
 - **ElGamal**: On a message and a random number chosen by a signer, ElGamal signature scheme produces a signature consisting of two numbers (r, s),
 where r is computed from a random number regardless of a message and then s is computed from a message,
 a signer's secret key, a chosen random number, and r.
-- **EC (Elliptic Curve)**: "Elliptic" is not elliptic in the sense of an "oval circle". In the field "Fp", an EC is like a non-connected cloud of points. All points satisfy an equation and all operations are performed modulo p. Some elliptic curves are pairing-friendly.
-- **Bilinear Pairings**: Are mathematical functions used in cryptography to map two elements of different groups (in EC, the group is an elliptic curve) to a single value in another group in a way that preserves certain algebraic properties.
+- **zk-SNARKs**: The acronym zk-SNARK stands for Zero-Knowledge Succinct Non-Interactive Argument of Knowledge and refers
+to a proof construction where one can prove possession of certain information, e.g., a secret key, without revealing that information, and without any interaction between the prover and verifier.
+- **EC (Elliptic Curve)**: "Elliptic" is not elliptic in the sense of an "oval circle". In the field "Fp", an EC is like a non-connected cloud of points.
+All points satisfy an equation and all operations are performed modulo p. Some elliptic curves are pairing-friendly.
+- **Bilinear Pairings**: Are mathematical functions used in cryptography to map two elements of different groups (in EC, the group is an elliptic curve) to a single value in another group
+in a way that preserves certain algebraic properties.
 - **Fields**: Mathematical structures where addition, subtraction, multiplication, and division are defined and behave as expected (excluding division by zero).
 - **Groups**: Sets equipped with an operation (like addition or multiplication) that satisfies certain conditions (closure, associativity, identity element, and inverses).
-- **Share**: Represents a piece of the public/private necessary elements to create signatures. In TSS, a threshold number of shares is needed to produce an aggregate signature that can be then verified by the ledger public key.
-- **Polynomial Commitment**: A polynomial commitment is a cryptographic commitment to a polynomial. It enables a committer to commit to a polynomial such that the commitment allows verifying evaluations of the polynomial at specific points without revealing the entire polynomial.
+- **Share**: Represents a piece of the public/private necessary elements to create signatures. In TSS,
+a threshold number of shares is needed to produce an aggregate signature that can be later verified by the ledger public key.
+- **Polynomial Commitment**: A polynomial commitment is a cryptographic commitment to a polynomial. 
+It enables a committer to commit to a polynomial such that the commitment allows verifying evaluations of the polynomial at specific points without revealing the entire polynomial.
 
 ### Goals
 - **Usability:** Design a user-friendly library with a public API that is easy to integrate with other projects like consensus-node and block-node.
@@ -58,14 +71,17 @@ a signer's secret key, a chosen random number, and r.
 
 ### Core Behaviors
 
-The proposed TSS solution is based on Groth21 
+The proposed TSS solution is based on Groth21.
 
 #### Description of the Scheme
 
-An external operator will generate a persistent EC private/public key pair for each participant of the scheme.
-Each external operator will distribute the key of the participant to the other participants in the scheme.
+Each participant of the scheme will receive from an external source its own persistent EC private key and all participant's EC public key.
 
-The following section describes the process from a particular participant's point of view after the key distribution happened:
+This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys, but the generation, persistence, distribution
+and loading of those keys are outside the scope of this proposal.
+
+The following section describes the TSS process in a scheme distributing 10 shares over 4 participants
+From a particular participant P₁ point of view, after the key distribution happened:
 
 ##### Input
 * Participant's persistent EC private key (Private to each participant)
@@ -73,7 +89,7 @@ The following section describes the process from a particular participant's poin
 * Number of shares per participant (Public)
 * All participants' persistent EC public key (Public)
 * A threshold value
-* A predefined `SignatureSchema` that defines the type of Curve to use, and which Group of the Pairing is used for PublicKey Generation (Public)
+* A predefined `SignatureSchema` that defines the type of Curve to use, gives access to the EC primitives, and defines which Group of the Pairing is used for PublicKey Generation (Public)
 
 ```
 `Share`: An abstract concept having a unique identifier and an owner
@@ -82,10 +98,6 @@ The following section describes the process from a particular participant's poin
 ```
 
 #####  Bootstrap Stage
-E.g: In a scheme distributing 10 shares over 4 participants
-
-Assuming Current Participant: (P₁;  P₁_EC_PrivateKey)
-
 Given
 
 The current participants' directory:
@@ -109,7 +121,8 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 ```
 
 ###### 1. Create TssMessage 
-`TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share, and includes validation information like a commitment to `Pₖ` and a zk-SNARKs proof that can be used to verify the validity of the message and assemble an aggregate public key (referred as ledgerId).
+`TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share,
+and includes validation information like a commitment to `Pₖ` and a zk-SNARKs proof that can be used to verify the validity of the message and assemble an aggregate public key (referred as ledgerId).
 
 In the bootstrap process we create a random EC_PrivateKey out of the FieldElement of the `SignatureScheme` (the secret being shared).
 
@@ -128,7 +141,7 @@ Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the valu
 
 A TssMessage:
 
-![img_5.png](img_5.png)
+![img_2.png](img_2.png)
 
 After created using a channel established outside the scope of the library, each participant will broadcast a single message to be received by all participants.
 While waiting for other participants' messages to arrive for a limited amount of time.
@@ -202,6 +215,9 @@ Once finished, the list of ProprietariesShares will be updated
 
 [TODO]
 
+### Diagram
+![img_9.png](img_9.png)
+
 
 ### Architecture
 
@@ -212,7 +228,7 @@ Once finished, the list of ProprietariesShares will be updated
 3. **Bilinear Pairings API**: Generalization to be included at compilation time providing the cryptography primitives and the arithmetic operations for working with a specific EC curve and the underlying Groups, Fields, and Pairings.
 4. **Bilinear Pairings Implementation**: Java underlying implementation of the previous API, that will be loaded at runtime using Java's SPI. Multiple implementations can be provided for supporting different types of curves.
 5. **Native Support Library**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar using a predefined organization, so they can be accessed with JNI.
-6. **Arkworks Rust Library**: arkworks is a Rust ecosystem for zkSNARK programming. Libraries in the arkworks ecosystem provide efficient implementations of all components required to implement zkSNARK applications, from generic finite fields to R1CS constraints for common functionalities.
+6. **Arkworks[https://github.com/arkworks-rs]**:  arkworks is a Rust ecosystem for zkSNARK programming. Libraries in the arkworks ecosystem provide efficient implementations of all components required to implement zkSNARK applications, from generic finite fields to R1CS constraints for common functionalities.
 7. **EC-Key Utils**: Utility module to enable the node operator to generate pre-genesis initial public/private Key pair
 
 ### Module Organization and repositories
@@ -230,18 +246,21 @@ Once finished, the list of ProprietariesShares will be updated
 #### Swirlds Native support
 ##### Overview
 Our implementation of the `swirlds-cryptography-pairings-api` will use native compiled libraries under the hood accessed with JNI.
+Given non GA state of project Panama, this proposal does not consider it, but it is not discarded for future change proposals.
 
-There are two possible ways of making the library accessible to Java code, so it can be accessed through JNI:
-1. Make it available in the classpath: The library would need to be previously installed in the executing environment and reference its location in the classpath env variable.
+While dealing with native code using JNI, there are two possible ways of making the library accessible to Java code:
+1. Make it available in the classpath: The library would need to be previously installed in the executing environment
+and reference its location in the classpath env variable.
 2. Distribute it as an application dependency. The caveat here is that:
 
     a. The distributed library needs to be compiled in every possible architecture the application is going to be executed on.
 
     b. The library needs to be unpackaged from the jar as it cannot be accessed while it's compressed.
 
-
+A key we are considering in the development of this solution is ensuring that dependent software do not have the requirement to install any additional dependencies other what is distributed in the jars.
 The native-support library will help with the loading of the native library by implementing option 2.
-for this to work, the Java native libraries need to be included in the jar running the JNI wrapping code under the following structure:
+For this to work, native support library needs to be included as dependency in the module accessing JNI wrapping code.
+The native libraries will be accessed assuming the following structure in the module declaring the dependency:
 
 ```
  native-library-client.jar
@@ -249,14 +268,14 @@ for this to work, the Java native libraries need to be included in the jar runni
     |_arch64
       |_macos
         |_libhedera_bls_jni.dylib
-    |amd64
+    |_amd64
       |_macos
         |_libhedera_bls_jni.dylib
       |_linux
         |_libhedera_bls_jni.so
       |_windows
         |_libhedera_bls_jni.dll
-    |x-86
+    |_x86
       |_linux
         |_libhedera_bls_jni.so
       |_windows
