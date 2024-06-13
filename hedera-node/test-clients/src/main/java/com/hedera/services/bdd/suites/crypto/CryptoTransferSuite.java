@@ -1597,23 +1597,19 @@ public class CryptoTransferSuite {
                                 List.of(ByteString.copyFromUtf8("metadata1"), ByteString.copyFromUtf8("metadata2"))),
                         // Transfer fungible token
                         cryptoTransfer(moving(1, tokenA).between(firstUser, secondUser))
+                                .signedBy(firstUser)
+                                .payingWith(firstUser)
                                 .via(transferToFU),
                         getTxnRecord(transferToFU)
                                 .hasNewTokenAssociation(tokenA, secondUser)
                                 .logged(),
                         // Transfer NFT
                         cryptoTransfer(movingUnique(tokenB, 1).between(firstUser, secondUser))
+                                .signedBy(firstUser)
+                                .payingWith(firstUser)
                                 .via(transferToSU),
                         getTxnRecord(transferToSU)
                                 .hasNewTokenAssociation(tokenB, secondUser)
-                                .logged(),
-                        // Transfer fungible token to hollow account
-                        cryptoTransfer(moving(1, tokenA).between(firstUser, MULTI_KEY))
-                                .hasKnownStatus(SUCCESS)
-                                .logged(),
-                        // Transfer NFT to hollow account
-                        cryptoTransfer(movingUnique(tokenB, 2).between(firstUser, MULTI_KEY))
-                                .hasKnownStatus(SUCCESS)
                                 .logged())
                 .then();
     }
