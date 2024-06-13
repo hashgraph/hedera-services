@@ -1,4 +1,4 @@
-# Merkle State API
+# Application State API
 
 ## Summary
 
