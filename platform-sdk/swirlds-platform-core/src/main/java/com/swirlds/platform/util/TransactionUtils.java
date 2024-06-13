@@ -58,6 +58,6 @@ public final class TransactionUtils {
      * @return {@code true} if the transaction is a system transaction, {@code false} otherwise
      */
     public static boolean isSystemTransaction(@NonNull final OneOf<PayloadOneOfType> transaction) {
-        return ! PayloadOneOfType.APPLICATION_PAYLOAD.equals(transaction.kind());
+        return !PayloadOneOfType.APPLICATION_PAYLOAD.equals(transaction.kind());
     }
 }

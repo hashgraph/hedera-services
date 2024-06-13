@@ -40,7 +40,8 @@ class TransactionUtilsTest {
 
     @ParameterizedTest
     @MethodSource("buildArgumentsSwirldTransactions")
-    void testSizeComparisonsSwirldTransactions(final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
+    void testSizeComparisonsSwirldTransactions(
+            final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
         assertEquals((int) TransactionUtils.getTransactionSize(payload), swirldTransaction.getSerializedLength());
         assertFalse(TransactionUtils.isSystemTransaction(payload));
     }
@@ -59,8 +60,10 @@ class TransactionUtilsTest {
 
     @ParameterizedTest
     @MethodSource("buildArgumentsStateSignatureTransaction")
-    void testSizeComparisonsStateSignatureTransaction(final OneOf<PayloadOneOfType> payload, final StateSignatureTransaction stateSignatureTransaction) {
-        assertEquals((int) TransactionUtils.getTransactionSize(payload), stateSignatureTransaction.getSerializedLength());
+    void testSizeComparisonsStateSignatureTransaction(
+            final OneOf<PayloadOneOfType> payload, final StateSignatureTransaction stateSignatureTransaction) {
+        assertEquals(
+                (int) TransactionUtils.getTransactionSize(payload), stateSignatureTransaction.getSerializedLength());
         assertTrue(TransactionUtils.isSystemTransaction(payload));
     }
 
@@ -68,9 +71,13 @@ class TransactionUtilsTest {
         final List<Arguments> arguments = new ArrayList<>();
 
         IntStream.range(0, 100).forEach(i -> {
-            final var payload = StateSignaturePayload.newBuilder().hash(randomBytes()).signature(randomBytes()).build();
+            final var payload = StateSignaturePayload.newBuilder()
+                    .hash(randomBytes())
+                    .signature(randomBytes())
+                    .build();
             arguments.add(Arguments.of(
-                    new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload), new StateSignatureTransaction(payload)));
+                    new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload),
+                    new StateSignatureTransaction(payload)));
         });
 
         return arguments.stream();
