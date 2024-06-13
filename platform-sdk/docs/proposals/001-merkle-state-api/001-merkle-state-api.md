@@ -71,15 +71,6 @@ private PlatformState findPlatformState(HederaState state) {
 }
 ```
 
-
-### Modules and Repos
-
-Two new modules are added as a part of this proposal:
-
-![state-modules](assets/state-modules.png)
-
-Note that the `swirlds-state-api` is already created and has a set of classes by [this PR](https://github.com/hashgraph/hedera-services/pull/12570). There is also one [more PR](https://github.com/hashgraph/hedera-services/pull/13331) related to this change.
-
 ## Components and Architecture
 
 ### Platform State
