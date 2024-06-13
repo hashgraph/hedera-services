@@ -1,8 +1,8 @@
-# 0X - Tss block signing - Cryptography APIs
+# 0X - Tss message signing - Cryptography APIs
 
 ## Summary
 
-Provide necessary pieces for signing blocks with TSS
+Provide necessary pieces for signing messages using a TSS scheme.
 
 | Metadata           | Entities                                               | 
 |--------------------|--------------------------------------------------------|
@@ -13,10 +13,14 @@ Provide necessary pieces for signing blocks with TSS
 
 
 ## Purpose and Context
-The goal of a threshold signature scheme is to enable a group of participants (shareholders) to securely and efficiently
+The goal of a threshold signature scheme (TSS) is to enable a group of participants (shareholders) to securely and efficiently
 perform signature generation while preserving security when assuring the presence of up to a threshold number of honest parties.
+When using TSS, a static public key is produced, that doesn't change even when the amount of participant of the scheme varies,
+and can be used to verify any message signed by a threshold of private aggregated signatures. 
 
-This proposal covers the implementation of all necessary pieces to provide the consensus-node and block-node,
+This is important for producing proofs that are easily consumable and verifiable by external entities.
+
+This proposal covers the implementation of all necessary pieces to provide the consensus node and block node,
 the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS), and EC Cryptography.
 
 The overview of the process and background for TSS and how it impacts functionally of the platform can be found in the related proposal: [TODO Add Ed's Proposal].
@@ -25,18 +29,18 @@ The proposal assumes no relation with the platform and defines a generic solutio
 the only assumption the proposal is making is that there exists a channel to connect each participant where the identity of the sender of a message has been previously validated.
 
 Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal, 
-the distribution aspect, the loading and in memory interpretation from each node is also outside the scope of this proposal. 
+the distribution aspect, the loading and in memory interpretation from each participant is also outside the scope of this proposal. 
 
 ### Glossary
-- **TSS (Threshold Signature Scheme)**: A threshold-based signing where a minimum number of parties (threshold) must collaborate
+- **TSS (Threshold Signature Scheme)**: A cryptographic signing scheme in which a minimum number of parties (threshold) must collaborate
 to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
 - **Groth 21**:publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
 with many possible uses cases supporting applications in distributed key generation and threshold signatures. 
 Uses Shamir's secret sharing, ElGamal and ZK-Snarks.
-- **Shamir’s Secret Sharing**: In Shamir’s SS, a secret s is divided into n shares by a dealer, and shares are sent to shareholders secretly. 
-The secret "s" is shared among n shareholders in such a way that (a) t or more than t shares can be used to recover the secret, and
-(b) fewer than t shares are not sufficient to obtain the secret.
-Shamir’s (t, n) SS is based on a linear polynomial and is unconditionally secure.
+- **Shamir’s Secret Sharing**: In Shamir’s SS, a secret `s` is divided into `n` shares by a dealer, and shares are sent to shareholders secretly.
+The secret `s` is shared among `n` shareholders in such a way that 
+(a) any party with great or equal to `t` shares can recover the secret, and (b) any party with fewer than `t` shares cannot obtain the secret.
+Shamir’s `(t, n)` SS is based on a linear polynomial and is unconditionally secure.
 - **ElGamal**: On a message and a random number chosen by a signer, ElGamal signature scheme produces a signature consisting of two numbers (r, s),
 where r is computed from a random number regardless of a message and then s is computed from a message,
 a signer's secret key, a chosen random number, and r.
@@ -54,11 +58,11 @@ a threshold number of shares is needed to produce an aggregate signature that ca
 It enables a committer to commit to a polynomial such that the commitment allows verifying evaluations of the polynomial at specific points without revealing the entire polynomial.
 
 ### Goals
-- **Usability:** Design a user-friendly library with a public API that is easy to integrate with other projects like consensus-node and block-node.
+- **Usability:** Design a user-friendly libraries with a public API that is easy to integrate with other projects like consensus-node and block-node.
 - **EVM support:** Generated signature and public keys should be compatible with evm precompiled functions so that signature validation can be done on smart contracts without incurring in excessive gas cost. 
 - **Security:** Our produced code should use audited code and be able to pass security audits both internal and external.
 - **Flexibility**: Minimize the impact of introducing support for other elliptic curves. 
-- **Independent Release:** Design release cycle independent components that can be used both in the consensus node and in the future block node.
+- **Independent Release:** this library should have its own release cycle separate from the platform, and that it should be easy for both platform and block node to depend on it.
 
 ### Non-Goals
 - Completely implement our own cryptography support/primitives/library implementation that supports EC-curves in Java.
@@ -74,6 +78,7 @@ It enables a committer to commit to a polynomial such that the commitment allows
 The proposed TSS solution is based on Groth21.
 
 #### Description of the Scheme
+Here the word participant is used to describe any one of the parties involved in produced the aggregated signature.
 
 Each participant of the scheme will receive from an external source its own persistent EC private key and all participant's EC public key.
 
@@ -81,15 +86,19 @@ This proposal covers the implementation of a tool similar to ssh-keygen to gener
 and loading of those keys are outside the scope of this proposal.
 
 The following section describes the TSS process in a scheme distributing 10 shares over 4 participants
-From a particular participant P₁ point of view, after the key distribution happened:
+From a particular participant P₁ point of view, after the key distribution is complete:
+
+Before starting all participants should agree on a `SignatureSchema` they will use.
+The `SignatureSchema` defines the type of Curve to use, and which Group of the Pairing is used for PublicKey Generation.
+
 
 ##### Input
 * Participant's persistent EC private key (Private to each participant)
 * Number of participants (Public)
 * Number of shares per participant (Public)
-* All participants' persistent EC public key (Public)
 * A threshold value
-* A predefined `SignatureSchema` that defines the type of Curve to use, gives access to the EC primitives, and defines which Group of the Pairing is used for PublicKey Generation (Public)
+* All participants' persistent EC public key (Public)
+* A predefined `SignatureSchema` (Public / Constant for all the network)
 
 ```
 `Share`: An abstract concept having a unique identifier and an owner
@@ -100,7 +109,7 @@ From a particular participant P₁ point of view, after the key distribution hap
 #####  Bootstrap Stage
 Given
 
-The current participants' directory:
+Latest participants directory:
 ```
 P   # shares
 -----------------------------
@@ -124,16 +133,27 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 `TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share,
 and includes validation information like a commitment to `Pₖ` and a zk-SNARKs proof that can be used to verify the validity of the message and assemble an aggregate public key (referred as ledgerId).
 
-In the bootstrap process we create a random EC_PrivateKey out of the FieldElement of the `SignatureScheme` (the secret being shared).
+In the bootstrap process we create a random EC_PrivateKey `k` out of the FieldElement of the `SignatureScheme` (the secret being shared).
 
-Then, each shareholder will produce `n` (n=total number of shares) values `xₛ` by evaluating a polynomial Pₖ at each `ShareId`: `sidₛ` in the ownership map
+Then,
 
+```
+`k`  - a random EC_PrivateKey for the participant
+`n`  - the number of total shares across all participants
+`s`  - One of the total shares
+`sidₛ`- the shareId of the share s
+`xₛ` - one of many points in a polynomial for share s
+`Pₖ` - a polynomial with certain properties given a specific private key k
+```
+
+
+each shareholder will produce `n` (n=total number of shares) values `xₛ` by evaluating a polynomial Pₖ at each `ShareId`: `sidₛ` in the ownership map
+
+The polynomial `Pₖ` is a polynomial with degree `t-1` (t=threshold) [created with random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element in `aₒ` and `x` each `sidₛ`]
 ```
    xₛ=Pₖ(sidₛ) for privateKey: k and each ShareId: sidₛ
 ```
 Each `xₛ` constitutes points on the polynomial.
-
-The polynomial `Pₖ` is a polynomial with degree `t-1` (t=threshold) created with random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element in `aₒ` and `x` each `sidₛ`
 
 Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `Mₛ` will be produced by encrypting `xₛ` using `sidₛ` owner's publicKey.
 
@@ -143,15 +163,16 @@ A TssMessage:
 
 ![img_2.png](img_2.png)
 
-After created using a channel established outside the scope of the library, each participant will broadcast a single message to be received by all participants.
-While waiting for other participants' messages to arrive for a limited amount of time.
-
-###### 2. Validation of TssMessage
+###### Outside of scope
+Using a channel already established, each participant will broadcast a single message to be received by all participants
+while waiting to receive other participant's messages. This functionality is key for the protocol to work but needs to be handled outside the library.
 Each participant will validate the received message against the commitment and the zk-SNARKs proof. Invalid messages will be discarded.
+###### 2. Validation of TssMessage
+Each message can be validated against the commitment and the zk-SNARKs proof.
 The validation is produced over the content of the message and does not include the sender's identity which is assumed to be provided by the external channel.
 
 ###### 3. Processing of TssMessage
-Given Participant's persistent EC PrivateKey, `n` number of validated messages (n=threshold), and the list of all validated `TssMessage`s,
+Given Participant's persistent EC PrivateKey, `t` number of validated messages (t=threshold), and the list of all validated `TssMessage`s,
 each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `ProprietaryShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
 
 
@@ -161,30 +182,15 @@ At this point, the participant executing the scheme is able to start signing.
 Synchronization between all participants will be needed in order to determine if all of them have received and processed enough messages and determined each owns ProprietaryShares,
 but that is not covered by this library and should be done outside.
 
-#####  Sign Stage
-
-###### 1. Sign
-Using each `ProprietaryShare` owned by the participant, a message can be signed producing a `TssSignature`
-Using a channel established outside the scope of the scheme and a message also created outside the scope of the library, each participant will broadcast a `TssSignature` per `ProprietaryShare` to the other participants.
-
-###### 2. Aggregate Signature
-Once the participant has received a number of messages `n` (n=threshold), validate them (?) and process them in sequence (?).
-Extract the signature and aggregate the signature for all messages.
-(?)Synchronization between all participants will be needed in order to determine if all of them have received and processed enough messages and determined the AggregatedSignature,
-
-###### 3. Persist
-The aggregate signature can be persisted.
-
 #####  Rekey Stage
-The rekeying process is similar to the bootstrap process 
 
-.g: In a scheme distributing 10 shares over 4 participants
+E.g.: In a scheme distributing 10 shares over 4 participants
 
 Assuming Current Participant: (P₁;  P₁_EC_PrivateKey)
 
 Given
 
-The current participants' directory:
+Latest participants directory:
 ```
 P   # shares
 -----------------------------
@@ -209,33 +215,43 @@ And a new ownership map: `ShareId`->`Participant`:
 sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
 P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  	P₅  	P₆  
 ```
+The rekeying process is similar to the bootstrap process but instead, each participant will generate a `TssMessage` out of each `ProprietaryShare` owned by the participant.
 
-but instead, each participant will generate a `TssMessage` out of each `ProprietaryShare` owned by the participant.
-Once finished, the list of ProprietariesShares will be updated 
+Once finished, the list of `ProprietariesShares` will be updated.
 
-[TODO]
 
-### Diagram
-![img_9.png](img_9.png)
+#####  Sign Stage
+After genesis keying or rekeying stages, the library can be used to sign any message. 
+Using each `ProprietaryShare` owned by the participant, a message can be signed producing a `TssSignature`
+
+Multiple signatures can be aggregated to create an aggregated `TssSignature`. An aggregated `TssSignature` can be validated against the aggregated PublicKey if
+`t` (t=threshold) valid signatures were aggregated. If the threshold is met and the signature is valid, the library will respond true as the validation response, if not false.
+
+
+##### Summary diagram
+The following diagram exposes the steps involved necessary for bootstrapping and using the library. In orange all the steps where the library is involved.
+The rest of the steps needs to happen, but are outside the scope of the described library.
+![img_12.png](img_12.png)
 
 
 ### Architecture
+To implement the functionality detailed in the previous section, the following code structure is proposed:
 
-![img_6.png](img_6.png)
+![img_10.png](img_10.png)
 
-1. **TSS Library**: Consensus node will use the TSS library to create shares, create TSS messages to send to other nodes, assemble shared public keys (ledgerId), and sign the block-node merkle tree hash.
-2. **Bilinear Pairings Signature Library**: Provides cryptographic objects (PrivateKey, PublicKey, and Signature) and operations for the block-node and consensus-node to sign and verify the signatures in the block. Consensus-node uses this library indirectly through the TSS Library.
-3. **Bilinear Pairings API**: Generalization to be included at compilation time providing the cryptography primitives and the arithmetic operations for working with a specific EC curve and the underlying Groups, Fields, and Pairings.
-4. **Bilinear Pairings Implementation**: Java underlying implementation of the previous API, that will be loaded at runtime using Java's SPI. Multiple implementations can be provided for supporting different types of curves.
-5. **Native Support Library**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar using a predefined organization, so they can be accessed with JNI.
+1. **TSS Lib**: Consensus node will use the TSS library to create shares, create TSS messages to send to other nodes, assemble shared public keys (ledgerId), and sign the block-node merkle tree hash.
+2. **Bilinear Pairings Signature Library**: Provides cryptographic objects (PrivateKey, PublicKey, and Signature) and operations for the block-node and consensus-node to sign and verify the signatures. Consensus-node uses this library indirectly through the TSS Library.
+3. **Bilinear Pairings API**: Layer of abstraction to be included at compilation time providing the cryptography primitives and the arithmetic operations for working with a specific EC curve and the underlying Groups, Fields, and Pairings and minimizes the impact of changing or including different curves implementations.
+4. **Bilinear Pairings Impl**: Implementation of Bilinear Pairings API that will be loaded at runtime using Java's SPI. Multiple implementations can be provided to support different types of curves. It allows chang or switching dependencies.
+5. **Native Support Lib**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar using a predefined organization, so they can be accessed with JNI.
 6. **Arkworks[https://github.com/arkworks-rs]**:  arkworks is a Rust ecosystem for zkSNARK programming. Libraries in the arkworks ecosystem provide efficient implementations of all components required to implement zkSNARK applications, from generic finite fields to R1CS constraints for common functionalities.
 7. **EC-Key Utils**: Utility module to enable the node operator to generate pre-genesis initial public/private Key pair
 
 ### Module Organization and repositories
-![img_7.png](img_7.png)
+![img_13.png](img_13.png)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries. This repository is necessary as a means of facilitating our build process that includes Rust libraries. Also provides independent release cycles between consensus node code and block node code.
 2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries, so they can be used with JNI.
-3. **swirlds-cryptography-tss**: Gradle module for the TSS Library. This library-only client is the consensus node, so will remain close to it in `hedera-services` repository under `platform-sdk` folder.
+3. **swirlds-cryptography-tss**: Gradle module for the TSS Library. This library-only client is the consensus node, so it will remain close to it in `hedera-services` repository under `platform-sdk` folder.
 4. **swirlds-cryptography-signatures**: Gradle module for the Bilinear Pairings Signature Library.
 5. **swirlds-cryptography-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
 6. **swirlds-cryptography-alt128**: Gradle module that will provide the implementation for the Bilinear Pairings API using alt-128 elliptic curve. That curve has been chosen in accordance with EVM's support of it. Support for that curve will be provided by arkworks rust library. The module will include Java code, and rust code that will be compiled for all possible system architectures, and distributed in a jar under a predefined structure.
@@ -257,8 +273,11 @@ and reference its location in the classpath env variable.
 
     b. The library needs to be unpackaged from the jar as it cannot be accessed while it's compressed.
 
-A key we are considering in the development of this solution is ensuring that dependent software do not have the requirement to install any additional dependencies other what is distributed in the jars.
-The native-support library will help with the loading of the native library by implementing option 2.
+Two key points we are considering in the development of this solution are: 
+a) ensuring that is compatible with java module system.
+b) ensuring that dependent software do not have the requirement to install any additional dependencies other what is distributed in the jars.
+
+That is why the native-support library will help with the loading of the native library by implementing option 2.
 For this to work, native support library needs to be included as dependency in the module accessing JNI wrapping code.
 The native libraries will be accessed assuming the following structure in the module declaring the dependency:
 
