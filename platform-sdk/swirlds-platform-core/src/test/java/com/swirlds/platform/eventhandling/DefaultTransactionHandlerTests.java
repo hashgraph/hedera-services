@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -79,6 +80,7 @@ class DefaultTransactionHandlerTests {
             final DetailedConsensusEvent detailedConsensusEvent =
                     new DetailedConsensusEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
             streamedEvents.add(detailedConsensusEvent);
+            detailedConsensusEvent.getRunningHash().setHash(mock(Hash.class));
         }
 
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
@@ -99,7 +101,6 @@ class DefaultTransactionHandlerTests {
                 new TestingEventBuilder(random).setConsensusTimestamp(time.now()), null, null);
 
         event.getBaseEvent().signalPrehandleCompletion();
-        // event.getRunningHash().setHash(mock(Hash.class));
 
         return event;
     }

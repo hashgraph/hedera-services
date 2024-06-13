@@ -43,7 +43,7 @@ class ConsensusRoundTests {
         final Randotron r = Randotron.create();
         final GraphGenerations g = mock(GraphGenerations.class);
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
-        
+
         when(snapshot.round()).thenReturn(1L);
 
         final List<EventImpl> events = List.of(
