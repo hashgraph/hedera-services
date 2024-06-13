@@ -540,6 +540,8 @@ public class ContractUpdateSuite {
                         getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
                         contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
                         getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(5000)
                                 .hasKnownStatus(SUCCESS),
