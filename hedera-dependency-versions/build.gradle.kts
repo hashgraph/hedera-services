@@ -81,13 +81,13 @@ dependencies.constraints {
         because("dagger.compiler")
     }
     api("io.grpc:grpc-netty:1.64.0") {
-        because("grpc.netty")
+        because("io.grpc.netty")
     }
     api("io.grpc:grpc-protobuf:1.64.0") {
-        because("grpc.protobuf")
+        because("io.grpc.protobuf")
     }
     api("io.grpc:grpc-stub:1.64.0") {
-        because("grpc.stub")
+        because("io.grpc.stub")
     }
     api("com.esaulpaugh:headlong:6.1.1") {
         because("headlong")
@@ -97,9 +97,6 @@ dependencies.constraints {
     }
     api("io.github.classgraph:classgraph:4.8.65") {
         because("io.github.classgraph")
-    }
-    api("io.helidon.grpc:io.grpc:3.2.1") {
-        because("io.grpc")
     }
     api("io.netty:netty-handler:4.1.110.Final") {
         because("io.netty.handler")

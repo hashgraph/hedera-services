@@ -71,6 +71,7 @@ itestModuleInfo {
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.swirlds.metrics.api")
+    requires("io.grpc")
     requires("io.grpc.netty")
     requires("io.grpc.stub")
     requires("org.apache.logging.log4j")
