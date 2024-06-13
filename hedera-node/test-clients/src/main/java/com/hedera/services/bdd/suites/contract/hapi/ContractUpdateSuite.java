@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -519,10 +519,18 @@ public class ContractUpdateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> tryContractUpdateWithMaxAutoAssociations() {
         return propertyPreservingHapiSpec("tryContractUpdateWithMaxAutoAssociations")
-                .preserving("contracts.allowAutoAssociations", "ledger.maxAutoAssociations")
+                .preserving(
+                        "contracts.allowAutoAssociations",
+                        "ledger.maxAutoAssociations",
+                        "entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", TRUE_VALUE, "ledger.maxAutoAssociations", "5000"),
+                        overridingThree(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                TRUE_VALUE,
+                                "contracts.allowAutoAssociations",
+                                TRUE_VALUE,
+                                "ledger.maxAutoAssociations",
+                                "5000"),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
