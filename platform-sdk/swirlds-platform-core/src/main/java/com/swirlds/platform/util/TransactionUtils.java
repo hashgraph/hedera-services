@@ -23,10 +23,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Utility class for calculating the size of a transaction.
+ * Utility class for handling PJB transactions.
  */
-public final class TransactionSizeUtils {
-    private TransactionSizeUtils() {}
+public final class TransactionUtils {
+    private TransactionUtils() {}
 
     /**
      * Get the size of a transaction.
@@ -49,5 +49,15 @@ public final class TransactionSizeUtils {
         } else {
             throw new IllegalArgumentException("Unknown transaction type: " + transaction.kind());
         }
+    }
+
+    /**
+     * Check if a transaction is a system transaction.
+     *
+     * @param transaction the transaction to check
+     * @return {@code true} if the transaction is a system transaction, {@code false} otherwise
+     */
+    public static boolean isSystemTransaction(@NonNull final OneOf<PayloadOneOfType> transaction) {
+        return ! PayloadOneOfType.APPLICATION_PAYLOAD.equals(transaction.kind());
     }
 }

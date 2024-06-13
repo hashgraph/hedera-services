@@ -16,9 +16,9 @@
 
 package com.swirlds.platform;
 
-import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
+import static com.swirlds.platform.util.TransactionUtils.isSystemTransaction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,7 +98,7 @@ public class EventImplTests {
             final TransactionData data, final Set<OneOf<PayloadOneOfType>> transactionSet) {
         for (int i = 0; i < data.transactions.size(); i++) {
             final OneOf<PayloadOneOfType> t = data.transactions.get(i);
-            final boolean isSystem = STATE_SIGNATURE_PAYLOAD.equals(t.kind());
+            final boolean isSystem = isSystemTransaction(t);
             if (data.systemIndices.contains(i)) {
                 assertTrue(isSystem, String.format("Transaction at index %d should be iterated", i));
                 assertFalse(

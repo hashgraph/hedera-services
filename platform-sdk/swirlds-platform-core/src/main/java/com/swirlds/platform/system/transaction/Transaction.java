@@ -17,11 +17,11 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventPayload;
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
+import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -64,7 +64,7 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * 		transaction
      */
     default boolean isSystem() {
-        return getPayload().kind() != PayloadOneOfType.APPLICATION_PAYLOAD;
+        return TransactionUtils.isSystemTransaction(getPayload());
     }
 
     /**

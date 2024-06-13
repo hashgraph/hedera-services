@@ -17,10 +17,14 @@
 package com.swirlds.platform.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,22 +35,42 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class TransactionSizeUtilsTest {
+class TransactionUtilsTest {
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     @ParameterizedTest
-    @MethodSource("buildArguments")
-    void testSizeComparisons(final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
-        assertEquals((int) TransactionSizeUtils.getTransactionSize(payload), swirldTransaction.getSerializedLength());
+    @MethodSource("buildArgumentsSwirldTransactions")
+    void testSizeComparisonsSwirldTransactions(final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
+        assertEquals((int) TransactionUtils.getTransactionSize(payload), swirldTransaction.getSerializedLength());
+        assertFalse(TransactionUtils.isSystemTransaction(payload));
     }
 
-    protected static Stream<Arguments> buildArguments() {
+    protected static Stream<Arguments> buildArgumentsSwirldTransactions() {
         final List<Arguments> arguments = new ArrayList<>();
 
         IntStream.range(0, 100).forEach(i -> {
             final var payload = randomBytes();
             arguments.add(Arguments.of(
                     new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload), new SwirldTransaction(payload)));
+        });
+
+        return arguments.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buildArgumentsStateSignatureTransaction")
+    void testSizeComparisonsStateSignatureTransaction(final OneOf<PayloadOneOfType> payload, final StateSignatureTransaction stateSignatureTransaction) {
+        assertEquals((int) TransactionUtils.getTransactionSize(payload), stateSignatureTransaction.getSerializedLength());
+        assertTrue(TransactionUtils.isSystemTransaction(payload));
+    }
+
+    protected static Stream<Arguments> buildArgumentsStateSignatureTransaction() {
+        final List<Arguments> arguments = new ArrayList<>();
+
+        IntStream.range(0, 100).forEach(i -> {
+            final var payload = StateSignaturePayload.newBuilder().hash(randomBytes()).signature(randomBytes()).build();
+            arguments.add(Arguments.of(
+                    new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload), new StateSignatureTransaction(payload)));
         });
 
         return arguments.stream();
