@@ -97,11 +97,14 @@ public final class SignedStateFileReader {
 
                     final Path directory = stateFile.getParent();
 
-                    final MerkleRoot state = snapshotStateReader.apply(in, directory);
-                    final Hash hash = in.readSerializable();
-                    final SigSet sigSet = in.readSerializable();
-
-                    return new StateFileData(state, hash, sigSet);
+                    try {
+                        final MerkleRoot state = snapshotStateReader.apply(in, directory);
+                        final Hash hash = in.readSerializable();
+                        final SigSet sigSet = in.readSerializable();
+                        return new StateFileData(state, hash, sigSet);
+                    } catch (final IOException e) {
+                        throw new IOException("Failed to read snapshot file " + stateFile.toFile(), e);
+                    }
                 });
 
         final SignedState newSignedState = new SignedState(
