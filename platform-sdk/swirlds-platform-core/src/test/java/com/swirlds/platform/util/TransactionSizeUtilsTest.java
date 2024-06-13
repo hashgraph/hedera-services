@@ -38,21 +38,19 @@ class TransactionSizeUtilsTest {
     @MethodSource("buildArguments")
     void testSizeComparisons(final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
         assertEquals((int) TransactionSizeUtils.getTransactionSize(payload), swirldTransaction.getSerializedLength());
-
     }
 
     protected static Stream<Arguments> buildArguments() {
         final List<Arguments> arguments = new ArrayList<>();
-        // arguments.add(Arguments.of(0, keyValueProvider));
 
         IntStream.range(0, 100).forEach(i -> {
             final var payload = randomBytes();
-            arguments.add(Arguments.of(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload), new SwirldTransaction(payload)));
+            arguments.add(Arguments.of(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload), new SwirldTransaction(payload)));
         });
 
         return arguments.stream();
     }
-
 
     private static Bytes randomBytes() {
         final var bytes = new byte[RANDOM.nextInt(1, 1024 / 32)];
