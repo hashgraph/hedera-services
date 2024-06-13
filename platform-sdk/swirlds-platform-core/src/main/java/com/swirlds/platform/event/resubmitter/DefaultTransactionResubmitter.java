@@ -23,8 +23,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -74,14 +72,14 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
                 final StateSignaturePayload payload = transaction.getPayload().as();
                 final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
-                    if (transactionAge <= maxSignatureResubmitAge) {
-                        transactionsToResubmit.add(transaction.getPayload());
-                        metrics.reportResubmittedSystemTransaction();
-                    } else {
-                        metrics.reportAbandonedSystemTransaction();
-                    }
+                if (transactionAge <= maxSignatureResubmitAge) {
+                    transactionsToResubmit.add(transaction.getPayload());
+                    metrics.reportResubmittedSystemTransaction();
+                } else {
+                    metrics.reportAbandonedSystemTransaction();
                 }
             }
+        }
 
         return transactionsToResubmit;
     }
