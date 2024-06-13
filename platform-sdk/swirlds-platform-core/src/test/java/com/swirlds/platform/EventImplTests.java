@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -35,11 +34,9 @@ import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,28 +102,15 @@ public class EventImplTests {
             if (data.systemIndices.contains(i)) {
                 assertTrue(isSystem, String.format("Transaction at index %d should be iterated", i));
                 assertFalse(
-                        findTransaction(transactionSet, t),
+                        transactionSet.contains(t),
                         String.format("Iterated transactions should include system transaction %s", t));
             } else {
                 assertFalse(isSystem, String.format("Transaction at index %d should not be iterated", i));
                 assertTrue(
-                        findTransaction(transactionSet, t),
+                        transactionSet.contains(t),
                         String.format("Iterated transactions should not include system transaction %s", t));
             }
         }
-    }
-
-    private boolean findTransaction(
-            final Set<OneOf<PayloadOneOfType>> transactionSet, final OneOf<PayloadOneOfType> transaction) {
-        return transactionSet.stream().anyMatch(t -> {
-            if (Objects.equals(t.kind(), transaction.kind())) {
-                final byte[] transactionBytes = (t.value() instanceof Bytes b) ? b.toByteArray() : (byte[]) t.value();
-                final byte[] otherBytes =
-                        (transaction.value() instanceof Bytes o) ? o.toByteArray() : (byte[]) transaction.value();
-                return Arrays.equals(transactionBytes, otherBytes);
-            }
-            return false;
-        });
     }
 
     private TransactionData mixedTransactions() {

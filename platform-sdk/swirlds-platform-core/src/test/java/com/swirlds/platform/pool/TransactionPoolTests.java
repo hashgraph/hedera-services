@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.pool;
 
-import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,9 +26,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
-import com.swirlds.common.test.fixtures.RandomUtils;
-import java.nio.ByteBuffer;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,13 +49,14 @@ class TransactionPoolTests {
         });
 
         final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
-        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(RandomUtils.nextLong());
-        final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, buffer.array());
+        final StateSignaturePayload signaturePayload = StateSignaturePayload.newBuilder()
+                .round(1)
+                .signature(Bytes.EMPTY)
+                .build();
 
-        transactionPool.submitSystemTransaction(transaction);
+        transactionPool.submitSystemTransaction(signaturePayload);
         assertEquals(1, transactionList.size());
-        assertSame(transaction, transactionList.getFirst());
+        assertSame(signaturePayload, transactionList.getFirst().as());
     }
 
     @Test

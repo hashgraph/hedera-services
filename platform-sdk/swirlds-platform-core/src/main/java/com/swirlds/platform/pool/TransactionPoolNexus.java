@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.pool;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
 import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
@@ -30,9 +32,8 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.TransactionSizeUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -138,47 +139,31 @@ public class TransactionPoolNexus implements TransactionSupplier {
      * Attempt to submit an application transaction. Similar to
      * {@link #submitTransaction} but with extra safeguards.
      *
-     * @param transaction the transaction to submit
+     * @param payload the transaction to submit
      * @return true if the transaction passed all validity checks and was accepted by the consumer
      */
-    public synchronized boolean submitApplicationTransaction(@NonNull final OneOf<PayloadOneOfType> transaction) {
+    public synchronized boolean submitApplicationTransaction(@NonNull final Bytes payload) {
         if (!healthy || platformStatus != PlatformStatus.ACTIVE) {
             return false;
         }
 
-        if (transaction == null) {
+        if (payload == null) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(EXCEPTION.getMarker(), "transaction is null");
             return false;
         }
-
-        int transactionSize = transactionConversion(transaction).getSize();
-        if (transactionSize > maximumTransactionSize) {
+        final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, payload);
+        if (TransactionSizeUtils.getTransactionSize(transaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
                     EXCEPTION.getMarker(),
                     "transaction has {} bytes, maximum permissible transaction size is {}",
-                    transactionSize,
+                    payload.length(),
                     maximumTransactionSize);
             return false;
         }
 
         return submitTransaction(transaction, false);
-    }
-
-    /**
-     * Convert a transaction to a {@link ConsensusTransactionImpl}. This is a hack because {@code OneOf<>} interface
-     * can not return a size of the transaction.
-     *
-     * @param transaction the transaction to convert
-     * @return the converted transaction
-     */
-    private ConsensusTransactionImpl transactionConversion(final OneOf<PayloadOneOfType> transaction) {
-        return switch (transaction.kind()) {
-            case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(transaction.as());
-            case APPLICATION_PAYLOAD -> new SwirldTransaction(transaction.as());
-            default -> throw new IllegalArgumentException("Unexpected transaction type: " + transaction.kind());
-        };
     }
 
     /**
@@ -251,12 +236,12 @@ public class TransactionPoolNexus implements TransactionSupplier {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
         if (!priorityBufferedTransactions.isEmpty()
-                && transactionConversion(priorityBufferedTransactions.peek()).getSerializedLength() <= maxSize) {
+                && TransactionSizeUtils.getTransactionSize(priorityBufferedTransactions.peek()) <= maxSize) {
             return priorityBufferedTransactions.poll();
         }
 
         if (!bufferedTransactions.isEmpty()
-                && transactionConversion(bufferedTransactions.peek()).getSerializedLength() <= maxSize) {
+                && TransactionSizeUtils.getTransactionSize(bufferedTransactions.peek()) <= maxSize) {
             return bufferedTransactions.poll();
         }
 
@@ -287,7 +272,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
                 break;
             }
 
-            currEventSize += transactionConversion(transaction).getSerializedLength();
+            currEventSize += (int) TransactionSizeUtils.getTransactionSize(transaction);
             selectedTrans.add(transaction);
 
             if (STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {

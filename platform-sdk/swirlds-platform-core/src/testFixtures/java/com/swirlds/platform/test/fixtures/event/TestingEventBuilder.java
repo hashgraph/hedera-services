@@ -25,6 +25,7 @@ import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -452,7 +453,7 @@ public class TestingEventBuilder {
         for (int i = 0; i < appTransactionCount; ++i) {
             final byte[] bytes = new byte[transactionSize];
             random.nextBytes(bytes);
-            generatedTransactions.add(new OneOf<>(APPLICATION_PAYLOAD, bytes));
+            generatedTransactions.add(new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(bytes)));
         }
 
         for (int i = appTransactionCount; i < appTransactionCount + systemTransactionCount; ++i) {

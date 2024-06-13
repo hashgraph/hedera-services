@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -99,7 +100,7 @@ class TransactionResubmitterTests {
             } else {
                 final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
                 buffer.putLong(randotron.nextLong());
-                transaction = new OneOf<>(APPLICATION_PAYLOAD, buffer.array());
+                transaction = new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
             }
             transactions.add(transaction);
         }
@@ -137,7 +138,7 @@ class TransactionResubmitterTests {
         for (int i = 0; i < transactionCount; i++) {
             final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.putLong(randotron.nextLong());
-            final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, buffer.array());
+            final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
             transactions.add(transaction);
         }
 

@@ -132,7 +132,7 @@ public class ExpansionBenchmark extends AppTestBase implements Scenarios {
                 yield Key.newBuilder().ed25519(keyBytes).build();
             }
             case "ECDSA_SECP256K1" -> {
-                final var bytes = randomByteArray(33);
+                final var bytes = randomByte(33);
                 bytes[0] = 0x02;
                 final var keyBytes = Bytes.wrap(bytes);
                 sigPairs.add(SignaturePair.newBuilder()

@@ -20,6 +20,7 @@ import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSeri
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -160,7 +161,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         this.transactions = transactions.stream()
                 .map(t -> switch (t.kind()) {
                     case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
-                    case APPLICATION_PAYLOAD -> new SwirldTransaction(t.as());
+                    case APPLICATION_PAYLOAD -> new SwirldTransaction((Bytes) t.as());
                     default -> throw new IllegalArgumentException("Unexpected transaction type: " + t.kind());
                 })
                 .toList()

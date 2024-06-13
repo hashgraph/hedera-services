@@ -98,7 +98,7 @@ public class TransactionUtils {
     public static OneOf<PayloadOneOfType> incrementingSwirldTransaction() {
         final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(nextLong.getAndIncrement());
-        return new OneOf<>(APPLICATION_PAYLOAD, buffer.array());
+        return new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
     }
 
     public static OneOf<PayloadOneOfType> incrementingSystemTransaction() {

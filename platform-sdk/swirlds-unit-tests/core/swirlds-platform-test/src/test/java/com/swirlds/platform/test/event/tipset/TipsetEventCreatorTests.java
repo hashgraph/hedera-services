@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -213,17 +212,16 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
-        final List<OneOf<PayloadOneOfType>> hapiTransactions = Stream.of(newEvent.getTransactions())
+        final List<OneOf<PayloadOneOfType>> convertedTransactions = Stream.of(newEvent.getTransactions())
                 .map(Transaction::getPayload)
-                .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, ((Bytes) one.as()).toByteArray()))
+                .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
                 .toList();
         // We should see the expected transactions
         IntStream.range(0, expectedTransactions.size()).forEach(i -> {
             final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
-            final OneOf<PayloadOneOfType> actual = hapiTransactions.get(i);
+            final OneOf<PayloadOneOfType> actual = convertedTransactions.get(i);
             assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch");
-            assertArrayEquals(
-                    (byte[]) expected.value(), (byte[]) actual.value(), "Transaction payload " + i + " mismatch");
+            assertEquals(expected.value(), actual.value(), "Transaction payload " + i + " mismatch");
         });
 
         assertDoesNotThrow(simulatedNode.eventCreator::toString);
@@ -285,7 +283,7 @@ class TipsetEventCreatorTests {
         for (int i = 0; i < transactionCount; i++) {
             final byte[] bytes = new byte[32];
             random.nextBytes(bytes);
-            transactions.add(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, bytes));
+            transactions.add(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(bytes)));
         }
 
         return transactions;

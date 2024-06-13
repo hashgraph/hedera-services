@@ -24,9 +24,7 @@ import static com.swirlds.common.wiring.wires.SolderType.OFFER;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.SELF_EVENT;
 import static com.swirlds.platform.event.stale.StaleEventDetectorOutput.STALE_SELF_EVENT;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
-import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.stream.RunningEventHashOverride;
@@ -138,7 +136,7 @@ public class PlatformWiring {
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final ComponentWiring<StateSigner, OneOf<PayloadOneOfType>> stateSignerWiring;
+    private final ComponentWiring<StateSigner, StateSignaturePayload> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -524,7 +522,7 @@ public class PlatformWiring {
 
         staleEventsFromStaleEventDetector.solderTo(
                 transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
-        final OutputWire<OneOf<PayloadOneOfType>> splitTransactionResubmitterOutput =
+        final OutputWire<StateSignaturePayload> splitTransactionResubmitterOutput =
                 transactionResubmitterWiring.getSplitOutput();
         splitTransactionResubmitterOutput.solderTo(
                 transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
