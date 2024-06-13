@@ -218,15 +218,13 @@ class TipsetEventCreatorTests {
                 .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, ((Bytes) one.as()).toByteArray()))
                 .toList();
         // We should see the expected transactions
-        IntStream.range(0, expectedTransactions.size())
-                .forEach(i ->
-                        {
-                            final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
-                            final OneOf<PayloadOneOfType> actual = hapiTransactions.get(i);
-                            assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch" );
-                            assertArrayEquals((byte[]) expected.value(), (byte[]) actual.value(), "Transaction payload " + i + " mismatch" );
-                        }
-                );
+        IntStream.range(0, expectedTransactions.size()).forEach(i -> {
+            final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
+            final OneOf<PayloadOneOfType> actual = hapiTransactions.get(i);
+            assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch");
+            assertArrayEquals(
+                    (byte[]) expected.value(), (byte[]) actual.value(), "Transaction payload " + i + " mismatch");
+        });
 
         assertDoesNotThrow(simulatedNode.eventCreator::toString);
     }

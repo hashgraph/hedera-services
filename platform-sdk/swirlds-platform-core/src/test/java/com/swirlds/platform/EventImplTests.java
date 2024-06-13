@@ -116,16 +116,17 @@ public class EventImplTests {
         }
     }
 
-    private boolean findTransaction(final Set<OneOf<PayloadOneOfType>> transactionSet, final OneOf<PayloadOneOfType> transaction) {
-        return transactionSet.stream()
-                .anyMatch(t -> {
-                    if(Objects.equals(t.kind(), transaction.kind())) {
-                        final byte[] transactionBytes = (t.value() instanceof Bytes b) ? b.toByteArray() : (byte[]) t.value();
-                        final byte[] otherBytes = (transaction.value() instanceof Bytes o) ? o.toByteArray() : (byte[]) transaction.value();
-                        return Arrays.equals(transactionBytes, otherBytes);
-                    }
-                    return false;
-                });
+    private boolean findTransaction(
+            final Set<OneOf<PayloadOneOfType>> transactionSet, final OneOf<PayloadOneOfType> transaction) {
+        return transactionSet.stream().anyMatch(t -> {
+            if (Objects.equals(t.kind(), transaction.kind())) {
+                final byte[] transactionBytes = (t.value() instanceof Bytes b) ? b.toByteArray() : (byte[]) t.value();
+                final byte[] otherBytes =
+                        (transaction.value() instanceof Bytes o) ? o.toByteArray() : (byte[]) transaction.value();
+                return Arrays.equals(transactionBytes, otherBytes);
+            }
+            return false;
+        });
     }
 
     private TransactionData mixedTransactions() {
