@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -73,7 +74,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -329,17 +332,19 @@ public class ContractMintHTSSuite {
                         }));
     }
 
-    @HapiTest
+    @LeakyHapiTest(ContextRequirement.PROPERTY_OVERRIDES)
     final Stream<DynamicTest> transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
         final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "TransferNftAfterNestedMint",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),

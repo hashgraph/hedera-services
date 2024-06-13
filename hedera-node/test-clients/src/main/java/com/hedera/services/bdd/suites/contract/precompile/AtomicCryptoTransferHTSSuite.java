@@ -1010,7 +1010,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cryptoTransferAllowanceToContractFT() {
         final var allowance = 11L;
         final var successfulTransferFromTxn = "txn";
@@ -1019,9 +1019,12 @@ public class AtomicCryptoTransferHTSSuite {
         final var revertingTransferFromTxnFungible = "revertWhenMoreThanAllowanceFungible";
         final var revertingTransferFromTxn2 = "revertingTxn";
         return propertyPreservingHapiSpec("cryptoTransferAllowanceToContractFT")
-                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving(
+                        "contracts.precompile.atomicCryptoTransfer.enabled",
+                        "entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(1),
@@ -1280,6 +1283,7 @@ public class AtomicCryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()

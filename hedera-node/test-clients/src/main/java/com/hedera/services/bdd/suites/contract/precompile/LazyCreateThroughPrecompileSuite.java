@@ -17,10 +17,12 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -49,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
@@ -87,6 +90,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -263,18 +267,19 @@ public class LazyCreateThroughPrecompileSuite {
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> erc20TransferLazyCreate() {
         final AtomicReference<String> tokenAddr = new AtomicReference<>();
-
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "erc20TransferLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
                         ALLOW_SKIPPED_ENTITY_IDS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -473,16 +478,18 @@ public class LazyCreateThroughPrecompileSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> erc721TransferFromLazyCreate() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "erc721TransferFromLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
                         ALLOW_SKIPPED_ENTITY_IDS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -575,17 +582,19 @@ public class LazyCreateThroughPrecompileSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> htsTransferFromFungibleTokenLazyCreate() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "htsTransferFromFungibleTokenLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
@@ -653,14 +662,16 @@ public class LazyCreateThroughPrecompileSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> htsTransferFromForNFTLazyCreate() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "htsTransferFromForNFTLazyCreate",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
