@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,24 +35,25 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param creatorError the creator error, can be null if there is no creator error
  * @param payer the payer account, can be null if there is no payer account for contract operations. It can be a token address.
  * @param payerError the final determined payer error, if any
- * @param unableToPayServiceFee whether the payer was unable to pay the service fee
- * @param isDuplicate whether the transaction is a duplicate
+ * @param serviceFeeStatus whether the payer was unable to pay the service fee
+ * @param duplicateStatus whether the transaction is a duplicate
  */
 public record ErrorReport(
         @NonNull AccountID creatorId,
         @Nullable ResponseCodeEnum creatorError,
         @Nullable Account payer,
         @Nullable ResponseCodeEnum payerError,
-        boolean unableToPayServiceFee,
-        @NonNull IsDuplicate isDuplicate) {
+        @NonNull ServiceFeeStatus serviceFeeStatus,
+        @NonNull DuplicateStatus duplicateStatus) {
     /**
      * Creates an error report with a creator error.
      * @param creatorId the creator account ID
      * @param creatorError the creator error
      * @return the error report
      */
+    @NonNull
     public static ErrorReport creatorErrorReport(@NonNull AccountID creatorId, @NonNull ResponseCodeEnum creatorError) {
-        return new ErrorReport(creatorId, creatorError, null, null, false, IsDuplicate.NO);
+        return new ErrorReport(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, DuplicateStatus.NO_DUPLICATE);
     }
 
     /**
@@ -60,11 +63,13 @@ public record ErrorReport(
      * @param payer the payer account
      * @return the error report
      */
+    @NonNull
     public static ErrorReport payerDuplicateErrorReport(
             @NonNull final AccountID creatorId, @NonNull final Account payer) {
         requireNonNull(payer);
         requireNonNull(creatorId);
-        return new ErrorReport(creatorId, null, payer, DUPLICATE_TRANSACTION, false, IsDuplicate.YES);
+        return new ErrorReport(
+                creatorId, null, payer, DUPLICATE_TRANSACTION, CAN_PAY_SERVICE_FEE, DuplicateStatus.DUPLICATE);
     }
 
     /**
@@ -75,6 +80,7 @@ public record ErrorReport(
      * @param payer the payer account
      * @return the error report
      */
+    @NonNull
     public static ErrorReport payerUniqueErrorReport(
             @NonNull final AccountID creatorId,
             @NonNull final Account payer,
@@ -82,7 +88,7 @@ public record ErrorReport(
         requireNonNull(payer);
         requireNonNull(creatorId);
         requireNonNull(payerError);
-        return new ErrorReport(creatorId, null, payer, payerError, false, IsDuplicate.NO);
+        return new ErrorReport(creatorId, null, payer, payerError, CAN_PAY_SERVICE_FEE, DuplicateStatus.NO_DUPLICATE);
     }
 
     /**
@@ -90,17 +96,18 @@ public record ErrorReport(
      * @param creatorId the creator account ID
      * @param payer the payer account
      * @param payerError the payer error
-     * @param unableToPayServiceFee whether the payer was unable to pay the service fee
-     * @param isDuplicate whether the transaction is a duplicate
+     * @param serviceFeeStatus whether the payer was unable to pay the service fee
+     * @param duplicateStatus whether the transaction is a duplicate
      * @return the error report
      */
+    @NonNull
     public static ErrorReport payerErrorReport(
             @NonNull AccountID creatorId,
             @NonNull Account payer,
             @NonNull ResponseCodeEnum payerError,
-            boolean unableToPayServiceFee,
-            @NonNull final IsDuplicate isDuplicate) {
-        return new ErrorReport(creatorId, null, payer, payerError, unableToPayServiceFee, isDuplicate);
+            @NonNull ServiceFeeStatus serviceFeeStatus,
+            @NonNull final DuplicateStatus duplicateStatus) {
+        return new ErrorReport(creatorId, null, payer, payerError, serviceFeeStatus, duplicateStatus);
     }
 
     /**
@@ -109,8 +116,9 @@ public record ErrorReport(
      * @param payer the payer account
      * @return the error report
      */
+    @NonNull
     public static ErrorReport errorFreeReport(@NonNull AccountID creatorId, @NonNull Account payer) {
-        return new ErrorReport(creatorId, null, payer, null, false, IsDuplicate.NO);
+        return new ErrorReport(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, DuplicateStatus.NO_DUPLICATE);
     }
 
     /**
@@ -133,6 +141,7 @@ public record ErrorReport(
      * Checks if there is payer error. If not, throws an exception.
      * @return the payer error
      */
+    @NonNull
     public ResponseCodeEnum payerErrorOrThrow() {
         return requireNonNull(payerError);
     }
@@ -141,6 +150,7 @@ public record ErrorReport(
      * Checks if there is a creator error. If not, throws an exception.
      * @return the creator error
      */
+    @NonNull
     public ResponseCodeEnum creatorErrorOrThrow() {
         return requireNonNull(creatorError);
     }
@@ -149,6 +159,7 @@ public record ErrorReport(
      * Checks if there is a payer.
      * @return payer account if there is a payer. Otherwise, throws an exception.
      */
+    @NonNull
     public Account payerOrThrow() {
         return requireNonNull(payer);
     }
@@ -157,7 +168,8 @@ public record ErrorReport(
      * Returns the error report with all fees except service fee.
      * @return the error report
      */
+    @NonNull
     public ErrorReport withoutServiceFee() {
-        return new ErrorReport(creatorId, creatorError, payer, payerError, true, isDuplicate);
+        return new ErrorReport(creatorId, creatorError, payer, payerError, UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
     }
 }

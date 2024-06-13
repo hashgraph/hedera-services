@@ -500,8 +500,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
         new StatefulEventHasher().hashEvent(next.getBaseEvent());
-        final GossipEvent tmp = new GossipEvent(
-                next.getBaseEvent().getHashedData(), next.getBaseEvent().getSignature());
+        final GossipEvent tmp = next.getBaseEvent().copyGossipedData();
         tmp.setHash(next.getBaseEvent().getHash());
         consensus.addEvent(inOrderLinker.linkEvent(tmp));
 

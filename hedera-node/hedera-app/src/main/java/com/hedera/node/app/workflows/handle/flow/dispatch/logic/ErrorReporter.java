@@ -27,6 +27,10 @@ import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorRepo
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerUniqueErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -106,9 +110,9 @@ public class ErrorReporter {
                             dispatch.txnInfo().txBody().transactionIDOrThrow(),
                             dispatch.creatorInfo().nodeId());
             return switch (duplicateCheckResult) {
-                case NO_DUPLICATE -> finalPayerErrorReport(payer, IsDuplicate.NO, dispatch);
+                case NO_DUPLICATE -> finalPayerErrorReport(payer, DuplicateStatus.NO_DUPLICATE, dispatch);
                 case SAME_NODE -> creatorErrorReport(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION);
-                case OTHER_NODE -> finalPayerErrorReport(payer, IsDuplicate.YES, dispatch);
+                case OTHER_NODE -> finalPayerErrorReport(payer, DuplicateStatus.DUPLICATE, dispatch);
             };
         }
     }
@@ -117,13 +121,15 @@ public class ErrorReporter {
      * Checks payer solvency for Schedule and User transactions. If the payer is a super-user, it will not be checked.
      *
      * @param payer the payer account
-     * @param isDuplicate whether the transaction is a duplicate
+     * @param duplicateStatus whether the transaction is a duplicate
      * @param dispatch the dispatch
      * @return the error report
      */
     @NonNull
     private ErrorReport finalPayerErrorReport(
-            @NonNull final Account payer, @NonNull final IsDuplicate isDuplicate, @NonNull final Dispatch dispatch) {
+            @NonNull final Account payer,
+            @NonNull final DuplicateStatus duplicateStatus,
+            @NonNull final Dispatch dispatch) {
         final var creatorId = dispatch.creatorInfo().accountId();
         try {
             solvencyPreCheck.checkSolvency(
@@ -131,22 +137,24 @@ public class ErrorReporter {
                     payer.accountIdOrThrow(),
                     dispatch.txnInfo().functionality(),
                     payer,
-                    isDuplicate == IsDuplicate.NO
+                    duplicateStatus == DuplicateStatus.NO_DUPLICATE
                             ? dispatch.fees()
                             : dispatch.fees().withoutServiceComponent(),
-                    false,
-                    dispatch.txnCategory() == USER || dispatch.txnCategory() == SCHEDULED);
+                    WorkflowCheck.NOT_INGEST,
+                    (dispatch.txnCategory() == USER || dispatch.txnCategory() == SCHEDULED)
+                            ? CHECK_OFFERED_FEE
+                            : SKIP_OFFERED_FEE_CHECK);
         } catch (final InsufficientServiceFeeException e) {
-            return payerErrorReport(creatorId, payer, e.responseCode(), true, isDuplicate);
+            return payerErrorReport(creatorId, payer, e.responseCode(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final InsufficientNonFeeDebitsException e) {
-            return payerErrorReport(creatorId, payer, e.responseCode(), false, isDuplicate);
+            return payerErrorReport(creatorId, payer, e.responseCode(), CAN_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final PreCheckException e) {
             // Includes InsufficientNetworkFeeException
             return creatorErrorReport(creatorId, e.responseCode());
         }
-        return switch (isDuplicate) {
-            case YES -> payerDuplicateErrorReport(creatorId, payer);
-            case NO -> dispatch.preHandleResult().status() == SO_FAR_SO_GOOD
+        return switch (duplicateStatus) {
+            case DUPLICATE -> payerDuplicateErrorReport(creatorId, payer);
+            case NO_DUPLICATE -> dispatch.preHandleResult().status() == SO_FAR_SO_GOOD
                     ? errorFreeReport(creatorId, payer)
                     : payerUniqueErrorReport(
                             creatorId, payer, dispatch.preHandleResult().responseCode());

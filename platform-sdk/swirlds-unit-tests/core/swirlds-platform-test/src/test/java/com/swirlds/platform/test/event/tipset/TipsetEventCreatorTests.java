@@ -165,7 +165,7 @@ class TipsetEventCreatorTests {
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
             for (final EventImpl event : events.values()) {
-                if (event.getHashedData().getHash().equals(newEvent.getHash())) {
+                if (event.getBaseEvent().getHash().equals(newEvent.getHash())) {
                     // comparing to self
                     continue;
                 }
@@ -192,7 +192,7 @@ class TipsetEventCreatorTests {
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getTransactions().length);
+            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getPayloadCount());
             final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
             assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }

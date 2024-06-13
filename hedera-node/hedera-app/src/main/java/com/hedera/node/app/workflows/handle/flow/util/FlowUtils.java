@@ -24,11 +24,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.Set;
 
+/**
+ * Utility methods for handle workflow.
+ */
 public class FlowUtils {
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
     public static final Set<HederaFunctionality> CONTRACT_OPERATIONS =
             EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
 
+    /**
+     * Checks if the given dispatch is a contract operation.
+     * @param dispatch the dispatch
+     * @return true if the dispatch is a contract operation, false otherwise
+     */
     public static boolean isContractOperation(@NonNull Dispatch dispatch) {
         return CONTRACT_OPERATIONS.contains(dispatch.txnInfo().functionality());
     }

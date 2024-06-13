@@ -23,6 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
@@ -211,7 +213,7 @@ public class DispatchProcessor {
         if (hasWaivedFees) {
             return;
         }
-        if (report.unableToPayServiceFee() || report.isDuplicate() == IsDuplicate.YES) {
+        if (report.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || report.duplicateStatus() == DUPLICATE) {
             dispatch.feeAccumulator()
                     .chargeFees(
                             report.payerOrThrow().accountIdOrThrow(),
@@ -245,7 +247,7 @@ public class DispatchProcessor {
         recordListBuilder.revertChildrenOf(recordBuilder);
     }
 
-    private WorkDone handle(@NonNull final Dispatch dispatch) {
+    private WorkDone handle(@NonNull final Dispatch dispatch) throws ThrottleException {
         if (isContractOperation(dispatch)) {
             networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
             if (networkUtilizationManager.wasLastTxnGasThrottled()) {
@@ -317,7 +319,7 @@ public class DispatchProcessor {
     /**
      * This class is used to throw a {@link ThrottleException} when a transaction is gas throttled.
      */
-    private static class ThrottleException extends RuntimeException {
+    private static class ThrottleException extends Exception {
         private final ResponseCodeEnum status;
 
         public ThrottleException(final ResponseCodeEnum status) {

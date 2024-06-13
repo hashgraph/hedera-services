@@ -27,6 +27,9 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
@@ -164,7 +167,14 @@ class ErrorReporterTest {
         final var report = subject.errorReportFor(dispatch);
 
         verify(solvencyPreCheck)
-                .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, false);
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES,
+                        NOT_INGEST,
+                        SKIP_OFFERED_FEE_CHECK);
         assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), payerAccount), report);
     }
 
@@ -182,7 +192,14 @@ class ErrorReporterTest {
         final var report = subject.errorReportFor(dispatch);
 
         verify(solvencyPreCheck)
-                .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, true);
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES,
+                        NOT_INGEST,
+                        CHECK_OFFERED_FEE);
         assertEquals(errorFreeReport(dispatch.creatorInfo().accountId(), payerAccount), report);
     }
 
@@ -205,15 +222,15 @@ class ErrorReporterTest {
                         TXN_INFO.functionality(),
                         payerAccount,
                         FEES.withoutServiceComponent(),
-                        false,
-                        true);
+                        NOT_INGEST,
+                        CHECK_OFFERED_FEE);
         assertEquals(
                 payerErrorReport(
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         DUPLICATE_TRANSACTION,
-                        false,
-                        IsDuplicate.YES),
+                        ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
+                        DuplicateStatus.DUPLICATE),
                 report);
     }
 
@@ -245,14 +262,21 @@ class ErrorReporterTest {
         final var report = subject.errorReportFor(dispatch);
 
         verify(solvencyPreCheck)
-                .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, true);
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES,
+                        NOT_INGEST,
+                        CHECK_OFFERED_FEE);
         assertEquals(
                 payerErrorReport(
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         UNSUCCESSFUL_PREHANDLE.responseCode(),
-                        false,
-                        IsDuplicate.NO),
+                        ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
+                        DuplicateStatus.NO_DUPLICATE),
                 report);
     }
 
@@ -265,7 +289,14 @@ class ErrorReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         doThrow(new InsufficientServiceFeeException(INSUFFICIENT_ACCOUNT_BALANCE, FEES.totalFee()))
                 .when(solvencyPreCheck)
-                .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, false);
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES,
+                        NOT_INGEST,
+                        SKIP_OFFERED_FEE_CHECK);
 
         final var report = subject.errorReportFor(dispatch);
 
@@ -274,8 +305,8 @@ class ErrorReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        true,
-                        IsDuplicate.NO),
+                        ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE,
+                        DuplicateStatus.NO_DUPLICATE),
                 report);
     }
 
@@ -289,7 +320,14 @@ class ErrorReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         doThrow(new InsufficientNonFeeDebitsException(INSUFFICIENT_ACCOUNT_BALANCE, FEES.totalFee()))
                 .when(solvencyPreCheck)
-                .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, true);
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES,
+                        NOT_INGEST,
+                        CHECK_OFFERED_FEE);
 
         final var report = subject.errorReportFor(dispatch);
 
@@ -298,8 +336,8 @@ class ErrorReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        false,
-                        IsDuplicate.NO),
+                        ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
+                        DuplicateStatus.NO_DUPLICATE),
                 report);
     }
 
@@ -314,7 +352,14 @@ class ErrorReporterTest {
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(1L));
         doThrow(new PreCheckException(INSUFFICIENT_PAYER_BALANCE))
                 .when(solvencyPreCheck)
-                .checkSolvency(TXN_BODY, PAYER_ACCOUNT_ID, TXN_INFO.functionality(), payerAccount, FEES, false, true);
+                .checkSolvency(
+                        TXN_BODY,
+                        PAYER_ACCOUNT_ID,
+                        TXN_INFO.functionality(),
+                        payerAccount,
+                        FEES,
+                        NOT_INGEST,
+                        CHECK_OFFERED_FEE);
 
         final var report = subject.errorReportFor(dispatch);
 
