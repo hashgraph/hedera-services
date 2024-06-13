@@ -205,7 +205,6 @@ public class ContractCallSuite {
     private static final String BENEFICIARY = "beneficiary";
     private static final String RECEIVER = "receiver";
     private static final String GET_BALANCE = "getBalance";
-    public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     private static final String TRANSFER_TXN = "transferTxn";
     public static final String ACCOUNT_INFO_AFTER_CALL = "accountInfoAfterCall";
     public static final String TRANSFER_TO_CALLER = "transferToCaller";
