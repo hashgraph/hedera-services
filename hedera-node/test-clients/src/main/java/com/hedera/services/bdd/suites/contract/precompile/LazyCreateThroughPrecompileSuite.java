@@ -357,16 +357,18 @@ public class LazyCreateThroughPrecompileSuite {
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> erc20TransferFromLazyCreate() {
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "erc20TransferFromLazyCreate",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         ALLOW_SKIPPED_ENTITY_IDS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
