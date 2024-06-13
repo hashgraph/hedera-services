@@ -18,8 +18,6 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +33,7 @@ import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
 import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
@@ -233,21 +232,17 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     }
 
     private Query createGetTopicInfoQuery(final int topicId) {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
         return Query.newBuilder().consensusGetTopicInfo(data).build();
     }
 
     private Query createEmptyGetTopicInfoQuery() {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
         return Query.newBuilder().consensusGetTopicInfo(data).build();

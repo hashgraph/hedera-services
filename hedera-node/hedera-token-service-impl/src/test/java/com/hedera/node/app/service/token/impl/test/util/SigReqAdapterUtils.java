@@ -27,52 +27,52 @@ import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TO
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.wellKnownAliasState;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_BALANCE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_PAYER_BALANCE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELETED_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FROM_OVERLAP_PAYER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FROM_OVERLAP_PAYER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_PAUSE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.OWNER_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.OWNER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_RECEIVER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER;
-import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
-import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.COMPLEX_KEY_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.CUSTOM_PAYER_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.CUSTOM_PAYER_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_BALANCE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_NODE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_PAYER_BALANCE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DEFAULT_PAYER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELEGATING_SPENDER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELEGATING_SPENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELETED_TOKEN;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DILIGENT_SIGNING_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DILIGENT_SIGNING_PAYER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FIRST_TOKEN_SENDER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FIRST_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FROM_OVERLAP_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FROM_OVERLAP_PAYER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_IMMUTABLE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_NO_SPECIAL_KEYS;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FREEZE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_KYC;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_PAUSE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_SUPPLY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_WIPE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MASTER_PAYER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.NO_RECEIVER_SIG;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.NO_RECEIVER_SIG_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.OWNER_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.OWNER_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.RECEIVER_SIG;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.RECEIVER_SIG_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SECOND_TOKEN_SENDER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SECOND_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.STAKING_FUND;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SYS_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.SYS_ACCOUNT_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_RECEIVER;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_TREASURY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_TREASURY_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TREASURY_PAYER;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -87,9 +87,7 @@ import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
@@ -97,12 +95,11 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.test.keys.KeysAndIds;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.StateKeyAdapter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.WritableKVState;
@@ -110,8 +107,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -165,8 +160,7 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {
-        final var wrappedState = wellKnownTokenState();
-        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
+        final var state = wellKnownTokenState();
         return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
@@ -397,26 +391,8 @@ public class SigReqAdapterUtils {
 
     @SuppressWarnings("java:S1604")
     private static com.hedera.node.app.service.mono.store.tokens.TokenStore sigReqsMockTokenStore() {
-        final var dummyScenario = new TxnHandlingScenario() {
-            @Override
-            public PlatformTxnAccessor platformTxn() {
-                throw new NotImplementedException();
-            }
-        };
+        final var dummyScenario = new KeysAndIds() {};
         return dummyScenario.tokenStore();
-    }
-
-    /**
-     * Returns a {@link TransactionBody} from a {@link TxnHandlingScenario}.
-     * @param scenario the scenario
-     * @return the transaction body
-     */
-    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return toPbj(scenario.platformTxn().getTxn());
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static Token asToken(final MerkleToken token) {

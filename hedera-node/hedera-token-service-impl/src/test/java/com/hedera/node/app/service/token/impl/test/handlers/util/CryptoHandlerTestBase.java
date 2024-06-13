@@ -22,9 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -32,7 +29,9 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -55,6 +54,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -66,6 +66,58 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public class CryptoHandlerTestBase {
+    private static final Function<String, Key.Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    public static final Key A_KEY_LIST = Key.newBuilder()
+            .keyList(KeyList.newBuilder()
+                    .keys(
+                            KEY_BUILDER.apply(A_NAME).build(),
+                            KEY_BUILDER.apply(B_NAME).build(),
+                            KEY_BUILDER.apply(C_NAME).build()))
+            .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+    public static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
+            .build();
+    public static final Key C_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    B_COMPLEX_KEY)))
+            .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key otherKey = C_COMPLEX_KEY;
     protected final AccountID id = AccountID.newBuilder().accountNum(3).build();

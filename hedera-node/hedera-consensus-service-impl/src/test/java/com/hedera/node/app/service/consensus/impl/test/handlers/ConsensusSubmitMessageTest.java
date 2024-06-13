@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,7 +67,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.utils.TxnUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -263,7 +261,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @DisplayName("Handle fails if submit message is too large")
     void failsIfMessageIsTooLarge() {
         givenValidTopic();
-        final var txn = newSubmitMessageTxn(topicEntityNum, Arrays.toString(TxnUtils.randomUtf8Bytes(2000)));
+        final var txn = newSubmitMessageTxn(topicEntityNum, Arrays.toString(new byte[2000]));
         given(handleContext.body()).willReturn(txn);
 
         final var config = HederaTestConfigBuilder.create()

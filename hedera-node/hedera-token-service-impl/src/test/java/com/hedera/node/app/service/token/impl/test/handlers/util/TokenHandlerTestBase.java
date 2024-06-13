@@ -16,23 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.B_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.C_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.IdUtils.asAccount;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
@@ -46,7 +43,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -71,7 +67,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class TokenHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
     protected static final Key payerKey = A_COMPLEX_KEY;
-    protected static final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     protected final Key adminKey = A_COMPLEX_KEY;
     protected final Key pauseKey = B_COMPLEX_KEY;
     protected final Key wipeKey = C_COMPLEX_KEY;
@@ -82,26 +77,13 @@ public class TokenHandlerTestBase {
     protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
     protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
-    protected final HederaKey adminHederaKey = asHederaKey(adminKey).get();
-    protected final HederaKey wipeHederaKey = asHederaKey(wipeKey).get();
-    protected final HederaKey supplyHederaKey = asHederaKey(supplyKey).get();
-    protected final HederaKey kycHederaKey = asHederaKey(kycKey).get();
-    protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
-    protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
-    protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final Key metadataKey = Key.DEFAULT;
     protected final TokenID tokenId = asToken(1L);
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
-    protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
-            Duration.newBuilder().seconds(100).build();
-    protected final Timestamp WELL_KNOWN_EXPIRY =
-            Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final TokenID WELL_KNOWN_TOKEN_ID = tokenId;
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
-    protected final long sequenceNumber = 1L;
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
     protected final AccountID TEST_DEFAULT_PAYER =

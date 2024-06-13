@@ -17,17 +17,14 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -44,6 +41,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -51,10 +49,42 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ConsensusTestBase {
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Key.Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+    public static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
+            .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
-    protected final String payerIdLiteral = "0.0.3";
-    protected final AccountID payerId = protoToPbj(asAccount(payerIdLiteral), AccountID.class);
+    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
     public static final AccountID anotherPayer =
             AccountID.newBuilder().accountNum(13257).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(1).build();
@@ -67,10 +97,6 @@ public class ConsensusTestBase {
             TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
-    protected final Timestamp WELL_KNOWN_EXPIRY =
-            Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final String beneficiaryIdStr = "0.0.3";
-    protected final long paymentAmount = 1_234L;
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
