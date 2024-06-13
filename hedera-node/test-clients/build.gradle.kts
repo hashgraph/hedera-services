@@ -59,6 +59,14 @@ sourceSets {
     create("yahcli")
 }
 
+tasks.register<JavaExec>("runTestClient") {
+    group = "build"
+    description = "Run a test client via -PtestClient=<Class>"
+
+    classpath = sourceSets.main.get().runtimeClasspath + files(tasks.jar)
+    mainClass = providers.gradleProperty("testClient")
+}
+
 val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
