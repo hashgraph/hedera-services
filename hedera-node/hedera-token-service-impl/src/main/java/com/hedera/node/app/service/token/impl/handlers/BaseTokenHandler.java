@@ -342,6 +342,20 @@ public class BaseTokenHandler {
         if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
             validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
         }
+
+        return createNewTokenRelationshipAndCommitToStore(account, token, accountStore, tokenRelStore);
+    }
+
+    protected TokenRelation createNewTokenRelationshipAndCommitToStore(
+            @NonNull final Account account,
+            @NonNull final Token token,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        final var accountId = account.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
+        final var numAssociations = account.numberAssociations();
+        final var usedAutoAssociations = account.usedAutoAssociations();
+
         // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
                 .tokenId(tokenId)

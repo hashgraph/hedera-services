@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody.Builder;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -182,6 +183,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
             final var unlimitedAutoAssociations =
                     config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+            TokenRelation newRelation;
             if (unlimitedAutoAssociations) {
                 final var topLevelPayer = handleContext.payer();
                 final var syntheticCreation = TransactionBody.newBuilder()
@@ -204,11 +206,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 // failure.
                 validateTrue(childRecord.status() == ResponseCodeEnum.SUCCESS, childRecord.status());
 
-                return asTokenAssociation(tokenId, accountId);
+                newRelation = createNewTokenRelationshipAndCommitToStore(account, token, accountStore, tokenRelStore);
             } else {
-                final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
-                return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
+                newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
             }
+            return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
