@@ -747,6 +747,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void testCalculateFeesHappyPath() {
         FeeContext feeContext = mock(FeeContext.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", true)
+                .getOrCreateConfig();
 
         TransactionBody cryptoUpdateTransaction = new CryptoUpdateBuilder()
                 .withPayer(id)
@@ -767,7 +770,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableStore);
         when(feeContext.body()).thenReturn(cryptoUpdateTransaction);
-        when(feeContext.configuration()).thenReturn(configuration);
+        when(feeContext.configuration()).thenReturn(config);
         when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
