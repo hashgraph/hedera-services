@@ -48,7 +48,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -193,9 +192,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                         syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, topLevelPayer);
                 // match mono - If superuser is the payer don't charge fee
                 if (!handleContext.isSuperUser()) {
-//                    final var fees = handleContext.dispatchComputeFees(
-//                            syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
-//                    final var fee = fees.serviceFee() + fees.networkFee() + fees.nodeFee();
+                    //                    final var fees = handleContext.dispatchComputeFees(
+                    //                            syntheticCreation.build(), topLevelPayer,
+                    // ComputeDispatchFeesAsTopLevel.NO);
+                    //                    final var fee = fees.serviceFee() + fees.networkFee() + fees.nodeFee();
                     // Test with hardcoded tinybars equivalent to 0.05$.
                     final var fee = 42183103;
                     childRecord.transactionFee(fee);
