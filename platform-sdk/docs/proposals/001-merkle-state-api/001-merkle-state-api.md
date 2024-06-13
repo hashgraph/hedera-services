@@ -35,7 +35,9 @@ In Java code it's represented by the following classes:
 public interface ReadableSingletonState<T> {
   @NonNull
   String getStateKey();
+  
   T get();
+  
   boolean isRead();
 }
 
@@ -49,7 +51,7 @@ public interface WritableSingletonState<T> extends ReadableSingletonState<T> {
 ## Requirements
 
 - `PlatformState` should be refactored to a singleton object as defined by the State API.
-- there should be a new module - `swirlds-state-api` - to host a set of interfaces, records, and abstract classes that represent the Hedera state.
+- there should be a new module - `swirlds-state-api` - to host a set of interfaces, records, and abstract classes that represent the Hashgraph state.
   This module should have a minimal set of dependencies. The Block Node should not have a compile-time dependency
   on any other modules but this one to interact with the state.
 
@@ -61,7 +63,7 @@ State API classes and interfaces will migrate to a designated module. The classe
 
 Usage example:
 ```java
-private PlatformState findPlatformState(HederanState state) {
+private PlatformState findPlatformState(HederaState state) {
   final ReadableStates states = state.getReadableStates(PlatformState.NAME);   
   final ReadableSingletonState<PlatformState> platformState = states.getSingleton(PlatformState.PLATFORM_STATE_KEY);
   return platformState.get();
