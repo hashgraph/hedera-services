@@ -29,6 +29,8 @@ import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorRepo
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerUniqueErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.CHECK_OFFERED_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -143,9 +145,9 @@ public class ErrorReporter {
                             ? CHECK_OFFERED_FEE
                             : SKIP_OFFERED_FEE_CHECK);
         } catch (final InsufficientServiceFeeException e) {
-            return payerErrorReport(creatorId, payer, e.responseCode(), true, duplicateStatus);
+            return payerErrorReport(creatorId, payer, e.responseCode(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final InsufficientNonFeeDebitsException e) {
-            return payerErrorReport(creatorId, payer, e.responseCode(), false, duplicateStatus);
+            return payerErrorReport(creatorId, payer, e.responseCode(), CAN_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final PreCheckException e) {
             // Includes InsufficientNetworkFeeException
             return creatorErrorReport(creatorId, e.responseCode());

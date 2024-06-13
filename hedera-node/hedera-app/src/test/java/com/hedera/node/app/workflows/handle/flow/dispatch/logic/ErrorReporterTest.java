@@ -229,7 +229,7 @@ class ErrorReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         DUPLICATE_TRANSACTION,
-                        false,
+                        ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
                         DuplicateStatus.DUPLICATE),
                 report);
     }
@@ -275,7 +275,7 @@ class ErrorReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         UNSUCCESSFUL_PREHANDLE.responseCode(),
-                        false,
+                        ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
                         DuplicateStatus.NO_DUPLICATE),
                 report);
     }
@@ -305,7 +305,7 @@ class ErrorReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        true,
+                        ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE,
                         DuplicateStatus.NO_DUPLICATE),
                 report);
     }
@@ -336,7 +336,7 @@ class ErrorReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        false,
+                        ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
                         DuplicateStatus.NO_DUPLICATE),
                 report);
     }

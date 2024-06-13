@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -123,15 +124,9 @@ public class RecordFinalizer {
      */
     @NonNull
     Set<AccountID> zeroAdjustIdsFrom(@NonNull final List<AccountAmount> explicitHbarAdjustments) {
-        Set<AccountID> zeroAdjustmentAccounts = null;
-        for (final var aa : explicitHbarAdjustments) {
-            if (aa.amount() == 0) {
-                if (zeroAdjustmentAccounts == null) {
-                    zeroAdjustmentAccounts = new LinkedHashSet<>();
-                }
-                zeroAdjustmentAccounts.add(aa.accountID());
-            }
-        }
-        return zeroAdjustmentAccounts == null ? emptySet() : zeroAdjustmentAccounts;
+        return explicitHbarAdjustments.stream()
+                .filter(aa -> aa.amount() == 0)
+                .map(AccountAmount::accountID)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }
