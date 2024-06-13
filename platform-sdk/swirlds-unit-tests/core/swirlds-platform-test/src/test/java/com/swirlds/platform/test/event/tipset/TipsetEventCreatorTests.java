@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -69,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -212,9 +215,18 @@ class TipsetEventCreatorTests {
 
         final List<OneOf<PayloadOneOfType>> hapiTransactions = Stream.of(newEvent.getTransactions())
                 .map(Transaction::getPayload)
+                .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, ((Bytes) one.as()).toByteArray()))
                 .toList();
         // We should see the expected transactions
-        assertEquals(expectedTransactions, hapiTransactions);
+        IntStream.range(0, expectedTransactions.size())
+                .forEach(i ->
+                        {
+                            final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
+                            final OneOf<PayloadOneOfType> actual = hapiTransactions.get(i);
+                            assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch" );
+                            assertArrayEquals((byte[]) expected.value(), (byte[]) actual.value(), "Transaction payload " + i + " mismatch" );
+                        }
+                );
 
         assertDoesNotThrow(simulatedNode.eventCreator::toString);
     }
