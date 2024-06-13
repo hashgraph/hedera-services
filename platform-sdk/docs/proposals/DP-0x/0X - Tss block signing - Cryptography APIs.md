@@ -20,7 +20,7 @@ and can be used to verify any message signed by a threshold of private aggregate
 
 This is important for producing proofs that are easily consumable and verifiable by external entities.
 
-This proposal covers the implementation of all necessary pieces to provide the consensus node and block node,
+This proposal covers the implementation of all necessary pieces to provide the consensus node and block node with
 the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS), and EC Cryptography.
 
 The overview of the process and background for TSS and how it impacts functionally of the platform can be found in the related proposal: [TODO Add Ed's Proposal].
@@ -34,7 +34,7 @@ the distribution aspect, the loading and in memory interpretation from each part
 ### Glossary
 - **TSS (Threshold Signature Scheme)**: A cryptographic signing scheme in which a minimum number of parties (threshold) must collaborate
 to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
-- **Groth 21**:publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
+- **Groth 21**: Publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
 with many possible uses cases supporting applications in distributed key generation and threshold signatures. 
 Uses Shamir's secret sharing, ElGamal and ZK-Snarks.
 - **Shamir’s Secret Sharing**: In Shamir’s SS, a secret `s` is divided into `n` shares by a dealer, and shares are sent to shareholders secretly.
@@ -58,8 +58,8 @@ a threshold number of shares is needed to produce an aggregate signature that ca
 It enables a committer to commit to a polynomial such that the commitment allows verifying evaluations of the polynomial at specific points without revealing the entire polynomial.
 
 ### Goals
-- **Usability:** Design a user-friendly libraries with a public API that is easy to integrate with other projects like consensus-node and block-node.
-- **EVM support:** Generated signature and public keys should be compatible with evm precompiled functions so that signature validation can be done on smart contracts without incurring in excessive gas cost. 
+- **Usability:** Design a user-friendly libraries with a public API that is easy to integrate with other projects like consensus node and block node.
+- **EVM support:** Generated signature and public keys should be compatible with evm precompiled functions so that signature validation can be done on smart contracts without incurring an excessive gas cost. 
 - **Security:** Our produced code should use audited code and be able to pass security audits both internal and external.
 - **Flexibility**: Minimize the impact of introducing support for other elliptic curves. 
 - **Independent Release:** this library should have its own release cycle separate from the platform, and that it should be easy for both platform and block node to depend on it.
@@ -175,6 +175,7 @@ The validation is produced over the content of the message and does not include 
 Given Participant's persistent EC PrivateKey, `t` number of validated messages (t=threshold), and the list of all validated `TssMessage`s,
 each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `ProprietaryShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
 
+**Note:** All participants must choose the same set of valid `TssMessages`, in addition to the requirement of having a threshold humber of valid messages.
 
 ![img_8.png](img_8.png)
 
@@ -239,13 +240,13 @@ To implement the functionality detailed in the previous section, the following c
 
 ![img_10.png](img_10.png)
 
-1. **TSS Lib**: Consensus node will use the TSS library to create shares, create TSS messages to send to other nodes, assemble shared public keys (ledgerId), and sign the block-node merkle tree hash.
-2. **Bilinear Pairings Signature Library**: Provides cryptographic objects (PrivateKey, PublicKey, and Signature) and operations for the block-node and consensus-node to sign and verify the signatures. Consensus-node uses this library indirectly through the TSS Library.
+1. **TSS Lib**: Consensus node will use the TSS library to create shares, create TSS messages to send to other nodes, assemble shared public keys (ledgerId), and sign the block node merkle tree hash.
+2. **Bilinear Pairings Signature Library**: Provides cryptographic objects (PrivateKey, PublicKey, and Signature) and operations for the block node and consensus node to sign and verify the signatures. Consensus node uses this library indirectly through the TSS Library.
 3. **Bilinear Pairings API**: Layer of abstraction to be included at compilation time providing the cryptography primitives and the arithmetic operations for working with a specific EC curve and the underlying Groups, Fields, and Pairings and minimizes the impact of changing or including different curves implementations.
 4. **Bilinear Pairings Impl**: Implementation of Bilinear Pairings API that will be loaded at runtime using Java's SPI. Multiple implementations can be provided to support different types of curves. It allows chang or switching dependencies.
 5. **Native Support Lib**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar using a predefined organization, so they can be accessed with JNI.
 6. **Arkworks[https://github.com/arkworks-rs]**:  arkworks is a Rust ecosystem for zkSNARK programming. Libraries in the arkworks ecosystem provide efficient implementations of all components required to implement zkSNARK applications, from generic finite fields to R1CS constraints for common functionalities.
-7. **EC-Key Utils**: Utility module to enable the node operator to generate pre-genesis initial public/private Key pair
+7. **EC-Key Utils**: Utility module to enable the node operator to generate bootstrapping public/private key pair.
 
 ### Module Organization and repositories
 ![img_13.png](img_13.png)
