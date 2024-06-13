@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.gradle.tasks
 
+import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -24,29 +25,20 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
-import javax.inject.Inject
 
 abstract class GitClone : DefaultTask() {
 
-    @get:Input
-    abstract val url: Property<String>
+    @get:Input abstract val url: Property<String>
 
-    @get:Input
-    @get:Optional
-    abstract val tag: Property<String>
+    @get:Input @get:Optional abstract val tag: Property<String>
 
-    @get:Input
-    @get:Optional
-    abstract val branch: Property<String>
+    @get:Input @get:Optional abstract val branch: Property<String>
 
-    @get:Input
-    abstract val offline: Property<Boolean>
+    @get:Input abstract val offline: Property<Boolean>
 
-    @get:OutputDirectory
-    abstract val localCloneDirectory: DirectoryProperty
+    @get:OutputDirectory abstract val localCloneDirectory: DirectoryProperty
 
-    @get:Inject
-    protected abstract val exec: ExecOperations
+    @get:Inject protected abstract val exec: ExecOperations
 
     init {
         // If a 'branch' is configured, the task is never up-to-date as it may change

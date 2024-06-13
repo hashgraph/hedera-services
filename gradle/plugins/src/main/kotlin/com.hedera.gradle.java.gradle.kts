@@ -19,6 +19,7 @@ import com.autonomousapps.AbstractExtension
 import com.autonomousapps.DependencyAnalysisSubExtension
 import com.hedera.gradle.services.TaskLockService
 import com.hedera.gradle.utils.Utils.versionTxt
+import org.gradlex.javamodule.dependencies.tasks.ModuleDirectivesOrderingCheck
 
 plugins {
     id("java")
@@ -346,6 +347,9 @@ tasks.assemble {
 tasks.check { dependsOn(tasks.jacocoTestReport) }
 
 tasks.named("qualityGate") { dependsOn(tasks.checkAllModuleInfo) }
+
+// ordering check is done by SortModuleInfoRequiresStep
+tasks.withType<ModuleDirectivesOrderingCheck> { enabled = false }
 
 tasks.withType<JavaCompile>() {
     // When ding a 'qualityGate' run, make sure spotlessApply is done before doing compilation and

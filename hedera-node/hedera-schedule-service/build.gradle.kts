@@ -19,7 +19,7 @@ plugins {
     id("com.hedera.gradle.services-publish")
 }
 
-description = "Hedera Scheduled Service API"
+description = "Hedera Schedule Service API"
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.

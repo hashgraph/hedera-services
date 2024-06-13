@@ -151,7 +151,7 @@ public class WritableStoreFactory {
             }
             return storeInterface.cast(store);
         }
-        throw new IllegalArgumentException("No store of the given class is available");
+        throw new IllegalArgumentException("No store of the given class is available " + storeInterface.getName());
     }
 
     private interface StoreFactory {
