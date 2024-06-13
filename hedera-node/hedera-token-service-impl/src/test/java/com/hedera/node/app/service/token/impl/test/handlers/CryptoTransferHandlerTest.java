@@ -50,6 +50,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
@@ -57,6 +58,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -66,6 +68,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -92,6 +95,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @Mock
     private CryptoTransferRecordBuilder transferRecordBuilder;
+
+    @Mock
+    private ExchangeRateInfo exchangeRateInfo;
 
     private static final TokenID TOKEN_1357 = asToken(1357);
     private static final TokenID TOKEN_9191 = asToken(9191);
@@ -509,6 +515,10 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var initialSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
         final var initialFeeCollectorBalance =
                 writableAccountStore.get(feeCollectorId).tinybarBalance();
+
+        final ExchangeRate exchangeRate = new ExchangeRate(1, 12, TimestampSeconds.DEFAULT);
+        given(handleContext.exchangeRateInfo()).willReturn(exchangeRateInfo);
+        given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
 
         subject.handle(handleContext);
 

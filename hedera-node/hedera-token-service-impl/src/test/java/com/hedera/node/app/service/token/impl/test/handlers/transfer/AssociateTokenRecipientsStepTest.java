@@ -26,12 +26,15 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.List;
@@ -52,6 +55,9 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Mock
     private ExpiryValidator expiryValidator;
 
+    @Mock
+    private ExchangeRateInfo exchangeRateInfo;
+
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
     private TransferContextImpl transferContext;
@@ -70,9 +76,13 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Test
     void associatesTokenRecipients() {
+        final ExchangeRate exchangeRate = new ExchangeRate(1, 12, TimestampSeconds.DEFAULT);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         given(handleContext.dispatchRemovablePrecedingTransaction(any(), any(), any(), any()))
                 .willReturn(cryptoCreateRecordBuilder);
+        given(handleContext.exchangeRateInfo()).willReturn(exchangeRateInfo);
+        given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
+
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
