@@ -57,6 +57,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -101,6 +102,7 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
+    private final AssetsLoader assetsLoader;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     /**
@@ -108,8 +110,9 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @param validator the validator to use to validate the transaction
      */
     @Inject
-    public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
-        this(validator, true);
+    public CryptoTransferHandler(
+            @NonNull final CryptoTransferValidator validator, @NonNull final AssetsLoader assetsLoader) {
+        this(validator, assetsLoader, true);
     }
 
     /**
@@ -119,8 +122,10 @@ public class CryptoTransferHandler implements TransactionHandler {
      */
     public CryptoTransferHandler(
             @NonNull final CryptoTransferValidator validator,
+            @NonNull final AssetsLoader assetsLoader,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.validator = validator;
+        this.assetsLoader = assetsLoader;
         this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
                 enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
@@ -334,7 +339,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
-        steps.add(new AssociateTokenRecipientsStep(op));
+        steps.add(new AssociateTokenRecipientsStep(op, assetsLoader));
         // Step 2: Charge custom fees for token transfers
         final var customFeeStep = new CustomFeeAssessmentStep(op);
         // The below steps should be doe for both custom fee assessed transaction in addition to
@@ -342,7 +347,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
 
         for (final var txn : customFeeAssessedOps) {
-            steps.add(new AssociateTokenRecipientsStep(txn));
+            steps.add(new AssociateTokenRecipientsStep(txn, assetsLoader));
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
             final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
             steps.add(assessHbarTransfers);

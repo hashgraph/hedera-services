@@ -101,7 +101,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new CryptoTransferHandler(validator);
+        subject = new CryptoTransferHandler(validator, assetsLoader);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }
 
@@ -446,7 +446,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void failsWhenAutoAssociatedTokenHasKycKey() {
-        subject = new CryptoTransferHandler(validator, false);
+        subject = new CryptoTransferHandler(validator, assetsLoader, false);
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -476,7 +476,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void happyPathWorksWithAutoCreation() {
-        subject = new CryptoTransferHandler(validator, false);
+        subject = new CryptoTransferHandler(validator, assetsLoader, false);
         givenTxn();
         refreshWritableStores();
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());

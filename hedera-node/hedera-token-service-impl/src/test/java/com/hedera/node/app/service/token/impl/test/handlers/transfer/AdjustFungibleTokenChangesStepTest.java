@@ -53,7 +53,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, assetsLoader);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
     }
@@ -102,7 +102,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxnWithAllowances();
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, assetsLoader);
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(tokenReceiver);
@@ -162,7 +162,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxn(body, payerId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, assetsLoader);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(spenderId);
 
@@ -190,7 +190,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, assetsLoader);
         given(handleContext.body()).willReturn(txn);
 
         final var replacedOp = getReplacedOp();
@@ -220,7 +220,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body, assetsLoader);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(spenderId);
 

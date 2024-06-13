@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -100,6 +101,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     private AttributeValidator attributeValidator;
 
     protected ExpiryValidator expiryValidator;
+    protected AssetsLoader assetsLoader;
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
     protected AssociateTokenRecipientsStep associateTokenRecepientsStep;
@@ -117,6 +119,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void baseInternalSetUp(final boolean prepopulateReceiverIds) {
         super.handlerTestBaseInternalSetUp(prepopulateReceiverIds);
+        assetsLoader = new AssetsLoader();
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
