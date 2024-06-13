@@ -76,7 +76,7 @@ import org.junit.jupiter.api.Test;
 
 class CryptoTransferHandlerParityTest extends ParityTestBase {
     private final CryptoTransferValidator validator = new CryptoTransferValidator();
-    private final CryptoTransferHandler subject = new CryptoTransferHandler(validator);
+    private final CryptoTransferHandler subject = new CryptoTransferHandler(validator, assetsLoader);
 
     @Test
     void cryptoTransferTokenReceiverIsMissingAliasScenario() throws PreCheckException {

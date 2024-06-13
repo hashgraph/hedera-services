@@ -46,6 +46,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
     public void setUp() {
         super.setUp();
         givenTxn();
+        givenExchangeRate();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());

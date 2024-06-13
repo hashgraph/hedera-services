@@ -26,15 +26,18 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -53,6 +56,7 @@ import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRe
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -97,6 +101,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
+
+    @Mock
+    protected ExchangeRateInfo exchangeRateInfo;
 
     private AttributeValidator attributeValidator;
 
@@ -247,5 +254,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.recordBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+    }
+
+    protected void givenExchangeRate() {
+        final ExchangeRate exchangeRate = new ExchangeRate(1, 12, TimestampSeconds.DEFAULT);
+        lenient().when(handleContext.exchangeRateInfo()).thenReturn(exchangeRateInfo);
+        lenient().when(exchangeRateInfo.activeRate(any())).thenReturn(exchangeRate);
     }
 }

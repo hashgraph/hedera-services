@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -40,6 +41,7 @@ public class ParityTestBase {
     protected WritableTokenRelationStore writableTokenRelStore;
     protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
     protected Configuration configuration;
+    protected AssetsLoader assetsLoader;
 
     /**
      * Sets up the test environment.
@@ -51,6 +53,7 @@ public class ParityTestBase {
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         writableTokenRelStore = SigReqAdapterUtils.wellKnownTokenRelStoreAt();
         configuration = HederaTestConfigBuilder.createConfig();
+        assetsLoader = new AssetsLoader();
     }
 
     protected TransactionBody txnFrom(final TxnHandlingScenario scenario) {
