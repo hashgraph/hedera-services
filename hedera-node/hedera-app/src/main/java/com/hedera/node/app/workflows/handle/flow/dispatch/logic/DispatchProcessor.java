@@ -211,7 +211,7 @@ public class DispatchProcessor {
         if (hasWaivedFees) {
             return;
         }
-        if (report.unableToPayServiceFee() || report.isDuplicate() == IsDuplicate.YES) {
+        if (report.unableToPayServiceFee() || report.duplicateStatus() == DuplicateStatus.DUPLICATE) {
             dispatch.feeAccumulator()
                     .chargeFees(
                             report.payerOrThrow().accountIdOrThrow(),

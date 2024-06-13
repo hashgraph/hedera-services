@@ -236,7 +236,7 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch))
                 .willReturn(payerErrorReport(
-                        CREATOR_ACCOUNT_ID, PAYER, INSUFFICIENT_ACCOUNT_BALANCE, true, IsDuplicate.NO));
+                        CREATOR_ACCOUNT_ID, PAYER, INSUFFICIENT_ACCOUNT_BALANCE, true, DuplicateStatus.NO_DUPLICATE));
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
 

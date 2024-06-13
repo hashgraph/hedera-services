@@ -44,7 +44,7 @@ public class ErrorReportTest {
         assertNull(report.payer());
         assertNull(report.payerError());
         assertFalse(report.unableToPayServiceFee());
-        assertEquals(IsDuplicate.NO, report.isDuplicate());
+        assertEquals(DuplicateStatus.NO_DUPLICATE, report.duplicateStatus());
         assertTrue(report.isCreatorError());
         assertFalse(report.isPayerError());
     }
@@ -58,7 +58,7 @@ public class ErrorReportTest {
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertEquals(DUPLICATE_TRANSACTION, report.payerError());
         assertFalse(report.unableToPayServiceFee());
-        assertEquals(IsDuplicate.YES, report.isDuplicate());
+        assertEquals(DuplicateStatus.DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertTrue(report.isPayerError());
     }
@@ -73,7 +73,7 @@ public class ErrorReportTest {
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerError());
         assertFalse(report.unableToPayServiceFee());
-        assertEquals(IsDuplicate.NO, report.isDuplicate());
+        assertEquals(DuplicateStatus.NO_DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertTrue(report.isPayerError());
     }
@@ -81,14 +81,14 @@ public class ErrorReportTest {
     @Test
     public void testPayerErrorReport() {
         ErrorReport report = ErrorReport.payerErrorReport(
-                CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, true, IsDuplicate.YES);
+                CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, true, DuplicateStatus.DUPLICATE);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerError());
         assertTrue(report.unableToPayServiceFee());
-        assertEquals(IsDuplicate.YES, report.isDuplicate());
+        assertEquals(DuplicateStatus.DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertTrue(report.isPayerError());
     }
@@ -102,15 +102,15 @@ public class ErrorReportTest {
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertNull(report.payerError());
         assertFalse(report.unableToPayServiceFee());
-        assertEquals(IsDuplicate.NO, report.isDuplicate());
+        assertEquals(DuplicateStatus.NO_DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertFalse(report.isPayerError());
     }
 
     @Test
     public void testIsCreatorError() {
-        ErrorReport report =
-                new ErrorReport(CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, false, IsDuplicate.NO);
+        ErrorReport report = new ErrorReport(
+                CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, false, DuplicateStatus.NO_DUPLICATE);
 
         assertTrue(report.isCreatorError());
     }
@@ -118,7 +118,12 @@ public class ErrorReportTest {
     @Test
     public void testIsPayerError() {
         ErrorReport report = new ErrorReport(
-                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, false, IsDuplicate.NO);
+                CREATOR_ACCOUNT_ID,
+                null,
+                PAYER_ACCOUNT_ID,
+                INVALID_PAYER_SIGNATURE,
+                false,
+                DuplicateStatus.NO_DUPLICATE);
 
         assertTrue(report.isPayerError());
     }
@@ -126,29 +131,36 @@ public class ErrorReportTest {
     @Test
     public void testPayerErrorOrThrow() {
         ErrorReport report = new ErrorReport(
-                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, false, IsDuplicate.NO);
+                CREATOR_ACCOUNT_ID,
+                null,
+                PAYER_ACCOUNT_ID,
+                INVALID_PAYER_SIGNATURE,
+                false,
+                DuplicateStatus.NO_DUPLICATE);
 
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerErrorOrThrow());
     }
 
     @Test
     public void testCreatorErrorOrThrow() {
-        ErrorReport report =
-                new ErrorReport(CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, false, IsDuplicate.NO);
+        ErrorReport report = new ErrorReport(
+                CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, false, DuplicateStatus.NO_DUPLICATE);
 
         assertEquals(INVALID_TRANSACTION_DURATION, report.creatorErrorOrThrow());
     }
 
     @Test
     public void testPayerOrThrow() {
-        ErrorReport report = new ErrorReport(CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, false, IsDuplicate.NO);
+        ErrorReport report =
+                new ErrorReport(CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, false, DuplicateStatus.NO_DUPLICATE);
 
         assertEquals(PAYER_ACCOUNT_ID, report.payerOrThrow());
     }
 
     @Test
     public void testWithoutServiceFee() {
-        ErrorReport report = new ErrorReport(CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, false, IsDuplicate.NO);
+        ErrorReport report =
+                new ErrorReport(CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, false, DuplicateStatus.NO_DUPLICATE);
         ErrorReport reportWithoutServiceFee = report.withoutServiceFee();
 
         assertTrue(reportWithoutServiceFee.unableToPayServiceFee());

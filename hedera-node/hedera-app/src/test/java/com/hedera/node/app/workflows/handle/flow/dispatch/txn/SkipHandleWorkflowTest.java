@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
+package com.hedera.node.app.workflows.handle.flow.dispatch.txn;
 
-/**
- * Enumerates whether the transaction is a duplicate.
- */
-public enum IsDuplicate {
-    YES,
-    NO
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.workflows.handle.flow.txn.SkipHandleWorkflow;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class SkipHandleWorkflowTest {
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
+    private final SkipHandleWorkflow subject = new SkipHandleWorkflow(exchangeRateManager);
 }
