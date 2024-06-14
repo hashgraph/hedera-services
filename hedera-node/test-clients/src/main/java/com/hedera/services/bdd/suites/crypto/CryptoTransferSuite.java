@@ -2376,7 +2376,8 @@ public class CryptoTransferSuite {
         final var transferTokenAAndBToHollowAccountTxn = "transferTokenAAndBToHollowAccountTxn";
         final double expectedCreateHollowAccountFee = 0.0491927684;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithFtTransferAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2455,8 +2456,7 @@ public class CryptoTransferSuite {
                                 .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
                 .then(validateChargedUsd(
-                        transferTokenAAndBToHollowAccountTxn,
-                        expectedCryptoTransferAndAssociationUsd));
+                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -2471,7 +2471,8 @@ public class CryptoTransferSuite {
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
         final double expectedCreateHollowAccountFee = 0.0491927684;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2567,7 +2568,8 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(validateChargedUsd(transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(validateChargedUsd(
+                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -2584,7 +2586,8 @@ public class CryptoTransferSuite {
         final AtomicReference<ByteString> carolHollowAccountAlias = new AtomicReference<>();
         final double expectedCreateHollowAccountFee = 0.0510495836;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithMultipleSendersAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2677,7 +2680,8 @@ public class CryptoTransferSuite {
         final AtomicReference<ByteString> carolHollowAccountAlias = new AtomicReference<>();
         final double expectedCreateHollowAccountFee = 0.0490786102;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = 2 * expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                2 * expectedCreateHollowAccountFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithMultipleReceiversAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")

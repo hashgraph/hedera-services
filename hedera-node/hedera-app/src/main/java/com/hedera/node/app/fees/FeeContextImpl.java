@@ -148,5 +148,4 @@ public class FeeContextImpl implements FeeContext {
         }
         return exchangeRateInfo;
     }
-
 }
