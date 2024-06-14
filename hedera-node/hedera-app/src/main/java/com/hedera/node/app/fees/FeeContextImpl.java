@@ -22,11 +22,13 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -46,6 +48,9 @@ public class FeeContextImpl implements FeeContext {
     private final Configuration configuration;
     private final Authorizer authorizer;
     private final int numSignatures;
+    private final HederaState state;
+    private ExchangeRateManager exchangeRateManager;
+    private ExchangeRateInfo exchangeRateInfo;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -59,6 +64,7 @@ public class FeeContextImpl implements FeeContext {
      * @param numSignatures the number of signatures in the transaction
      */
     public FeeContextImpl(
+            @NonNull final HederaState state,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo txInfo,
             @NonNull final Key payerKey,
@@ -67,7 +73,9 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             final int numSignatures) {
+        this.state = state;
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
@@ -76,6 +84,7 @@ public class FeeContextImpl implements FeeContext {
         this.storeFactory = storeFactory;
         this.configuration = configuration;
         this.authorizer = authorizer;
+        this.exchangeRateManager = exchangeRateManager;
         this.numSignatures = numSignatures;
     }
 
@@ -130,4 +139,14 @@ public class FeeContextImpl implements FeeContext {
     public int numTxnSignatures() {
         return numSignatures;
     }
+
+    @NonNull
+    @Override
+    public ExchangeRateInfo exchangeRateInfo() {
+        if (exchangeRateInfo == null) {
+            exchangeRateInfo = exchangeRateManager.exchangeRateInfo(state);
+        }
+        return exchangeRateInfo;
+    }
+
 }

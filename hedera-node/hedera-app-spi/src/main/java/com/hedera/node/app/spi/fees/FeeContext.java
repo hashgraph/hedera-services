@@ -84,4 +84,7 @@ public interface FeeContext {
      * @return the number of signatures
      */
     int numTxnSignatures();
+
+    @NonNull
+    ExchangeRateInfo exchangeRateInfo();
 }

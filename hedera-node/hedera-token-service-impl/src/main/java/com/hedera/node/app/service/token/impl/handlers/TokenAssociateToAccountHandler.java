@@ -47,6 +47,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -197,6 +198,11 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var accountId = op.accountOrThrow();
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var account = readableAccountStore.getAccountById(accountId);
+
+        ExchangeRateInfo exchangeRateInfo = feeContext.exchangeRateInfo();
+        if (exchangeRateInfo == null) {
+            throw new IllegalStateException("Exchange rate info is required for fee calculation");
+        }
 
         return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(
                         txnEstimateFactory)

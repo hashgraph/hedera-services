@@ -46,8 +46,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -88,29 +90,38 @@ class QueryCheckerTest extends AppTestBase {
     @Mock
     private FeeManager feeManager;
 
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
     private QueryChecker checker;
 
     @BeforeEach
     void setup() {
-        checker = new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager);
+        checker = new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck,
+                expiryValidation, feeManager, exchangeRateManager);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
         assertThatThrownBy(() ->
-                        new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager))
+                        new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck,
+                                expiryValidation, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager))
+        assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck,
+                expiryValidation, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, null, expiryValidation, feeManager))
+                        () -> new QueryChecker(authorizer, cryptoTransferHandler, null,
+                                expiryValidation, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager))
+                        () -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck,
+                                null, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null))
+                        new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck,
+                                expiryValidation, null, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -461,6 +472,7 @@ class QueryCheckerTest extends AppTestBase {
     @Test
     void testEstimateTxFees(@Mock final ReadableStoreFactory storeFactory) {
         // given
+        final var hederaState = new FakeHederaState();
         final var consensusNow = Instant.ofEpochSecond(0);
         final var txInfo = createPaymentInfo(ALICE.accountID());
         final var configuration = HederaTestConfigBuilder.createConfig();
@@ -469,7 +481,7 @@ class QueryCheckerTest extends AppTestBase {
 
         // when
         final var result = checker.estimateTxFees(
-                storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
+                hederaState, storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
 
         // then
         assertThat(result).isEqualTo(fees.totalFee());
