@@ -22,7 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
+import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
+import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -42,9 +43,9 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -55,15 +56,21 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
 
     @Inject
     public ConsensusUpdateTopicHandler() {
@@ -164,12 +171,13 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        final var topicUpdate = op.consensusUpdateTopicOrThrow();
+        final var topicUpdate = op.consensusUpdateTopicOrElse(ConsensusUpdateTopicTransactionBody.DEFAULT);
         final var topicId = topicUpdate.topicIDOrElse(TopicID.DEFAULT);
         final var topic = feeContext.readableStore(ReadableTopicStore.class).getTopic(topicId);
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new UpdateTopicResourceUsage()
-                .usageGivenExplicit(fromPbj(op), sigValueObj, topic != null ? pbjToState(topic) : null));
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGivenExplicit(op, sigValueObj, topic));
     }
 
     private void resolveMutableBuilderAttributes(
@@ -309,5 +317,28 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
                 && id.hasAccountNum()
                 && id.accountNum() == 0
                 && id.alias() == null;
+    }
+
+    private FeeData usageGivenExplicit(
+            @NonNull final TransactionBody txnBody, @NonNull final SigValueObj sigUsage, @Nullable final Topic topic) {
+        long rbsIncrease = 0;
+        final var protoTxnBody = fromPbj(txnBody);
+        if (topic != null && topic.hasAdminKey()) {
+            final var expiry =
+                    Timestamp.newBuilder().setSeconds(topic.expirationSecond()).build();
+            try {
+                rbsIncrease = getUpdateTopicRbsIncrease(
+                        protoTxnBody.getTransactionID().getTransactionValidStart(),
+                        fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
+                        fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
+                        topic.memo(),
+                        topic.hasAutoRenewAccountId(),
+                        expiry,
+                        protoTxnBody.getConsensusUpdateTopic());
+            } catch (Exception e) {
+                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, e);
+            }
+        }
+        return getConsensusUpdateTopicFee(protoTxnBody, rbsIncrease, sigUsage);
     }
 }

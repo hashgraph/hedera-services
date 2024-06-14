@@ -21,14 +21,24 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
+import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getQueryFeeDataMatrices;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getStateProofSize;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
@@ -37,16 +47,19 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
 import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
-import com.hedera.node.app.service.mono.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -127,6 +140,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
     /**
      * Provides information about a topic.
+     *
      * @param topicID the topic to get information about
      * @param topicStore the topic store
      * @param config the LedgerConfig
@@ -166,7 +180,39 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final var topic = topicStore.getTopic(topicId);
 
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTopicInfoResourceUsage()
-                .usageGivenTypeAndTopic(topic != null ? pbjToState(topic) : null, fromPbjResponseType(responseType)));
+        return queryContext.feeCalculator().legacyCalculate(ignored -> usageGivenTypeAndTopic(topic, responseType));
+    }
+
+    private FeeData usageGivenTypeAndTopic(@Nullable final Topic topic, @NonNull final ResponseType responseType) {
+        requireNonNull(responseType);
+        if (topic == null) {
+            return CONSTANT_FEE_DATA;
+        }
+        final var bpr = BASIC_QUERY_RES_HEADER
+                + getStateProofSize(fromPbjResponseType(responseType))
+                + BASIC_ENTITY_ID_SIZE
+                + getTopicInfoSize(topic);
+        final var feeMatrices = FeeComponents.newBuilder()
+                .setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
+                .setVpt(0)
+                .setRbh(0)
+                .setSbh(0)
+                .setGas(0)
+                .setTv(0)
+                .setBpr(bpr)
+                .setSbpr(0)
+                .build();
+        return getQueryFeeDataMatrices(feeMatrices);
+    }
+
+    private static int getTopicInfoSize(@NonNull final Topic topic) {
+        /* Three longs in a topic representation: sequenceNumber, expirationTime, autoRenewPeriod */
+        return TX_HASH_SIZE
+                + 3 * LONG_SIZE
+                + computeVariableSizedFieldsUsage(
+                        fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
+                        fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
+                        topic.memo(),
+                        topic.hasAutoRenewAccountId());
     }
 }
