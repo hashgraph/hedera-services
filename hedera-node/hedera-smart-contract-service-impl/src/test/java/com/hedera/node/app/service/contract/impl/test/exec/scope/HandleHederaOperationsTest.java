@@ -316,8 +316,6 @@ class HandleHederaOperationsTest {
                 .build();
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthContractCreation = synthContractCreationFromParent(pendingId, parent);
-        final var synthContractNoKey =
-                synthContractCreation.copyBuilder().adminKey((Key) null).build();
 
         final var synthAccountCreation =
                 synthAccountCreationFromHapi(pendingId, CANONICAL_ALIAS, synthContractCreation);
@@ -344,7 +342,7 @@ class HandleHederaOperationsTest {
 
         subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
 
-        assertInternalFinisherAsExpected(captor.getValue(), synthContractNoKey);
+        assertInternalFinisherAsExpected(captor.getValue(), synthContractCreation);
         verify(tokenServiceApi)
                 .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }

@@ -87,8 +87,6 @@ class SynthTxnUtilsTest {
                 .maxAutoAssociations(321)
                 .memo("Something")
                 .build();
-        final var matchingCreationKey =
-                Key.newBuilder().contractID(CALLED_CONTRACT_ID).build();
         final var matchingCreation = synthContractCreationFromParent(CALLED_CONTRACT_ID, parent);
         assertEquals(parent.maxAutoAssociations(), matchingCreation.maxAutomaticTokenAssociations());
         assertEquals(parent.declineReward(), matchingCreation.declineReward());
@@ -96,7 +94,7 @@ class SynthTxnUtilsTest {
         assertEquals(
                 parent.autoRenewSeconds(), matchingCreation.autoRenewPeriod().seconds());
         assertEquals(parent.autoRenewAccountId(), matchingCreation.autoRenewAccountId());
-        assertEquals(matchingCreationKey, matchingCreation.adminKey());
+        assertEquals(parent.key(), matchingCreation.adminKey());
     }
 
     @Test
