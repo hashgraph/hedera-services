@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.crypto.staking;
+package com.hedera.services.bdd.suites.staking;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.crypto.staking.StakingSuite.STAKING_REWARD_RATE;
+import static com.hedera.services.bdd.suites.staking.StakingSuite.STAKING_REWARD_RATE;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;

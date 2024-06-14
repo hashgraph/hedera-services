@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -31,11 +34,13 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import java.time.Instant;
+import java.util.SortedSet;
 import java.util.TreeSet;
-import org.assertj.core.api.Assertions;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,6 +74,9 @@ class GenesisRecordsConsensusHookTest {
     private ReadableBlockRecordStore blockStore;
 
     @Mock
+    private SyntheticAccountCreator syntheticAccountCreator;
+
+    @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
 
     private GenesisRecordsConsensusHook subject;
@@ -83,79 +91,11 @@ class GenesisRecordsConsensusHookTest {
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
-        subject = new GenesisRecordsConsensusHook();
+        subject = new GenesisRecordsConsensusHook(syntheticAccountCreator);
     }
 
     @Test
-    void processCreatesSystemAccounts() {
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        accts.add(ACCOUNT_2);
-        subject.systemAccounts(accts);
-        subject.process(context);
-
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO, ACCT_1_BALANCE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
-        verify(context).markMigrationRecordsStreamed();
-    }
-
-    @Test
-    void processCreatesStakingAccounts() {
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        accts.add(ACCOUNT_2);
-        subject.stakingAccounts(accts);
-
-        subject.process(context);
-
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_STAKING_MEMO, ACCT_1_BALANCE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
-        verify(context).markMigrationRecordsStreamed();
-    }
-
-    @Test
-    void processCreatesMultipurposeAccounts() {
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        accts.add(ACCOUNT_2);
-        subject.miscAccounts(accts);
-
-        subject.process(context);
-
-        verifyBuilderInvoked(ACCOUNT_ID_1, null, ACCT_1_BALANCE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, null);
-        verify(context).markMigrationRecordsStreamed();
-    }
-
-    @Test
-    void processCreatesTreasuryClones() {
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        accts.add(ACCOUNT_2);
-        subject.treasuryClones(accts);
-
-        subject.process(context);
-
-        verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_TREASURY_CLONE_MEMO, ACCT_1_BALANCE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_TREASURY_CLONE_MEMO);
-        verify(context).markMigrationRecordsStreamed();
-    }
-
-    @Test
-    void processCreatesBlocklistAccounts() {
-        final var accts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
-        accts.add(ACCOUNT_1);
-        accts.add(ACCOUNT_2);
-        subject.blocklistAccounts(accts);
-
-        subject.process(context);
-
-        verifyBuilderInvoked(ACCOUNT_ID_1, null, ACCT_1_BALANCE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, null);
-        verify(context).markMigrationRecordsStreamed();
-    }
-
-    @Test
+    @SuppressWarnings("unchecked")
     void processCreatesAllRecords() {
         final var acctId3 = ACCOUNT_ID_1.copyBuilder().accountNum(3).build();
         final var acct3 = ACCOUNT_1.copyBuilder().accountId(acctId3).build();
@@ -165,19 +105,24 @@ class GenesisRecordsConsensusHookTest {
         final var acct5 = ACCOUNT_1.copyBuilder().accountId(acctId5).build();
         final var sysAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         sysAccts.add(ACCOUNT_1);
-        subject.systemAccounts(sysAccts);
         final var stakingAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         stakingAccts.add(ACCOUNT_2);
-        subject.stakingAccounts(stakingAccts);
         final var miscAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         miscAccts.add(acct3);
-        subject.miscAccounts(miscAccts);
         final var treasuryAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         treasuryAccts.add(acct4);
-        subject.treasuryClones(treasuryAccts);
         final var blocklistAccts = new TreeSet<>(TokenComparators.ACCOUNT_COMPARATOR);
         blocklistAccts.add(acct5);
-        subject.blocklistAccounts(blocklistAccts);
+        doAnswer(invocationOnMock -> {
+                    ((Consumer<SortedSet<Account>>) invocationOnMock.getArgument(1)).accept(sysAccts);
+                    ((Consumer<SortedSet<Account>>) invocationOnMock.getArgument(2)).accept(stakingAccts);
+                    ((Consumer<SortedSet<Account>>) invocationOnMock.getArgument(3)).accept(treasuryAccts);
+                    ((Consumer<SortedSet<Account>>) invocationOnMock.getArgument(4)).accept(miscAccts);
+                    ((Consumer<SortedSet<Account>>) invocationOnMock.getArgument(5)).accept(blocklistAccts);
+                    return null;
+                })
+                .when(syntheticAccountCreator)
+                .generateSyntheticAccounts(any(), any(), any(), any(), any(), any());
 
         // Call the first time to make sure records are generated
         subject.process(context);
@@ -187,11 +132,10 @@ class GenesisRecordsConsensusHookTest {
         verifyBuilderInvoked(acctId3, null);
         verifyBuilderInvoked(acctId4, EXPECTED_TREASURY_CLONE_MEMO);
         verifyBuilderInvoked(acctId5, null);
-        verify(context).markMigrationRecordsStreamed();
 
         // Call process() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
-        subject.process(context);
+        assertThatThrownBy(() -> subject.process(context)).isInstanceOf(NullPointerException.class);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
@@ -200,36 +144,6 @@ class GenesisRecordsConsensusHookTest {
         subject.process(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
         verify(context, never()).markMigrationRecordsStreamed();
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void systemAccountsNullParam() {
-        Assertions.assertThatThrownBy(() -> subject.systemAccounts(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void stakingAccountsNullParam() {
-        Assertions.assertThatThrownBy(() -> subject.stakingAccounts(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void multipurposeAccountsNullParam() {
-        Assertions.assertThatThrownBy(() -> subject.miscAccounts(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void treasuryAccountsNullParam() {
-        Assertions.assertThatThrownBy(() -> subject.treasuryClones(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void blocklistAccountsNullParam() {
-        Assertions.assertThatThrownBy(() -> subject.blocklistAccounts(null)).isInstanceOf(NullPointerException.class);
     }
 
     private void verifyBuilderInvoked(final AccountID acctId, final String expectedMemo) {

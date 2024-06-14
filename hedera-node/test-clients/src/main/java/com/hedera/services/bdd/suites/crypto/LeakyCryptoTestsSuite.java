@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.leaky;
+package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.google.protobuf.ByteString.copyFromUtf8;
