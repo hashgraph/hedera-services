@@ -39,7 +39,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_IN_A_TINYBAR;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
@@ -582,12 +582,12 @@ class HevmTransactionFactoryTest {
         assertEquals(Bytes.EMPTY, transaction.payload());
         assertEquals(Bytes.wrap(ETH_DATA_WITH_TO_ADDRESS.chainId()), transaction.chainId());
         assertEquals(
-                ETH_DATA_WITH_TO_ADDRESS.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), transaction.value());
+                ETH_DATA_WITH_TO_ADDRESS.value().divide(WEIBARS_IN_A_TINYBAR).longValueExact(), transaction.value());
         assertEquals(ETH_DATA_WITH_TO_ADDRESS.gasLimit(), transaction.gasLimit());
         assertEquals(
                 ETH_DATA_WITH_TO_ADDRESS
                         .getMaxGasAsBigInteger(TOP_LEVEL_TINYBAR_GAS_PRICE)
-                        .divide(WEIBARS_TO_TINYBARS)
+                        .divide(WEIBARS_IN_A_TINYBAR)
                         .longValueExact(),
                 transaction.offeredGasPrice());
         assertEquals(MAX_GAS_ALLOWANCE, transaction.maxGasAllowance());
@@ -611,7 +611,7 @@ class HevmTransactionFactoryTest {
         assertEquals(0, transaction.nonce());
         assertEquals(CALL_DATA, transaction.payload());
         assertEquals(Bytes.wrap(dataToUse.chainId()), transaction.chainId());
-        assertEquals(dataToUse.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), transaction.value());
+        assertEquals(dataToUse.value().divide(WEIBARS_IN_A_TINYBAR).longValueExact(), transaction.value());
         assertEquals(dataToUse.gasLimit(), transaction.gasLimit());
         assertEquals(
                 dataToUse.effectiveOfferedGasPriceInTinybars(TOP_LEVEL_TINYBAR_GAS_PRICE),
