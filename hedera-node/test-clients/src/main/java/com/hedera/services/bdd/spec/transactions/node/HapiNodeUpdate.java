@@ -16,33 +16,23 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-import static java.util.Collections.EMPTY_MAP;
-
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
-import com.hedera.hapi.node.addressbook.NodeGetInfoResponse;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -87,7 +77,7 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         return this;
     }
 
-    public HapiNodeUpdate serviceEndpoint(List<ServiceEndpoint>  serviceEndpoint) {
+    public HapiNodeUpdate serviceEndpoint(List<ServiceEndpoint> serviceEndpoint) {
         this.serviceEndpoint = Optional.of(serviceEndpoint);
         return this;
     }
@@ -126,20 +116,20 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(s -> builder.setDescription(
                                     StringValue.newBuilder().setValue(s).build()));
-                            if(gossipEndpoint.isPresent()) {
+                            if (gossipEndpoint.isPresent()) {
                                 builder.addAllGossipEndpoint(gossipEndpoint.get());
                             }
-                            if(serviceEndpoint.isPresent()) {
+                            if (serviceEndpoint.isPresent()) {
                                 builder.addAllServiceEndpoint(serviceEndpoint.get());
                             }
-                            if(gossipCaCertificate.isPresent()) {
+                            if (gossipCaCertificate.isPresent()) {
                                 try {
                                     builder.setGossipCaCertificate(BytesValue.parseFrom(gossipCaCertificate.get()));
                                 } catch (InvalidProtocolBufferException e) {
                                     throw new RuntimeException(e);
                                 }
                             }
-                            if(grpcCertificateHash.isPresent()) {
+                            if (grpcCertificateHash.isPresent()) {
                                 try {
                                     builder.setGrpcCertificateHash(BytesValue.parseFrom(grpcCertificateHash.get()));
                                 } catch (InvalidProtocolBufferException e) {
@@ -153,11 +143,14 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
 
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        //temp till we decide about the logic
-        return FeeData.newBuilder().setNodedata(FeeComponents.newBuilder().setBpr(0)).setNetworkdata(FeeComponents.newBuilder().setBpr(0)).setServicedata(FeeComponents.newBuilder().setBpr(0)).build().getSerializedSize();
-
+        // temp till we decide about the logic
+        return FeeData.newBuilder()
+                .setNodedata(FeeComponents.newBuilder().setBpr(0))
+                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
+                .setServicedata(FeeComponents.newBuilder().setBpr(0))
+                .build()
+                .getSerializedSize();
     }
-
 
     @Override
     protected HapiNodeUpdate self() {
@@ -171,8 +164,4 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         description.ifPresent(d -> helper.add("description", d));
         return helper;
     }
-
-
-
-
 }

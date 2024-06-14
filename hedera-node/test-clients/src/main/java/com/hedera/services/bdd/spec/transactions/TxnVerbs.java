@@ -239,7 +239,6 @@ public class TxnVerbs {
         return new HapiNodeDelete(node);
     }
 
-
     /* TOKEN */
     public static HapiTokenDissociate tokenDissociate(String account, String... tokens) {
         return new HapiTokenDissociate(account, tokens);

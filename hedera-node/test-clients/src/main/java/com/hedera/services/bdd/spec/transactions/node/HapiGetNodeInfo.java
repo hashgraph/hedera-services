@@ -24,14 +24,12 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NodeGetInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.NodeGetInfoQuery;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import java.util.function.Consumer;
-
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,18 +68,15 @@ public class HapiGetNodeInfo extends HapiQueryOp<HapiGetNodeInfo> {
         return this;
     }
 
-
     public HapiGetNodeInfo hasDeleted(boolean expected) {
         expectedDeleted = Optional.of(expected);
         return this;
     }
 
-
     public HapiGetNodeInfo saveToRegistry(String name) {
         saveNodeInfoToReg = Optional.of(name);
         return this;
     }
-
 
     public HapiGetNodeInfo(Supplier<String> supplier) {
         nodeSupplier = Optional.of(supplier);
@@ -93,9 +88,7 @@ public class HapiGetNodeInfo extends HapiQueryOp<HapiGetNodeInfo> {
             LOG.info("Info for node '{}': {}", node, response.getNodeGetInfo());
         }
         if (saveNodeInfoToReg.isPresent()) {
-            spec.registry()
-                    .saveNodeInfo(
-                            saveNodeInfoToReg.get(), response.getNodeGetInfo());
+            spec.registry().saveNodeInfo(saveNodeInfoToReg.get(), response.getNodeGetInfo());
         }
     }
 
@@ -106,7 +99,6 @@ public class HapiGetNodeInfo extends HapiQueryOp<HapiGetNodeInfo> {
         Assertions.assertEquals(TxnUtils.asNodeId(node, spec), info.getNodeId(), "Wrong node id!");
         expectedDeleted.ifPresent(f -> Assertions.assertEquals(f, info.getDeleted(), "Bad deletion status!"));
         expectedDescription.ifPresent(e -> Assertions.assertEquals(e, info.getDescription()));
-
     }
 
     /**

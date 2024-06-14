@@ -78,7 +78,6 @@ public class QueryVerbs {
         return new HapiGetNodeInfo(node);
     }
 
-
     public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
     }

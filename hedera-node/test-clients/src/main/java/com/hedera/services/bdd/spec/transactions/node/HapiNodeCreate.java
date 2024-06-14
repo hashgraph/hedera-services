@@ -21,17 +21,15 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import com.hederahashgraph.api.proto.java.AccountID;
-
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -53,11 +51,9 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private byte[] grpcCertificateHash;
     Optional<LongConsumer> newNumObserver = Optional.empty();
 
-
     public HapiNodeCreate(String node) {
         this.node = node;
     }
-
 
     @Override
     public HederaFunctionality type() {
@@ -68,8 +64,6 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         newNumObserver = Optional.of(obs);
         return this;
     }
-
-
 
     public HapiNodeCreate addAccount(final AccountID accountID) {
         this.accountId = Optional.of(accountID);
@@ -85,8 +79,6 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         this.gossipEndpoint = gossipEndpoint;
         return this;
     }
-
-
 
     public HapiNodeCreate addServiceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
         this.serviceEndpoint = serviceEndpoint;
@@ -114,8 +106,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        //temp till we decide about the logic
-        return FeeData.newBuilder().setNodedata(FeeComponents.newBuilder().setBpr(0)).setNetworkdata(FeeComponents.newBuilder().setBpr(0)).setServicedata(FeeComponents.newBuilder().setBpr(0)).build();
+        // temp till we decide about the logic
+        return FeeData.newBuilder()
+                .setNodedata(FeeComponents.newBuilder().setBpr(0))
+                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
+                .setServicedata(FeeComponents.newBuilder().setBpr(0))
+                .build();
     }
 
     @Override
@@ -123,8 +119,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         final NodeCreateTransactionBody opBody = spec.txns()
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
                         NodeCreateTransactionBody.class, b -> {
-                            if(accountId.isPresent())
-                                b.setAccountId(accountId.get());
+                            if (accountId.isPresent()) b.setAccountId(accountId.get());
                             b.setDescription(description);
                             b.addAllGossipEndpoint(gossipEndpoint);
                             b.addAllServiceEndpoint(serviceEndpoint);
@@ -142,16 +137,14 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     @Override
     protected void updateStateOf(final HapiSpec spec) {
         final var newId = lastReceipt.getNodeId();
-//        newNumObserver.ifPresent(obs -> obs.accept(newId.getFileNum());
+        //        newNumObserver.ifPresent(obs -> obs.accept(newId.getFileNum());
         spec.registry().saveNodeId(description, newId);
     }
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         MoreObjects.ToStringHelper helper = super.toStringHelper();
-        Optional.ofNullable(lastReceipt)
-                .ifPresent(receipt -> helper.add("created", receipt.getNodeId()));
+        Optional.ofNullable(lastReceipt).ifPresent(receipt -> helper.add("created", receipt.getNodeId()));
         return helper;
     }
-
 }

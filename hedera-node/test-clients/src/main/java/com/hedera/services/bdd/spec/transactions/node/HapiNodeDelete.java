@@ -23,15 +23,12 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
-
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,8 +77,13 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        //temp till we decide about the logic
-        return FeeData.newBuilder().setNodedata(FeeComponents.newBuilder().setBpr(0)).setNetworkdata(FeeComponents.newBuilder().setBpr(0)).setServicedata(FeeComponents.newBuilder().setBpr(0)).build().getSerializedSize();
+        // temp till we decide about the logic
+        return FeeData.newBuilder()
+                .setNodedata(FeeComponents.newBuilder().setBpr(0))
+                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
+                .setServicedata(FeeComponents.newBuilder().setBpr(0))
+                .build()
+                .getSerializedSize();
     }
 
     @Override

@@ -40,11 +40,11 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
-import com.hederahashgraph.api.proto.java.NodeGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NodeGetInfoResponse;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -696,7 +696,6 @@ public class HapiSpecRegistry {
     public long getNodeId(String name) {
         return get(name, Long.class);
     }
-
 
     public void removeFileId(String name) {
         try {
