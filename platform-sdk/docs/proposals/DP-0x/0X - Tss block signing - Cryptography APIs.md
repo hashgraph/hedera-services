@@ -15,8 +15,8 @@ Provide necessary pieces for signing messages using a TSS scheme.
 ## Purpose and Context
 The goal of a threshold signature scheme (TSS) is to enable a group of participants (shareholders) to securely and efficiently
 perform signature generation while preserving security when assuring the presence of up to a threshold number of honest parties.
-When using TSS, a static public key is produced, that doesn't change even when the amount of participant of the scheme varies,
-and can be used to verify any message signed by a threshold of private aggregated signatures. 
+In our TSS implementation, a static public key should be produced, that doesn't change even when the amount of participant of the scheme varies,
+and it can be used to verify any message signed by a threshold of private aggregated signatures. 
 
 This is important for producing proofs that are easily consumable and verifiable by external entities.
 
@@ -77,8 +77,11 @@ It enables a committer to commit to a polynomial such that the commitment allows
 
 The proposed TSS solution is based on Groth21.
 
+A non-interactive publicly verifiable secret sharing scheme where a dealer can construct a Shamir secret sharing of a field element and confidentially yet verifiably distribute shares to multiple receivers.
+Distributed resharing protocol that preserves the public key but creates a fresh secret sharing of the secret key and hands it to a set of receivers, which may or may not overlap with the original set of shareholders.
+
 #### Description of the Scheme
-Here the word participant is used to describe any one of the parties involved in produced the aggregated signature.
+Here the word participant is used to describe any one of the parties involved in produced the aggregated signature and aggregated public key.
 
 Each participant of the scheme will receive from an external source its own persistent EC private key and all participant's EC public key.
 
@@ -102,14 +105,14 @@ The `SignatureSchema` defines the type of Curve to use, and which Group of the P
 
 ```
 `Share`: An abstract concept having a unique identifier and an owner
-|_  `ProprietaryShare`: Represents a share owned by the executor of the scheme. Contains a secret value (Ec Private key) used for signing.
+|_  `PrivateShare`: Represents a share owned by the executor of the scheme. Contains a secret value (Ec Private key) used for signing.
 |_  `ExternalShare`: Represents a share owned by other participants.
 ```
 
 #####  Bootstrap Stage
 Given
 
-Latest participants directory:
+a participants directory:
 ```
 P   # shares
 -----------------------------
@@ -119,8 +122,14 @@ P₃  1        P₃_EC_PublicKey
 P₄  2        P₄_EC_PublicKey
 
 ```
+
 A threshold: 
 `t = 5`
+
+First a `shareId`: `sid` is generated for each share. With the purpose of being able to use the id to evaluate and distribute the secret.
+It's a unique identifier for each existent share. It is deterministic because the function we use to generate it takes is deterministic.
+it is only necessary that they are values: a) are unique per share, b) non-0, and c) can be used in the polynomial (They are from the same field of the selected curve)
+
 
 And an ownership map: `ShareId`->`Participant`:
 
@@ -161,32 +170,36 @@ Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the valu
 
 A TssMessage:
 
-![img_2.png](img_2.png)
+![img.png](img.png)
 
 ###### Outside of scope
 Using a channel already established, each participant will broadcast a single message to be received by all participants
 while waiting to receive other participant's messages. This functionality is key for the protocol to work but needs to be handled outside the library.
 Each participant will validate the received message against the commitment and the zk-SNARKs proof. Invalid messages will be discarded.
+
 ###### 2. Validation of TssMessage
 Each message can be validated against the commitment and the zk-SNARKs proof.
 The validation is produced over the content of the message and does not include the sender's identity which is assumed to be provided by the external channel.
 
 ###### 3. Processing of TssMessage
 Given Participant's persistent EC PrivateKey, `t` number of validated messages (t=threshold), and the list of all validated `TssMessage`s,
-each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `ProprietaryShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
+each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `SecretShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
 
 **Note:** All participants must choose the same set of valid `TssMessages`, in addition to the requirement of having a threshold humber of valid messages.
 
-![img_8.png](img_8.png)
+![img_3.png](img_3.png)
 
 At this point, the participant executing the scheme is able to start signing.
-Synchronization between all participants will be needed in order to determine if all of them have received and processed enough messages and determined each owns ProprietaryShares,
+Synchronization between all participants will be needed in order to determine if all of them have received and processed enough messages and determined each owns SecretShares,
 but that is not covered by this library and should be done outside.
 
 #####  Rekey Stage
+(Rehashing protocol)
+This Section describes the rekey process that is executed each time some of the parameters of the scheme changed like amount of participants, or the amount of shares assigned to the participant.
+The rekeying process can happen too if the parameters are exactly the same of the genesis procedure.
+
 
 E.g.: In a scheme distributing 10 shares over 4 participants
-
 Assuming Current Participant: (P₁;  P₁_EC_PrivateKey)
 
 Given
@@ -216,14 +229,16 @@ And a new ownership map: `ShareId`->`Participant`:
 sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
 P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  	P₅  	P₆  
 ```
-The rekeying process is similar to the bootstrap process but instead, each participant will generate a `TssMessage` out of each `ProprietaryShare` owned by the participant.
+The rekeying process is similar to the bootstrap process but instead, it starts with an old ownership map and a new ownership map, each participant will generate a `TssMessage` out of each `SecretShare` owned by the participant in the new ownership map.
 
-Once finished, the list of `ProprietariesShares` will be updated.
+![img_1.png](img_1.png)
+
+Once finished, the list of `SecretShare`s will be updated.
 
 
 #####  Sign Stage
 After genesis keying or rekeying stages, the library can be used to sign any message. 
-Using each `ProprietaryShare` owned by the participant, a message can be signed producing a `TssSignature`
+Using each `SecretShare` owned by the participant, a message can be signed producing a `TssSignature`
 
 Multiple signatures can be aggregated to create an aggregated `TssSignature`. An aggregated `TssSignature` can be validated against the aggregated PublicKey if
 `t` (t=threshold) valid signatures were aggregated. If the threshold is met and the signature is valid, the library will respond true as the validation response, if not false.
@@ -232,6 +247,7 @@ Multiple signatures can be aggregated to create an aggregated `TssSignature`. An
 ##### Summary diagram
 The following diagram exposes the steps involved necessary for bootstrapping and using the library. In orange all the steps where the library is involved.
 The rest of the steps needs to happen, but are outside the scope of the described library.
+
 ![img_12.png](img_12.png)
 
 
@@ -248,7 +264,7 @@ To implement the functionality detailed in the previous section, the following c
 6. **Arkworks[https://github.com/arkworks-rs]**:  arkworks is a Rust ecosystem for zkSNARK programming. Libraries in the arkworks ecosystem provide efficient implementations of all components required to implement zkSNARK applications, from generic finite fields to R1CS constraints for common functionalities.
 7. **EC-Key Utils**: Utility module to enable the node operator to generate bootstrapping public/private key pair.
 
-### Module Organization and repositories
+### Module organization and repositories
 ![img_13.png](img_13.png)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries. This repository is necessary as a means of facilitating our build process that includes Rust libraries. Also provides independent release cycles between consensus node code and block node code.
 2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries, so they can be used with JNI.
@@ -257,93 +273,85 @@ To implement the functionality detailed in the previous section, the following c
 5. **swirlds-cryptography-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
 6. **swirlds-cryptography-alt128**: Gradle module that will provide the implementation for the Bilinear Pairings API using alt-128 elliptic curve. That curve has been chosen in accordance with EVM's support of it. Support for that curve will be provided by arkworks rust library. The module will include Java code, and rust code that will be compiled for all possible system architectures, and distributed in a jar under a predefined structure.
 
-
 ### Libraries Specifications
 
-#### Swirlds Native support
+#### Swirlds Crypto TSS Library
 ##### Overview
-Our implementation of the `swirlds-cryptography-pairings-api` will use native compiled libraries under the hood accessed with JNI.
-Given non GA state of project Panama, this proposal does not consider it, but it is not discarded for future change proposals.
-
-While dealing with native code using JNI, there are two possible ways of making the library accessible to Java code:
-1. Make it available in the classpath: The library would need to be previously installed in the executing environment
-and reference its location in the classpath env variable.
-2. Distribute it as an application dependency. The caveat here is that:
-
-    a. The distributed library needs to be compiled in every possible architecture the application is going to be executed on.
-
-    b. The library needs to be unpackaged from the jar as it cannot be accessed while it's compressed.
-
-Two key points we are considering in the development of this solution are: 
-a) ensuring that is compatible with java module system.
-b) ensuring that dependent software do not have the requirement to install any additional dependencies other what is distributed in the jars.
-
-That is why the native-support library will help with the loading of the native library by implementing option 2.
-For this to work, native support library needs to be included as dependency in the module accessing JNI wrapping code.
-The native libraries will be accessed assuming the following structure in the module declaring the dependency:
-
-```
- native-library-client.jar
- |_WEB-INF
-    |_arch64
-      |_macos
-        |_libhedera_bls_jni.dylib
-    |_amd64
-      |_macos
-        |_libhedera_bls_jni.dylib
-      |_linux
-        |_libhedera_bls_jni.so
-      |_windows
-        |_libhedera_bls_jni.dll
-    |_x86
-      |_linux
-        |_libhedera_bls_jni.so
-      |_windows
-        |_libhedera_bls_jni.dll
-  ...
-```
-
-lib folder is organized in subfolders by the platform identifier, as returned by `System.getProperty("os.arch")` and `System.getProperty("os.name")` 
+This library implements the Groth21 TSS specific primitives.
 
 ##### Constraints
-This module will not depend on hedera-services artifacts, so cannot include logging, metrics, configuration, or any other helper module from that repo.
+Once built this library will depend on artifacts constructed in other repository.
 
 ##### Public API
-###### `LibraryDescriptionEntry`
-**Description**: Given that the compilation of a native library produces files with different names under different OS and architectures, we need a way to assemble a catalog for all possible forms our library will take.
 
-A record of 3 elements that defines the name of the binary file of the library to load in a specific system architecture and OS.
-
-**Example**: 
+##### Example
+###### 1. Bootstrapping
 ```java
-    new LibraryDescriptionEntry("macos", "aarch64", "libhedera_bls_jni.dylib");
+   TssService service = new TssService(signatureScheme);
+   PairingPrivateKey persistentParticipantKey = Requirements.loadECPrivateKey();
+   List<PairingPublicKey> persistentPublicKeys = Requirements.loadECPublicKeys();
+   TssParticipantDirectory directory = 
+        service.participantDirectoryBuilder()
+           .self(/**/ 0, persistentParticipantKey)
+           .withClaim(0, 5, persistentPublicKeys.get(0))
+           .withClaim(1, 2, persistentPublicKeys.get(1))
+           .withClaim(2, 1, persistentPublicKeys.get(2))
+           .withClaim(3, 1, persistentPublicKeys.get(3))
+          .build();
+   
+   //One can then query the directory
+   int n = directory.getTotalNumberOfShares();
+   List<TssShareId> privateShares = directory.getOwnedShares();
+   List<TssShareId> shareIds = directory.getShareIds();
 ```
-###### `LibraryDescription`
-**Description**: A description of the library in all possible systems.
+###### 1. Create TssMessage
 ```java
-    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry("macos", "aarch64", "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry("linux", "amd64", "libhedera_bls_jni.so"), ...);
+
+   TssSecretShare s = directory.createRandomSecretShare();
+   TssMessage m = service.createTssMessage(directory, s, threshold);
 ```
-If the library name is the same for all system architectures with the only change of the extension one can configure:
+
+###### 2. Validation of TssMessage
 ```java
-  //For any system architecture load libhedera_bls_jni.dylib, libhedera_bls_jni.so or libhedera_bls_jni.dll depending on the os  
-  static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription("libhedera_bls_jni");
+   List<TssMessage> messages = Requirements.receiveTssMessages();
+   for(TssMessage m : messages){
+     m.validate(directory);
+   }
 ```
-
-
-###### `LibraryLoader`
-**Description**: Helper class that will load a library for the correct system:
-
+###### 3. Processing of TssMessage
 ```java
-class AnySystemReferencedClass{
-    static {
-        LibraryLoader.load(LIB_HEDERA_BLS);
-    }
-}
+   List<TssMessage> messages = Requirements.receiveTssMessages();
+   TssService cachedService = service.withCache(size);
+   
+   TssProcessingResult result = cachedService.processMessages(directory, messages);
+   result.isValid();
+   TssParticipantDirectory updatedDirectory = result.getDirectory();
 ```
-if there is no description matching the current system architecture the method will fail with runtime exception.
+######  Sign
+```java
+   byte[] message = Requirements.messageToSign();
 
+   List<TssSignature> signatures = updatedDirectory.produceSignatures(updatedDirectory, message);
 
-#### Swirlds Cryptography Pairings Signature Library
+   //Implemented:
+   List<PrivateShare> privateShares = updatedDirectory.getPrivateShares();
+   List<TssSignature> signatures = new ArrayList<>();
+   for(PrivateShare k: privateShares){
+      signatures.add(k.sign(message));    
+   }
+   
+   
+```
+
+######  Aggregate Signatures
+```java
+   byte[] message = Requirements.messageToSign();
+
+   List<TssSignature> signatures = Requirements.loadSignatures();
+   PairingSignature aggregatedSignature = service.aggregate(signatures);
+```
+
+#### Swirlds Crypto Pairings Signature Library
 ##### Overview
 This module provides cryptography primitives to create EC PublicKeys, EC PrivateKeys, and Signatures.
 
@@ -398,23 +406,11 @@ swirlds-cryptography-pairings-API and runtime implementation
 ##### Other considerations
 Analyzed the possibility of implementing [JCA](https://docs.oracle.com/en/java/javase/11/security/java-cryptography-architecture-jca-reference-guide.html#GUID-9A793484-AE6A-4513-A603-BFEAE887DD8B) (Java-Cryptography-architecture).
 There were unknowns that are worth investigating in a follow-up task:
- * Should we parametrize the EC curve with: [`java.security.spec.EllipticCurve`](https://docs.oracle.com/javase/1.5.0/docs/api/java/security/spec/EllipticCurve.html)? Implications?
- * What is the serialization format supported by arkworks?  Raw Key Bytes are formatted with PKCS#8 for private keys and X.509 for public keys. Should we define a custom format for bytes serialized with arkworks? Should we reformat? What do we do with our custom content.
+* Should we parametrize the EC curve with: [`java.security.spec.EllipticCurve`](https://docs.oracle.com/javase/1.5.0/docs/api/java/security/spec/EllipticCurve.html)? Implications?
+* What is the serialization format supported by arkworks?  Raw Key Bytes are formatted with PKCS#8 for private keys and X.509 for public keys. Should we define a custom format for bytes serialized with arkworks? Should we reformat? What do we do with our custom content.
 
 
-#### Swirlds Threshold Signature Scheme (TSS) Library
-[TODO]
-##### Overview
-[TODO]
-##### Constraints
-[TODO]
-##### Public API
-[TODO]
-##### Example
-[TODO]
-
-
-#### Swirlds Cryptography Pairings API
+#### Swirlds Crypto Pairings API
 ##### Overview
 This API will expose general arithmetic operations to work with Billinear Pairings and EC curves that implementations must provide.
 
@@ -461,6 +457,130 @@ This API will expose general arithmetic operations to work with Billinear Pairin
 **Description**: An interface representing the result of a pairing operation, with methods to compare it to other group elements.
 
 **Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
+
+
+#### Swirlds Crypto Pairings Impl
+##### Overview
+This module will be a multilanguage module following the structure:
+```
+ swirlds-crypto-pairings-impl-X
+ |_src
+    |_main
+    | |_java
+    | | |_com...
+    | |_rust
+    |   |_...
+    |_test
+      |_java
+      | |_com...
+      |_rust
+        |_...
+```
+Support for release engineering will be needed.
+This module should include Cargo for compiling rust source to binary files,
+Should be built in a way that the rust code is compiled for every supported architecture, and only after that, packaged into the jar following the structure:
+```
+ |_WEB-INF
+    |_arch64
+      |_macos
+        |_lib.dylib
+    |_amd64
+      |_macos
+        |_lib.dylib
+      |_linux
+        |_lib.so
+      |_windows
+        |_lib.dll
+    |_x86
+      |_linux
+        |_lib.so
+      |_windows
+        |_lib.dll
+```
+It will unzip and load the correct library packaged inside the jar, access it using JNI calls.
+The interface with the api is through JNI. Once build this should become a runtime dependency only.
+
+#### Swirlds Native Support
+##### Overview
+Our implementation of the `swirlds-cryptography-pairings-api` will use native compiled libraries under the hood accessed with JNI.
+Given non GA state of project Panama, this proposal does not consider it, but it is not discarded for future change proposals.
+
+While dealing with native code using JNI, there are two possible ways of making the library accessible to Java code:
+1. Make it available in the classpath: The library would need to be previously installed in the executing environment
+   and reference its location in the classpath env variable.
+2. Distribute it as an application dependency. The caveat here is that:
+
+   a. The distributed library needs to be compiled in every possible architecture the application is going to be executed on.
+
+   b. The library needs to be unpackaged from the jar as it cannot be accessed while it's compressed.
+
+Two key points we are considering in the development of this solution are:
+a) ensuring that is compatible with java module system.
+b) ensuring that dependent software do not have the requirement to install any additional dependencies other what is distributed in the jars.
+
+That is why the native-support library will help with the loading of the native library by implementing option 2.
+For this to work, native support library needs to be included as dependency in the module accessing JNI wrapping code.
+The native libraries will be accessed assuming the following structure in the module declaring the dependency:
+
+```
+ native-library-client.jar
+ |_WEB-INF
+    |_arch64
+      |_macos
+        |_libhedera_bls_jni.dylib
+    |_amd64
+      |_macos
+        |_libhedera_bls_jni.dylib
+      |_linux
+        |_libhedera_bls_jni.so
+      |_windows
+        |_libhedera_bls_jni.dll
+    |_x86
+      |_linux
+        |_libhedera_bls_jni.so
+      |_windows
+        |_libhedera_bls_jni.dll
+  ...
+```
+
+lib folder is organized in subfolders by the platform identifier, as returned by `System.getProperty("os.arch")` and `System.getProperty("os.name")`
+
+##### Constraints
+This module will not depend on hedera-services artifacts, so cannot include logging, metrics, configuration, or any other helper module from that repo.
+
+##### Public API
+###### `LibraryDescriptionEntry`
+**Description**: Given that the compilation of a native library produces files with different names under different OS and architectures, we need a way to assemble a catalog for all possible forms our library will take.
+
+A record of 3 elements that defines the name of the binary file of the library to load in a specific system architecture and OS.
+
+**Example**:
+```java
+    new LibraryDescriptionEntry("macos", "aarch64", "libhedera_bls_jni.dylib");
+```
+###### `LibraryDescription`
+**Description**: A description of the library in all possible systems.
+```java
+    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry("macos", "aarch64", "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry("linux", "amd64", "libhedera_bls_jni.so"), ...);
+```
+If the library name is the same for all system architectures with the only change of the extension one can configure:
+```java
+  //For any system architecture load libhedera_bls_jni.dylib, libhedera_bls_jni.so or libhedera_bls_jni.dll depending on the os  
+  static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription("libhedera_bls_jni");
+```
+
+
+###### `LibraryLoader`
+**Description**: Helper class that will load a library for the correct system:
+
+```java
+class AnySystemReferencedClass{
+    static {
+        LibraryLoader.load(LIB_HEDERA_BLS);
+    }
+}
+```
+if there is no description matching the current system architecture the method will fail with runtime exception.
 
 
 ## Test Plan
