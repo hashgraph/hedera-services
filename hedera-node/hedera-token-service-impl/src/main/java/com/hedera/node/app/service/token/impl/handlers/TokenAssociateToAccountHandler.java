@@ -23,8 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -36,18 +35,16 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
-import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
-import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -58,6 +55,10 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -69,12 +70,14 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAssociateToAccountHandler extends BaseTokenHandler implements TransactionHandler {
+
+    private final AssetsLoader assetsLoader;
     /**
      * Default constructor for injection.
      */
     @Inject
-    public TokenAssociateToAccountHandler() {
-        // Exists for injection
+    public TokenAssociateToAccountHandler(@NonNull final AssetsLoader assetsLoader) {
+        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
     }
 
     @Override
@@ -193,19 +196,53 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var body = feeContext.body();
-        final var op = body.tokenAssociateOrThrow();
-        final var accountId = op.accountOrThrow();
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var account = readableAccountStore.getAccountById(accountId);
-
-        ExchangeRateInfo exchangeRateInfo = feeContext.exchangeRateInfo();
+        final var exchangeRateInfo = feeContext.exchangeRateInfo();
         if (exchangeRateInfo == null) {
             throw new IllegalStateException("Exchange rate info is required for fee calculation");
         }
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(body), sigValueObj, account));
+        final var body = feeContext.body();
+        final var op = body.tokenAssociateOrThrow();
+        final var calculator = feeContext.feeCalculator(DEFAULT);
+
+        calculator.resetUsage();
+        // The first signature is free and is accounted in the base price, so we only need to add
+        // the price of the rest of the signatures.
+        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+        final var baseFee = calculator.calculate();
+        final var newAssociationsCount = op.tokens().size();
+
+        final var associateInTinyCents = getFixedAssociatePriceInTinyCents();
+        final var associateInTinybars = getTinybarsFromTinyCents(
+                associateInTinyCents, exchangeRateInfo.activeRate(Instant.now())); // TODO: get the correct timestamp
+
+        final var totalFee = baseFee.copyBuilder()
+                .networkFee(baseFee.networkFee() + newAssociationsCount * associateInTinybars)
+                .build();
+
+        return totalFee;
+    }
+
+    private long getFixedAssociatePriceInTinyCents() {
+        BigDecimal usdFee;
+        try {
+            usdFee = assetsLoader
+                    .loadCanonicalPrices()
+                    .get(com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount)
+                    .get(com.hederahashgraph.api.proto.java.SubType.DEFAULT);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load canonical prices", e);
+        }
+        final var usdToTinyCents = BigDecimal.valueOf(100 * 100_000_000L);
+        return usdToTinyCents.multiply(usdFee).longValue();
+    }
+
+    private long getTinybarsFromTinyCents(@NonNull final long tinyCents, @NonNull final ExchangeRate rate) {
+        final var aMultiplier = BigInteger.valueOf(rate.hbarEquiv());
+        final var bDivisor = BigInteger.valueOf(rate.centEquiv());
+        return BigInteger.valueOf(tinyCents)
+                .multiply(aMultiplier)
+                .divide(bDivisor)
+                .longValueExact();
     }
 }
