@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -71,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
@@ -441,6 +443,41 @@ public class HollowAccountFinalizationSuite {
                     final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                     final var op2 = contractCreate(CONTRACT)
                             .adminKey(ADMIN_KEY)
+                            .payingWith(SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                            .hasKnownStatus(SUCCESS)
+                            .via(TRANSFER_TXN_2);
+                    final var op3 = getAliasedAccountInfo(evmAddress)
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
+                    final var hapiGetSecondTxnRecord =
+                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
+
+                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> hollowAccountCompletionWithEthereumContractCreate() {
+        final var CONTRACT = "CreateTrivial";
+        return defaultHapiSpec("hollowAccountCompletionWithEthereumContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT))
+                .when(createHollowAccountFrom(
+                        SECP_256K1_SOURCE_KEY, INITIAL_BALANCE * ONE_MILLION_HBARS, 1_000_000 * ONE_HUNDRED_HBARS))
+                .then(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    final var op2 = ethereumContractCreate(CONTRACT)
+                            .type(EthTransactionType.LEGACY_ETHEREUM)
+                            .nonce(0)
+                            .gasPrice(2L)
+                            .maxPriorityGas(2L)
+                            .gasLimit(1_000_000L)
                             .payingWith(SECP_256K1_SOURCE_KEY)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
                             .hasKnownStatus(SUCCESS)
