@@ -62,7 +62,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -223,8 +222,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
 
             final var associateInTinyCents = getFixedAssociatePriceInTinyCents();
             final var associateInTinybars = getTinybarsFromTinyCents(
-                    associateInTinyCents,
-                    exchangeRateInfo.activeRate(Instant.now())); // TODO: get the correct timestamp
+                    associateInTinyCents, exchangeRateInfo.activeRate(feeContext.consensusNow()));
 
             return baseFee.copyBuilder()
                     .networkFee(baseFee.networkFee() + newAssociationsCount * associateInTinybars)
