@@ -72,6 +72,7 @@ public class QueryChecker {
      * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks if the payer has enough
      * @param expiryValidation the {@link ExpiryValidation} that checks if an account is expired
      * @param feeManager the {@link FeeManager} that calculates the fees
+     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -204,6 +205,7 @@ public class QueryChecker {
     /**
      * Estimates the fees for a payment (CryptoTransfer) in a query
      *
+     * @param state current state
      * @param storeFactory the {@link ReadableStoreFactory} used to access stores
      * @param transactionInfo the {@link TransactionInfo} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
      * @param payerKey the {@link Key} of the payer

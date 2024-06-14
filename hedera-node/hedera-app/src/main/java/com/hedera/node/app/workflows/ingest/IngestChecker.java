@@ -112,6 +112,7 @@ public final class IngestChecker {
      * @param dispatcher the {@link TransactionDispatcher} that dispatches transactions
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
+     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject

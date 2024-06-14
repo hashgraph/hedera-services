@@ -49,18 +49,20 @@ public class FeeContextImpl implements FeeContext {
     private final Authorizer authorizer;
     private final int numSignatures;
     private final HederaState state;
-    private ExchangeRateManager exchangeRateManager;
+    private final ExchangeRateManager exchangeRateManager;
     private ExchangeRateInfo exchangeRateInfo;
 
     /**
      * Constructor of {@code FeeContextImpl}
      *
+     * @param state current state
      * @param consensusTime the approximation of consensus time used during ingest
      * @param txInfo the {@link TransactionInfo} of the transaction
      * @param payerKey the {@link Key} of the payer
      * @param payerId the {@link AccountID} of the payer
      * @param feeManager the {@link FeeManager} to generate a {@link FeeCalculator}
      * @param storeFactory the {@link ReadableStoreFactory} to create readable stores
+     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param numSignatures the number of signatures in the transaction
      */
     public FeeContextImpl(
