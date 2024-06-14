@@ -43,7 +43,9 @@ public class StreamedRound implements Round {
             final long roundNumber) {
         this.events = events;
         this.roundNumber = roundNumber;
-        events.stream().map(DetailedConsensusEvent::getGossipEvent).forEach(GossipEvent::setConsensusTimestampsOnPayloads);
+        events.stream()
+                .map(DetailedConsensusEvent::getGossipEvent)
+                .forEach(GossipEvent::setConsensusTimestampsOnPayloads);
         consensusTimestamp = events.get(events.size() - 1).getGossipEvent().getConsensusTimestamp();
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
     }

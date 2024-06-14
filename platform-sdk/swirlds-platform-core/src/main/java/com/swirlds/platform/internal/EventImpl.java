@@ -231,7 +231,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     //////////////////////////////////////////
     // ConsensusData
     //////////////////////////////////////////
-    
+
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
     }

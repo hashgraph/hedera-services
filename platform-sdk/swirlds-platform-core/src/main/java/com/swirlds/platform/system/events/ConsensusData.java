@@ -57,9 +57,7 @@ public class ConsensusData {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("roundReceived", roundReceived)
-                .toString();
+        return new ToStringBuilder(this).append("roundReceived", roundReceived).toString();
     }
 
     public long getRoundReceived() {

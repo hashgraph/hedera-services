@@ -349,7 +349,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Consens
      * Set the consensus timestamp on the payload wrappers for this event. This must be done after the consensus time is
      * set for this event.
      */
-    public void setConsensusTimestampsOnPayloads(){
+    public void setConsensusTimestampsOnPayloads() {
         if (this.consensusData == NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data must be set");
         }
