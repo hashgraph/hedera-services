@@ -19,12 +19,10 @@ package com.swirlds.platform.internal;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventMetadata;
-import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -153,21 +151,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     }
 
     /**
-     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all consensus
-     * data is set.
-     */
-    public void consensusReached() {
-        final ConsensusTransactionImpl[] transactions = getTransactions();
-        if (transactions == null) {
-            return;
-        }
-
-        for (int i = 0; i < transactions.length; i++) {
-            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(baseEvent, i));
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -216,13 +199,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
      */
     public boolean hasOtherParent() {
         return !baseEvent.getOtherParents().isEmpty();
-    }
-
-    /**
-     * @return Consensus data calculated for an event
-     */
-    public ConsensusData getConsensusData() {
-        return consensusData;
     }
 
     //////////////////////////////////////////

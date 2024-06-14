@@ -191,7 +191,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         try {
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final EventImpl event : consensusRound.getConsensusEvents()) {
-                event.consensusReached();
+                event.getBaseEvent().setConsensusTimestampsOnPayloads();
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);

@@ -29,7 +29,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -178,7 +177,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     @Nullable
     @Override
     public SoftwareVersion getSoftwareVersion() {
-        return null;
+        return gossipEvent.getSoftwareVersion();
     }
 
     /**

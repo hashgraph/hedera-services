@@ -29,10 +29,6 @@ public class IndexedEvent extends EventImpl {
 
     private long generatorIndex;
 
-    private static final long CLASS_ID = 0x284d35dc6f9265d0L;
-
-    public IndexedEvent() {}
-
     public IndexedEvent(final GossipEvent gossipEvent) {
         super(gossipEvent);
     }

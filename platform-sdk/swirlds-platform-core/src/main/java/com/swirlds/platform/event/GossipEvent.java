@@ -33,6 +33,7 @@ import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -342,6 +343,24 @@ public class GossipEvent extends AbstractSerializableHashable implements Consens
         Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
         this.consensusData = consensusData;
         this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
+    }
+
+    /**
+     * Set the consensus timestamp on the payload wrappers for this event. This must be done after the consensus time is
+     * set for this event.
+     */
+    public void setConsensusTimestampsOnPayloads(){
+        if (this.consensusData == NO_CONSENSUS) {
+            throw new IllegalStateException("Consensus data must be set");
+        }
+        final ConsensusTransactionImpl[] transactions = hashedData.getTransactions();
+        if (transactions == null) {
+            return;
+        }
+
+        for (int i = 0; i < transactions.length; i++) {
+            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
+        }
     }
 
     /**
