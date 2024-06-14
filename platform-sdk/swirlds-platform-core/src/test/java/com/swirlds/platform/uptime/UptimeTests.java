@@ -135,13 +135,7 @@ class UptimeTests {
         final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
         final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
         final List<EventImpl> firstRoundEvents = generateEvents(
-                random,
-                time,
-                Duration.ofSeconds(1),
-                addressBook,
-                eventCount,
-                noFirstRoundEvents,
-                noFirstRoundJudges);
+                random, time, Duration.ofSeconds(1), addressBook, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
         for (final Address address : addressBook) {
@@ -194,13 +188,7 @@ class UptimeTests {
         final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(2));
         final Set<NodeId> noSecondRoundJudges = Set.of(addressBook.getNodeId(7), addressBook.getNodeId(9));
         final List<EventImpl> secondRoundEvents = generateEvents(
-                random,
-                time,
-                Duration.ofSeconds(1),
-                addressBook,
-                eventCount,
-                noSecondRoundEvents,
-                noSecondRoundJudges);
+                random, time, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, noSecondRoundJudges);
 
         final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
         uptimeTracker.handleRound(roundTwo, nextRoundUptimeData, addressBook);
@@ -271,13 +259,7 @@ class UptimeTests {
         final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
         final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
         final List<EventImpl> firstRoundEvents = generateEvents(
-                random,
-                time,
-                Duration.ofSeconds(1),
-                addressBook,
-                eventCount,
-                noFirstRoundEvents,
-                noFirstRoundJudges);
+                random, time, Duration.ofSeconds(1), addressBook, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
         for (final Address address : addressBook) {

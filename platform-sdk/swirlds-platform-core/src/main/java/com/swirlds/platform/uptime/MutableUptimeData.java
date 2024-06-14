@@ -17,8 +17,6 @@
 package com.swirlds.platform.uptime;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.UptimeData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
