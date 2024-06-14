@@ -185,7 +185,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                     .tokenAssociate(new Builder().account(account.accountId()).tokens(token.tokenId()));
             final var fees = handleContext.dispatchComputeFees(
                     syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
-            // TODO: use these fees
+            handleContext
+                    .feeAccumulator()
+                    .chargeNetworkFee(topLevelPayer, fees.nodeFee() + fees.networkFee() + fees.serviceFee());
+
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {

@@ -24,6 +24,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
+import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -41,6 +43,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -196,31 +200,39 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var exchangeRateInfo = feeContext.exchangeRateInfo();
-        if (exchangeRateInfo == null) {
-            throw new IllegalStateException("Exchange rate info is required for fee calculation");
-        }
+        requireNonNull(feeContext.configuration());
 
         final var body = feeContext.body();
         final var op = body.tokenAssociateOrThrow();
         final var calculator = feeContext.feeCalculator(DEFAULT);
+        final var accountId = op.accountOrThrow();
+        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+        final var account = readableAccountStore.getAccountById(accountId);
+        final var unlimitedAutoAssociations =
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
-        calculator.resetUsage();
-        // The first signature is free and is accounted in the base price, so we only need to add
-        // the price of the rest of the signatures.
-        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
-        final var baseFee = calculator.calculate();
-        final var newAssociationsCount = op.tokens().size();
+        if (unlimitedAutoAssociations) {
+            final var exchangeRateInfo = feeContext.exchangeRateInfo();
 
-        final var associateInTinyCents = getFixedAssociatePriceInTinyCents();
-        final var associateInTinybars = getTinybarsFromTinyCents(
-                associateInTinyCents, exchangeRateInfo.activeRate(Instant.now())); // TODO: get the correct timestamp
+            calculator.resetUsage();
+            // The first signature is free and is accounted in the base price, so we only need to add
+            // the price of the rest of the signatures.
+            calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+            final var baseFee = calculator.calculate();
+            final var newAssociationsCount = op.tokens().size();
 
-        final var totalFee = baseFee.copyBuilder()
-                .networkFee(baseFee.networkFee() + newAssociationsCount * associateInTinybars)
-                .build();
+            final var associateInTinyCents = getFixedAssociatePriceInTinyCents();
+            final var associateInTinybars = getTinybarsFromTinyCents(
+                    associateInTinyCents,
+                    exchangeRateInfo.activeRate(Instant.now())); // TODO: get the correct timestamp
 
-        return totalFee;
+            return baseFee.copyBuilder()
+                    .networkFee(baseFee.networkFee() + newAssociationsCount * associateInTinybars)
+                    .build();
+        }
+
+        return calculator.legacyCalculate(sigValueObj ->
+                new TokenAssociateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, account));
     }
 
     private long getFixedAssociatePriceInTinyCents() {
