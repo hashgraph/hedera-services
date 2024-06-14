@@ -16,9 +16,11 @@
 
 package com.hedera.services.bdd.suites;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
 import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -53,6 +55,7 @@ public abstract class HapiSuite {
     public static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
     public static final String EVM_VERSION_046 = "v0.46";
     public static final String EVM_VERSION_050 = "v0.50";
+    public static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
     protected static String ALICE = "ALICE";
     protected static String BOB = "BOB";
     protected static String CAROL = "CAROL";
@@ -104,7 +107,7 @@ public abstract class HapiSuite {
             .build();
     private static final int BYTES_PER_KB = 1024;
     public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
     // Useful for testing overflow scenarios when an ERC-20/721 ABI specifies
     // a uint256, but a valid value on Hedera will be an 8-byte long only
     public static final BigInteger MAX_UINT256_VALUE =

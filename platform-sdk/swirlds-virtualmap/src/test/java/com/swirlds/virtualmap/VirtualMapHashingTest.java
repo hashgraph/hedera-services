@@ -363,6 +363,74 @@ class VirtualMapHashingTest {
         map.getRoot().fullLeafRehashIfNecessary();
     }
 
+    @Test
+    @DisplayName("Remove all but one elements and rehash")
+    void removeLeafTwo() {
+        VirtualMap<TestKey, TestValue> map = createMap();
+
+        try {
+            map.put(new TestKey(1), new TestValue("a"));
+            map.put(new TestKey(2), new TestValue("b"));
+
+            VirtualMap<TestKey, TestValue> copy = map.copy();
+            final Hash hash1 = map.getRight().getHash(); // virtual root node hash
+            map.release();
+            map = copy;
+
+            // Remove the second leaf, it must affect the root hash
+            map.remove(new TestKey(2));
+
+            copy = map.copy();
+            final Hash hash2 = map.getRight().getHash(); // virtual root node hash
+            map.release();
+            map = copy;
+
+            assertNotEquals(hash1, hash2, "Hash must be changed");
+
+            // Remove the last leaf, it must also change the hash
+            map.remove(new TestKey(1));
+
+            copy = map.copy();
+            final Hash hash3 = map.getRight().getHash(); // virtual root node hash
+            map.release();
+            map = copy;
+
+            assertNotEquals(hash2, hash3, "Hash must be changed");
+
+            // Now check the other order: remove leaf 1 first, then leaf 2
+
+            map.put(new TestKey(1), new TestValue("a"));
+            map.put(new TestKey(2), new TestValue("b"));
+
+            copy = map.copy();
+            final Hash hash4 = map.getRight().getHash(); // virtual root node hash
+            map.release();
+            map = copy;
+
+            // Remove the first leaf, it must affect the root hash
+            map.remove(new TestKey(1));
+
+            copy = map.copy();
+            final Hash hash5 = map.getRight().getHash(); // virtual root node hash
+            map.release();
+            map = copy;
+
+            assertNotEquals(hash4, hash5, "Hash must be changed");
+
+            // Remove the last leaf, it must also change the hash
+            map.remove(new TestKey(2));
+
+            copy = map.copy();
+            final Hash hash6 = map.getRight().getHash(); // virtual root node hash
+            map.release();
+            map = copy;
+
+            assertNotEquals(hash5, hash6, "Hash must be changed");
+        } finally {
+            map.release();
+        }
+    }
+
     private static void doFullRehash(VirtualRootNode<TestKey, TestValue> root) {
         root.setImmutable(true);
         root.getCache().seal();

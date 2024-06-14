@@ -18,9 +18,9 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Set;

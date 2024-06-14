@@ -30,7 +30,8 @@ public interface StoreMetricsService {
         FILE,
         SLOT_STORAGE,
         CONTRACT,
-        SCHEDULE
+        SCHEDULE,
+        NODE
     }
 
     StoreMetrics get(@NonNull StoreType storeType, long capacity);

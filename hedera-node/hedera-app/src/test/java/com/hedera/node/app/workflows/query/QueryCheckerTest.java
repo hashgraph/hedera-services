@@ -58,6 +58,7 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -259,7 +260,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
             doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, amount))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), false);
+                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), WorkflowCheck.NOT_INGEST);
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))

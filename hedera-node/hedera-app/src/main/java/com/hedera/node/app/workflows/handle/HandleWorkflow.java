@@ -42,6 +42,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.isGasThrottled;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
@@ -86,8 +87,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -128,6 +127,8 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -704,7 +705,6 @@ public class HandleWorkflow {
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
         try {
             transactionFinalizer.finalizeParentRecord(
-                    payer,
                     tokenServiceContext,
                     functionality,
                     extraRewardReceivers(txBody, functionality, recordBuilder),
@@ -948,7 +948,7 @@ public class HandleWorkflow {
 
         // Check the status and solvency of the payer (assuming their signature is valid)
         try {
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees, false);
+            solvencyPreCheck.checkSolvency(txInfo, payer, fees, NOT_INGEST);
         } catch (final InsufficientServiceFeeException e) {
             return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode(), fees);
         } catch (final InsufficientNonFeeDebitsException e) {

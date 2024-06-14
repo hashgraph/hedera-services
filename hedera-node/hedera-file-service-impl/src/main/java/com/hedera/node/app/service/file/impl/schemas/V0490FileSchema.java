@@ -50,10 +50,6 @@ import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -63,7 +59,11 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -240,16 +240,17 @@ public class V0490FileSchema extends Schema {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         for (final var nodeInfo : networkInfo.addressBook()) {
             nodeAddresses.add(NodeAddress.newBuilder()
-                    .ipAddress(Bytes.wrap(nodeInfo.externalHostName()))
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     .nodeId(nodeInfo.nodeId())
-                    .stake(nodeInfo.stake())
-                    .memo(Bytes.wrap(nodeInfo.memo()))
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
-                            .port(nodeInfo.externalPort())
-                            .build())
-                    .nodeAccountId(nodeInfo.accountId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
+                    .serviceEndpoint(
+                            // we really don't have grpc proxy name and port for now. Temporary values are set.
+                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
+                            // here.
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                                    .port(1)
+                                    .build())
                     .build());
         }
 
@@ -282,7 +283,26 @@ public class V0490FileSchema extends Schema {
                         .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
 
-        // Create the node details
+        // Create the node details for file 102,  their fields are different from 101, addressBook
+        final var nodeDetail = new ArrayList<NodeAddress>();
+        for (final var nodeInfo : networkInfo.addressBook()) {
+            nodeDetail.add(NodeAddress.newBuilder()
+                    .stake(nodeInfo.stake())
+                    .nodeAccountId(nodeInfo.accountId())
+                    .nodeId(nodeInfo.nodeId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    // we really don't have grpc proxy name and port for now.Temporary values are set.
+                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
+                    .serviceEndpoint(ServiceEndpoint.newBuilder()
+                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                            .port(1)
+                            .build())
+                    .build());
+        }
+
+        final var nodeDetails =
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
+        final var nodeDetailsProto = NodeAddressBook.PROTOBUF.toBytes(nodeDetails);
         final var nodeInfoFileNum = filesConfig.nodeDetails();
         final var nodeInfoFileId = FileID.newBuilder()
                 .shardNum(hederaConfig.shard())
@@ -294,7 +314,7 @@ public class V0490FileSchema extends Schema {
         files.put(
                 nodeInfoFileId,
                 File.newBuilder()
-                        .contents(nodeAddressBookProto)
+                        .contents(nodeDetailsProto)
                         .fileId(nodeInfoFileId)
                         .keys(masterKey)
                         .expirationSecond(bootstrapConfig.systemEntityExpiry())

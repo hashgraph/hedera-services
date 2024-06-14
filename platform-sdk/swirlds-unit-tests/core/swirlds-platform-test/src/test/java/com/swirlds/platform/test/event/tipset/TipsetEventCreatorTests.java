@@ -45,7 +45,6 @@ import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
-import com.swirlds.platform.event.creation.tipset.TipsetUtils;
 import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -166,7 +165,7 @@ class TipsetEventCreatorTests {
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
             for (final EventImpl event : events.values()) {
-                if (event.getHashedData().getHash().equals(newEvent.getHash())) {
+                if (event.getBaseEvent().getHash().equals(newEvent.getHash())) {
                     // comparing to self
                     continue;
                 }
@@ -193,7 +192,7 @@ class TipsetEventCreatorTests {
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getTransactions().length);
+            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getPayloadCount());
             final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
             assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }
@@ -236,10 +235,7 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final BaseEventHashedData event) {
 
-        eventCreators
-                .get(event.getCreatorId())
-                .tipsetTracker
-                .addEvent(event.getDescriptor(), TipsetUtils.getParentDescriptors(event));
+        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
 
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
@@ -260,7 +256,7 @@ class TipsetEventCreatorTests {
             eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(),
-                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent().getHashedData()));
+                    eventImpl.getBaseEvent().getAllParents());
         }
     }
 

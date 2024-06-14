@@ -46,7 +46,6 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +76,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(
-            @Nullable final AccountID payer,
             @NonNull final FinalizeContext context,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Set<AccountID> explicitRewardReceivers,
@@ -115,7 +113,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         } catch (HandleException e) {
             if (e.getStatus() == FAIL_INVALID) {
                 logHbarFinalizationFailInvalid(
-                        payer,
                         context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class),
                         writableAccountStore);
             }
@@ -160,18 +157,16 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     // invoke logger parameters conditionally
     @SuppressWarnings("java:S2629")
     private void logHbarFinalizationFailInvalid(
-            @Nullable final AccountID payerId,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final WritableAccountStore accountStore) {
         logger.error(
                 """
                         Non-zero net hbar change when handling body
                         {}
-                        with payer {} and fee {}; original/modified accounts claimed to be:
+                        with fee {}; original/modified accounts claimed to be:
                         {}
                         """,
                 recordBuilder.transactionBody(),
-                payerId,
                 recordBuilder.transactionFee(),
                 accountStore.modifiedAccountsInState().stream()
                         .map(accountId -> String.format(
