@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.schemas;
+package com.hedera.node.app.service.token.impl.test.schemas;
 
 import static com.hedera.hapi.util.HapiUtils.CONTRACT_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;

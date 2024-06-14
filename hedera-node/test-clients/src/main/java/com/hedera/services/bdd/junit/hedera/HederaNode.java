@@ -60,18 +60,12 @@ public interface HederaNode {
     AccountID getAccountId();
 
     /**
-     * Gets the path to the node's record stream.
+     * Gets the path to a external file or directory used by the node.
      *
-     * @return the path to the node's record stream
+     * @param path the external path to get
+     * @return the requested external path
      */
-    Path getRecordStreamPath();
-
-    /**
-     * Gets the path to the node's application log.
-     *
-     * @return the path to the node's application log
-     */
-    Path getApplicationLogPath();
+    Path getExternalPath(@NonNull ExternalPath path);
 
     /**
      * Initializes the working directory for the node. Must be called before the node is started.

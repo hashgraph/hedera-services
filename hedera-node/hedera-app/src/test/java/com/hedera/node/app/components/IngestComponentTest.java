@@ -31,11 +31,9 @@ import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
 import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
@@ -98,12 +96,10 @@ class IngestComponentTest {
                         0));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var genesisRecordBuilder = new GenesisRecordsConsensusHook();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .bootstrapProps(new BootstrapProperties())
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
                 .self(selfNodeInfo)
@@ -111,7 +107,6 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
-                .genesisRecordsConsensusHook(genesisRecordBuilder)
                 .softwareVersion(mock(HederaSoftwareVersion.class))
                 .build();
 

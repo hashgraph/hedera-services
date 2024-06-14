@@ -31,14 +31,15 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,10 +51,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class SyntheticRecordsGeneratorTest {
+final class SyntheticAccountCreatorTest {
 
     @Mock
-    private GenesisRecordsBuilder genesisRecordsBuilder;
+    private Consumer<SortedSet<Account>> systemAccounts;
+
+    @Mock
+    private Consumer<SortedSet<Account>> stakingAccounts;
+
+    @Mock
+    private Consumer<SortedSet<Account>> miscAccounts;
+
+    @Mock
+    private Consumer<SortedSet<Account>> treasuryClones;
+
+    @Mock
+    private Consumer<SortedSet<Account>> blocklistAccounts;
 
     @Captor
     private ArgumentCaptor<SortedSet<Account>> sysAcctRcdsCaptor;
@@ -71,19 +84,22 @@ final class SyntheticRecordsGeneratorTest {
     private ArgumentCaptor<SortedSet<Account>> blocklistAcctRcdsCaptor;
 
     private Configuration config;
+    private long firstUserEntityNum;
 
     @BeforeEach
     void setUp() {
         config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, true);
+        firstUserEntityNum = config.getConfigData(HederaConfig.class).firstUserEntity();
     }
 
     @Test
     void createsAllSyntheticRecords() {
-        final var subject = new SyntheticRecordsGenerator();
-        subject.createRecords(config, genesisRecordsBuilder);
+        final var subject = new SyntheticAccountCreator();
+        subject.generateSyntheticAccounts(
+                config, systemAccounts, stakingAccounts, treasuryClones, miscAccounts, blocklistAccounts);
 
         // Verify system records created
-        verify(genesisRecordsBuilder).systemAccounts(sysAcctRcdsCaptor.capture());
+        verify(systemAccounts).accept(sysAcctRcdsCaptor.capture());
         final var sysAcctRcdsResult = sysAcctRcdsCaptor.getValue();
         Assertions.assertThat(sysAcctRcdsResult)
                 .isNotNull()
@@ -97,7 +113,7 @@ final class SyntheticRecordsGeneratorTest {
         Assertions.assertThat(aggregateBalance).isEqualTo(EXPECTED_TREASURY_TINYBARS_BALANCE);
 
         // Verify staking records created
-        verify(genesisRecordsBuilder).stakingAccounts(stakingAcctRcdsCaptor.capture());
+        verify(stakingAccounts).accept(stakingAcctRcdsCaptor.capture());
         final var stakingAcctRcdsResult = stakingAcctRcdsCaptor.getValue();
         Assertions.assertThat(stakingAcctRcdsResult).isNotNull().hasSize(2).allSatisfy(this::verifyStakingSynthRecord);
         Assertions.assertThat(stakingAcctRcdsResult.stream()
@@ -107,7 +123,7 @@ final class SyntheticRecordsGeneratorTest {
                 .containsExactly(800L, 801L);
 
         // Verify multipurpose records created
-        verify(genesisRecordsBuilder).miscAccounts(multiuseAcctRcdsCaptor.capture());
+        verify(miscAccounts).accept(multiuseAcctRcdsCaptor.capture());
         final var multiuseAcctsResult = multiuseAcctRcdsCaptor.getValue();
         Assertions.assertThat(multiuseAcctsResult).isNotNull().hasSize(101).allSatisfy(this::verifyMultiUseSynthRecord);
         Assertions.assertThat(
@@ -115,7 +131,7 @@ final class SyntheticRecordsGeneratorTest {
                 .allMatch(acctNum -> 900 <= acctNum && acctNum <= 1000);
 
         // Verify treasury clone records created
-        verify(genesisRecordsBuilder).treasuryClones(treasuryCloneRcdsCaptor.capture());
+        verify(treasuryClones).accept(treasuryCloneRcdsCaptor.capture());
         final var treasuryCloneAcctsResult = treasuryCloneRcdsCaptor.getValue();
         Assertions.assertThat(treasuryCloneAcctsResult)
                 .isNotNull()
@@ -128,7 +144,7 @@ final class SyntheticRecordsGeneratorTest {
                         Arrays.contains(V0490TokenSchema.nonContractSystemNums(NUM_RESERVED_SYSTEM_ENTITIES), acctNum));
 
         // Verify blocklist records created
-        verify(genesisRecordsBuilder).blocklistAccounts(blocklistAcctRcdsCaptor.capture());
+        verify(blocklistAccounts).accept(blocklistAcctRcdsCaptor.capture());
         final var expectedBlocklistAcctRcdsSize = 6;
         final var blocklistAcctsResult = blocklistAcctRcdsCaptor.getValue();
         Assertions.assertThat(blocklistAcctsResult).isNotNull().hasSize(expectedBlocklistAcctRcdsSize);
@@ -138,7 +154,8 @@ final class SyntheticRecordsGeneratorTest {
             // These account ID numbers are placeholders until we can get a real entity ID assigned by the
             // EntityIdService (which happens later)
             final var placeholderAcctNum = acctRecord.accountId().accountNum().longValue();
-            Assertions.assertThat(placeholderAcctNum).isBetween(1L, (long) expectedBlocklistAcctRcdsSize);
+            Assertions.assertThat(placeholderAcctNum)
+                    .isBetween(firstUserEntityNum, firstUserEntityNum + expectedBlocklistAcctRcdsSize);
             Assertions.assertThat(acctRecord.receiverSigRequired()).isTrue();
             Assertions.assertThat(acctRecord.declineReward()).isTrue();
             Assertions.assertThat(acctRecord.deleted()).isFalse();
@@ -147,32 +164,34 @@ final class SyntheticRecordsGeneratorTest {
             Assertions.assertThat(acctRecord.smartContract()).isFalse();
             Assertions.assertThat(acctRecord.key()).isNotNull();
             Assertions.assertThat(acctRecord.alias())
-                    .isEqualTo(Bytes.fromHex(EVM_ADDRESSES[(int) placeholderAcctNum - 1]));
+                    .isEqualTo(Bytes.fromHex(EVM_ADDRESSES[(int) (placeholderAcctNum - firstUserEntityNum)]));
         }
     }
 
     @Test
     void blocklistNotEnabled() {
-        final var subject = new SyntheticRecordsGenerator();
+        final var subject = new SyntheticAccountCreator();
 
         config = buildConfig(DEFAULT_NUM_SYSTEM_ACCOUNTS, false);
 
-        subject.createRecords(config, genesisRecordsBuilder);
+        subject.generateSyntheticAccounts(
+                config, systemAccounts, stakingAccounts, treasuryClones, miscAccounts, blocklistAccounts);
 
         // No synthetic records should be created when the blocklist isn't enabled
-        verify(genesisRecordsBuilder).blocklistAccounts(Collections.emptySortedSet());
+        verify(blocklistAccounts).accept(Collections.emptySortedSet());
     }
 
     @Test
     void correctEntityIdsUsed() {
-        final var subject = new SyntheticRecordsGenerator();
-        subject.createRecords(config, genesisRecordsBuilder);
+        final var subject = new SyntheticAccountCreator();
+        subject.generateSyntheticAccounts(
+                config, systemAccounts, stakingAccounts, treasuryClones, miscAccounts, blocklistAccounts);
 
-        verify(genesisRecordsBuilder).systemAccounts(sysAcctRcdsCaptor.capture());
-        verify(genesisRecordsBuilder).stakingAccounts(stakingAcctRcdsCaptor.capture());
-        verify(genesisRecordsBuilder).treasuryClones(treasuryCloneRcdsCaptor.capture());
-        verify(genesisRecordsBuilder).miscAccounts(multiuseAcctRcdsCaptor.capture());
-        verify(genesisRecordsBuilder).blocklistAccounts(blocklistAcctRcdsCaptor.capture());
+        verify(systemAccounts).accept(sysAcctRcdsCaptor.capture());
+        verify(stakingAccounts).accept(stakingAcctRcdsCaptor.capture());
+        verify(treasuryClones).accept(treasuryCloneRcdsCaptor.capture());
+        verify(miscAccounts).accept(multiuseAcctRcdsCaptor.capture());
+        verify(blocklistAccounts).accept(blocklistAcctRcdsCaptor.capture());
         final var allSynthRcds = new TreeSet<>(ACCOUNT_COMPARATOR);
         allSynthRcds.addAll(sysAcctRcdsCaptor.getValue());
         allSynthRcds.addAll(stakingAcctRcdsCaptor.getValue());
