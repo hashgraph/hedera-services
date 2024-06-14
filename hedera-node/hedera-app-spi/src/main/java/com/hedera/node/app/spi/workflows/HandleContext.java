@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -41,10 +40,12 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -77,6 +78,11 @@ public interface HandleContext {
         CHILD,
         /** A transaction executed via the schedule service. */
         SCHEDULED
+    }
+
+    enum PrecedingTransactionCategory {
+        UNLIMITED_CHILD_RECORDS,
+        LIMITED_CHILD_RECORDS
     }
 
     /**
@@ -118,14 +124,6 @@ public interface HandleContext {
      */
     @NonNull
     BlockRecordInfo blockRecordInfo();
-
-    /**
-     * Getter for the payer key
-     *
-     * @return the payer key
-     */
-    @Nullable
-    Key payerKey();
 
     /**
      * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
@@ -415,37 +413,6 @@ public interface HandleContext {
     }
 
     /**
-     * Dispatches preceding transaction that can be reverted.
-     *
-     * <p>A reversible preceding transaction depends on the current transaction. That means if the user transaction
-     * fails, a reversible preceding transaction is automatically rolled back. The state changes introduced by a
-     * reversible preceding transaction are automatically committed together with the parent transaction.
-     *
-     * <p>This method can only be called by a {@link TransactionCategory#USER}-transaction and only as long as no state
-     * changes have been introduced by the user transaction (either by storing state or by calling a child
-     * transaction).
-     *
-     * <p>The provided {@link Predicate} callback will be called to verify simple keys when the child transaction calls
-     * any of the {@code verificationFor} methods.
-     *
-     * @param txBody             the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier           a {@link Predicate} that will be used to validate primitive keys
-     * @param syntheticPayer    the payer of the transaction
-     * @return the record builder of the transaction
-     * @throws NullPointerException     if {@code txBody} is {@code null}
-     * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
-     *                                  the record builder type is unknown to the app
-     * @throws IllegalStateException    if the current transaction has already introduced state changes
-     */
-    @NonNull
-    <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull TransactionBody txBody,
-            @NonNull Class<T> recordBuilderClass,
-            @NonNull Predicate<Key> verifier,
-            AccountID syntheticPayer);
-
-    /**
      * Dispatches preceding transaction that can be removed.
      *
      * <p>A removable preceding transaction depends on the current transaction. That means if the user transaction
@@ -475,28 +442,6 @@ public interface HandleContext {
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> verifier,
             AccountID syntheticPayer);
-
-    /**
-     * Dispatches a reversible preceding transaction that already has an ID.
-     *
-     * @param txBody            the {@link TransactionBody} of the transaction to dispatch
-     * @param recordBuilderClass the record builder class of the transaction
-     * @param verifier         a {@link Predicate} that will be used to validate primitive keys
-     * @return the record builder of the transaction
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the transaction body did not have an id
-     */
-    default <T> T dispatchReversiblePrecedingTransaction(
-            @NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass,
-            @NonNull final Predicate<Key> verifier) {
-        throwIfMissingPayerId(txBody);
-        return dispatchReversiblePrecedingTransaction(
-                txBody,
-                recordBuilderClass,
-                verifier,
-                txBody.transactionIDOrThrow().accountIDOrThrow());
-    }
 
     /**
      * Dispatches a child transaction.
@@ -627,19 +572,6 @@ public interface HandleContext {
     <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
-     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
      * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
      * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
      * rolled back.
@@ -709,11 +641,13 @@ public interface HandleContext {
     void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
 
     /**
-     * Returns whether the current transaction being processed was submitted by this node.
-     *
-     * @return true if the current transaction was submitted by this node
+     * Gets the pre-paid rewards for the current transaction. This can be non-empty for scheduled transactions.
+     * Since we use the parent record finalizer to finalize schedule transactions, we need to deduct any paid staking rewards
+     * already happened in the parent transaction.
+     * @return the paid rewards
      */
-    boolean isSelfSubmitted();
+    @NonNull
+    Map<AccountID, Long> dispatchPaidRewards();
 
     /**
      * A stack of savepoints.
@@ -759,11 +693,4 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
-
-    /**
-     * Returns the freeze time from state, if it is set.
-     * @return the freeze time, if it is set
-     */
-    @Nullable
-    Instant freezeTime();
 }

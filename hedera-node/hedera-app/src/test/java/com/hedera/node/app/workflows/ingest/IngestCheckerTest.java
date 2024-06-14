@@ -75,6 +75,7 @@ import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -417,7 +418,7 @@ class IngestCheckerTest extends AppTestBase {
             givenValidPayerSignature();
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), any(), eq(Boolean.TRUE));
+                    .checkSolvency(any(), any(), any(), eq(WorkflowCheck.INGEST));
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(InsufficientBalanceException.class)
@@ -432,7 +433,7 @@ class IngestCheckerTest extends AppTestBase {
             givenValidPayerSignature();
             doThrow(new RuntimeException("checkSolvency exception"))
                     .when(solvencyPreCheck)
-                    .checkSolvency(any(), any(), any(), eq(Boolean.TRUE));
+                    .checkSolvency(any(), any(), any(), eq(WorkflowCheck.INGEST));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

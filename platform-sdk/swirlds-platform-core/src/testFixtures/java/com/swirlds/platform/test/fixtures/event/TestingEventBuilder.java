@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import static com.swirlds.platform.system.events.EventConstants.BIRTH_ROUND_UNDEFINED;
+import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
@@ -35,10 +35,11 @@ import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Stream;
 
 /**
  * A builder for creating event instances for testing purposes.
@@ -103,11 +104,9 @@ public class TestingEventBuilder {
     private GossipEvent selfParent;
 
     /**
-     * The other parent of the event.
-     * <p>
-     * Future work: add support for multiple other parents.
+     * The other parents of the event.
      */
-    private GossipEvent otherParent;
+    private List<GossipEvent> otherParents;
 
     /**
      * Overrides the generation of the configured self parent.
@@ -304,15 +303,28 @@ public class TestingEventBuilder {
     }
 
     /**
-     * Set the other-parent of an event
+     * Set an other-parent of an event
      * <p>
-     * If not set, an other parent will NOT be generated: the output event will have a null other parent.
+     * If not set, no other-parent will be generated: the output event will have a no other-parents.
      *
      * @param otherParent the other-parent
      * @return this instance
      */
     public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
-        this.otherParent = otherParent;
+        this.otherParents = otherParent == null ? null : List.of(otherParent);
+        return this;
+    }
+
+    /**
+     * Set a list of other-parents of an event
+     * <p>
+     * If not set, no other-parents will be generated: the output event will have a no other-parents.
+     *
+     * @param otherParents the other-parents
+     * @return this instance
+     */
+    public @NonNull TestingEventBuilder setOtherParents(@NonNull final List<GossipEvent> otherParents) {
+        this.otherParents = otherParents;
         return this;
     }
 
@@ -480,11 +492,9 @@ public class TestingEventBuilder {
         }
 
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
-        final long birthRound =
-                birthRoundOverride == null ? parent.getHashedData().getBirthRound() : birthRoundOverride;
+        final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
-        return new EventDescriptor(
-                parent.getHashedData().getHash(), parent.getHashedData().getCreatorId(), generation, birthRound);
+        return new EventDescriptor(parent.getHash(), parent.getCreatorId(), generation, birthRound);
     }
 
     /**
@@ -499,7 +509,7 @@ public class TestingEventBuilder {
 
         if (creatorId == null) {
             if (selfParent != null) {
-                creatorId = selfParent.getHashedData().getCreatorId();
+                creatorId = selfParent.getCreatorId();
             } else {
                 creatorId = DEFAULT_CREATOR_ID;
             }
@@ -507,17 +517,20 @@ public class TestingEventBuilder {
 
         final EventDescriptor selfParentDescriptor =
                 createDescriptorFromParent(selfParent, selfParentGenerationOverride, selfParentBirthRoundOverride);
-        final EventDescriptor otherParentDescriptor =
-                createDescriptorFromParent(otherParent, otherParentGenerationOverride, otherParentBirthRoundOverride);
+        final List<EventDescriptor> otherParentDescriptors = Stream.ofNullable(otherParents)
+                .flatMap(List::stream)
+                .map(parent -> createDescriptorFromParent(
+                        parent, otherParentGenerationOverride, otherParentBirthRoundOverride))
+                .toList();
 
         if (this.birthRound == null) {
-            final long maxParentBirthRound = Math.max(
-                    selfParent == null
-                            ? BIRTH_ROUND_UNDEFINED
-                            : selfParent.getHashedData().getBirthRound(),
-                    otherParent == null
-                            ? BIRTH_ROUND_UNDEFINED
-                            : otherParent.getHashedData().getBirthRound());
+
+            final long maxParentBirthRound = Stream.concat(
+                            Stream.ofNullable(selfParent),
+                            Stream.ofNullable(otherParents).flatMap(List::stream))
+                    .mapToLong(GossipEvent::getBirthRound)
+                    .max()
+                    .orElse(MINIMUM_ROUND_CREATED);
 
             // randomly add between 0 and 2 to max parent birth round
             birthRound = maxParentBirthRound + random.nextLong(0, 3);
@@ -528,7 +541,7 @@ public class TestingEventBuilder {
                 timeCreated = DEFAULT_TIMESTAMP;
             } else {
                 // randomly add between 1 and 99 milliseconds to self parent time created
-                timeCreated = selfParent.getHashedData().getTimeCreated().plusMillis(random.nextLong(1, 100));
+                timeCreated = selfParent.getTimeCreated().plusMillis(random.nextLong(1, 100));
             }
         }
 
@@ -540,19 +553,17 @@ public class TestingEventBuilder {
                 softwareVersion,
                 creatorId,
                 selfParentDescriptor,
-                // Future work: add support for multiple other parents
-                otherParentDescriptor == null
-                        ? Collections.emptyList()
-                        : Collections.singletonList(otherParentDescriptor),
+                otherParentDescriptors,
                 birthRound,
                 timeCreated,
                 transactions);
-        hashedData.setHash(RandomUtils.randomHash(random));
 
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
         final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
+
+        gossipEvent.setHash(RandomUtils.randomHash(random));
 
         if (consensusTimestamp != null || consensusOrder != null) {
             gossipEvent.setConsensusData(new EventConsensusData.Builder()

@@ -17,10 +17,7 @@
 package com.swirlds.platform.event.stale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
@@ -36,6 +33,7 @@ import com.swirlds.platform.event.resubmitter.DefaultTransactionResubmitter;
 import com.swirlds.platform.event.resubmitter.TransactionResubmitter;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +54,8 @@ class TransactionResubmitterTests {
                 .withConfiguration(configuration)
                 .build();
 
-        final long currentRound = randotron.nextLong(1, 1000);
+        // the round must be high enough to allow events to be too old
+        final long currentRound = randotron.nextLong(1000, 2000);
         final EventWindow eventWindow = new EventWindow(
                 currentRound,
                 1 /* ignored by resubmitter */,
@@ -95,8 +94,7 @@ class TransactionResubmitterTests {
                     systemTransactions.add(transaction);
                 }
             } else {
-                transaction = mock(ConsensusTransactionImpl.class);
-                when(transaction.isSystem()).thenReturn(false);
+                transaction = new SwirldTransaction(new byte[1]);
             }
             transactions[i] = transaction;
         }
@@ -107,7 +105,7 @@ class TransactionResubmitterTests {
         final List<ConsensusTransactionImpl> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(systemTransactions.size(), transactionsToResubmit.size());
         for (int i = 0; i < systemTransactions.size(); i++) {
-            assertSame(systemTransactions.get(i), transactionsToResubmit.get(i));
+            assertEquals(systemTransactions.get(i), transactionsToResubmit.get(i));
         }
     }
 
@@ -131,9 +129,7 @@ class TransactionResubmitterTests {
         final int transactionCount = randotron.nextInt(1, 100);
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
         for (int i = 0; i < transactionCount; i++) {
-            final ConsensusTransactionImpl transaction = mock(ConsensusTransactionImpl.class);
-            when(transaction.isSystem()).thenReturn(false);
-            transactions[i] = transaction;
+            transactions[i] = new SwirldTransaction(new byte[1]);
         }
 
         final GossipEvent event =

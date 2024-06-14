@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static java.lang.Boolean.FALSE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +59,6 @@ import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -93,6 +92,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -1671,7 +1671,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(solvencyPreCheck)
-                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(FALSE));
+                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(NOT_INGEST));
 
             // when
             workflow.handleRound(state, platformState, round);

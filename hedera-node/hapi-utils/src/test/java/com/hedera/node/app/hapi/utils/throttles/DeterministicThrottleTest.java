@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class DeterministicThrottleTest {
@@ -142,6 +143,7 @@ class DeterministicThrottleTest {
     }
 
     @Test
+    @Disabled("Test is flaky. See https://github.com/hashgraph/hedera-services/issues/13667")
     void throttlesWithinPermissibleTolerance() throws InterruptedException {
         final long mtps = 123_456L;
         final var subject = DeterministicThrottle.withMtps(mtps);

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -41,7 +42,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -106,6 +106,12 @@ public class ProtectedFilesUpdateSuite {
     final Stream<DynamicTest> account2CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(
                 GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, TARGET_MEMO, REPLACE_MEMO));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> account2CanUpdateAddressBookAccount() {
+        return specialAccountCanUpdateSpecialFile(
+                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook2(contents, TARGET_MEMO, REPLACE_MEMO));
     }
 
     @HapiTest
@@ -305,10 +311,39 @@ public class ProtectedFilesUpdateSuite {
                 node.setNodeId(nodeId++);
                 r.nextBytes(randCertHash);
                 node.setNodeCertHash(ByteString.copyFrom(randCertHash));
-                node.setNodeAccountId(
-                        HapiPropertySource.asAccount(new String(node.getMemo().toByteArray())));
+                node.setNodeAccountId(node.getNodeAccountId());
                 if (new String(node.getMemo().toByteArray()).equals(targetMemo)) {
                     node.setMemo(ByteString.copyFrom(replaceMemo.getBytes()));
+                }
+            }
+            var newBook = builder.build();
+            var bookJson = mapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(AddressBookPojo.addressBookFrom(newBook));
+            log.info("New address book w/ extended bio: {}", bookJson);
+            return builder.build().toByteArray();
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Basic address book could not be parsed", e);
+            throw new AssertionError("Unparseable address book!");
+        } catch (JsonProcessingException e) {
+            log.error("Extended address book could not be serialized", e);
+            throw new AssertionError("Unserializable address book!");
+        }
+    }
+
+    private byte[] extendedBioAddressBook2(byte[] contents, String targetAccount, String replaceAccount) {
+        var r = new SplittableRandom();
+        try {
+            var book = NodeAddressBook.parseFrom(contents);
+            var builder = book.toBuilder();
+            byte[] randCertHash = new byte[32];
+            long nodeId = 0;
+            for (NodeAddress.Builder node : builder.getNodeAddressBuilderList()) {
+                node.setNodeId(nodeId++);
+                r.nextBytes(randCertHash);
+                node.setNodeCertHash(ByteString.copyFrom(randCertHash));
+                node.setNodeAccountId(node.getNodeAccountId());
+                if (node.getNodeAccountId().equals(asAccount(targetAccount))) {
+                    node.setNodeAccountId(asAccount(replaceAccount));
                 }
             }
             var newBook = builder.build();

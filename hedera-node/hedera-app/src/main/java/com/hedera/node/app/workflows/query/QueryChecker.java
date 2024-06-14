@@ -43,6 +43,7 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -133,7 +134,7 @@ public class QueryChecker {
 
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
-        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), false);
+        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), WorkflowCheck.NOT_INGEST);
 
         if (transfers.isEmpty()) {
             throw new PreCheckException(INVALID_ACCOUNT_AMOUNTS);

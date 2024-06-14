@@ -31,7 +31,6 @@ import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
@@ -112,7 +111,6 @@ public class EventImpl extends EventMetadata
             final EventImpl otherParent) {
         super(selfParent, otherParent);
         Objects.requireNonNull(baseEvent, "baseEvent");
-        Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
         Objects.requireNonNull(baseEvent.getSignature(), "signature");
         Objects.requireNonNull(consensusData, "consensusData");
 
@@ -304,10 +302,21 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * @return The hashed part of a base event
+     * Check if the event has a self parent.
+     *
+     * @return true if the event has a self parent
      */
-    public BaseEventHashedData getHashedData() {
-        return baseEvent.getHashedData();
+    public boolean hasSelfParent() {
+        return baseEvent.getSelfParent() != null;
+    }
+
+    /**
+     * Check if the event has other parents.
+     *
+     * @return true if the event has other parents
+     */
+    public boolean hasOtherParent() {
+        return !baseEvent.getOtherParents().isEmpty();
     }
 
     /**
@@ -326,23 +335,11 @@ public class EventImpl extends EventMetadata
     //////////////////////////////////////////
 
     public Instant getTimeCreated() {
-        return baseEvent.getHashedData().getTimeCreated();
-    }
-
-    public long getOtherParentGen() {
-        return baseEvent.getHashedData().getOtherParentGen();
-    }
-
-    public Hash getSelfParentHash() {
-        return baseEvent.getHashedData().getSelfParentHash();
-    }
-
-    public Hash getOtherParentHash() {
-        return baseEvent.getHashedData().getOtherParentHash();
+        return baseEvent.getTimeCreated();
     }
 
     public Hash getBaseHash() {
-        return baseEvent.getHashedData().getHash();
+        return baseEvent.getHash();
     }
 
     /**
@@ -407,7 +404,7 @@ public class EventImpl extends EventMetadata
      * @return the generation of this event
      */
     public long getGeneration() {
-        return baseEvent.getHashedData().getGeneration();
+        return baseEvent.getGeneration();
     }
 
     /**
@@ -416,7 +413,7 @@ public class EventImpl extends EventMetadata
      * @return the birth round of this event
      */
     public long getBirthRound() {
-        return baseEvent.getHashedData().getBirthRound();
+        return baseEvent.getBirthRound();
     }
 
     /**
@@ -425,7 +422,7 @@ public class EventImpl extends EventMetadata
     @Override
     @Nullable
     public SoftwareVersion getSoftwareVersion() {
-        return baseEvent.getHashedData().getSoftwareVersion();
+        return baseEvent.getSoftwareVersion();
     }
 
     /**
@@ -434,7 +431,7 @@ public class EventImpl extends EventMetadata
     @Override
     @NonNull
     public NodeId getCreatorId() {
-        return baseEvent.getHashedData().getCreatorId();
+        return baseEvent.getCreatorId();
     }
 
     /**
@@ -460,7 +457,7 @@ public class EventImpl extends EventMetadata
      * @return true iff this event has no transactions
      */
     public boolean isEmpty() {
-        return getTransactions() == null || getTransactions().length == 0;
+        return baseEvent.getPayloadCount() == 0;
     }
 
     @Override

@@ -36,6 +36,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -93,8 +94,8 @@ class DefaultTransactionHandlerTests {
     }
 
     private static SwirldStateManager mockSwirldStateManager(@NonNull final PlatformState platformState) {
-        final State consensusState = mock(State.class);
-        final State stateForSigning = mock(State.class);
+        final MerkleRoot consensusState = mock(State.class);
+        final MerkleRoot stateForSigning = mock(State.class);
         when(consensusState.getPlatformState()).thenReturn(platformState);
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
         when(swirldStateManager.getConsensusState()).thenReturn(consensusState);
@@ -104,14 +105,14 @@ class DefaultTransactionHandlerTests {
     }
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
-        assertTrue(event.getTransactions().length > 0, "event should have transactions");
+        assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
         event.consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNotNull(
                         transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
-        assertTrue(event.getTransactions().length > 0, "event should have transactions");
+        assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
         event.consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNull(
                         transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
