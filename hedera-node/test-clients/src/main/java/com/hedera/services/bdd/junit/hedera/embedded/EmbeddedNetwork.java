@@ -125,4 +125,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public TargetNetworkType type() {
         return EMBEDDED_NETWORK;
     }
+
+    @Nullable
+    public EmbeddedHedera embeddedHedera() {
+        return embeddedHedera;
+    }
 }

@@ -189,7 +189,10 @@ public class EmbeddedHedera {
         } else {
             final var nodeId = requireNonNull(nodeIds.get(nodeAccountId), "Missing node account id");
             // Bypass ingest for any other node, but make a little noise to remind test author this happens
-            LOGGER.warn("Bypassing ingest checks for transaction to node {} ({})", nodeId, nodeAccountId);
+            LOGGER.warn(
+                    "Bypassing ingest checks for transaction to node{} (0.0.{})",
+                    nodeId,
+                    nodeAccountId.getAccountNum());
             platform.queue.add(new ToyEvent(nodeId, Instant.now(), new SwirldTransaction(transaction.toByteArray())));
             return OK_RESPONSE;
         }
@@ -510,6 +513,10 @@ public class EmbeddedHedera {
         public Instant getConsensusTimestamp() {
             return now;
         }
+    }
+
+    public FakeHederaState state() {
+        return state;
     }
 
     private boolean isFree(@NonNull final Query query) {
