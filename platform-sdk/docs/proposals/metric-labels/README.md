@@ -13,7 +13,7 @@ Why this proposal uses the name "metric labels" (like prometheus does) other lib
 ## Motivation
 
 Today the metrics module only supports the definition of metrics without adding custom labels.
-While each metric has a  hardcoded category, name, and nodeId no other custom information can be added.
+While each metric has a hardcoded category, name, and nodeId no other custom information can be added.
 This proposal suggests adding a new concept called "metric labels" to the metrics module and
 migration the `category`, `name`, and `nodeId` information to labels.
 While the category and name are defined as String values the nodeId is a class called `NodeId`.
