@@ -90,7 +90,9 @@ public class AutoCreateUtils {
     public static HapiSpecOperation[] createHollowAccountFrom(@NonNull final String key) {
         return createHollowAccountFrom(key, INITIAL_BALANCE * ONE_HBAR, ONE_HUNDRED_HBARS);
     }
-    public static HapiSpecOperation[] createHollowAccountFrom(@NonNull final String key, final long sponsorBalance, final long transferAmount) {
+
+    public static HapiSpecOperation[] createHollowAccountFrom(
+            @NonNull final String key, final long sponsorBalance, final long transferAmount) {
         return new HapiSpecOperation[] {
             cryptoCreate(LAZY_CREATE_SPONSOR).balance(sponsorBalance),
             cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -110,10 +112,12 @@ public class AutoCreateUtils {
                                 .memo(LAZY_MEMO));
 
                 // create a hollow account with the correct create1 address
-                final var create1Address = contractAddress(Address.wrap(Bytes.wrap(recoverAddressFromPubKey(ecdsaKey))), 0L);
+                final var create1Address =
+                        contractAddress(Address.wrap(Bytes.wrap(recoverAddressFromPubKey(ecdsaKey))), 0L);
                 final var create1ByteString = ByteString.copyFrom(create1Address.toArray());
 
-                final var op3 = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, create1ByteString, ONE_HUNDRED_HBARS))
+                final var op3 = cryptoTransfer(
+                                tinyBarsFromTo(LAZY_CREATE_SPONSOR, create1ByteString, ONE_HUNDRED_HBARS))
                         .hasKnownStatus(SUCCESS)
                         .via(TRANSFER_TXN_FOR_CREATE_1);
 
