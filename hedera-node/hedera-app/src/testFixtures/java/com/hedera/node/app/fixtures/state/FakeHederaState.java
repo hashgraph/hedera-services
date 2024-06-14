@@ -38,14 +38,18 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures. */
+/**
+ * A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures.
+ */
 public class FakeHederaState implements HederaState {
     // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
     private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
     private final Map<String, ReadableStates> readableStates = new ConcurrentHashMap<>();
     private final Map<String, WritableStates> writableStates = new ConcurrentHashMap<>();
 
-    /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
+    /**
+     * Adds to the service with the given name the {@link ReadableKVState} {@code states}
+     */
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         serviceStates.putAll(dataSources);
@@ -114,6 +118,17 @@ public class FakeHederaState implements HederaState {
                 }
             }
             return new MapWritableStates(data, () -> readableStates.remove(serviceName));
+        });
+    }
+
+    /**
+     * Commits all pending changes made to the states.
+     */
+    public void commit() {
+        writableStates.values().forEach(writableStates -> {
+            if (writableStates instanceof MapWritableStates mapWritableStates) {
+                mapWritableStates.commit();
+            }
         });
     }
 }

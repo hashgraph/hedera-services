@@ -59,6 +59,14 @@ sourceSets {
     create("yahcli")
 }
 
+tasks.register<JavaExec>("runTestClient") {
+    group = "build"
+    description = "Run a test client via -PtestClient=<Class>"
+
+    classpath = sourceSets.main.get().runtimeClasspath + files(tasks.jar)
+    mainClass = providers.gradleProperty("testClient")
+}
+
 val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
@@ -67,7 +75,8 @@ val ciCheckTagExpressions =
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
-        "hapiTestMisc" to "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)"
+        "hapiTestMisc" to
+            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED)"
     )
 
 tasks {
@@ -87,7 +96,7 @@ tasks.test {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "any()|none()"
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
             else "${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION"
         )
     }

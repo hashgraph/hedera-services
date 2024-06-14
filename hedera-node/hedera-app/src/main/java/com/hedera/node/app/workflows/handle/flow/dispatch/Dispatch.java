@@ -143,7 +143,7 @@ public interface Dispatch {
     PlatformState platformState();
 
     /**
-     *
+     * The pre-handle result for the transaction
      * @return
      */
     PreHandleResult preHandleResult();

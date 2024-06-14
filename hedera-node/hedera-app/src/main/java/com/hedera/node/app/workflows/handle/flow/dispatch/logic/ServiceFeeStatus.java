@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites;
+package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-/** Used in BDD suites to mark methods that, though returning `HapiSpec`, are not themselves test methods. */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface BddMethodIsNotATest {}
+public enum ServiceFeeStatus {
+    CAN_PAY_SERVICE_FEE,
+    UNABLE_TO_PAY_SERVICE_FEE
+}

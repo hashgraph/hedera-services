@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -31,6 +32,7 @@ import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
@@ -49,6 +51,11 @@ public class HapiSpecSetup {
 
     public static HapiPropertySource getDefaultNodeProps() {
         return defaultNodeProps;
+    }
+
+    public static String getDefaultProp(@NonNull final String property) {
+        requireNonNull(property);
+        return defaultNodeProps.get(property);
     }
 
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;

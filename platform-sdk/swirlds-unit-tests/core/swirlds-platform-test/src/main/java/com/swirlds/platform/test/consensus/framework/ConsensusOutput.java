@@ -112,8 +112,8 @@ public class ConsensusOutput implements Clearable {
     public @NonNull List<GossipEvent> sortedAddedEvents() {
         final List<GossipEvent> sortedEvents = new ArrayList<>(addedEvents);
         sortedEvents.sort(Comparator.comparingLong(GossipEvent::getGeneration)
-                .thenComparingLong(e -> e.getHashedData().getCreatorId().id())
-                .thenComparing(e -> e.getHashedData().getHash()));
+                .thenComparingLong(e -> e.getCreatorId().id())
+                .thenComparing(GossipEvent::getHash));
         return sortedEvents;
     }
 

@@ -80,6 +80,8 @@ public abstract class Schema implements Comparable<Schema> {
      * @param configuration The configuration to consult
      * @return A map of all states to be created. Possibly empty.
      */
+    @NonNull
+    @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate(@NonNull final Configuration configuration) {
         return statesToCreate();
     }

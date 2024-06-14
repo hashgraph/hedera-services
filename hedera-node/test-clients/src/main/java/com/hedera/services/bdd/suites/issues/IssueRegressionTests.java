@@ -21,6 +21,8 @@ import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -39,12 +41,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedQueryIds;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
@@ -56,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -184,7 +189,7 @@ public class IssueRegressionTests {
         return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
                 .given(
                         cryptoCreate("acct1").balance(initialBalance).logged().via("txnId1"),
-                        UtilVerbs.sleepFor(2000),
+                        sleepFor(2000),
                         cryptoCreate("acctWithDuplicateTxnId")
                                 .balance(initialBalance)
                                 .logged()
@@ -213,20 +218,29 @@ public class IssueRegressionTests {
     final Stream<DynamicTest> duplicatedTxnsSameTypeDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferentNodesDetected")
                 .given(
-                        // This is an unchecked submit in embedded mode so we can test
-                        // precheck of the default node in what comes next
-                        cryptoCreate("acct3").setNode("0.0.5").via("txnId1"),
-                        UtilVerbs.sleepFor(2000),
-                        cryptoCreate("acctWithDuplicateTxnId").txnId("txnId1").hasPrecheck(DUPLICATE_TRANSACTION))
-                .when()
-                .then(getTxnRecord("txnId1").logged());
+                        cryptoCreate("acct3").setNode("0.0.3").via("txnId1"),
+                        sleepFor(2000),
+                        cryptoCreate("acctWithDuplicateTxnId")
+                                .setNode("0.0.5")
+                                .txnId("txnId1")
+                                .hasPrecheck(DUPLICATE_TRANSACTION),
+                        uncheckedSubmit(cryptoCreate("acctWithDuplicateTxnId")
+                                        .setNode("0.0.5")
+                                        .txnId("txnId1"))
+                                .setNode("0.0.5"))
+                .when(sleepFor(2000))
+                .then(getTxnRecord("txnId1")
+                        .andAnyDuplicates()
+                        .assertingNothingAboutHashes()
+                        .hasPriority(recordWith().status(SUCCESS))
+                        .hasDuplicates(inOrder(recordWith().status(DUPLICATE_TRANSACTION))));
     }
 
     @HapiTest
     final Stream<DynamicTest> duplicatedTxnsDifferentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDifferentNodesDetected")
                 .given(
-                        cryptoCreate("acct4").via("txnId4"),
+                        cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),
                         newKeyNamed("key2"),
                         createTopic("topic2").setNode("0.0.5").submitKeyName("key2"))
                 .when(submitMessageTo("topic2")

@@ -1,10 +1,5 @@
 # IntelliJ quickstart
 
-## JVM
-
-OpenJDK17 is strongly recommended. You can [download it from IntelliJ](https://www.jetbrains.com/help/idea/sdk.html)
-if you don't have it already.
-
 ## Preliminaries
 
 Clone this repository:
@@ -15,63 +10,78 @@ git clone https://github.com/hashgraph/hedera-services.git
 
 From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
 
-Make sure you are using JDK17 as the project SDK:
+### (optional) IntelliJ plugins
+
+The following plugins add comfort features for working with certain parts of the code base:
+
+- [Android IntelliJ plugin](https://plugins.jetbrains.com/plugin/22989-android)
+  adds additional code navigation capabilities for Dagger2 annotated interfaces.
+- [JMH IntelliJ plugin](https://plugins.jetbrains.com/plugin/7529-jmh-java-microbenchmark-harness)
+  allows running selected JMH benchmarks directly from the IDE.
+
+## Configure the JDK used by Gradle
+
+The project is imported as a Gradle project. Before you can use all features reliably, make sure that Gradle is
+started with the JDK we use in the project, which currently is:
+**Eclipse Temurin, 21.0.1**
+
+You can use IntelliJ to download the JDK if you do not have it installed.
 
 <p>
-    <img src="assets/jdk-17.png"/>
+    <img src="./assets/gradle-jdk.png" />
 </p>
 
-Run the Gradle `assemble` task in the root project (for example, via the IntelliJ Gradle tool window).
 
-This will both,
-<ol>
-  <li>Build the <i>hedera-node/data/apps/HederaNode.jar</i>; and,
-  <li>Populate your <i>hedera-node/data/config</i> directory with 
-  dev-appropriate versions of the <i>application.properties</i>,
-  <i>api-permission.properties</i>, and <i>node.properties</i> 
-  files that are used to bootstrap a new Hedera Services network.
-  (To read more about how properties are sourced in Services, 
-   please see [here](./services-configuration.md).)
-</ol>
+## Reload Project with Gradle
 
-## Starting a local single-node network
+After everything is configured, and everytime you change something in the project setup, you should press the
+**Reload All Gradle project** in IntelliJ.
 
-Now browse to `com.hedera.node.app.ServicesMain`. Its
-`main` method starts a single node network of Hedera Service by
-calling `com.swirlds.platform.Browser#main`, which is the
-entrypoint to bootstrap the Platform app named by the
-[_config.txt_](../hedera-node/config.txt) in the working
-directory.
-
-Run `ServicesMain#main` with an IntelliJ configuration whose working
-directory is the _hedera-node/_ directory of your clone of this repo:
+Changes to the project setup include,
+- Changing `build.gradle.kts` files
+- Changing dependencies in `src/main/java/module-info.java` files
+- Changing build configuration in `gradle/plugins/src/main/kotlin`
 
 <p>
-    <img src="./assets/node-config.png" height="518" width="800" />
+    <img src="./assets/gradle-reload.png" />
 </p>
 
-You can also run from Gradle below:
+See [gradle-quickstart](gradle-quickstart.md) for more details on modifying the project setup.
+
+## Build, test, run through Gradle tasks
+
+You can run all tasks described in [gradle-quickstart](gradle-quickstart.md) from the Gradle tool window.
 
 <p>
-    <img src="./assets/gradle-run.png" height="214" width="415" />
+    <img src="./assets/gradle-tasks.png" />
 </p>
 
-You will see a single black pane appear, similar to:
+## Running a services instance or example apps
 
-<p>
-    <img src="./assets/node-startup.png" height="150" width="600"/>
-</p>
+### Starting a local single-node network
 
-This node's name is "Alice" because of [Line 26](../hedera-node/config.txt#L26)
+You can start the `ServicesMain` process via the `modrun` Gradle task. You will see an output like the following:
+
+```
+2024-04-25 11:00:26.066 INFO  169  NettyGrpcServerManager - Starting gRPC server on port 50211
+2024-04-25 11:00:26.118 INFO  292  NettyGrpcServerManager - Epoll not available, using NIO
+2024-04-25 11:00:26.172 INFO  172  NettyGrpcServerManager - gRPC server listening on port 50211
+2024-04-25 11:00:26.172 INFO  180  NettyGrpcServerManager - Starting TLS gRPC server on port 50212
+2024-04-25 11:00:26.172 INFO  292  NettyGrpcServerManager - Epoll not available, using NIO
+2024-04-25 11:00:26.172 WARN  325  NettyGrpcServerManager - Specified TLS cert 'hedera.crt' doesn't exist!
+2024-04-25 11:00:26.173 WARN  187  NettyGrpcServerManager - Could not start TLS server, will continue without it: hedera.crt
+```
+
+This node's name is "Alice" because of [Line 25](../hedera-node/config.txt#L25)
 in the _config.txt_ present in your working directory.
 
 Looking closer at _config.txt_, you can see you are running Hedera Services
-(and not some other app) because [Line 12](../hedera-node/config.txt#L12)
+(and not some other app) because [Line 11](../hedera-node/config.txt#L11)
 points to the JAR file you just built; and there are three nodes in your
 network because you specified "Bob" and "Carol" as well as "Alice".
 
 If multiple nodes Alice, Bob, and Carol are set up to run locally by
-uncommenting lines [27](../hedera-node/config.txt#L27) and [29](../hedera-node/config.txt#L29),
+uncommenting lines [26](../hedera-node/config.txt#L26) and [28](../hedera-node/config.txt#L28),
 they will all be running on your local machine; and
 communicating via the loopback interface. But each still has a private
 instance of the Platform, and keeps its own state, just as it would in a
@@ -90,19 +100,18 @@ Public: 0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92
 Private: 91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
 ```
 
-## Submitting transactions to your local network
+### Submitting transactions to your local network
 
 The _test-clients/_ directory in this repo contains a large number of
 end-to-end tests that Hedera engineering uses to validate the behavior of
 Hedera Services. Many of these tests are written in the style of a BDD
 specification. 
 
-Run `HelloWorldSpec#main` with an IntelliJ configuration whose working
-directory is the _test-clients/_ directory of your clone of this repo:
+Run `HelloWorldSpec` with the following Gradle command:
 
-<p>
-    <img src="./assets/spec-configuration.png" height="300" width="450" />
-</p>
+```
+./gradlew runTestClient -PtestClient=com.hedera.services.bdd.suites.crypto.HelloWorldSpec
+```
 
 Because [`node=localhost`](../test-clients/src/main/resource/spec-default.properties)
 in the _spec-default.properties_ controlling the `HelloWorldSpec` test, this
@@ -123,9 +132,9 @@ will run against your local network, culminating in logs similar to:
 keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties)
 under the `startupAccounts.path` key).
 
-## Stopping/restarting the network
+### Stopping/restarting the network
 
-Stop the `ServicesMain` process in IntelliJ to shut down the network.
+Stop the `ServicesMain` process by stopping the `modrun` Gradle run. 
 
 When you restart `ServicesMain`, the nodes will attempt to restore their
 state from the _hedera-node/data/saved_ directory tree.

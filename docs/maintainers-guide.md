@@ -2,38 +2,25 @@
 This document outlines the process and keynotes for the core maintainers of this repository .
 
 ## IntelliJ set up
+
 IntelliJ is used for most of the development lifecycle.
 Install IntelliJ using the [Jetbrains toolbox](https://www.jetbrains.com/lp/toolbox/), instead of installing directly.
 If you are on an M1/M2 chipset, select **.dmg (macOs Apple Silicon)**. Once you have the jetbrains toolbox installed,
 open it and Install **Intellij IDEA Ultimate**.
 
-## JDK
-Download JDK-17.0.3 for mac [here](https://adoptium.net/temurin/releases/).
-
 ## Cloning repository
+
 Clone this repository using:
 ```
 git clone git@github.com:hashgraph/hedera-services.git
 ```
 
-From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
-Make sure you are using JDK17 as the project SDK in IntelliJ.
+## Work with the project
 
-<p>
-    <img src="assets/jdk-17.png"/>
-</p>
-
-Follow [intellij-quickstart](intellij-quickstart.md) guide to run network on your local machine and submit transactions.
-
-## Gradle
-Once the repository is opened in IntelliJ, to build the project from Intellij, open the Gradle tool window and
-run `Tasks/build/assemble` to on the root project. If you are using command line use `./gradlew assemble`.
-
-Start using either the Gradle command line
-`(./gradlew spotlessApply)`  or set up the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
-in IntelliJ to format your code to follow Google Code Style.
+Follow the [gradle-quickstart.md](gradle-quickstart.md) and [intellij-quickstart.md](intellij-quickstart.md).
 
 ## GPG set up
+
 Every commit being pushed to the repository should be verified and [signed off](#dco-sign-off). So it is important to set up GPG keys before
 contributing to the repository.
 
@@ -52,6 +39,7 @@ Use the following tutorials to set up a GPG key.
   - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
 
 ## Development Model
+
 The Git Source Code Management(SCM) system treats branches as one of the fundamental constructs for supporting 
 concurrent development and assisting with merge conflict resolution. Due to the fundamental nature and flexibility 
 offered by Git branches, it is critical to have a consistent branching workflow in order to reduce merge conflicts and 
@@ -75,6 +63,7 @@ Note especially the roles of the `main` and `develop` branches:
 - `main` is a tightly-controlled branch that release engineering uses for final tags deployed to production.
 
 ### Creating issues on GitHub
+
 GitHub's [issues](https://github.com/hashgraph/hedera-services/issues) are used as the primary method for tracking
 project changes.
 Any actionable item that need to be addressed, should be associated to an issue in GitHub.
@@ -109,18 +98,21 @@ The release engineering team will handle the following:
 ### User Stories
 
 #### As a developer, I would like to create a branch to work on the feature for the upcoming release
+
 As per the development model, every developer should create a feature branch from `develop` branch for working on a
 change targeted for the current release. The created branch should follow [naming conventions](branch-naming-conventions.md).
 
 The `develop` branch should be up-to-date with all the features going into the next release.
 
 #### As a developer, I would like to create a branch to work on the feature NOT targeted for upcoming release
+
 As per the development model, every developer should create a feature branch to work from `develop` branch. The created
 branch should follow [naming conventions](branch-naming-conventions.md).
 But, the feature branch should NOT be merged into `develop` until the decision is made if the feature is going into upcoming
 release.
 
 #### As a developer, I would like to merge my feature branch or bug fix for the upcoming release
+
 Open a pull request (PR) from the feature branch to `develop` branch and add `hashgraph/hedera-services-team` as reviewers.
 
 Also add the following labels on the PR :
@@ -133,14 +125,14 @@ PR should be merged after an approving review and all the checks are passed.
 NOTE:
 1. Any feature that is not going into the upcoming release should stay in the feature branch and should not be merged
    to `develop`.
-2. Please use either the Gradle command line`(./gradlew spotlessApply)`  or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
+2. Please use either the Gradle command line `./gradlew qualityGate` or the [Google Java Format IntelliJ Plugin](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    to format your code to avoid failing checks in CI pipeline.
 3. The linked issues should be automatically closed when a PR is merged or closed manually.
 
 #### As a developer, I would like to merge a bugfix/hotfix after release branch is created
 
 Once the release branch is created, only bugfixes or hotfixes should be merged into release branch. To do that, create
-a `hotfix` from the `release` branch. The created branch should follow [naming conventions](#naming-convention-for-branches).
+a `hotfix` from the `release` branch. The created branch should follow [naming conventions](branch-naming-conventions.md).
 Once the fix is in the branch, open a PR to the release branch. Once the fix is merged into `release` branch, it should
 be cherry-picked into the `develop` branch.
 
@@ -151,6 +143,7 @@ the branch, create a PR targeting to `main`. Once bugfix is merged into `main`an
 back into the current `release` branch(if the release branch is still open), and also into `develop`.
 
 ### DCO Sign Off
+
 The sign-off is a simple line at the end of a commit message. All commits need to be signed.
 Your signature certifies that you wrote the code or otherwise have the right to contribute the material.
 First, read the [Developer Certificate of Origin (DCO)](https://developercertificate.org/) to fully understand its terms.
