@@ -29,7 +29,7 @@ import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -56,7 +56,7 @@ public class ReconnectLearner {
 
     private final Connection connection;
     private final AddressBook addressBook;
-    private final State currentState;
+    private final MerkleRoot currentState;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
@@ -88,7 +88,7 @@ public class ReconnectLearner {
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             @NonNull final AddressBook addressBook,
-            @NonNull final State currentState,
+            @NonNull final MerkleRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
@@ -190,7 +190,7 @@ public class ReconnectLearner {
                 new LearningSynchronizer(threadManager, in, out, currentState, connection::disconnect, reconnectConfig);
         synchronizer.synchronize();
 
-        final State state = (State) synchronizer.getRoot();
+        final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
                 platformContext,
                 CryptoStatic::verifySignature,

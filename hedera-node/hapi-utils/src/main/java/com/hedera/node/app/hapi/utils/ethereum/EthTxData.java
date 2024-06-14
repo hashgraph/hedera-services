@@ -42,7 +42,7 @@ public record EthTxData(
         byte[] maxGas,
         long gasLimit,
         byte[] to,
-        BigInteger value,
+        BigInteger value, // weibar, always positive - note that high-bit might be ON in RLP encoding: still positive
         byte[] callData,
         byte[] accessList,
         int recId,
@@ -50,7 +50,12 @@ public record EthTxData(
         byte[] r,
         byte[] s) {
 
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    /**
+     * A "wiebar" is 10⁻¹⁸ of an hbar.  The relationship is weibar : hbar as wei : ether.  Ethereum
+     * transactions come in with transfer amounts in units of weibar.  Elsewhere in Hedera we use
+     * units of tinybar (10⁻⁸ of an hbar), and here is the conversion factor:
+     */
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
 
     // Copy of constants from besu-native, remove when next besu-native publishes
     static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
@@ -159,7 +164,7 @@ public record EthTxData(
                     gasPrice,
                     Integers.toBytes(gasLimit),
                     to,
-                    value.toByteArray(),
+                    Integers.toBytesUnsigned(value),
                     callData,
                     v,
                     r,
@@ -172,7 +177,7 @@ public record EthTxData(
                             gasPrice,
                             Integers.toBytes(gasLimit),
                             to,
-                            value.toByteArray(),
+                            Integers.toBytesUnsigned(value),
                             callData,
                             List.of(/*accessList*/ ),
                             Integers.toBytes(recId),
@@ -187,7 +192,7 @@ public record EthTxData(
                             maxGas,
                             Integers.toBytes(gasLimit),
                             to,
-                            value.toByteArray(),
+                            Integers.toBytesUnsigned(value),
                             callData,
                             List.of(/*accessList*/ ),
                             Integers.toBytes(recId),
@@ -197,7 +202,7 @@ public record EthTxData(
     }
 
     public long getAmount() {
-        return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
+        return value.divide(WEIBARS_IN_A_TINYBAR).longValueExact();
     }
 
     public BigInteger getMaxGasAsBigInteger(final long tinybarGasPrice) {
@@ -219,12 +224,12 @@ public record EthTxData(
      * <p>Clearly the latter value would always be un-payable, since the transaction would cost more
      * than the entire hbar supply. We just do this to avoid integral overflow.
      *
-     * @param tinybarGasPrice the current gas price in tinybars
-     * @return the effective offered gas price
+     * @param weibarGasPrice the current gas price in weibars
+     * @return the effective offered gas price in tinybars
      */
-    public long effectiveOfferedGasPriceInTinybars(final long tinybarGasPrice) {
+    public long effectiveOfferedGasPriceInTinybars(final long weibarGasPrice) {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(getMaxGasAsBigInteger(tinybarGasPrice).divide(WEIBARS_TO_TINYBARS))
+                .min(getMaxGasAsBigInteger(weibarGasPrice).divide(WEIBARS_IN_A_TINYBAR))
                 .longValueExact();
     }
 
@@ -239,7 +244,7 @@ public record EthTxData(
      */
     public long effectiveTinybarValue() {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(value.divide(WEIBARS_TO_TINYBARS))
+                .min(value.divide(WEIBARS_IN_A_TINYBAR))
                 .longValueExact();
     }
 
@@ -391,7 +396,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(2).asLong(), // gasLimit
                 rlpList.get(3).data(), // to
-                toValue(rlpList.get(4).data()), // value
+                rlpList.get(4).asBigInt(), // value
                 rlpList.get(5).data(), // callData
                 null, // accessList
                 recId,
@@ -426,7 +431,7 @@ public record EthTxData(
                 rlpList.get(3).data(), // maxGas
                 rlpList.get(4).asLong(), // gasLimit
                 rlpList.get(5).data(), // to
-                toValue(rlpList.get(6).data()), // value
+                rlpList.get(6).asBigInt(), // value
                 rlpList.get(7).data(), // callData
                 rlpList.get(8).data(), // accessList
                 rlpList.get(9).asByte(), // recId
@@ -461,7 +466,7 @@ public record EthTxData(
                 null, // maxGas
                 rlpList.get(3).asLong(), // gasLimit
                 rlpList.get(4).data(), // to
-                toValue(rlpList.get(5).data()), // value
+                rlpList.get(5).asBigInt(), // value
                 rlpList.get(6).data(), // callData
                 rlpList.get(7).data(), // accessList
                 rlpList.get(8).asByte(), // recId
@@ -469,12 +474,6 @@ public record EthTxData(
                 rlpList.get(9).data(), // r
                 rlpList.get(10).data() // s
                 );
-    }
-
-    // Wrapping the bytes in a BigInteger to handle when there is a negative value. If we use the RLPItem.asBigInt()
-    // method it doesn't handle two's complement correctly.
-    private static BigInteger toValue(final byte[] value) {
-        return value.length == 0 ? BigInteger.ZERO : new BigInteger(value);
     }
 
     // before EIP155 the value of v in

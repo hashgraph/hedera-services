@@ -43,6 +43,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SigSet;
@@ -218,7 +219,7 @@ class SavedStateMetadataTests {
 
         final SignedState signedState = mock(SignedState.class);
         final SigSet sigSet = mock(SigSet.class);
-        final State state = mock(State.class);
+        final MerkleRoot state = mock(State.class);
         when(state.getHash()).thenReturn(randomHash(random));
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
