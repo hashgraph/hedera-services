@@ -109,13 +109,8 @@ public class SynthTxnUtils {
         } else if (parent.hasStakedAccountId()) {
             builder.stakedAccountId(parent.stakedAccountIdOrThrow());
         }
-        final var parentAdminKey = parent.keyOrThrow();
-        if (isSelfAdmin(parent)) {
-            // The new contract will manage itself as well, which we indicate via self-referential admin key
-            builder.adminKey(Key.newBuilder().contractID(pendingId));
-        } else {
-            builder.adminKey(parentAdminKey);
-        }
+
+        builder.adminKey(Key.newBuilder().contractID(pendingId));
         return builder.build();
     }
 
