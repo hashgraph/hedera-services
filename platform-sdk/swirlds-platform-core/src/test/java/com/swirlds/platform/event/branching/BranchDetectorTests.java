@@ -103,7 +103,7 @@ class BranchDetectorTests {
 
         // Create a random topological ordering
         Collections.shuffle(events, randotron);
-        events.sort(Comparator.comparingLong(x -> x.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(x -> x.getBirthRound()));
 
         long ancientThreshold = initialBirthRound;
 
@@ -112,14 +112,14 @@ class BranchDetectorTests {
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         for (final GossipEvent event : events) {
-            if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
+            if (event.getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.
 
                 ancientThreshold++;
                 branchDetector.updateEventWindow(
                         new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
             }
-            assertFalse(event.getHashedData().getBirthRound() < ancientThreshold);
+            assertFalse(event.getBirthRound() < ancientThreshold);
 
             final GossipEvent branchingEvent = branchDetector.checkForBranches(event);
             assertNull(branchingEvent);
@@ -162,7 +162,7 @@ class BranchDetectorTests {
 
                 branchingEvent = new TestingEventBuilder(randotron)
                         .setCreatorId(branchingNode)
-                        .setBirthRound(siblingEvent.getHashedData().getBirthRound())
+                        .setBirthRound(siblingEvent.getBirthRound())
                         .setSelfParent(parent)
                         .build();
             }
@@ -172,7 +172,7 @@ class BranchDetectorTests {
 
         // Create a random topological ordering
         Collections.shuffle(events, randotron);
-        events.sort(Comparator.comparingLong(x -> x.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(x -> x.getBirthRound()));
 
         long ancientThreshold = initialBirthRound;
 
@@ -183,22 +183,21 @@ class BranchDetectorTests {
         boolean branchingEventAdded = false;
 
         for (final GossipEvent event : events) {
-            if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
+            if (event.getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.
                 ancientThreshold++;
                 branchDetector.updateEventWindow(
                         new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
             }
-            assertFalse(event.getHashedData().getBirthRound() < ancientThreshold);
+            assertFalse(event.getBirthRound() < ancientThreshold);
 
             final GossipEvent result = branchDetector.checkForBranches(event);
             if (!branchingEventAdded) {
                 // There shouldn't have been any observed branches yet
                 assertNull(result);
             } else {
-                if (event.getHashedData().getCreatorId().equals(branchingNode)) {
-                    if (event.getHashedData().getBirthRound()
-                            == branchingEvent.getHashedData().getBirthRound() + 1) {
+                if (event.getCreatorId().equals(branchingNode)) {
+                    if (event.getBirthRound() == branchingEvent.getBirthRound() + 1) {
                         // The event that comes right after the branch should also be flagged as a branching event
                         assertSame(event, result);
                     } else {
@@ -213,7 +212,7 @@ class BranchDetectorTests {
             }
 
             if (event == siblingEvent) {
-                assertFalse(branchingEvent.getHashedData().getBirthRound() < ancientThreshold);
+                assertFalse(branchingEvent.getBirthRound() < ancientThreshold);
                 // Intentionally add the branching event
                 final GossipEvent branchingResult = branchDetector.checkForBranches(branchingEvent);
                 assertSame(branchingEvent, branchingResult);
@@ -249,7 +248,7 @@ class BranchDetectorTests {
                 final GossipEvent lastNonBranchingEvent = nodeEvents.getLast();
                 branchingEvent = new TestingEventBuilder(randotron)
                         .setCreatorId(branchingNode)
-                        .setBirthRound(lastNonBranchingEvent.getHashedData().getBirthRound() + 1)
+                        .setBirthRound(lastNonBranchingEvent.getBirthRound() + 1)
                         .setSelfParent(null)
                         .build();
                 events.add(branchingEvent);
@@ -260,7 +259,7 @@ class BranchDetectorTests {
 
         // Create a random topological ordering
         Collections.shuffle(events, randotron);
-        events.sort(Comparator.comparingLong(x -> x.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(x -> x.getBirthRound()));
 
         long ancientThreshold = initialBirthRound;
 
@@ -269,16 +268,16 @@ class BranchDetectorTests {
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         for (final GossipEvent event : events) {
-            if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
+            if (event.getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.
                 ancientThreshold++;
                 branchDetector.updateEventWindow(
                         new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
             }
-            assertFalse(event.getHashedData().getBirthRound() < ancientThreshold);
+            assertFalse(event.getBirthRound() < ancientThreshold);
 
             final GossipEvent result = branchDetector.checkForBranches(event);
-            if (event.getHashedData().getCreatorId().equals(branchingNode)) {
+            if (event.getCreatorId().equals(branchingNode)) {
                 if (event == branchingEvent) {
                     // This event has a null parent when it shouldn't
                     assertSame(event, result);
@@ -322,7 +321,7 @@ class BranchDetectorTests {
 
                 branchingEvent = new TestingEventBuilder(randotron)
                         .setCreatorId(branchingNode)
-                        .setBirthRound(siblingEvent.getHashedData().getBirthRound())
+                        .setBirthRound(siblingEvent.getBirthRound())
                         .setSelfParent(parent)
                         .build();
             }
@@ -332,7 +331,7 @@ class BranchDetectorTests {
 
         // Create a random topological ordering
         Collections.shuffle(events, randotron);
-        events.sort(Comparator.comparingLong(x -> x.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(x -> x.getBirthRound()));
 
         long ancientThreshold = initialBirthRound;
 
@@ -341,21 +340,21 @@ class BranchDetectorTests {
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         for (final GossipEvent event : events) {
-            if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
+            if (event.getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.
                 ancientThreshold++;
                 branchDetector.updateEventWindow(
                         new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
             }
-            assertFalse(event.getHashedData().getBirthRound() < ancientThreshold);
+            assertFalse(event.getBirthRound() < ancientThreshold);
 
             final GossipEvent result = branchDetector.checkForBranches(event);
             assertNull(result);
         }
 
         // Ensure that the branching event is ancient when we add it.
-        if (ancientThreshold <= branchingEvent.getHashedData().getBirthRound()) {
-            ancientThreshold = branchingEvent.getHashedData().getBirthRound() + 1;
+        if (ancientThreshold <= branchingEvent.getBirthRound()) {
+            ancientThreshold = branchingEvent.getBirthRound() + 1;
             branchDetector.updateEventWindow(
                     new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
         }
@@ -389,7 +388,7 @@ class BranchDetectorTests {
                 final GossipEvent lastNonBranchingEvent = nodeEvents.getLast();
                 branchingEvent = new TestingEventBuilder(randotron)
                         .setCreatorId(branchingNode)
-                        .setBirthRound(lastNonBranchingEvent.getHashedData().getBirthRound() + 1)
+                        .setBirthRound(lastNonBranchingEvent.getBirthRound() + 1)
                         .setSelfParent(null)
                         .build();
             }
@@ -399,7 +398,7 @@ class BranchDetectorTests {
 
         // Create a random topological ordering
         Collections.shuffle(events, randotron);
-        events.sort(Comparator.comparingLong(x -> x.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(x -> x.getBirthRound()));
 
         long ancientThreshold = initialBirthRound;
 
@@ -408,20 +407,20 @@ class BranchDetectorTests {
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         for (final GossipEvent event : events) {
-            if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
+            if (event.getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.
                 ancientThreshold++;
                 branchDetector.updateEventWindow(
                         new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
             }
-            assertFalse(event.getHashedData().getBirthRound() < ancientThreshold);
+            assertFalse(event.getBirthRound() < ancientThreshold);
 
             final GossipEvent result = branchDetector.checkForBranches(event);
             assertNull(result);
         }
 
         // Ensure that all ancestors of the branching event are ancient.
-        ancientThreshold = branchingEvent.getHashedData().getBirthRound();
+        ancientThreshold = branchingEvent.getBirthRound();
         branchDetector.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
@@ -468,7 +467,7 @@ class BranchDetectorTests {
 
         // Create a random topological ordering
         Collections.shuffle(events, randotron);
-        events.sort(Comparator.comparingLong(x -> x.getHashedData().getBirthRound()));
+        events.sort(Comparator.comparingLong(x -> x.getBirthRound()));
 
         long ancientThreshold = initialBirthRound;
 
@@ -477,20 +476,20 @@ class BranchDetectorTests {
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
         for (final GossipEvent event : events) {
-            if (event.getHashedData().getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
+            if (event.getBirthRound() > ancientThreshold + 5 && randotron.nextBoolean(0.1)) {
                 // Randomly advance the ancient threshold, but don't let it advance past where we are adding events.
                 ancientThreshold++;
                 branchDetector.updateEventWindow(
                         new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
             }
-            assertFalse(event.getHashedData().getBirthRound() < ancientThreshold);
+            assertFalse(event.getBirthRound() < ancientThreshold);
 
             final GossipEvent result = branchDetector.checkForBranches(event);
             assertNull(result);
         }
 
         // Advance the ancient threshold to "hide the evidence"
-        ancientThreshold = branchingEvent.getHashedData().getBirthRound();
+        ancientThreshold = branchingEvent.getBirthRound();
         branchDetector.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
