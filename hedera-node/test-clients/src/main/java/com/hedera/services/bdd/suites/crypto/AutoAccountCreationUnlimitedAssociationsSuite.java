@@ -106,7 +106,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
         return propertyPreservingHapiSpec(
-                        "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
+                "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
@@ -115,8 +115,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoTransfer(
-                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
-                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                        tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                        tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .via(TRANSFER_TXN)
                         .payingWith(PAYER))
                 .then(
@@ -166,7 +166,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
         return propertyPreservingHapiSpec(
-                        "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
+                "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
@@ -175,8 +175,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoTransfer(
-                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
-                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                        tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                        tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .via(TRANSFER_TXN)
                         .payingWith(PAYER))
                 .then(
@@ -249,14 +249,11 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
                             .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
                             .alias(counterAlias.get());
 
                     var getAccountInfo = getAccountInfo("testAccount")
-                            .has(
-                                    accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(0)
-                                    // enable this after integrating changes in crypto create
-                                    // .maxAutoAssociations(-1)
-                                    );
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(-1));
 
                     var accountDelete = cryptoDelete("testAccount").hasKnownStatus(SUCCESS);
 
@@ -264,8 +261,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     // create hollow account with the deleted account alias
                     var hollowAccount = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
@@ -374,15 +371,12 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
                             .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
                             .alias(counterAlias.get());
 
                     var getAccountInfo = getAccountInfo("testAccount")
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .has(
-                                    accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(0)
-                                    // enable this after integrating changes in crypto create
-                                    // .maxAutoAssociations(-1)
-                                    );
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(-1));
 
                     var accountDelete = cryptoDelete("testAccount").hasKnownStatus(SUCCESS);
 
@@ -390,10 +384,10 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     /* hollow account created with fungible token transfer as expected */
                     final var hollowAccount = cryptoTransfer(
-                                    (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                            .setToken(ftId.get())
-                                            .addTransfers(aaWith(partyAlias.get(), -500))
-                                            .addTransfers(aaWith(counterAlias.get(), +500))))
+                            (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                    .setToken(ftId.get())
+                                    .addTransfers(aaWith(partyAlias.get(), -500))
+                                    .addTransfers(aaWith(counterAlias.get(), +500))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(FT_XFER);
 
@@ -422,8 +416,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     // transfer some hbars to the hollow account so that we can pay with it later
                     var hollowAccountTransfer = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
@@ -443,7 +437,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         // verify fees of first transfer
                         // add this assertion after transfer changes are integrated
                         // validateChargedUsd(FT_XFER, v13PriceUsdOneAutoAssociation)
-                        );
+                );
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -495,15 +489,12 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
                             .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
                             .alias(counterAlias.get());
 
                     var getAccountInfo = getAccountInfo("testAccount")
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .has(
-                                    accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(0)
-                                    // enable this after integrating changes in crypto create
-                                    // .maxAutoAssociations(-1)
-                                    );
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).maxAutoAssociations(-1));
 
                     var accountDelete = cryptoDelete("testAccount").hasKnownStatus(SUCCESS);
 
@@ -511,13 +502,13 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     /* hollow account created with NFT transfer as expected */
                     final var hollowAccount = cryptoTransfer((s, b) -> {
-                                b.addTokenTransfers(TokenTransferList.newBuilder()
-                                        .setToken(nftId.get())
-                                        .addNftTransfers(NftTransfer.newBuilder()
-                                                .setSerialNumber(1L)
-                                                .setSenderAccountID(treasuryId.get())
-                                                .setReceiverAccountID(asIdWithAlias(counterAlias.get()))));
-                            })
+                        b.addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(nftId.get())
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSerialNumber(1L)
+                                        .setSenderAccountID(treasuryId.get())
+                                        .setReceiverAccountID(asIdWithAlias(counterAlias.get()))));
+                    })
                             .signedBy(MULTI_KEY, DEFAULT_PAYER, TOKEN_TREASURY)
                             .via(NFT_XFER);
 
@@ -546,8 +537,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     // transfer some hbars to the hollow account so that we can pay with it later
                     var hollowAccountTransfer = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
@@ -567,6 +558,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         // verify fees of first transfer
                         // add this assertion after transfer changes are integrated
                         // validateChargedUsd(NFT_XFER, v13PriceUsdOneAutoAssociation)
-                        );
+                );
     }
 }
