@@ -33,6 +33,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -110,7 +111,14 @@ public class ChildFeeContextImpl implements FeeContext {
     }
 
     @Override
+    @NonNull
     public ExchangeRateInfo exchangeRateInfo() {
         return context.exchangeRateInfo();
+    }
+
+    @Override
+    @NonNull
+    public Instant consensusNow() {
+        return context.consensusNow();
     }
 }

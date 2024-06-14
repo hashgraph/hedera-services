@@ -150,4 +150,10 @@ public class FeeContextImpl implements FeeContext {
         }
         return exchangeRateInfo;
     }
+
+    @Override
+    @NonNull
+    public Instant consensusNow() {
+        return consensusTime;
+    }
 }
