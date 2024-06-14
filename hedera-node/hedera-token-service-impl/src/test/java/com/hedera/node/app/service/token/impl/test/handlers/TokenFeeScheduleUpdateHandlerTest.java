@@ -285,8 +285,17 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);
 
         final var feeContext = new FeeContextImpl(
-                state, consensusInstant, txnInfo, payerKey, payerId, feeManager, storeFactory,
-                configuration, null, exchangeRateManager, -1);
+                state,
+                consensusInstant,
+                txnInfo,
+                payerKey,
+                payerId,
+                feeManager,
+                storeFactory,
+                configuration,
+                null,
+                exchangeRateManager,
+                -1);
 
         final var calculateFees = subject.calculateFees(feeContext);
         assertEquals(calculateFees, Fees.FREE);

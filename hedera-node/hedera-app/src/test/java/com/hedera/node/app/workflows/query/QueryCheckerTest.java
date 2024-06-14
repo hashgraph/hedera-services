@@ -97,31 +97,37 @@ class QueryCheckerTest extends AppTestBase {
 
     @BeforeEach
     void setup() {
-        checker = new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck,
-                expiryValidation, feeManager, exchangeRateManager);
+        checker = new QueryChecker(
+                authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, exchangeRateManager);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() ->
-                        new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck,
-                                expiryValidation, feeManager, exchangeRateManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        null,
+                        cryptoTransferHandler,
+                        solvencyPreCheck,
+                        expiryValidation,
+                        feeManager,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck,
-                expiryValidation, feeManager, exchangeRateManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, null, solvencyPreCheck, expiryValidation, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, null,
-                                expiryValidation, feeManager, exchangeRateManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, null, expiryValidation, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck,
-                                null, feeManager, exchangeRateManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck,
-                                expiryValidation, null, exchangeRateManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer,
+                        cryptoTransferHandler,
+                        solvencyPreCheck,
+                        expiryValidation,
+                        null,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
     }
 
