@@ -76,7 +76,8 @@ private PlatformState findPlatformState(HederaState state) {
 ### Platform State
 
 Currently `PlatformState` is a special case node of the merkle tree. That is, it doesn't conform to State API. 
-As a part of the simplification effort **it should be refactored to a singleton state**.
+As a part of the simplification effort **it should be refactored to a singleton state**. 
+As a part of this change, `PlatformState` should not be a `MerkleNode` anymore.
 
 Protobuf definition:
 
@@ -156,14 +157,6 @@ message PlatformState {
      */
     SoftwareVersion first_version_in_birth_round_mode = 8;
 
-    /**
-     * A consensus round.<br/>
-     * The last round before the birth round mode was enabled.
-     * <p>
-     * This SHALL be `MAX_UNSIGNED` if birth round mode has not yet been enabled.
-     */
-    uint64 last_round_before_birth_round_mode = 9;
-
     // Fields below are to be deprecated in the foreseeable future.
 
     /**
@@ -181,6 +174,15 @@ message PlatformState {
      * This SHALL be `MAX_UNSIGNED` if birth round mode has not yet been enabled.
      */
     uint64 lowest_judge_generation_before_birth_round_mode = 10001 [deprecated = true];
+    
+    /**
+     * A consensus round.<br/>
+     * The last round before the birth round mode was enabled.
+     * Will be removed after the birth round migration.
+     * <p>
+     * This SHALL be `MAX_UNSIGNED` if birth round mode has not yet been enabled.
+     */
+    uint64 last_round_before_birth_round_mode = 10002 [deprecated = true];
 }
 
 
