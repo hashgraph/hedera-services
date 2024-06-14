@@ -23,6 +23,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -295,6 +296,10 @@ public interface HapiPropertySource {
                 .setRealmNum(nativeParts[1])
                 .setFileNum(nativeParts[2])
                 .build();
+    }
+
+    static EntityNumber asNode(String v) {
+        return EntityNumber.newBuilder().number(Long.parseLong(v)).build();
     }
 
     static String asFileString(FileID file) {

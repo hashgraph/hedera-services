@@ -43,6 +43,7 @@ import com.hedera.services.bdd.spec.queries.token.HapiGetAccountNftInfos;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfos;
+import com.hedera.services.bdd.spec.transactions.node.HapiGetNodeInfo;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import java.util.function.Function;
@@ -72,6 +73,11 @@ public class QueryVerbs {
     public static HapiGetAccountInfo getAccountInfo(final String account) {
         return new HapiGetAccountInfo(account);
     }
+
+    public static HapiGetNodeInfo getNodeInfo(final String node) {
+        return new HapiGetNodeInfo(node);
+    }
+
 
     public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);

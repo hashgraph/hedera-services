@@ -24,6 +24,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asNode;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
@@ -48,6 +49,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.SpecOperation;
@@ -238,6 +240,10 @@ public class TxnUtils {
 
     public static FileID asFileId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asFile(s) : lookupSpec.registry().getFileId(s);
+    }
+
+    public static long asNodeId(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s) ? asNode(s).number() : lookupSpec.registry().getNodeId(s);
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
