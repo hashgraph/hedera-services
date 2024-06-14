@@ -2386,6 +2386,16 @@ public class CryptoTransferSuite {
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        // Create FT1
+                        tokenCreate(tokenA)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(10L)
+                                .treasury(TREASURY),
+                        // Create FT2
+                        tokenCreate(tokenB)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(10L)
+                                .treasury(TREASURY),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             final var treasuryAccountId = registry.getAccountID(TREASURY);
@@ -2398,23 +2408,11 @@ public class CryptoTransferSuite {
                                     .toByteArray();
                             final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                             hollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(tokenA));
+                            tokenIdB.set(registry.getTokenID(tokenB));
                         }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        // Create FT1
-                        tokenCreate(tokenA)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(10L)
-                                .treasury(TREASURY)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdA.set(spec.registry().getTokenID(tokenA))),
-                        // Create FT2
-                        tokenCreate(tokenB)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(10L)
-                                .treasury(TREASURY)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdB.set(spec.registry().getTokenID(tokenB))),
                         // create hollow account with maxAutomaticAssociations set to -1
                         cryptoCreate("testAccount")
                                 .key(hollowAccountKey)
@@ -2482,6 +2480,18 @@ public class CryptoTransferSuite {
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        // Create NFT1
+                        tokenCreate(tokenA)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        // Create NFT2
+                        tokenCreate(tokenB)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             final var treasuryAccountId = registry.getAccountID(TREASURY);
@@ -2494,25 +2504,11 @@ public class CryptoTransferSuite {
                                     .toByteArray();
                             final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                             hollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(tokenA));
+                            tokenIdB.set(registry.getTokenID(tokenB));
                         }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        // Create NFT1
-                        tokenCreate(tokenA)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TREASURY)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdA.set(spec.registry().getTokenID(tokenA))),
-                        // Create NFT2
-                        tokenCreate(tokenB)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TREASURY)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdB.set(spec.registry().getTokenID(tokenB))),
                         // Mint all NFTs
                         mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
                         mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata2"))),
@@ -2600,6 +2596,17 @@ public class CryptoTransferSuite {
                         newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
                         cryptoCreate(DAVE).maxAutomaticTokenAssociations(1),
                         cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
+                        // Create fungible token
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(ALICE),
+                        // Create NFT
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(BOB),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             aliceAlias.set(ByteString.copyFrom(asSolidityAddress(registry.getAccountID(ALICE))));
@@ -2612,24 +2619,11 @@ public class CryptoTransferSuite {
                                     .toByteArray();
                             final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                             carolHollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(FUNGIBLE_TOKEN));
+                            tokenIdB.set(registry.getTokenID(NON_FUNGIBLE_TOKEN));
                         }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        // Create fungible token
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(5)
-                                .treasury(ALICE)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdA.set(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                        // Create NFT
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(BOB)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdB.set(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                         // Mint the NFT
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("metadata1"))),
                         // Transfer both tokens to hollow account with different senders.
@@ -2692,6 +2686,17 @@ public class CryptoTransferSuite {
                         newKeyNamed(BOB).shape(SECP_256K1_SHAPE),
                         newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
                         cryptoCreate(DAVE).balance(1_000 * ONE_MILLION_HBARS).maxAutomaticTokenAssociations(1),
+                        // Create FT
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(10L)
+                                .treasury(ALICE),
+                        // Create NFT
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(ALICE)
+                                .treasury(ALICE),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             aliceAlias.set(ByteString.copyFrom(asSolidityAddress(registry.getAccountID(ALICE))));
@@ -2712,24 +2717,11 @@ public class CryptoTransferSuite {
                             final var evmAddressBytesCarol =
                                     ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKeyCarol));
                             carolHollowAccountAlias.set(evmAddressBytesCarol);
+                            tokenIdA.set(spec.registry().getTokenID(FUNGIBLE_TOKEN));
+                            tokenIdB.set(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN));
                         }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        // Create FT
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(10L)
-                                .treasury(ALICE)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdA.set(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
-                        // Create NFT
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(ALICE)
-                                .treasury(ALICE)
-                                .exposingCreatedIdTo(
-                                        id -> tokenIdB.set(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))),
                         // Mint the NFT
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1"))),
                         // Create the hollow accounts
