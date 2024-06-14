@@ -97,6 +97,11 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */
     private final CountDownLatch prehandleCompleted = new CountDownLatch(1);
+    /**
+     * The actual birth round to return. May not be the original birth round if this event was created in the software
+     * version right before the birth round migration.
+     */
+    private long birthRound;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
@@ -122,6 +127,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         if (hashedData.getHash() != null) {
             setHash(hashedData.getHash());
         }
+        this.birthRound = hashedData.getBirthRound();
     }
 
     /**
@@ -181,6 +187,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
         this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
+        this.birthRound = hashedData.getBirthRound();
     }
 
     /**
@@ -243,7 +250,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return hashedData.getBirthRound();
+        return birthRound;
     }
 
     /**
@@ -335,6 +342,16 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      */
     public void signalPrehandleCompletion() {
         prehandleCompleted.countDown();
+    }
+
+    /**
+     * Override the birth round for this event. This will only be called for events created in the software version
+     * right before the birth round migration.
+     *
+     * @param birthRound the birth round that has been assigned to this event
+     */
+    public void overrideBirthRound(final long birthRound) {
+        this.birthRound = birthRound;
     }
 
     /**
@@ -436,6 +453,18 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         final GossipEvent that = (GossipEvent) o;
         return Objects.equals(getHashedData(), that.getHashedData())
                 && Objects.equals(consensusData, that.consensusData);
+    }
+
+    /**
+     * Check if the gossiped data of this event is equal to the gossiped data of another event. Ignores the consensus
+     * data.
+     *
+     * @param that the other event
+     * @return true if the gossiped data of this event is equal to the gossiped data of the other event
+     */
+    public boolean equalsGossipedData(@NonNull final GossipEvent that) {
+        return Objects.equals(getHashedData(), that.getHashedData())
+                && Objects.equals(getSignature(), that.getSignature());
     }
 
     @Override

@@ -45,6 +45,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -638,6 +639,15 @@ public interface HandleContext {
      * @param snapshots the snapshots to reset to
      */
     void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
+
+    /**
+     * Gets the pre-paid rewards for the current transaction. This can be non-empty for scheduled transactions.
+     * Since we use the parent record finalizer to finalize schedule transactions, we need to deduct any paid staking rewards
+     * already happened in the parent transaction.
+     * @return the paid rewards
+     */
+    @NonNull
+    Map<AccountID, Long> dispatchPaidRewards();
 
     /**
      * A stack of savepoints.

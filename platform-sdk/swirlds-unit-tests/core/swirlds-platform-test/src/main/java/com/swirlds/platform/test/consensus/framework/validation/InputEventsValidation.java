@@ -20,7 +20,6 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Objects;
 import org.junit.jupiter.api.Assertions;
 
 public class InputEventsValidation {
@@ -68,7 +67,7 @@ public class InputEventsValidation {
         for (int index = 0; index < l1.size(); index++) {
             final GossipEvent e1 = l1.get(index);
             final GossipEvent e2 = l2.get(index);
-            final boolean equals = Objects.equals(e1.getHashedData(), e2.getHashedData());
+            final boolean equals = e1.equalsGossipedData(e2);
             if (shouldBeEqual && !equals) {
                 final String sb = description
                         + "\n"
