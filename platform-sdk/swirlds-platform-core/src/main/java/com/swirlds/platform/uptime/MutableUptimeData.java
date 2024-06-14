@@ -17,8 +17,10 @@
 package com.swirlds.platform.uptime;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.UptimeData;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,15 +32,17 @@ public interface MutableUptimeData extends UptimeData {
      * Record data about the most recent event received by a node.
      *
      * @param event the event
+     * @param round the round number
      */
-    void recordLastEvent(@NonNull final EventImpl event);
+    void recordLastEvent(@NonNull final ConsensusEvent event, final long round);
 
     /**
      * Record data about the most recent judge received by a node.
      *
      * @param event the judge
+     * @param round the round number
      */
-    void recordLastJudge(@NonNull final EventImpl event);
+    void recordLastJudge(@NonNull final ConsensusEvent event, final long round);
 
     /**
      * Start tracking data for a new node.
