@@ -68,15 +68,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
         this(gossipEvent, new ConsensusData(), null, null);
     }
 
-    /**
-     * Create an instance based on the given {@link DetailedConsensusEvent}
-     * @param detailedConsensusEvent the detailed consensus event to build from
-     */
-    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) { // TODO remove
-        Objects.requireNonNull(detailedConsensusEvent);
-        buildFromConsensusEvent(detailedConsensusEvent);
-    }
-
     private EventImpl(
             final GossipEvent baseEvent,
             final ConsensusData consensusData,
@@ -129,22 +120,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     @Override
     public synchronized int compareTo(final EventImpl other) {
         return Long.compare(getGeneration(), other.getGeneration());
-    }
-
-    /**
-     * build current Event from consensusEvent
-     *
-     * @param consensusEvent the consensus event to build from
-     */
-    void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
-        baseEvent = consensusEvent.getGossipEvent();
-        // clears metadata in case there is any
-        super.clear();
-
-        findSystemTransactions();
-        consensusData = new ConsensusData();
-        consensusData.setRoundReceived(consensusEvent.getRoundReceived());
-        consensusData.setLastInRoundReceived(consensusEvent.isLastInRoundReceived());
     }
 
     /**
@@ -280,34 +255,9 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     //////////////////////////////////////////
     // ConsensusData
     //////////////////////////////////////////
-
-    // TODO probably remove these
-    /**
-     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
-     */
-    @Deprecated(forRemoval = true)
+    
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
-    }
-
-    /**
-     * is this event the last in consensus order of all those with the same received round
-     *
-     * @return is this event the last in consensus order of all those with the same received round
-     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one
-     *     can be determined by looking at its position within the round
-     */
-    @Deprecated(forRemoval = true)
-    public boolean isLastInRoundReceived() {
-        return consensusData.isLastInRoundReceived();
-    }
-
-    /**
-     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
-     */
-    @Deprecated(forRemoval = true)
-    public void setLastInRoundReceived(final boolean lastInRoundReceived) {
-        consensusData.setLastInRoundReceived(lastInRoundReceived);
     }
 
     //////////////////////////////////////////

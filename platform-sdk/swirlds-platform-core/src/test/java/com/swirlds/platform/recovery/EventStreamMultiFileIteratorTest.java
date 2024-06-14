@@ -214,10 +214,7 @@ class EventStreamMultiFileIteratorTest {
             for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 
                 final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(event);
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEquals(event, events.get(eventIndex), "event should match input event");
             }
 
         } catch (final IOException ioException) {

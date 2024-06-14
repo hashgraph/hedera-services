@@ -67,18 +67,6 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     public DetailedConsensusEvent() {}
 
     /**
-     * Create a new instance.
-     *
-     * @param event the event to copy the data from
-     */
-    public DetailedConsensusEvent(@NonNull final EventImpl event) { // TODO remove
-        Objects.requireNonNull(event);
-        this.gossipEvent = event.getBaseEvent();
-        this.roundReceived = event.getRoundReceived();
-        this.lastInRoundReceived = event.isLastInRoundReceived();
-    }
-
-    /**
      * Create a new instance with the provided data.
      *
      * @param gossipEvent         the pre-consensus event
