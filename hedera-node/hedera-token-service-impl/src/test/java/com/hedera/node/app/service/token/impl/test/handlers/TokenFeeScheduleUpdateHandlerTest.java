@@ -42,6 +42,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -63,6 +64,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.HederaState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -252,8 +254,10 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     public void testCalculateFeesHappyPath() {
+        HederaState state = mock(HederaState.class);
         TransactionInfo txnInfo = mock(TransactionInfo.class);
         FeeManager feeManager = mock(FeeManager.class);
+        ExchangeRateManager exchangeRateManager = mock(ExchangeRateManager.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         ReadableStoreFactory storeFactory = mock(ReadableStoreFactory.class);
         TransactionBody transactionBody = mock(TransactionBody.class);
@@ -281,7 +285,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);
 
         final var feeContext = new FeeContextImpl(
-                consensusInstant, txnInfo, payerKey, payerId, feeManager, storeFactory, configuration, null, -1);
+                state, consensusInstant, txnInfo, payerKey, payerId, feeManager, storeFactory,
+                configuration, null, exchangeRateManager, -1);
 
         final var calculateFees = subject.calculateFees(feeContext);
         assertEquals(calculateFees, Fees.FREE);

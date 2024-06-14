@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -43,6 +44,7 @@ import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -58,6 +60,7 @@ public class QueryChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
+    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryChecker}
@@ -76,12 +79,14 @@ public class QueryChecker {
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
     /**
@@ -205,12 +210,14 @@ public class QueryChecker {
      * @return the estimated fees
      */
     public long estimateTxFees(
+            @NonNull final HederaState state,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration) {
         final var feeContext = new FeeContextImpl(
+                state,
                 consensusTime,
                 transactionInfo,
                 payerKey,
@@ -219,6 +226,7 @@ public class QueryChecker {
                 storeFactory,
                 configuration,
                 authorizer,
+                exchangeRateManager,
                 // Signatures aren't applicable to queries
                 -1);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
