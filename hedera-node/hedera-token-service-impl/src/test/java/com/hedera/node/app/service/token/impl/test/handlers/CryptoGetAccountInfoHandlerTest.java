@@ -268,7 +268,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
                 .build();
-        setupTokenRelationStore(tokenRelation);
+        if(balancesInQueriesEnabled) {
+            setupTokenRelationStore(tokenRelation);
+        } else {
+            setupTokenRelationStore(TokenRelation.DEFAULT);
+        }
         setupStakingInfoStore();
         setupStakingRewardsStore();
         setupConfig(balancesInQueriesEnabled);
@@ -329,7 +333,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .nextToken(asToken(6L))
                 .previousToken(asToken(4L))
                 .build();
-        setupTokenRelationStore(tokenRelation1, tokenRelation2, tokenRelation3);
+        if(balancesInQueriesEnabled) {
+            setupTokenRelationStore(tokenRelation1, tokenRelation2, tokenRelation3);
+        } else {
+            setupTokenRelationStore(TokenRelation.DEFAULT);
+        }
         setupStakingInfoStore();
         setupStakingRewardsStore();
         setupConfig(balancesInQueriesEnabled);
@@ -374,7 +382,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
                 .build();
-        setupTokenRelationStore(tokenRelation);
+        if(balancesInQueriesEnabled) {
+            setupTokenRelationStore(tokenRelation);
+        } else {
+            setupTokenRelationStore(TokenRelation.DEFAULT);
+        }
         setupStakingInfoStore();
         setupStakingRewardsStore();
         setupConfig(balancesInQueriesEnabled);
@@ -416,7 +428,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
                 .build();
-        setupTokenRelationStore(tokenRelation);
+        if(balancesInQueriesEnabled) {
+            setupTokenRelationStore(tokenRelation);
+        } else {
+            setupTokenRelationStore(TokenRelation.DEFAULT);
+        }
         setupStakingInfoStore();
         setupStakingRewardsStore();
         setupConfig(balancesInQueriesEnabled);
