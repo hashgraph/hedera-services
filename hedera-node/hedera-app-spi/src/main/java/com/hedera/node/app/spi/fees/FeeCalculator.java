@@ -102,4 +102,10 @@ public interface FeeCalculator {
      */
     @NonNull
     FeeCalculator resetUsage();
+
+    /**
+     * Resets the usage of all components to zero including the constant.
+     * @return
+     */
+    long getVptPrice();
 }

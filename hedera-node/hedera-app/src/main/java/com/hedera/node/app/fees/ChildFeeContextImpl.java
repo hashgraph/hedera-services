@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.swirlds.config.api.Configuration;
@@ -46,18 +47,21 @@ public class ChildFeeContextImpl implements FeeContext {
     private final TransactionBody body;
     private final AccountID payerId;
     private final boolean computeFeesAsInternalDispatch;
+    private TransactionCategory transactionCategory;
 
     public ChildFeeContextImpl(
             @NonNull final FeeManager feeManager,
             @NonNull final HandleContextImpl context,
             @NonNull final TransactionBody body,
             @NonNull final AccountID payerId,
-            final boolean computeFeesAsInternalDispatch) {
+            final boolean computeFeesAsInternalDispatch,
+            TransactionCategory transactionCategory) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
         this.payerId = Objects.requireNonNull(payerId);
         this.computeFeesAsInternalDispatch = computeFeesAsInternalDispatch;
+        this.transactionCategory = transactionCategory;
     }
 
     @Override
@@ -88,6 +92,11 @@ public class ChildFeeContextImpl implements FeeContext {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);
         }
+    }
+
+    @Override
+    public TransactionCategory transactionCategory() {
+        return transactionCategory;
     }
 
     @Override

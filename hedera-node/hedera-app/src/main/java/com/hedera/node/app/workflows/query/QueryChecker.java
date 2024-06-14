@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.validation.ExpiryValidation;
@@ -230,6 +231,7 @@ public class QueryChecker {
                 configuration,
                 authorizer,
                 exchangeRateManager,
+                TransactionCategory.USER,
                 // Signatures aren't applicable to queries
                 -1);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();

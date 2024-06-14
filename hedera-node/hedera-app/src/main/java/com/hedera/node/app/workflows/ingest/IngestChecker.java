@@ -51,6 +51,7 @@ import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
@@ -230,6 +231,7 @@ public final class IngestChecker {
                 configuration,
                 authorizer,
                 exchangeRateManager,
+                TransactionCategory.USER,
                 numSigs);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);

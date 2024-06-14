@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -214,19 +215,19 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             final var exchangeRateInfo = feeContext.exchangeRateInfo();
 
             calculator.resetUsage();
-            // The first signature is free and is accounted in the base price, so we only need to add
-            // the price of the rest of the signatures.
-            calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
-            final var baseFee = calculator.calculate();
+            final var price = getTinybarsFromTinyCents(
+                    calculator.getVptPrice(), exchangeRateInfo.activeRate(feeContext.consensusNow()));
             final var newAssociationsCount = op.tokens().size();
 
             final var associateInTinyCents = getFixedAssociatePriceInTinyCents();
             final var associateInTinybars = getTinybarsFromTinyCents(
                     associateInTinyCents, exchangeRateInfo.activeRate(feeContext.consensusNow()));
 
-            return baseFee.copyBuilder()
-                    .networkFee(baseFee.networkFee() + newAssociationsCount * associateInTinybars)
-                    .build();
+            var sigPrice = 0L;
+            if (feeContext.transactionCategory() == TransactionCategory.USER) {
+                sigPrice = (feeContext.numTxnSignatures() - 1) * price;
+            }
+            return new Fees(0L, sigPrice + newAssociationsCount * associateInTinybars, 0L);
         }
 
         return calculator.legacyCalculate(sigValueObj ->

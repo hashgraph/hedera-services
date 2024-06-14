@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,6 +53,8 @@ public interface FeeContext {
      */
     @NonNull
     FeeCalculator feeCalculator(@NonNull final SubType subType);
+
+    TransactionCategory transactionCategory();
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.

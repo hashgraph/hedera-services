@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
@@ -51,6 +52,7 @@ public class FeeContextImpl implements FeeContext {
     private final HederaState state;
     private final ExchangeRateManager exchangeRateManager;
     private ExchangeRateInfo exchangeRateInfo;
+    private TransactionCategory transactionCategory;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -76,6 +78,7 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
+            final TransactionCategory transactionCategory,
             final int numSignatures) {
         this.state = state;
         this.consensusTime = consensusTime;
@@ -88,6 +91,7 @@ public class FeeContextImpl implements FeeContext {
         this.authorizer = authorizer;
         this.exchangeRateManager = exchangeRateManager;
         this.numSignatures = numSignatures;
+        this.transactionCategory = transactionCategory;
     }
 
     @Override
@@ -117,6 +121,11 @@ public class FeeContextImpl implements FeeContext {
                 subType,
                 false,
                 storeFactory);
+    }
+
+    @Override
+    public TransactionCategory transactionCategory() {
+        return transactionCategory;
     }
 
     @NonNull
