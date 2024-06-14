@@ -492,7 +492,8 @@ public class HollowAccountFinalizationSuite extends HapiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT))
-                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY, INITIAL_BALANCE * ONE_MILLION_HBARS, 1_000_000 * ONE_HUNDRED_HBARS))
+                .when(createHollowAccountFrom(
+                        SECP_256K1_SOURCE_KEY, INITIAL_BALANCE * ONE_MILLION_HBARS, 1_000_000 * ONE_HUNDRED_HBARS))
                 .then(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry()
                             .getKey(SECP_256K1_SOURCE_KEY)
