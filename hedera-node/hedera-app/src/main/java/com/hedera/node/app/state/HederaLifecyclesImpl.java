@@ -55,7 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implements the major lifecycle events for Hedera Services.
+ * Implements the major lifecycle events for Hedera Services, primarily by delegating to a Hedera instance.
  */
 public class HederaLifecyclesImpl implements HederaLifecycles {
     private static final Logger logger = LogManager.getLogger(HederaLifecyclesImpl.class);
@@ -241,6 +241,6 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
-        hedera.onNewRecoveredState(recoveredState);
+        hedera.onNewRecoveredState();
     }
 }

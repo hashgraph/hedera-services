@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
-import com.hedera.node.config.ConfigProvider;
+import com.amh.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import dagger.Module;

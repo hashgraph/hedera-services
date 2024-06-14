@@ -105,8 +105,6 @@ public class V0490FileSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
-    private final ConfigProvider configProvider;
-
     /**
      * These fields hold the state of the file service during migration.
      */
@@ -118,22 +116,20 @@ public class V0490FileSchema extends Schema {
     /**
      * Constructs a new {@link V0490FileSchema} instance with the given {@link ConfigProvider}.
      *
-     * @param configProvider the configuration provider
      */
-    public V0490FileSchema(@NonNull final ConfigProvider configProvider) {
+    public V0490FileSchema() {
         super(VERSION);
-        this.configProvider = requireNonNull(configProvider);
     }
 
     @NonNull
     @Override
     @SuppressWarnings("rawtypes")
-    public Set<StateDefinition> statesToCreate() {
+    public Set<StateDefinition> statesToCreate(@NonNull final Configuration config) {
         final Set<StateDefinition> definitions = new LinkedHashSet<>();
         definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
 
-        final FilesConfig filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
-        final HederaConfig hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final FilesConfig filesConfig = config.getConfigData(FilesConfig.class);
+        final HederaConfig hederaConfig = config.getConfigData(HederaConfig.class);
         final LongPair fileNums = filesConfig.softwareUpdateRange();
         final long firstUpdateNum = fileNums.left();
         final long lastUpdateNum = fileNums.right();

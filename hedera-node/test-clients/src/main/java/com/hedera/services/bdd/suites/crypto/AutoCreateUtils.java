@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZ
 import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.hyperledger.besu.datatypes.Address.contractAddress;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -45,8 +46,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class AutoCreateUtils {
+
+    private static final String TRANSFER_TXN_FOR_CREATE_1 = "transferTxnForCreate1";
+
     public static ByteString randomValidEd25519Alias() {
         final var alias = RandomStringUtils.random(128, true, true);
         return Key.newBuilder()
@@ -82,26 +88,42 @@ public class AutoCreateUtils {
     }
 
     public static HapiSpecOperation[] createHollowAccountFrom(@NonNull final String key) {
+        return createHollowAccountFrom(key, INITIAL_BALANCE * ONE_HBAR, ONE_HUNDRED_HBARS);
+    }
+
+    public static HapiSpecOperation[] createHollowAccountFrom(
+            @NonNull final String key, final long sponsorBalance, final long transferAmount) {
         return new HapiSpecOperation[] {
-            cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+            cryptoCreate(LAZY_CREATE_SPONSOR).balance(sponsorBalance),
             cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR),
             withOpContext((spec, opLog) -> {
                 final var ecdsaKey =
                         spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
                 final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
+                final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, transferAmount))
                         .hasKnownStatus(SUCCESS)
                         .via(TRANSFER_TXN);
                 final var op2 = getAliasedAccountInfo(evmAddress)
                         .has(accountWith()
                                 .hasEmptyKey()
-                                .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                .expectedBalanceWithChargedUsd(transferAmount, 0, 0)
                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
                                 .receiverSigReq(false)
                                 .memo(LAZY_MEMO));
+
+                // create a hollow account with the correct create1 address
+                final var create1Address =
+                        contractAddress(Address.wrap(Bytes.wrap(recoverAddressFromPubKey(ecdsaKey))), 0L);
+                final var create1ByteString = ByteString.copyFrom(create1Address.toArray());
+
+                final var op3 = cryptoTransfer(
+                                tinyBarsFromTo(LAZY_CREATE_SPONSOR, create1ByteString, ONE_HUNDRED_HBARS))
+                        .hasKnownStatus(SUCCESS)
+                        .via(TRANSFER_TXN_FOR_CREATE_1);
+
                 final HapiGetTxnRecord hapiGetTxnRecord =
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged();
-                allRunFor(spec, op, op2, hapiGetTxnRecord);
+                allRunFor(spec, op, op2, op3, hapiGetTxnRecord);
 
                 final AccountID newAccountID = hapiGetTxnRecord
                         .getFirstNonStakingChildRecord()

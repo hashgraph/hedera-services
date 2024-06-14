@@ -149,7 +149,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         stakingValidator = new StakingValidator();
-        subject = new CryptoUpdateHandler(waivers, stakingValidator, networkInfo);
+        subject = new CryptoUpdateHandler(waivers, stakingValidator);
     }
 
     @Test
@@ -252,6 +252,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(networkInfo.nodeInfo(anyLong())).willReturn(mock(NodeInfo.class));
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(0).build();
         givenTxnWith(txn);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
 
         assertNull(writableStore.get(updateAccountId).stakedNodeId());
 
@@ -274,6 +275,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void validatesStakedNodeIdProvided() {
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(10).build();
         givenTxnWith(txn);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -297,6 +299,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(3).build();
         givenTxnWith(txn);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
         given(networkInfo.nodeInfo(3)).willReturn(mock(NodeInfo.class));
 
         assertNull(writableStore.get(updateAccountId).stakedNodeId());
@@ -337,6 +340,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn1 = new CryptoUpdateBuilder().withStakedNodeId(-1).build();
         givenTxnWith(txn1);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
         subject.handle(handleContext);
         assertEquals(-1, writableStore.get(updateAccountId).stakedNodeId());
 

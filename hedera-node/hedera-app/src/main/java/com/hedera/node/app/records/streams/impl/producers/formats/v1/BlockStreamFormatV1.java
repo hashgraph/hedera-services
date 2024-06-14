@@ -95,7 +95,8 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                         .softwareVersion(version)
                         .creatorId(consensusEvent.getCreatorId().id())
                         .gen(eventImpl.getGeneration())
-                        .birthRound(eventImpl.getHashedData().getBirthRound()) // This may not be populated yet
+                        //todo implement?
+//                        .birthRound(eventImpl.getHash().bir) // This may not be populated yet
                         .selfParent(EventDescriptor.newBuilder()
                                 .creatorId(
                                         selfParent == null

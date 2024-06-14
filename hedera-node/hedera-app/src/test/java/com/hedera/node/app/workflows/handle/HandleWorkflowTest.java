@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static java.lang.Boolean.FALSE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -1715,7 +1715,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             doThrow(new PreCheckException(responseCode))
                     .when(solvencyPreCheck)
-                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(FALSE));
+                    .checkSolvency(eq(OK_RESULT.txInfo()), any(), eq(DEFAULT_FEES), eq(NOT_INGEST));
 
             // when
             workflow.handleRound(state, platformState, round);
@@ -1926,7 +1926,7 @@ class HandleWorkflowTest extends AppTestBase {
     void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, platformState, round);
         verify(blockRecordManager).consTimeOfLastHandledTxn();
-        verify(genesisRecordsTimeHook).process(notNull());
+        verify(genesisRecordsTimeHook, never()).process(notNull());
         verify(stakingPeriodTimeHook).process(notNull(), notNull());
     }
 

@@ -57,24 +57,32 @@ module com.hedera.node.app {
             com.hedera.node.test.clients;
     exports com.hedera.node.app.state to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.ingest to
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.query to
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
-            com.hedera.node.services.cli;
+            com.hedera.node.services.cli,
+            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.signature to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.info to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.handle to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.handle.record to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
-            com.swirlds.platform;
+            com.swirlds.platform,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.validation;
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;

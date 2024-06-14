@@ -182,9 +182,12 @@ public class MiscCryptoSuite {
     @HapiTest
     final Stream<DynamicTest> getRecordsIdVariantsTreatedAsExpected() {
         return defaultHapiSpec("getRecordsIdVariantsTreatedAsExpected")
-                .given()
+                .given(
+                        // Getting account records for the default payer can fail if we hit
+                        // ConcurrentModificationException when iterating in the record cache
+                        cryptoCreate("inert"))
                 .when()
-                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords(DEFAULT_PAYER)));
+                .then(sendModified(withSuccessivelyVariedQueryIds(), () -> getAccountRecords("inert")));
     }
 
     @HapiTest
