@@ -116,7 +116,7 @@ message PlatformState {
      * <p>
      * This SHALL be the software version that created this state.
      */
-    SoftwareVersion creation_software_version = 3;
+    proto.SemanticVersion creation_software_version = 3;
 
     /**
      * A number of non-ancient rounds.
@@ -148,14 +148,14 @@ message PlatformState {
     proto.Timestamp last_frozen_time = 7;
 
     /**
-     * A consensus node software version.<br/>
+     * A consensus node semantic version.<br/>
      * The software version that enabled birth round mode.
      * <p>
      * This SHALL be unset if birth round migration has not yet happened.<br/>
      * If birth round migration is complete, this SHALL be the _first_ software
      * version that enabled birth round mode.
      */
-    SoftwareVersion first_version_in_birth_round_mode = 8;
+    proto.SemanticVersion first_version_in_birth_round_mode = 8;
 
     // Fields below are to be deprecated in the foreseeable future.
 
@@ -163,7 +163,8 @@ message PlatformState {
      * A running event hash.<br/>
      * This is computed by the consensus event stream.
      * <p>
-     * This will be _deprecated_ once the consensus event stream is retired.
+     * This will be _removed_ and the field number reserved once the consensus
+     * event stream is retired.
      */
      bytes legacy_running_event_hash = 10000 [deprecated = true];
 
@@ -174,7 +175,7 @@ message PlatformState {
      * This SHALL be `MAX_UNSIGNED` if birth round mode has not yet been enabled.
      */
     uint64 lowest_judge_generation_before_birth_round_mode = 10001 [deprecated = true];
-    
+
     /**
      * A consensus round.<br/>
      * The last round before the birth round mode was enabled.
@@ -187,33 +188,6 @@ message PlatformState {
 
 
 /**
- * A consensus node software version.
- *
- * This message records version information for configuration, the Hedera
- * API, and the "Services" subsystems.
- */
-message SoftwareVersion {
-    /**
-     * A single numeric version.<br/>
-     * This is the current configuration version read on node startup.
-     */
-    uint32 config_version = 1;
-
-    /**
-     * A semantic version entry.<br/>
-     * This is the version of the HAPI module (Hedera API).
-     */
-    proto.SemanticVersion hapi_version = 2;
-
-    /**
-     * A semantic version entry.<br/>
-     * This is the version of the services module.
-     */
-    proto.SemanticVersion services_version = 3;
-}
-
-
-/**
  * A consensus snapshot.<br/>
  * This is a snapshot of the consensus state for a particular round.
  *
@@ -221,11 +195,6 @@ message SoftwareVersion {
  * and reconnect.
  */
 message ConsensusSnapshot {
-    /**
-     * A consensus round.<br/>
-     * The round number of this snapshot.
-     */
-    uint64 round = 1;
 
     /**
      * A list of SHA-384 hash values.<br/>
@@ -234,35 +203,24 @@ message ConsensusSnapshot {
      * This list SHALL be ordered by creator ID.<br/>
      * This list MUST be deterministically ordered.
      */
-    repeated bytes judge_hashes = 2;
+    repeated bytes judge_hashes = 1;
 
     /**
      * A list of minimum judge information entries.<br/>
      * These are "minimum ancient" entries for non-ancient rounds.
      */
-    repeated MinimumJudgeInfo minimum_judge_info_list = 3;
+    repeated MinimumJudgeInfo minimum_judge_info_list = 2;
 
     /**
      * A single consensus number.<br/>
      * The consensus order of the next event to reach consensus.
      */
-    uint64 next_consensus_number = 4;
+    uint64 next_consensus_number = 3;
 
-    /**
-     * A "consensus" timestamp.<br/>
-     * The consensus timestamp of this snapshot.
-     * <p>
-     * This SHALL be a consensus value and MAY NOT correspond to an actual
-     * "wall clock" timestamp.<br/>
-     * Consensus Timestamps SHALL always increase.
-     */
-    proto.Timestamp consensus_timestamp = 5;
 }
 
 /**
- * Minimum ancient threshold information for round judges.<br/>
- * This message records the minimum ancient threshold agreed by all judges in
- * a round.
+ * Records the minimum ancient indicator for all judges in a particular round.
  */
 message MinimumJudgeInfo {
     /**
@@ -272,14 +230,15 @@ message MinimumJudgeInfo {
     uint64 round = 1;
 
     /**
-     * Minimum ancient threshold for all judges in the round.
+     *  The minimum ancient threshold for all judges for a given round.<br/>
+     *  Will be a generation if the birth round migration has not yet happened,
+     *  will be a birth round otherwise.
      * <p>
      * This SHALL reflect the relevant minimum threshold, whether
      * generation-based or birth-round-based.
      */
     uint64 minimum_judge_ancient_threshold = 2;
 }
-
 ```
 
 ## Test plan
