@@ -1,14 +1,13 @@
 # Platform Design Proposal Process
 
-This document describes the process for creating and reviewing platform design proposals. It is a modified version of
-the [ADR process](https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/adr-process.html).
+This document describes the process for creating and reviewing platform design proposals.
 
 The status of all active design proposals can be viewed
 at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project board.
 
 ---
 
-## Design Proposal Flow
+## Design Proposal Process Flow
 
 ![](designProposalFlow.svg)
 
@@ -53,59 +52,68 @@ When the proposal is ready for voting, take the following steps:
 Requests for inmaterial changes to the proposal can be addressed by pushing additional commits to the existing proposal
 PR while in `Voting`. Examples of inmaterial changes are spelling or grammar errors, wording changes that do not modify
 meaning or intent, and formatting changes. Examples of material changes include changes to behaviors or APIs, addition
-or removal of content, etc. If any material changes are needed, the PR must be closed, and moved to the `Superceded`
-status. A new proposal PR is prepared and voting is restarted. The `Superceded` PR must reference the new PR.
+or removal of content, etc. If any material changes are needed, the PR must be closed, and moved to the `Superseded`
+status. A new proposal PR is prepared and voting is restarted. The `Superseded` PR must reference the new PR.
 
 ---
 
 ## Voting on A Proposal
 
-Proposal Acceptance Critera:
+Votes follow the [Apache Voting](https://www.apache.org/foundation/voting.html#expressing-votes-1-0-1-and-fractions)
+scheme. Votes are cast in comments on the PR on a range between -1 to -0, +0 to +1 with the following semantics:
+
+* -1: is a veto.
+* -0 >= x > -1: is a vote generally against the proposal.
+* +0 <= x < +1: is a vote generally in favor of the proposal.
+* +1: is a vote in favor of the proposal.
+
+The magnitude of the numeric value of the vote indicates the strength of the sentiment behind the vote.
+
++1 votes can also be expressed by approving the PR. -1 votes can be expressed by "Requesting Changes" on the PR and
+must be accompanied by a comment explaining the reason for the veto.
+
+---
+
+## Acceptance of A Proposal
+
+A proposal becomes `Accepted` when the following criteria have been fulfilled:
 
 1. The proposal has been in the Voting state for at least 3 business days. Business days are defined as SwirldsLabs
    working days and excludes weekends and company holidays.
 2. The proposal must have at least three +1 votes from platform code owners.
 3. The proposal must not have any -1 votes from platform code owners or architects.
 
-Votes follow the [Apache Voting](https://www.apache.org/foundation/voting.html#expressing-votes-1-0-1-and-fractions)
-scheme. Votes are cast in comments on the PR on a range between -1 to -0, +0 to +1 with the following semantics:
-
-* -1: is a veto.
-* -0 >= x > -1: is a non-blocking vote against the proposal.
-* +0 <= x < +1: is a vote in favor of the proposal but with some level of uncertainty.
-* +1: is a vote in favor of the proposal.
-
-The magnitude of the numeric value of the vote indicates the strength of the sentiment behind the vote.
-
-+1 votes can also be expressed by approving the PR. -1 votes can be expressed by "Requesting Changes" on the PR and
-should be accompanied by a comment explaining the reason for the veto.
-
----
-
-## Acceptance of A Proposal
-
-After 3 business days of voting, if the proposal has 3 or more +1 votes in favor with no vetos and the proposal has not
-been withdrawn or superseded, then the proposal becomes accepted. Once accepted, implementation may begin.
+Once accepted, the proposal must be moved to the Accepted status in
+the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board and implementation of the
+proposal may begin.
 
 ---
 
 ## Superseding A Proposal
 
-A proposal may be superseded by a new proposal. The old proposal must link to the new proposal and indicate that it is
-being superseded. After the proposal has been updated, the PR's status in the proposal project should be changed
-to `Superseded`.
+A proposal is superseded by a new proposal when material changes are needed once voting has started. The old proposal
+must link to the new proposal and indicate that it is being superseded. After the proposal has been updated, the PR's
+status in the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project should be
+changed to `Superseded`.
 
 ---
 
 ## Withdrawing A Proposal
 
-A proposal may be withdrawn. The proposal must be updated with a reason for the withdrawal. After the proposal has been
-updated, the PR's status in the proposal project should be changed to `Withdrawn`.
+A proposal may be withdrawn after voting occurs. The proposal must be updated with a reason for the withdrawal. After
+the proposal has been updated, the PR's status in
+the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project should be changed
+to `Withdrawn`.
 
 ---
 
 ## Delivery of A Proposal
 
-Once an accepted proposal has been completely implemented and the code merged into develop, the proposal's content
-should be used to update the documentation of the platform. Once the platform documentation is updated, the status of
-the proposal PR in the proposal project should be changed to `Delivered`.
+Once an accepted proposal has been completely implemented, tested, the code merged into `develop`, and the feature is
+enabled for production, the proposal's content should be merged with the documentation of the platform
+in `platform-sdk/docs` and removed from `platform-sdk/docs/proposals`. Once the platform documentation is updated, the
+status of the proposal PR in the proposal project should be changed to `Delivered`.
+
+## Design Proposal State Machine
+
+![](designProposalStateMachine.svg)
