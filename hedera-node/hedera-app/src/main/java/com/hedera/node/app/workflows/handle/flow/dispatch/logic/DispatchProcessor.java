@@ -29,6 +29,7 @@ import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -71,22 +72,22 @@ public class DispatchProcessor {
 
     @Inject
     public DispatchProcessor(
-            final Authorizer authorizer,
-            final ErrorReporter errorReporter,
-            final RecordFinalizer recordFinalizer,
-            final SystemFileUpdateFacility systemFileUpdateFacility,
-            final PlatformStateUpdateFacility platformStateUpdateFacility,
-            final ExchangeRateManager exchangeRateManager,
-            final TransactionDispatcher dispatcher,
-            final NetworkUtilizationManager networkUtilizationManager) {
-        this.authorizer = authorizer;
-        this.errorReporter = errorReporter;
-        this.recordFinalizer = recordFinalizer;
-        this.systemFileUpdateFacility = systemFileUpdateFacility;
-        this.platformStateUpdateFacility = platformStateUpdateFacility;
-        this.exchangeRateManager = exchangeRateManager;
-        this.dispatcher = dispatcher;
-        this.networkUtilizationManager = networkUtilizationManager;
+            @NonNull final Authorizer authorizer,
+            @NonNull final ErrorReporter errorReporter,
+            @NonNull final RecordFinalizer recordFinalizer,
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
+            @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+        this.authorizer = requireNonNull(authorizer);
+        this.errorReporter = requireNonNull(errorReporter);
+        this.recordFinalizer = requireNonNull(recordFinalizer);
+        this.systemFileUpdateFacility = requireNonNull(systemFileUpdateFacility);
+        this.platformStateUpdateFacility = requireNonNull(platformStateUpdateFacility);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.dispatcher = requireNonNull(dispatcher);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
     /**
@@ -97,7 +98,8 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      * @return the work done by the dispatch
      */
-    public WorkDone processDispatch(@NonNull Dispatch dispatch) {
+    public WorkDone processDispatch(@NonNull final Dispatch dispatch) {
+        requireNonNull(dispatch);
         final var errorReport = errorReporter.errorReportFor(dispatch);
         var workDone = FEES_ONLY;
         if (errorReport.isCreatorError()) {

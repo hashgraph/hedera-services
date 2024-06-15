@@ -17,6 +17,7 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -32,7 +33,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * A {@link FeeContext} to use when computing the cost of a child transaction within
@@ -45,7 +45,6 @@ public class ChildFeeContextImpl implements FeeContext {
     private final AccountID payerId;
     private final boolean computeFeesAsInternalDispatch;
     private final Authorizer authorizer;
-    private final int numTxnSignatures;
     private final ReadableStoreFactory storeFactory;
     private final Instant consensusNow;
 
@@ -55,19 +54,17 @@ public class ChildFeeContextImpl implements FeeContext {
             @NonNull final TransactionBody body,
             @NonNull final AccountID payerId,
             final boolean computeFeesAsInternalDispatch,
-            final Authorizer authorizer,
-            final int numTxnSignatures,
-            final ReadableStoreFactory storeFactory,
-            final Instant consensusNow) {
-        this.feeManager = Objects.requireNonNull(feeManager);
-        this.context = Objects.requireNonNull(context);
-        this.body = Objects.requireNonNull(body);
-        this.payerId = Objects.requireNonNull(payerId);
+            @NonNull final Authorizer authorizer,
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final Instant consensusNow) {
+        this.feeManager = requireNonNull(feeManager);
+        this.context = requireNonNull(context);
+        this.body = requireNonNull(body);
+        this.payerId = requireNonNull(payerId);
         this.computeFeesAsInternalDispatch = computeFeesAsInternalDispatch;
-        this.authorizer = authorizer;
-        this.numTxnSignatures = numTxnSignatures;
-        this.storeFactory = storeFactory;
-        this.consensusNow = consensusNow;
+        this.authorizer = requireNonNull(authorizer);
+        this.storeFactory = requireNonNull(storeFactory);
+        this.consensusNow = requireNonNull(consensusNow);
     }
 
     @Override
@@ -116,7 +113,7 @@ public class ChildFeeContextImpl implements FeeContext {
 
     @Override
     public int numTxnSignatures() {
-        return numTxnSignatures;
+        return 0;
     }
 
     @Override

@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.spi.fees;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Represents the combination of node, network, and service fees.
@@ -116,7 +119,8 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
      * @param fees The fees to add to this one
      * @return a new {@link Fees} object with the sum of the fees
      */
-    public Fees plus(Fees fees) {
+    public Fees plus(@NonNull final Fees fees) {
+        requireNonNull(fees);
         return new Fees(nodeFee + fees.nodeFee(), networkFee + fees.networkFee(), serviceFee + fees.serviceFee());
     }
 

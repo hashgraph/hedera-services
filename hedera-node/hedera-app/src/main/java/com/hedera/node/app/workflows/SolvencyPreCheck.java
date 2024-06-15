@@ -83,23 +83,6 @@ public class SolvencyPreCheck {
     @NonNull
     public Account getPayerAccount(@NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
             throws PreCheckException {
-        return getPayerAccount(storeFactory, accountID, false);
-    }
-
-    /**
-     * Reads the payer account from state and validates it.
-     *
-     * @param storeFactory the {@link ReadableStoreFactory} used to access readable state
-     * @param accountID the {@link AccountID} of the payer
-     * @param allowContractPayer whether to allow contract accounts as payers
-     * @throws PreCheckException if the payer account is invalid
-     */
-    @NonNull
-    public Account getPayerAccount(
-            @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final AccountID accountID,
-            boolean allowContractPayer)
-            throws PreCheckException {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(accountID);
 
@@ -111,7 +94,7 @@ public class SolvencyPreCheck {
             throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_DELETED);
         }
 
-        if (account.smartContract() && !allowContractPayer) {
+        if (account.smartContract()) {
             throw new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND);
         }
 

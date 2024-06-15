@@ -92,16 +92,12 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Provider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * The HandleContext Implementation
  */
 @Reusable
 public class DispatchHandleContext implements HandleContext, FeeContext {
-    private static final Logger logger = LogManager.getLogger(DispatchHandleContext.class);
-
     private final Instant consensusNow;
     private final TransactionInfo txnInfo;
     private final Configuration configuration;
@@ -133,59 +129,58 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @Inject
     public DispatchHandleContext(
-            final Instant consensusNow,
-            final TransactionInfo transactionInfo,
-            final Configuration configuration,
-            final Authorizer authorizer,
-            final BlockRecordManager blockRecordManager,
-            final FeeManager feeManager,
-            final ReadableStoreFactory storeFactory,
-            final AccountID syntheticPayer,
-            final KeyVerifier verifier,
-            final Key payerkey,
-            final FeeAccumulator feeAccumulator,
-            final ExchangeRateManager exchangeRateManager,
-            final SavepointStackImpl stack,
-            final WritableEntityIdStore entityIdStore,
-            final TransactionDispatcher dispatcher,
-            final RecordCache recordCache,
-            final WritableStoreFactory writableStoreFactory,
-            final ServiceApiFactory serviceApiFactory,
-            final NetworkInfo networkInfo,
-            final SingleTransactionRecordBuilderImpl recordBuilder,
-            final Provider<ChildDispatchComponent.Factory> childDispatchProvider,
-            final ChildDispatchFactory childDispatchLogic,
-            final Dispatch parentDispatch,
-            final DispatchProcessor dispatchProcessor,
-            final NetworkUtilizationManager networkUtilizationManager) {
-        this.consensusNow = consensusNow;
-        this.txnInfo = transactionInfo;
-        this.configuration = configuration;
-        this.authorizer = authorizer;
-        this.blockRecordManager = blockRecordManager;
-        this.feeManager = feeManager;
-        this.readableStoreFactory = storeFactory;
-        this.syntheticPayer = syntheticPayer;
-        this.verifier = verifier;
-        this.payerkey = payerkey;
-        this.feeAccumulator = feeAccumulator;
-        this.exchangeRateManager = exchangeRateManager;
-        this.stack = stack;
-        this.entityIdStore = entityIdStore;
-        this.childDispatchProvider = childDispatchProvider;
-        this.childDispatchFactory = childDispatchLogic;
-        this.currentDispatch = parentDispatch;
-        this.dispatchProcessor = dispatchProcessor;
-        this.networkUtilizationManager = networkUtilizationManager;
-        // FUTURE : Provide these two from UserTxnScope after deleting mono code
+            @NonNull final Instant consensusNow,
+            @NonNull final TransactionInfo transactionInfo,
+            @NonNull final Configuration configuration,
+            @NonNull final Authorizer authorizer,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final FeeManager feeManager,
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final AccountID syntheticPayer,
+            @NonNull final KeyVerifier verifier,
+            @NonNull final Key payerkey,
+            @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final WritableEntityIdStore entityIdStore,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final RecordCache recordCache,
+            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final ServiceApiFactory serviceApiFactory,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchProvider,
+            @NonNull final ChildDispatchFactory childDispatchLogic,
+            @NonNull final Dispatch parentDispatch,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+        this.consensusNow = requireNonNull(consensusNow);
+        this.txnInfo = requireNonNull(transactionInfo);
+        this.configuration = requireNonNull(configuration);
+        this.authorizer = requireNonNull(authorizer);
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.feeManager = requireNonNull(feeManager);
+        this.readableStoreFactory = requireNonNull(storeFactory);
+        this.syntheticPayer = requireNonNull(syntheticPayer);
+        this.verifier = requireNonNull(verifier);
+        this.payerkey = requireNonNull(payerkey);
+        this.feeAccumulator = requireNonNull(feeAccumulator);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.stack = requireNonNull(stack);
+        this.entityIdStore = requireNonNull(entityIdStore);
+        this.childDispatchProvider = requireNonNull(childDispatchProvider);
+        this.childDispatchFactory = requireNonNull(childDispatchLogic);
+        this.currentDispatch = requireNonNull(parentDispatch);
+        this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
-        this.dispatcher = dispatcher;
-        this.recordCache = recordCache;
-        this.writableStoreFactory = writableStoreFactory;
-        this.serviceApiFactory = serviceApiFactory;
-        this.networkInfo = networkInfo;
-        this.recordBuilder = recordBuilder;
+        this.dispatcher = requireNonNull(dispatcher);
+        this.recordCache = requireNonNull(recordCache);
+        this.writableStoreFactory = requireNonNull(writableStoreFactory);
+        this.serviceApiFactory = requireNonNull(serviceApiFactory);
+        this.networkInfo = requireNonNull(networkInfo);
+        this.recordBuilder = requireNonNull(recordBuilder);
     }
 
     @NonNull
@@ -400,7 +395,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 syntheticPayerId,
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
-                0,
                 readableStoreFactory,
                 consensusNow));
     }

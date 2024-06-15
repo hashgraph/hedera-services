@@ -78,8 +78,21 @@ public interface HandleContext {
         SCHEDULED
     }
 
-    public enum PrecedingTransactionCategory {
+    /**
+     * Enumerates the possible kinds of limits on preceding transaction records.
+     */
+    enum PrecedingTransactionCategory {
+        /**
+         * No limit on preceding transactions, true at genesis since there are no previous consensus
+         * times to collide with.
+         */
         UNLIMITED_CHILD_RECORDS,
+        /**
+         * The number of preceding transactions is limited by the number of nanoseconds between the
+         * last-assigned consensus time and the current platform-assigned consensus time. (Or,
+         * before block streams, even further artificially limited to three records for
+         * backward compatibility.)
+         */
         LIMITED_CHILD_RECORDS
     }
 
