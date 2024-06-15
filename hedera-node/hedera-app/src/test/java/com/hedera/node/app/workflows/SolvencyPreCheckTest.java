@@ -25,6 +25,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.INGEST;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -166,6 +167,14 @@ class SolvencyPreCheckTest extends AppTestBase {
             assertThatThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
+        }
+
+        @Test
+        void testGetSmartContractPayerAccountSucceedsWhenAllowed() {
+            accountsState.put(
+                    ALICE.accountID(),
+                    ALICE.account().copyBuilder().smartContract(true).build());
+            assertThatNoException().isThrownBy(() -> subject.getPayerAccount(storeFactory, ALICE.accountID()));
         }
     }
 

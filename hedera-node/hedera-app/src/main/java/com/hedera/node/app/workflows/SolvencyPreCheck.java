@@ -80,6 +80,13 @@ public class SolvencyPreCheck {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
     }
 
+    /**
+     * Reads the payer account from state and validates it.
+     *
+     * @param storeFactory the {@link ReadableStoreFactory} used to access readable state
+     * @param accountID the {@link AccountID} of the payer
+     * @throws PreCheckException if the payer account is invalid
+     */
     @NonNull
     public Account getPayerAccount(@NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
             throws PreCheckException {
