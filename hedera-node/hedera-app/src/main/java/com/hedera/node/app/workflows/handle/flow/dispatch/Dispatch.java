@@ -30,6 +30,7 @@ import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
@@ -41,10 +42,18 @@ import java.util.Set;
  */
 public interface Dispatch {
     /**
-     * The builder for the transaction record in the scope
+     * The builder for the transaction record of this dispatch.
+     *
      * @return the builder
      */
     SingleTransactionRecordBuilderImpl recordBuilder();
+
+    /**
+     * The configuration for the dispatch.
+     *
+     * @return the configuration
+     */
+    Configuration config();
 
     /**
      * The fees calculated for the transaction
@@ -143,8 +152,9 @@ public interface Dispatch {
     PlatformState platformState();
 
     /**
-     * The pre-handle result for the transaction
-     * @return
+     * The pre-handle result for the transaction; will be a synthetic result for a child dispatch.
+     *
+     * @return the pre-handle result
      */
     PreHandleResult preHandleResult();
 }

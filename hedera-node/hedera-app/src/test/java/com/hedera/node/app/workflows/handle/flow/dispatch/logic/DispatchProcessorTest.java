@@ -34,13 +34,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -68,18 +66,23 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.txn.WorkDone;
+import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,6 +92,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DispatchProcessorTest {
+    private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Fees FEES = new Fees(1L, 2L, 3L);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
@@ -119,6 +123,9 @@ class DispatchProcessorTest {
 
     @Mock
     private Authorizer authorizer;
+
+    @Mock
+    private DispatchUsageManager dispatchUsageManager;
 
     @Mock
     private KeyVerifier keyVerifier;
@@ -165,6 +172,15 @@ class DispatchProcessorTest {
     @Mock
     private FeeAccumulator feeAccumulator;
 
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private ThrottleServiceManager throttleServiceManager;
+
+    @Mock
+    private HandleWorkflowMetrics handleWorkflowMetrics;
+
     private DispatchProcessor subject;
 
     @BeforeEach
@@ -175,9 +191,9 @@ class DispatchProcessorTest {
                 recordFinalizer,
                 systemFileUpdateFacility,
                 platformStateUpdateFacility,
+                dispatchUsageManager,
                 exchangeRateManager,
-                dispatcher,
-                networkUtilizationManager);
+                dispatcher);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }
@@ -189,8 +205,9 @@ class DispatchProcessorTest {
         given(errorReporter.errorReportFor(dispatch))
                 .willReturn(creatorErrorReport(CREATOR_ACCOUNT_ID, INVALID_PAYER_SIGNATURE));
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeNetworkFee(CREATOR_ACCOUNT_ID, FEES.networkFee());
         verify(recordBuilder).status(INVALID_PAYER_SIGNATURE);
         assertFinished();
@@ -205,10 +222,10 @@ class DispatchProcessorTest {
                 .willReturn(true);
         given(recordBuilder.exchangeRate(any())).willReturn(recordBuilder);
         given(dispatch.handleContext()).willReturn(context);
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
+        given(dispatch.txnCategory()).willReturn(USER);
         givenAuthorization();
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+        subject.processDispatch(dispatch);
 
         verifyNoInteractions(feeAccumulator);
         verify(dispatcher).dispatchHandle(context);
@@ -226,8 +243,9 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(NOT_SUPPORTED);
         assertFinished();
@@ -243,8 +261,9 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(UNAUTHORIZED);
         assertFinished();
@@ -262,8 +281,9 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(AUTHORIZATION_FAILED);
         assertFinished();
@@ -281,8 +301,9 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(ENTITY_NOT_ALLOWED_TO_DELETE);
         assertFinished();
@@ -300,8 +321,9 @@ class DispatchProcessorTest {
         given(dispatch.requiredKeys()).willReturn(Set.of(Key.DEFAULT));
         given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(FAILED_VERIFICATION);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(INVALID_SIGNATURE);
         assertFinished();
@@ -321,8 +343,9 @@ class DispatchProcessorTest {
         given(dispatch.hollowAccounts()).willReturn(Set.of(HOLLOW));
         given(keyVerifier.verificationFor(HOLLOW.alias())).willReturn(FAILED_VERIFICATION);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         verify(recordBuilder).status(INVALID_SIGNATURE);
         assertFinished();
@@ -342,8 +365,9 @@ class DispatchProcessorTest {
                 .when(dispatcher)
                 .dispatchHandle(context);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+        subject.processDispatch(dispatch);
 
+        verifyUtilization();
         verify(dispatcher).dispatchHandle(context);
         verify(recordBuilder).status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         verify(recordListBuilder).revertChildrenOf(recordBuilder);
@@ -365,8 +389,9 @@ class DispatchProcessorTest {
                 .when(dispatcher)
                 .dispatchHandle(context);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+        subject.processDispatch(dispatch);
 
+        verifyUtilization();
         verify(dispatcher).dispatchHandle(context);
         verify(recordBuilder).status(CONTRACT_REVERT_EXECUTED);
         verify(recordListBuilder).revertChildrenOf(recordBuilder);
@@ -375,7 +400,7 @@ class DispatchProcessorTest {
     }
 
     @Test
-    void consGasExhaustedWaivesServiceFee() {
+    void consGasExhaustedWaivesServiceFee() throws ThrottleException {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
@@ -383,10 +408,13 @@ class DispatchProcessorTest {
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
         givenAuthorization(CONTRACT_TXN_INFO);
-        given(networkUtilizationManager.wasLastTxnGasThrottled()).willReturn(true);
+        doThrow(new ThrottleException(CONSENSUS_GAS_EXHAUSTED))
+                .when(dispatchUsageManager)
+                .screenForCapacity(dispatch);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(dispatcher, never()).dispatchHandle(context);
         verify(recordBuilder).status(CONSENSUS_GAS_EXHAUSTED);
         verify(recordListBuilder).revertChildrenOf(recordBuilder);
@@ -407,8 +435,9 @@ class DispatchProcessorTest {
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
         doThrow(new IllegalStateException()).when(dispatcher).dispatchHandle(context);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(recordBuilder).status(FAIL_INVALID);
         verify(recordListBuilder).revertChildrenOf(recordBuilder);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
@@ -424,7 +453,7 @@ class DispatchProcessorTest {
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         given(dispatch.handleContext()).willReturn(context);
-        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
+        given(dispatch.txnCategory()).willReturn(USER);
         given(dispatch.keyVerifier()).willReturn(keyVerifier);
         given(dispatch.requiredKeys()).willReturn(Set.of(Key.DEFAULT));
         given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(PASSED_VERIFICATION);
@@ -433,8 +462,9 @@ class DispatchProcessorTest {
         givenAuthorization(CONTRACT_TXN_INFO);
         givenSystemEffectSuccess(CONTRACT_TXN_INFO);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+        subject.processDispatch(dispatch);
 
+        verifyUtilization();
         verify(platformStateUpdateFacility).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
@@ -452,7 +482,7 @@ class DispatchProcessorTest {
         given(dispatch.handleContext()).willReturn(context);
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+        subject.processDispatch(dispatch);
 
         verify(platformStateUpdateFacility, never())
                 .handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
@@ -475,7 +505,7 @@ class DispatchProcessorTest {
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
         verify(recordBuilder).status(INSUFFICIENT_ACCOUNT_BALANCE);
@@ -491,8 +521,9 @@ class DispatchProcessorTest {
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
 
-        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+        subject.processDispatch(dispatch);
 
+        verifyTrackedFeePayments();
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
         verify(recordBuilder).status(DUPLICATE_TRANSACTION);
         verifyNoInteractions(dispatcher);
@@ -520,5 +551,13 @@ class DispatchProcessorTest {
     private void assertFinished() {
         verify(recordFinalizer).finalizeRecord(dispatch);
         verify(stack).commitFullStack();
+    }
+
+    private void verifyTrackedFeePayments() {
+        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.FEES_ONLY);
+    }
+
+    private void verifyUtilization() {
+        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.USER_TRANSACTION);
     }
 }
