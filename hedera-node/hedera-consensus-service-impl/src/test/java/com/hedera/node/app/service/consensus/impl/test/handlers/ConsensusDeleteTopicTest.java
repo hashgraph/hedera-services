@@ -241,7 +241,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
 
         final var existingTopic = writableStore.getTopic(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
         assertNotNull(existingTopic);
         assertFalse(existingTopic.deleted());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
@@ -249,7 +249,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         final var changedTopic = writableStore.getTopic(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
 
         assertNotNull(changedTopic);
         assertTrue(changedTopic.deleted());

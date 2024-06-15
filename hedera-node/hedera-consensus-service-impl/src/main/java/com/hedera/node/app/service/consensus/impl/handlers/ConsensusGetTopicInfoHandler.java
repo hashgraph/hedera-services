@@ -29,8 +29,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getStateProofSize;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -50,6 +48,7 @@ import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -189,7 +188,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             return CONSTANT_FEE_DATA;
         }
         final var bpr = BASIC_QUERY_RES_HEADER
-                + getStateProofSize(fromPbjResponseType(responseType))
+                + getStateProofSize(CommonPbjConverters.fromPbjResponseType(responseType))
                 + BASIC_ENTITY_ID_SIZE
                 + getTopicInfoSize(topic);
         final var feeMatrices = FeeComponents.newBuilder()
@@ -210,8 +209,8 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         return TX_HASH_SIZE
                 + 3 * LONG_SIZE
                 + computeVariableSizedFieldsUsage(
-                        fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
-                        fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
+                        CommonPbjConverters.fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
+                        CommonPbjConverters.fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
                         topic.memo(),
                         topic.hasAutoRenewAccountId());
     }

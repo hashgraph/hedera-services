@@ -19,10 +19,9 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
+import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler.noThrowSha384HashOf;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
-import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -54,7 +53,6 @@ import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -80,7 +78,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusSubmitMessageTest extends ConsensusTestBase {
+class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 
@@ -261,7 +259,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @DisplayName("Handle fails if submit message is too large")
     void failsIfMessageIsTooLarge() {
         givenValidTopic();
-        final var txn = newSubmitMessageTxn(topicEntityNum, Arrays.toString(new byte[2000]));
+        final var txn = newSubmitMessageTxn(1L, Arrays.toString(new byte[2000]));
         given(handleContext.body()).willReturn(txn);
 
         final var config = HederaTestConfigBuilder.create()
@@ -277,7 +275,7 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @DisplayName("Handle fails if topic for which message is being submitted is not found")
     void failsIfTopicIDInvalid() {
         givenValidTopic();
-        final var txn = newDefaultSubmitMessageTxn(MISSING_NUM);
+        final var txn = newDefaultSubmitMessageTxn(0L);
         given(handleContext.body()).willReturn(txn);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -372,18 +370,16 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         ConsensusTestUtils.mockTopicLookup(null, submitKey, readableStore);
     }
 
-    private TransactionBody newDefaultSubmitMessageTxn(final EntityNum topicEntityNum) {
+    private TransactionBody newDefaultSubmitMessageTxn(final long topicEntityNum) {
         return newSubmitMessageTxn(
                 topicEntityNum,
                 "Message for test-" + Instant.now() + "." + Instant.now().getNano());
     }
 
-    private TransactionBody newSubmitMessageTxn(final EntityNum topicEntityNum, final String message) {
+    private TransactionBody newSubmitMessageTxn(final long topicEntityNum, final String message) {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .topicID(TopicID.newBuilder()
-                        .topicNum(topicEntityNum.longValue())
-                        .build())
+                .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .message(Bytes.wrap(message));
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
@@ -407,20 +403,15 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     }
 
     private TransactionBody newSubmitMessageTxnWithChunks(
-            final EntityNum topicEntityNum, final int currentChunk, final int totalChunk) {
+            final long topicEntityNum, final int currentChunk, final int totalChunk) {
         return newSubmitMessageTxnWithChunksAndPayer(topicEntityNum, currentChunk, totalChunk, null);
     }
 
     private TransactionBody newSubmitMessageTxnWithChunksAndPayer(
-            final EntityNum topicEntityNum,
-            final int currentChunk,
-            final int totalChunk,
-            final TransactionID initialTxnId) {
+            final long topicEntityNum, final int currentChunk, final int totalChunk, final TransactionID initialTxnId) {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .topicID(TopicID.newBuilder()
-                        .topicNum(topicEntityNum.longValue())
-                        .build())
+                .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .chunkInfo(ConsensusMessageChunkInfo.newBuilder()
                         .initialTransactionID(initialTxnId != null ? initialTxnId : txnId)
                         .number(currentChunk)

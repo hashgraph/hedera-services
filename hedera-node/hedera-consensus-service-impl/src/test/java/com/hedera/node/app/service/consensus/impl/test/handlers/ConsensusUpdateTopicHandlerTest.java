@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_KEYLIST;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.EMPTY_THRESHOLD_KEY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -50,8 +50,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -62,8 +60,6 @@ import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -72,9 +68,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusUpdateTopicTest extends ConsensusTestBase {
-    private static final long maxLifetime = 3_000_000L;
-
+class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     private final ConsensusUpdateTopicTransactionBody.Builder OP_BUILDER =
             ConsensusUpdateTopicTransactionBody.newBuilder();
 
@@ -96,32 +90,15 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     private AttributeValidator attributeValidator;
 
     @Mock
-    private LongSupplier consensusSecondNow;
-
-    @Mock
-    private GlobalDynamicProperties dynamicProperties;
-
-    @Mock
-    private PropertySource compositeProps;
-
-    @Mock
     private FeeCalculator feeCalculator;
 
     @Mock
     private FeeAccumulator feeAccumulator;
 
-    private StandardizedAttributeValidator standardizedAttributeValidator;
-
     private ConsensusUpdateTopicHandler subject;
-
-    //
 
     @BeforeEach
     void setUp() {
-        given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(maxLifetime);
-
-        standardizedAttributeValidator =
-                new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         subject = new ConsensusUpdateTopicHandler();
 
         lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
@@ -197,10 +174,11 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var op = OP_BUILDER.topicID(topicId).adminKey(A_NONNULL_KEY).build();
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.body())
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
+        doThrow(new HandleException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
 
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
@@ -217,7 +195,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_KEYLIST).build();
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.body())
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
@@ -237,7 +215,8 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         final var op = OP_BUILDER.topicID(topicId).adminKey(EMPTY_THRESHOLD_KEY).build();
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.attributeValidator()).willReturn(standardizedAttributeValidator);
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        doThrow(new HandleException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
         given(handleContext.body())
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
@@ -521,9 +500,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         final var op = OP_BUILDER
                 .expirationTime(Timestamp.newBuilder().build())
-                .topicID(TopicID.newBuilder()
-                        .topicNum(topicEntityNum.longValue())
-                        .build())
+                .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .build();
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
         context.registerStore(ReadableTopicStore.class, readableStore);
@@ -574,7 +551,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         final var op = OP_BUILDER
                 .adminKey(anotherKey)
-                .topicID(TopicID.newBuilder().topicNum(1L).build())
+                .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())
                 .build();
         final var context = new FakePreHandleContext(accountStore, txnWith(op));
         context.registerStore(ReadableTopicStore.class, readableStore);

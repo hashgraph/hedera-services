@@ -30,7 +30,6 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -92,9 +91,9 @@ public class ConsensusTestBase {
 
     protected final Key adminKey = key;
     protected final Key autoRenewKey = anotherKey;
-    protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
+    protected final long topicEntityNum = 1L;
     protected final TopicID topicId =
-            TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
+            TopicID.newBuilder().topicNum(topicEntityNum).build();
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
     protected final String memo = "test memo";
@@ -224,19 +223,6 @@ public class ConsensusTestBase {
                 .topicId(topicId)
                 .adminKey(key)
                 .submitKey(key)
-                .autoRenewPeriod(autoRenewSecs)
-                .autoRenewAccountId(autoRenewId)
-                .expirationSecond(expirationTime)
-                .sequenceNumber(sequenceNumber)
-                .memo(memo)
-                .deleted(true)
-                .runningHash(Bytes.wrap(runningHash))
-                .build();
-    }
-
-    protected Topic createTopicEmptyKeys() {
-        return new Topic.Builder()
-                .topicId(topicId)
                 .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountId(autoRenewId)
                 .expirationSecond(expirationTime)

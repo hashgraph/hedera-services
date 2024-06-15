@@ -26,7 +26,6 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -36,7 +35,6 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.service.consensus.impl.schemas.V0490ConsensusSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -44,7 +42,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -142,12 +139,6 @@ public class MonoMigrationUtils {
                     copy.registerMetrics(metrics);
                     MONO_VIRTUAL_MAPS.add(copy);
                     V0490TokenSchema.setTokenRelsFromState(tokenRelsFromState);
-                }
-
-                // --------------------- TOPICS (2)
-                final MerkleMap<EntityNum, MerkleTopic> topicsFromState = state.getChild(TOPICS);
-                if (topicsFromState != null) {
-                    V0490ConsensusSchema.setFromState(topicsFromState);
                 }
 
                 // --------------------- STORAGE (3)     // only "non-special" files

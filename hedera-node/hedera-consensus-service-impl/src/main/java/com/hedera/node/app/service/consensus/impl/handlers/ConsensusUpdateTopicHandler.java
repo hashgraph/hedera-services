@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
@@ -43,6 +42,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -322,15 +322,15 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private FeeData usageGivenExplicit(
             @NonNull final TransactionBody txnBody, @NonNull final SigValueObj sigUsage, @Nullable final Topic topic) {
         long rbsIncrease = 0;
-        final var protoTxnBody = fromPbj(txnBody);
+        final var protoTxnBody = CommonPbjConverters.fromPbj(txnBody);
         if (topic != null && topic.hasAdminKey()) {
             final var expiry =
                     Timestamp.newBuilder().setSeconds(topic.expirationSecond()).build();
             try {
                 rbsIncrease = getUpdateTopicRbsIncrease(
                         protoTxnBody.getTransactionID().getTransactionValidStart(),
-                        fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
-                        fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
+                        CommonPbjConverters.fromPbj(topic.adminKeyOrElse(Key.DEFAULT)),
+                        CommonPbjConverters.fromPbj(topic.submitKeyOrElse(Key.DEFAULT)),
                         topic.memo(),
                         topic.hasAutoRenewAccountId(),
                         expiry,
