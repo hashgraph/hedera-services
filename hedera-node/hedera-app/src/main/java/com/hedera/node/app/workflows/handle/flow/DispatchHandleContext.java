@@ -422,6 +422,10 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
             final AccountID childSyntheticPayerId) {
+        requireNonNull(childTxnBody, "childTxnBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
+
         return dispatchForRecord(
                 childTxnBody,
                 recordBuilderClass,
@@ -459,6 +463,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
             @NonNull final TransactionCategory childCategory) {
+        requireNonNull(childTxBody, "childTxBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
+        requireNonNull(childCategory, "childCategory must not be null");
+
         return dispatchForRecord(
                 childTxBody,
                 recordBuilderClass,
@@ -478,6 +487,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @Nullable final Predicate<Key> childCallback,
             @NonNull final AccountID childSyntheticPayerId,
             @NonNull final ExternalizedRecordCustomizer customizer) {
+        requireNonNull(childTxBody, "childTxBody must not be null");
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");
+        requireNonNull(customizer, "customizer must not be null");
+
         return dispatchForRecord(
                 childTxBody,
                 recordBuilderClass,

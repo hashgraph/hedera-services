@@ -124,7 +124,6 @@ public class WritableStoreFactory {
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
         this.storeMetricsService =
                 requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
-
         this.states = state.getWritableStates(serviceName);
     }
 
