@@ -23,7 +23,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public enum DumpableLeaf {
+/**
+ * Enumerates the Merkle state children that can be dumped.
+ */
+public enum MerkleStateChild {
     /**
      * Entity ids, block info, and running hashes
      */
@@ -107,19 +110,19 @@ public enum DumpableLeaf {
      *
      * @return the selected checkpoints, or an empty set if none are selected
      */
-    public static Set<DumpableLeaf> selectedLeaves() {
-        if (leaves == null) {
+    public static Set<MerkleStateChild> childrenToDump() {
+        if (childrenToDump == null) {
             final var literalSelection =
-                    Optional.ofNullable(System.getProperty("leavesToDump")).orElse("");
-            leaves = literalSelection.isEmpty()
+                    Optional.ofNullable(System.getProperty("childrenToDump")).orElse("");
+            childrenToDump = literalSelection.isEmpty()
                     ? Collections.emptySet()
                     : Arrays.stream(literalSelection.split(","))
-                            .map(DumpableLeaf::valueOf)
-                            .collect(Collectors.toCollection(() -> EnumSet.noneOf(DumpableLeaf.class)));
-            System.out.println("Dumping leaves: " + leaves);
+                            .map(MerkleStateChild::valueOf)
+                            .collect(Collectors.toCollection(() -> EnumSet.noneOf(MerkleStateChild.class)));
+            System.out.println("Dumping children: " + childrenToDump);
         }
-        return leaves;
+        return childrenToDump;
     }
 
-    private static Set<DumpableLeaf> leaves = null;
+    private static Set<MerkleStateChild> childrenToDump = null;
 }

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -39,7 +40,7 @@ public enum ContractServiceImpl implements ContractService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ContractSchema());
-        //        registry.register(new V0500ContractSchema());
+        registry.register(new V0500ContractSchema());
     }
 
     public ContractHandlers handlers() {

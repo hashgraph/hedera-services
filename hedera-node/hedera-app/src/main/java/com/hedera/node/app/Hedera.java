@@ -50,7 +50,7 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.statedumpers.DumpableLeaf;
+import com.hedera.node.app.service.mono.statedumpers.MerkleStateChild;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
@@ -552,14 +552,11 @@ public final class Hedera implements SwirldMain {
     }
 
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
-        // (FUTURE) - dump the semantic contents of the recovered state for
-        // comparison with the mirroring mono-service state
         try {
             if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
-                dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY, DumpableLeaf.selectedLeaves());
+                dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY, MerkleStateChild.childrenToDump());
             }
         } catch (Exception e) {
-            e.printStackTrace();
             logger.error("Error dumping state after migration at MOD_POST_EVENT_STREAM_REPLAY", e);
         }
         // Always close the block manager so replay will end with a complete record file
