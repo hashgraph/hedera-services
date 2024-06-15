@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -31,14 +30,12 @@ import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFe
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
-import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
@@ -69,9 +66,9 @@ public class DispatchProcessor {
     private final RecordFinalizer recordFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final PlatformStateUpdateFacility platformStateUpdateFacility;
+    private final DispatchUsageManager dispatchUsageManager;
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher dispatcher;
-    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public DispatchProcessor(
@@ -80,28 +77,29 @@ public class DispatchProcessor {
             @NonNull final RecordFinalizer recordFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
             @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
+            @NonNull final DispatchUsageManager dispatchUsageManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.errorReporter = requireNonNull(errorReporter);
         this.recordFinalizer = requireNonNull(recordFinalizer);
         this.systemFileUpdateFacility = requireNonNull(systemFileUpdateFacility);
         this.platformStateUpdateFacility = requireNonNull(platformStateUpdateFacility);
+        this.dispatchUsageManager = requireNonNull(dispatchUsageManager);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
-        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
     /**
      * This method is responsible for charging the fees and tries to execute the business logic for the given dispatch,
      * guaranteeing that the changes committed to its stack are exactly reflected in its recordBuilder.
-     * At the end, it will finalize the record and commit the stack. The WorkDone returned will be used track the
-     * network utilization. It will be FEE_ONLY if the transaction has node errors, otherwise it will be USER_TRANSACTION.
+     * At the end, it will finalize the record and commit the stack. The WorkDone returned will be used trackUsage the
+     * network utilization. It will be {@link WorkDone#FEES_ONLY} if the transaction has node errors, otherwise it
+     * will be {@link WorkDone#USER_TRANSACTION}.
+     *
      * @param dispatch the dispatch to be processed
-     * @return the work done by the dispatch
      */
-    public WorkDone processDispatch(@NonNull final Dispatch dispatch) {
+    public void processDispatch(@NonNull final Dispatch dispatch) {
         requireNonNull(dispatch);
         final var errorReport = errorReporter.errorReportFor(dispatch);
         var workDone = FEES_ONLY;
@@ -113,9 +111,9 @@ public class DispatchProcessor {
                 workDone = tryHandle(dispatch, errorReport);
             }
         }
+        dispatchUsageManager.trackUsage(dispatch, workDone);
         recordFinalizer.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
-        return workDone;
     }
 
     /**
@@ -123,15 +121,17 @@ public class DispatchProcessor {
      * rollback the stack and charge the payer for the fees.
      * If it is throttled, it will charge the payer for the fees and return FEE_ONLY as work done.
      * If it catches an unexpected exception, it will charge the payer for the fees and return FEE_ONLY as work done.
+     *
      * @param dispatch the dispatch to be processed
      * @param errorReport the due diligence report for the dispatch
      * @return the work done by the dispatch
      */
     private WorkDone tryHandle(@NonNull final Dispatch dispatch, @NonNull final ErrorReport errorReport) {
         try {
-            handle(dispatch);
+            dispatchUsageManager.screenForCapacity(dispatch);
+            dispatcher.dispatchHandle(dispatch.handleContext());
             dispatch.recordBuilder().status(SUCCESS);
-            // Only user transactions can trigger system updates at present
+            // Only user transactions can trigger system updates in the current system
             if (dispatch.txnCategory() == USER) {
                 handleSystemUpdates(dispatch);
             }
@@ -147,8 +147,8 @@ public class DispatchProcessor {
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, errorReport);
             }
-            // Since there is no easy way to discern how much work was done in the dispatch, and
-            // current throttling is very rough-grained, we just return as if all work was done
+            // Since there is no easy way to say how much work was done in the failed dispatch,
+            // and current throttling is very rough-grained, we just return USER_TRANSACTION here
             return USER_TRANSACTION;
         } catch (final ThrottleException e) {
             return nonHandleWorkDone(dispatch, errorReport, dispatch.recordListBuilder(), e.getStatus());
@@ -159,25 +159,9 @@ public class DispatchProcessor {
     }
 
     /**
-     * Sends the given dispatch to the appropriate handler, unless the transaction is gas throttled.
-     *
-     * @param dispatch the dispatch to be processed
-     * @throws ThrottleException if the transaction is gas throttled
-     */
-    private void handle(@NonNull final Dispatch dispatch) throws ThrottleException {
-        if (isContractOperation(dispatch)) {
-            networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
-            if (networkUtilizationManager.wasLastTxnGasThrottled()) {
-                throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
-            }
-        }
-        // Throws HandleException if the handler determines the dispatch is invalid
-        dispatcher.dispatchHandle(dispatch.handleContext());
-    }
-
-    /**
      * Handles the system updates for the dispatch. It will notify the responsible system file update facility if
      * any system file was uploaded. It will also notify if the platform state was updated.
+     *
      * @param dispatch the dispatch to be processed
      */
     private void handleSystemUpdates(final Dispatch dispatch) {
@@ -305,6 +289,7 @@ public class DispatchProcessor {
 
     /**
      * Asserts that the dispatch is authorized. If the dispatch is not authorized, it will throw a {@link HandleException}.
+     *
      * @param dispatch the dispatch to be processed
      */
     private @Nullable ResponseCodeEnum maybeAuthorizationFailure(@NonNull final Dispatch dispatch) {
@@ -325,6 +310,7 @@ public class DispatchProcessor {
 
     /**
      * Asserts that the signatures are valid. If the signatures are not valid, it will throw a {@link HandleException}.
+     *
      * @param dispatch the dispatch to be processed
      */
     private boolean failsSignatureVerification(@NonNull final Dispatch dispatch) {
@@ -342,25 +328,5 @@ public class DispatchProcessor {
             }
         }
         return false;
-    }
-
-    /**
-     * This class is used to throw a {@link ThrottleException} when a transaction is gas throttled.
-     */
-    private static class ThrottleException extends Exception {
-        private final ResponseCodeEnum status;
-
-        public ThrottleException(@NonNull final ResponseCodeEnum status) {
-            this.status = requireNonNull(status);
-        }
-
-        /**
-         * Gets the status of the exception.
-         *
-         * @return the status
-         */
-        public ResponseCodeEnum getStatus() {
-            return status;
-        }
     }
 }

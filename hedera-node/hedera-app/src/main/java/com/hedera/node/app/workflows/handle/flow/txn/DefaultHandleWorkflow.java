@@ -65,9 +65,8 @@ public class DefaultHandleWorkflow {
      * user transaction, finalizes hollow accounts, and processes the dispatch.
      *
      * @param userTxn the user transaction component
-     * @return the work done
      */
-    public WorkDone execute(@NonNull final UserTransactionComponent userTxn) {
+    public void execute(@NonNull final UserTransactionComponent userTxn) {
         requireNonNull(userTxn);
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
@@ -77,8 +76,7 @@ public class DefaultHandleWorkflow {
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
         hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
-
-        return dispatchProcessor.processDispatch(userDispatch);
+        dispatchProcessor.processDispatch(userDispatch);
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {

@@ -588,11 +588,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody childTxBody,
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childVerifier,
-            final AccountID syntheticPayer,
-            @NonNull ExternalizedRecordCustomizer customizer,
-            TransactionCategory category,
-            SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
-            boolean commitStack) {
+            @NonNull final AccountID syntheticPayer,
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCategory category,
+            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            final boolean commitStack) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 currentDispatch,
                 childTxBody,
