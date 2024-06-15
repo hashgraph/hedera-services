@@ -35,6 +35,6 @@ public class TokenServiceImpl implements TokenService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0490TokenSchema(new SyntheticAccountCreator()));
-        registry.register(new V0500TokenSchema());
+//        registry.register(new V0500TokenSchema());
     }
 }

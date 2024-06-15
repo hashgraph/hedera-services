@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.Schema;
@@ -40,6 +41,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,6 +57,7 @@ import org.apache.logging.log4j.Logger;
  *     migration context in a {@link SortedMap} at key {@code "V0500_FIRST_STORAGE_KEYS"}.</li>
  * </ol>
  */
+@SuppressWarnings("rawtypes")
 public class V0500ContractSchema extends Schema {
     private static final Logger log = LogManager.getLogger(V0500ContractSchema.class);
 
@@ -108,19 +114,35 @@ public class V0500ContractSchema extends Schema {
                 "Previous state with {} slots had {} contracts with broken storage links",
                 storage.size(),
                 contractIdsToMigrate.size());
+        final var numPuts = new AtomicLong();
         if (!contractIdsToMigrate.isEmpty()) {
             contractIdsToMigrate.sort(CONTRACT_ID_COMPARATOR);
             final WritableKVState<SlotKey, SlotValue> writableStorage =
                     ctx.newStates().get(STORAGE_KEY);
+            final var writableStorageRef = new AtomicReference<>(writableStorage);
             // And finally update the new state with the fixed mappings
             contractIdsToMigrate.forEach(contractId -> mappings.get(contractId)
-                    .forEach(mapping -> writableStorage.put(mapping.slotKey(), mapping.slotValue())));
+                    .forEach(mapping -> {
+                        writableStorageRef.get().put(mapping.slotKey(), mapping.slotValue());
+                        if (numPuts.incrementAndGet() % 10_000 == 0) {
+                            // Make sure we are flushing data to disk as we go
+                            ((WritableKVStateBase) writableStorageRef.get()).commit();
+                            ctx.copyAndReleaseOnDiskState(STORAGE_KEY);
+                            // And ensure we have the latest writable state
+                            writableStorageRef.set(ctx.newStates().get(STORAGE_KEY));
+                        }
+                    }));
         }
+        System.out.printf("Previous state with %d slots had %d contracts with broken storage links, repair needed %d puts%n",
+                storage.size(),
+                contractIdsToMigrate.size(),
+                numPuts.get());
 
         // Expose the first keys of all contracts in the migration context for the token service
         ctx.sharedValues().put(SHARED_VALUES_KEY, firstKeys);
         final var end = Instant.now();
         log.info("Completed link repair in {}", Duration.between(begin, end));
+        System.out.printf("Completed link repair in %s%n", Duration.between(begin, end));
     }
 
     private MappingSummary summarizeWithRequiredFixes(@NonNull final List<StorageMapping> mappings) {

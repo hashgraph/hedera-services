@@ -40,7 +40,7 @@ public enum ContractServiceImpl implements ContractService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ContractSchema());
-        registry.register(new V0500ContractSchema());
+//        registry.register(new V0500ContractSchema());
     }
 
     public ContractHandlers handlers() {

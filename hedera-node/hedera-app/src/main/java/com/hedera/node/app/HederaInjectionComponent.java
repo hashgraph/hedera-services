@@ -17,6 +17,7 @@
 package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.swirlds.platform.system.InitTrigger;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
@@ -84,6 +85,8 @@ import javax.inject.Singleton;
             ThrottleServiceModule.class
         })
 public interface HederaInjectionComponent {
+    InitTrigger initTrigger();
+
     /* Needed by ServicesState */
     Provider<QueryInjectionComponent.Factory> queryComponentFactory();
 
