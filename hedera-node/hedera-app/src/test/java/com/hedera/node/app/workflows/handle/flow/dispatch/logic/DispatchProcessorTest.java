@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
@@ -64,6 +66,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,6 +132,9 @@ class DispatchProcessorTest {
 
     @Mock
     private SingleTransactionRecordBuilderImpl recordBuilder;
+
+    @Mock
+    private PlatformState platformState;
 
     @Mock
     private RecordListBuilder recordListBuilder;
@@ -231,6 +237,46 @@ class DispatchProcessorTest {
     }
 
     @Test
+    void failInvalidWaivesServiceFee() {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
+        given(dispatch.handleContext()).willReturn(context);
+        givenAuthorization(TXN_INFO);
+        doThrow(new IllegalStateException()).when(dispatcher).dispatchHandle(context);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(recordBuilder).status(FAIL_INVALID);
+        verify(recordListBuilder).revertChildrenOf(recordBuilder);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        assertFinished();
+    }
+
+    @Test
+    void happyPathContractCallAsExpected() {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
+        given(dispatch.handleContext()).willReturn(context);
+        givenAuthorization(CONTRACT_TXN_INFO);
+        givenSystemEffectSuccess(CONTRACT_TXN_INFO);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+
+        verify(platformStateUpdateFacility).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
+        verify(recordBuilder, times(2)).status(SUCCESS);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        assertFinished();
+    }
+
+    @Test
     void unableToAffordServiceFeesChargesAccordingly() {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
@@ -250,6 +296,13 @@ class DispatchProcessorTest {
         verify(recordBuilder).status(INSUFFICIENT_ACCOUNT_BALANCE);
         verifyNoInteractions(dispatcher);
         assertFinished();
+    }
+
+    private void givenSystemEffectSuccess(@NonNull final TransactionInfo txnInfo) {
+        given(systemFileUpdateFacility.handleTxBody(stack, txnInfo.txBody())).willReturn(SUCCESS);
+        given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
+        given(recordBuilder.exchangeRate(ExchangeRateSet.DEFAULT)).willReturn(recordBuilder);
+        given(dispatch.platformState()).willReturn(platformState);
     }
 
     private void givenAuthorization() {

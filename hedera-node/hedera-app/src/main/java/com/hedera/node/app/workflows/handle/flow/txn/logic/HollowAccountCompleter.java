@@ -58,7 +58,7 @@ public class HollowAccountCompleter {
 
     @Inject
     public HollowAccountCompleter() {
-        // do nothing
+        // Dagger2
     }
 
     /**
@@ -70,7 +70,10 @@ public class HollowAccountCompleter {
      * @param userTxn the user transaction component
      * @param dispatch the dispatch
      */
-    public void finalizeHollowAccounts(@NonNull UserTransactionComponent userTxn, @NonNull Dispatch dispatch) {
+    public void finalizeHollowAccounts(
+            @NonNull final UserTransactionComponent userTxn, @NonNull final Dispatch dispatch) {
+        requireNonNull(userTxn);
+        requireNonNull(dispatch);
         // Any hollow accounts that must sign to have all needed signatures, need to be finalized
         // as a result of transaction being handled.
         Set<Account> hollowAccounts = userTxn.preHandleResult().getHollowAccounts();

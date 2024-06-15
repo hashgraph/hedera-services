@@ -17,8 +17,10 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -126,10 +128,10 @@ public class DispatchProcessor {
      */
     private WorkDone tryHandle(@NonNull final Dispatch dispatch, @NonNull final ErrorReport errorReport) {
         try {
-            final var workDone = handle(dispatch);
+            handle(dispatch);
             dispatch.recordBuilder().status(SUCCESS);
             handleSystemUpdates(dispatch);
-            return workDone;
+            return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
             rollback(
@@ -141,13 +143,32 @@ public class DispatchProcessor {
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, errorReport);
             }
+            // Since there is no easy way to discern how much work was done in the dispatch, and
+            // current throttling is very rough-grained, we just return as if all work was done
             return USER_TRANSACTION;
-        } catch (ThrottleException e) {
-            return handleException(dispatch, errorReport, dispatch.recordListBuilder(), e.getStatus());
-        } catch (Exception e) {
+        } catch (final ThrottleException e) {
+            return nonHandleWorkDone(dispatch, errorReport, dispatch.recordListBuilder(), e.getStatus());
+        } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            return handleException(dispatch, errorReport, dispatch.recordListBuilder(), ResponseCodeEnum.FAIL_INVALID);
+            return nonHandleWorkDone(dispatch, errorReport, dispatch.recordListBuilder(), FAIL_INVALID);
         }
+    }
+
+    /**
+     * Sends the given dispatch to the appropriate handler, unless the transaction is gas throttled.
+     *
+     * @param dispatch the dispatch to be processed
+     * @throws ThrottleException if the transaction is gas throttled
+     */
+    private void handle(@NonNull final Dispatch dispatch) throws ThrottleException {
+        if (isContractOperation(dispatch)) {
+            networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+            if (networkUtilizationManager.wasLastTxnGasThrottled()) {
+                throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
+            }
+        }
+        // Throws HandleException if the handler determines the dispatch is invalid
+        dispatcher.dispatchHandle(dispatch.handleContext());
     }
 
     /**
@@ -171,16 +192,17 @@ public class DispatchProcessor {
     }
 
     /**
-     * Handles the exception for the dispatch. It will rollback the stack, charge the payer for the fees and return
-     * FEE_ONLY as work done.
+     * Handles the exception for the dispatch. It will rollback the stack, charge the payer for the fees
+     * and return FEE_ONLY as work done.
+     *
      * @param dispatch the dispatch to be processed
      * @param errorReport the due diligence report for the dispatch
      * @param recordListBuilder the record list builder
      * @param status the status to set
-     * @return the work done by the dispatch
+     * @return the work done in handling the exception
      */
     @NonNull
-    private WorkDone handleException(
+    private WorkDone nonHandleWorkDone(
             final @NonNull Dispatch dispatch,
             final @NonNull ErrorReport errorReport,
             final @NonNull RecordListBuilder recordListBuilder,
@@ -192,22 +214,24 @@ public class DispatchProcessor {
 
     /**
      * Charges the creator for the network fee. This will be called when there is a due diligence failure.
+     *
      * @param dispatch the dispatch to be processed
      * @param report the due diligence report for the dispatch
      */
-    private void chargeCreator(final Dispatch dispatch, ErrorReport report) {
+    private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final ErrorReport report) {
         dispatch.recordBuilder().status(report.creatorErrorOrThrow());
         dispatch.feeAccumulator()
                 .chargeNetworkFee(report.creatorId(), dispatch.fees().networkFee());
     }
 
     /**
-     * Charges the payer for the fees. If the payer is unable to pay the service fee, the service fee will be charged to
-     * the creator. If the transaction is a duplicate, the service fee will be waived.
+     * Charges the payer for the fees. If the payer is unable to pay the service fee, the service fee
+     * will be charged to the creator. If the transaction is a duplicate, the service fee will be waived.
+     *
      * @param dispatch the dispatch to be processed
      * @param report the due diligence report for the dispatch
      */
-    private void chargePayer(final Dispatch dispatch, ErrorReport report) {
+    private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final ErrorReport report) {
         final var hasWaivedFees = authorizer.hasWaivedFees(
                 dispatch.syntheticPayer(),
                 dispatch.txnInfo().functionality(),
@@ -249,17 +273,15 @@ public class DispatchProcessor {
         recordListBuilder.revertChildrenOf(recordBuilder);
     }
 
-    private WorkDone handle(@NonNull final Dispatch dispatch) throws ThrottleException {
-        if (isContractOperation(dispatch)) {
-            networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
-            if (networkUtilizationManager.wasLastTxnGasThrottled()) {
-                throw new ThrottleException(CONSENSUS_GAS_EXHAUSTED);
-            }
-        }
-        dispatcher.dispatchHandle(dispatch.handleContext());
-        return USER_TRANSACTION;
-    }
-
+    /**
+     * Checks if the transaction has already failed due to an error that can be identified before even performing
+     * the dispatch. If it has, it will set the status of the dispatch's record buidler and return true.
+     * Otherwise, it will return false.
+     *
+     * @param dispatch the dispatch to be processed
+     * @param errorReport the due diligence report for the dispatch
+     * @return true if the transaction has already failed, false otherwise
+     */
     private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final ErrorReport errorReport) {
         if (errorReport.isPayerError()) {
             dispatch.recordBuilder().status(errorReport.payerErrorOrThrow());
@@ -281,7 +303,7 @@ public class DispatchProcessor {
      * Asserts that the dispatch is authorized. If the dispatch is not authorized, it will throw a {@link HandleException}.
      * @param dispatch the dispatch to be processed
      */
-    private @Nullable ResponseCodeEnum maybeAuthorizationFailure(final Dispatch dispatch) {
+    private @Nullable ResponseCodeEnum maybeAuthorizationFailure(@NonNull final Dispatch dispatch) {
         if (!authorizer.isAuthorized(
                 dispatch.syntheticPayer(), dispatch.txnInfo().functionality())) {
             return dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
@@ -291,7 +313,7 @@ public class DispatchProcessor {
                 dispatch.txnInfo().functionality(),
                 dispatch.txnInfo().txBody());
         return switch (failure) {
-            case UNAUTHORIZED -> UNAUTHORIZED;
+            case UNAUTHORIZED -> AUTHORIZATION_FAILED;
             case IMPERMISSIBLE -> ENTITY_NOT_ALLOWED_TO_DELETE;
             default -> null;
         };
@@ -301,7 +323,7 @@ public class DispatchProcessor {
      * Asserts that the signatures are valid. If the signatures are not valid, it will throw a {@link HandleException}.
      * @param dispatch the dispatch to be processed
      */
-    private boolean failsSignatureVerification(final Dispatch dispatch) {
+    private boolean failsSignatureVerification(@NonNull final Dispatch dispatch) {
         for (final var key : dispatch.requiredKeys()) {
             final var verification = dispatch.keyVerifier().verificationFor(key);
             if (verification.failed()) {
@@ -324,10 +346,15 @@ public class DispatchProcessor {
     private static class ThrottleException extends Exception {
         private final ResponseCodeEnum status;
 
-        public ThrottleException(final ResponseCodeEnum status) {
-            this.status = status;
+        public ThrottleException(@NonNull final ResponseCodeEnum status) {
+            this.status = requireNonNull(status);
         }
 
+        /**
+         * Gets the status of the exception.
+         *
+         * @return the status
+         */
         public ResponseCodeEnum getStatus() {
             return status;
         }

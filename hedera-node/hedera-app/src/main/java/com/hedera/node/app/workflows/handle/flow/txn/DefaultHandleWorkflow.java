@@ -19,12 +19,14 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -60,11 +62,13 @@ public class DefaultHandleWorkflow {
     /**
      * Executes the handle workflow. This method is the entry point for handling a user transaction.
      * It processes the staking period time hook, advances the consensus clock, expires schedules, logs the
-     * user transaction,
+     * user transaction, finalizes hollow accounts, and processes the dispatch.
+     *
      * @param userTxn the user transaction component
      * @return the work done
      */
-    public WorkDone execute(UserTransactionComponent userTxn) {
+    public WorkDone execute(@NonNull final UserTransactionComponent userTxn) {
+        requireNonNull(userTxn);
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         schedulePurger.expireSchedules(userTxn);
