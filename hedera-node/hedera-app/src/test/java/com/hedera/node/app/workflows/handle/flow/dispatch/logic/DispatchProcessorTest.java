@@ -16,6 +16,39 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerDuplicateErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -25,8 +58,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -45,37 +80,12 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerDuplicateErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class DispatchProcessorTest {
@@ -86,6 +96,9 @@ class DispatchProcessorTest {
             Account.newBuilder().accountId(PAYER_ACCOUNT_ID).build();
     private static final AccountID CREATOR_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3).build();
+    private static final Account HOLLOW = Account.newBuilder()
+            .alias(Bytes.fromHex("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"))
+            .build();
     private static final NodeId CREATOR_NODE_ID = new NodeId(0L);
     private static final SignatureVerification PASSED_VERIFICATION =
             new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
@@ -95,13 +108,20 @@ class DispatchProcessorTest {
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
-    private static final TransactionInfo TXN_INFO =
+    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+    private static final TransactionInfo SYS_DEL_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_DELETE);
+    private static final TransactionInfo SYS_UNDEL_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, SYSTEM_UNDELETE);
     private static final TransactionInfo CONTRACT_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
 
     @Mock
     private Authorizer authorizer;
+
+    @Mock
+    private KeyVerifier keyVerifier;
 
     @Mock
     private HandleContext context;
@@ -180,11 +200,12 @@ class DispatchProcessorTest {
     void waivedFeesDoesNotCharge() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
-        given(dispatch.txnInfo()).willReturn(TXN_INFO);
-        given(authorizer.hasWaivedFees(PAYER_ACCOUNT_ID, TXN_INFO.functionality(), TXN_BODY))
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(authorizer.hasWaivedFees(PAYER_ACCOUNT_ID, CRYPTO_TRANSFER_TXN_INFO.functionality(), TXN_BODY))
                 .willReturn(true);
         given(recordBuilder.exchangeRate(any())).willReturn(recordBuilder);
         given(dispatch.handleContext()).willReturn(context);
+        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
         givenAuthorization();
 
         assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
@@ -196,12 +217,124 @@ class DispatchProcessorTest {
     }
 
     @Test
+    void unauthorizedSystemDeleteIsNotSupported() {
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(SYS_DEL_TXN_INFO);
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality()))
+                .willReturn(false);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(NOT_SUPPORTED);
+        assertFinished();
+    }
+
+    @Test
+    void unauthorizedOtherIsUnauthorized() {
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(SYS_UNDEL_TXN_INFO);
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_UNDEL_TXN_INFO.functionality()))
+                .willReturn(false);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(UNAUTHORIZED);
+        assertFinished();
+    }
+
+    @Test
+    void unprivilegedSystemUndeleteIsAuthorizationFailed() {
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(SYS_DEL_TXN_INFO);
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality()))
+                .willReturn(true);
+        given(authorizer.hasPrivilegedAuthorization(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality(), TXN_BODY))
+                .willReturn(SystemPrivilege.UNAUTHORIZED);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(AUTHORIZATION_FAILED);
+        assertFinished();
+    }
+
+    @Test
+    void unprivilegedSystemDeleteIsImpermissible() {
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(SYS_DEL_TXN_INFO);
+        given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality()))
+                .willReturn(true);
+        given(authorizer.hasPrivilegedAuthorization(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality(), TXN_BODY))
+                .willReturn(SystemPrivilege.IMPERMISSIBLE);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(ENTITY_NOT_ALLOWED_TO_DELETE);
+        assertFinished();
+    }
+
+    @Test
+    void invalidSignatureCryptoTransferFails() {
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        givenAuthorization();
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.keyVerifier()).willReturn(keyVerifier);
+        given(dispatch.requiredKeys()).willReturn(Set.of(Key.DEFAULT));
+        given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(FAILED_VERIFICATION);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(INVALID_SIGNATURE);
+        assertFinished();
+    }
+
+    @Test
+    void invalidHollowAccountCryptoTransferFails() {
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        givenAuthorization();
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.keyVerifier()).willReturn(keyVerifier);
+        given(dispatch.requiredKeys()).willReturn(Set.of(Key.DEFAULT));
+        given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(PASSED_VERIFICATION);
+        given(dispatch.hollowAccounts()).willReturn(Set.of(HOLLOW));
+        given(keyVerifier.verificationFor(HOLLOW.alias())).willReturn(FAILED_VERIFICATION);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        verify(recordBuilder).status(INVALID_SIGNATURE);
+        assertFinished();
+    }
+
+    @Test
     void thrownHandleExceptionRollsBackIfRequested() {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
-        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.handleContext()).willReturn(context);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
         givenAuthorization();
@@ -268,10 +401,10 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
-        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(dispatch.handleContext()).willReturn(context);
-        givenAuthorization(TXN_INFO);
+        givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
         doThrow(new IllegalStateException()).when(dispatcher).dispatchHandle(context);
 
         assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
@@ -291,6 +424,12 @@ class DispatchProcessorTest {
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         given(dispatch.handleContext()).willReturn(context);
+        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.USER);
+        given(dispatch.keyVerifier()).willReturn(keyVerifier);
+        given(dispatch.requiredKeys()).willReturn(Set.of(Key.DEFAULT));
+        given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(PASSED_VERIFICATION);
+        given(dispatch.hollowAccounts()).willReturn(Set.of(HOLLOW));
+        given(keyVerifier.verificationFor(HOLLOW.alias())).willReturn(PASSED_VERIFICATION);
         givenAuthorization(CONTRACT_TXN_INFO);
         givenSystemEffectSuccess(CONTRACT_TXN_INFO);
 
@@ -298,6 +437,26 @@ class DispatchProcessorTest {
 
         verify(platformStateUpdateFacility).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
         verify(recordBuilder, times(2)).status(SUCCESS);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        assertFinished();
+    }
+
+    @Test
+    void happyPathChildCryptoTransferAsExpected() {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
+        given(dispatch.handleContext()).willReturn(context);
+        givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+
+        verify(platformStateUpdateFacility, never())
+                .handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         assertFinished();
     }
@@ -314,7 +473,7 @@ class DispatchProcessorTest {
                         ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE,
                         DuplicateStatus.NO_DUPLICATE));
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
-        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
 
         assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
 
@@ -328,12 +487,9 @@ class DispatchProcessorTest {
     void duplicateChargesAccordingly() {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
-        given(errorReporter.errorReportFor(dispatch))
-                .willReturn(payerDuplicateErrorReport(
-                        CREATOR_ACCOUNT_ID,
-                        PAYER));
+        given(errorReporter.errorReportFor(dispatch)).willReturn(payerDuplicateErrorReport(CREATOR_ACCOUNT_ID, PAYER));
         given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
-        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
 
         assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
 
@@ -351,7 +507,7 @@ class DispatchProcessorTest {
     }
 
     private void givenAuthorization() {
-        givenAuthorization(TXN_INFO);
+        givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
     }
 
     private void givenAuthorization(@NonNull final TransactionInfo txnInfo) {

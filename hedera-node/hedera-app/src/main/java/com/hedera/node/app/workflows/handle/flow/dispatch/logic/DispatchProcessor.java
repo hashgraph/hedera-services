@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
@@ -130,7 +131,10 @@ public class DispatchProcessor {
         try {
             handle(dispatch);
             dispatch.recordBuilder().status(SUCCESS);
-            handleSystemUpdates(dispatch);
+            // Only user transactions can trigger system updates at present
+            if (dispatch.txnCategory() == USER) {
+                handleSystemUpdates(dispatch);
+            }
             return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
