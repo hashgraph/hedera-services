@@ -17,7 +17,6 @@
 package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
-import com.swirlds.platform.system.InitTrigger;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;

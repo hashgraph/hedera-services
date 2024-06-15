@@ -21,15 +21,11 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.statedumpers.nfts.BBMUniqueToken;
-import com.hedera.node.app.service.mono.statedumpers.nfts.BBMUniqueTokenId;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingInfo;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
 import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -44,8 +40,7 @@ public class StakingInfoDumpUtils {
 
     public static void dumpModStakingInfo(
             @NonNull final Path path,
-            @NonNull
-                    final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> BBMStakingInfoVirtualMap,
+            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> BBMStakingInfoVirtualMap,
             @NonNull final DumpCheckpoint checkpoint) {
         System.out.printf("=== %d staking info ===%n", BBMStakingInfoVirtualMap.size());
 
@@ -63,8 +58,7 @@ public class StakingInfoDumpUtils {
 
     @NonNull
     static Map<Long, BBMStakingInfo> gatherBBMStakingInfoFromMod(
-            @NonNull
-                    final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> stakingInfo) {
+            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> stakingInfo) {
         final var r = new HashMap<Long, BBMStakingInfo>();
         final var threadCount = 5;
         final var mappings = new ConcurrentLinkedQueue<Pair<Long, BBMStakingInfo>>();
@@ -72,7 +66,9 @@ public class StakingInfoDumpUtils {
             VirtualMapLike.from(stakingInfo)
                     .extractVirtualMapDataC(
                             getStaticThreadManager(),
-                            p -> mappings.add(Pair.of(p.left().getKey().number(), fromMod(p.right().getValue()))),
+                            p -> mappings.add(Pair.of(
+                                    p.left().getKey().number(),
+                                    fromMod(p.right().getValue()))),
                             threadCount);
         } catch (final InterruptedException ex) {
             System.err.println("*** Traversal of uniques virtual map interrupted!");

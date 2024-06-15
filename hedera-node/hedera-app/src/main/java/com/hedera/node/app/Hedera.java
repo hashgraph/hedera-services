@@ -25,9 +25,9 @@ import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.status.PlatformStatus.STARTING_UP;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -102,7 +102,6 @@ import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -557,10 +556,7 @@ public final class Hedera implements SwirldMain {
         // comparison with the mirroring mono-service state
         try {
             if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
-                dumpModChildrenFrom(
-                        recoveredState,
-                        MOD_POST_EVENT_STREAM_REPLAY,
-                        DumpableLeaf.selectedLeaves());
+                dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY, DumpableLeaf.selectedLeaves());
             }
         } catch (Exception e) {
             e.printStackTrace();

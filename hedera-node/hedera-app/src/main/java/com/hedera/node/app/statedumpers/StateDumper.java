@@ -90,8 +90,6 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
 import com.swirlds.platform.state.merkle.disk.OnDiskValue;
-import com.swirlds.platform.state.merkle.memory.InMemoryKey;
-import com.swirlds.platform.state.merkle.memory.InMemoryValue;
 import com.swirlds.platform.state.merkle.queue.QueueNode;
 import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.HederaState;
@@ -158,12 +156,14 @@ public class StateDumper {
         }
 
         if (leaves.contains(DumpableLeaf.ACCOUNTS)) {
-            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts = requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
             dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
         }
 
         if (leaves.contains(DumpableLeaf.BYTECODE)) {
-            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts = requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
             final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(
                     state.getChild(state.findNodeIndex(ContractService.NAME, V0490ContractSchema.BYTECODE_KEY)));
             dumpModContractBytecodes(
@@ -184,11 +184,12 @@ public class StateDumper {
         if (leaves.contains(DumpableLeaf.SCHEDULED_TRANSACTIONS)) {
             final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactionsByKey =
                     requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_ID_KEY)));
-            final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>>
-                    scheduledTransactionsByEquality = requireNonNull(
+            final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> scheduledTransactionsByEquality =
+                    requireNonNull(
                             state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EQUALITY_KEY)));
             final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> scheduledTransactionsByExpiry =
-                    requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EXPIRY_SEC_KEY)));
+                    requireNonNull(
+                            state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EXPIRY_SEC_KEY)));
             dumpModScheduledTransactions(
                     Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS),
                     scheduledTransactionsByKey,
@@ -204,8 +205,8 @@ public class StateDumper {
         }
 
         if (leaves.contains(DumpableLeaf.BLOCK_METADATA)) {
-            final SingletonNode<RunningHashes> runningHashesSingleton =
-                    requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
+            final SingletonNode<RunningHashes> runningHashesSingleton = requireNonNull(
+                    state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
             final SingletonNode<BlockInfo> blocksStateSingleton =
                     requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
             final SingletonNode<EntityNumber> entityIdSingleton =
@@ -237,10 +238,12 @@ public class StateDumper {
         }
 
         if (leaves.contains(DumpableLeaf.THROTTLE_METADATA)) {
-            final SingletonNode<CongestionLevelStarts> congestionLevelStartsSingletonNode = requireNonNull(
-                    state.getChild(state.findNodeIndex(CongestionThrottleService.NAME, CONGESTION_LEVEL_STARTS_STATE_KEY)));
-            final SingletonNode<ThrottleUsageSnapshots> throttleUsageSnapshotsSingletonNode = requireNonNull(state.getChild(
-                    state.findNodeIndex(CongestionThrottleService.NAME, THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)));
+            final SingletonNode<CongestionLevelStarts> congestionLevelStartsSingletonNode =
+                    requireNonNull(state.getChild(
+                            state.findNodeIndex(CongestionThrottleService.NAME, CONGESTION_LEVEL_STARTS_STATE_KEY)));
+            final SingletonNode<ThrottleUsageSnapshots> throttleUsageSnapshotsSingletonNode =
+                    requireNonNull(state.getChild(
+                            state.findNodeIndex(CongestionThrottleService.NAME, THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)));
             dumpModCongestion(
                     Paths.get(dumpLoc, SEMANTIC_CONGESTION),
                     congestionLevelStartsSingletonNode.getValue(),

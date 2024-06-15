@@ -16,6 +16,16 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
+import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
+import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -29,19 +39,8 @@ import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
-import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
-import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
 
 @Singleton
 public class DispatchUsageManager {

@@ -41,10 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,22 +119,20 @@ public class V0500ContractSchema extends Schema {
                     ctx.newStates().get(STORAGE_KEY);
             final var writableStorageRef = new AtomicReference<>(writableStorage);
             // And finally update the new state with the fixed mappings
-            contractIdsToMigrate.forEach(contractId -> mappings.get(contractId)
-                    .forEach(mapping -> {
-                        writableStorageRef.get().put(mapping.slotKey(), mapping.slotValue());
-                        if (numPuts.incrementAndGet() % 10_000 == 0) {
-                            // Make sure we are flushing data to disk as we go
-                            ((WritableKVStateBase) writableStorageRef.get()).commit();
-                            ctx.copyAndReleaseOnDiskState(STORAGE_KEY);
-                            // And ensure we have the latest writable state
-                            writableStorageRef.set(ctx.newStates().get(STORAGE_KEY));
-                        }
-                    }));
+            contractIdsToMigrate.forEach(contractId -> mappings.get(contractId).forEach(mapping -> {
+                writableStorageRef.get().put(mapping.slotKey(), mapping.slotValue());
+                if (numPuts.incrementAndGet() % 10_000 == 0) {
+                    // Make sure we are flushing data to disk as we go
+                    ((WritableKVStateBase) writableStorageRef.get()).commit();
+                    ctx.copyAndReleaseOnDiskState(STORAGE_KEY);
+                    // And ensure we have the latest writable state
+                    writableStorageRef.set(ctx.newStates().get(STORAGE_KEY));
+                }
+            }));
         }
-        System.out.printf("Previous state with %d slots had %d contracts with broken storage links, repair needed %d puts%n",
-                storage.size(),
-                contractIdsToMigrate.size(),
-                numPuts.get());
+        System.out.printf(
+                "Previous state with %d slots had %d contracts with broken storage links, repair needed %d puts%n",
+                storage.size(), contractIdsToMigrate.size(), numPuts.get());
 
         // Expose the first keys of all contracts in the migration context for the token service
         ctx.sharedValues().put(SHARED_VALUES_KEY, firstKeys);
