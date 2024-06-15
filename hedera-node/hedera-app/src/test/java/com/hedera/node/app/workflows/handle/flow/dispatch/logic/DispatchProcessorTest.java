@@ -16,29 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -73,6 +50,32 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.creatorErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.errorFreeReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerDuplicateErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.ErrorReport.payerErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class DispatchProcessorTest {
@@ -216,6 +219,29 @@ class DispatchProcessorTest {
     }
 
     @Test
+    void thrownHandleExceptionDoesNotRollBackIfNotRequested() {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
+        given(dispatch.handleContext()).willReturn(context);
+        given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
+        givenAuthorization(CONTRACT_TXN_INFO);
+        doThrow(new HandleException(CONTRACT_REVERT_EXECUTED, HandleException.ShouldRollbackStack.NO))
+                .when(dispatcher)
+                .dispatchHandle(context);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(USER_TRANSACTION);
+
+        verify(dispatcher).dispatchHandle(context);
+        verify(recordBuilder).status(CONTRACT_REVERT_EXECUTED);
+        verify(recordListBuilder).revertChildrenOf(recordBuilder);
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
+        assertFinished();
+    }
+
+    @Test
     void consGasExhaustedWaivesServiceFee() {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
@@ -294,6 +320,25 @@ class DispatchProcessorTest {
 
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
         verify(recordBuilder).status(INSUFFICIENT_ACCOUNT_BALANCE);
+        verifyNoInteractions(dispatcher);
+        assertFinished();
+    }
+
+    @Test
+    void duplicateChargesAccordingly() {
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(errorReporter.errorReportFor(dispatch))
+                .willReturn(payerDuplicateErrorReport(
+                        CREATOR_ACCOUNT_ID,
+                        PAYER));
+        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(TXN_INFO);
+
+        assertThat(subject.processDispatch(dispatch)).isEqualTo(FEES_ONLY);
+
+        verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES.withoutServiceComponent());
+        verify(recordBuilder).status(DUPLICATE_TRANSACTION);
         verifyNoInteractions(dispatcher);
         assertFinished();
     }
