@@ -241,6 +241,6 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
-        hedera.onNewRecoveredState();
+        hedera.onNewRecoveredState(recoveredState);
     }
 }
