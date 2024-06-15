@@ -61,7 +61,6 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Set;
 import javax.inject.Provider;
 
@@ -111,7 +110,8 @@ public interface ChildDispatchModule {
     @Provides
     @ChildDispatchScope
     static FeeAccumulator provideFeeAccumulator(
-            @NonNull SingleTransactionRecordBuilderImpl recordBuilder, @NonNull ServiceApiFactory serviceApiFactory) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
@@ -129,89 +129,89 @@ public interface ChildDispatchModule {
     @ChildDispatchScope
     @ChildQualifier
     static Key providePayerKey() {
+        // This is used exclusively for signature-usage fees, which should all zero out for a child dispatch.
+        // (FUTURE) Rework things so that this implementation detail is hidden.
         return Key.DEFAULT;
     }
 
     @Provides
     @ChildDispatchScope
-    static WritableEntityIdStore provideEntityIdStore(
-            @ChildQualifier SavepointStackImpl stack,
-            Configuration configuration,
-            StoreMetricsService storeMetricsService) {
-        final var entityIdsFactory =
+    static WritableEntityIdStore provideWritableEntityIdStore(
+            @ChildQualifier @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
+        final var storeFactory =
                 new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
-        return entityIdsFactory.getStore(WritableEntityIdStore.class);
+        return storeFactory.getStore(WritableEntityIdStore.class);
     }
 
     @Provides
     @ChildDispatchScope
     static WritableStoreFactory provideWritableStoreFactory(
-            @ChildQualifier SavepointStackImpl stack,
-            @ChildQualifier TransactionInfo txnInfo,
-            Configuration configuration,
-            ServiceScopeLookup serviceScopeLookup,
-            StoreMetricsService storeMetricsService) {
+            @ChildQualifier @NonNull final SavepointStackImpl stack,
+            @ChildQualifier @NonNull final TransactionInfo txnInfo,
+            @NonNull final Configuration configuration,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final StoreMetricsService storeMetricsService) {
         return new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), configuration, storeMetricsService);
     }
 
     @Provides
     @ChildDispatchScope
-    static FinalizeContext provideTriggeredFinalizeContext(
+    static FinalizeContext provideFinalizeContext(
             @ChildQualifier @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @ChildQualifier @NonNull final SavepointStackImpl stack,
-            @NonNull final Instant consensusNow,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         final var writableStoreFactory =
                 new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
         return new TriggeredFinalizeContext(
-                readableStoreFactory, writableStoreFactory, recordBuilder, consensusNow, configuration);
+                readableStoreFactory, writableStoreFactory, recordBuilder, recordBuilder.consensusNow(), configuration);
     }
 
     @Provides
     @ChildDispatchScope
-    static Set<Key> provideRequiredKeys(@ChildQualifier PreHandleResult preHandleResult) {
+    static Set<Key> provideRequiredKeys(@ChildQualifier @NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.requiredKeys();
     }
 
     @Provides
     @ChildDispatchScope
-    static Set<Account> provideHollowAccounts(@ChildQualifier PreHandleResult preHandleResult) {
+    static Set<Account> provideHollowAccounts(@ChildQualifier @NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.hollowAccounts();
     }
 
     @Provides
     @ChildDispatchScope
-    static DispatchHandleContext provideFlowHandleContext(
-            final Instant consensusNow,
+    static DispatchHandleContext provideDispatchHandleContext(
             @NonNull @ChildQualifier final TransactionInfo transactionInfo,
-            final Configuration configuration,
-            final Authorizer authorizer,
-            final BlockRecordManager blockRecordManager,
-            final FeeManager feeManager,
+            @NonNull final Configuration configuration,
+            @NonNull final Authorizer authorizer,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final FeeManager feeManager,
             @NonNull @ChildQualifier final ReadableStoreFactory storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
             @NonNull @ChildQualifier final Key payerkey,
             @NonNull final FeeAccumulator feeAccumulator,
-            final ExchangeRateManager exchangeRateManager,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull @ChildQualifier final SavepointStackImpl stack,
             @NonNull final WritableEntityIdStore entityIdStore,
-            final TransactionDispatcher dispatcher,
-            final RecordCache recordCache,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final RecordCache recordCache,
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final ServiceApiFactory serviceApiFactory,
-            final NetworkInfo networkInfo,
+            @NonNull final NetworkInfo networkInfo,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
-            final ChildDispatchFactory childDispatchLogic,
+            @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
+            @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final ChildDispatchComponent dispatch,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         return new DispatchHandleContext(
-                consensusNow,
+                recordBuilder.consensusNow(),
                 transactionInfo,
                 configuration,
                 authorizer,

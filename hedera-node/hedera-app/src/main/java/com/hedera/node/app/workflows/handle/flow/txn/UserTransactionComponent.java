@@ -62,8 +62,15 @@ public interface UserTransactionComponent {
                 @BindsInstance NodeInfo creator,
                 @BindsInstance ConsensusTransaction platformTxn,
                 @BindsInstance Instant consensusTime,
-                @BindsInstance @LastHandledTime final Instant lastHandledConsensusTime);
+                @BindsInstance @LastHandledTime Instant lastHandledConsensusTime);
     }
+
+    /**
+     * Returns whether this is the first transaction ever handled.
+     *
+     * @return true if this is the first transaction ever handled
+     */
+    boolean isGenesisTxn();
 
     /**
      * The functionality of the user transaction
@@ -72,8 +79,9 @@ public interface UserTransactionComponent {
     HederaFunctionality functionality();
 
     /**
-     * The process runner for the user transaction to produce stream items
-     * @return the process runner
+     * The workflow for the user transaction to produce stream items
+     *
+     * @return the workflow
      */
     UserTxnWorkflow workflow();
 

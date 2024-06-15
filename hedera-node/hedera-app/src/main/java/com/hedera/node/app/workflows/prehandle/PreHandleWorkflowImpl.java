@@ -205,10 +205,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // No reason to do this twice, since every transaction passed to handle is first given to pre-handle
         if (previousResult == null) {
-            // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
-            // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen
-            // this
-            // transaction ID, so we can give proper results in the different receipt queries)
+            // Also register this txID as having been seen (we don't actually do deduplication in the
+            // pre-handle because deduplication needs to be done deterministically, but we will keep
+            // track of the fact that we have seen this transaction ID, so we can give proper results
+            // in the different receipt queries)
             deduplicationCache.add(txInfo.transactionID());
         }
 

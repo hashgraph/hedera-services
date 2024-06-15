@@ -151,6 +151,15 @@ public class WritableStoreFactory {
         throw new IllegalArgumentException("No store of the given class is available " + storeInterface.getName());
     }
 
+    /**
+     * Gets the name of the service this factory is creating stores for.
+     *
+     * @return the name of the service
+     */
+    public String getServiceName() {
+        return serviceName;
+    }
+
     private interface StoreFactory {
         Object create(
                 @NonNull WritableStates states,

@@ -101,16 +101,16 @@ public class ChildDispatchFactory {
                 category,
                 reversingBehavior,
                 customizer);
-
+        final var childStack = new SavepointStackImpl(parentDispatch.stack().peek());
         return childDispatchFactory
                 .get()
                 .create(
                         recordBuilder,
                         childTxnInfo,
-                        isScheduled(category),
+                        dispatchFeesModeFor(category),
                         syntheticPayerId,
                         category,
-                        new SavepointStackImpl(parentDispatch.stack().peek()),
+                        childStack,
                         preHandleResult,
                         getKeyVerifier(callback));
     }
@@ -170,7 +170,8 @@ public class ChildDispatchFactory {
      * @return the compute dispatch fees as top level
      */
     @NonNull
-    private static ComputeDispatchFeesAsTopLevel isScheduled(final HandleContext.TransactionCategory category) {
+    private static ComputeDispatchFeesAsTopLevel dispatchFeesModeFor(
+            @NonNull final HandleContext.TransactionCategory category) {
         return category == HandleContext.TransactionCategory.SCHEDULED
                 ? ComputeDispatchFeesAsTopLevel.YES
                 : ComputeDispatchFeesAsTopLevel.NO;

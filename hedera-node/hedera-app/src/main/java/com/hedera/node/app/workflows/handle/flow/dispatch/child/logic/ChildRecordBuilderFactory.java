@@ -17,9 +17,6 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -56,11 +53,11 @@ public class ChildRecordBuilderFactory {
      * @return the record builder
      */
     public SingleTransactionRecordBuilderImpl recordBuilderFor(
-            TransactionInfo txnInfo,
-            final RecordListBuilder recordListBuilder,
-            final Configuration configuration,
-            HandleContext.TransactionCategory childCategory,
-            SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final Configuration configuration,
+            @NonNull final HandleContext.TransactionCategory childCategory,
+            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable final ExternalizedRecordCustomizer customizer) {
         final var recordBuilder =
                 switch (childCategory) {
