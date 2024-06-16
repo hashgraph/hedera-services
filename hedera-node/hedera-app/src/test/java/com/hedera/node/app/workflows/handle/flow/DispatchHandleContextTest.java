@@ -139,7 +139,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class DispatchHandleContextTest extends StateTestBase implements Scenarios {
-    private static final Instant DEFAULT_CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+    public static final Instant DEFAULT_CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
     private FeeAccumulator accumulator;
