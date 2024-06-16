@@ -28,6 +28,7 @@ import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildRecordBuilderFactoryTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -130,6 +132,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -159,15 +162,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     public static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
-    private static final Account PAYER =
-            Account.newBuilder().accountId(PAYER_ACCOUNT_ID).build();
-    private static final AccountID CREATOR_ACCOUNT_ID =
+    private static final AccountID NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3).build();
-    private static final Account HOLLOW = Account.newBuilder()
-            .alias(Bytes.fromHex("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"))
-            .build();
-    private static final SignatureVerification PASSED_VERIFICATION =
-            new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
     private static final TransactionBody CONTRACT_CALL_TXN_BODY = TransactionBody.newBuilder()
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
@@ -908,6 +904,33 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
+        }
+
+        @Test
+        void testChildWithPaidRewardsUpdatedPaidRewards() {
+            final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
+
+            Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
+            given(childDispatch.recordBuilder()).willReturn(childRecordBuilder);
+            given(childRecordBuilder.getPaidStakingRewards())
+                    .willReturn(List.of(
+                            AccountAmount.newBuilder()
+                                    .accountID(PAYER_ACCOUNT_ID)
+                                    .amount(+1)
+                                    .build(),
+                            AccountAmount.newBuilder()
+                                    .accountID(NODE_ACCOUNT_ID)
+                                    .amount(+2)
+                                    .build()));
+            assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
+
+            context.dispatchChildTransaction(
+                    txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED);
+
+            verify(dispatchProcessor).processDispatch(childDispatch);
+            verify(stack, never()).commitFullStack();
+            assertThat(context.dispatchPaidRewards())
+                    .containsExactly(Map.entry(PAYER_ACCOUNT_ID, +1L), Map.entry(NODE_ACCOUNT_ID, +2L));
         }
     }
 
