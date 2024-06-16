@@ -22,6 +22,8 @@ import static com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.Chi
 import static com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildTxnInfoFactoryTest.consensusTime;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -29,14 +31,18 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -51,6 +57,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.util.Collections;
 import java.util.function.Predicate;
@@ -63,14 +70,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ChildDispatchFactoryTest {
+    public static final Key AN_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
+    public static final Key A_CONTRACT_ID_KEY =
+            Key.newBuilder().contractID(ContractID.DEFAULT).build();
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(1)
+                    .keys(KeyList.newBuilder().keys(AN_ED25519_KEY, A_CONTRACT_ID_KEY)))
+            .build();
+
     @Mock
     private TransactionDispatcher dispatcher;
+
+    @Mock
+    private VerificationAssistant assistant;
 
     @Mock
     private HandleContext handleContext;
 
     @Mock
     private Dispatch parentDispatch;
+
+    @Mock
+    private Predicate<Key> verifierCallback;
 
     @Mock
     private Provider<ChildDispatchComponent.Factory> childDispatchFactoryProvider;
@@ -117,21 +141,11 @@ class ChildDispatchFactoryTest {
     @BeforeEach
     public void setUp() {
         subject = new ChildDispatchFactory(childTxnInfoFactory, dispatcher, childRecordBuilderFactory);
-
-        given(parentDispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.configuration()).willReturn(configuration);
-        given(parentDispatch.readableStoreFactory()).willReturn(readableStoreFactory);
-        given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(accountStore.getAccountById(payerId))
-                .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
-        given(parentDispatch.stack()).willReturn(savepointStack);
-        given(savepointStack.peek()).willReturn(new WrappedHederaState(savepointStack));
-        given(childDispatchFactoryProvider.get()).willReturn(childDispatchFactory);
     }
 
     @Test
     void testCreateChildDispatch() throws PreCheckException {
+        mainSetup();
         // Create the child dispatch
         subject.createChildDispatch(
                 parentDispatch,
@@ -171,7 +185,49 @@ class ChildDispatchFactoryTest {
     }
 
     @Test
+    void scheduleDispatchComputesFeesAsTopLevel() throws PreCheckException {
+        mainSetup();
+        // Create the child dispatch
+        subject.createChildDispatch(
+                parentDispatch,
+                txBody,
+                callback,
+                payerId,
+                HandleContext.TransactionCategory.SCHEDULED,
+                childDispatchFactoryProvider,
+                customizer,
+                reversingBehavior);
+        final var expectedPreHandleResult = new PreHandleResult(
+                null,
+                null,
+                SO_FAR_SO_GOOD,
+                OK,
+                null,
+                Collections.emptySet(),
+                null,
+                Collections.emptySet(),
+                null,
+                null,
+                0);
+
+        verify(dispatcher).dispatchPureChecks(txBody);
+        verify(dispatcher).dispatchPreHandle(any());
+
+        verify(childDispatchFactory)
+                .create(
+                        any(),
+                        any(),
+                        eq(ComputeDispatchFeesAsTopLevel.YES),
+                        eq(payerId),
+                        eq(HandleContext.TransactionCategory.SCHEDULED),
+                        any(),
+                        eq(expectedPreHandleResult),
+                        any());
+    }
+
+    @Test
     void failsToCreateDispatchIfPreHandleException() throws PreCheckException {
+        mainSetup();
         willThrow(new PreCheckException(PAYER_ACCOUNT_DELETED))
                 .given(dispatcher)
                 .dispatchPreHandle(any());
@@ -209,5 +265,65 @@ class ChildDispatchFactoryTest {
                         any(),
                         eq(expectedPreHandleResult),
                         any());
+    }
+
+    @Test
+    void noOpKeyVerifierAlwaysPasses() {
+        final var noOpKeyVerifier = new ChildDispatchFactory.NoOpKeyVerifier();
+        assertThat(noOpKeyVerifier.verificationFor(Key.DEFAULT).passed()).isTrue();
+        assertThat(noOpKeyVerifier.verificationFor(Key.DEFAULT, assistant).passed())
+                .isTrue();
+        assertThat(noOpKeyVerifier.verificationFor(Bytes.EMPTY).passed()).isTrue();
+        assertThat(noOpKeyVerifier.numSignaturesVerified()).isEqualTo(0L);
+    }
+
+    @Test
+    void keyVerifierWithNullCallbackIsNoOp() {
+        assertThat(ChildDispatchFactory.getKeyVerifier(null)).isInstanceOf(ChildDispatchFactory.NoOpKeyVerifier.class);
+    }
+
+    @Test
+    void keyVerifierOnlySupportsKeyVerification() {
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        assertThatThrownBy(() -> derivedVerifier.verificationFor(Key.DEFAULT, assistant))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> derivedVerifier.verificationFor(Bytes.EMPTY))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(derivedVerifier.numSignaturesVerified()).isEqualTo(0L);
+    }
+
+    @Test
+    void keyVerifierPassesImmediatelyGivenTrueCallback() {
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        given(verifierCallback.test(AN_ED25519_KEY)).willReturn(true);
+        assertThat(derivedVerifier.verificationFor(AN_ED25519_KEY).passed()).isTrue();
+    }
+
+    @Test
+    void keyVerifierUsesDelegateIfNotImmediatePass() {
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        given(verifierCallback.test(A_THRESHOLD_KEY)).willReturn(false);
+        given(verifierCallback.test(AN_ED25519_KEY)).willReturn(true);
+        assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isTrue();
+    }
+
+    @Test
+    void keyVerifierDetectsNoPass() {
+        final var derivedVerifier = ChildDispatchFactory.getKeyVerifier(verifierCallback);
+        assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isFalse();
+        verify(verifierCallback).test(A_THRESHOLD_KEY);
+    }
+
+    private void mainSetup() {
+        given(parentDispatch.handleContext()).willReturn(handleContext);
+        given(handleContext.configuration()).willReturn(configuration);
+        given(parentDispatch.readableStoreFactory()).willReturn(readableStoreFactory);
+        given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(payerId))
+                .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
+        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
+        given(parentDispatch.stack()).willReturn(savepointStack);
+        given(savepointStack.peek()).willReturn(new WrappedHederaState(savepointStack));
+        given(childDispatchFactoryProvider.get()).willReturn(childDispatchFactory);
     }
 }

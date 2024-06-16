@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.modules;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -30,17 +34,22 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -70,21 +79,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ChildDispatchModuleTest {
-    private static final Instant CHILD_CONS_NOW = Instant.ofEpochSecond(1_234_567L);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
     private static final TransactionBody TXN_BODY = TransactionBody.newBuilder()
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
-    private static final TransactionInfo TXN_INFO =
+    private static final TransactionInfo CRYPT_TRANSFER_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+    private static final TransactionInfo CRYPTO_UPDATE_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_UPDATE);
+    private static final TransactionInfo CRYPTO_CREATE_TXN_INFO =
+            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_CREATE);
+    private static final Fees FEES = new Fees(1L, 2L, 3L);
+    private static final Instant CHILD_CONS_NOW = Instant.ofEpochSecond(1_234_567L);
     private static final PreHandleResult PRE_HANDLE_RESULT = new PreHandleResult(
             AccountID.DEFAULT,
             Key.DEFAULT,
             SO_FAR_SO_GOOD,
             SUCCESS,
-            TXN_INFO,
+            CRYPT_TRANSFER_TXN_INFO,
             Set.of(Key.DEFAULT),
             Collections.emptySet(),
             Set.of(Account.DEFAULT),
@@ -93,7 +107,16 @@ class ChildDispatchModuleTest {
             1L);
 
     @Mock
+    private FeeContext feeContext;
+
+    @Mock
     private TransactionInfo transactionInfo;
+
+    @Mock
+    private ServiceApiFactory serviceApiFactory;
+
+    @Mock
+    private TokenServiceApi tokenServiceApi;
 
     @Mock
     private WritableStates writableStates;
@@ -145,9 +168,6 @@ class ChildDispatchModuleTest {
 
     @Mock
     private WritableStoreFactory writableStoreFactory;
-
-    @Mock
-    private ServiceApiFactory serviceApiFactory;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -230,7 +250,7 @@ class ChildDispatchModuleTest {
     void providesServiceScopedWritableStoreFactory() {
         given(serviceScopeLookup.getServiceName(TXN_BODY)).willReturn(UtilService.NAME);
         final var writableStoreFactory = ChildDispatchModule.provideWritableStoreFactory(
-                stack, TXN_INFO, configuration, serviceScopeLookup, storeMetricsService);
+                stack, CRYPT_TRANSFER_TXN_INFO, configuration, serviceScopeLookup, storeMetricsService);
         assertThat(writableStoreFactory.getServiceName()).isEqualTo(UtilService.NAME);
     }
 
@@ -245,5 +265,91 @@ class ChildDispatchModuleTest {
     @Test
     void usesDefaultPayerKeyForFeeCalculations() {
         assertThat(ChildDispatchModule.providePayerKey()).isSameAs(Key.DEFAULT);
+    }
+
+    @Test
+    void providesServiceApiFactory() {
+        assertThat(ChildDispatchModule.provideServiceApiFactory(stack, configuration, storeMetricsService))
+                .isNotNull();
+    }
+
+    @Test
+    void providesFeeAccumulatorImpl() {
+        given(serviceApiFactory.getApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        assertThat(ChildDispatchModule.provideFeeAccumulator(recordBuilder, serviceApiFactory))
+                .isInstanceOf(FeeAccumulatorImpl.class);
+    }
+
+    @Test
+    void providesReadableStoreFactory() {
+        assertThat(ChildDispatchModule.provideReadableStoreFactory(stack)).isNotNull();
+    }
+
+    @Test
+    void scheduledFeesIncludeOnlyServiceComponent() {
+        given(dispatcher.dispatchComputeFees(feeContext)).willReturn(FEES);
+        assertThat(ChildDispatchModule.provideFees(
+                        feeContext,
+                        HandleContext.TransactionCategory.SCHEDULED,
+                        dispatcher,
+                        CRYPTO_TRANSFER,
+                        CRYPT_TRANSFER_TXN_INFO))
+                .isEqualTo(FEES.onlyServiceComponent());
+    }
+
+    @Test
+    void precedingFeesAreZeroForContract() {
+        assertThat(ChildDispatchModule.provideFees(
+                        feeContext,
+                        HandleContext.TransactionCategory.PRECEDING,
+                        dispatcher,
+                        CONTRACT_CALL,
+                        CRYPT_TRANSFER_TXN_INFO))
+                .isSameAs(Fees.FREE);
+    }
+
+    @Test
+    void precedingFeesAreZeroForCryptoUpdate() {
+        assertThat(ChildDispatchModule.provideFees(
+                        feeContext,
+                        HandleContext.TransactionCategory.PRECEDING,
+                        dispatcher,
+                        CRYPTO_TRANSFER,
+                        CRYPTO_UPDATE_TXN_INFO))
+                .isSameAs(Fees.FREE);
+    }
+
+    @Test
+    void precedingFeesAreNonZeroForAutoCreation() {
+        given(dispatcher.dispatchComputeFees(feeContext)).willReturn(FEES);
+        assertThat(ChildDispatchModule.provideFees(
+                        feeContext,
+                        HandleContext.TransactionCategory.PRECEDING,
+                        dispatcher,
+                        CRYPTO_TRANSFER,
+                        CRYPTO_CREATE_TXN_INFO))
+                .isSameAs(FEES);
+    }
+
+    @Test
+    void childFeesAreZero() {
+        assertThat(ChildDispatchModule.provideFees(
+                        feeContext,
+                        HandleContext.TransactionCategory.CHILD,
+                        dispatcher,
+                        CONTRACT_CALL,
+                        CRYPTO_CREATE_TXN_INFO))
+                .isSameAs(Fees.FREE);
+    }
+
+    @Test
+    void cannotDispatchUserTransaction() {
+        assertThatThrownBy(() -> ChildDispatchModule.provideFees(
+                        feeContext,
+                        HandleContext.TransactionCategory.USER,
+                        dispatcher,
+                        CONTRACT_CALL,
+                        CRYPTO_CREATE_TXN_INFO))
+                .isInstanceOf(IllegalStateException.class);
     }
 }
