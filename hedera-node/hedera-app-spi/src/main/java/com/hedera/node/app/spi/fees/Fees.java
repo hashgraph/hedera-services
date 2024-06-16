@@ -60,6 +60,15 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
     }
 
     /**
+     * Returns true if there is nothing to charge for these fees.
+     *
+     * @return true if there is nothing to charge for these fees
+     */
+    public boolean nothingToCharge() {
+        return nodeFee == 0 && networkFee == 0 && serviceFee == 0;
+    }
+
+    /**
      * Returns this {@link Fees} with the service fee zeroed out. Used when the payer was willing and able
      * to cover at least the network fee; but not the node
      *

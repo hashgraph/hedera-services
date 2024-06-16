@@ -16,19 +16,20 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.flow.txn.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -86,20 +87,21 @@ public class DispatchUsageManager {
         if (dispatch.txnCategory() != USER) {
             return;
         }
-        if (workDone == FEES_ONLY) {
-            networkUtilizationManager.trackFeePayments(dispatch.consensusNow(), dispatch.stack());
-        } else if (workDone == USER_TRANSACTION) {
-            // (FUTURE) When throttling is better encapsulated as a dispatch-scope concern, call trackTxn()
-            // in only one place; for now we have already tracked utilization for contract operations
-            // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
-            final var function = dispatch.txnInfo().functionality();
-            if (!CONTRACT_OPERATIONS.contains(function)) {
-                networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
-            } else {
-                leakUnusedGas(dispatch);
-            }
-            if (canAutoCreate(function) && dispatch.recordBuilder().status() != SUCCESS) {
-                reclaimFailedCryptoCreateCapacity(dispatch);
+        switch (workDone) {
+            case FEES_ONLY -> networkUtilizationManager.trackFeePayments(dispatch.consensusNow(), dispatch.stack());
+            case USER_TRANSACTION -> {
+                // (FUTURE) When throttling is better encapsulated as a dispatch-scope concern, call trackTxn()
+                // in only one place; for now we have already tracked utilization for contract operations
+                // at point of dispatch so we could detect CONSENSUS_GAS_EXHAUSTED
+                final var function = dispatch.txnInfo().functionality();
+                if (!CONTRACT_OPERATIONS.contains(function)) {
+                    networkUtilizationManager.trackTxn(dispatch.txnInfo(), dispatch.consensusNow(), dispatch.stack());
+                } else {
+                    leakUnusedGas(dispatch);
+                }
+                if (canAutoCreate(function) && dispatch.recordBuilder().status() != SUCCESS) {
+                    reclaimFailedCryptoCreateCapacity(dispatch);
+                }
             }
         }
         throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(dispatch.stack());
@@ -168,28 +170,16 @@ public class DispatchUsageManager {
      */
     private static long getGasLimitForContractTx(
             @NonNull final TransactionBody txnBody, @NonNull final HederaFunctionality function) {
-        return switch (function) {
-            case CONTRACT_CREATE -> txnBody.contractCreateInstanceOrElse(ContractCreateTransactionBody.DEFAULT)
+        if (function == CONTRACT_CREATE) {
+            return txnBody.contractCreateInstanceOrElse(ContractCreateTransactionBody.DEFAULT)
                     .gas();
-            case CONTRACT_CALL -> txnBody.contractCallOrElse(ContractCallTransactionBody.DEFAULT)
+        } else if (function == ETHEREUM_TRANSACTION) {
+            final var rawEthTxn = txnBody.ethereumTransactionOrElse(EthereumTransactionBody.DEFAULT);
+            final var ethTxData = populateEthTxData(rawEthTxn.ethereumData().toByteArray());
+            return ethTxData != null ? ethTxData.gasLimit() : 0L;
+        } else {
+            return txnBody.contractCallOrElse(ContractCallTransactionBody.DEFAULT)
                     .gas();
-            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
-            default -> 0L;
-        };
-    }
-
-    /**
-     * Returns the gas limit for an Ethereum transaction.
-     *
-     * @param txn the transaction
-     * @return the gas limit for an Ethereum transaction
-     */
-    private static long getGasLimitFromEthTxData(@NonNull final TransactionBody txn) {
-        if (!txn.hasEthereumTransaction()) {
-            return 0L;
         }
-        final var ethTxData = populateEthTxData(
-                txn.ethereumTransactionOrThrow().ethereumData().toByteArray());
-        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 }

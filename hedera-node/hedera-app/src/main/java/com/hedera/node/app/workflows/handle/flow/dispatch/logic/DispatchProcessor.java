@@ -220,6 +220,10 @@ public class DispatchProcessor {
      * @param report the due diligence report for the dispatch
      */
     private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final ErrorReport report) {
+        final var fees = dispatch.fees();
+        if (fees.nothingToCharge()) {
+            return;
+        }
         final var hasWaivedFees = authorizer.hasWaivedFees(
                 dispatch.syntheticPayer(),
                 dispatch.txnInfo().functionality(),
@@ -227,15 +231,17 @@ public class DispatchProcessor {
         if (hasWaivedFees) {
             return;
         }
-        if (report.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || report.duplicateStatus() == DUPLICATE) {
+        final var shouldWaiveServiceFee =
+                report.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || report.duplicateStatus() == DUPLICATE;
+        final var feesToCharge = shouldWaiveServiceFee ? fees.withoutServiceComponent() : fees;
+        if (dispatch.txnCategory() == USER) {
             dispatch.feeAccumulator()
-                    .chargeFees(
-                            report.payerOrThrow().accountIdOrThrow(),
-                            report.creatorId(),
-                            dispatch.fees().withoutServiceComponent());
+                    .chargeFees(report.payerOrThrow().accountIdOrThrow(), report.creatorId(), feesToCharge);
         } else {
+            // The node only does work for submitting user transactions, so for other categories,
+            // we charge fees that are collected without a disbursement to the node account
             dispatch.feeAccumulator()
-                    .chargeFees(report.payerOrThrow().accountIdOrThrow(), report.creatorId(), dispatch.fees());
+                    .chargeNetworkFee(report.payerOrThrow().accountIdOrThrow(), feesToCharge.totalFee());
         }
     }
 

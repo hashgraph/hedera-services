@@ -61,47 +61,53 @@ import java.util.Set;
 public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
-    Dispatch bindDispatch(UserDispatchComponent userDispatchComponent);
+    Dispatch bindDispatch(@NonNull UserDispatchComponent userDispatchComponent);
+
+    @Binds
+    @UserDispatchScope
+    FinalizeContext bindFinalizeContext(@NonNull TokenContextImpl tokenContext);
+
+    @Binds
+    @UserDispatchScope
+    HandleContext bindHandleContext(@NonNull DispatchHandleContext handleContext);
+
+    @Binds
+    @UserDispatchScope
+    FeeContext bindFeeContext(@NonNull DispatchHandleContext handleContext);
 
     @Provides
     @UserDispatchScope
-    static Set<Key> provideRequiredKeys(PreHandleResult preHandleResult) {
+    static Set<Key> provideRequiredKeys(@NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.requiredKeys();
     }
 
     @Provides
     @UserDispatchScope
-    static Set<Account> provideHollowAccounts(PreHandleResult preHandleResult) {
+    static Set<Account> provideHollowAccounts(@NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.hollowAccounts();
     }
 
     @Provides
     @UserDispatchScope
-    static AccountID provideSyntheticPayer(TransactionInfo txnInfo) {
+    static AccountID provideSyntheticPayer(@NonNull final TransactionInfo txnInfo) {
         return txnInfo.payerID();
     }
 
     @Provides
     @UserDispatchScope
     static KeyVerifier provideKeyVerifier(
-            @NonNull HederaConfig hederaConfig, TransactionInfo txnInfo, PreHandleResult preHandleResult) {
+            @NonNull final HederaConfig hederaConfig,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final PreHandleResult preHandleResult) {
         return new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(), hederaConfig, preHandleResult.getVerificationResults());
     }
 
     @Provides
     @UserDispatchScope
-    static Fees provideFees(@NonNull FeeContext feeContext, @NonNull TransactionDispatcher dispatcher) {
+    static Fees provideFees(@NonNull final FeeContext feeContext, @NonNull final TransactionDispatcher dispatcher) {
         return dispatcher.dispatchComputeFees(feeContext);
     }
-
-    @Binds
-    @UserDispatchScope
-    HandleContext bindHandleContext(DispatchHandleContext handleContext);
-
-    @Binds
-    @UserDispatchScope
-    FeeContext bindFeeContext(DispatchHandleContext handleContext);
 
     @Provides
     @UserDispatchScope
@@ -115,7 +121,8 @@ public interface UserDispatchModule {
     @Provides
     @UserDispatchScope
     static FeeAccumulator provideFeeAccumulator(
-            @NonNull SingleTransactionRecordBuilderImpl recordBuilder, @NonNull ServiceApiFactory serviceApiFactory) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
         return new FeeAccumulatorImpl(tokenApi, recordBuilder);
     }
@@ -147,17 +154,12 @@ public interface UserDispatchModule {
         return HandleContext.TransactionCategory.USER;
     }
 
-    @Binds
-    @UserDispatchScope
-    FinalizeContext bindFinalizeContext(TokenContextImpl tokenContext);
-
     @Provides
     @UserDispatchScope
     static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
-            @NonNull RecordListBuilder recordListBuilder,
-            @NonNull UserRecordInitializer userRecordInitializer,
-            TransactionInfo txnInfo) {
-        userRecordInitializer.initializeUserRecord(recordListBuilder.userTransactionRecordBuilder(), txnInfo);
-        return recordListBuilder.userTransactionRecordBuilder();
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final UserRecordInitializer userRecordInitializer,
+            @NonNull final TransactionInfo txnInfo) {
+        return userRecordInitializer.initializeUserRecord(recordListBuilder.userTransactionRecordBuilder(), txnInfo);
     }
 }
