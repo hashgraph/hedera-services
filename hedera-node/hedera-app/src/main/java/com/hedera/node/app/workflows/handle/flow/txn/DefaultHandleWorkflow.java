@@ -16,21 +16,22 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The default implementation of the handle workflow.
@@ -47,16 +48,16 @@ public class DefaultHandleWorkflow {
 
     @Inject
     public DefaultHandleWorkflow(
-            final StakingPeriodTimeHook stakingPeriodTimeHook,
-            final BlockRecordManager blockRecordManager,
-            final SchedulePurger schedulePurger,
-            final DispatchProcessor dispatchProcessor,
-            final HollowAccountCompleter hollowAccountFinalization) {
-        this.stakingPeriodTimeHook = stakingPeriodTimeHook;
-        this.blockRecordManager = blockRecordManager;
-        this.schedulePurger = schedulePurger;
-        this.dispatchProcessor = dispatchProcessor;
-        this.hollowAccountFinalization = hollowAccountFinalization;
+            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final SchedulePurger schedulePurger,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final HollowAccountCompleter hollowAccountFinalization) {
+        this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook);
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.schedulePurger = requireNonNull(schedulePurger);
+        this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.hollowAccountFinalization = requireNonNull(hollowAccountFinalization);
     }
 
     /**
@@ -88,7 +89,7 @@ public class DefaultHandleWorkflow {
         }
     }
 
-    public void logUserTxn(UserTransactionComponent userTxn) {
+    private void logUserTxn(@NonNull final UserTransactionComponent userTxn) {
         // Log start of user transaction to transaction state log
         logStartUserTransaction(
                 userTxn.platformTxn(),

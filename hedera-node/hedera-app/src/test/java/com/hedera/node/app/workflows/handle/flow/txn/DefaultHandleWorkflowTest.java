@@ -14,17 +14,7 @@
  * limitations under the License.
  */
 
-import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.DEFAULT_CONSENSUS_NOW;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+package com.hedera.node.app.workflows.handle.flow.txn;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -33,27 +23,32 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.state.logging.TransactionStateLogger;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.state.HederaState;
-import javax.inject.Provider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.inject.Provider;
+
+import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.DEFAULT_CONSENSUS_NOW;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 public class DefaultHandleWorkflowTest {
@@ -146,24 +141,6 @@ public class DefaultHandleWorkflowTest {
         verify(dispatchProcessor)
                 .processDispatch(userTxn.userDispatchProvider().get().create());
 
-        assertTrue(logCaptor.errorLogs().get(0).contains("Failed to process staking period time hook"));
-    }
-
-    @Test
-    public void testLogUserTxn() {
-        Logger mockLogger = Mockito.mock(Logger.class);
-        mockStatic(LogManager.class);
-        when(LogManager.getLogger(DefaultHandleWorkflow.class)).thenReturn(mockLogger);
-        when(LogManager.getLogger(TransactionStateLogger.class)).thenReturn(mockLogger);
-
-        //        when(mockLogger.isDebugEnabled()).thenReturn(true);
-
-        subject.logUserTxn(userTxn);
-
-        verify(userTxn).platformTxn();
-        verify(userTxn.txnInfo()).txBody();
-        verify(userTxn.txnInfo()).payerID();
-        verify(userTxn, times(2)).preHandleResult();
-        //        assertThat(logCaptor.debugLogs().get(0)).contains(" Starting user transaction");
+        assertTrue(logCaptor.errorLogs().getFirst().contains("Failed to process staking period time hook"));
     }
 }
