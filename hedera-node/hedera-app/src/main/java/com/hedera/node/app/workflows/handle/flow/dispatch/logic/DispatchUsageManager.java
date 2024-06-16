@@ -136,8 +136,9 @@ public class DispatchUsageManager {
      * @param dispatch the dispatch
      */
     private void reclaimFailedCryptoCreateCapacity(@NonNull final Dispatch dispatch) {
-        final var numImplicitCreations = throttleServiceManager.numImplicitCreations(
-                dispatch.txnInfo().txBody(), dispatch.readableStoreFactory().getStore(ReadableAccountStore.class));
+        final var readableAccountStore = dispatch.readableStoreFactory().getStore(ReadableAccountStore.class);
+        final var numImplicitCreations =
+                throttleServiceManager.numImplicitCreations(dispatch.txnInfo().txBody(), readableAccountStore);
         if (usedSelfFrontendThrottleCapacity(
                 numImplicitCreations, dispatch.txnInfo().txBody())) {
             throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);

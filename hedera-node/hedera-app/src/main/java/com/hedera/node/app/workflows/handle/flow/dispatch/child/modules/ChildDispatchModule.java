@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.modules;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -80,16 +81,15 @@ public interface ChildDispatchModule {
     @Provides
     @ChildDispatchScope
     static Fees provideFees(
-            @NonNull FeeContext feeContext,
-            @NonNull HandleContext.TransactionCategory childCategory,
-            @NonNull TransactionDispatcher dispatcher,
-            @NonNull HederaFunctionality topLevelFunction,
-            @NonNull @ChildQualifier TransactionInfo childTxnInfo) {
+            @NonNull final FeeContext feeContext,
+            @NonNull final HandleContext.TransactionCategory childCategory,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HederaFunctionality topLevelFunction,
+            @NonNull @ChildQualifier final TransactionInfo childTxnInfo) {
         return switch (childCategory) {
             case SCHEDULED -> dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
             case PRECEDING -> {
-                if (CONTRACT_OPERATIONS.contains(topLevelFunction)
-                        || childTxnInfo.functionality() == HederaFunctionality.CRYPTO_UPDATE) {
+                if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
                     yield Fees.FREE;
                 } else {
                     yield dispatcher.dispatchComputeFees(feeContext);

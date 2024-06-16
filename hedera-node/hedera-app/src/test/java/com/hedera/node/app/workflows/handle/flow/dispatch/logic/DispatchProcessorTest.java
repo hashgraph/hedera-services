@@ -78,11 +78,9 @@ import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,7 +90,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DispatchProcessorTest {
-    private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Fees FEES = new Fees(1L, 2L, 3L);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
@@ -103,7 +100,6 @@ class DispatchProcessorTest {
     private static final Account HOLLOW = Account.newBuilder()
             .alias(Bytes.fromHex("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"))
             .build();
-    private static final NodeId CREATOR_NODE_ID = new NodeId(0L);
     private static final SignatureVerification PASSED_VERIFICATION =
             new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
     private static final SignatureVerification FAILED_VERIFICATION =

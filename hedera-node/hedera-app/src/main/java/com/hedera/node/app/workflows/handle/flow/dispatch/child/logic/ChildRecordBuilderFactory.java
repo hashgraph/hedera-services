@@ -39,7 +39,9 @@ public class ChildRecordBuilderFactory {
      * Constructs the {@link ChildRecordBuilderFactory} instance.
      */
     @Inject
-    public ChildRecordBuilderFactory() {}
+    public ChildRecordBuilderFactory() {
+        // Dagger2
+    }
 
     /**
      * Provides the record builder for the child transaction category and initializes it.
