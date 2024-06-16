@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -84,14 +76,23 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import javax.inject.Inject;
-import javax.inject.Provider;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The HandleContext Implementation
@@ -559,7 +560,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 }
 
                 final var childTxInfo = TransactionInfo.from(
-                        childTx, childTxBody, childTx.sigMap(), childTx.signedTransactionBytes(), childTxFunctionality);
+                        childTx,
+                        childTxBody,
+                        childTx.sigMapOrElse(SignatureMap.DEFAULT),
+                        childTx.signedTransactionBytes(),
+                        childTxFunctionality);
                 final var shouldThrottleTxn = networkUtilizationManager.shouldThrottle(
                         childTxInfo, currentDispatch.stack().peek(), consensusNow);
                 if (shouldThrottleTxn) {

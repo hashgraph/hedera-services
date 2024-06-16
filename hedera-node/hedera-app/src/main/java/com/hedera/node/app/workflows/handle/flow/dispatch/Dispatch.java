@@ -71,7 +71,7 @@ public interface Dispatch {
      * The payer of the transaction. This will be the synthetic payer for child transactions.
      * @return the payer
      */
-    AccountID syntheticPayer();
+    AccountID payerId();
 
     /**
      * The readable store factory for the transaction

@@ -39,40 +39,41 @@ public interface PreHandleResultModule {
     @Provides
     @UserTxnScope
     static PreHandleResult providePreHandleResult(
-            @NonNull NodeInfo creator,
-            @NonNull ConsensusTransaction platformTxn,
-            @NonNull PreHandleResultManager preHandleResultManager,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn,
+            @NonNull final PreHandleResultManager preHandleResultManager,
             @NonNull final ReadableStoreFactory storeFactory) {
         return preHandleResultManager.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
     }
 
     @Provides
     @UserTxnScope
-    static TransactionInfo provideTransactionInfo(@NonNull PreHandleResult preHandleResult) {
+    static TransactionInfo provideTransactionInfo(@NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.txInfo();
     }
 
     @Provides
     @UserTxnScope
-    static Map<Key, SignatureVerificationFuture> provideKeyVerifications(@NonNull PreHandleResult preHandleResult) {
+    static Map<Key, SignatureVerificationFuture> provideKeyVerifications(
+            @NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.getVerificationResults();
     }
 
     @Provides
     @UserTxnScope
-    static int provideLegacyFeeCalcNetworkVpt(@NonNull TransactionInfo txnInfo) {
+    static int provideLegacyFeeCalcNetworkVpt(@NonNull final TransactionInfo txnInfo) {
         return txnInfo.signatureMap().sigPair().size();
     }
 
     @Provides
     @UserTxnScope
-    static HederaFunctionality provideFunctionality(@NonNull TransactionInfo txnInfo) {
+    static HederaFunctionality provideFunctionality(@NonNull final TransactionInfo txnInfo) {
         return txnInfo.functionality();
     }
 
     @Provides
     @UserTxnScope
-    static Key providePayerKey(@NonNull PreHandleResult preHandleResult) {
+    static Key providePayerKey(@NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey();
     }
 }

@@ -212,7 +212,7 @@ class DispatchProcessorTest {
     @Test
     void waivedFeesDoesNotCharge() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.fees()).willReturn(FEES);
         given(authorizer.hasWaivedFees(PAYER_ACCOUNT_ID, CRYPTO_TRANSFER_TXN_INFO.functionality(), TXN_BODY))
@@ -234,7 +234,7 @@ class DispatchProcessorTest {
     @Test
     void unauthorizedSystemDeleteIsNotSupported() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(SYS_DEL_TXN_INFO);
         given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality()))
                 .willReturn(false);
@@ -253,7 +253,7 @@ class DispatchProcessorTest {
     @Test
     void unauthorizedOtherIsUnauthorized() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(SYS_UNDEL_TXN_INFO);
         given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_UNDEL_TXN_INFO.functionality()))
                 .willReturn(false);
@@ -272,7 +272,7 @@ class DispatchProcessorTest {
     @Test
     void unprivilegedSystemUndeleteIsAuthorizationFailed() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(SYS_DEL_TXN_INFO);
         given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality()))
                 .willReturn(true);
@@ -293,7 +293,7 @@ class DispatchProcessorTest {
     @Test
     void unprivilegedSystemDeleteIsImpermissible() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(SYS_DEL_TXN_INFO);
         given(authorizer.isAuthorized(PAYER_ACCOUNT_ID, SYS_DEL_TXN_INFO.functionality()))
                 .willReturn(true);
@@ -314,7 +314,7 @@ class DispatchProcessorTest {
     @Test
     void invalidSignatureCryptoTransferFails() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(USER);
         givenAuthorization();
@@ -335,7 +335,7 @@ class DispatchProcessorTest {
     @Test
     void invalidHollowAccountCryptoTransferFails() {
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         givenAuthorization();
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
@@ -360,7 +360,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.handleContext()).willReturn(context);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
@@ -385,7 +385,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         given(dispatch.handleContext()).willReturn(context);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
@@ -410,7 +410,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
         givenAuthorization(CONTRACT_TXN_INFO);
@@ -435,7 +435,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(dispatch.handleContext()).willReturn(context);
@@ -458,7 +458,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CONTRACT_TXN_INFO);
         given(dispatch.handleContext()).willReturn(context);
         given(dispatch.txnCategory()).willReturn(USER);
@@ -484,7 +484,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         given(dispatch.handleContext()).willReturn(context);
@@ -503,7 +503,7 @@ class DispatchProcessorTest {
     void happyPathFreeChildCryptoTransferAsExpected() {
         given(dispatch.fees()).willReturn(Fees.FREE);
         given(errorReporter.errorReportFor(dispatch)).willReturn(errorFreeReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         given(dispatch.handleContext()).willReturn(context);
@@ -528,7 +528,7 @@ class DispatchProcessorTest {
                         INSUFFICIENT_ACCOUNT_BALANCE,
                         ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE,
                         DuplicateStatus.NO_DUPLICATE));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(USER);
 
@@ -545,7 +545,7 @@ class DispatchProcessorTest {
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(errorReporter.errorReportFor(dispatch)).willReturn(payerDuplicateErrorReport(CREATOR_ACCOUNT_ID, PAYER));
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(USER);
 

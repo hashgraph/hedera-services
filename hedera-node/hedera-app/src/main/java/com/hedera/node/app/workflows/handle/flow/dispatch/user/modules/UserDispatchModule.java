@@ -129,8 +129,10 @@ public interface UserDispatchModule {
 
     @Provides
     @UserDispatchScope
-    static WritableEntityIdStore provideEntityIdStore(
-            SavepointStackImpl stack, Configuration configuration, StoreMetricsService storeMetricsService) {
+    static WritableEntityIdStore provideWritableEntityIdStore(
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration configuration,
+            @NonNull final StoreMetricsService storeMetricsService) {
         final var entityIdsFactory =
                 new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class);
@@ -139,11 +141,11 @@ public interface UserDispatchModule {
     @Provides
     @UserDispatchScope
     static WritableStoreFactory provideWritableStoreFactory(
-            SavepointStackImpl stack,
-            TransactionInfo txnInfo,
-            Configuration configuration,
-            ServiceScopeLookup serviceScopeLookup,
-            StoreMetricsService storeMetricsService) {
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final Configuration configuration,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final StoreMetricsService storeMetricsService) {
         return new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), configuration, storeMetricsService);
     }

@@ -104,7 +104,7 @@ public class RecordFinalizer {
             @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        if (recordBuilder.status() != SUCCESS || body == null) {
+        if (body == null || recordBuilder.status() != SUCCESS) {
             return emptySet();
         }
         return switch (function) {

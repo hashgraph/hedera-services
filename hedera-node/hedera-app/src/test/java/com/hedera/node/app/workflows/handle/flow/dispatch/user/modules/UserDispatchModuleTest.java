@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.user.modules;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -31,7 +32,10 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -39,6 +43,8 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -46,6 +52,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableStates;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -62,7 +69,7 @@ class UserDispatchModuleTest {
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
-    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
+    private static final TransactionInfo TXN_INFO = new TransactionInfo(
             Transaction.DEFAULT,
             TXN_BODY,
             SignatureMap.newBuilder()
@@ -75,13 +82,22 @@ class UserDispatchModuleTest {
             Key.DEFAULT,
             SO_FAR_SO_GOOD,
             SUCCESS,
-            CRYPTO_TRANSFER_TXN_INFO,
+            TXN_INFO,
             Set.of(Key.DEFAULT),
             Collections.emptySet(),
             Set.of(Account.DEFAULT),
             Collections.emptyMap(),
             null,
             1L);
+
+    @Mock
+    private WritableStates writableStates;
+
+    @Mock
+    private UserRecordInitializer userRecordInitializer;
+
+    @Mock
+    private RecordListBuilder recordListBuilder;
 
     @Mock
     private FeeContext feeContext;
@@ -104,6 +120,9 @@ class UserDispatchModuleTest {
     @Mock
     private TokenServiceApi tokenServiceApi;
 
+    @Mock
+    private ServiceScopeLookup serviceScopeLookup;
+
     @Test
     void providesRequiredKeys() {
         assertThat(UserDispatchModule.provideRequiredKeys(PRE_HANDLE_RESULT))
@@ -117,15 +136,14 @@ class UserDispatchModuleTest {
     }
 
     @Test
-    void syntheticPayerIsTxnInfoPayer() {
-        assertThat(UserDispatchModule.provideSyntheticPayer(CRYPTO_TRANSFER_TXN_INFO))
-                .isEqualTo(PAYER_ACCOUNT_ID);
+    void payerId() {
+        assertThat(UserDispatchModule.provideSyntheticPayer(TXN_INFO)).isEqualTo(PAYER_ACCOUNT_ID);
     }
 
     @Test
     void providesDefaultKeyVerifier() {
         final var keyVerifier = UserDispatchModule.provideKeyVerifier(
-                DEFAULT_CONFIG.getConfigData(HederaConfig.class), CRYPTO_TRANSFER_TXN_INFO, PRE_HANDLE_RESULT);
+                DEFAULT_CONFIG.getConfigData(HederaConfig.class), TXN_INFO, PRE_HANDLE_RESULT);
         assertThat(keyVerifier).isInstanceOf(DefaultKeyVerifier.class);
         assertThat(keyVerifier.numSignaturesVerified()).isEqualTo(2);
     }
@@ -148,5 +166,37 @@ class UserDispatchModuleTest {
         given(serviceApiFactory.getApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         assertThat(UserDispatchModule.provideFeeAccumulator(recordBuilder, serviceApiFactory))
                 .isInstanceOf(FeeAccumulatorImpl.class);
+    }
+
+    @Test
+    void providesWritableEntityIdStore() {
+        given(stack.getWritableStates(EntityIdService.NAME)).willReturn(writableStates);
+        final var writableEntityIdStore =
+                UserDispatchModule.provideWritableEntityIdStore(stack, DEFAULT_CONFIG, storeMetricsService);
+        assertThat(writableEntityIdStore).isNotNull();
+    }
+
+    @Test
+    void providesServiceScopedWritableStoreFactory() {
+        given(serviceScopeLookup.getServiceName(TXN_BODY)).willReturn(UtilService.NAME);
+        final var writableStoreFactory = UserDispatchModule.provideWritableStoreFactory(
+                stack, TXN_INFO, DEFAULT_CONFIG, serviceScopeLookup, storeMetricsService);
+        assertThat(writableStoreFactory.getServiceName()).isEqualTo(UtilService.NAME);
+    }
+
+    @Test
+    void txnCategoryIsUser() {
+        assertThat(UserDispatchModule.provideTransactionCategory()).isEqualTo(USER);
+    }
+
+    @Test
+    void recordBuilderIsInitializedUserBuilder() {
+        given(recordListBuilder.userTransactionRecordBuilder()).willReturn(recordBuilder);
+        given(userRecordInitializer.initializeUserRecord(recordBuilder, TXN_INFO))
+                .willReturn(recordBuilder);
+
+        assertThat(UserDispatchModule.provideUserTransactionRecordBuilder(
+                        recordListBuilder, userRecordInitializer, TXN_INFO))
+                .isSameAs(recordBuilder);
     }
 }

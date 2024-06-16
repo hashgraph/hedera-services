@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
-import dagger.Module;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The module that adds the user dispatch and child dispatch subcomponents under user transaction component.
- */
-@Module(subcomponents = {UserDispatchComponent.class, ChildDispatchComponent.class})
-public interface UserDispatchSubcomponentModule {}
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+
+class ContextModuleTest {
+    @Test
+    void onlyLastHandledEpochIsGenesis() {
+        assertThat(ContextModule.provideIsGenesis(Instant.EPOCH)).isTrue();
+        assertThat(ContextModule.provideIsGenesis(Instant.EPOCH.plusNanos(1L))).isFalse();
+    }
+}

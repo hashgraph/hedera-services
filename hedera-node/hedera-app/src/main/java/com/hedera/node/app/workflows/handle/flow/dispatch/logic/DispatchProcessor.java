@@ -225,7 +225,7 @@ public class DispatchProcessor {
             return;
         }
         final var hasWaivedFees = authorizer.hasWaivedFees(
-                dispatch.syntheticPayer(),
+                dispatch.payerId(),
                 dispatch.txnInfo().functionality(),
                 dispatch.txnInfo().txBody());
         if (hasWaivedFees) {
@@ -299,12 +299,11 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      */
     private @Nullable ResponseCodeEnum maybeAuthorizationFailure(@NonNull final Dispatch dispatch) {
-        if (!authorizer.isAuthorized(
-                dispatch.syntheticPayer(), dispatch.txnInfo().functionality())) {
+        if (!authorizer.isAuthorized(dispatch.payerId(), dispatch.txnInfo().functionality())) {
             return dispatch.txnInfo().functionality() == SYSTEM_DELETE ? NOT_SUPPORTED : UNAUTHORIZED;
         }
         final var failure = authorizer.hasPrivilegedAuthorization(
-                dispatch.syntheticPayer(),
+                dispatch.payerId(),
                 dispatch.txnInfo().functionality(),
                 dispatch.txnInfo().txBody());
         return switch (failure) {

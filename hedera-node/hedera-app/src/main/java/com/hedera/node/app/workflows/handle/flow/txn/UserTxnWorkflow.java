@@ -22,18 +22,14 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -50,12 +46,8 @@ public class UserTxnWorkflow {
     private final DefaultHandleWorkflow defaultHandleWorkflow;
     private final GenesisWorkflow genesisWorkflow;
     private final UserTransactionComponent userTxn;
-    private final BlockRecordManager blockRecordManager;
     private final HederaRecordCache recordCache;
-    private final NetworkUtilizationManager networkUtilizationManager;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
-    private final ThrottleServiceManager throttleServiceManager;
-    private final NetworkInfo networkInfo;
     private final UserRecordInitializer userRecordInitializer;
 
     @Inject
@@ -66,12 +58,8 @@ public class UserTxnWorkflow {
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
             @NonNull final GenesisWorkflow genesisWorkflow,
             @NonNull final UserTransactionComponent userTxn,
-            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final HederaRecordCache recordCache,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
-            @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final NetworkInfo networkInfo,
             @NonNull final UserRecordInitializer userRecordInitializer) {
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
@@ -79,12 +67,8 @@ public class UserTxnWorkflow {
         this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
         this.genesisWorkflow = requireNonNull(genesisWorkflow);
         this.userTxn = requireNonNull(userTxn);
-        this.blockRecordManager = requireNonNull(blockRecordManager);
         this.recordCache = requireNonNull(recordCache);
-        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
-        this.throttleServiceManager = requireNonNull(throttleServiceManager);
-        this.networkInfo = requireNonNull(networkInfo);
         this.userRecordInitializer = requireNonNull(userRecordInitializer);
     }
 
@@ -165,7 +149,7 @@ public class UserTxnWorkflow {
     private void updateWorkflowMetrics() {
         if (userTxn.isGenesisTxn()
                 || userTxn.consensusNow().getEpochSecond()
-                        > blockRecordManager.consTimeOfLastHandledTxn().getEpochSecond()) {
+                        > userTxn.lastHandledConsensusTime().getEpochSecond()) {
             handleWorkflowMetrics.switchConsensusSecond();
         }
     }

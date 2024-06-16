@@ -16,6 +16,16 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.DEFAULT_CONSENSUS_NOW;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -32,23 +42,12 @@ import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.state.HederaState;
+import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.inject.Provider;
-
-import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.DEFAULT_CONSENSUS_NOW;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 public class DefaultHandleWorkflowTest {

@@ -16,22 +16,21 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of the handle workflow.

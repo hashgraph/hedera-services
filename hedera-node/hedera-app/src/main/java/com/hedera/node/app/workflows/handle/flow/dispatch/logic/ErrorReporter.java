@@ -93,7 +93,7 @@ public class ErrorReporter {
             return creatorErrorReport(dispatch.creatorInfo().accountId(), creatorError);
         } else {
             final var payer =
-                    getPayerAccount(dispatch.readableStoreFactory(), dispatch.syntheticPayer(), dispatch.txnCategory());
+                    getPayerAccount(dispatch.readableStoreFactory(), dispatch.payerId(), dispatch.txnCategory());
             final var category = dispatch.txnCategory();
             final var requiresPayerSig = category == USER || category == SCHEDULED;
             if (requiresPayerSig && !isHollow(payer)) {

@@ -85,7 +85,7 @@ class ChildDispatchModuleTest {
             .transactionID(
                     TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
             .build();
-    private static final TransactionInfo CRYPT_TRANSFER_TXN_INFO =
+    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
     private static final TransactionInfo CRYPTO_UPDATE_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_UPDATE);
@@ -98,7 +98,7 @@ class ChildDispatchModuleTest {
             Key.DEFAULT,
             SO_FAR_SO_GOOD,
             SUCCESS,
-            CRYPT_TRANSFER_TXN_INFO,
+            CRYPTO_TRANSFER_TXN_INFO,
             Set.of(Key.DEFAULT),
             Collections.emptySet(),
             Set.of(Account.DEFAULT),
@@ -250,7 +250,7 @@ class ChildDispatchModuleTest {
     void providesServiceScopedWritableStoreFactory() {
         given(serviceScopeLookup.getServiceName(TXN_BODY)).willReturn(UtilService.NAME);
         final var writableStoreFactory = ChildDispatchModule.provideWritableStoreFactory(
-                stack, CRYPT_TRANSFER_TXN_INFO, configuration, serviceScopeLookup, storeMetricsService);
+                stack, CRYPTO_TRANSFER_TXN_INFO, configuration, serviceScopeLookup, storeMetricsService);
         assertThat(writableStoreFactory.getServiceName()).isEqualTo(UtilService.NAME);
     }
 
@@ -293,7 +293,7 @@ class ChildDispatchModuleTest {
                         HandleContext.TransactionCategory.SCHEDULED,
                         dispatcher,
                         CRYPTO_TRANSFER,
-                        CRYPT_TRANSFER_TXN_INFO))
+                        CRYPTO_TRANSFER_TXN_INFO))
                 .isEqualTo(FEES.onlyServiceComponent());
     }
 
@@ -304,7 +304,7 @@ class ChildDispatchModuleTest {
                         HandleContext.TransactionCategory.PRECEDING,
                         dispatcher,
                         CONTRACT_CALL,
-                        CRYPT_TRANSFER_TXN_INFO))
+                        CRYPTO_TRANSFER_TXN_INFO))
                 .isSameAs(Fees.FREE);
     }
 
