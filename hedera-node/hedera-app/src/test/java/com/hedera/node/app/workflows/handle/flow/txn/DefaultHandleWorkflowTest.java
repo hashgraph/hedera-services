@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
-import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.DEFAULT_CONSENSUS_NOW;
+import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.CONSENSUS_NOW;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.any;
@@ -96,7 +96,7 @@ public class DefaultHandleWorkflowTest {
                 dispatchProcessor,
                 hollowAccountFinalization);
 
-        when(userTxn.consensusNow()).thenReturn(DEFAULT_CONSENSUS_NOW);
+        when(userTxn.consensusNow()).thenReturn(CONSENSUS_NOW);
         when(userTxn.state()).thenReturn(state);
         when(userTxn.userDispatchProvider()).thenReturn(userDispatchProvider);
         when(userTxn.userDispatchProvider().get()).thenReturn(userDispatchComponentFactory);

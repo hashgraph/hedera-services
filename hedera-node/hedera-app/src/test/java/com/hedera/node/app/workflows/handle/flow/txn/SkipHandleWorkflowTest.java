@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
-import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.DEFAULT_CONSENSUS_NOW;
+import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.CONSENSUS_NOW;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildRecordBuilderFactoryTest.asTxn;
 import static org.mockito.Mockito.when;
 
@@ -70,8 +70,8 @@ class SkipHandleWorkflowTest {
                             .build())
                     .build())
             .build();
-    private static final TransactionBody txBody = asTxn(transferBody, payerId, DEFAULT_CONSENSUS_NOW);
-    private RecordListBuilder recordListBuilder = new RecordListBuilder(DEFAULT_CONSENSUS_NOW);
+    private static final TransactionBody txBody = asTxn(transferBody, payerId, CONSENSUS_NOW);
+    private RecordListBuilder recordListBuilder = new RecordListBuilder(CONSENSUS_NOW);
 
     private static final TransactionInfo txnInfo = new TransactionInfo(
             Transaction.newBuilder().body(txBody).build(),

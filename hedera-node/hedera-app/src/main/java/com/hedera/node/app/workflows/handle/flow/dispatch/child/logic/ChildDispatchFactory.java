@@ -28,7 +28,6 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -107,7 +106,6 @@ public class ChildDispatchFactory {
                 .create(
                         recordBuilder,
                         childTxnInfo,
-                        dispatchFeesModeFor(category),
                         syntheticPayerId,
                         category,
                         childStack,
@@ -162,19 +160,6 @@ public class ChildDispatchFactory {
                     null,
                     0);
         }
-    }
-
-    /**
-     * Returns whether the transaction is scheduled or not.
-     * @param category the transaction category
-     * @return the compute dispatch fees as top level
-     */
-    @NonNull
-    private static ComputeDispatchFeesAsTopLevel dispatchFeesModeFor(
-            @NonNull final HandleContext.TransactionCategory category) {
-        return category == HandleContext.TransactionCategory.SCHEDULED
-                ? ComputeDispatchFeesAsTopLevel.YES
-                : ComputeDispatchFeesAsTopLevel.NO;
     }
 
     /**

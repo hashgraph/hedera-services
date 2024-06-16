@@ -43,7 +43,6 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -173,15 +172,7 @@ class ChildDispatchFactoryTest {
         verify(dispatcher).dispatchPreHandle(any());
 
         verify(childDispatchFactory)
-                .create(
-                        any(),
-                        any(),
-                        eq(ComputeDispatchFeesAsTopLevel.NO),
-                        eq(payerId),
-                        eq(category),
-                        any(),
-                        eq(expectedPreHandleResult),
-                        any());
+                .create(any(), any(), eq(payerId), eq(category), any(), eq(expectedPreHandleResult), any());
     }
 
     @Test
@@ -217,7 +208,6 @@ class ChildDispatchFactoryTest {
                 .create(
                         any(),
                         any(),
-                        eq(ComputeDispatchFeesAsTopLevel.YES),
                         eq(payerId),
                         eq(HandleContext.TransactionCategory.SCHEDULED),
                         any(),
@@ -256,15 +246,7 @@ class ChildDispatchFactoryTest {
         verify(dispatcher).dispatchPreHandle(any());
 
         verify(childDispatchFactory)
-                .create(
-                        any(),
-                        any(),
-                        eq(ComputeDispatchFeesAsTopLevel.NO),
-                        eq(payerId),
-                        eq(category),
-                        any(),
-                        eq(expectedPreHandleResult),
-                        any());
+                .create(any(), any(), eq(payerId), eq(category), any(), eq(expectedPreHandleResult), any());
     }
 
     @Test

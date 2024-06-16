@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -76,23 +84,14 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Provider;
 
 /**
  * The HandleContext Implementation
@@ -108,7 +107,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ReadableStoreFactory readableStoreFactory;
     private final AccountID syntheticPayer;
     private final KeyVerifier verifier;
-    private final Key payerkey;
+    private final Key payerKey;
     private final FeeAccumulator feeAccumulator;
     private final ExchangeRateManager exchangeRateManager;
     private final SavepointStackImpl stack;
@@ -139,7 +138,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
-            @NonNull final Key payerkey,
+            @NonNull final Key payerKey,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SavepointStackImpl stack,
@@ -164,7 +163,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.readableStoreFactory = requireNonNull(storeFactory);
         this.syntheticPayer = requireNonNull(syntheticPayer);
         this.verifier = requireNonNull(verifier);
-        this.payerkey = requireNonNull(payerkey);
+        this.payerKey = requireNonNull(payerKey);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.stack = requireNonNull(stack);
@@ -222,6 +221,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public Fees dispatchComputeFees(
             @NonNull final TransactionBody childTxBody, @NonNull final AccountID syntheticPayerId) {
+        requireNonNull(childTxBody);
+        requireNonNull(syntheticPayerId);
         return dispatchComputeFees(childTxBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.NO);
     }
 
@@ -245,7 +246,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     public FeeCalculator feeCalculator(@NonNull final SubType subType) {
         return feeManager.createFeeCalculator(
                 ensureTxnId(txnInfo.txBody()),
-                payerkey,
+                payerKey,
                 txnInfo.functionality(),
                 numTxnSignatures(),
                 SignatureMap.PROTOBUF.measureRecord(txnInfo.signatureMap()),
@@ -331,7 +332,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @Override
     public SystemPrivilege hasPrivilegedAuthorization() {
-        return authorizer.hasPrivilegedAuthorization(txnInfo.payerID(), txnInfo.functionality(), txnInfo.txBody());
+        return authorizer.hasPrivilegedAuthorization(
+                requireNonNull(txnInfo.payerID()), txnInfo.functionality(), txnInfo.txBody());
     }
 
     @NonNull
@@ -530,7 +532,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     }
 
     @Override
-    public boolean shouldThrottleNOfUnscaled(final int n, final HederaFunctionality function) {
+    public boolean shouldThrottleNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
+        requireNonNull(function);
         return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, consensusNow);
     }
 

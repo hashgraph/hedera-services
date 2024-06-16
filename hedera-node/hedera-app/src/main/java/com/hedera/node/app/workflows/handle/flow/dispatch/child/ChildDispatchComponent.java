@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -41,7 +40,6 @@ public interface ChildDispatchComponent extends Dispatch {
         ChildDispatchComponent create(
                 @BindsInstance SingleTransactionRecordBuilderImpl recordBuilder,
                 @BindsInstance @ChildQualifier TransactionInfo txnInfo,
-                @BindsInstance ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
                 @BindsInstance AccountID syntheticPayer,
                 @BindsInstance HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,
