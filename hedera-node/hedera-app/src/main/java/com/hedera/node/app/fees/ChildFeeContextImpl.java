@@ -36,7 +36,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link FeeContext} to use when computing the cost of a child transaction within
@@ -95,7 +94,7 @@ public class ChildFeeContextImpl implements FeeContext {
         }
     }
 
-    @NotNull
+    @NonNull
     @Override
     public TransactionCategory transactionCategory() {
         return transactionCategory;

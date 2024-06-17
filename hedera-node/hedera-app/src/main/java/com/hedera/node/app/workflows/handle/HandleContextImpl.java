@@ -116,7 +116,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The default implementation of {@link HandleContext}.
@@ -306,7 +305,7 @@ public class HandleContextImpl implements HandleContext, FeeContext {
         return feeCalculatorCreator.apply(subType);
     }
 
-    @NotNull
+    @NonNull
     @Override
     public TransactionCategory transactionCategory() {
         return category;
