@@ -141,7 +141,7 @@ public class ConsensusRound implements Round {
     /**
      * @return the list of CES events in this round
      */
-    public List<DetailedConsensusEvent> getStreamedEvents() {
+    public @NonNull List<DetailedConsensusEvent> getStreamedEvents() {
         return streamedEvents;
     }
 

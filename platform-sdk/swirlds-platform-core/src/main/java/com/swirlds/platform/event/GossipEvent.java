@@ -316,7 +316,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Consens
     }
 
     @Override
-    public Iterator<ConsensusTransaction> consensusTransactionIterator() {
+    public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
         return Arrays.asList((ConsensusTransaction[]) hashedData.getTransactions())
                 .iterator();
     }

@@ -70,7 +70,7 @@ public class StreamedRound implements Round {
         };
     }
 
-    public List<DetailedConsensusEvent> getEvents() {
+    public @NonNull List<DetailedConsensusEvent> getEvents() {
         return events;
     }
 
