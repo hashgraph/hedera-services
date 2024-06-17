@@ -203,16 +203,13 @@ public class ReadableFreezeUpgradeActions {
 
     private void generateConfigPem(@NonNull final Path artifactsLoc) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
-
         final var configTxt = artifactsLoc.resolve("config.txt");
-        final var nodeState = nodeStore.nodesState();
 
-        if (nodeState == null || nodeState.size() == 0) {
+        final var nodeIds = nodeStore.keys();
+        if (nodeIds == null) {
             log.info("Node state is empty, cannot generate config.txt"); // change to log error later
             return;
         }
-
-        final var nodeIds = nodeStore.nodesState().keys();
 
         try (FileWriter fw = new FileWriter(configTxt.toFile());
                 BufferedWriter bw = new BufferedWriter(fw)) {

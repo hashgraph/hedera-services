@@ -392,7 +392,7 @@ class ReadableFreezeUpgradeActionsTest {
                 .value(new EntityNumber(3), node3)
                 .value(new EntityNumber(1), node1)
                 .build();
-        given(nodeStore.nodesState()).willReturn(readableNodeState);
+        given(nodeStore.keys()).willReturn(readableNodeState.keys());
         given(nodeStore.get(1)).willReturn(node1);
         given(nodeStore.get(2)).willReturn(node2);
         given(nodeStore.get(3)).willReturn(node3);
@@ -426,9 +426,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var pemFile2 = Files.readAllBytes(pemFilePath2);
         final var pemFile4 = Files.readAllBytes(pemFilePath4);
 
-        final String configContents = "address, 1, 1, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n"
-                + "address, 2, 2, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n"
-                + "address, 4, 4, node4, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n";
+        final String configContents = new StringBuilder()
+                .append("address, 1, 1, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
+                .append("address, 2, 2, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
+                .append("address, 4, 4, node4, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
+                .toString();
         final byte[] pemFile1Bytes = Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
                 .toByteArray();

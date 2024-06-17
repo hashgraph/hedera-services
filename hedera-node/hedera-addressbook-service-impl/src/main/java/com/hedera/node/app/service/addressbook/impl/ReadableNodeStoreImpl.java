@@ -26,6 +26,7 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Iterator;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -68,7 +69,12 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         return nodesState.size();
     }
 
-    public <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {
+    protected <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {
         return (T) nodesState;
+    }
+
+    @NonNull
+    public Iterator<EntityNumber> keys() {
+        return nodesState().keys();
     }
 }

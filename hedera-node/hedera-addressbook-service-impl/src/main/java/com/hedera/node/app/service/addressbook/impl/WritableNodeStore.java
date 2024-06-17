@@ -57,7 +57,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     }
 
     @Override
-    public WritableKVState<EntityNumber, Node> nodesState() {
+    protected WritableKVState<EntityNumber, Node> nodesState() {
         return super.nodesState();
     }
 
@@ -103,6 +103,8 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
      * Returns an iterator over the keys in the state.
      * @return
      */
+    @Override
+    @NonNull
     public Iterator<EntityNumber> keys() {
         return nodesState().keys();
     }
