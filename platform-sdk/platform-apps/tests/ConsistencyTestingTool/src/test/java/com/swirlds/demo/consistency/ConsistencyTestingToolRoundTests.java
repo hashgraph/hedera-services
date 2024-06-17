@@ -82,7 +82,6 @@ class ConsistencyTestingToolRoundTests {
             Mockito.when(mockEvent.getRoundReceived()).thenReturn(roundReceived);
             Mockito.when(mockEvent.getBaseEvent()).thenReturn(mock(GossipEvent.class));
             Mockito.when(mockEvent.consensusTransactionIterator()).thenReturn(mockTransactions.iterator());
-            Mockito.when(mockEvent.getTransactions()).thenReturn((ConsensusTransactionImpl[]) eventTransactionArray);
 
             mockEvents.add(mockEvent);
         });

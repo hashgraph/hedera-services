@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.contract;
 
-import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;

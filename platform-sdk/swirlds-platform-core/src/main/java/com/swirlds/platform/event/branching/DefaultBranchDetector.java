@@ -76,7 +76,7 @@ public class DefaultBranchDetector implements BranchDetector {
 
         final NodeId creator = event.getCreatorId();
         final EventDescriptor previousEvent = mostRecentEvents.get(creator);
-        final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+        final EventDescriptor selfParent = event.getSelfParent();
 
         final boolean branching = !(previousEvent == null || previousEvent.equals(selfParent));
 

@@ -114,7 +114,8 @@ class PlatformWiringTests {
                 .withBranchDetector(mock(BranchDetector.class))
                 .withBranchReporter(mock(BranchReporter.class))
                 .withStateSigner(mock(StateSigner.class))
-                .withTransactionHandler(mock(DefaultTransactionHandler.class));
+                .withTransactionHandler(mock(DefaultTransactionHandler.class))
+                .withLatestCompleteStateNotifier(mock(LatestCompleteStateNotifier.class));
 
         // Gossip is a special case, it's not like other components.
         // Currently we just have a facade between gossip and the wiring framework.
@@ -145,7 +146,6 @@ class PlatformWiringTests {
                 mock(StateSignatureCollector.class),
                 mock(EventWindowManager.class),
                 mock(BirthRoundMigrationShim.class),
-                mock(LatestCompleteStateNotifier.class),
                 mock(SignedStateNexus.class),
                 mock(LatestCompleteStateNexus.class),
                 mock(SavedStateController.class),

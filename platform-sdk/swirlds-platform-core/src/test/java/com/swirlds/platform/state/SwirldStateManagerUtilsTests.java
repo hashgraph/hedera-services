@@ -48,7 +48,7 @@ public class SwirldStateManagerUtilsTests {
 
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
-        final State result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
+        final MerkleRoot result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
 
         assertFalse(result.isImmutable(), "The copy state should be mutable.");
         assertEquals(

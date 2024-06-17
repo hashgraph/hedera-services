@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -36,8 +35,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -120,11 +117,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                     synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
-            final var lazyCreateFees =
-                    context.dispatchComputeFees(synthTxn, context.payer(), ComputeDispatchFeesAsTopLevel.NO);
-            final var finalizationFees = getLazyCreationFinalizationFees();
-            childRecordBuilder.transactionFee(lazyCreateFees.totalFee() + finalizationFees.totalFee());
-
             return childRecordBuilder.status();
         } catch (final HandleException e) {
             // It is critically important we don't let HandleExceptions propagate to the workflow because
@@ -182,13 +174,5 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
-    }
-
-    private Fees getLazyCreationFinalizationFees() {
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder().key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY));
-        final var synthTxn =
-                TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody).build();
-        return context.dispatchComputeFees(synthTxn, context.payer(), ComputeDispatchFeesAsTopLevel.NO);
     }
 }

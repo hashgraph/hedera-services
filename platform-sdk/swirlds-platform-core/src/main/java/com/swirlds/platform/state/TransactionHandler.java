@@ -52,7 +52,7 @@ public class TransactionHandler {
      * @param state
      * 		the state to apply {@code round} to
      */
-    public void handleRound(final ConsensusRound round, final State state) {
+    public void handleRound(final ConsensusRound round, final MerkleRoot state) {
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();

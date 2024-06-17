@@ -800,4 +800,11 @@ public class ConversionUtils {
                         .toByteArray(),
                 headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
     }
+
+    public static byte[] removeIfAnyLeading0x(com.hedera.pbj.runtime.io.buffer.Bytes contents) {
+        final var hexPrefix = new byte[] {(byte) '0', (byte) 'x'};
+        final var offset = contents.matchesPrefix(hexPrefix) ? hexPrefix.length : 0L;
+        final var len = contents.length() - offset;
+        return contents.getBytes(offset, len).toByteArray();
+    }
 }

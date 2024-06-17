@@ -25,12 +25,12 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.io.IOIterator;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.wiring.wires.output.StandardOutputWire;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -82,12 +82,10 @@ class PcesReplayerTests {
         final int eventCount = 100;
 
         for (int i = 0; i < eventCount; i++) {
-            final GossipEvent event = mock(GossipEvent.class);
-            when(event.getHashedData()).thenReturn(mock(BaseEventHashedData.class));
-            final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[0];
-            final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-            when(hashedData.getTransactions()).thenReturn(transactions);
-            when(event.getHashedData()).thenReturn(hashedData);
+            final GossipEvent event = new TestingEventBuilder(Randotron.create())
+                    .setAppTransactionCount(0)
+                    .setSystemTransactionCount(0)
+                    .build();
 
             events.add(event);
         }

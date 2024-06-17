@@ -19,22 +19,19 @@ package com.hedera.node.app.service.file.impl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.config.ConfigProvider;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 /** Standard implementation of the {@link FileService} {@link RpcService}. */
 public final class FileServiceImpl implements FileService {
-    private final ConfigProvider configProvider;
 
     /**
-     * Constructs a {@link FileServiceImpl} with the given {@link ConfigProvider}.
-     * @param configProvider the configuration provider
+     * Constructs a {@link FileServiceImpl}.
      */
     @Inject
-    public FileServiceImpl(@NonNull final ConfigProvider configProvider) {
-        this.configProvider = configProvider;
+    public FileServiceImpl() {
+        // No-op
     }
 
     /**
@@ -42,6 +39,6 @@ public final class FileServiceImpl implements FileService {
      */
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new V0490FileSchema(configProvider));
+        registry.register(new V0490FileSchema());
     }
 }

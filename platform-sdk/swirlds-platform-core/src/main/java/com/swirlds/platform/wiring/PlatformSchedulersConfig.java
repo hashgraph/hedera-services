@@ -24,43 +24,43 @@ import java.time.Duration;
 /**
  * Contains configuration values for the platform schedulers.
  *
- * @param eventHasherUnhandledCapacity           number of unhandled tasks allowed in the event hasher scheduler
- * @param internalEventValidator                 configuration for the internal event validator scheduler
- * @param eventDeduplicator                      configuration for the event deduplicator scheduler
- * @param eventSignatureValidator                configuration for the event signature validator scheduler
- * @param orphanBuffer                           configuration for the orphan buffer scheduler
- * @param consensusEngine                        configuration for the consensus engine scheduler
- * @param eventCreationManager                   configuration for the event creation manager scheduler
- * @param selfEventSigner                        configuration for the self event signer scheduler
- * @param stateSigner                            configuration for the state signer scheduler
- * @param pcesWriter                             configuration for the preconsensus event writer scheduler
- * @param pcesSequencer                          configuration for the preconsensus event sequencer scheduler
- * @param applicationTransactionPrehandler       configuration for the application transaction prehandler scheduler
- * @param stateSignatureCollector                configuration for the state signature collector scheduler
- * @param transactionHandler                     configuration for the transaction handler scheduler
- * @param issDetector                            configuration for the ISS detector scheduler
- * @param issHandler                             configuration for the ISS handler scheduler
- * @param hashLogger                             configuration for the hash logger scheduler
- * @param completeStateNotifierUnhandledCapacity number of unhandled tasks allowed for the state completion notifier
- * @param stateHasher                            configuration for the state hasher scheduler
- * @param stateGarbageCollector                  configuration for the state garbage collector scheduler
- * @param stateGarbageCollectorHeartbeatPeriod   the frequency that heartbeats should be sent to the state garbage
- *                                               collector
- * @param platformPublisher                      configuration for the platform publisher scheduler
- * @param consensusEventStream                   configuration for the consensus event stream scheduler
- * @param roundDurabilityBuffer                  configuration for the round durability buffer scheduler
- * @param signedStateSentinel                    configuration for the signed state sentinel scheduler
- * @param signedStateSentinelHeartbeatPeriod     the frequency that heartbeats should be sent to the signed state
- *                                               sentinel
- * @param statusStateMachine                     configuration for the status state machine scheduler
- * @param staleEventDetector                     configuration for the stale event detector scheduler
- * @param transactionResubmitter                 configuration for the transaction resubmitter scheduler
- * @param transactionPool                        configuration for the transaction pool scheduler
- * @param gossip                                 configuration for the gossip scheduler
- * @param eventHasher                            configuration for the event hasher scheduler
- * @param postHashCollector                      configuration for the post hash collector scheduler
- * @param branchDetector                         configuration for the branch detector scheduler
- * @param branchReporter                         configuration for the branch reporter scheduler
+ * @param eventHasherUnhandledCapacity         number of unhandled tasks allowed in the event hasher scheduler
+ * @param internalEventValidator               configuration for the internal event validator scheduler
+ * @param eventDeduplicator                    configuration for the event deduplicator scheduler
+ * @param eventSignatureValidator              configuration for the event signature validator scheduler
+ * @param orphanBuffer                         configuration for the orphan buffer scheduler
+ * @param consensusEngine                      configuration for the consensus engine scheduler
+ * @param eventCreationManager                 configuration for the event creation manager scheduler
+ * @param selfEventSigner                      configuration for the self event signer scheduler
+ * @param stateSigner                          configuration for the state signer scheduler
+ * @param pcesWriter                           configuration for the preconsensus event writer scheduler
+ * @param pcesSequencer                        configuration for the preconsensus event sequencer scheduler
+ * @param applicationTransactionPrehandler     configuration for the application transaction prehandler scheduler
+ * @param stateSignatureCollector              configuration for the state signature collector scheduler
+ * @param transactionHandler                   configuration for the transaction handler scheduler
+ * @param issDetector                          configuration for the ISS detector scheduler
+ * @param issHandler                           configuration for the ISS handler scheduler
+ * @param hashLogger                           configuration for the hash logger scheduler
+ * @param latestCompleteStateNotifier          configuration for the latest complete state notifier scheduler
+ * @param stateHasher                          configuration for the state hasher scheduler
+ * @param stateGarbageCollector                configuration for the state garbage collector scheduler
+ * @param stateGarbageCollectorHeartbeatPeriod the frequency that heartbeats should be sent to the state garbage
+ *                                             collector
+ * @param platformPublisher                    configuration for the platform publisher scheduler
+ * @param consensusEventStream                 configuration for the consensus event stream scheduler
+ * @param roundDurabilityBuffer                configuration for the round durability buffer scheduler
+ * @param signedStateSentinel                  configuration for the signed state sentinel scheduler
+ * @param signedStateSentinelHeartbeatPeriod   the frequency that heartbeats should be sent to the signed state
+ *                                             sentinel
+ * @param statusStateMachine                   configuration for the status state machine scheduler
+ * @param staleEventDetector                   configuration for the stale event detector scheduler
+ * @param transactionResubmitter               configuration for the transaction resubmitter scheduler
+ * @param transactionPool                      configuration for the transaction pool scheduler
+ * @param gossip                               configuration for the gossip scheduler
+ * @param eventHasher                          configuration for the event hasher scheduler
+ * @param postHashCollector                    configuration for the post hash collector scheduler
+ * @param branchDetector                       configuration for the branch detector scheduler
+ * @param branchReporter                       configuration for the branch reporter scheduler
  */
 @ConfigData("platformSchedulers")
 public record PlatformSchedulersConfig(
@@ -100,7 +100,8 @@ public record PlatformSchedulersConfig(
         @ConfigProperty(defaultValue = "DIRECT") TaskSchedulerConfiguration issHandler,
         @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(100) UNHANDLED_TASK_METRIC")
                 TaskSchedulerConfiguration hashLogger,
-        @ConfigProperty(defaultValue = "1000") int completeStateNotifierUnhandledCapacity,
+        @ConfigProperty(defaultValue = "SEQUENTIAL CAPACITY(5) UNHANDLED_TASK_METRIC")
+                TaskSchedulerConfiguration latestCompleteStateNotifier,
         @ConfigProperty(
                         defaultValue =
                                 "SEQUENTIAL_THREAD CAPACITY(5) FLUSHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC")

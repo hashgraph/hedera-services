@@ -142,9 +142,9 @@ class BirthRoundMigrationShimTests {
             assertEquals(lastRoundBeforeBirthRoundMode, event.getBirthRound());
 
             // The hash of the event should not have changed
-            event.getHashedData().invalidateHash();
+            event.invalidateHash();
             new StatefulEventHasher().hashEvent(event);
-            assertEquals(originalHash, event.getHashedData().getHash());
+            assertEquals(originalHash, event.getHash());
         }
     }
 
@@ -185,7 +185,7 @@ class BirthRoundMigrationShimTests {
             // The hash of the event should not have changed
             event.invalidateHash();
             new StatefulEventHasher().hashEvent(event);
-            assertEquals(originalHash, event.getHashedData().getHash());
+            assertEquals(originalHash, event.getHash());
         }
     }
 }

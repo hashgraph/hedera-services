@@ -16,10 +16,14 @@
 
 package com.swirlds.platform.wiring.components;
 
+import static com.swirlds.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.NoInput;
+import com.swirlds.wiring.model.WiringModel;
 import com.swirlds.wiring.schedulers.TaskScheduler;
 import com.swirlds.wiring.wires.input.BindableInputWire;
 import com.swirlds.wiring.wires.input.InputWire;
@@ -43,11 +47,17 @@ public record PcesReplayerWiring(
     /**
      * Create a new instance of this wiring.
      *
-     * @param taskScheduler the task scheduler for this wiring
+     * @param model the wiring model
      * @return the new wiring instance
      */
     @NonNull
-    public static PcesReplayerWiring create(@NonNull final TaskScheduler<NoInput> taskScheduler) {
+    public static PcesReplayerWiring create(@NonNull final WiringModel model) {
+        final TaskScheduler<NoInput> taskScheduler = model.schedulerBuilder("pcesReplayer")
+                .withType(DIRECT)
+                .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
+                .build()
+                .cast();
+
         return new PcesReplayerWiring(
                 taskScheduler.buildInputWire("event files to replay"),
                 taskScheduler.getOutputWire(),
