@@ -9,14 +9,14 @@ at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/vie
 
 ## Design Proposal Process Flow
 
-![](designProposalFlow.svg)
+![](designProposalFlow.drawio)
 
 ## Creating A Proposal
 
 All proposals have an owner who is responsible for taking it through the process to completion. Proposals must be
 presented in the form of a PR containing the proposal in a subdirectory of `platform-sdk/docs/proposals/`. Proposals may
-contain diagrams and supporting materials. Diagrams must be in SVG format and all content must be in an editable
-format (i.e. no images).
+contain diagrams and supporting materials. Diagrams must be in DrawIO (.drawio) format and all content
+must be in an editable format (i.e. no images).
 
 Any source code that was developed as part of the design process may be included in the subdirectory of the proposal
 but not merged into the source code of the platform.
@@ -47,7 +47,7 @@ When the proposal is ready for voting, take the following steps:
 1. Ensure all comments are resolved.
 2. Mark the PR as ready for review
 3. Update the status of the PR in
-    the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board to `Voting`
+   the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board to `Voting`
 
 Requests for inmaterial changes can be addressed by pushing additional commits to the existing proposal
 PR while in `Voting`. Examples of inmaterial changes are spelling or grammar errors, wording changes that do not modify
@@ -118,4 +118,4 @@ project should be changed to `Delivered`.
 
 ## Design Proposal State Machine
 
-![](designProposalStateMachine.svg)
+![](designProposalStateMachine.drawio)
