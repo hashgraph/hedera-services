@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.STAKING_NOT_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -41,8 +40,10 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -58,9 +59,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
@@ -78,8 +76,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -108,23 +104,18 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = Strictness.LENIENT)
     private LongSupplier consensusSecondNow;
 
-    @Mock
-    private GlobalDynamicProperties dynamicProperties;
-
-    @Mock
-    private PropertySource compositeProps;
-
-    @Mock
-    private HederaNumbers hederaNumbers;
-
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProvider configProvider;
 
     @Mock(strictness = Strictness.LENIENT)
     private CryptoSignatureWaiversImpl waivers;
 
+    @Mock
     private AttributeValidator attributeValidator;
+
+    @Mock
     private ExpiryValidator expiryValidator;
+
     private StakingValidator stakingValidator;
     private final long updateAccountNum = 32132L;
     private final AccountID updateAccountId =
@@ -143,10 +134,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
-        given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
-        attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
-        expiryValidator = new StandardizedExpiryValidator(
-                System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         stakingValidator = new StakingValidator();
         subject = new CryptoUpdateHandler(waivers, stakingValidator);
     }
@@ -545,7 +532,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void updatesMemo() {
-        given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(1000);
         final var txn = new CryptoUpdateBuilder().withMemo("test memo").build();
         givenTxnWith(txn);
         assertEquals("testAccount", writableStore.get(updateAccountId).memo());
@@ -556,8 +542,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void updatesAutoRenewPeriod() {
-        given(dynamicProperties.maxAutoRenewDuration()).willReturn(100000000L);
-
         final var txn = new CryptoUpdateBuilder().withAutoRenewPeriod(2000000L).build();
         givenTxnWith(txn);
         assertEquals(72000L, writableStore.get(updateAccountId).autoRenewSeconds());
@@ -583,6 +567,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withKey(defaultkey()).build();
         givenTxnWith(txn);
         assertEquals(otherKey, writableStore.get(updateAccountId).key());
+        doThrow(new HandleException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -595,6 +580,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withKey(emptyKey()).build();
         givenTxnWith(txn);
         assertEquals(otherKey, writableStore.get(updateAccountId).key());
+        doThrow(new HandleException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -613,6 +599,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .withValue("ledger.maxMemoUtf8Bytes", 2)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
+        doThrow(new HandleException(MEMO_TOO_LONG)).when(attributeValidator).validateMemo(any());
 
         assertEquals("testAccount", writableStore.get(updateAccountId).memo());
 
@@ -626,6 +613,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void rejectsInvalidAutoRenewPeriod() {
         final var txn = new CryptoUpdateBuilder().withAutoRenewPeriod(10L).build();
         givenTxnWith(txn);
+        doThrow(new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE))
+                .when(attributeValidator)
+                .validateAutoRenewPeriod(anyLong());
 
         assertEquals(72000L, writableStore.get(updateAccountId).autoRenewSeconds());
 
@@ -653,6 +643,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        given(expiryValidator.isDetached(any(), anyBoolean(), anyLong())).willReturn(true);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -663,6 +654,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void rejectsInvalidExpiryIfExpiryValidatorFails() {
         final var txn = new CryptoUpdateBuilder().withExpiration(1234567).build();
         givenTxnWith(txn);
+        given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
+                .willThrow(new HandleException(INVALID_EXPIRATION_TIME));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -694,6 +687,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withExpiration(10L).build();
         givenTxnWith(txn);
         assertEquals(1234567L, writableStore.get(updateAccountId).expirationSecond());
+        given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
+                .willThrow(new HandleException(EXPIRATION_REDUCTION_NOT_ALLOWED));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)

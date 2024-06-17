@@ -28,10 +28,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZE
 import static com.hedera.hapi.node.base.TokenKeyValidation.NO_VALIDATION;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenKey.METADATA_KEY;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -49,7 +50,10 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenUpdateResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -66,9 +70,11 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -333,10 +339,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             final Token.Builder builder,
             final Token originalToken,
             final boolean isHapiCall) {
-        if (op.symbol() != null && op.symbol().length() > 0) {
+        if (!op.symbol().isEmpty()) {
             builder.symbol(op.symbol());
         }
-        if (op.name() != null && op.name().length() > 0) {
+        if (!op.name().isEmpty()) {
             builder.name(op.name());
         }
         if (op.hasMemo()) {
@@ -349,7 +355,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             }
         }
         if (op.hasMetadata()) {
-            builder.metadata(op.metadata());
+            builder.metadata(op.metadataOrThrow());
         }
         // Here we check that there is a treasury to be updated,
         // that if the transaction is a contract call the treasury shouldn't be a zero account
@@ -611,16 +617,59 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var readableStore = feeContext.readableStore(ReadableTokenStore.class);
         final var token = readableStore.get(op.tokenOrThrow());
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenUpdateResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(body), sigValueObj, token));
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, token));
     }
 
     private boolean isHapiCallOrNonZeroTreasuryAccount(final boolean isHapiCall, final TokenUpdateTransactionBody op) {
-        return isHapiCall || !isZeroAccount(op.treasury());
+        return isHapiCall || !isZeroAccount(op.treasuryOrElse(AccountID.DEFAULT));
     }
 
     private boolean isZeroAccount(@NonNull final AccountID accountID) {
         return accountID.equals(ZERO_ACCOUNT_ID);
+    }
+
+    private FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn, final SigValueObj svo, final Token token) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        if (token != null) {
+            final var estimate = TokenUpdateUsage.newEstimate(
+                            txn, txnEstimateFactory.get(sigUsage, txn, ESTIMATOR_UTILS))
+                    .givenCurrentAdminKey(
+                            token.hasAdminKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.adminKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentFreezeKey(
+                            token.hasFreezeKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.freezeKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentWipeKey(
+                            token.hasWipeKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.wipeKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentSupplyKey(
+                            token.hasSupplyKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.supplyKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentKycKey(
+                            token.hasKycKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.kycKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentPauseKey(
+                            token.hasPauseKey()
+                                    ? Optional.of(CommonPbjConverters.fromPbj(token.pauseKeyOrThrow()))
+                                    : Optional.empty())
+                    .givenCurrentName(token.name())
+                    .givenCurrentMemo(token.memo())
+                    .givenCurrentSymbol(token.symbol())
+                    .givenCurrentExpiry(token.expirationSecond());
+            if (token.hasAutoRenewAccountId()) {
+                estimate.givenCurrentlyUsingAutoRenewAccount();
+            }
+            return estimate.get();
+        } else {
+            return CONSTANT_FEE_DATA;
+        }
     }
 }

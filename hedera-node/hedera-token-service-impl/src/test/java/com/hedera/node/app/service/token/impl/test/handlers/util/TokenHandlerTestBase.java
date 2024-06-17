@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.B_COMPLEX_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.C_COMPLEX_KEY;
-import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.IdUtils.asAccount;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -74,8 +72,8 @@ public class TokenHandlerTestBase {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final AccountID payerId = protoToPbj(asAccount("0.0.3"), AccountID.class);
-    protected final AccountID treasury = protoToPbj(asAccount("0.0.100"), AccountID.class);
+    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID treasury = AccountID.newBuilder().accountNum(100).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
     protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final Key metadataKey = Key.DEFAULT;

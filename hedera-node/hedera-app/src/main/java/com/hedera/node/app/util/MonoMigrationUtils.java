@@ -16,16 +16,11 @@
 
 package com.hedera.node.app.util;
 
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
@@ -38,27 +33,17 @@ import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
-import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.HederaState;
@@ -116,43 +101,6 @@ public class MonoMigrationUtils {
                 // --------------------- BEGIN MONO -> MODULAR MIGRATION ---------------------
                 logger.info("BBM: migration beginning 😅...");
 
-                // --------------------- UNIQUE_TOKENS (0)
-                final VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqTokensFromState = state.getChild(UNIQUE_TOKENS);
-                if (uniqTokensFromState != null) {
-                    // Copy this virtual map, so it doesn't get released before the migration is done
-                    final var copy = uniqTokensFromState.copy();
-                    copy.registerMetrics(metrics);
-                    MONO_VIRTUAL_MAPS.add(copy);
-                    V0490TokenSchema.setNftsFromState(uniqTokensFromState);
-                }
-
-                // --------------------- TOKEN_ASSOCIATIONS (1)
-                final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelsFromState =
-                        state.getChild(TOKEN_ASSOCIATIONS);
-                if (tokenRelsFromState != null) {
-                    // Copy this virtual map, so it doesn't get released before the migration is done
-                    final var copy = tokenRelsFromState.copy();
-                    copy.registerMetrics(metrics);
-                    MONO_VIRTUAL_MAPS.add(copy);
-                    V0490TokenSchema.setTokenRelsFromState(tokenRelsFromState);
-                }
-
-                // --------------------- ACCOUNTS (4)
-                final VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFromState = state.getChild(ACCOUNTS);
-                if (acctsFromState != null) {
-                    // Copy this virtual map, so it doesn't get released before the migration is done
-                    final var copy = acctsFromState.copy();
-                    copy.registerMetrics(metrics);
-                    MONO_VIRTUAL_MAPS.add(copy);
-                    V0490TokenSchema.setAcctsFromState(acctsFromState);
-                }
-
-                // --------------------- TOKENS (5)
-                final MerkleMap<EntityNum, MerkleToken> tokensFromState = state.getChild(TOKENS);
-                if (tokensFromState != null) {
-                    V0490TokenSchema.setTokensFromState(tokensFromState);
-                }
-
                 // --------------------- NETWORK_CTX (6)
                 // Here we assign the network context, but don't migrate it by itself. These properties have been split
                 // out
@@ -187,12 +135,6 @@ public class MonoMigrationUtils {
                     copy.registerMetrics(metrics);
                     MONO_VIRTUAL_MAPS.add(copy);
                     V0490ContractSchema.setStorageFromState(VirtualMapLike.from(contractFromStorage));
-                }
-
-                // --------------------- STAKING_INFO (12)
-                final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfoFromState = state.getChild(STAKING_INFO);
-                if (stakingInfoFromState != null) {
-                    V0490TokenSchema.setStakingFs(stakingInfoFromState, fromNetworkContext);
                 }
 
                 // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)

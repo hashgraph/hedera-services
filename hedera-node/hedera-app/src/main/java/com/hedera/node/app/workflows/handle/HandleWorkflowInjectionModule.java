@@ -23,15 +23,10 @@ import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactor
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.state.HederaState;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,14 +46,6 @@ public interface HandleWorkflowInjectionModule {
     static Function<TxnAccessor, TxnScopedPlatformSigFactory> provideScopedFactoryProvider() {
         return ReusableBodySigningFactory::new;
     }
-
-    @Binds
-    @Singleton
-    ExpiryValidator bindEntityExpiryValidator(MonoExpiryValidator monoEntityExpiryValidator);
-
-    @Binds
-    @Singleton
-    AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
 
     Runnable NO_OP = () -> {};
 

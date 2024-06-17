@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
@@ -41,7 +39,6 @@ import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -127,13 +124,12 @@ public class CryptoHandlerTestBase {
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(consensusTimestamp.seconds());
     protected final Key accountKey = A_COMPLEX_KEY;
-    protected final HederaKey accountHederaKey = asHederaKey(accountKey).get();
     protected final Long accountNum = id.accountNumOrThrow();
 
     protected static final Key aPrimitiveKey = Key.newBuilder()
             .ed25519(Bytes.wrap("01234567890123456789012345678901"))
             .build();
-    protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
+    protected static final ProtoBytes edKeyAlias = new ProtoBytes(aPrimitiveKey.ed25519());
     protected final AccountID alias =
             AccountID.newBuilder().alias(edKeyAlias.value()).build();
     protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e26");

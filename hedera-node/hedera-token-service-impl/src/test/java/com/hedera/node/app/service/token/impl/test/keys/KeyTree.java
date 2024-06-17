@@ -16,13 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.keys;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hederahashgraph.api.proto.java.Key;
-import java.security.InvalidKeyException;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 public class KeyTree {
     private final KeyTreeNode root;
@@ -35,37 +30,12 @@ public class KeyTree {
         return new KeyTree(KeyTreeNode.from(rootFactory));
     }
 
-    public KeyTreeNode getRoot() {
-        return root;
-    }
-
-    public int numLeaves() {
-        return root.numLeaves();
-    }
-
-    @SuppressWarnings("unchecked")
-    public void traverseLeaves(final Consumer<KeyTreeLeaf> visitor) {
-        traverse(node -> node instanceof KeyTreeLeaf, node -> visitor.accept((KeyTreeLeaf) node));
-    }
-
-    public void traverse(final Predicate<KeyTreeNode> shouldVisit, final Consumer<KeyTreeNode> visitor) {
-        root.traverse(shouldVisit, visitor);
-    }
-
-    public JKey asJKey() throws InvalidKeyException {
-        return JKey.mapKey(asKey());
-    }
-
-    public JKey asJKeyUnchecked() {
-        return MiscUtils.asFcKeyUnchecked(asKey());
-    }
-
     public Key asKey() {
         return asKey(KeyFactory.getDefaultInstance());
     }
 
     public com.hedera.hapi.node.base.Key asPbjKey() {
-        return PbjConverter.protoToPbj(asKey(), com.hedera.hapi.node.base.Key.class);
+        return CommonPbjConverters.protoToPbj(asKey(), com.hedera.hapi.node.base.Key.class);
     }
 
     public Key asKey(final KeyFactory factoryToUse) {

@@ -22,8 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.IdUtils.asAccount;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -69,7 +67,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenRevokeKycFromAccountHandlerTest {
 
-    private static final AccountID PBJ_PAYER_ID = protoToPbj(asAccount("0.0.3"), AccountID.class);
+    private static final AccountID PBJ_PAYER_ID =
+            AccountID.newBuilder().accountNum(3).build();
     private static final TokenID TOKEN_10 = TokenID.newBuilder().tokenNum(10).build();
     private static final AccountID ACCOUNT_100 =
             AccountID.newBuilder().accountNum(100).build();

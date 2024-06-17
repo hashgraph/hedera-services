@@ -18,10 +18,11 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
+import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.AUTO_MEMO;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -33,7 +34,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -81,7 +81,7 @@ public class AutoAccountCreator {
         final TransactionBody.Builder syntheticCreation;
         String memo;
 
-        final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
+        final var isAliasEVMAddress = isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L, maxAutoAssociations);
             memo = LAZY_MEMO;

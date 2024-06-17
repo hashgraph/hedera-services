@@ -34,7 +34,7 @@ import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -182,7 +182,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
                 .toList();
 
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
-                newFees.stream().map(PbjConverter::fromPbj).toList());
+                newFees.stream().map(CommonPbjConverters::fromPbj).toList());
         final var effConsTime =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);

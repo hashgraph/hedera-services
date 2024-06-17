@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELETED_TOKEN;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_IMMUTABLE;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
@@ -291,13 +291,13 @@ class TokenAssociateToAccountHandlerTest {
             final var headToken = writableAccountStore.getAccountById(newAcctId).headTokenId();
             final var headTokenRel = writableTokenRelStore.get(newAcctId, headToken);
             Assertions.assertThat(headTokenRel.frozen()).isFalse();
-            Assertions.assertThat(headTokenRel.kycGranted()).isFalse();
+            Assertions.assertThat(headTokenRel.kycGranted()).isTrue();
             Assertions.assertThat(headTokenRel.previousToken()).isNull();
             Assertions.assertThat(headTokenRel.tokenId()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_WIPE));
             Assertions.assertThat(headTokenRel.nextToken()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY));
             final var nextToHeadTokenRel = writableTokenRelStore.get(newAcctId, headTokenRel.nextToken());
             Assertions.assertThat(nextToHeadTokenRel.frozen()).isFalse();
-            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
+            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isTrue();
             Assertions.assertThat(nextToHeadTokenRel.previousToken()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_WIPE));
             Assertions.assertThat(nextToHeadTokenRel.tokenId()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY));
             Assertions.assertThat(nextToHeadTokenRel.nextToken()).isNull();
@@ -370,7 +370,7 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(nextToHeadTokenRel.frozen()).isTrue();
             // Note: this token doesn't actually have a KYC key even though its name implies that
             // it does
-            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
+            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isTrue();
             Assertions.assertThat(nextToHeadTokenRel.automaticAssociation()).isFalse();
 
             final var thirdTokenRel = writableTokenRelStore.get(newAcctId, nextToHeadTokenRel.nextToken());

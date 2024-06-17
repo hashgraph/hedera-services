@@ -16,27 +16,16 @@
 
 package com.hedera.node.app.service.token.impl.test.keys;
 
-import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.test.keys.KeyTree.withRoot;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.IdUtils.asAccount;
 import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.IdUtils.asToken;
 import static com.hedera.node.app.service.token.impl.test.keys.NodeFactory.ed25519;
 import static com.hedera.node.app.service.token.impl.test.keys.NodeFactory.list;
 import static com.hedera.node.app.service.token.impl.test.keys.NodeFactory.threshold;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
-import static org.mockito.quality.Strictness.LENIENT;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.List;
 import java.util.stream.Stream;
 
 public interface KeysAndIds {
@@ -50,120 +39,6 @@ public interface KeysAndIds {
     AccountID TREASURY_PAYER = asAccount(TREASURY_PAYER_ID);
     KeyTree DEFAULT_PAYER_KT = withRoot(list(ed25519()));
     AccountID STAKING_FUND = asAccount("0.0.800");
-
-    default TokenStore tokenStore() {
-        var tokenStore = mock(TokenStore.class, withSettings().strictness(LENIENT));
-
-        var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
-        var optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();
-        var optionalWipeKey = TOKEN_WIPE_KT.asJKeyUnchecked();
-        var optionalSupplyKey = TOKEN_SUPPLY_KT.asJKeyUnchecked();
-        var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
-        var optionalFeeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked();
-        var optionalPauseKey = TOKEN_PAUSE_KT.asJKeyUnchecked();
-
-        var immutableToken = new MerkleToken(
-                Long.MAX_VALUE,
-                100,
-                1,
-                "ImmutableToken",
-                "ImmutableTokenName",
-                false,
-                false,
-                new EntityId(1, 2, 3),
-                (int) KNOWN_TOKEN_IMMUTABLE.getTokenNum());
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_IMMUTABLE)).thenReturn(KNOWN_TOKEN_IMMUTABLE);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).thenReturn(immutableToken);
-
-        var vanillaToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "VanillaToken", "TOKENNAME", false, false, new EntityId(1, 2, 3), (int)
-                        KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum());
-        vanillaToken.setAdminKey(adminKey);
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_NO_SPECIAL_KEYS)).thenReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).thenReturn(vanillaToken);
-
-        var pausedToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "PausedToken", "PAUSEDTOKEN", false, false, new EntityId(1, 2, 4), (int)
-                        KNOWN_TOKEN_WITH_PAUSE.getTokenNum());
-        pausedToken.setAdminKey(adminKey);
-        pausedToken.setPauseKey(optionalPauseKey);
-        pausedToken.setPaused(true);
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_PAUSE)).thenReturn(KNOWN_TOKEN_WITH_PAUSE);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_PAUSE)).thenReturn(pausedToken);
-
-        var frozenToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "FrozenToken", "FRZNTKN", true, false, new EntityId(1, 2, 4), (int)
-                        KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
-        frozenToken.setAdminKey(adminKey);
-        frozenToken.setFreezeKey(optionalFreezeKey);
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_FREEZE)).thenReturn(KNOWN_TOKEN_WITH_FREEZE);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).thenReturn(frozenToken);
-
-        var kycToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "KycToken", "KYCTOKENNAME", false, true, new EntityId(1, 2, 4), (int)
-                        KNOWN_TOKEN_WITH_KYC.getTokenNum());
-        kycToken.setAdminKey(adminKey);
-        kycToken.setKycKey(optionalKycKey);
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_KYC)).thenReturn(KNOWN_TOKEN_WITH_KYC);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).thenReturn(kycToken);
-
-        var feeScheduleToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "FsToken", "FEE_SCHEDULETOKENNAME", false, true, new EntityId(1, 2, 4), (int)
-                        KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY.getTokenNum());
-        feeScheduleToken.setFeeScheduleKey(optionalFeeScheduleKey);
-        lenient()
-                .when(tokenStore.resolve(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY))
-                .thenReturn(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).thenReturn(feeScheduleToken);
-
-        var royaltyFeeWithFallbackToken = new MerkleToken(
-                Long.MAX_VALUE,
-                100,
-                1,
-                "ZPHYR",
-                "West Wind Art",
-                false,
-                true,
-                EntityId.fromGrpcAccountId(MISC_ACCOUNT),
-                (int) KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK.getTokenNum());
-        royaltyFeeWithFallbackToken.setFeeScheduleKey(optionalFeeScheduleKey);
-        royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
-        royaltyFeeWithFallbackToken.setFeeSchedule(
-                List.of(FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
-        lenient()
-                .when(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
-                .thenReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
-        lenient()
-                .when(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
-                .thenReturn(royaltyFeeWithFallbackToken);
-
-        var supplyToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "SupplyToken", "SUPPLYTOKENNAME", false, false, new EntityId(1, 2, 4), (int)
-                        KNOWN_TOKEN_WITH_SUPPLY.getTokenNum());
-        supplyToken.setAdminKey(adminKey);
-        supplyToken.setSupplyKey(optionalSupplyKey);
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_SUPPLY)).thenReturn(KNOWN_TOKEN_WITH_SUPPLY);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).thenReturn(supplyToken);
-
-        var wipeToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "WipeToken", "WIPETOKENNAME", false, false, new EntityId(1, 2, 4), (int)
-                        KNOWN_TOKEN_WITH_WIPE.getTokenNum());
-        wipeToken.setAdminKey(adminKey);
-        wipeToken.setWipeKey(optionalWipeKey);
-        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_WIPE)).thenReturn(KNOWN_TOKEN_WITH_WIPE);
-        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).thenReturn(wipeToken);
-
-        var deletedToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "DeletedToken", "DELETEDTOKENNAME", false, false, new EntityId(1, 2, 4), (int)
-                        DELETED_TOKEN.getTokenNum());
-        deletedToken.setDeleted(true);
-        lenient().when(tokenStore.resolve(DELETED_TOKEN)).thenReturn(DELETED_TOKEN);
-        lenient().when(tokenStore.get(DELETED_TOKEN)).thenReturn(deletedToken);
-
-        lenient().when(tokenStore.resolve(MISSING_TOKEN)).thenReturn(TokenStore.MISSING_TOKEN);
-
-        return tokenStore;
-    }
 
     String CURRENTLY_UNUSED_ALIAS = "currentlyUnusedAlias";
 

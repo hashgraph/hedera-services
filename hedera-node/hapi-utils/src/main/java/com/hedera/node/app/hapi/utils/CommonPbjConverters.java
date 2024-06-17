@@ -21,14 +21,21 @@ import static java.util.Objects.requireNonNull;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,5 +143,76 @@ public class CommonPbjConverters {
                 .setShardNum(someFileId.shardNum())
                 .setFileNum(someFileId.fileNum())
                 .build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.TransactionRecord fromPbj(@NonNull TransactionRecord tx) {
+        requireNonNull(tx);
+        try {
+            final var bytes = asBytes(TransactionRecord.PROTOBUF, tx);
+            return com.hederahashgraph.api.proto.java.TransactionRecord.parseFrom(bytes);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(@NonNull final CustomFee customFee) {
+        return explicitPbjToProto(
+                customFee, CustomFee.PROTOBUF, com.hederahashgraph.api.proto.java.CustomFee::parseFrom);
+    }
+
+    private interface ProtoParser<R extends GeneratedMessageV3> {
+        R parseFrom(byte[] bytes) throws InvalidProtocolBufferException;
+    }
+
+    private static <T extends Record, R extends GeneratedMessageV3> R explicitPbjToProto(
+            @NonNull final T pbj, @NonNull final Codec<T> pbjCodec, @NonNull final ProtoParser<R> protoParser) {
+        requireNonNull(pbj);
+        requireNonNull(pbjCodec);
+        requireNonNull(protoParser);
+        try {
+            return protoParser.parseFrom(asBytes(pbjCodec, pbj));
+        } catch (InvalidProtocolBufferException e) {
+            // Should be impossible
+            throw new IllegalStateException("Serialization failure for " + pbj, e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.SubType fromPbj(@NonNull SubType subType) {
+        requireNonNull(subType);
+        return com.hederahashgraph.api.proto.java.SubType.valueOf(subType.name());
+    }
+
+    public static @NonNull TokenID toPbj(@NonNull com.hederahashgraph.api.proto.java.TokenID tokenID) {
+        requireNonNull(tokenID);
+        return TokenID.newBuilder()
+                .shardNum(tokenID.getShardNum())
+                .realmNum(tokenID.getRealmNum())
+                .tokenNum(tokenID.getTokenNum())
+                .build();
+    }
+
+    public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
+        requireNonNull(accountID);
+        final var builder =
+                AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
+        if (accountID.getAccountCase() == com.hederahashgraph.api.proto.java.AccountID.AccountCase.ALIAS) {
+            builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
+        } else {
+            builder.accountNum(accountID.getAccountNum());
+        }
+        return builder.build();
+    }
+
+    public static <T extends GeneratedMessageV3, R extends Record> @NonNull R protoToPbj(
+            @NonNull final T proto, @NonNull final Class<R> pbjClass) {
+        try {
+            final var bytes = requireNonNull(proto).toByteArray();
+            final var codecField = requireNonNull(pbjClass).getDeclaredField("PROTOBUF");
+            final var codec = (Codec<R>) codecField.get(null);
+            return codec.parse(BufferedData.wrap(bytes));
+        } catch (NoSuchFieldException | IllegalAccessException | ParseException e) {
+            // Should be impossible, so just propagate an exception
+            throw new RuntimeException("Invalid conversion to PBJ for " + pbjClass.getSimpleName(), e);
+        }
     }
 }
