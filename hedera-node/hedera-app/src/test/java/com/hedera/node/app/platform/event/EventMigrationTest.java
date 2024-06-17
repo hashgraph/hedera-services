@@ -69,7 +69,7 @@ public class EventMigrationTest {
                         .toPath(),
                 false)) {
             while (iterator.hasNext()) {
-                final PlatformEvent platformEvent = iterator.next().getGossipEvent();
+                final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
                 new StatefulEventHasher().hashEvent(platformEvent);
                 numEvents++;
                 eventHashes.add(platformEvent.getHash());
