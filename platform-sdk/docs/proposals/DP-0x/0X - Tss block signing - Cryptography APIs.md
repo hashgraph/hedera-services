@@ -8,7 +8,7 @@ Provide necessary pieces for signing messages using a TSS scheme.
 |--------------------|--------------------------------------------------------|
 | Designers          | Austin, Cody, Edward, Rohit, Maxi, <br/> Platform team | 
 | Functional Impacts | Platform team. Release engineering. DevOps             |
-| Related Proposals  | TSS                                                    |
+| Related Proposals  | [TODO Add Ed’s Proposal]                               |
 | HIPS               | ?                                                      |
 
 
