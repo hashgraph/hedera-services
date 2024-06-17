@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
@@ -79,6 +80,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -144,7 +146,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private VersionedConfiguration configuration;
-    private Query query;
     private Transaction payment;
     private TransactionBody txBody;
     private Bytes requestBuffer;
@@ -533,6 +534,23 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var precheckCode =
                 response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
         assertThat(precheckCode).isEqualTo(NOT_SUPPORTED);
+        verify(opCounters, never()).countReceived(any());
+        verify(opCounters, never()).countAnswered(any());
+    }
+
+    @Test
+    void testUnknownQueryParamFails() throws ParseException {
+        // given
+        when(queryParser.parseStrict((ReadableSequentialData) notNull()))
+                .thenThrow(new ParseException(new UnknownFieldException("bogus field")));
+        final var responseBuffer = newEmptyBuffer();
+
+        // then
+        workflow.handleQuery(requestBuffer, responseBuffer);
+        final var response = parseResponse(responseBuffer);
+        final var precheckCode =
+                response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
+        assertThat(precheckCode).isEqualTo(TRANSACTION_HAS_UNKNOWN_FIELDS);
         verify(opCounters, never()).countReceived(any());
         verify(opCounters, never()).countAnswered(any());
     }
