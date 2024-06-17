@@ -70,7 +70,6 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
@@ -94,6 +93,7 @@ import com.swirlds.platform.state.snapshot.StateSnapshotManager;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -585,8 +585,10 @@ public class PlatformComponentBuilder {
                     blocks.selfId(),
                     (byte[] data) -> new PlatformSigner(blocks.keysAndCerts()).sign(data),
                     consensusEventStreamName,
-                    (EventImpl event) -> event.isLastInRoundReceived()
-                            && blocks.isInFreezePeriodReference().get().test(event.getConsensusTimestamp()));
+                    (DetailedConsensusEvent event) -> event.isLastInRoundReceived()
+                            && blocks.isInFreezePeriodReference()
+                                    .get()
+                                    .test(event.getGossipEvent().getConsensusTimestamp()));
         }
         return consensusEventStream;
     }

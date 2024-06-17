@@ -26,6 +26,7 @@ module com.hedera.node.app {
     requires transitive grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.addressbook.impl; // javax.annotation.processing.Generated
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
@@ -51,34 +52,58 @@ module com.hedera.node.app {
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler;
+    requires static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
             com.hedera.node.test.clients;
     exports com.hedera.node.app.state to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.ingest to
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.query to
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.state.merkle to
-            com.hedera.node.services.cli;
+            com.hedera.node.services.cli,
+            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.dispatcher;
     exports com.hedera.node.app.config;
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.signature to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.info to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.handle to
-            com.hedera.node.app.test.fixtures;
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.handle.record to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
-            com.swirlds.platform;
+            com.swirlds.platform,
+            com.hedera.node.test.clients;
     exports com.hedera.node.app.validation;
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.services;
+    exports com.hedera.node.app.workflows.handle.flow to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.user.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.txn.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.txn to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.txn.modules to
+            com.hedera.node.app.test.fixtures;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static java.util.stream.Collectors.joining;
 

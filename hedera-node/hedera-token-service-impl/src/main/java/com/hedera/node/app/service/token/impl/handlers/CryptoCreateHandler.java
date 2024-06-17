@@ -52,6 +52,7 @@ import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NO_STAKE_PERIOD_START;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -67,6 +68,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -87,6 +89,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -97,6 +100,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoCreateHandler extends BaseCryptoHandler implements TransactionHandler {
+    private static final TransactionBody UPDATE_TXN_BODY_BUILDER = TransactionBody.newBuilder()
+            .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build()))
+            .build();
+
     private final CryptoCreateValidator cryptoCreateValidator;
     private final StakingValidator stakingValidator;
 
@@ -445,11 +453,17 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
-        return feeCalculator
+        final var fee = feeCalculator
                 .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
                 .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)
                 .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs())
                 .calculate();
+
+        if (IMMUTABILITY_SENTINEL_KEY.equals(op.key())) {
+            final var lazyCreationFee = feeContext.dispatchComputeFees(UPDATE_TXN_BODY_BUILDER, feeContext.payer());
+            return fee.plus(lazyCreationFee);
+        }
+        return fee;
     }
 }

@@ -25,7 +25,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -112,7 +111,7 @@ public class UptimeTracker {
         final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
         final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
-        updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator);
+        updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator, round.getRoundNum());
         reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
 
         final Instant end = time.now();
@@ -209,17 +208,19 @@ public class UptimeTracker {
      * @param uptimeData                 the uptime data to be updated
      * @param lastEventsInRoundByCreator the last event in the round by creator
      * @param judgesByCreator            the judges by creator
+     * @param roundNum                   the round number
      */
     private void updateState(
             @NonNull final AddressBook addressBook,
             @NonNull final MutableUptimeData uptimeData,
             @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
-            @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
+            @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator,
+            final long roundNum) {
 
         for (final Address address : addressBook) {
             final ConsensusEvent lastEvent = lastEventsInRoundByCreator.get(address.getNodeId());
             if (lastEvent != null) {
-                uptimeData.recordLastEvent((EventImpl) lastEvent);
+                uptimeData.recordLastEvent(lastEvent, roundNum);
             }
 
             // Temporarily disabled until we properly detect judges in a round

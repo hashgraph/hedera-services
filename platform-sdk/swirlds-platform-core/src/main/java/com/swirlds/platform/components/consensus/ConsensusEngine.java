@@ -21,7 +21,7 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -57,12 +57,12 @@ public interface ConsensusEngine {
     void outOfBandSnapshotUpdate(@NonNull ConsensusSnapshot snapshot);
 
     /**
-     * Extract a list of consensus events from a consensus round
+     * Extract a list of events intended for the consensus events stream
      *
-     * @return a list of consensus events
+     * @return a list of CES events
      */
     @NonNull
-    default List<EventImpl> getConsensusEvents(@NonNull final ConsensusRound round) {
-        return round.getConsensusEvents();
+    default List<DetailedConsensusEvent> getCesEvents(@NonNull final ConsensusRound round) {
+        return round.getStreamedEvents();
     }
 }

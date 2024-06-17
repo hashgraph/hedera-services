@@ -1360,8 +1360,6 @@ public final class PbjConverter {
             case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
             case INVALID_IPV4_ADDRESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_IPV4_ADDRESS;
-
-                //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
 

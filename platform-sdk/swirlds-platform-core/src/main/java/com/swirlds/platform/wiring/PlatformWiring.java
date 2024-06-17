@@ -626,7 +626,7 @@ public class PlatformWiring {
                 transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
 
         consensusEngineWiring
-                .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
+                .getSplitAndTransformedOutput(ConsensusEngine::getCesEvents)
                 .solderTo(consensusEventStreamWiring.getInputWire(ConsensusEventStream::addEvents));
 
         final OutputWire<StateAndRound> transactionHandlerStateAndRoundOutput = transactionHandlerWiring

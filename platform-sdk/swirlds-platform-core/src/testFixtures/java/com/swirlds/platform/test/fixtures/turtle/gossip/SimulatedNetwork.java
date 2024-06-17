@@ -212,7 +212,7 @@ public class SimulatedNetwork {
             final SerializableDataInputStream inputStream =
                     new SerializableDataInputStream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
             final GossipEvent copy = inputStream.readSerializable(false, GossipEvent::new);
-            copy.getHashedData().setHash(event.getHashedData().getHash());
+            copy.setHash(event.getHash());
             return copy;
         } catch (final IOException e) {
             throw new RuntimeException(e);
