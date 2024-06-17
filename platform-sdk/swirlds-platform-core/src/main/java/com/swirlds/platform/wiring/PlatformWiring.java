@@ -17,6 +17,7 @@
 package com.swirlds.platform.wiring;
 
 import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.NO_OP_CONFIGURATION;
 import static com.swirlds.common.wiring.wires.SolderType.INJECT;
 import static com.swirlds.common.wiring.wires.SolderType.OFFER;
@@ -34,7 +35,6 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.common.wiring.transformers.WireFilter;
 import com.swirlds.common.wiring.transformers.WireTransformer;
@@ -195,20 +195,13 @@ public class PlatformWiring {
         config = platformContext.getConfiguration().getConfigData(PlatformSchedulersConfig.class);
         hashCollectorEnabled = config.hashCollectorEnabled();
 
-        final PlatformSchedulers schedulers = PlatformSchedulers.create(platformContext, model);
-
         final AncientMode ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            birthRoundMigrationShimWiring = new ComponentWiring<>(
-                    model,
-                    BirthRoundMigrationShim.class,
-                    model.schedulerBuilder("birthRoundMigrationShim")
-                            .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                            .build()
-                            .cast());
+            birthRoundMigrationShimWiring =
+                    new ComponentWiring<>(model, BirthRoundMigrationShim.class, DIRECT_THREADSAFE_CONFIGURATION);
         } else {
             birthRoundMigrationShimWiring = null;
         }
@@ -260,65 +253,36 @@ public class PlatformWiring {
         transactionHandlerWiring = new ComponentWiring<>(model, TransactionHandler.class, config.transactionHandler());
         consensusEventStreamWiring =
                 new ComponentWiring<>(model, ConsensusEventStream.class, config.consensusEventStream());
-        runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(schedulers.runningHashUpdateScheduler());
+        runningEventHashOverrideWiring = RunningEventHashOverrideWiring.create(model);
 
         stateHasherWiring = new ComponentWiring<>(model, StateHasher.class, config.stateHasher());
 
         gossipWiring = new GossipWiring(platformContext, model);
 
-        pcesReplayerWiring = PcesReplayerWiring.create(schedulers.pcesReplayerScheduler());
+        pcesReplayerWiring = PcesReplayerWiring.create(model);
 
         pcesWriterWiring = new ComponentWiring<>(model, PcesWriter.class, config.pcesWriter());
         roundDurabilityBufferWiring =
                 new ComponentWiring<>(model, RoundDurabilityBuffer.class, config.roundDurabilityBuffer());
 
-        eventWindowManagerWiring = new ComponentWiring<>(
-                model,
-                EventWindowManager.class,
-                model.schedulerBuilder("eventWindowManager")
-                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .withHyperlink(platformCoreHyperlink(EventWindowManager.class))
-                        .build()
-                        .cast());
+        eventWindowManagerWiring =
+                new ComponentWiring<>(model, EventWindowManager.class, DIRECT_THREADSAFE_CONFIGURATION);
 
         issDetectorWiring = new ComponentWiring<>(model, IssDetector.class, config.issDetector());
         issHandlerWiring = new ComponentWiring<>(model, IssHandler.class, config.issHandler());
         hashLoggerWiring = new ComponentWiring<>(model, HashLogger.class, config.hashLogger());
 
-        latestCompleteStateNotifierWiring = new ComponentWiring<>(
-                model,
-                LatestCompleteStateNotifier.class,
-                schedulers.latestCompleteStateNotifierScheduler().cast());
+        latestCompleteStateNotifierWiring =
+                new ComponentWiring<>(model, LatestCompleteStateNotifier.class, config.latestCompleteStateNotifier());
 
-        latestImmutableStateNexusWiring = new ComponentWiring<>(
-                model,
-                SignedStateNexus.class,
-                model.schedulerBuilder("latestImmutableStateNexus")
-                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast());
-        latestCompleteStateNexusWiring = new ComponentWiring<>(
-                model,
-                LatestCompleteStateNexus.class,
-                model.schedulerBuilder("latestCompleteStateNexus")
-                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast());
-        savedStateControllerWiring = new ComponentWiring<>(
-                model,
-                SavedStateController.class,
-                model.schedulerBuilder("savedStateController")
-                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast());
+        latestImmutableStateNexusWiring =
+                new ComponentWiring<>(model, SignedStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
+        latestCompleteStateNexusWiring =
+                new ComponentWiring<>(model, LatestCompleteStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
+        savedStateControllerWiring =
+                new ComponentWiring<>(model, SavedStateController.class, DIRECT_THREADSAFE_CONFIGURATION);
 
-        notifierWiring = new ComponentWiring<>(
-                model,
-                AppNotifier.class,
-                model.schedulerBuilder("notifier")
-                        .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast());
+        notifierWiring = new ComponentWiring<>(model, AppNotifier.class, DIRECT_THREADSAFE_CONFIGURATION);
 
         this.publishPreconsensusEvents = applicationCallbacks.preconsensusEventConsumer() != null;
         this.publishSnapshotOverrides = applicationCallbacks.snapshotOverrideConsumer() != null;
@@ -662,7 +626,7 @@ public class PlatformWiring {
                 transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
 
         consensusEngineWiring
-                .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
+                .getSplitAndTransformedOutput(ConsensusEngine::getCesEvents)
                 .solderTo(consensusEventStreamWiring.getInputWire(ConsensusEventStream::addEvents));
 
         final OutputWire<StateAndRound> transactionHandlerStateAndRoundOutput = transactionHandlerWiring
@@ -819,7 +783,6 @@ public class PlatformWiring {
      * @param eventWindowManager        the event window manager to bind
      * @param birthRoundMigrationShim   the birth round migration shim to bind, ignored if birth round migration has not
      *                                  yet happened, must not be null if birth round migration has happened
-     * @param completeStateNotifier     the latest complete state notifier to bind
      * @param latestImmutableStateNexus the latest immutable state nexus to bind
      * @param latestCompleteStateNexus  the latest complete state nexus to bind
      * @param savedStateController      the saved state controller to bind
@@ -832,7 +795,6 @@ public class PlatformWiring {
             @NonNull final StateSignatureCollector stateSignatureCollector,
             @NonNull final EventWindowManager eventWindowManager,
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
-            @NonNull final LatestCompleteStateNotifier completeStateNotifier,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
             @NonNull final SavedStateController savedStateController,
@@ -864,7 +826,7 @@ public class PlatformWiring {
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring.bind(Objects.requireNonNull(birthRoundMigrationShim));
         }
-        latestCompleteStateNotifierWiring.bind(completeStateNotifier);
+        latestCompleteStateNotifierWiring.bind(builder::buildLatestCompleteStateNotifier);
         latestImmutableStateNexusWiring.bind(latestImmutableStateNexus);
         latestCompleteStateNexusWiring.bind(latestCompleteStateNexus);
         savedStateControllerWiring.bind(savedStateController);

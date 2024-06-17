@@ -78,14 +78,14 @@ public class RandomEventUtils {
                         selfParent.getBaseHash(),
                         selfParent.getCreatorId(),
                         selfParent.getGeneration(),
-                        selfParent.getBaseEvent().getHashedData().getBirthRound());
+                        selfParent.getBaseEvent().getBirthRound());
         final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
                 : new EventDescriptor(
                         otherParent.getBaseHash(),
                         otherParent.getCreatorId(),
                         otherParent.getGeneration(),
-                        otherParent.getBaseEvent().getHashedData().getBirthRound());
+                        otherParent.getBaseEvent().getBirthRound());
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),

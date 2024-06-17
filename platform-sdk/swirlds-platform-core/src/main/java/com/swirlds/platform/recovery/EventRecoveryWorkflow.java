@@ -51,8 +51,9 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
+import com.swirlds.platform.recovery.internal.StreamedRound;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -63,6 +64,7 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -159,7 +161,7 @@ public final class EventRecoveryWorkflow {
                     initialState.get().getRound());
             logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
-            final IOIterator<Round> roundIterator = new EventStreamRoundIterator(
+            final IOIterator<StreamedRound> roundIterator = new EventStreamRoundIterator(
                     initialState.get().getAddressBook(),
                     eventStreamDirectory,
                     initialState.get().getRound() + 1,
@@ -182,7 +184,7 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             // Make one more copy to force the state in recoveredState to be immutable.
-            final State mutableStateCopy =
+            final MerkleRoot mutableStateCopy =
                     recoveredState.state().get().getState().copy();
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
@@ -285,7 +287,7 @@ public final class EventRecoveryWorkflow {
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState initialState,
             @NonNull final SwirldMain appMain,
-            @NonNull final IOIterator<Round> roundIterator,
+            @NonNull final IOIterator<StreamedRound> roundIterator,
             final long finalRound,
             @NonNull final NodeId selfId,
             final boolean loadSigningKeys)
@@ -323,7 +325,7 @@ public final class EventRecoveryWorkflow {
         GossipEvent lastEvent = null;
         while (roundIterator.hasNext()
                 && (finalRound == -1 || roundIterator.peek().getRoundNum() <= finalRound)) {
-            final Round round = roundIterator.next();
+            final StreamedRound round = roundIterator.next();
 
             logger.info(
                     STARTUP.getMarker(),
@@ -369,14 +371,14 @@ public final class EventRecoveryWorkflow {
     private static ReservedSignedState handleNextRound(
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState previousState,
-            @NonNull final Round round,
+            @NonNull final StreamedRound round,
             @NonNull final ConsensusConfig config) {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         previousState.get().getState().throwIfImmutable();
-        final State newState = previousState.get().getState().copy();
-        final EventImpl lastEvent = (EventImpl) getLastEvent(round);
-        new StatefulEventHasher().hashEvent(lastEvent.getBaseEvent());
+        final MerkleRoot newState = previousState.get().getState().copy();
+        final DetailedConsensusEvent lastEvent = (DetailedConsensusEvent) getLastEvent(round);
+        new StatefulEventHasher().hashEvent(lastEvent.getGossipEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 
@@ -389,7 +391,7 @@ public final class EventRecoveryWorkflow {
                 lastEvent.getConsensusOrder(),
                 currentRoundTimestamp,
                 config,
-                lastEvent.getBaseEvent()));
+                lastEvent.getGossipEvent()));
         platformState.setCreationSoftwareVersion(
                 previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
@@ -429,12 +431,13 @@ public final class EventRecoveryWorkflow {
      * @param round               the current round
      * @return the running event hash at the end of the current round
      */
-    static Hash getHashEventsCons(final Hash previousRunningHash, final Round round) {
-        final RunningHashCalculatorForStream<EventImpl> hashCalculator = new RunningHashCalculatorForStream<>();
+    static Hash getHashEventsCons(final Hash previousRunningHash, final StreamedRound round) {
+        final RunningHashCalculatorForStream<DetailedConsensusEvent> hashCalculator =
+                new RunningHashCalculatorForStream<>();
         hashCalculator.setRunningHash(previousRunningHash);
 
         for (final ConsensusEvent event : round) {
-            hashCalculator.addObject((EventImpl) event);
+            hashCalculator.addObject((DetailedConsensusEvent) event);
         }
 
         final Hash runningHash = hashCalculator.getRunningHash();

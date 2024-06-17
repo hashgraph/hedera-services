@@ -166,7 +166,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                     .consTimeOfLastHandledTxn(now)
                     .firstConsTimeOfCurrentBlock(now)
                     .build();
-            persistLastBlockInfo(state);
+            putLastBlockInfo(state);
             streamFileProducer.switchBlocks(-1, 0, consensusTime);
             return true;
         }
@@ -194,7 +194,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                     infoOfJustFinished(lastBlockInfo, justFinishedBlockNumber, lastBlockHashBytes, consensusTime);
 
             // Update BlockInfo state
-            persistLastBlockInfo(state);
+            putLastBlockInfo(state);
 
             // log end of block if needed
             if (logger.isDebugEnabled()) {
@@ -234,7 +234,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 lastBlockInfo.lastBlockNumber(), lastBlockInfo.lastBlockNumber() + 1, consensusTime);
     }
 
-    private void persistLastBlockInfo(@NonNull final HederaState state) {
+    private void putLastBlockInfo(@NonNull final HederaState state) {
         final var states = state.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
         blockInfoState.put(lastBlockInfo);

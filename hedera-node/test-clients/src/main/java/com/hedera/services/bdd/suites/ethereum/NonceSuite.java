@@ -37,10 +37,6 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -75,9 +71,6 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -193,14 +186,8 @@ public class NonceSuite {
 
     @HapiTest
     final Stream<DynamicTest> nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed() {
-        final Map<String, String> startingProps = new HashMap<>();
-        final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
-        AtomicLong maxGasPerSec = new AtomicLong();
         return defaultHapiSpec("nonceNotUpdatedWhenMaxGasPerSecPrecheckFailed", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        remembering(startingProps, USE_GAS_THROTTLE_PROP),
-                        overriding(USE_GAS_THROTTLE_PROP, "true"),
-                        recordSystemProperty("contracts.maxGasPerSec", Long::parseLong, maxGasPerSec::set),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HBAR)),
@@ -211,12 +198,10 @@ public class NonceSuite {
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(RELAYER)
                         .nonce(0)
-                        .gasLimit(maxGasPerSec.get() + 1L)
+                        .gasLimit(Long.MAX_VALUE)
                         .hasPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY)))
-                .then(
-                        overridingAllOfDeferred(() -> startingProps),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(0L)));
+                .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                        .has(accountWith().nonce(0L)));
     }
 
     @HapiTest

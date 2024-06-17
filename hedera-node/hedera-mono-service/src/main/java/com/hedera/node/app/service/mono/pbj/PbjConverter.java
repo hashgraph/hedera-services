@@ -796,6 +796,8 @@ public final class PbjConverter {
             case FQDN_SIZE_TOO_LARGE -> ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
             case INVALID_ENDPOINT -> ResponseCodeEnum.INVALID_ENDPOINT;
             case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
+            case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
+            case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1355,8 +1357,9 @@ public final class PbjConverter {
             case INVALID_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ENDPOINT;
             case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
-
-                //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
+            case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
+            case INVALID_IPV4_ADDRESS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_IPV4_ADDRESS;
         };
     }
 

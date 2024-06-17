@@ -29,6 +29,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * The default implementation of {@link SavepointStack}.
@@ -45,6 +46,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @param root the root state
      * @throws NullPointerException if {@code root} is {@code null}
      */
+    @Inject
     public SavepointStackImpl(@NonNull final HederaState root) {
         this.root = requireNonNull(root, "root must not be null");
         setupSavepoint(root);
