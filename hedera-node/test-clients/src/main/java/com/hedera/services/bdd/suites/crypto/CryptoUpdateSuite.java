@@ -178,7 +178,7 @@ public class CryptoUpdateSuite {
     @HapiTest
     final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
-        double baseFee = 0.00021;
+        double baseFee = 0.000214;
         double baseFeeWithExpiry = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
