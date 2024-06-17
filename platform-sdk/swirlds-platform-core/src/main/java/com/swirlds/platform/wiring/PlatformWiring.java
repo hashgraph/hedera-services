@@ -225,7 +225,7 @@ public class PlatformWiring {
 
         if (hashCollectorEnabled) {
             postHashCollectorWiring = new PassThroughWiring<>(
-                    model, "GossipEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
+                    model, "PlatformEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
         } else {
             postHashCollectorWiring = null;
         }

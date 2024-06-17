@@ -29,6 +29,6 @@ public interface TransactionPrehandler {
      *
      * @param event the event to prehandle
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     void prehandleApplicationTransactions(@NonNull PlatformEvent event);
 }

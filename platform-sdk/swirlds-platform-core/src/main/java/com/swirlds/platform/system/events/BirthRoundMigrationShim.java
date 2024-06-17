@@ -31,7 +31,7 @@ public interface BirthRoundMigrationShim {
      * @param event the event to migrate
      * @return the migrated event
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     @NonNull
     PlatformEvent migrateEvent(@NonNull PlatformEvent event);
 }

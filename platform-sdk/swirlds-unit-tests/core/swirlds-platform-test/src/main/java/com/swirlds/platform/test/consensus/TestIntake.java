@@ -86,7 +86,7 @@ public class TestIntake {
         hasherWiring.bind(eventHasher);
 
         final PassThroughWiring<PlatformEvent> postHashCollectorWiring =
-                new PassThroughWiring(model, "GossipEvent", "postHashCollector", TaskSchedulerType.DIRECT);
+                new PassThroughWiring(model, "PlatformEvent", "postHashCollector", TaskSchedulerType.DIRECT);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
         final OrphanBuffer orphanBuffer = new DefaultOrphanBuffer(platformContext, intakeEventCounter);

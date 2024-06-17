@@ -18,7 +18,7 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
-import static com.swirlds.platform.test.fixtures.event.EventUtils.serializeGossipEvent;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.serializePlatformEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,14 +73,14 @@ class EventDeduplicatorTests {
     }
 
     /**
-     * Create a test gossip event
+     * Create a test platform event
      *
      * @param creatorId  the creator of the event
      * @param generation the generation of the event
      * @param birthRound the birth round of the event
-     * @return the mocked gossip event
+     * @return the mocked platform event
      */
-    private PlatformEvent createGossipEvent(
+    private PlatformEvent createPlatformEvent(
             @NonNull final NodeId creatorId, final long generation, final long birthRound) {
 
         final PlatformEvent selfParent = new TestingEventBuilder(random)
@@ -112,7 +112,7 @@ class EventDeduplicatorTests {
             } else {
                 assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
             }
-            assertTrue(emittedEvents.add(ByteBuffer.wrap(serializeGossipEvent(event))), "Event was emitted twice");
+            assertTrue(emittedEvents.add(ByteBuffer.wrap(serializePlatformEvent(event))), "Event was emitted twice");
         }
     }
 
@@ -173,7 +173,7 @@ class EventDeduplicatorTests {
                     }
                 }
 
-                final PlatformEvent newEvent = createGossipEvent(creatorId, eventGeneration, eventBirthRound);
+                final PlatformEvent newEvent = createPlatformEvent(creatorId, eventGeneration, eventBirthRound);
 
                 validateEmittedEvent(
                         deduplicator.handleEvent(newEvent),

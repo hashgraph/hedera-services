@@ -41,12 +41,12 @@ public final class EventUtils {
     private EventUtils() {}
 
     /**
-     * Serialize a gossip event to a byte array.
+     * Serialize a platform event to a byte array.
      *
      * @param event the event to serialize
      * @return the serialized event
      */
-    public static byte[] serializeGossipEvent(@NonNull final PlatformEvent event) {
+    public static byte[] serializePlatformEvent(@NonNull final PlatformEvent event) {
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             event.serialize(new SerializableDataOutputStream(stream));

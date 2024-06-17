@@ -32,7 +32,7 @@ public interface PlatformPublisher {
      *
      * @param event the event to publish
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     void publishPreconsensusEvent(@NonNull final PlatformEvent event);
 
     /**

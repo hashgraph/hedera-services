@@ -45,7 +45,7 @@ public interface EventCreationManager {
      *
      * @param event the event to add
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     void registerEvent(@NonNull PlatformEvent event);
 
     /**

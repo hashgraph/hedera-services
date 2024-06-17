@@ -39,8 +39,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Takes as input an unordered stream of {@link PlatformEvent GossipEvent}s and emits a stream
- * of {@link PlatformEvent GossipEvent}s in topological order.
+ * Takes as input an unordered stream of {@link PlatformEvent}s and emits a stream
+ * of {@link PlatformEvent}s in topological order.
  */
 public class DefaultOrphanBuffer implements OrphanBuffer {
     /**

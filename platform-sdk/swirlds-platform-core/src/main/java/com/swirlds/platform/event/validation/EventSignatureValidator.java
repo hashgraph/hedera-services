@@ -33,7 +33,7 @@ public interface EventSignatureValidator {
      * @param event the event to verify the signature of
      * @return the event if the signature is valid, otherwise null
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     @Nullable
     PlatformEvent validateSignature(@NonNull final PlatformEvent event);
 

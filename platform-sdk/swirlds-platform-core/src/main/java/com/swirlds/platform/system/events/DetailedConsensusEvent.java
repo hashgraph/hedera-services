@@ -256,7 +256,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("gossipEvent", platformEvent)
+                .append("platformEvent", platformEvent)
                 .append("roundReceived", roundReceived)
                 .append("lastInRoundReceived", lastInRoundReceived)
                 .toString();
