@@ -29,7 +29,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -337,19 +336,13 @@ public class HandleHederaOperations implements HederaOperations {
     }
 
     @Override
-    public void externalizeHollowAccountMerge(
-            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress) {
+    public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
-        var parent = accountStore.getContractById(parentId);
-        // If the parent contract is not found, use the default Account to create the contract
-        if (parent == null) {
-            parent = Account.DEFAULT;
-        }
         final var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
                 .transaction(transactionWith(TransactionBody.newBuilder()
-                        .contractCreateInstance(synthContractCreationFromParent(contractId, parent))
+                        .contractCreateInstance(synthContractCreationForExternalization(contractId))
                         .build()))
                 .contractCreateResult(ContractFunctionResult.newBuilder()
                         .contractID(contractId)

@@ -626,7 +626,6 @@ class HandleHederaOperationsTest {
                 .build();
         var contractId = ContractID.newBuilder().contractNum(1001).build();
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(readableAccountStore.getContractById(ContractID.DEFAULT)).willReturn(parentAccount);
         given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(eq(contractId))).willReturn(contractCreateRecordBuilder);
@@ -636,7 +635,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
 
         // when
-        subject.externalizeHollowAccountMerge(contractId, ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress());
+        subject.externalizeHollowAccountMerge(contractId, VALID_CONTRACT_ADDRESS.evmAddress());
 
         // then
         verify(contractCreateRecordBuilder).contractID(contractId);
