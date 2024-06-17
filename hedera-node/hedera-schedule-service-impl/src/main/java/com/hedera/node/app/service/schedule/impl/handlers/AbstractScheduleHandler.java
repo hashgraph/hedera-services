@@ -329,11 +329,6 @@ abstract class AbstractScheduleHandler {
             acceptedSignatories.addAll(validSignatories);
             acceptedSignatories.add(getKeyForAccount(context, originalPayer));
             final Predicate<Key> assistant = new DispatchPredicate(acceptedSignatories);
-            log.info(
-                    "Set of accepted signatories: {}, payerId {}, keyForAccount {}",
-                    acceptedSignatories,
-                    scheduleToExecute.payerAccountId(),
-                    getKeyForAccount(context, originalPayer));
             // This sets the child transaction ID to scheduled.
             final TransactionBody childTransaction = HandlerUtility.childAsOrdinary(scheduleToExecute);
             final ScheduleRecordBuilder recordBuilder = context.dispatchChildTransaction(

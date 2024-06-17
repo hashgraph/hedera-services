@@ -16,13 +16,14 @@
 
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,17 +56,9 @@ public class SimpleFreezeOnly extends HapiSuite {
     }
 
     final Stream<DynamicTest> simpleFreezeWithTimestamp() {
-        //        return defaultHapiSpec("SimpleFreezeWithTimeStamp")
-        //                .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
-        //                .when(sleepFor(40000))
-        //                .then();
-        return customHapiSpec("hmm")
-                .withProperties(Map.of(
-                        "nodes", "35.196.138.70",
-                        "fees.useFixedOffer", "false",
-                        "fees.fixedOffer", "10000000000"))
-                .given()
-                .when()
-                .then(getFileContents(FEE_SCHEDULE).saveTo("weird.bin"));
+        return defaultHapiSpec("SimpleFreezeWithTimeStamp")
+                .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
+                .when(sleepFor(40000))
+                .then();
     }
 }
