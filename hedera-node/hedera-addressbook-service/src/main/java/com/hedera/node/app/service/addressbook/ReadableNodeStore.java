@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.addressbook;
 
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -51,4 +53,6 @@ public interface ReadableNodeStore {
      * @param nodeId the node id
      */
     default void warm(final long nodeId) {}
+
+    <T extends ReadableKVState<EntityNumber, Node>> T nodesState();
 }

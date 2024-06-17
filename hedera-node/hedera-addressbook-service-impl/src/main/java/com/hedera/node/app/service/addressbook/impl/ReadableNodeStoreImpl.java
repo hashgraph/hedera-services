@@ -68,7 +68,7 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         return nodesState.size();
     }
 
-    protected <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {
+    public <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {
         return (T) nodesState;
     }
 }

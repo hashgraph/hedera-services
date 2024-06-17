@@ -26,6 +26,7 @@ module com.hedera.node.app {
     requires transitive grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
+    requires com.hedera.node.app.service.addressbook.impl; // javax.annotation.processing.Generated
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;
@@ -50,7 +51,7 @@ module com.hedera.node.app {
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler; // javax.annotation.processing.Generated
+    requires static java.compiler;
 
     exports com.hedera.node.app to
             com.hedera.node.test.clients;

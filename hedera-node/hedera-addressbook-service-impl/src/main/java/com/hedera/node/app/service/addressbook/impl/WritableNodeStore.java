@@ -57,7 +57,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     }
 
     @Override
-    protected WritableKVState<EntityNumber, Node> nodesState() {
+    public WritableKVState<EntityNumber, Node> nodesState() {
         return super.nodesState();
     }
 

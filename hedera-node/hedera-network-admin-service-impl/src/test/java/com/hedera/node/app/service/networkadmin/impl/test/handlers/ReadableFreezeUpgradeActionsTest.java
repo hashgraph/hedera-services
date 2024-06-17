@@ -19,19 +19,29 @@ package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
@@ -40,6 +50,7 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -92,6 +103,12 @@ class ReadableFreezeUpgradeActionsTest {
     @Mock
     private WritableUpgradeFileStore upgradeFileStore;
 
+    @Mock
+    private ReadableNodeStore nodeStore;
+
+    @Mock
+    private ReadableStakingInfoStore stakingInfoStore;
+
     @BeforeEach
     void setUp() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
@@ -99,7 +116,8 @@ class ReadableFreezeUpgradeActionsTest {
 
         final Executor freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
-        subject = new FreezeUpgradeActions(adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore);
+        subject = new FreezeUpgradeActions(
+                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");
@@ -142,6 +160,22 @@ class ReadableFreezeUpgradeActionsTest {
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
+        assertThat(logCaptor.infoLogs()).anyMatch(l -> l.equals("Node state is empty, cannot generate config.txt"));
+        assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
+    }
+
+    @Test
+    void preparesForUpgradeWithDAB() throws IOException {
+        setupNoiseFiles();
+        rmIfPresent(EXEC_IMMEDIATE_MARKER);
+        setupNodes();
+
+        given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
+        subject.extractSoftwareUpgrade(realArchive).join();
+
+        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -296,5 +330,129 @@ class ReadableFreezeUpgradeActionsTest {
                         "In the wind's singing",
                         "More distant and more solemn",
                         "Than a fading star"));
+    }
+
+    private void setupNodes() {
+        final var node1 = new Node(
+                1,
+                asAccount(3),
+                "node1description",
+                List.of(
+                        new ServiceEndpoint(Bytes.wrap("127.0.0.1"), 1234, null),
+                        new ServiceEndpoint(Bytes.wrap("35.186.191.247"), 50211, null)),
+                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.247"), 50231, null)),
+                Bytes.wrap(
+                        "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap("grpc1CertificateHash"),
+                2,
+                false);
+        final var node2 = new Node(
+                2,
+                asAccount(4),
+                "node2description",
+                List.of(
+                        new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 1245, null),
+                        new ServiceEndpoint(Bytes.wrap("35.186.191.245"), 50221, null)),
+                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.245"), 50225, null)),
+                Bytes.wrap(
+                        "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap("grpc2CertificateHash"),
+                4,
+                false);
+        final var node3 = new Node(
+                3,
+                asAccount(6),
+                "node3description",
+                List.of(
+                        new ServiceEndpoint(Bytes.wrap("127.0.0.3"), 1245, null),
+                        new ServiceEndpoint(Bytes.wrap("35.186.191.235"), 50221, null)),
+                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.235"), 50225, null)),
+                Bytes.wrap(
+                        "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap("grpc3CertificateHash"),
+                1,
+                true);
+        final var node4 = new Node(
+                4,
+                asAccount(8),
+                "node4description",
+                List.of(
+                        new ServiceEndpoint(Bytes.wrap("127.0.0.4"), 1445, null),
+                        new ServiceEndpoint(Bytes.wrap("test.domain.com"), 50225, null),
+                        new ServiceEndpoint(Bytes.wrap("35.186.191.225"), 50225, null)),
+                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.225"), 50225, null)),
+                Bytes.wrap(
+                        "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
+                Bytes.wrap("grpc5CertificateHash"),
+                8,
+                false);
+        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder("NODES")
+                .value(new EntityNumber(4), node4)
+                .value(new EntityNumber(2), node2)
+                .value(new EntityNumber(3), node3)
+                .value(new EntityNumber(1), node1)
+                .build();
+        given(nodeStore.nodesState()).willReturn(readableNodeState);
+        given(nodeStore.get(1)).willReturn(node1);
+        given(nodeStore.get(2)).willReturn(node2);
+        given(nodeStore.get(3)).willReturn(node3);
+        given(nodeStore.get(4)).willReturn(node4);
+        var stakingNodeInfo1 = mock(StakingNodeInfo.class);
+        var stakingNodeInfo2 = mock(StakingNodeInfo.class);
+        var stakingNodeInfo4 = mock(StakingNodeInfo.class);
+        given(stakingNodeInfo1.weight()).willReturn(5);
+        given(stakingNodeInfo2.weight()).willReturn(10);
+        given(stakingNodeInfo4.weight()).willReturn(20);
+        given(stakingInfoStore.get(1)).willReturn(stakingNodeInfo1);
+        given(stakingInfoStore.get(2)).willReturn(stakingNodeInfo2);
+        given(stakingInfoStore.get(4)).willReturn(stakingNodeInfo4);
+    }
+
+    private void assertDABFilesCreated(final String file, final Path baseDir) throws IOException {
+        final Path filePath = baseDir.resolve(file);
+        final Path configFilePath = baseDir.resolve("config.txt");
+        assertTrue(configFilePath.toFile().exists());
+        final var configFile = Files.readString(configFilePath);
+
+        final Path pemFilePath1 = baseDir.resolve("s-public-node1.pem");
+        assertTrue(pemFilePath1.toFile().exists());
+        final Path pemFilePath2 = baseDir.resolve("s-public-node2.pem");
+        assertTrue(pemFilePath2.toFile().exists());
+        final Path pemFilePath3 = baseDir.resolve("s-public-node3.pem");
+        assertFalse(pemFilePath3.toFile().exists());
+        final Path pemFilePath4 = baseDir.resolve("s-public-node4.pem");
+        assertTrue(pemFilePath4.toFile().exists());
+        final var pemFile1 = Files.readAllBytes(pemFilePath1);
+        final var pemFile2 = Files.readAllBytes(pemFilePath2);
+        final var pemFile4 = Files.readAllBytes(pemFilePath4);
+
+        final String configContents = "address, 1, 1, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n"
+                + "address, 2, 2, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n"
+                + "address, 4, 4, node4, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n";
+        final byte[] pemFile1Bytes = Bytes.wrap(
+                        "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
+                .toByteArray();
+        final byte[] pemFile2Bytes = Bytes.wrap(
+                        "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
+                .toByteArray();
+        final byte[] pemFile4Bytes = Bytes.wrap(
+                        "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
+                .toByteArray();
+
+        if (file.equals(EXEC_IMMEDIATE_MARKER)) {
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("About to unzip ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished unzipping ")
+                            && l.contains(" bytes for software update into " + baseDir)));
+            assertThat(logCaptor.infoLogs())
+                    .anyMatch(l -> (l.startsWith("Finished generating config.txt and pem files into " + baseDir)));
+            assertThat(logCaptor.infoLogs()).anyMatch(l -> (l.contains("Wrote marker " + filePath)));
+            assertThat(configFile).isEqualTo(configContents);
+            assertArrayEquals(pemFile1, pemFile1Bytes);
+            assertArrayEquals(pemFile2, pemFile2Bytes);
+            assertArrayEquals(pemFile4, pemFile4Bytes);
+        }
     }
 }

@@ -21,21 +21,29 @@ import static com.hedera.node.app.service.mono.context.properties.StaticProperti
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
+import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.apache.commons.io.FileUtils;
@@ -50,6 +58,10 @@ public class ReadableFreezeUpgradeActions {
     private final NetworkAdminConfig adminServiceConfig;
     private final ReadableFreezeStore freezeStore;
     private final ReadableUpgradeFileStore upgradeFileStore;
+
+    private final ReadableNodeStore nodeStore;
+
+    private final ReadableStakingInfoStore stakingInfoStore;
 
     private final Executor executor;
 
@@ -69,16 +81,22 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final NetworkAdminConfig adminServiceConfig,
             @NonNull final ReadableFreezeStore freezeStore,
             @NonNull final Executor executor,
-            @NonNull final ReadableUpgradeFileStore upgradeFileStore) {
+            @NonNull final ReadableUpgradeFileStore upgradeFileStore,
+            @NonNull final ReadableNodeStore nodeStore,
+            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
         requireNonNull(adminServiceConfig, "Admin service config is required for freeze upgrade actions");
         requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
         requireNonNull(executor, "Executor is required for freeze upgrade actions");
         requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
+        requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
+        requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
 
         this.adminServiceConfig = adminServiceConfig;
         this.freezeStore = freezeStore;
         this.executor = executor;
         this.upgradeFileStore = upgradeFileStore;
+        this.nodeStore = nodeStore;
+        this.stakingInfoStore = stakingInfoStore;
     }
 
     public void externalizeFreezeIfUpgradePending() {
@@ -169,6 +187,10 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(artifactsLoc.toFile());
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
+            if (desc.equals(PREPARE_UPGRADE_DESC)) {
+                generateConfigPem(artifactsLoc);
+                log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
+            }
             writeSecondMarker(marker, now);
         } catch (final IOException e) {
             // catch and log instead of throwing because upgrade process looks at the presence or absence
@@ -176,6 +198,87 @@ public class ReadableFreezeUpgradeActions {
             // if second marker is present, that means the zip file was successfully extracted
             log.error("Failed to unzip archive for NMT consumption", e);
             log.error(MANUAL_REMEDIATION_ALERT);
+        }
+    }
+
+    private void generateConfigPem(@NonNull final Path artifactsLoc) {
+        requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
+
+        final var configTxt = artifactsLoc.resolve("config.txt");
+        final var nodeState = nodeStore.nodesState();
+
+        if (nodeState == null || nodeState.size() == 0) {
+            log.info("Node state is empty, cannot generate config.txt"); // change to log error later
+            return;
+        }
+
+        final var nodeIds = nodeStore.nodesState().keys();
+
+        try (FileWriter fw = new FileWriter(configTxt.toFile());
+                BufferedWriter bw = new BufferedWriter(fw)) {
+            Streams.stream(nodeIds)
+                    .map(nodeId -> nodeStore.get(nodeId.number()))
+                    .filter(node -> node != null && !node.deleted())
+                    .sorted(Comparator.comparing(Node::nodeId))
+                    .forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
+        } catch (final IOException e) {
+            log.error("Failed to generate {} with exception : {}", configTxt, e);
+        }
+    }
+
+    private void writeConfigLineAndPem(
+            @NonNull final Node node, @NonNull final BufferedWriter bw, @NonNull final Path pathToWrite) {
+        requireNonNull(node);
+        requireNonNull(bw);
+        requireNonNull(pathToWrite);
+
+        var line = new StringBuilder();
+        int weight = 0;
+        final var name = "node" + node.nodeId();
+        final var alias = nameToAlias(name);
+        final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
+        final int INT = 0;
+        final int EXT = 1;
+
+        final var stakingNodeInfo = stakingInfoStore.get(node.nodeId());
+        if (stakingNodeInfo != null) {
+            weight = stakingNodeInfo.weight();
+        }
+
+        final var gossipEndpoints = node.gossipEndpoint();
+        if (gossipEndpoints.size() > 1) {
+            line.append("address, ")
+                    .append(node.nodeId())
+                    .append(", ")
+                    .append(node.nodeId()) // nodeId as nickname
+                    .append(", ")
+                    .append(name)
+                    .append(", ")
+                    .append(weight)
+                    .append(", ")
+                    .append(gossipEndpoints.get(INT).ipAddressV4().asUtf8String())
+                    .append(", ")
+                    .append(gossipEndpoints.get(INT).port())
+                    .append(", ")
+                    .append(gossipEndpoints.get(EXT).ipAddressV4().asUtf8String())
+                    .append(", ")
+                    .append(gossipEndpoints.get(EXT).port())
+                    .append(", ")
+                    .append(node.accountId().shardNum() + "." + node.accountId().realmNum() + "."
+                            + node.accountId().accountNum())
+                    .append("\n");
+            try {
+                bw.write(line.toString());
+            } catch (IOException e) {
+                log.error("Failed to write line {}} with exception : {}", line, e);
+            }
+            try {
+                Files.write(pemFile, node.gossipCaCertificate().toByteArray());
+            } catch (IOException e) {
+                log.error("Failed to write to {}} with exception : {}", pemFile, e);
+            }
+        } else {
+            log.error("Node has {}} gossip endpoints, expected greater than 1", gossipEndpoints.size());
         }
     }
 
