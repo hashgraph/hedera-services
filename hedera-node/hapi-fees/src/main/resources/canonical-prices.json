@@ -203,16 +203,16 @@
 	"DEFAULT": 0.001
   },
   "NodeCreate": {
-    "DEFAULT": 0.0001
+    "DEFAULT": 0.001
   },
   "NodeUpdate": {
-    "DEFAULT": 0.0001
+    "DEFAULT": 0.001
   },
   "NodeDelete": {
-    "DEFAULT": 0.0001
+    "DEFAULT": 0.001
   },
   "NodeGetInfo": {
-    "DEFAULT": 0.0001
+    "DEFAULT": 0.001
   }
 
 }
