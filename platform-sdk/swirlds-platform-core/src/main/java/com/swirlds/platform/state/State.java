@@ -19,7 +19,6 @@ package com.swirlds.platform.state;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
@@ -27,6 +26,7 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  * The root of the merkle tree holding the state of the Swirlds ledger. Contains two children: the state used by the
  * application and the state used by the platform.
  */
-public class State extends PartialNaryMerkleInternal implements MerkleInternal {
+public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     private static final Logger logger = LogManager.getLogger(State.class);
 
@@ -114,6 +114,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      *
      * @return the application state
      */
+    @Override
+    @NonNull
     public SwirldState getSwirldState() {
         return getChild(ChildIndices.SWIRLD_STATE);
     }
@@ -132,6 +134,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      *
      * @return the platform state
      */
+    @NonNull
+    @Override
     public PlatformState getPlatformState() {
         return getChild(ChildIndices.PLATFORM_STATE);
     }
@@ -141,7 +145,8 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      *
      * @param platformState the platform state
      */
-    public void setPlatformState(final PlatformState platformState) {
+    @Override
+    public void setPlatformState(@NonNull final PlatformState platformState) {
         setChild(ChildIndices.PLATFORM_STATE, platformState);
     }
 
@@ -164,8 +169,9 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public State copy() {
+    public MerkleRoot copy() {
         throwIfImmutable();
         throwIfDestroyed();
         return new State(this);
@@ -190,7 +196,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
-        final State state = (State) other;
+        final MerkleRoot state = (MerkleRoot) other;
         return Objects.equals(getPlatformState(), state.getPlatformState())
                 && Objects.equals(getSwirldState(), state.getSwirldState());
     }
@@ -208,8 +214,22 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      *
      * @param hashDepth the depth of the tree to visit and print
      */
+    @NonNull
+    @Override
     public String getInfoString(final int hashDepth) {
         final PlatformState platformState = getPlatformState();
+        return createInfoString(hashDepth, platformState, getHash(), this);
+    }
+
+    /**
+     * Generate a string that describes this state.
+     *
+     * @param hashDepth the depth of the tree to visit and print
+     * @param platformState current platform state
+     * @param state current root node state
+     *
+     */
+    public static String createInfoString(int hashDepth, PlatformState platformState, Hash rootHash, MerkleNode state) {
         final Hash epochHash = platformState.getNextEpochHash();
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
 
@@ -230,14 +250,14 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
                 .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
                 .addRow("Epoch hash:", epochHash)
                 .addRow("Minimum judge hash code:", minimumJudgeInfo == null ? "null" : minimumJudgeInfo.hashCode())
-                .addRow("Root hash:", getHash())
+                .addRow("Root hash:", rootHash)
                 .addRow("First BR Version:", platformState.getFirstVersionInBirthRoundMode())
                 .addRow("Last round before BR:", platformState.getLastRoundBeforeBirthRoundMode())
                 .addRow("Lowest Judge Gen before BR", platformState.getLowestJudgeGenerationBeforeBirthRoundMode())
                 .render(sb);
 
         sb.append("\n");
-        new MerkleTreeVisualizer(this).setDepth(hashDepth).render(sb);
+        new MerkleTreeVisualizer(state).setDepth(hashDepth).render(sb);
         return sb.toString();
     }
 

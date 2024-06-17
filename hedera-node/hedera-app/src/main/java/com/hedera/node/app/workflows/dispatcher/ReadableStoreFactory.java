@@ -59,6 +59,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -113,6 +114,7 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
+    @Inject
     public ReadableStoreFactory(@NonNull final HederaState state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }
