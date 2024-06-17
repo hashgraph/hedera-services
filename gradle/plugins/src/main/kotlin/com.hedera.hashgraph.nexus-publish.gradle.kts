@@ -20,6 +20,7 @@ plugins {
 }
 
 nexusPublishing {
+    packageGroup = "com.swirlds"
     repositories {
         sonatype {
             username = System.getenv("OSSRH_USERNAME")
