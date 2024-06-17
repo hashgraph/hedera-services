@@ -34,6 +34,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -87,7 +88,7 @@ class ChildFeeContextImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, PAYER_ID, true);
+        subject = new ChildFeeContextImpl(feeManager, context, SAMPLE_BODY, PAYER_ID, true, TransactionCategory.CHILD);
     }
 
     @Test
@@ -100,15 +101,15 @@ class ChildFeeContextImplTest {
         given(context.consensusNow()).willReturn(NOW);
         given(context.savepointStack()).willReturn(new SavepointStackImpl(new FakeHederaState()));
         given(feeManager.createFeeCalculator(
-                        eq(SAMPLE_BODY),
-                        eq(Key.DEFAULT),
-                        eq(HederaFunctionality.CRYPTO_TRANSFER),
-                        eq(0),
-                        eq(0),
-                        eq(NOW),
-                        eq(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
-                        eq(true),
-                        any(ReadableStoreFactory.class)))
+                eq(SAMPLE_BODY),
+                eq(Key.DEFAULT),
+                eq(HederaFunctionality.CRYPTO_TRANSFER),
+                eq(0),
+                eq(0),
+                eq(NOW),
+                eq(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES),
+                eq(true),
+                any(ReadableStoreFactory.class)))
                 .willReturn(feeCalculator);
         assertSame(feeCalculator, subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }
@@ -116,7 +117,8 @@ class ChildFeeContextImplTest {
     @Test
     void propagatesInvalidBodyAsIllegalStateException() {
         given(context.savepointStack()).willReturn(new SavepointStackImpl(new FakeHederaState()));
-        subject = new ChildFeeContextImpl(feeManager, context, TransactionBody.DEFAULT, PAYER_ID, true);
+        subject = new ChildFeeContextImpl(
+                feeManager, context, TransactionBody.DEFAULT, PAYER_ID, true, TransactionCategory.CHILD);
         assertThrows(
                 IllegalStateException.class,
                 () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));

@@ -39,13 +39,17 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody.Builder;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,13 +171,33 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 getIfUsableForAliasedId(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         final var config = handleContext.configuration();
+        final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        if (tokenRel == null && account.maxAutoAssociations() > 0) {
-            validateFalse(
-                    account.usedAutoAssociations() >= account.maxAutoAssociations(),
-                    NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        if (tokenRel == null && account.maxAutoAssociations() != 0) {
+            boolean validAssociations = hasUnlimitedAutoAssociations(account, entitiesConfig)
+                    || account.usedAutoAssociations() < account.maxAutoAssociations();
+            validateTrue(validAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
+
+            //final var unlimitedAutoAssociations =
+            //        config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+            // use false unlimited for the moment
+            // TODO use the flag logic later
+            final var unlimitedAutoAssociations = false;
+
+            if (unlimitedAutoAssociations) {
+                final var topLevelPayer = handleContext.payer();
+                final var syntheticCreation = TransactionBody.newBuilder()
+                        .tokenAssociate(
+                                new Builder().account(account.accountId()).tokens(token.tokenId()));
+                final var fees = handleContext.dispatchComputeFees(
+                        syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
+                handleContext
+                        .feeAccumulator()
+                        .chargeNetworkFee(topLevelPayer, fees.nodeFee() + fees.networkFee() + fees.serviceFee());
+            }
+
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
@@ -198,4 +222,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
         throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
     }
+
+   boolean hasUnlimitedAutoAssociations(Account account, EntitiesConfig entitiesConfig) {
+        //TOOO use proper logic here
+        return false;
+   }
 }

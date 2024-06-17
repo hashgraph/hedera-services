@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRe
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -97,6 +98,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
 
+    @Mock
+    protected FeeAccumulator feeAccumulator;
+
     private AttributeValidator attributeValidator;
 
     protected ExpiryValidator expiryValidator;
@@ -121,6 +125,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         refreshWritableStores();
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
     }
 
     protected final AccountID unknownAliasedId =
@@ -201,11 +206,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
-                        any(),
-                        eq(CryptoCreateRecordBuilder.class),
-                        any(Predicate.class),
-                        eq(payerId),
-                        any(ExternalizedRecordCustomizer.class)))
+                any(),
+                eq(CryptoCreateRecordBuilder.class),
+                any(Predicate.class),
+                eq(payerId),
+                any(ExternalizedRecordCustomizer.class)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
@@ -220,7 +225,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
+                any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)

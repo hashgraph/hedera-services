@@ -307,6 +307,12 @@ public class HandleContextImpl implements HandleContext, FeeContext {
 
     @NonNull
     @Override
+    public TransactionCategory transactionCategory() {
+        return category;
+    }
+
+    @NonNull
+    @Override
     public FunctionalityResourcePrices resourcePricesFor(
             @NonNull final HederaFunctionality functionality, @NonNull final SubType subType) {
         return new FunctionalityResourcePrices(
@@ -528,7 +534,8 @@ public class HandleContextImpl implements HandleContext, FeeContext {
                 this,
                 bodyToDispatch,
                 syntheticPayerId,
-                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO));
+                computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
+                CHILD));
     }
 
     @Override

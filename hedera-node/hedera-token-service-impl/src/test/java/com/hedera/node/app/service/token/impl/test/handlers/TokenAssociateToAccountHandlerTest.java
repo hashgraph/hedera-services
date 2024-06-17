@@ -56,6 +56,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -90,7 +91,7 @@ class TokenAssociateToAccountHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TokenAssociateToAccountHandler();
+        subject = new TokenAssociateToAccountHandler(new AssetsLoader());
     }
 
     @Nested
