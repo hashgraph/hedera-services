@@ -83,7 +83,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
      * @param numVerifications The number of cryptographic signatures that were verified for this transaction. We only
      *                         know this answer after pre-handle has run.
      * @param signatureMapSize The number of bytes in the signature map.
-     * @param resourcePrices          The fee data associated with this transaction and its subtype.
+     * @param resourcePrices   The fee data associated with this transaction and its subtype.
      * @param currentRate      The current HBAR-to-USD exchange rate.
      * @param isInternalDispatch Whether this is an internal child dispatch transaction
      */
@@ -229,8 +229,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
 
     @Override
     public long getVptPrice() {
-        var sigVerPrice = resourcePrices.getNetworkdata().getVpt() / 1000L; // then multiply by the number of sig ver
-        return sigVerPrice;
+        return resourcePrices.getNetworkdata().getVpt() / 1000L;
     }
 
     @NonNull

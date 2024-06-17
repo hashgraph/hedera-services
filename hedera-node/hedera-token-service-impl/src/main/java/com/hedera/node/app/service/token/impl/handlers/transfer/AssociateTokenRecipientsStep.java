@@ -180,14 +180,18 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            final var topLevelPayer = handleContext.payer();
-            final var syntheticCreation = TransactionBody.newBuilder()
-                    .tokenAssociate(new Builder().account(account.accountId()).tokens(token.tokenId()));
-            final var fees = handleContext.dispatchComputeFees(
-                    syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
-            handleContext
-                    .feeAccumulator()
-                    .chargeNetworkFee(topLevelPayer, fees.nodeFee() + fees.networkFee() + fees.serviceFee());
+            final var unlimitedAutoAssociations =
+                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+            if (unlimitedAutoAssociations) {
+                final var topLevelPayer = handleContext.payer();
+                final var syntheticCreation = TransactionBody.newBuilder()
+                        .tokenAssociate(new Builder().account(account.accountId()).tokens(token.tokenId()));
+                final var fees = handleContext.dispatchComputeFees(
+                        syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
+                handleContext
+                        .feeAccumulator()
+                        .chargeNetworkFee(topLevelPayer, fees.nodeFee() + fees.networkFee() + fees.serviceFee());
+            }
 
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());

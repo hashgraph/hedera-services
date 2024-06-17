@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.impl.test.fixtures.FakeCryptoTransferRe
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -97,6 +98,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
 
+    @Mock
+    protected FeeAccumulator feeAccumulator;
+
     private AttributeValidator attributeValidator;
 
     protected ExpiryValidator expiryValidator;
@@ -121,6 +125,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         refreshWritableStores();
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
     }
 
     protected final AccountID unknownAliasedId =

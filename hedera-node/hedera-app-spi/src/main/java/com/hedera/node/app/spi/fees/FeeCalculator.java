@@ -104,8 +104,8 @@ public interface FeeCalculator {
     FeeCalculator resetUsage();
 
     /**
-     * Resets the usage of all components to zero including the constant.
-     * @return
+     * Gets the price for signature verifications only.
+     * @return the vpt price
      */
     long getVptPrice();
 }

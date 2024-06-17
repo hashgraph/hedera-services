@@ -54,6 +54,11 @@ public interface FeeContext {
     @NonNull
     FeeCalculator feeCalculator(@NonNull final SubType subType);
 
+    /**
+     * Returns the {@link TransactionCategory}
+     * @return the transactionCategory in this fee context
+     */
+    @NonNull
     TransactionCategory transactionCategory();
 
     /**

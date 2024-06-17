@@ -62,6 +62,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         givenValidTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         subject = new AssociateTokenRecipientsStep(txn);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));

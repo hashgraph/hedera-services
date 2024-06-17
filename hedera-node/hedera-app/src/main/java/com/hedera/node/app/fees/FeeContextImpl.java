@@ -32,6 +32,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Simple implementation of {@link FeeContext} without any addition functionality.
@@ -65,6 +66,7 @@ public class FeeContextImpl implements FeeContext {
      * @param feeManager the {@link FeeManager} to generate a {@link FeeCalculator}
      * @param storeFactory the {@link ReadableStoreFactory} to create readable stores
      * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
+     * @param transactionCategory The {@link TransactionCategory} of the current transaction
      * @param numSignatures the number of signatures in the transaction
      */
     public FeeContextImpl(
@@ -78,7 +80,7 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            final TransactionCategory transactionCategory,
+            @NonNull final TransactionCategory transactionCategory,
             final int numSignatures) {
         this.state = state;
         this.consensusTime = consensusTime;
@@ -123,6 +125,7 @@ public class FeeContextImpl implements FeeContext {
                 storeFactory);
     }
 
+    @NotNull
     @Override
     public TransactionCategory transactionCategory() {
         return transactionCategory;
