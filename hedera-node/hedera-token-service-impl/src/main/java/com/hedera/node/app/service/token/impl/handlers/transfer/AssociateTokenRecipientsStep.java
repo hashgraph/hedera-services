@@ -185,7 +185,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             if (unlimitedAutoAssociations) {
                 final var topLevelPayer = handleContext.payer();
                 final var syntheticCreation = TransactionBody.newBuilder()
-                        .tokenAssociate(new Builder().account(account.accountId()).tokens(token.tokenId()));
+                        .tokenAssociate(
+                                new Builder().account(account.accountId()).tokens(token.tokenId()));
                 final var fees = handleContext.dispatchComputeFees(
                         syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
                 handleContext
