@@ -348,16 +348,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     private static long baseSizeOf(
             final CryptoUpdateTransactionBody op, final long keySize, final boolean unlimitedAutoAssociationsEnabled) {
-        var baseSize = BASIC_ENTITY_ID_SIZE
+        return BASIC_ENTITY_ID_SIZE
                 + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
                 + (op.hasExpirationTime() ? LONG_SIZE : 0L)
                 + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
                 + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
+                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
                 + keySize;
-        if (!unlimitedAutoAssociationsEnabled) {
-            baseSize += op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L;
-        }
-        return baseSize;
     }
 
     /**

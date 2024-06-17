@@ -783,7 +783,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         subject.calculateFees(feeContext);
 
         InOrder inOrder = inOrder(feeCalculator);
-        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(208L);
+        inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(212L);
         inOrder.verify(feeCalculator, times(2)).addRamByteSeconds(0L);
         inOrder.verify(feeCalculator, times(1)).calculate();
     }
