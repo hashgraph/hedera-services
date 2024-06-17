@@ -164,7 +164,9 @@ class StaleEventDetectorTests {
      */
     @NonNull
     private ConsensusRound createConsensusRound(
-            @NonNull final Randotron randotron, @NonNull final List<PlatformEvent> events, final long ancientThreshold) {
+            @NonNull final Randotron randotron,
+            @NonNull final List<PlatformEvent> events,
+            final long ancientThreshold) {
         final List<EventImpl> eventImpls = new ArrayList<>();
         for (final PlatformEvent consensusEvent : events) {
             eventImpls.add(new EventImpl(consensusEvent));

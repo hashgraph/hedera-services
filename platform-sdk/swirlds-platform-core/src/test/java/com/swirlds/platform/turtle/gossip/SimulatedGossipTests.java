@@ -120,7 +120,8 @@ class SimulatedGossipTests {
                     new StandardOutputWire<>((TraceableWiringModel) model, "eventOutputWire");
             eventOutputWire.solderTo("handleOutputEvent", "event", receivedEventsForNode::add);
 
-            final BindableInputWire<PlatformEvent, Void> eventInputWire = eventInputShim.buildInputWire("eventInputWire");
+            final BindableInputWire<PlatformEvent, Void> eventInputWire =
+                    eventInputShim.buildInputWire("eventInputWire");
             eventSubmitters.put(nodeId, eventInputWire::inject);
 
             network.getGossipInstance(nodeId)

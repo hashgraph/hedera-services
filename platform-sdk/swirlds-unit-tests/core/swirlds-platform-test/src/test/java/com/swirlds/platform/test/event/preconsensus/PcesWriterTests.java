@@ -558,7 +558,8 @@ class PcesWriterTests {
             final List<PlatformEvent> eventsBeforeDiscontinuity = new LinkedList<>();
             final List<PlatformEvent> eventsAfterDiscontinuity = new LinkedList<>();
             for (int i = 0; i < numEvents; i++) {
-                final PlatformEvent event = generator.generateEventWithoutIndex().getBaseEvent();
+                final PlatformEvent event =
+                        generator.generateEventWithoutIndex().getBaseEvent();
                 if (i < numEvents / 2) {
                     eventsBeforeDiscontinuity.add(event);
                 } else {

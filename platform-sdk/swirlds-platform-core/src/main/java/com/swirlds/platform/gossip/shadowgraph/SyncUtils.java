@@ -283,7 +283,8 @@ public final class SyncUtils {
                                 }
                             }
 
-                            final PlatformEvent platformEvent = connection.getDis().readEventData();
+                            final PlatformEvent platformEvent =
+                                    connection.getDis().readEventData();
 
                             platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());
