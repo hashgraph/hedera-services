@@ -76,8 +76,8 @@ Create new transaction type as defined in the HIP:
  * - Each successful transfer SHALL populate that transfer in `token_transfer_list` for the record.
  * - Each successful transfer that consumes an automatic association slot SHALL populate the
  *   `automatic_association` field for the record.
- * - Each pending transfer _created_ SHALL be added to the `pending_airdrops` field for the record.
- * - Each pending transfer _updated_ SHALL be added to the `pending_airdrops` field for the record.
+ * - Each pending transfer _created_ SHALL be added to the `new_pending_airdrops` field for the record.
+ * - Each pending transfer _updated_ SHALL be added to the `new_pending_airdrops` field for the record.
  */
  message TokenAirdropTransactionBody {
 /**
