@@ -8,7 +8,7 @@
 This proposal describes a new feature for the metrics module.
 The feature is called "metric labels" and allows to add labels to metrics.
 Labels are key-value pairs that can be used to filter and group metrics.
-Why this proposal uses the name "metric labels" (like prometheus does) other libraries (like micrometer) use the term tags.
+Why this proposal uses the name "metric labels" (like prometheus does) other libraries (like micrometer or open telemetry) use the term tags or attributes.
 
 ## Motivation
 
@@ -29,6 +29,7 @@ platform module since it does not depend on the platform module's `nodeId` anymo
 - Add labels to the snapshot API
 - The output of the snapshot API should contain the labels
 - The output of the snapshot API must be compatible with the current output (no breaking changes)
+- Create better and more dynamic dashboards in Grafana by using labels
 
 ## Non-Goals
 
@@ -39,6 +40,27 @@ Here the preferred solution is still that we forward our metrics to a monitoring
 ## Design & Architecture
 
 This chapter describes the changes that are needed to add labels to the metrics module.
+
+### About labels
+
+Before we start with the implementation we need to define what labels are.
+Labels are key-value pairs that can be used to filter and group metrics.
+Labels are used by monitoring systems like prometheus to create more dynamic dashboards.
+For example, a metric that counts the number of requests can have a label called `method` that defines if the request was a `GET` or `POST` request.
+By doing so the monitoring system can create a dashboard that shows the number of requests per method.
+
+In prometheus a concrete metric is defined like this (see https://prometheus.io/docs/concepts/data_model/#notation):
+
+```
+api_http_requests_total{method="POST", handler="/messages"}
+```
+
+Here a metric is defined by a name (`api_http_requests_total`) and a set of labels (`method="POST"` and `handler="/messages"`).
+In prometheus that defines the unique identifier of a metric.
+
+When using labels to create dashboards in Grafana prometheus provides a rich query language to filter and group metrics: https://prometheus.io/docs/prometheus/latest/querying/examples/
+
+We will use the same practices and definition as in prometheus regarding labels.
 
 ### Public API
 
@@ -57,12 +79,9 @@ interface Metric {
     //...
     
     @NonNull
-    List<Label> getLabels();
+    Set<Label> getLabels();
 }
 ```
-
-> [!IMPORTANT]  
-> I currently ask myself if the method should return `Set`, `Collection` or `List`. Help is appreciated.
 
 Like the name or category, the labels are defined when a metric is created and cannot be changed later.
 Based on that the MetricConfig class will be extended by a new method called `withLabels`:
@@ -76,7 +95,7 @@ abstract class MetricConfig {
     MetricConfig withLabels(@NonNull Label... labels) {...}
     
     @NonNull
-    MetricConfig withLabels(@NonNull Collection<Label> labels) {...}
+    MetricConfig withLabels(@NonNull Set<Label> labels) {...}
 }
 ```
 
@@ -100,6 +119,26 @@ interface Metrics {
 
 Since the old methods are only used in tests or demos today we can do that change easily.
 
+##### Examples
+
+Here are some examples how to define a metric with labels:
+
+```java
+final Label transactionTypeLabel = new Label("transactionType", "fileUpload");
+final Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount").withLabels(transactionTypeLabel);
+
+final Metrics metrics = ...;
+final Counter counter = metrics.getOrCreate(config);
+
+counter.increment();
+```
+
+In prometheus the metric will be defined like this:
+
+```
+transactionsCategory.transactionCount{transactionType="fileUpload"}
+```
+
 #### Snapshot API
 
 The snapshot API will be extended to return the labels of a metric for a snapshot.
@@ -114,17 +153,11 @@ Next to extending the public API we need to migrate the current metrics to the n
 
 #### Migration of the `category`, `name`, and `nodeId`
 
-The `category`, `name`, and `nodeId` information of a metric will be migrated to labels.
-The key of a metric is the combination of the `category` and `name`.
-That will not be changed but next to that both values will be added as labels to the metric.
-By doing so a metric can be identified by its key and labels.
-
-Let's assume a metric with the category `myCategory`, the name `myName`.
-As today the key of the metric is `myCategory.myName`.
-Next to that the metric will have 2 labels: `category=myCategory` and `name=myName`.
-The unique identifier of the metric is the key and the labels.
+The `nodeId` information of a metric will be migrated to labels.
+The key of a metric won't change and still be defined as the combination of the `category` and `name`.
+The unique identifier of the metric is the combination key and the labels.
 That is a breaking change since today the key is the unique identifier of a metric.
-Since we do not have api today to add labels the migration should be minimalistic.
+Since we do not have an api today to add labels the migration should be minimalistic.
 
 #### Migration of the prometheus endpoint
 
@@ -146,7 +179,6 @@ Here we need to check that a platform metric (that has a `nodeId` label) is stil
 
 Please help me to answer the following questions before we can start with the implementation:
 
-- Should the `getLabels()` method return `Set`, `Collection` or `List`?
 - Should we add a new methods to the `Metrics` interface to get for example all metrics with a specific label?
 - How will a label with a `null` value be handled?
 
