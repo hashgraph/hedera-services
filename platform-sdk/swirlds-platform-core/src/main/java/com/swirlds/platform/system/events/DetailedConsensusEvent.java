@@ -137,9 +137,9 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
     }
 
     /**
-     * @return the pre-consensus event
+     * @return the platform event backing this consensus event
      */
-    public PlatformEvent getGossipEvent() {
+    public PlatformEvent getPlatformEvent() {
         return platformEvent;
     }
 

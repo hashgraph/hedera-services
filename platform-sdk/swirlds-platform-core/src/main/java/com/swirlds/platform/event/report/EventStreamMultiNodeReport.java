@@ -59,8 +59,8 @@ public class EventStreamMultiNodeReport {
 
         final Entry<String, EventStreamInfo> entryWithLatestEvent = individualReports.entrySet().stream()
                 .max(Map.Entry.comparingByValue(((o1, o2) -> {
-                    final Instant o1Timestamp = o1.lastEvent().getGossipEvent().getConsensusTimestamp();
-                    final Instant o2Timestamp = o2.lastEvent().getGossipEvent().getConsensusTimestamp();
+                    final Instant o1Timestamp = o1.lastEvent().getPlatformEvent().getConsensusTimestamp();
+                    final Instant o2Timestamp = o2.lastEvent().getPlatformEvent().getConsensusTimestamp();
 
                     return o1Timestamp.compareTo(o2Timestamp);
                 })))
@@ -78,7 +78,7 @@ public class EventStreamMultiNodeReport {
                         entryWithLatestEvent
                                 .getValue()
                                 .lastEvent()
-                                .getGossipEvent()
+                                .getPlatformEvent()
                                 .getConsensusTimestamp())
                 .addRow(BRIGHT_RED.apply("Directory with most events"), entryWithMostEvents.getKey())
                 .addRow(
