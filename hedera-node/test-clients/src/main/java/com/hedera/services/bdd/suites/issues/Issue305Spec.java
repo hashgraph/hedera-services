@@ -60,11 +60,7 @@ public class Issue305Spec {
         final List<TransactionID> submittedTxnIds = new ArrayList<>();
 
         return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
-                .preserving(
-                        "fees.percentCongestionMultipliers",
-                        "fees.minCongestionPeriod",
-                        "contracts.maxGasPerSec",
-                        "contracts.throttle.throttleByGas")
+                .preserving("fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec")
                 .given(
                         cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(multipurposeContract),
@@ -79,8 +75,7 @@ public class Issue305Spec {
                         overridingAllOf(Map.of(
                                 "contracts.maxGasPerSec", "3_000_000",
                                 "fees.percentCongestionMultipliers", "1,5x",
-                                "fees.minCongestionPeriod", "1",
-                                "contracts.throttle.throttleByGas", "true")))
+                                "fees.minCongestionPeriod", "1")))
                 .when(withOpContext((spec, opLog) -> {
                     // We submit 2.5 seconds of transactions with a 1 second congestion period, so
                     // we should see a 5x multiplier in effect at some point here

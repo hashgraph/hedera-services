@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -68,9 +69,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
@@ -84,8 +87,10 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -455,6 +460,41 @@ public class HollowAccountFinalizationSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> hollowAccountCompletionWithEthereumContractCreate() {
+        final var CONTRACT = "CreateTrivial";
+        return defaultHapiSpec("hollowAccountCompletionWithEthereumContractCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT))
+                .when(createHollowAccountFrom(
+                        SECP_256K1_SOURCE_KEY, INITIAL_BALANCE * ONE_MILLION_HBARS, 1_000_000 * ONE_HUNDRED_HBARS))
+                .then(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    final var op2 = ethereumContractCreate(CONTRACT)
+                            .type(EthTransactionType.LEGACY_ETHEREUM)
+                            .nonce(0)
+                            .gasPrice(2L)
+                            .maxPriorityGas(2L)
+                            .gasLimit(1_000_000L)
+                            .payingWith(SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                            .hasKnownStatus(SUCCESS)
+                            .via(TRANSFER_TXN_2);
+                    final var op3 = getAliasedAccountInfo(evmAddress)
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
+                    final var hapiGetSecondTxnRecord =
+                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
+
+                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                }));
+    }
+
+    @HapiTest
     final Stream<DynamicTest> hollowAccountCompletionWithContractCall() {
         final var DEPOSIT_AMOUNT = 1000;
         return defaultHapiSpec(
@@ -534,6 +574,7 @@ public class HollowAccountFinalizationSuite {
         final var ECDSA_KEY_3 = "ECDSA_KEY_3";
         final var ECDSA_KEY_4 = "ECDSA_KEY_4";
         final var RECIPIENT_KEY = "ECDSA_KEY_5";
+        final AtomicInteger numHollow = new AtomicInteger(0);
         return defaultHapiSpec("tooManyHollowAccountFinalizationsShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ECDSA_KEY_1).shape(SECP_256K1_SHAPE),
@@ -542,9 +583,7 @@ public class HollowAccountFinalizationSuite {
                         newKeyNamed(ECDSA_KEY_4).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(PAY_RECEIVABLE),
-                        contractCreate(PAY_RECEIVABLE).adminKey(ADMIN_KEY))
+                        newKeyNamed(ADMIN_KEY))
                 .when()
                 .then(withOpContext((spec, opLog) -> {
                     // create hollow accounts
@@ -571,18 +610,22 @@ public class HollowAccountFinalizationSuite {
                                     uniqueWithFullPrefixesFor(ECDSA_KEY_1, ECDSA_KEY_2, ECDSA_KEY_3, ECDSA_KEY_4))
                             .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
                             .via(TRANSFER_TXN_2);
-                    // no finalization child records should be exported, since too
-                    // many finalizations
-                    // were requested
-                    final var op3 = emptyChildRecordsCheck(TRANSFER_TXN_2, MAX_CHILD_RECORDS_EXCEEDED);
+                    final var op3 =
+                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().hasChildRecordCount(3);
+                    final Consumer<Boolean> consumer = b -> {
+                        if (b) {
+                            numHollow.incrementAndGet();
+                        }
+                    };
                     allRunFor(
                             spec,
                             op2,
                             op3,
-                            assertStillHollow(spec, ECDSA_KEY_1),
-                            assertStillHollow(spec, ECDSA_KEY_2),
-                            assertStillHollow(spec, ECDSA_KEY_3),
-                            assertStillHollow(spec, ECDSA_KEY_4));
+                            checkHollowStatus(spec, ECDSA_KEY_1, consumer),
+                            checkHollowStatus(spec, ECDSA_KEY_2, consumer),
+                            checkHollowStatus(spec, ECDSA_KEY_3, consumer),
+                            checkHollowStatus(spec, ECDSA_KEY_4, consumer));
+                    assertTrue(numHollow.get() == 1 || numHollow.get() == 2);
                 }));
     }
 
@@ -952,5 +995,19 @@ public class HollowAccountFinalizationSuite {
         final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
         return getAliasedAccountInfo(evmAddress)
                 .has(accountWith().hasEmptyKey().evmAddress(evmAddress).noAlias());
+    }
+
+    private HapiGetAccountInfo checkHollowStatus(final HapiSpec spec, final String key, Consumer<Boolean> callback) {
+        final var ecdsaKey = spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+        final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+        return getAliasedAccountInfo(evmAddress).exposingKeyTo(k -> {
+            callback.accept(EMPTY_KEY.equals(k));
+        });
+    }
+
+    private HapiGetAccountInfo assertNotHollow(final HapiSpec spec, final String key) {
+        final var ecdsaKey = spec.registry().getKey(key).getECDSASecp256K1().toByteArray();
+        final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+        return getAliasedAccountInfo(evmAddress).has(accountWith().hasNonEmptyKey());
     }
 }

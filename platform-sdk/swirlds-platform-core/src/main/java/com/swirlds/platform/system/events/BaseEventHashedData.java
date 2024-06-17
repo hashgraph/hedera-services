@@ -112,12 +112,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     private EventDescriptor descriptor;
 
     /**
-     * The actual birth round to return. May not be the original birth round if this event was created in the software
-     * version right before the birth round migration.
-     */
-    private long birthRoundOverride;
-
-    /**
      * Class IDs of permitted transaction types.
      */
     private static final Set<Long> TRANSACTION_TYPES =
@@ -152,7 +146,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         this.otherParents = otherParents;
         this.allParents = createAllParentsList();
         this.birthRound = birthRound;
-        this.birthRoundOverride = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
     }
@@ -199,7 +192,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
         allParents = createAllParentsList();
         birthRound = in.readLong();
-        birthRoundOverride = birthRound;
 
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
@@ -280,22 +272,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     }
 
     /**
-     * Override the birth round for this event. This will only be called for events created in the software version
-     * right before the birth round migration.
-     *
-     * @param birthRoundOverride the birth round that has been assigned to this event
-     */
-    public void setBirthRoundOverride(final long birthRoundOverride) {
-        this.birthRoundOverride = birthRoundOverride;
-    }
-
-    /**
      * Get the birth round of the event.
      *
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return birthRoundOverride;
+        return birthRound;
     }
 
     /**

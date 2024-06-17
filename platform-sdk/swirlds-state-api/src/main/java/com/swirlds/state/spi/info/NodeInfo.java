@@ -17,6 +17,7 @@
 package com.swirlds.state.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 /**
  * Summarizes useful information about the nodes in the AddressBook from the Platform. In
@@ -84,4 +85,23 @@ public interface NodeInfo {
      * @return the stake weight
      */
     long stake();
+
+    /**
+     * The signing x509 certificate bytes of the member
+     * @return the signing x509 certificate bytes
+     */
+    Bytes sigCertBytes();
+
+    /**
+     * The host name of this node, as known by the internal world. This is an IP address.
+     *
+     * @return The host name (IP Address) of this node
+     */
+    String internalHostName();
+
+    /**
+     * The internal port the node is listening on.
+     * @return the port. Non-negative.
+     */
+    int internalPort();
 }
