@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 
@@ -103,7 +104,7 @@ public class CryptoCreateValidator {
             @NonNull final TokensConfig tokensConfig) {
         return (entitiesConfig.limitTokenAssociations() && n > tokensConfig.maxPerAccount())
                 || n > ledgerConfig.maxAutoAssociations()
-                || (n < -1 && entitiesConfig.unlimitedAutoAssociationsEnabled())
+                || (n < UNLIMITED_AUTOMATIC_ASSOCIATIONS && entitiesConfig.unlimitedAutoAssociationsEnabled())
                 || (n < 0 && !entitiesConfig.unlimitedAutoAssociationsEnabled());
     }
 }

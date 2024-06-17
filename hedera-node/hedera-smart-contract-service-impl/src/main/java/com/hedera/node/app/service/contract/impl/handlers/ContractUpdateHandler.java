@@ -74,6 +74,11 @@ import javax.inject.Singleton;
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
 
+    /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
+
     @Inject
     public ContractUpdateHandler() {
         // Exists for injection
@@ -170,7 +175,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             final long newMaxAssociations = op.maxAutomaticTokenAssociationsOrThrow();
 
             if (entitiesConfig.unlimitedAutoAssociationsEnabled() && newMaxAssociations < 0) {
-                validateTrue(newMaxAssociations == -1, INVALID_MAX_AUTO_ASSOCIATIONS);
+                validateTrue(newMaxAssociations == UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
             } else {
                 validateFalse(
                         newMaxAssociations > ledgerConfig.maxAutoAssociations(),

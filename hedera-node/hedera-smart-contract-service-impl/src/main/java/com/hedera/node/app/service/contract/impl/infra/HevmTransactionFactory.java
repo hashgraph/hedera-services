@@ -35,6 +35,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.removeIfAnyLeading0x;
@@ -325,8 +326,8 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
         final var usesUnsupportedAutoAssociations =
                 body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
-        final var usesInvalidAutoAssociations =
-                body.maxAutomaticTokenAssociations() < -1 && entitiesConfig.unlimitedAutoAssociationsEnabled();
+        final var usesInvalidAutoAssociations = body.maxAutomaticTokenAssociations() < UNLIMITED_AUTOMATIC_ASSOCIATIONS
+                && entitiesConfig.unlimitedAutoAssociationsEnabled();
         validateFalse(usesUnsupportedAutoAssociations, NOT_SUPPORTED);
         validateFalse(usesInvalidAutoAssociations, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTrue(

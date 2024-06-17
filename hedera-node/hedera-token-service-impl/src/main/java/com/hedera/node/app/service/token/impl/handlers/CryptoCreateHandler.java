@@ -48,6 +48,7 @@ import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isKeyAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isOfEvmAddressSize;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NO_STAKE_PERIOD_START;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -127,7 +128,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             validateTruePreCheck(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
         }
         // HIP 904 now allows for unlimited auto-associations
-        validateTruePreCheck(op.maxAutomaticTokenAssociations() >= -1, INVALID_MAX_AUTO_ASSOCIATIONS);
+        validateTruePreCheck(
+                op.maxAutomaticTokenAssociations() >= UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
         // FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
         validateTruePreCheck(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
