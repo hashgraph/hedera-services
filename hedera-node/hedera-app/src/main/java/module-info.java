@@ -26,7 +26,8 @@ module com.hedera.node.app {
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app.service.addressbook.impl; // javax.annotation.processing.Generated
+    requires com.hedera.node.app.service.addressbook.impl;
+    requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;

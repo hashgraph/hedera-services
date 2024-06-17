@@ -2,13 +2,13 @@ import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 
 module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.hedera.node.app.service.addressbook;
+    requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.state.api;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.service.token;
     requires com.hedera.node.config;
     requires com.swirlds.platform.core;
     requires com.hedera.pbj.runtime;
