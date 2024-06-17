@@ -36,5 +36,6 @@ public interface ConsensusEvent extends Event, ReachedConsensus {
      *
      * @return a consensus transaction iterator
      */
-    @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator();
+    @NonNull
+    Iterator<ConsensusTransaction> consensusTransactionIterator();
 }
