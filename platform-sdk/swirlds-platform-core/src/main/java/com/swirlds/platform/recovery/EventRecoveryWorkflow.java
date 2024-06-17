@@ -41,7 +41,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -322,7 +322,7 @@ public final class EventRecoveryWorkflow {
         ReservedSignedState signedState = initialState;
 
         // Apply events to the state
-        GossipEvent lastEvent = null;
+        PlatformEvent lastEvent = null;
         while (roundIterator.hasNext()
                 && (finalRound == -1 || roundIterator.peek().getRoundNum() <= finalRound)) {
             final StreamedRound round = roundIterator.next();

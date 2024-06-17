@@ -20,7 +20,7 @@ import static java.lang.Integer.max;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public final class EventUtils {
      * @param event the event to serialize
      * @return the serialized event
      */
-    public static byte[] serializeGossipEvent(@NonNull final GossipEvent event) {
+    public static byte[] serializeGossipEvent(@NonNull final PlatformEvent event) {
         final ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             event.serialize(new SerializableDataOutputStream(stream));

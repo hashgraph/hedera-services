@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -47,14 +47,14 @@ public class EventImplTestUtils {
             @Nullable final EventImpl selfParent,
             @Nullable final EventImpl otherParent) {
 
-        final GossipEvent selfParentGossipEvent = selfParent == null ? null : selfParent.getBaseEvent();
-        final GossipEvent otherParentGossipEvent = otherParent == null ? null : otherParent.getBaseEvent();
+        final PlatformEvent selfParentPlatformEvent = selfParent == null ? null : selfParent.getBaseEvent();
+        final PlatformEvent otherParentPlatformEvent = otherParent == null ? null : otherParent.getBaseEvent();
 
-        final GossipEvent gossipEvent = gossipEventBuilder
-                .setSelfParent(selfParentGossipEvent)
-                .setOtherParent(otherParentGossipEvent)
+        final PlatformEvent platformEvent = gossipEventBuilder
+                .setSelfParent(selfParentPlatformEvent)
+                .setOtherParent(otherParentPlatformEvent)
                 .build();
 
-        return new EventImpl(gossipEvent, selfParent, otherParent);
+        return new EventImpl(platformEvent, selfParent, otherParent);
     }
 }

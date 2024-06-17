@@ -46,7 +46,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.TransactionConfig_;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.DefaultPcesWriter;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
@@ -118,14 +118,14 @@ class PcesWriterTests {
      * @param ancientMode        the ancient mode
      */
     private void verifyStream(
-            @NonNull final List<GossipEvent> events,
+            @NonNull final List<PlatformEvent> events,
             @NonNull final PlatformContext platformContext,
             final int truncatedFileCount,
             @NonNull final AncientMode ancientMode)
             throws IOException {
 
         long lastAncientIdentifier = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             lastAncientIdentifier = Math.max(lastAncientIdentifier, event.getAncientIndicator(ancientMode));
         }
 
@@ -134,7 +134,7 @@ class PcesWriterTests {
 
         // Verify that the events were written correctly
         final PcesMultiFileIterator eventsIterator = pcesFiles.getEventIterator(0, 0);
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             assertTrue(eventsIterator.hasNext());
             assertEquals(event, eventsIterator.next());
         }
@@ -144,8 +144,8 @@ class PcesWriterTests {
 
         // Make sure things look good when iterating starting in the middle of the stream that was written
         final long startingLowerBound = lastAncientIdentifier / 2;
-        final IOIterator<GossipEvent> eventsIterator2 = pcesFiles.getEventIterator(startingLowerBound, 0);
-        for (final GossipEvent event : events) {
+        final IOIterator<PlatformEvent> eventsIterator2 = pcesFiles.getEventIterator(startingLowerBound, 0);
+        for (final PlatformEvent event : events) {
             if (event.getAncientIndicator(ancientMode) < startingLowerBound) {
                 continue;
             }
@@ -155,7 +155,7 @@ class PcesWriterTests {
         assertFalse(eventsIterator2.hasNext());
 
         // Iterating from a high ancient indicator should yield no events
-        final IOIterator<GossipEvent> eventsIterator3 = pcesFiles.getEventIterator(lastAncientIdentifier + 1, 0);
+        final IOIterator<PlatformEvent> eventsIterator3 = pcesFiles.getEventIterator(lastAncientIdentifier + 1, 0);
         assertFalse(eventsIterator3.hasNext());
 
         // Do basic validation on event files
@@ -182,9 +182,9 @@ class PcesWriterTests {
             assertTrue(file.getUpperBound() >= previousMaximum);
             previousMaximum = file.getUpperBound();
 
-            final IOIterator<GossipEvent> fileEvents = file.iterator(0);
+            final IOIterator<PlatformEvent> fileEvents = file.iterator(0);
             while (fileEvents.hasNext()) {
-                final GossipEvent event = fileEvents.next();
+                final PlatformEvent event = fileEvents.next();
                 assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
                 assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
             }
@@ -311,19 +311,19 @@ class PcesWriterTests {
         final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
-        final List<GossipEvent> events = new LinkedList<>();
+        final List<PlatformEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents();
 
-        final Collection<GossipEvent> rejectedEvents = new HashSet<>();
+        final Collection<PlatformEvent> rejectedEvents = new HashSet<>();
 
         long lowerBound = ancientMode.selectIndicator(0, 1);
-        final Iterator<GossipEvent> iterator = events.iterator();
+        final Iterator<PlatformEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
-            final GossipEvent event = iterator.next();
+            final PlatformEvent event = iterator.next();
 
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
@@ -378,21 +378,21 @@ class PcesWriterTests {
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
         // We will add this event at the very end, it should be ancient by then
-        final GossipEvent ancientEvent = generator.generateEventWithoutIndex().getBaseEvent();
+        final PlatformEvent ancientEvent = generator.generateEventWithoutIndex().getBaseEvent();
 
-        final List<GossipEvent> events = new LinkedList<>();
+        final List<PlatformEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents();
 
-        final Collection<GossipEvent> rejectedEvents = new HashSet<>();
+        final Collection<PlatformEvent> rejectedEvents = new HashSet<>();
 
         long lowerBound = ancientMode.selectIndicator(0, 1);
-        final Iterator<GossipEvent> iterator = events.iterator();
+        final Iterator<PlatformEvent> iterator = events.iterator();
         while (iterator.hasNext()) {
-            final GossipEvent event = iterator.next();
+            final PlatformEvent event = iterator.next();
 
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
@@ -465,14 +465,14 @@ class PcesWriterTests {
         final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
-        final List<GossipEvent> events = new LinkedList<>();
+        final List<PlatformEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents();
 
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
         }
@@ -509,7 +509,7 @@ class PcesWriterTests {
         final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
-        final List<GossipEvent> events = new LinkedList<>();
+        final List<PlatformEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
@@ -518,7 +518,7 @@ class PcesWriterTests {
         // passed into the writer to be more or less ignored.
 
         long lowerBound = ancientMode.selectIndicator(0, 1);
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
             passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
 
@@ -555,10 +555,10 @@ class PcesWriterTests {
             final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
             final AtomicLong latestDurableSequenceNumber = new AtomicLong();
 
-            final List<GossipEvent> eventsBeforeDiscontinuity = new LinkedList<>();
-            final List<GossipEvent> eventsAfterDiscontinuity = new LinkedList<>();
+            final List<PlatformEvent> eventsBeforeDiscontinuity = new LinkedList<>();
+            final List<PlatformEvent> eventsAfterDiscontinuity = new LinkedList<>();
             for (int i = 0; i < numEvents; i++) {
-                final GossipEvent event = generator.generateEventWithoutIndex().getBaseEvent();
+                final PlatformEvent event = generator.generateEventWithoutIndex().getBaseEvent();
                 if (i < numEvents / 2) {
                     eventsBeforeDiscontinuity.add(event);
                 } else {
@@ -568,12 +568,12 @@ class PcesWriterTests {
 
             writer.beginStreamingNewEvents();
 
-            final Collection<GossipEvent> rejectedEvents = new HashSet<>();
+            final Collection<PlatformEvent> rejectedEvents = new HashSet<>();
 
             long lowerBound = ancientMode.selectIndicator(0, 1);
-            final Iterator<GossipEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
+            final Iterator<PlatformEvent> iterator1 = eventsBeforeDiscontinuity.iterator();
             while (iterator1.hasNext()) {
-                final GossipEvent event = iterator1.next();
+                final PlatformEvent event = iterator1.next();
 
                 sequencer.assignStreamSequenceNumber(event);
                 passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
@@ -612,9 +612,9 @@ class PcesWriterTests {
                 eventsBeforeDiscontinuity.remove(eventsBeforeDiscontinuity.size() - 1);
             }
 
-            final Iterator<GossipEvent> iterator2 = eventsAfterDiscontinuity.iterator();
+            final Iterator<PlatformEvent> iterator2 = eventsAfterDiscontinuity.iterator();
             while (iterator2.hasNext()) {
-                final GossipEvent event = iterator2.next();
+                final PlatformEvent event = iterator2.next();
 
                 sequencer.assignStreamSequenceNumber(event);
                 passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
@@ -677,17 +677,17 @@ class PcesWriterTests {
         final DefaultPcesWriter writer = new DefaultPcesWriter(platformContext, fileManager);
         final AtomicLong latestDurableSequenceNumber = new AtomicLong(-1);
 
-        final List<GossipEvent> events = new LinkedList<>();
+        final List<PlatformEvent> events = new LinkedList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEventWithoutIndex().getBaseEvent());
         }
 
         writer.beginStreamingNewEvents();
 
-        final Set<GossipEvent> rejectedEvents = new HashSet<>();
+        final Set<PlatformEvent> rejectedEvents = new HashSet<>();
 
         long lowerBound = ancientMode.selectIndicator(0, 1);
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             sequencer.assignStreamSequenceNumber(event);
 
             passValueToDurabilityNexus(writer.writeEvent(event), latestDurableSequenceNumber);
@@ -762,9 +762,9 @@ class PcesWriterTests {
 
         writer.beginStreamingNewEvents();
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (long i = 0; i < 9; i++) {
-            final GossipEvent event = mock(GossipEvent.class);
+            final PlatformEvent event = mock(PlatformEvent.class);
             when(event.getStreamSequenceNumber()).thenReturn(i);
             events.add(event);
         }

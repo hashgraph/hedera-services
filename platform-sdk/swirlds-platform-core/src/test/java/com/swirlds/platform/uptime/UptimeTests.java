@@ -34,7 +34,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.Address;
@@ -78,11 +78,11 @@ class UptimeTests {
             if (noEvents.contains(nodeId)) {
                 continue;
             }
-            final GossipEvent gossipEvent = new TestingEventBuilder(random)
+            final PlatformEvent platformEvent = new TestingEventBuilder(random)
                     .setCreatorId(nodeId)
                     .setConsensusTimestamp(time.now())
                     .build();
-            final EventImpl event = new EventImpl(gossipEvent, null, null);
+            final EventImpl event = new EventImpl(platformEvent, null, null);
 
             if (!noJudges.contains(nodeId) && firstEventCreated.add(nodeId)) {
                 event.setFamous(true);

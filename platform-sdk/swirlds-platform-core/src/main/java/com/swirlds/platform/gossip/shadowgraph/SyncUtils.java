@@ -25,7 +25,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
@@ -255,7 +255,7 @@ public final class SyncUtils {
      */
     public static Callable<Integer> readEventsINeed(
             final Connection connection,
-            final Consumer<GossipEvent> eventHandler,
+            final Consumer<PlatformEvent> eventHandler,
             final int maxEventCount,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
@@ -283,12 +283,12 @@ public final class SyncUtils {
                                 }
                             }
 
-                            final GossipEvent gossipEvent = connection.getDis().readEventData();
+                            final PlatformEvent platformEvent = connection.getDis().readEventData();
 
-                            gossipEvent.setSenderId(connection.getOtherId());
+                            platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());
 
-                            eventHandler.accept(gossipEvent);
+                            eventHandler.accept(platformEvent);
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
