@@ -50,9 +50,8 @@ public interface ParentRecordFinalizer {
      * It determines the net hbar transfers and token transfers based on the original value from readable state,
      * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
      * for the parent record. It also calculates staking rewards for the parent record.
-     *
-     * @param context                 the context
-     * @param functionality           the functionality
+     * @param context the context
+     * @param functionality the functionality
      * @param explicitRewardReceivers the explicit reward receivers
      */
     default void finalizeParentRecord(

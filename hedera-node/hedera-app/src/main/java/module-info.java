@@ -2,7 +2,6 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
-    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
@@ -26,6 +25,7 @@ module com.hedera.node.app {
     requires transitive grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;
@@ -86,6 +86,22 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.services;
+    exports com.hedera.node.app.workflows.handle.flow to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.user.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.txn.logic to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.txn to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.txn.modules to
+            com.hedera.node.app.test.fixtures;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

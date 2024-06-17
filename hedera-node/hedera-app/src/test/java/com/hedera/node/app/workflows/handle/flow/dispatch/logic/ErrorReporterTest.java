@@ -418,7 +418,7 @@ class ErrorReporterTest {
     }
 
     private void givenMissingPayer() {
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.readableStoreFactory()).willReturn(storeFactory);
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
     }
@@ -478,7 +478,7 @@ class ErrorReporterTest {
     }
 
     private Account givenPayer(@NonNull final Consumer<Account.Builder> spec) {
-        given(dispatch.syntheticPayer()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.readableStoreFactory()).willReturn(storeFactory);
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         final var payer = Account.newBuilder().accountId(PAYER_ACCOUNT_ID).key(Key.DEFAULT);

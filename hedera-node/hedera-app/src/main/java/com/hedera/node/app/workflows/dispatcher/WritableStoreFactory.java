@@ -124,7 +124,6 @@ public class WritableStoreFactory {
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
         this.storeMetricsService =
                 requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
-
         this.states = state.getWritableStates(serviceName);
     }
 
@@ -150,6 +149,15 @@ public class WritableStoreFactory {
             return storeInterface.cast(store);
         }
         throw new IllegalArgumentException("No store of the given class is available " + storeInterface.getName());
+    }
+
+    /**
+     * Gets the name of the service this factory is creating stores for.
+     *
+     * @return the name of the service
+     */
+    public String getServiceName() {
+        return serviceName;
     }
 
     private interface StoreFactory {

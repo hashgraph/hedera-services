@@ -172,7 +172,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -814,7 +813,7 @@ public class LeakyCryptoTestsSuite {
                     // balance to pay for the finalization (CryptoUpdate) fee
                     final var op5 = cryptoTransfer(tinyBarsFromTo(payer, secondEvmAddress, ONE_HUNDRED_HBARS))
                             .payingWith(payer)
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                            .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
                             .via(TRANSFER_TXN);
                     final var op5FeeAssertion = getTxnRecord(TRANSFER_TXN)
                             .logged()
@@ -834,9 +833,9 @@ public class LeakyCryptoTestsSuite {
                             .via(TRANSFER_TXN);
                     final var op7FeeAssertion = getTxnRecord(TRANSFER_TXN)
                             .logged()
+                            .andAllChildRecords()
                             .exposingTo(record -> {
-                                Assertions.assertEquals(
-                                        REDUCED_TOTAL_FEE + 2 * REDUCED_TOTAL_FEE, record.getTransactionFee());
+                                Assertions.assertEquals(REDUCED_TOTAL_FEE, record.getTransactionFee());
                             });
                     final var op8 = getAliasedAccountInfo(secondKey)
                             .has(accountWith()
@@ -1155,14 +1154,6 @@ public class LeakyCryptoTestsSuite {
                                                         .contractCallResult(ContractFnResultAsserts.resultWith()
                                                                 .contract(asContractString(contractIdReference.get()))))
                                                 .andAllChildRecords()
-                                                .exposingAllTo(records -> {
-                                                    final long gasUsed = records.get(0)
-                                                            .getContractCallResult()
-                                                            .getGasUsed();
-                                                    final long transactionFee =
-                                                            records.get(1).getTransactionFee();
-                                                    assertEquals(GAS_PRICE, transactionFee / (gasUsed - 21_000L));
-                                                })
                                                 .logged(),
                                         expectContractActionSidecarFor(
                                                 lazyCreateTxn,

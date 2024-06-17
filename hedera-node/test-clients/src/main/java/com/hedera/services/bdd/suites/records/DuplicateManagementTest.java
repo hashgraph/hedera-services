@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -146,9 +147,6 @@ public class DuplicateManagementTest {
                         .signedBy("notTreasuryKey")
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE),
                 // And verify that the node is charged the network fee for submitting this transaction
-                // !!!
-                // ---->>>> fails on develop, nothing is charged to the node <<<<----
-                // !!!
                 mutateAccount("0.0.4", account -> account.tinybarBalance(0L)),
                 getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
     }
@@ -179,10 +177,15 @@ public class DuplicateManagementTest {
                         .setNode(submittingNodeAccountId)
                         .payingWith(CIVILIAN)
                         .txnId(TXN_ID),
+                // Ensure a later transaction with a different id has been handled so the duplicate
+                // record queried below is guaranteed to be in the record cache
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)),
+                getTxnRecord(TXN_ID)
+                        .andAnyDuplicates()
+                        .assertingNothingAboutHashes()
+                        .hasPriority(recordWith().status(SUCCESS))
+                        .hasDuplicates(inOrder(recordWith().status(INSUFFICIENT_PAYER_BALANCE))),
                 // And verify that the node is charged the network fee for submitting this transaction
-                // !!!
-                // ---->>>> Above transfer gets FAIL_INVALID on develop, nothing is charged to the node <<<<----
-                // !!!
                 getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
     }
 
