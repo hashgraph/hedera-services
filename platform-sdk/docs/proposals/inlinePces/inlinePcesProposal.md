@@ -1,7 +1,7 @@
 # Goal
 
 It is currently possible for nodes to forget about self events when they restart. If such a forgotten self event is
-preserved by another node, then it becomes possible for an honest node to create create branching events.
+preserved by another node, then it becomes possible for an honest node to create branching events.
 
 # Proposal
 
