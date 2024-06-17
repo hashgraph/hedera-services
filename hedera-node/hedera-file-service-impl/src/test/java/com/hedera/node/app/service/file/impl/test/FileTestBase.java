@@ -30,8 +30,6 @@ import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
@@ -46,7 +44,6 @@ import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,10 +100,6 @@ public class FileTestBase {
     protected final Bytes contentsBytes = Bytes.wrap(contents);
 
     protected final KeyList keys = A_KEY_LIST.keyList();
-    protected final JKeyList jKeyList = new JKeyList(List.of(
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()),
-            new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
-            new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes())));
 
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
     protected final FileID WELL_KNOWN_FILE_ID =

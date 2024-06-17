@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
@@ -32,11 +31,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileCreateResourceUsage;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -149,7 +148,7 @@ public class FileCreateHandler implements TransactionHandler {
                                     : hederaConfig.realm())
                     .build();
             builder.fileId(fileId);
-            validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
+            validateContent(CommonPbjConverters.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
@@ -168,10 +167,12 @@ public class FileCreateHandler implements TransactionHandler {
 
     @NonNull
     @Override
-    public Fees calculateFees(@NonNull FeeContext feeContext) {
-        final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new FileCreateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj);
-        });
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var txnBody = feeContext.body();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(svo -> fileOpsUsage.fileCreateUsage(
+                        CommonPbjConverters.fromPbj(txnBody),
+                        new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount())));
     }
 }

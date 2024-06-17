@@ -18,18 +18,17 @@ package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.utils.FileServiceUtils;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.SystemUndeleteFileResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -129,10 +128,10 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        final var op = feeContext.body();
+        final var txnBody = feeContext.body();
         return feeContext
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj ->
-                        new SystemUndeleteFileResourceUsage(usageEstimator).usageGiven(fromPbj(op), sigValueObj));
+                .legacyCalculate(sigValueObj -> usageEstimator.getSystemUnDeleteFileTxFeeMatrices(
+                        CommonPbjConverters.fromPbj(txnBody), sigValueObj));
     }
 }

@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeysForDelete;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
@@ -30,10 +29,10 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileDeleteResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -134,9 +133,10 @@ public class FileDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new FileDeleteResourceUsage(
-                        usageEstimator)
-                .usageGiven(fromPbj(op), sigValueObj));
+        final var txnBody = feeContext.body();
+        return feeContext
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(
+                        svo -> usageEstimator.getFileDeleteTxFeeMatrices(CommonPbjConverters.fromPbj(txnBody), svo));
     }
 }

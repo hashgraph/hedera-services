@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STAKING_INFO;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKENS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
@@ -36,7 +35,6 @@ import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
-import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
@@ -48,8 +46,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
@@ -139,21 +135,6 @@ public class MonoMigrationUtils {
                     copy.registerMetrics(metrics);
                     MONO_VIRTUAL_MAPS.add(copy);
                     V0490TokenSchema.setTokenRelsFromState(tokenRelsFromState);
-                }
-
-                // --------------------- STORAGE (3)     // only "non-special" files
-                final VirtualMap<VirtualBlobKey, VirtualBlobValue> filesFromState = state.getChild(STORAGE);
-                if (filesFromState != null) {
-                    // Copy this virtual map, so it doesn't get released before the migration is done
-                    final var copy = filesFromState.copy();
-                    copy.registerMetrics(metrics);
-                    MONO_VIRTUAL_MAPS.add(copy);
-
-                    // Note: some files have no metadata, e.g. contract bytecode files
-                    V0490FileSchema.setFileFromState(() -> VirtualMapLike.from(filesFromState));
-
-                    // We also need to make this available to the contract service, so it can extract contract bytecode
-                    V0490ContractSchema.setBytecodeFromState(() -> VirtualMapLike.from(filesFromState));
                 }
 
                 // --------------------- ACCOUNTS (4)
