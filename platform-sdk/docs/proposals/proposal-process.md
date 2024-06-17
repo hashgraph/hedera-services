@@ -38,22 +38,23 @@ errors should be caught during this phase.
 6. Put the draft PR in the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board in
    the `Draft` status.
 7. Solicit feedback from stakeholders and other design collaborators.
-8. Iterate on the proposal until it is ready for voting. All open comments should be resolved.
+8. Iterate on the proposal until it is ready for voting. All open comments should be resolved while in the draft stage.
 
 ### Submitting a Proposal for Voting
 
 When the proposal is ready for voting, take the following steps:
 
 1. Ensure all comments are resolved.
-9. Mark the as ready for review
-10. Update the status of the PR in
+2. Mark the PR as ready for review
+3. Update the status of the PR in
     the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board to `Voting`
 
-Requests for inmaterial changes to the proposal can be addressed by pushing additional commits to the existing proposal
+Requests for inmaterial changes can be addressed by pushing additional commits to the existing proposal
 PR while in `Voting`. Examples of inmaterial changes are spelling or grammar errors, wording changes that do not modify
 meaning or intent, and formatting changes. Examples of material changes include changes to behaviors or APIs, addition
-or removal of content, etc. If any material changes are needed, the PR must be closed, and moved to the `Superseded`
-status. A new proposal PR is prepared and voting is restarted. The `Superseded` PR must reference the new PR.
+or removal of diagrams, etc. If any material changes are needed, the PR must be closed and moved to the `Superseded`
+status. A new proposal PR is prepared and voting is restarted. The `Superseded` PR must reference the new PR to
+create an auditable history.
 
 ---
 
@@ -83,7 +84,7 @@ A proposal becomes `Accepted` when the following criteria have been fulfilled:
 2. The proposal must have at least three +1 votes from platform code owners.
 3. The proposal must not have any -1 votes from platform code owners or architects.
 
-Once accepted, the proposal must be moved to the Accepted status in
+Once accepted, the proposal must be moved to the `Accepted` status in
 the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board and implementation of the
 proposal may begin.
 
@@ -110,9 +111,10 @@ to `Withdrawn`.
 ## Delivery of A Proposal
 
 Once an accepted proposal has been completely implemented, tested, the code merged into `develop`, and the feature is
-enabled for production, the proposal's content should be merged with the documentation of the platform
-in `platform-sdk/docs` and removed from `platform-sdk/docs/proposals`. Once the platform documentation is updated, the
-status of the proposal PR in the proposal project should be changed to `Delivered`.
+planned to be enabled for production, the proposal's content should be merged with the documentation of the platform
+in `platform-sdk/docs` (or other relevant location such as `module-info.java`), as applicable, and removed
+from `platform-sdk/docs/proposals`. Once the feature is live on mainnet, the status of the proposal PR in the proposal
+project should be changed to `Delivered`.
 
 ## Design Proposal State Machine
 
