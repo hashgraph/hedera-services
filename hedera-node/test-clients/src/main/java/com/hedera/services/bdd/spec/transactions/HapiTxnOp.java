@@ -25,12 +25,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.lang.Thread.sleep;
@@ -424,16 +426,28 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
         do {
             Response response = statusResponse(spec, receiptQuery);
-            lastReceipt = response.getTransactionGetReceipt().getReceipt();
-            ResponseCodeEnum statusNow = lastReceipt.getStatus();
+            final var getReceiptResponse = response.getTransactionGetReceipt();
+            lastReceipt = getReceiptResponse.getReceipt();
+            final var lookupStatus = getReceiptResponse.getHeader().getNodeTransactionPrecheckCode();
+            final var statusNow = lookupStatus == OK ? lastReceipt.getStatus() : lookupStatus;
             if (acceptAnyStatus) {
                 expectedStatus = Optional.of(statusNow);
                 return statusNow;
             } else if (statusNow != UNKNOWN) {
                 if (acceptAnyKnownStatus) {
                     expectedStatus = Optional.of(statusNow);
+                    return statusNow;
                 }
-                return statusNow;
+                if (statusNow == RECEIPT_NOT_FOUND
+                        && expectedStatus.orElse(SUCCESS) != RECEIPT_NOT_FOUND
+                        && spec.targetNetworkOrThrow().type() == EMBEDDED_NETWORK) {
+                    // This smooths the case of getting the receipt for a transaction that was submitted
+                    // to the non-default node in embedded mode, bypassing ingest; we retry until the default
+                    // node caches the receipt at consensus
+                    continue;
+                } else {
+                    return statusNow;
+                }
             }
             pause(spec.setup().statusWaitSleepMs());
         } while ((Instant.now().toEpochMilli() - beginWait) < spec.setup().statusWaitTimeoutMs());
@@ -704,16 +718,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T txnId(String name) {
         customTxnId = Optional.of(name);
-        return self();
-    }
-
-    public T randomNode() {
-        useRandomNode = true;
-        return self();
-    }
-
-    public T unavailableNode() {
-        unavailableNode = true;
         return self();
     }
 

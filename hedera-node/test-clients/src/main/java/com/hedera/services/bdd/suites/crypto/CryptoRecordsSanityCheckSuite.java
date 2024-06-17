@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.records;
+package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
@@ -45,6 +45,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -187,12 +189,14 @@ public class CryptoRecordsSanityCheckSuite {
                         .key(NEW_KEY)
                         .payingWith(PAYER)
                         .fee(BALANCE / 2)
-                        .via("updateTxn")
                         .deferStatusResolution())
                 .then(cryptoTransfer(tinyBarsFromTo(PAYER, RECEIVER, 1_000L))
                         .payingWith(PAYER)
-                        .via("transferTxn")
                         .signedBy(ORIG_KEY, RECEIVER)
+                        // Running with embedded mode the previous transaction may already
+                        // be handled and lead to rejecting this submission at ingest; with
+                        // a live network, the transaction will be rejected at consensus
+                        .hasPrecheckFrom(OK, INVALID_SIGNATURE)
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE));
     }
 }

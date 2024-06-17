@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.crypto.staking;
+package com.hedera.services.bdd.suites.staking;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS;
 import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
@@ -49,14 +49,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.NODE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
@@ -472,46 +469,6 @@ public class StakingSuite {
                         getTxnRecord(deletion)
                                 .logged()
                                 .hasPaidStakingRewards(List.of(Pair.of(bob, 100 * SUITE_PER_HBAR_REWARD_RATE))));
-    }
-
-    /**
-     * Creates a contract staked to a node with a lifetime just over one staking period; waits long
-     * enough for it to be eligible for rewards, and then triggers its auto-renewal.
-     *
-     * <p>Since system records aren't queryable via HAPI, it's necessary to add logging in e.g.
-     * ExpiryRecordsHelper#finalizeAndStream() to inspect the generated record and confirm staking
-     * rewards are paid.
-     *
-     * @return the spec described above
-     */
-    // (FUTURE) Enable when expiry/auto-renewal is implemented
-    final Stream<DynamicTest> autoRenewalsCanTriggerStakingRewards() {
-        final var initBalance = ONE_HBAR * 1000;
-        final var minimalLifetime = 3;
-        final var creation = "creation";
-
-        return defaultHapiSpec("AutoRenewalsCanTriggerStakingRewards")
-                .given(
-                        cryptoCreate("miscStaker").stakedNodeId(0).balance(ONE_HUNDRED_HBARS * 1000),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .when(
-                        enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .gas(2_000_000)
-                                .entityMemo("")
-                                .stakedNodeId(0L)
-                                // Lifetime is in seconds not minutes, add a 10 second buffer
-                                .autoRenewSecs(STAKING_PERIOD_MINS * 60 + 10)
-                                .balance(initBalance)
-                                .via(creation),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS))
-                .then(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggerRenewal")
-                        // (TODO) Verify that the contract was auto-renewed and that staking rewards were paid
-                        );
     }
 
     // (FUTURE) Delete after confirming min stake will always be zero going forward

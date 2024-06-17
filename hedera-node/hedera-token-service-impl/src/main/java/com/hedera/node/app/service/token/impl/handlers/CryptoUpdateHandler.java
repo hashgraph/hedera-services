@@ -72,7 +72,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -84,26 +83,20 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoUpdateHandler extends BaseCryptoHandler implements TransactionHandler {
-
     private final CryptoSignatureWaivers waivers;
     private final StakingValidator stakingValidator;
-    private final NetworkInfo networkInfo;
 
     /**
      * Default constructor for injection.
      * @param waivers the {@link CryptoSignatureWaivers} to use for checking signature waivers
      * @param stakingValidator the {@link StakingValidator} to use for staking validation
-     * @param networkInfo the {@link NetworkInfo} to use for network information
      */
     @Inject
     public CryptoUpdateHandler(
-            @NonNull final CryptoSignatureWaivers waivers,
-            @NonNull final StakingValidator stakingValidator,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final CryptoSignatureWaivers waivers, @NonNull final StakingValidator stakingValidator) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'networkInfo' must not be null");
     }
 
     @Override
@@ -326,7 +319,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                networkInfo);
+                context.networkInfo());
     }
 
     /**
@@ -355,16 +348,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     private static long baseSizeOf(
             final CryptoUpdateTransactionBody op, final long keySize, final boolean unlimitedAutoAssociationsEnabled) {
-        var baseSize = BASIC_ENTITY_ID_SIZE
+        return BASIC_ENTITY_ID_SIZE
                 + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
                 + (op.hasExpirationTime() ? LONG_SIZE : 0L)
                 + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
                 + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
+                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
                 + keySize;
-        if (!unlimitedAutoAssociationsEnabled) {
-            baseSize += op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L;
-        }
-        return baseSize;
     }
 
     /**

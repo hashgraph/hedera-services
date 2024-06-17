@@ -1873,7 +1873,7 @@ class HandleWorkflowTest extends AppTestBase {
     void testConsensusTimeHooksCalled() {
         workflow.handleRound(state, platformState, round);
         verify(blockRecordManager).consTimeOfLastHandledTxn();
-        verify(genesisRecordsTimeHook).process(notNull());
+        verify(genesisRecordsTimeHook, never()).process(notNull());
         verify(stakingPeriodTimeHook).process(notNull(), notNull());
     }
 

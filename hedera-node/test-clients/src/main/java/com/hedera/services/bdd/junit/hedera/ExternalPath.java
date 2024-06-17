@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.util;
+package com.hedera.services.bdd.junit.hedera;
 
-public class TokenUtil {
-
-    /**
-     * The value for unlimited automatic associations
-     */
-    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
-
-    private TokenUtil() {
-        throw new UnsupportedOperationException("Utility class only");
-    }
+/**
+ * Enumerates files and directories created and used by a Hedera node.
+ */
+public enum ExternalPath {
+    APPLICATION_LOG,
+    ADDRESS_BOOK,
+    GENESIS_PROPERTIES,
+    APPLICATION_PROPERTIES,
+    LOG4J2_XML,
+    STREAMS_DIR,
 }
