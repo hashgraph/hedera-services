@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.util;
 
-import static com.hedera.node.app.Hedera.shouldDump;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
@@ -30,7 +29,9 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOPICS;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
+import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
@@ -54,6 +55,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
@@ -266,5 +268,9 @@ public class MonoMigrationUtils {
             }
         });
         MONO_VIRTUAL_MAPS.clear();
+    }
+
+    public static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
+        return trigger == EVENT_STREAM_RECOVERY && selectedDumpCheckpoints().contains(checkpoint);
     }
 }

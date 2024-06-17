@@ -31,8 +31,6 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
@@ -41,18 +39,16 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
-import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
@@ -99,8 +95,6 @@ public interface HederaInjectionComponent {
 
     GrpcServerManager grpcServerManager();
 
-    NodeId nodeId();
-
     Supplier<Charset> nativeCharset();
 
     SystemExits systemExits();
@@ -109,23 +103,19 @@ public interface HederaInjectionComponent {
 
     NetworkInfo networkInfo();
 
-    LedgerValidator ledgerValidator();
-
     PreHandleWorkflow preHandleWorkflow();
 
     HandleWorkflow handleWorkflow();
+
+    IngestWorkflow ingestWorkflow();
+
+    QueryWorkflow queryWorkflow();
 
     BlockRecordManager blockRecordManager();
 
     FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
-
-    PlatformStateUpdateFacility platformStateUpdateFacility();
-
-    GenesisRecordsConsensusHook genesisRecordsConsensusHook();
-
-    InitTrigger initTrigger();
 
     ThrottleServiceManager throttleServiceManager();
 
@@ -156,9 +146,6 @@ public interface HederaInjectionComponent {
         Builder self(final SelfNodeInfo self);
 
         @BindsInstance
-        Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
-
-        @BindsInstance
         Builder configProvider(ConfigProvider configProvider);
 
         @BindsInstance
@@ -172,9 +159,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
-
-        @BindsInstance
-        Builder genesisRecordsConsensusHook(GenesisRecordsConsensusHook genesisRecordsBuilder);
 
         @BindsInstance
         Builder softwareVersion(SoftwareVersion softwareVersion);
