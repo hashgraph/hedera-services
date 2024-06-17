@@ -48,7 +48,6 @@ module com.hedera.node.app {
     requires io.netty.transport;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
-    requires org.jetbrains.annotations; // javax.annotation.processing.Generated
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
     requires static java.compiler;

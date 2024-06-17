@@ -32,7 +32,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Simple implementation of {@link FeeContext} without any addition functionality.
@@ -125,7 +124,7 @@ public class FeeContextImpl implements FeeContext {
                 storeFactory);
     }
 
-    @NotNull
+    @NonNull
     @Override
     public TransactionCategory transactionCategory() {
         return transactionCategory;
