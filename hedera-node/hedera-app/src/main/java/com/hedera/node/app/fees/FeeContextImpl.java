@@ -30,10 +30,13 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Simple implementation of {@link FeeContext} without any addition functionality.
@@ -54,8 +57,10 @@ public class FeeContextImpl implements FeeContext {
     private final TransactionDispatcher transactionDispatcher;
     private final HederaState state;
     private final ExchangeRateManager exchangeRateManager;
+    private final SingleTransactionRecordBuilderImpl recordBuilder;
     private ExchangeRateInfo exchangeRateInfo;
     private TransactionCategory transactionCategory;
+
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -84,7 +89,8 @@ public class FeeContextImpl implements FeeContext {
             final int numSignatures,
             final TransactionDispatcher transactionDispatcher,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionCategory transactionCategory) {
+            @NonNull final TransactionCategory transactionCategory,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         this.state = state;
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
@@ -98,6 +104,7 @@ public class FeeContextImpl implements FeeContext {
         this.transactionDispatcher = transactionDispatcher;
         this.exchangeRateManager = exchangeRateManager;
         this.transactionCategory = transactionCategory;
+        this.recordBuilder = recordBuilder;
     }
 
     @Override
@@ -181,7 +188,8 @@ public class FeeContextImpl implements FeeContext {
     }
 
     @Override
+    @NonNull
     public Instant consensusNow() {
-        return consensusTime;
+        return recordBuilder.consensusNow();
     }
 }

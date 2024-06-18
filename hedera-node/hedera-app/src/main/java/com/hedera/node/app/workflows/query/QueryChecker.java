@@ -46,6 +46,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -224,6 +225,17 @@ public class QueryChecker {
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration) {
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
+
+        // Initialize record builder list
+        recordBuilder
+                .transaction(transactionInfo.transaction())
+                .transactionBytes(transactionInfo.signedBytes())
+                .transactionID(transactionInfo.transactionID())
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(transactionInfo.txBody().memo());
+
         final var feeContext = new FeeContextImpl(
                 state,
                 consensusTime,
@@ -238,7 +250,8 @@ public class QueryChecker {
                 -1,
                 dispatcher,
                 exchangeRateManager,
-                TransactionCategory.USER);
+                TransactionCategory.USER,
+                recordBuilder);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

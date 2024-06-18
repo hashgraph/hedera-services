@@ -62,6 +62,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -219,6 +220,19 @@ public final class IngestChecker {
 
         // 7. Check payer solvency
         final var numSigs = txInfo.signatureMap().sigPair().size();
+
+        final var recordListBuilder = new RecordListBuilder(consensusTime);
+        final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
+
+        // Initialize record builder list
+        recordBuilder
+                .transaction(txInfo.transaction())
+                .transactionBytes(txInfo.signedBytes())
+                .transactionID(txInfo.transactionID())
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(txInfo.txBody().memo());
+
+
         final FeeContext feeContext = new FeeContextImpl(
                 state,
                 consensusTime,
@@ -232,7 +246,8 @@ public final class IngestChecker {
                 numSigs,
                 dispatcher,
                 exchangeRateManager,
-                TransactionCategory.USER);
+                TransactionCategory.USER,
+                recordBuilder);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);
 

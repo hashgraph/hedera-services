@@ -64,6 +64,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.HederaState;
@@ -90,7 +91,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private PreHandleContext preHandleContext;
 
     @Mock(strictness = LENIENT)
-    private TokenBaseRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -302,7 +303,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 -1,
                 transactionDispatcher,
                 exchangeRateManager,
-                TransactionCategory.USER);
+                TransactionCategory.USER,
+                recordBuilder);
 
         final var calculateFees = subject.calculateFees(feeContext);
         assertEquals(calculateFees, Fees.FREE);
