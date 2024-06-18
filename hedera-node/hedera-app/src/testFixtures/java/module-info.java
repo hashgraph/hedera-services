@@ -9,7 +9,6 @@ module com.hedera.node.app.test.fixtures {
     requires transitive com.swirlds.platform.core.test.fixtures;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
-    requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi;
     requires com.hedera.node.config.test.fixtures;
@@ -18,7 +17,10 @@ module com.hedera.node.app.test.fixtures {
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.metrics.api;
     requires com.hedera.pbj.runtime;
+    requires com.sun.jna;
     requires org.apache.logging.log4j;
     requires org.assertj.core;
+    requires org.bouncycastle.provider;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires static com.github.spotbugs.annotations;
 }
