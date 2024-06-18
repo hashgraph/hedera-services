@@ -18,6 +18,10 @@ package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
 
+import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -41,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -117,7 +122,9 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     private static final Set<Long> TRANSACTION_TYPES =
             Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
-    public BaseEventHashedData() {}
+    private final EventCore eventCore;
+    private final List<OneOf<PayloadOneOfType>> payloads;
+
 
     /**
      * Create a BaseEventHashedData object
@@ -148,6 +155,20 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         this.birthRound = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
+
+        this.payloads = Arrays.stream(transactions).map(ConsensusTransactionImpl::getPayload).toList();
+        this.eventCore = new EventCore(
+                creatorId.id(),
+                birthRound,
+                HapiUtils.asTimestamp(timeCreated),
+                this.allParents.stream().map(
+                        ed -> new com.hedera.hapi.platform.event.EventDescriptor(
+                                ed.getHash().getBytes(),
+                                ed.getCreator().id(),
+                                ed.getGeneration(),
+                                ed.getBirthRound())
+                ).toList(),
+                softwareVersion.getPbjSemanticVersion());
     }
 
     @Override
