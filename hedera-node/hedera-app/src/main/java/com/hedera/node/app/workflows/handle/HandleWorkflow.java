@@ -1042,8 +1042,7 @@ public class HandleWorkflow {
 
     private boolean usedSelfFrontendThrottleCapacity(
             final int numImplicitCreations, final int numAutoAssociations, @NonNull final TransactionBody txnBody) {
-        return (numImplicitCreations > 0
-                || numAutoAssociations > 0)
+        return (numImplicitCreations > 0 || numAutoAssociations > 0)
                 && txnBody.nodeAccountIDOrThrow()
                         .equals(networkInfo.selfNodeInfo().accountId());
     }
