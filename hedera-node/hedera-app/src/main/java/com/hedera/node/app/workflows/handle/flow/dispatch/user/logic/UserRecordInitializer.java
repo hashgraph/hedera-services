@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.user.logic;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -36,8 +39,8 @@ public class UserRecordInitializer {
      * @param exchangeRateManager the exchange rate manager
      */
     @Inject
-    public UserRecordInitializer(final ExchangeRateManager exchangeRateManager) {
-        this.exchangeRateManager = exchangeRateManager;
+    public UserRecordInitializer(@NonNull final ExchangeRateManager exchangeRateManager) {
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
     /**
@@ -47,17 +50,20 @@ public class UserRecordInitializer {
      * @param txnInfo the transaction info
      */
     // TODO: Guarantee that this never throws an exception
-    public void initializeUserRecord(SingleTransactionRecordBuilderImpl recordBuilder, TransactionInfo txnInfo) {
-        final Bytes transactionBytes;
+    public SingleTransactionRecordBuilderImpl initializeUserRecord(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
+        requireNonNull(txnInfo);
+        requireNonNull(recordBuilder);
         final var transaction = txnInfo.transaction();
+        // If the transaction uses the legacy body bytes field instead of explicitly setting
+        // its signed bytes, the record will have the hash of its bytes as serialized by PBJ
+        final Bytes transactionBytes;
         if (transaction.signedTransactionBytes().length() > 0) {
             transactionBytes = transaction.signedTransactionBytes();
         } else {
-            // in this case, recorder hash the transaction itself, not its bodyBytes.
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
-        // Initialize record builder list
-        recordBuilder
+        return recordBuilder
                 .transaction(txnInfo.transaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())

@@ -31,7 +31,7 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -106,7 +106,7 @@ public final class PcesBirthRoundMigration {
 
         makeBackupFiles(platformContext.getRecycleBin(), databaseDirectory);
 
-        final List<GossipEvent> eventsToMigrate =
+        final List<PlatformEvent> eventsToMigrate =
                 readEventsToBeMigrated(platformContext, selfId, minimumJudgeGenerationInMigrationRound, migrationRound);
 
         if (eventsToMigrate.isEmpty()) {
@@ -173,7 +173,7 @@ public final class PcesBirthRoundMigration {
      * @return the events to be migrated
      */
     @NonNull
-    private static List<GossipEvent> readEventsToBeMigrated(
+    private static List<PlatformEvent> readEventsToBeMigrated(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
             final long minimumJudgeGenerationInMigrationRound,
@@ -193,9 +193,9 @@ public final class PcesBirthRoundMigration {
         // The number of events that qualify for migration is expected to be small,
         // so we can gather them all in memory.
 
-        final IOIterator<GossipEvent> iterator =
+        final IOIterator<PlatformEvent> iterator =
                 originalFiles.getEventIterator(minimumJudgeGenerationInMigrationRound, migrationRound);
-        final List<GossipEvent> eventsToMigrate = new ArrayList<>();
+        final List<PlatformEvent> eventsToMigrate = new ArrayList<>();
         while (iterator.hasNext()) {
             eventsToMigrate.add(iterator.next());
         }
@@ -215,7 +215,7 @@ public final class PcesBirthRoundMigration {
     private static void migrateEvents(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId selfId,
-            @NonNull final List<GossipEvent> eventsToMigrate,
+            @NonNull final List<PlatformEvent> eventsToMigrate,
             final long migrationRound)
             throws IOException {
 
@@ -224,7 +224,7 @@ public final class PcesBirthRoundMigration {
         final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                 new BufferedOutputStream(new FileOutputStream(temporaryFile.toFile())));
         outputStream.writeInt(PcesMutableFile.FILE_VERSION);
-        for (final GossipEvent event : eventsToMigrate) {
+        for (final PlatformEvent event : eventsToMigrate) {
             outputStream.writeSerializable(event, false);
         }
         outputStream.close();

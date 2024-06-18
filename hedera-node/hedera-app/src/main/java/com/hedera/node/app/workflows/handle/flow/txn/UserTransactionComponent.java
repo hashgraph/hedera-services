@@ -23,9 +23,10 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ContextModule;
+import com.hedera.node.app.workflows.handle.flow.txn.modules.DispatchSubcomponentsModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.LastHandledTime;
+import com.hedera.node.app.workflows.handle.flow.txn.modules.PreHandleResultModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.StateModule;
-import com.hedera.node.app.workflows.handle.flow.txn.modules.UserDispatchSubcomponentModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -48,7 +49,8 @@ import javax.inject.Provider;
             StateModule.class,
             ActiveConfigModule.class,
             ContextModule.class,
-            UserDispatchSubcomponentModule.class
+            PreHandleResultModule.class,
+            DispatchSubcomponentsModule.class
         })
 @UserTxnScope
 public interface UserTransactionComponent {
@@ -60,14 +62,28 @@ public interface UserTransactionComponent {
                 @BindsInstance NodeInfo creator,
                 @BindsInstance ConsensusTransaction platformTxn,
                 @BindsInstance Instant consensusTime,
-                @BindsInstance @LastHandledTime final Instant lastHandledConsensusTime);
+                @BindsInstance @LastHandledTime Instant lastHandledConsensusTime);
     }
+
+    /**
+     * Returns whether this is the first transaction ever handled.
+     *
+     * @return true if this is the first transaction ever handled
+     */
+    boolean isGenesisTxn();
 
     /**
      * The functionality of the user transaction
      * @return the functionality
      */
     HederaFunctionality functionality();
+
+    /**
+     * The workflow for the user transaction to produce stream items
+     *
+     * @return the workflow
+     */
+    UserTxnWorkflow workflow();
 
     /**
      * The consensus time of the user transaction

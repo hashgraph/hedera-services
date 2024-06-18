@@ -29,6 +29,7 @@ import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,8 +45,21 @@ import java.util.Set;
 public class MapWritableStates implements WritableStates, CommittableWritableStates {
     private final Map<String, ?> states;
 
+    /**
+     * Need this callback so a {@code FakeHederaState} owning this writable states can
+     * invalidate its cache of {@link com.swirlds.state.spi.ReadableStates} when it is
+     * committed.
+     */
+    @Nullable
+    private final Runnable onCommit;
+
     public MapWritableStates(@NonNull final Map<String, ?> states) {
+        this(states, null);
+    }
+
+    public MapWritableStates(@NonNull final Map<String, ?> states, @Nullable final Runnable onCommit) {
         this.states = requireNonNull(states);
+        this.onCommit = onCommit;
     }
 
     @SuppressWarnings("unchecked")
@@ -114,6 +128,9 @@ public class MapWritableStates implements WritableStates, CommittableWritableSta
                         "Unknown state type " + state.getClass().getName());
             }
         });
+        if (onCommit != null) {
+            onCommit.run();
+        }
     }
 
     @Override

@@ -20,7 +20,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -33,7 +33,7 @@ public class StatefulEventHasher implements EventHasher {
 
     @NonNull
     @Override
-    public GossipEvent hashEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         try {
             event.serializeLegacyHashBytes(outputStream);
             event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
