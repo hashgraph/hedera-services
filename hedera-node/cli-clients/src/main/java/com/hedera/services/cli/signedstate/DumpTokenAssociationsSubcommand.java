@@ -16,13 +16,8 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
-import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.Writer;
@@ -36,7 +31,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 /** Dump all token associations (tokenrels) , from a signed state file, to a text file, in deterministic order */
@@ -81,11 +75,8 @@ public class DumpTokenAssociationsSubcommand {
     }
 
     void doit() {
-        final var tokenAssociationsStore = state.getTokenAssociations();
-        System.out.printf(
-                "=== %d token associations (%s) === %n",
-                tokenAssociationsStore.size(), tokenAssociationsStore.areOnDisk() ? "virtual" : "merkle");
-        final var tokenAssociations = gatherTokenAssociations(tokenAssociationsStore);
+        System.out.printf("=== %d token associations (%s) === %n", 0, "virtual");
+        final var tokenAssociations = gatherTokenAssociations();
 
         int reportSize;
         try (@NonNull final var writer = new Writer(tokenRelPath)) {
@@ -105,33 +96,6 @@ public class DumpTokenAssociationsSubcommand {
             boolean isAutomaticAssociation,
             long prev,
             long next) {
-        @NonNull
-        public static TokenRel from(@NonNull final MerkleTokenRelStatus tokenRel) {
-            final var at = toLongsPair(toPair(tokenRel.getKey()));
-            return new TokenRel(
-                    at.left(),
-                    at.right(),
-                    tokenRel.getBalance(),
-                    tokenRel.isFrozen(),
-                    tokenRel.isKycGranted(),
-                    tokenRel.isAutomaticAssociation(),
-                    tokenRel.getPrev(),
-                    tokenRel.getNext());
-        }
-
-        @NonNull
-        public static TokenRel from(@NonNull final OnDiskTokenRel tokenRel) {
-            final var at = toLongsPair(toPair(tokenRel.getKey()));
-            return new TokenRel(
-                    at.left(),
-                    at.right(),
-                    tokenRel.getBalance(),
-                    tokenRel.isFrozen(),
-                    tokenRel.isKycGranted(),
-                    tokenRel.isAutomaticAssociation(),
-                    tokenRel.getPrev(),
-                    tokenRel.getNext());
-        }
 
         @NonNull
         public Pair<Long /*accountId*/, Long /*tokenId*/> getKey() {
@@ -214,43 +178,8 @@ public class DumpTokenAssociationsSubcommand {
     }
 
     @NonNull
-    SortedMap<Pair<Long, Long>, TokenRel> gatherTokenAssociations(@NonNull TokenRelStorageAdapter tokenRelStore) {
-        requireNonNull(tokenRelStore, "tokenRelStore");
-
-        final SortedMap<Pair<Long, Long>, TokenRel> r = new TreeMap<>(getPairOfLongsComparator());
-
-        if (tokenRelStore.areOnDisk()) {
-            final var tokenRels = requireNonNull(tokenRelStore.getOnDiskRels());
-            final var tokenAssociations = new ConcurrentLinkedQueue<TokenRel>();
-            try {
-                final var threadCount = 8; // Good enough for my laptop, why not?
-                tokenRels.extractVirtualMapDataC(
-                        getStaticThreadManager(),
-                        p -> {
-                            final var tokenRel = TokenRel.from(p.value());
-                            tokenAssociations.add(tokenRel);
-                        },
-                        threadCount);
-            } catch (final InterruptedException ex) {
-                System.err.println("*** Traversal of token associations virtual map interrupted!");
-                Thread.currentThread().interrupt();
-            }
-            while (!tokenAssociations.isEmpty()) {
-                final var tokenRel = tokenAssociations.poll();
-                r.put(tokenRel.getKey(), tokenRel);
-            }
-        } else /* not on disk */ {
-            final var tokenRels = requireNonNull(tokenRelStore.getInMemoryRels());
-            tokenRels.getIndex().forEach((key, value) -> r.put(toLongsPair(toPair(key)), TokenRel.from(value)));
-        }
-
-        return r;
-    }
-
-    @NonNull
-    static Pair<AccountID, TokenID> toPair(@NonNull final EntityNumPair enp) {
-        final var at = enp.asAccountTokenRel();
-        return Pair.of(at.getLeft(), at.getRight());
+    SortedMap<Pair<Long, Long>, TokenRel> gatherTokenAssociations() {
+        return new TreeMap<>();
     }
 
     @NonNull
