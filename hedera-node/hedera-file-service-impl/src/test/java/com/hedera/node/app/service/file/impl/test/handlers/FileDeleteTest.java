@@ -153,7 +153,7 @@ class FileDeleteTest extends FileTestBase {
 
         subject.calculateFees(feeContext);
 
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        InOrder inOrder = inOrder(feeContext, feeCalculatorFactory, feeCalculator);
         inOrder.verify(feeContext).body();
         inOrder.verify(feeCalculatorFactory).feeCalculator(SubType.DEFAULT);
         inOrder.verify(feeCalculator).legacyCalculate(any());

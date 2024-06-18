@@ -51,6 +51,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -380,8 +381,10 @@ class FileAppendHandlerTest extends FileTestBase {
         final var feeCtx = mock(FeeContext.class);
         given(feeCtx.body()).willReturn(txBody);
 
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculatorFactory().feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCtx.configuration()).willReturn(testConfig);
         given(feeCtx.readableStore(ReadableFileStore.class)).willReturn(readableStore);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);

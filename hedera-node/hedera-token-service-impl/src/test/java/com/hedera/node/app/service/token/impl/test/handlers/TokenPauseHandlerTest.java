@@ -128,7 +128,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
 
         subject.calculateFees(feeContext);
 
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        InOrder inOrder = inOrder(feeCalculatorFactory, feeCalculator);
         inOrder.verify(feeCalculatorFactory).feeCalculator(SubType.DEFAULT);
         inOrder.verify(feeCalculator).addBytesPerTransaction(anyLong());
         inOrder.verify(feeCalculator).calculate();

@@ -31,6 +31,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
@@ -73,8 +74,10 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTe
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -168,13 +171,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("test CalculateFees When Free")
-    void testCalculateFeesWhenFree() {
+    void testCalculateFeesWhenFree(@Mock FeeCalculatorFactory feeCalculatorFactory) {
         var transactionBody = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
                 .withMemo("blank")
                 .withKey(A_COMPLEX_KEY)
                 .build();
+        final var feeCalculator = new FakeFeeCalculator();
         given(feeContext.body()).willReturn(transactionBody);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(DEFAULT)).willReturn(feeCalculator);
         final var result = subject.calculateFees(feeContext);
         assertThat(result).isEqualTo(Fees.FREE);
     }

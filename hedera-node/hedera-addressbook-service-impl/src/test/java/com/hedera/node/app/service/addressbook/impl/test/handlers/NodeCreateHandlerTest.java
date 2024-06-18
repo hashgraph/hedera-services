@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
@@ -133,7 +134,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withServiceEndpoint(List.of(endpoint2))
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_ENDPOINT);
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CAE_CERTIFICATE);
     }
 
     @Test
