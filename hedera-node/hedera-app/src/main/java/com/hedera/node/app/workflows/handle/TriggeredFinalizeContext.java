@@ -59,7 +59,9 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
     }
 
     @Override
-    public boolean hasChildRecords() {
+    public boolean hasChildOrPrecedingRecords() {
+        // Since this is only used for a scheduled dispatch, we should not deduct any changes from this transaction
+        // So always return false.
         return false;
     }
 

@@ -106,7 +106,7 @@ public class ChildRecordBuilderFactoryTest {
                 configuration,
                 PRECEDING,
                 SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
-                customizer);
+                null);
 
         assertNotNull(recordBuilder);
         assertTrue(recordListBuilder.precedingRecordBuilders().contains(recordBuilder));

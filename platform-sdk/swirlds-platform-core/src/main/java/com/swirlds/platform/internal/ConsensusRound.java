@@ -23,9 +23,11 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +41,12 @@ public class ConsensusRound implements Round {
      * an unmodifiable list of consensus events in this round, in consensus order
      */
     private final List<EventImpl> consensusEvents;
+    /**
+     * the same events that are stored in {@link #consensusEvents} but repackaged for the Consensus Event Stream. since
+     * the CES is something that will be removed as soon as possible, this additional list allows us to decouple the CES
+     * from the rest of the event structure.
+     */
+    private final List<DetailedConsensusEvent> streamedEvents;
 
     /**
      * the consensus generations when this round reached consensus
@@ -104,8 +112,11 @@ public class ConsensusRound implements Round {
         this.snapshot = Objects.requireNonNull(snapshot);
         this.pcesRound = pcesRound;
 
-        for (final EventImpl e : consensusEvents) {
+        this.streamedEvents = new ArrayList<>(consensusEvents.size());
+        for (final Iterator<EventImpl> iterator = consensusEvents.iterator(); iterator.hasNext(); ) {
+            final EventImpl e = iterator.next();
             numAppTransactions += e.getNumAppTransactions();
+            streamedEvents.add(new DetailedConsensusEvent(e.getBaseEvent(), snapshot.round(), !iterator.hasNext()));
         }
     }
 
@@ -125,6 +136,13 @@ public class ConsensusRound implements Round {
      */
     public @NonNull List<EventImpl> getConsensusEvents() {
         return consensusEvents;
+    }
+
+    /**
+     * @return the list of CES events in this round
+     */
+    public @NonNull List<DetailedConsensusEvent> getStreamedEvents() {
+        return streamedEvents;
     }
 
     /**

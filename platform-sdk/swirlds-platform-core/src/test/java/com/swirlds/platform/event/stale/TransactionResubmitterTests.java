@@ -33,7 +33,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.resubmitter.DefaultTransactionResubmitter;
 import com.swirlds.platform.event.resubmitter.TransactionResubmitter;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -105,7 +105,7 @@ class TransactionResubmitterTests {
             transactions.add(transaction);
         }
 
-        final GossipEvent event =
+        final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
         final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
@@ -142,7 +142,7 @@ class TransactionResubmitterTests {
             transactions.add(transaction);
         }
 
-        final GossipEvent event =
+        final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
         final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
@@ -166,7 +166,7 @@ class TransactionResubmitterTests {
         final TransactionResubmitter resubmitter = new DefaultTransactionResubmitter(platformContext);
         resubmitter.updateEventWindow(eventWindow);
 
-        final GossipEvent event = new TestingEventBuilder(randotron)
+        final PlatformEvent event = new TestingEventBuilder(randotron)
                 .setTransactions(Collections.emptyList())
                 .build();
 
@@ -183,7 +183,7 @@ class TransactionResubmitterTests {
 
         final TransactionResubmitter resubmitter = new DefaultTransactionResubmitter(platformContext);
 
-        final GossipEvent event = new TestingEventBuilder(randotron)
+        final PlatformEvent event = new TestingEventBuilder(randotron)
                 .setTransactions(Collections.emptyList())
                 .build();
 

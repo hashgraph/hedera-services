@@ -19,7 +19,7 @@ package com.swirlds.platform.test.fixtures.turtle.gossip;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
@@ -53,7 +53,7 @@ public class SimulatedNetwork {
      * Events that have been submitted within the most recent tick. It is safe for multiple nodes to add to their list
      * of submitted events in parallel.
      */
-    private final Map<NodeId, List<GossipEvent>> newlySubmittedEvents = new HashMap<>();
+    private final Map<NodeId, List<PlatformEvent>> newlySubmittedEvents = new HashMap<>();
 
     /**
      * A sorted list of node IDs for when deterministic iteration order is required.
@@ -124,7 +124,7 @@ public class SimulatedNetwork {
      * @param submitterId the id of the node submitting the event
      * @param event       the event to gossip
      */
-    public void submitEvent(@NonNull final NodeId submitterId, @NonNull final GossipEvent event) {
+    public void submitEvent(@NonNull final NodeId submitterId, @NonNull final PlatformEvent event) {
         newlySubmittedEvents.get(submitterId).add(event);
     }
 
@@ -172,8 +172,8 @@ public class SimulatedNetwork {
         // in nondeterministic orders with nondeterministic timing.
 
         for (final NodeId sender : sortedNodeIds) {
-            final List<GossipEvent> events = newlySubmittedEvents.get(sender);
-            for (final GossipEvent event : events) {
+            final List<PlatformEvent> events = newlySubmittedEvents.get(sender);
+            for (final PlatformEvent event : events) {
                 for (final NodeId receiver : sortedNodeIds) {
                     if (sender.equals(receiver)) {
                         // Don't gossip to ourselves
@@ -185,7 +185,7 @@ public class SimulatedNetwork {
                     final Instant deliveryTime = now.plusNanos(
                             (long) (averageDelayNanos + random.nextGaussian() * standardDeviationDelayNanos));
 
-                    final GossipEvent eventToDeliver = deepCopyEvent(event);
+                    final PlatformEvent eventToDeliver = deepCopyEvent(event);
                     eventToDeliver.setSenderId(sender);
                     eventToDeliver.setTimeReceived(deliveryTime);
                     final EventInTransit eventInTransit = new EventInTransit(eventToDeliver, sender, deliveryTime);
@@ -204,14 +204,14 @@ public class SimulatedNetwork {
      * @return a deep copy of the event
      */
     @NonNull
-    private GossipEvent deepCopyEvent(@NonNull final GossipEvent event) {
+    private PlatformEvent deepCopyEvent(@NonNull final PlatformEvent event) {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(byteArrayOutputStream);
             outputStream.writeSerializable(event, false);
             final SerializableDataInputStream inputStream =
                     new SerializableDataInputStream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
-            final GossipEvent copy = inputStream.readSerializable(false, GossipEvent::new);
+            final PlatformEvent copy = inputStream.readSerializable(false, PlatformEvent::new);
             copy.setHash(event.getHash());
             return copy;
         } catch (final IOException e) {

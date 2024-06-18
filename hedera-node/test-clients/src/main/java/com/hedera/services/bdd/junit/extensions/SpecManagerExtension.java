@@ -18,7 +18,6 @@ package com.hedera.services.bdd.junit.extensions;
 
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 
-import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,7 +38,8 @@ public class SpecManagerExtension
     @Override
     public void beforeAll(@NonNull final ExtensionContext extensionContext) {
         if (isRootTestClass(extensionContext)) {
-            getStore(extensionContext).put(SPEC_MANAGER, new SpecManager(SubProcessNetwork.SHARED_NETWORK.get()));
+            getStore(extensionContext)
+                    .put(SPEC_MANAGER, new SpecManager(NetworkTargetingExtension.SHARED_NETWORK.get()));
         }
     }
 

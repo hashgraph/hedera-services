@@ -147,7 +147,7 @@ public class EventImplTests {
                 null,
                 null);
 
-        event.consensusReached();
+        event.getBaseEvent().setConsensusTimestampsOnPayloads();
 
         final ConsensusTransactionImpl[] transactions = event.getTransactions();
         for (int i = 0; i < transactions.length; i++) {

@@ -54,7 +54,7 @@ import com.swirlds.platform.components.transaction.system.SystemTransactionExtra
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.branching.BranchDetector;
 import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationConfig;
@@ -126,21 +126,21 @@ public class PlatformWiring {
     private final PlatformContext platformContext;
     private final PlatformSchedulersConfig config;
 
-    private final ComponentWiring<EventHasher, GossipEvent> eventHasherWiring;
-    private final PassThroughWiring<GossipEvent> postHashCollectorWiring;
-    private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
-    private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
-    private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
-    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
+    private final ComponentWiring<EventHasher, PlatformEvent> eventHasherWiring;
+    private final PassThroughWiring<PlatformEvent> postHashCollectorWiring;
+    private final ComponentWiring<InternalEventValidator, PlatformEvent> internalEventValidatorWiring;
+    private final ComponentWiring<EventDeduplicator, PlatformEvent> eventDeduplicatorWiring;
+    private final ComponentWiring<EventSignatureValidator, PlatformEvent> eventSignatureValidatorWiring;
+    private final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
-    private final ComponentWiring<SelfEventSigner, GossipEvent> selfEventSignerWiring;
+    private final ComponentWiring<SelfEventSigner, PlatformEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
     private final ComponentWiring<StateSigner, StateSignaturePayload> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
-    private final ComponentWiring<PcesSequencer, GossipEvent> pcesSequencerWiring;
+    private final ComponentWiring<PcesSequencer, PlatformEvent> pcesSequencerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final GossipWiring gossipWiring;
@@ -158,7 +158,7 @@ public class PlatformWiring {
     private final ComponentWiring<SavedStateController, StateAndRound> savedStateControllerWiring;
     private final ComponentWiring<StateHasher, StateAndRound> stateHasherWiring;
     private final PlatformCoordinator platformCoordinator;
-    private final ComponentWiring<BirthRoundMigrationShim, GossipEvent> birthRoundMigrationShimWiring;
+    private final ComponentWiring<BirthRoundMigrationShim, PlatformEvent> birthRoundMigrationShimWiring;
     private final ComponentWiring<AppNotifier, Void> notifierWiring;
     private final ComponentWiring<StateGarbageCollector, Void> stateGarbageCollectorWiring;
     private final ComponentWiring<SignedStateSentinel, Void> signedStateSentinelWiring;
@@ -171,7 +171,7 @@ public class PlatformWiring {
     private final ComponentWiring<TransactionResubmitter, List<ConsensusTransactionImpl>> transactionResubmitterWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
-    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;
     private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     private final boolean hashCollectorEnabled;
@@ -225,7 +225,7 @@ public class PlatformWiring {
 
         if (hashCollectorEnabled) {
             postHashCollectorWiring = new PassThroughWiring<>(
-                    model, "GossipEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
+                    model, "PlatformEvent", buildPostHashCollectorScheduler(hashingObjectCounter));
         } else {
             postHashCollectorWiring = null;
         }
@@ -347,7 +347,7 @@ public class PlatformWiring {
      * @return the event hasher scheduler
      */
     @NonNull
-    private TaskScheduler<GossipEvent> buildEventHasherScheduler(@NonNull final ObjectCounter hashingObjectCounter) {
+    private TaskScheduler<PlatformEvent> buildEventHasherScheduler(@NonNull final ObjectCounter hashingObjectCounter) {
         final TaskSchedulerBuilder<Object> builder = model.schedulerBuilder("EventHasher")
                 .configure(config.eventHasher())
                 .withUnhandledTaskMetricEnabled(true)
@@ -375,7 +375,7 @@ public class PlatformWiring {
      * @return the post hash collector scheduler
      */
     @NonNull
-    private TaskScheduler<GossipEvent> buildPostHashCollectorScheduler(
+    private TaskScheduler<PlatformEvent> buildPostHashCollectorScheduler(
             @NonNull final ObjectCounter hashingObjectCounter) {
         return model.schedulerBuilder("PostHashCollector")
                 .configure(config.postHashCollector())
@@ -440,7 +440,7 @@ public class PlatformWiring {
      * Wire the components together.
      */
     private void wire() {
-        final InputWire<GossipEvent> pipelineInputWire;
+        final InputWire<PlatformEvent> pipelineInputWire;
         if (birthRoundMigrationShimWiring != null) {
             birthRoundMigrationShimWiring
                     .getOutputWire()
@@ -471,7 +471,7 @@ public class PlatformWiring {
         eventSignatureValidatorWiring
                 .getOutputWire()
                 .solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
-        final OutputWire<GossipEvent> splitOrphanBufferOutput = orphanBufferWiring.getSplitOutput();
+        final OutputWire<PlatformEvent> splitOrphanBufferOutput = orphanBufferWiring.getSplitOutput();
         splitOrphanBufferOutput.solderTo(pcesSequencerWiring.getInputWire(PcesSequencer::assignStreamSequenceNumber));
         pcesSequencerWiring.getOutputWire().solderTo(pcesWriterWiring.getInputWire(PcesWriter::writeEvent));
 
@@ -512,9 +512,9 @@ public class PlatformWiring {
                 .getOutputWire()
                 .solderTo(staleEventDetectorWiring.getInputWire(StaleEventDetector::addSelfEvent));
 
-        final OutputWire<GossipEvent> staleEventsFromStaleEventDetector =
+        final OutputWire<PlatformEvent> staleEventsFromStaleEventDetector =
                 staleEventDetectorWiring.getSplitAndRoutedOutput(STALE_SELF_EVENT);
-        final OutputWire<GossipEvent> selfEventsFromStaleEventDetector =
+        final OutputWire<PlatformEvent> selfEventsFromStaleEventDetector =
                 staleEventDetectorWiring.getSplitAndRoutedOutput(SELF_EVENT);
 
         selfEventsFromStaleEventDetector.solderTo(
@@ -536,7 +536,7 @@ public class PlatformWiring {
                 TransactionPrehandler::prehandleApplicationTransactions));
 
         // From the orphan buffer, extract signatures from preconsensus events for input to the StateSignatureCollector.
-        final WireTransformer<GossipEvent, List<ScopedSystemTransaction<StateSignaturePayload>>>
+        final WireTransformer<PlatformEvent, List<ScopedSystemTransaction<StateSignaturePayload>>>
                 preConsensusTransformer = new WireTransformer<>(
                         model,
                         "extractPreconsensusSignatureTransactions",
@@ -626,7 +626,7 @@ public class PlatformWiring {
                 transactionHandlerWiring.getInputWire(TransactionHandler::handleConsensusRound));
 
         consensusEngineWiring
-                .getSplitAndTransformedOutput(ConsensusEngine::getConsensusEvents)
+                .getSplitAndTransformedOutput(ConsensusEngine::getCesEvents)
                 .solderTo(consensusEventStreamWiring.getInputWire(ConsensusEventStream::addEvents));
 
         final OutputWire<StateAndRound> transactionHandlerStateAndRoundOutput = transactionHandlerWiring
@@ -890,7 +890,7 @@ public class PlatformWiring {
      * @return the input wire for passing a PCES iterator to the replayer
      */
     @NonNull
-    public InputWire<IOIterator<GossipEvent>> getPcesReplayerIteratorInput() {
+    public InputWire<IOIterator<PlatformEvent>> getPcesReplayerIteratorInput() {
         return pcesReplayerWiring.pcesIteratorInputWire();
     }
 
@@ -900,7 +900,7 @@ public class PlatformWiring {
      * @return the output wire that the replayer uses to pass events from file into the intake pipeline
      */
     @NonNull
-    public StandardOutputWire<GossipEvent> getPcesReplayerEventOutput() {
+    public StandardOutputWire<PlatformEvent> getPcesReplayerEventOutput() {
         return pcesReplayerWiring.eventOutput();
     }
 

@@ -22,7 +22,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
      */
     @Override
     @NonNull
-    public List<OneOf<PayloadOneOfType>> resubmitStaleTransactions(@NonNull final GossipEvent event) {
+    public List<OneOf<PayloadOneOfType>> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
         if (eventWindow == null) {
             throw new IllegalStateException("Event window is not set");
         }
