@@ -118,7 +118,7 @@ public class DispatchProcessor {
 
     /**
      * Tries to the transaction logic for the given dispatch. If the logic fails and throws HandleException, it will
-     * rollback the stack and charge the payer for the fees.
+     * roll back the stack and charge the payer for the fees.
      * If it is throttled, it will charge the payer for the fees and return FEE_ONLY as work done.
      * If it catches an unexpected exception, it will charge the payer for the fees and return FEE_ONLY as work done.
      *

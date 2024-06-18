@@ -1,11 +1,11 @@
-### Workflow Onset
+## Workflow Onset
 
 At the beginning of each workflow, a `Transaction` has to be parsed and validated.
 As these steps are the same for all workflows, this functionality has been extracted and made available independently.
 All related classes can be found in the package `com.hedera.node.app.workflows.onset`.
 Details about the required pre-checks can be found [here](transaction-prechecks.md).
 
-### Ingest Workflow
+## Ingest Workflow
 
 The package `com.hedera.node.app.workflows.ingest` contains the ingest workflow. A rough overview can be seen in the diagram below.
 
@@ -33,7 +33,7 @@ If all checks have been successful, the transaction has been submitted to the pl
 Otherwise the transaction is rejected with an appropriate response code.
 In case of insufficient funds, the returned `TransactionResponse` also contains an estimation of the required fee.
 
-### Pre-Handle Workflow
+## Pre-Handle Workflow
 
 The `com.hedera.node.app.workflows.prehandle` package contains the workflow for pre-handling transactions. A rough overview can be seen in the diagram below.
 
@@ -56,7 +56,7 @@ If all checks have been successful, the status of the created `TransactionMetada
 Otherwise, the status is set to the response code providing the failure reason. 
 If the workflow terminates early (either because the parsing step (1.) fails or an unexpected `Exception` occurs) an `ErrorTransactionMetadata` is attached to the `SwirldsTransaction` that contains the causing `Exception`.
 
-### Query Workflow
+## Query Workflow
 
 The query workflow is quite complex.
 Unlike transaction processing, it is not split into several phases, but covers the whole query from receiving the request until sending the response.
@@ -87,3 +87,47 @@ The query workflow consists of the following steps:
 
 Depending on what was requested, either the result of the query or the expected costs are returned to the caller.
 If at anytime an error occurs, a response with the error code is returned.
+
+## Handle Workflow
+
+When a platform transaction reaches consensus and needs to be handled, the `HandleWorkflow.handlePlatformTransaction()` 
+is called.
+Few terms that will be used in the following sections:
+1. **Dispatch**: The context needed for executing business logic of a service. This has two implementations 
+- one for user transactions scope 
+- one for dispatched child transactions scope.
+
+Objects created while handling the transaction belong to one of the following Dagger scopes. 
+- **Singleton** - Tied to the lifecycle of the application
+- **UserTxnScope** - Tied to the lifecycle of the platform transaction.
+- **UserDispatchScope** - The lifecycle of the object is tied to the lifecycle of the user transaction dispatch.
+- **ChildDispatchScope** - The lifecycle of the object is tied to the lifecycle of the child transaction dispatch.
+![dagger_scopes.png](dagger_scopes.png)
+
+
+#### HandleWorkflow overview:
+1. `BlockRecordManager` to update the new consensus time for the user transaction, puts the lastBlockInfo in state if needed.
+when blocks
+2. `UserTxnWorkflow` is called to handle the transaction and provide record stream
+3. Externalizes the record stream items
+4. Update metrics for the handled user transaction
+
+#### UserTxnWorkflow overview:
+1. If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
+This writes a record with `BUSY` status and adds to record cache
+2. If the transaction is from a valid software version, we call `DefaultHandleWorkflow`
+   - Exports synthetic records of system accounts creation that need to be externalized on genesis start 
+   - Process staking period hook that is responsible for staking updates and staking rewards distribution
+   - Advances consensus clock by updating the last consensus time that node has handled
+   - Expire schedules if any
+   - Creates a `Dispatch` for the user transaction
+   - Finalizes hollow accounts
+   - Gives the dispatch to the `DispatchProcessor` to process the dispatch. 
+     The `DispatchProcessor` will call the `Dispatch` to execute the business logic of the transaction.
+     This same code will be called for child transactions as well, since the user transaction and dispatch 
+     and child transaction dispatches are treated the same way.
+
+#### DispatchProcessor overview:
+The `DispatchProcessor.processDispatch` will be called for child transactions as well, 
+since the user transaction and dispatch and child transaction dispatches are treated the same way.
+1. It will

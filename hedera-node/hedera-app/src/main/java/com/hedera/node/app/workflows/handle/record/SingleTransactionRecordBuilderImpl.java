@@ -1202,37 +1202,4 @@ public class SingleTransactionRecordBuilderImpl
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
-
-    @Override
-    public String toString() {
-        return "SingleTransactionRecordBuilderImpl{" + "transaction="
-                + transaction + ", transactionBytes="
-                + transactionBytes + ", consensusNow="
-                + consensusNow + ", parentConsensus="
-                + parentConsensus + ", transactionID="
-                + transactionID + ", tokenTransferLists="
-                + tokenTransferLists + ", assessedCustomFees="
-                + assessedCustomFees + ", automaticTokenAssociations="
-                + automaticTokenAssociations + ", paidStakingRewards="
-                + paidStakingRewards + ", transactionRecordBuilder="
-                + transactionRecordBuilder + ", transferList="
-                + transferList + ", status="
-                + status + ", exchangeRate="
-                + exchangeRate + ", serialNumbers="
-                + serialNumbers + ", newTotalSupply="
-                + newTotalSupply + ", transactionReceiptBuilder="
-                + transactionReceiptBuilder + ", contractStateChanges="
-                + contractStateChanges + ", contractActions="
-                + contractActions + ", contractBytecodes="
-                + contractBytecodes + ", deletedAccountBeneficiaries="
-                + deletedAccountBeneficiaries + ", explicitRewardReceiverIds="
-                + explicitRewardReceiverIds + ", transactionFee="
-                + transactionFee + ", contractFunctionResult="
-                + contractFunctionResult + ", reversingBehavior="
-                + reversingBehavior + ", customizer="
-                + customizer + ", tokenID="
-                + tokenID + ", tokenType="
-                + tokenType + ", inProgressBody="
-                + inProgressBody() + '}';
-    }
 }
