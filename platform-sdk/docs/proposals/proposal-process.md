@@ -2,23 +2,22 @@
 
 This document describes the process for creating and reviewing platform design proposals.
 
-The status of all active design proposals can be viewed
-at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project board.
+The status of all design proposals can be viewed at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project board.
 
 ---
 
 ## Design Proposal Process Flow
 
-![](designProposalFlow.drawio)
+![](designProposalFlow.drawio.svg)
 
 ## Creating A Proposal
 
 All proposals have an owner who is responsible for taking it through the process to completion. Proposals must be
 presented in the form of a PR containing the proposal in a subdirectory of `platform-sdk/docs/proposals/`. Proposals may
-contain diagrams and supporting materials. Diagrams must be in DrawIO (.drawio) format and all content
-must be in an editable format (i.e. no images).
+contain diagrams and supporting materials. Diagrams must be created with DrawIO and exported in SVG format. All content
+must be editable (i.e. no images).
 
-Any source code that was developed as part of the design process may be included in the subdirectory of the proposal
+If any APIs were developed in code as part of the design process, it may be included in the subdirectory of the proposal
 but not merged into the source code of the platform.
 
 While in this draft phase the proposal may be updated and modified as needed. It is best practice to solicit review from
@@ -27,13 +26,11 @@ errors should be caught during this phase.
 
 ### Creating a Draft Proposal
 
-1. Create an issue in the github repository for the creation of the proposal if it is for a project prioritized by
-   SwirldsLabs. Other proposals do not require a ticket.
-2. Create a new branch for the proposal.
-3. Copy the template `template.md` into a subdirectory of `platform-sdk/docs/proposals/` with the name of the
-   proposal.
-4. Fill out the template with the details of the proposal, removing any irrelevant sections. Diagrams and other files
-   may be included in the proposal directory and linked from the proposal.
+1. Create a new branch for the proposal.
+2. Create a subdirectory of `platform-sdk/docs/proposals/` with the name of the proposal.
+3. Copy the template `template.md` into the subdirectory and rename it to `README.md`
+4. Fill out the template with the details of the proposal, removing any irrelevant sections or adding new sections as
+   needed. Diagrams and other files may be included in the proposal directory and linked from the proposal.
 5. Create a draft PR with the proposal documents.
 6. Put the draft PR in the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board in
    the `Draft` status.
@@ -45,7 +42,7 @@ errors should be caught during this phase.
 When the proposal is ready for voting, take the following steps:
 
 1. Ensure all comments are resolved.
-2. Mark the PR as ready for review
+2. Mark the PR as `Ready for Review`
 3. Update the status of the PR in
    the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board to `Voting`
 
@@ -93,18 +90,18 @@ proposal may begin.
 ## Superseding A Proposal
 
 A proposal is superseded by a new proposal when material changes are needed once voting has started. The old proposal
-must link to the new proposal and indicate that it is being superseded. After the proposal has been updated, the PR's
-status in the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project should be
+must contain link to the new proposal and indicate that it is being superseded. After the proposal has been updated, the
+PR's status in the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project should be
 changed to `Superseded`.
 
 ---
 
 ## Withdrawing A Proposal
 
-A proposal may be withdrawn after voting occurs. The proposal must be updated with a reason for the withdrawal. After
-the proposal has been updated, the PR's status in
+A proposal may be withdrawn after voting occurs. The proposal must contain a comment with a reason for the withdrawal.
+After the proposal has been updated, the PR's status in
 the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project should be changed
-to `Withdrawn`.
+to `Withdrawn` and closed.
 
 ---
 
@@ -118,4 +115,4 @@ project should be changed to `Delivered`.
 
 ## Design Proposal State Machine
 
-![](designProposalStateMachine.drawio)
+![](designProposalStateMachine.drawio.svg)
