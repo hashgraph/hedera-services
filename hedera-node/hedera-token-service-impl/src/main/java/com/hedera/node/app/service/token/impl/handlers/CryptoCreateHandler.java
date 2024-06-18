@@ -461,11 +461,9 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var fee = feeCalculator
                 .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
-                .addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER)
                 .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         if (!unlimitedAutoAssociations && op.maxAutomaticTokenAssociations() > 0) {
-            fee.addRamByteSeconds(
-                    op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER);
+            fee.addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER);
         }
         if (IMMUTABILITY_SENTINEL_KEY.equals(op.key())) {
             final var lazyCreationFee = feeContext.dispatchComputeFees(UPDATE_TXN_BODY_BUILDER, feeContext.payer());
