@@ -205,9 +205,6 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var body = feeContext.body();
         final var op = body.tokenAssociateOrThrow();
         final var calculator = feeContext.feeCalculator(DEFAULT);
-        final var accountId = op.accountOrThrow();
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var account = readableAccountStore.getAccountById(accountId);
         final var unlimitedAutoAssociations =
                 feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
@@ -215,7 +212,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             final var exchangeRateInfo = feeContext.exchangeRateInfo();
 
             calculator.resetUsage();
-            final var price = getTinybarsFromTinyCents(
+            final var singleSigPrice = getTinybarsFromTinyCents(
                     calculator.getVptPrice(), exchangeRateInfo.activeRate(feeContext.consensusNow()));
             final var newAssociationsCount = op.tokens().size();
 
@@ -223,15 +220,23 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             final var associateInTinybars = getTinybarsFromTinyCents(
                     associateInTinyCents, exchangeRateInfo.activeRate(feeContext.consensusNow()));
 
-            var sigPrice = 0L;
+            var totalSigPrice = 0L;
+            // If the transaction category is USER then this is the main transaction. If it is CHILD
+            // then this is a transaction that was internally dispatched and the signature verifications
+            // were already performed and charged in the main transaction so we don't need to
+            // calculate them again here.
             if (feeContext.transactionCategory() == TransactionCategory.USER) {
-                sigPrice = (feeContext.numTxnSignatures() - 1) * price;
+                totalSigPrice = Math.max(0, feeContext.numTxnSignatures() - 1) * singleSigPrice;
             }
-            return new Fees(0L, sigPrice + newAssociationsCount * associateInTinybars, 0L);
-        }
+            return new Fees(0L, totalSigPrice + newAssociationsCount * associateInTinybars, 0L);
+        } else {
+            final var accountId = op.accountOrThrow();
+            final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+            final var account = readableAccountStore.getAccountById(accountId);
 
-        return calculator.legacyCalculate(sigValueObj ->
-                new TokenAssociateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, account));
+            return calculator.legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(txnEstimateFactory)
+                    .usageGiven(fromPbj(body), sigValueObj, account));
+        }
     }
 
     private long getFixedAssociatePriceInTinyCents() {

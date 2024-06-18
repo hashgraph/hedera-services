@@ -51,8 +51,8 @@ public class FeeContextImpl implements FeeContext {
     private final int numSignatures;
     private final HederaState state;
     private final ExchangeRateManager exchangeRateManager;
+    private final TransactionCategory transactionCategory;
     private ExchangeRateInfo exchangeRateInfo;
-    private TransactionCategory transactionCategory;
 
     /**
      * Constructor of {@code FeeContextImpl}

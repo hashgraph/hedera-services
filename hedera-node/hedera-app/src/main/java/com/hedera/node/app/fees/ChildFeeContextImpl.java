@@ -55,7 +55,7 @@ public class ChildFeeContextImpl implements FeeContext {
             @NonNull final TransactionBody body,
             @NonNull final AccountID payerId,
             final boolean computeFeesAsInternalDispatch,
-            TransactionCategory transactionCategory) {
+            @NonNull TransactionCategory transactionCategory) {
         this.feeManager = Objects.requireNonNull(feeManager);
         this.context = Objects.requireNonNull(context);
         this.body = Objects.requireNonNull(body);
