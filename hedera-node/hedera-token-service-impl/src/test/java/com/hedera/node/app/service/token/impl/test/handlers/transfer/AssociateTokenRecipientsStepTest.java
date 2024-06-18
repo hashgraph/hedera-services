@@ -21,6 +21,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -34,6 +36,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextI
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,9 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Mock
     private ExpiryValidator expiryValidator;
 
+    //    @Mock
+    //    private EntitiesConfig entitiesConfig;
+
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
     private TransferContextImpl transferContext;
@@ -69,7 +75,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     }
 
     @Test
-    void associatesTokenRecepients() {
+    void associatesTokenRecipients() {
         given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
@@ -82,6 +88,20 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
+    }
+
+    @Test
+    void autoAssociateWithDispatchComputeFees() {
+        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        final var modifiedConfiguration = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", true)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(modifiedConfiguration);
+
+        subject.doIn(transferContext);
+
+        verify(handleContext, times(2)).dispatchComputeFees(any(), any(), any());
+        verify(handleContext.feeAccumulator(), times(2)).chargeNetworkFee(any(), anyLong());
     }
 
     void givenValidTxn() {

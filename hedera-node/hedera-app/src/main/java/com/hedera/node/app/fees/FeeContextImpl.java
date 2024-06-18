@@ -54,8 +54,8 @@ public class FeeContextImpl implements FeeContext {
     private final TransactionDispatcher transactionDispatcher;
     private final HederaState state;
     private final ExchangeRateManager exchangeRateManager;
+    private final TransactionCategory transactionCategory;
     private ExchangeRateInfo exchangeRateInfo;
-    private TransactionCategory transactionCategory;
 
     /**
      * Constructor of {@code FeeContextImpl}
