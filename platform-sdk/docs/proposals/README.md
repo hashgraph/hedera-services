@@ -1,8 +1,23 @@
 # Platform Design Proposal Process
 
-This document describes the process for creating and reviewing platform design proposals.
+This document describes the kind of code changes that require an accepted design proposal, the process for creating,
+reviewing, and merging platform design proposals, and how accepted proposals can be updated.
 
-The status of all design proposals can be viewed at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project board.
+The status of all design proposals can be viewed
+at [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) project board.
+
+---
+
+## Design Proposal Criteria
+
+If code changes fall into one of the categories below, then an accepted design proposal is required before the code can
+merge:
+
+1. Publicly available inputs/outputs/API including disk
+2. Core behaviors
+3. Is likely to performance
+4. Changes to interactions between major systems or teams (platform, services, mirror node, devops, etc)
+5. Module Structure & Repos
 
 ---
 
@@ -46,8 +61,8 @@ When the proposal is ready for voting, take the following steps:
 3. Update the status of the PR in
    the [Platform Design Proposals](https://github.com/orgs/hashgraph/projects/73/views/1) board to `Voting`
 
-Requests for inmaterial changes can be addressed by pushing additional commits to the existing proposal
-PR while in `Voting`. Examples of inmaterial changes are spelling or grammar errors, wording changes that do not modify
+Requests for immaterial changes can be addressed by pushing additional commits to the existing proposal
+PR while in `Voting`. Examples of immaterial changes are spelling or grammar errors, wording changes that do not modify
 meaning or intent, and formatting changes. Examples of material changes include changes to behaviors or APIs, addition
 or removal of diagrams, etc. If any material changes are needed, the PR must be closed and moved to the `Superseded`
 status. A new proposal PR is prepared and voting is restarted. The `Superseded` PR must reference the new PR to
@@ -113,6 +128,19 @@ in `platform-sdk/docs` (or other relevant location such as `module-info.java`), 
 from `platform-sdk/docs/proposals`. Once the feature is live on mainnet, the status of the proposal PR in the proposal
 project should be changed to `Delivered`.
 
+---
+
 ## Design Proposal State Machine
 
 ![](designProposalStateMachine.drawio.svg)
+
+
+## Modifying an Accepted Design Proposal
+
+It is common that during implementation of a design, something is discovered that requires a change to the documented
+design. When this occurs, the design proposal must be updated via a modification proposal. Keeping the design up to date
+ensures that the documentation remains up to date and always reflects the intended and actual design. It also provides
+an opportunity for those who voted on and approved the accepted proposal to review the changes and weigh in on the
+resulting design.
+
+Modification proposals follow the same process and flow as normal design proposals.
