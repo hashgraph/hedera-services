@@ -23,23 +23,23 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Utility class for handling PJB transactions.
+ * Utility class for handling PJB payloads.
  */
-public final class TransactionUtils {
-    private TransactionUtils() {}
+public final class PayloadUtils {
+    private PayloadUtils() {}
 
     /**
-     * Get the size of a transaction.
+     * Get the size of a payload.
      *
-     * @param transaction the transaction to get the size of
-     * @return the size of the transaction
+     * @param payload the payload to get the size of
+     * @return the size of the payload
      */
-    public static long getTransactionSize(@NonNull final OneOf<PayloadOneOfType> transaction) {
-        if (PayloadOneOfType.APPLICATION_PAYLOAD.equals(transaction.kind())) {
+    public static long getPayloadSize(@NonNull final OneOf<PayloadOneOfType> payload) {
+        if (PayloadOneOfType.APPLICATION_PAYLOAD.equals(payload.kind())) {
             return Integer.BYTES // add the the size of array length field
-                    + ((Bytes) transaction.as()).length(); // add the size of the array
-        } else if (PayloadOneOfType.STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {
-            final StateSignaturePayload stateSignaturePayload = transaction.as();
+                    + ((Bytes) payload.as()).length(); // add the size of the array
+        } else if (PayloadOneOfType.STATE_SIGNATURE_PAYLOAD.equals(payload.kind())) {
+            final StateSignaturePayload stateSignaturePayload = payload.as();
             return Long.BYTES // round
                     + Integer.BYTES // signature array length
                     + stateSignaturePayload.signature().length()
@@ -47,17 +47,17 @@ public final class TransactionUtils {
                     + stateSignaturePayload.hash().length()
                     + Integer.BYTES; // epochHash, always null, which is SerializableStreamConstants.NULL_VERSION
         } else {
-            throw new IllegalArgumentException("Unknown transaction type: " + transaction.kind());
+            throw new IllegalArgumentException("Unknown payload type: " + payload.kind());
         }
     }
 
     /**
-     * Check if a transaction is a system transaction.
+     * Check if a payload is a system payload.
      *
-     * @param transaction the transaction to check
-     * @return {@code true} if the transaction is a system transaction, {@code false} otherwise
+     * @param payload the payload to check
+     * @return {@code true} if the payload is a system payload, {@code false} otherwise
      */
-    public static boolean isSystemTransaction(@NonNull final OneOf<PayloadOneOfType> transaction) {
-        return !PayloadOneOfType.APPLICATION_PAYLOAD.equals(transaction.kind());
+    public static boolean isSystemPayload(@NonNull final OneOf<PayloadOneOfType> payload) {
+        return !PayloadOneOfType.APPLICATION_PAYLOAD.equals(payload.kind());
     }
 }

@@ -33,7 +33,7 @@ import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.util.TransactionUtils;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -153,7 +153,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             return false;
         }
         final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, payload);
-        if (TransactionUtils.getTransactionSize(transaction) > maximumTransactionSize) {
+        if (PayloadUtils.getPayloadSize(transaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
                     EXCEPTION.getMarker(),
@@ -180,7 +180,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             @NonNull final OneOf<PayloadOneOfType> transaction, final boolean priority) {
 
         Objects.requireNonNull(transaction);
-        final boolean isSystem = TransactionUtils.isSystemTransaction(transaction);
+        final boolean isSystem = PayloadUtils.isSystemPayload(transaction);
 
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
@@ -236,12 +236,12 @@ public class TransactionPoolNexus implements TransactionSupplier {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
         if (!priorityBufferedTransactions.isEmpty()
-                && TransactionUtils.getTransactionSize(priorityBufferedTransactions.peek()) <= maxSize) {
+                && PayloadUtils.getPayloadSize(priorityBufferedTransactions.peek()) <= maxSize) {
             return priorityBufferedTransactions.poll();
         }
 
         if (!bufferedTransactions.isEmpty()
-                && TransactionUtils.getTransactionSize(bufferedTransactions.peek()) <= maxSize) {
+                && PayloadUtils.getPayloadSize(bufferedTransactions.peek()) <= maxSize) {
             return bufferedTransactions.poll();
         }
 
@@ -272,7 +272,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
                 break;
             }
 
-            currEventSize += (int) TransactionUtils.getTransactionSize(transaction);
+            currEventSize += (int) PayloadUtils.getPayloadSize(transaction);
             selectedTrans.add(transaction);
 
             if (STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {

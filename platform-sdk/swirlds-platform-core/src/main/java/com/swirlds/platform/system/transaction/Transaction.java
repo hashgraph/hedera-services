@@ -21,7 +21,7 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.SerializableWithKnownLength;
-import com.swirlds.platform.util.TransactionUtils;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -64,7 +64,7 @@ public sealed interface Transaction extends SerializableWithKnownLength permits 
      * 		transaction
      */
     default boolean isSystem() {
-        return TransactionUtils.isSystemTransaction(getPayload());
+        return PayloadUtils.isSystemPayload(getPayload());
     }
 
     /**
