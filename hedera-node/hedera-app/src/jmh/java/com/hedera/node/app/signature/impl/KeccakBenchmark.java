@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.signature.impl;
 
-import com.hedera.node.app.fixtures.signature.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.BenchmarkMode;

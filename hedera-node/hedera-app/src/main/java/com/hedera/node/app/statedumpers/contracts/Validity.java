@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.platform;
+package com.hedera.node.app.statedumpers.contracts;
 
-import com.hedera.node.app.service.mono.utils.SystemExits;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-@Singleton
-public class JvmSystemExits implements SystemExits {
-    @Inject
-    public JvmSystemExits() {
-        // Default Constructor
-    }
-
-    @Override
-    public void fail(int returnCode) {
-        System.exit(returnCode);
-    }
+public enum Validity {
+    ACTIVE,
+    DELETED
 }

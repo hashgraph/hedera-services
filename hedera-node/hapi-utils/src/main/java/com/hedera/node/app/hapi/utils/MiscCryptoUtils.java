@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.fixtures.signature;
+package com.hedera.node.app.hapi.utils;
 
 import com.sun.jna.ptr.LongByReference;
 import java.nio.ByteBuffer;

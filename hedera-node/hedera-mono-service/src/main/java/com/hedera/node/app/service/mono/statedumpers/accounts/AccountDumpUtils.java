@@ -16,27 +16,15 @@
 
 package com.hedera.node.app.service.mono.statedumpers.accounts;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -66,48 +54,6 @@ public class AccountDumpUtils {
 
     private AccountDumpUtils() {
         // Utility class
-    }
-
-    public static void dumpMonoAccounts(
-            @NonNull final Path path,
-            @NonNull final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts,
-            @NonNull final DumpCheckpoint checkpoint) {
-
-        try (@NonNull final var writer = new Writer(path)) {
-            BBMHederaAccount[] dumpableAccounts = gatherAccounts(accounts, BBMHederaAccount::fromMono);
-            reportOnAccounts(writer, dumpableAccounts);
-            System.out.printf(
-                    "=== mod accounts report is %d bytes at checkpoint %s%n", writer.getSize(), checkpoint.name());
-        }
-    }
-
-    @NonNull
-    public static <K extends VirtualKey, V extends VirtualValue> BBMHederaAccount[] gatherAccounts(
-            @NonNull VirtualMap<K, V> accounts, @NonNull Function<V, BBMHederaAccount> mapper) {
-        final var accountsToReturn = new ConcurrentLinkedQueue<BBMHederaAccount>();
-        final var threadCount = 8;
-        final var processed = new AtomicInteger();
-
-        try {
-            VirtualMapLike.from(accounts)
-                    .extractVirtualMapData(
-                            getStaticThreadManager(),
-                            p -> {
-                                processed.incrementAndGet();
-                                accountsToReturn.add(mapper.apply(p.right()));
-                            },
-                            threadCount);
-        } catch (final InterruptedException ex) {
-            System.err.println("*** Traversal of accounts virtual map interrupted!");
-            Thread.currentThread().interrupt();
-        }
-
-        final var accountsArr = accountsToReturn.toArray(new BBMHederaAccount[0]);
-        Arrays.parallelSort(
-                accountsArr, Comparator.comparingLong(a -> a.accountId().accountNum()));
-        System.out.printf("=== %d accounts iterated over (%d saved)%n", processed.get(), accountsArr.length);
-
-        return accountsArr;
     }
 
     public static void reportOnAccounts(@NonNull final Writer writer, @NonNull final BBMHederaAccount[] accountsArr) {

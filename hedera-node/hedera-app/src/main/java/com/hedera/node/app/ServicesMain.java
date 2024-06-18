@@ -62,9 +62,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Main entry point.
  *
- * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
- * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * <p>This class simply delegates to {@link Hedera}.
  */
 public class ServicesMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);

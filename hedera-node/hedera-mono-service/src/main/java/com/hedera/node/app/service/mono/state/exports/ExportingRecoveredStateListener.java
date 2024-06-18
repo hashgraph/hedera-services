@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.exports;
 
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
-import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
-
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.InitTrigger;
@@ -58,13 +54,5 @@ public class ExportingRecoveredStateListener implements NewRecoveredStateListene
         recordStreamManager.setInFreeze(true);
         balancesExporter.exportBalancesFrom(
                 notification.getSwirldState(), notification.getConsensusTimestamp(), nodeId);
-        try {
-            if (selectedDumpCheckpoints().contains(MONO_POST_EVENT_STREAM_REPLAY)) {
-                dumpMonoChildrenFrom(notification.getSwirldState(), MONO_POST_EVENT_STREAM_REPLAY);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("Error while dumping state at MONO_POST_EVENT_STREAM_REPLAY", e);
-        }
     }
 }

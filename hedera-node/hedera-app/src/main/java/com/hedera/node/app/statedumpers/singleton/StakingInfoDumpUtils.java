@@ -22,7 +22,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingInfo;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -40,8 +39,7 @@ public class StakingInfoDumpUtils {
 
     public static void dumpModStakingInfo(
             @NonNull final Path path,
-            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> BBMStakingInfoVirtualMap,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> BBMStakingInfoVirtualMap) {
         System.out.printf("=== %d staking info ===%n", BBMStakingInfoVirtualMap.size());
 
         final var allBBMStakingInfo = gatherBBMStakingInfoFromMod(BBMStakingInfoVirtualMap);

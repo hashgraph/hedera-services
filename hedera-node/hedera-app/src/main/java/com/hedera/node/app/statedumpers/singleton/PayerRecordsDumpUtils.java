@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMPayerRecord;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import com.swirlds.platform.state.merkle.queue.QueueNode;
@@ -34,9 +33,7 @@ import java.util.Objects;
 
 public class PayerRecordsDumpUtils {
     public static void dumpModTxnRecordQueue(
-            @NonNull final Path path,
-            @NonNull final QueueNode<TransactionRecordEntry> queue,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final QueueNode<TransactionRecordEntry> queue) {
         var transactionRecords = gatherTxnRecordsFromMod(queue);
         System.out.println("=== Dumping payer records ===");
         System.out.println(transactionRecords.size() + " records found");

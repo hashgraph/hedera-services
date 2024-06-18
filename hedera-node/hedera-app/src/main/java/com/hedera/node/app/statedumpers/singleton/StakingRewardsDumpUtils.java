@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.statedumpers.singleton.StakingRew
 import static com.hedera.node.app.service.mono.statedumpers.singleton.StakingRewardsDumpUtils.formatStakingRewards;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMStakingRewards;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,9 +27,7 @@ import java.nio.file.Path;
 
 public class StakingRewardsDumpUtils {
     public static void dumpModStakingRewards(
-            @NonNull final Path path,
-            @NonNull final NetworkStakingRewards stakingRewards,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final Path path, @NonNull final NetworkStakingRewards stakingRewards) {
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
             reportOnBBMStakingRewards(writer, fromMod(stakingRewards));

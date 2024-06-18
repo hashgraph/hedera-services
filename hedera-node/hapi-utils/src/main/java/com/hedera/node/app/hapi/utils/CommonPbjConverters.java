@@ -36,11 +36,14 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -651,7 +654,7 @@ public class CommonPbjConverters {
             case INVALID_NODE_ACCOUNT_ID -> ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
             case INVALID_NODE_DESCRIPTION -> ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
             case INVALID_SERVICE_ENDPOINT -> ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
-            case INVALID_GOSSIP_CAE_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+            case INVALID_GOSSIP_CA_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
             case INVALID_GRPC_CERTIFICATE -> ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
             case MAX_NODES_CREATED -> ResponseCodeEnum.MAX_NODES_CREATED;
@@ -782,5 +785,29 @@ public class CommonPbjConverters {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new ThrottleUsageSnapshot(snapshot.used(), null);
+        } else {
+            return new ThrottleUsageSnapshot(snapshot.used(), HapiUtils.asTimestamp(lastDecisionTime));
+        }
+    }
+
+    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
+        final var lastDecisionTime = snapshot.lastDecisionTime();
+        if (lastDecisionTime == null) {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
+        } else {
+            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
+        }
+    }
+
+    public static @NonNull byte[] asBytes(@NonNull BufferedData b) {
+        final var buf = new byte[Math.toIntExact(b.position())];
+        b.readBytes(buf);
+        return buf;
     }
 }

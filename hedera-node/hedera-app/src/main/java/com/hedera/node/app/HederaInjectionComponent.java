@@ -31,14 +31,12 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
+import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
@@ -96,10 +94,6 @@ public interface HederaInjectionComponent {
     GrpcServerManager grpcServerManager();
 
     Supplier<Charset> nativeCharset();
-
-    SystemExits systemExits();
-
-    NamedDigestFactory digestFactory();
 
     NetworkInfo networkInfo();
 

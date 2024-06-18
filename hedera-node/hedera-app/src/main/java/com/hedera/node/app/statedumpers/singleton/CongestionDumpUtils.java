@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.statedumpers.singleton.Congestion
 
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.singleton.BBMCongestion;
 import com.hedera.node.app.service.mono.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.service.mono.statedumpers.utils.Writer;
@@ -32,8 +31,7 @@ public class CongestionDumpUtils {
     public static void dumpModCongestion(
             @NonNull final Path path,
             @NonNull final CongestionLevelStarts congestionLevelStarts,
-            @NonNull final ThrottleUsageSnapshots throttleUsageSnapshots,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final ThrottleUsageSnapshots throttleUsageSnapshots) {
         int reportSize;
         try (@NonNull final var writer = new Writer(path)) {
             reportOnCongestion(writer, fromMod(congestionLevelStarts, throttleUsageSnapshots));

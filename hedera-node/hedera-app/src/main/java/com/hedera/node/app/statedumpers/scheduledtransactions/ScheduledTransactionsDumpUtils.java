@@ -32,7 +32,6 @@ import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledEqualityValue;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledId;
 import com.hedera.node.app.service.mono.statedumpers.scheduledtransactions.BBMScheduledSecondValue;
@@ -60,8 +59,7 @@ public class ScheduledTransactionsDumpUtils {
             @NonNull final Path path,
             @NonNull final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactions,
             @NonNull final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> byEquality,
-            @NonNull final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> byExpiry,
-            @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> byExpiry) {
         try (@NonNull final var writer = new Writer(path)) {
             System.out.printf("=== Dumping schedule transactions %n ======");
 

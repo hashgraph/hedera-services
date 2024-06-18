@@ -32,7 +32,7 @@ public class ExpandedSignaturePairFactory {
         final var compressed = key.ecdsaSecp256k1OrThrow();
         final var array = new byte[(int) compressed.length()];
         compressed.getBytes(0, array);
-        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
+        final var decompressed = com.hedera.node.app.hapi.utils.MiscCryptoUtils.decompressSecp256k1(array);
         final var sigPair = SignaturePair.newBuilder()
                 .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
                 .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())
@@ -54,7 +54,7 @@ public class ExpandedSignaturePairFactory {
         final var compressed = key.ecdsaSecp256k1OrThrow();
         final var array = new byte[(int) compressed.length()];
         compressed.getBytes(0, array);
-        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
+        final var decompressed = com.hedera.node.app.hapi.utils.MiscCryptoUtils.decompressSecp256k1(array);
         final var sigPair = SignaturePair.newBuilder()
                 .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
                 .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())

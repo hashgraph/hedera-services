@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.signature.impl;
 
-import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
+import static com.hedera.node.app.hapi.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
