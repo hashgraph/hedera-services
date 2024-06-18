@@ -25,14 +25,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
-import com.hedera.node.app.service.mono.context.properties.EntityType;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
-import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
-import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType;
-import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
@@ -40,10 +32,12 @@ import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
 import com.hedera.node.config.converter.FileIDConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
-import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
-import com.hedera.node.config.sources.PropertySourceBasedConfigSource;
+import com.hedera.node.config.types.CongestionMultipliers;
+import com.hedera.node.config.types.EntityScaleFactors;
+import com.hedera.node.config.types.EntityType;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -52,16 +46,10 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PropertySourceBasedConfigTest {
-
-    @Mock(strictness = Strictness.LENIENT)
-    private PropertySource propertySource;
 
     private final Map<String, String> rawData = new HashMap<>();
 
@@ -71,7 +59,6 @@ class PropertySourceBasedConfigTest {
         rawData.put("test.entityScaleFactors", "DEFAULT(32,7:1)");
         rawData.put("test.entityType", "CONTRACT");
         rawData.put("test.knownBlockValues", "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666");
-        rawData.put("test.legacyContractIdActivations", "1058134by[1062784|2173895],857111by[522000|365365]");
         rawData.put("test.mapAccessType", "ACCOUNTS_GET");
         rawData.put("test.recomputeType", "PENDING_REWARDS");
         rawData.put("test.scaleFactor", "1:3");
@@ -81,10 +68,6 @@ class PropertySourceBasedConfigTest {
         rawData.put("test.hederaFunctionality", "CRYPTO_TRANSFER");
         rawData.put("test.profile", "DEV");
         rawData.put("test.sidecarType", "CONTRACT_ACTION");
-
-        BDDMockito.given(propertySource.allPropertyNames()).willReturn(rawData.keySet());
-        rawData.forEach((key, value) ->
-                BDDMockito.given(propertySource.getRawValue(key)).willReturn(value));
     }
 
     @Test
@@ -94,14 +77,12 @@ class PropertySourceBasedConfigTest {
                 .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
                 .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
                 .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())
-                .withConverter(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter())
                 .withConverter(PermissionedAccountsRange.class, new PermissionedAccountsRangeConverter())
                 .withConverter(ScaleFactor.class, new ScaleFactorConverter())
                 .withConverter(AccountID.class, new AccountIDConverter())
                 .withConverter(ContractID.class, new ContractIDConverter())
                 .withConverter(FileID.class, new FileIDConverter())
                 .withConverter(Bytes.class, new BytesConverter())
-                .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();
 
         // when
@@ -112,10 +93,6 @@ class PropertySourceBasedConfigTest {
         final EntityType entityType = configuration.getValue("test.entityType", EntityType.class);
         final KnownBlockValues knownBlockValues =
                 configuration.getValue("test.knownBlockValues", KnownBlockValues.class);
-        final LegacyContractIdActivations legacyContractIdActivations =
-                configuration.getValue("test.legacyContractIdActivations", LegacyContractIdActivations.class);
-        final MapAccessType mapAccessType = configuration.getValue("test.mapAccessType", MapAccessType.class);
-        final RecomputeType recomputeType = configuration.getValue("test.recomputeType", RecomputeType.class);
         final ScaleFactor scaleFactor = configuration.getValue("test.scaleFactor", ScaleFactor.class);
         final AccountID accountID = configuration.getValue("test.accountID", AccountID.class);
         final ContractID contractID = configuration.getValue("test.contractID", ContractID.class);
@@ -130,9 +107,6 @@ class PropertySourceBasedConfigTest {
         assertThat(entityScaleFactors).isNotNull();
         assertThat(entityType).isNotNull();
         assertThat(knownBlockValues).isNotNull();
-        assertThat(legacyContractIdActivations).isNotNull();
-        assertThat(mapAccessType).isNotNull();
-        assertThat(recomputeType).isNotNull();
         assertThat(scaleFactor).isNotNull();
         assertThat(accountID).isNotNull();
         assertThat(contractID).isNotNull();
