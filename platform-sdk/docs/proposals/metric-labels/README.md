@@ -214,7 +214,7 @@ Next to that all that ideas will end in having a hardcoded `nodeId` label in the
 ### Definition of Label at measurement time
 
 In the given concept the labels are defined when a metric is created.
-This is how several other libraries (like micrometer) handle labels.
+This is how several other libraries handle labels.
 Another option would be to define the labels at the time when a metric is measured.
 Both variants have their pros and cons.
 Since this proposal introduces a new concept to the metrics module we should start with the simplest solution.
