@@ -25,9 +25,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,6 +49,7 @@ public class ChildFeeContextImpl implements FeeContext {
     private final Authorizer authorizer;
     private final ReadableStoreFactory storeFactory;
     private final Instant consensusNow;
+    private final TransactionCategory transactionCategory;
 
     public ChildFeeContextImpl(
             @NonNull final FeeManager feeManager,
@@ -56,7 +59,8 @@ public class ChildFeeContextImpl implements FeeContext {
             final boolean computeFeesAsInternalDispatch,
             @NonNull final Authorizer authorizer,
             @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final Instant consensusNow) {
+            @NonNull final Instant consensusNow,
+            TransactionCategory transactionCategory) {
         this.feeManager = requireNonNull(feeManager);
         this.context = requireNonNull(context);
         this.body = requireNonNull(body);
@@ -65,6 +69,7 @@ public class ChildFeeContextImpl implements FeeContext {
         this.authorizer = requireNonNull(authorizer);
         this.storeFactory = requireNonNull(storeFactory);
         this.consensusNow = requireNonNull(consensusNow);
+        this.transactionCategory = requireNonNull(transactionCategory);
     }
 
     @Override
@@ -119,5 +124,23 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public Fees dispatchComputeFees(@NonNull final TransactionBody txBody, @NonNull final AccountID syntheticPayerId) {
         return context.dispatchComputeFees(txBody, syntheticPayerId);
+    }
+
+    @NonNull
+    @Override
+    public TransactionCategory transactionCategory() {
+        return transactionCategory;
+    }
+
+    @Override
+    @NonNull
+    public ExchangeRateInfo exchangeRateInfo() {
+        return context.exchangeRateInfo();
+    }
+
+    @Override
+    @NonNull
+    public Instant consensusNow() {
+        return context.consensusNow();
     }
 }

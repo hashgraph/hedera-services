@@ -60,6 +60,12 @@ import org.apache.logging.log4j.Logger;
  * Provides common functionality for token handlers.
  */
 public class BaseTokenHandler {
+
+    /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
+
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
     /**
      * The set of token keys that are not admin keys.
@@ -461,5 +467,21 @@ public class BaseTokenHandler {
                 .tokenId(tokenId)
                 .accountId(accountId)
                 .build();
+    }
+
+    /**
+     * Checks if the given account has unlimited auto-associations enabled.
+     *
+     * @param account        the account to check; must not be null
+     * @param entitiesConfig the configuration settings to check against; must not be null
+     * @return               {@code true} if unlimited auto-associations is enabled and the account's
+     *                       max auto-associations is set to {@code UNLIMITED_AUTOMATIC_ASSOCIATIONS},
+     *                       otherwise {@code false}
+     * @throws NullPointerException if either {@code account} or {@code entitiesConfig} is null
+     */
+    public static boolean hasUnlimitedAutoAssociations(
+            @NonNull final Account account, @NonNull EntitiesConfig entitiesConfig) {
+        return entitiesConfig.unlimitedAutoAssociationsEnabled()
+                && account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS;
     }
 }

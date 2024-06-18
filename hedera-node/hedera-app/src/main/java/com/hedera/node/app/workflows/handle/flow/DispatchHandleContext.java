@@ -226,6 +226,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return dispatchComputeFees(childTxBody, syntheticPayerId, ComputeDispatchFeesAsTopLevel.NO);
     }
 
+    @Override
+    public TransactionCategory transactionCategory() {
+        return TransactionCategory.USER;
+    }
+
     @NonNull
     @Override
     public BlockRecordInfo blockRecordInfo() {
@@ -399,7 +404,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
                 readableStoreFactory,
-                consensusNow));
+                consensusNow,
+                CHILD));
     }
 
     @NonNull
