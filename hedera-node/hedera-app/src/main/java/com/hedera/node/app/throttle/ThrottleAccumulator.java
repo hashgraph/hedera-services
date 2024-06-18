@@ -87,7 +87,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -607,13 +606,11 @@ public class ThrottleAccumulator {
                 configuration.getConfigData(AutoCreationConfig.class).enabled();
         final boolean isLazyCreationEnabled =
                 configuration.getConfigData(LazyCreationConfig.class).enabled();
-        final boolean isAutoAssociationEnabled =
-                configuration.getConfigData(ContractsConfig.class).allowAutoAssociations();
         final boolean unlimitedAutoAssociations =
                 configuration.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
         if ((isAutoCreationEnabled || isLazyCreationEnabled) && implicitCreationsCount > 0) {
             return shouldThrottleBasedOnImplicitCreations(manager, implicitCreationsCount, now);
-        } else if ((isAutoAssociationEnabled || unlimitedAutoAssociations) && autoAssociationsCount > 0) {
+        } else if (unlimitedAutoAssociations && autoAssociationsCount > 0) {
             return shouldThrottleBasedOnAutoAssociations(manager, autoAssociationsCount, now);
         } else {
             return !manager.allReqsMetAt(now);
@@ -665,29 +662,24 @@ public class ThrottleAccumulator {
 
     public int getAutoAssociationsCount(
             @NonNull final TransactionBody txnBody, @NonNull final ReadableTokenRelationStore relationStore) {
-        AtomicInteger autoAssociationsCount = new AtomicInteger();
+        int autoAssociationsCount = 0;
         final var cryptoTransferBody = txnBody.cryptoTransfer();
-        if (cryptoTransferBody == null || !cryptoTransferBody.hasTransfers()) {
+        if (cryptoTransferBody == null || cryptoTransferBody.tokenTransfers().isEmpty()) {
             return 0;
         }
         for (var transfer : cryptoTransferBody.tokenTransfers()) {
             final var tokenID = transfer.token();
-            transfer.transfers().stream()
+            autoAssociationsCount += (int) transfer.transfers().stream()
                     .filter(accountAmount -> accountAmount.amount() > 0)
                     .map(AccountAmount::accountID)
-                    .forEach(accountID -> {
-                        if (hasNoRelation(relationStore, accountID, tokenID)) {
-                            autoAssociationsCount.getAndIncrement();
-                        }
-                    });
-            transfer.nftTransfers().stream().map(NftTransfer::receiverAccountID).forEach(receiverID -> {
-                if (hasNoRelation(relationStore, receiverID, tokenID)) {
-                    autoAssociationsCount.getAndIncrement();
-                }
-            });
+                    .filter(accountID -> hasNoRelation(relationStore, accountID, tokenID))
+                    .count();
+            autoAssociationsCount += (int) transfer.nftTransfers().stream()
+                    .map(NftTransfer::receiverAccountID)
+                    .filter(receiverID -> hasNoRelation(relationStore, receiverID, tokenID))
+                    .count();
         }
-
-        return autoAssociationsCount.get();
+        return autoAssociationsCount;
     }
 
     private boolean hasNoRelation(
