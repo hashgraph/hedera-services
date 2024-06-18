@@ -20,7 +20,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -55,7 +55,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        return new IndexedEvent(new GossipEvent(hashedData, sig), selfParent, otherParent);
+        return new IndexedEvent(new PlatformEvent(hashedData, sig), selfParent, otherParent);
     }
 
     /**

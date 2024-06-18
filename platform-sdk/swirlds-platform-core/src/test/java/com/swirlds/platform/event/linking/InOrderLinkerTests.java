@@ -33,7 +33,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
@@ -58,8 +58,8 @@ class InOrderLinkerTests {
 
     private InOrderLinker inOrderLinker;
 
-    private GossipEvent genesisSelfParent;
-    private GossipEvent genesisOtherParent;
+    private PlatformEvent genesisSelfParent;
+    private PlatformEvent genesisOtherParent;
 
     private FakeTime time;
 
@@ -129,10 +129,10 @@ class InOrderLinkerTests {
      * @return the event window that will cause the given events to be considered ancient
      */
     private static EventWindow chooseEventWindow(
-            @NonNull final AncientMode ancientMode, final GossipEvent... ancientEvents) {
+            @NonNull final AncientMode ancientMode, final PlatformEvent... ancientEvents) {
 
         long ancientValue = 0;
-        for (final GossipEvent ancientEvent : ancientEvents) {
+        for (final PlatformEvent ancientEvent : ancientEvents) {
             ancientValue = switch (ancientMode) {
                 case BIRTH_ROUND_THRESHOLD -> Math.max(ancientValue, ancientEvent.getBirthRound());
                 case GENERATION_THRESHOLD -> Math.max(ancientValue, ancientEvent.getGeneration());};
@@ -144,7 +144,7 @@ class InOrderLinkerTests {
                 ROUND_FIRST /* ignored in this context */,
                 ancientMode);
 
-        for (final GossipEvent ancientEvent : ancientEvents) {
+        for (final PlatformEvent ancientEvent : ancientEvents) {
             assertTrue(eventWindow.isAncient(ancientEvent));
         }
 
@@ -163,7 +163,7 @@ class InOrderLinkerTests {
         // The linking should fail to occur based on the advancing event window.
         // The values used for birthRound and generation are just for this test and do not reflect real world values.
 
-        final GossipEvent child1 = new TestingEventBuilder(random)
+        final PlatformEvent child1 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -184,7 +184,7 @@ class InOrderLinkerTests {
         assertFalse(eventWindow.isAncient(child1));
         inOrderLinker.setEventWindow(eventWindow);
 
-        final GossipEvent child2 = new TestingEventBuilder(random)
+        final PlatformEvent child2 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(genesisOtherParent)
@@ -205,7 +205,7 @@ class InOrderLinkerTests {
         assertFalse(eventWindow.isAncient(child2));
         inOrderLinker.setEventWindow(eventWindow);
 
-        final GossipEvent child3 = new TestingEventBuilder(random)
+        final PlatformEvent child3 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(child2)
@@ -224,7 +224,7 @@ class InOrderLinkerTests {
         eventWindow = chooseEventWindow(ancientMode, child2, child3);
         inOrderLinker.setEventWindow(eventWindow);
 
-        final GossipEvent child4 = new TestingEventBuilder(random)
+        final PlatformEvent child4 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child2)
                 .setOtherParent(child3)
@@ -247,7 +247,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setOtherParent(genesisOtherParent)
                 .setTimeCreated(time.now())
@@ -269,7 +269,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setTimeCreated(time.now())
@@ -297,7 +297,7 @@ class InOrderLinkerTests {
                 ROUND_FIRST /* ignored in this context */,
                 ancientMode));
 
-        final GossipEvent child1 = new TestingEventBuilder(random)
+        final PlatformEvent child1 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -309,7 +309,7 @@ class InOrderLinkerTests {
 
         assertNull(inOrderLinker.linkEvent(child1));
 
-        final GossipEvent child2 = new TestingEventBuilder(random)
+        final PlatformEvent child2 = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(child1)
                 .setOtherParent(genesisOtherParent)
@@ -329,7 +329,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -351,7 +351,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -373,7 +373,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -395,7 +395,7 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -418,7 +418,7 @@ class InOrderLinkerTests {
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
 
-        final GossipEvent lateParent = new TestingEventBuilder(random)
+        final PlatformEvent lateParent = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(genesisOtherParent)
@@ -427,7 +427,7 @@ class InOrderLinkerTests {
 
         inOrderLinker.linkEvent(lateParent);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(lateParent)
                 .setOtherParent(genesisOtherParent)
@@ -448,7 +448,7 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final GossipEvent lateParent = new TestingEventBuilder(random)
+        final PlatformEvent lateParent = new TestingEventBuilder(random)
                 .setCreatorId(otherId)
                 .setSelfParent(genesisOtherParent)
                 .setOtherParent(genesisSelfParent)
@@ -457,7 +457,7 @@ class InOrderLinkerTests {
 
         inOrderLinker.linkEvent(lateParent);
 
-        final GossipEvent child = new TestingEventBuilder(random)
+        final PlatformEvent child = new TestingEventBuilder(random)
                 .setCreatorId(selfId)
                 .setSelfParent(genesisSelfParent)
                 .setOtherParent(lateParent)

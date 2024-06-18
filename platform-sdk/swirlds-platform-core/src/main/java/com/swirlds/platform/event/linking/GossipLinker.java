@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.linking;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +50,7 @@ public class GossipLinker extends AbstractInOrderLinker {
      * {@inheritDoc}
      */
     @Override
-    protected void ancientEventAdded(@NonNull final GossipEvent event) {
+    protected void ancientEventAdded(@NonNull final PlatformEvent event) {
         counter.eventExitedIntakePipeline(event.getSenderId());
     }
 }
