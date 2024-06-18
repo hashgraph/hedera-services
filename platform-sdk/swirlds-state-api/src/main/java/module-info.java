@@ -3,7 +3,6 @@ module com.swirlds.state.api {
     exports com.swirlds.state.spi;
     exports com.swirlds.state.spi.metrics;
     exports com.swirlds.state.spi.info;
-    exports com.swirlds.state.spi.workflows.record;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;

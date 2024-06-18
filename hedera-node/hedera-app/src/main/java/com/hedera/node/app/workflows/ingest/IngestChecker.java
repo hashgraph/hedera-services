@@ -59,6 +59,7 @@ import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeB
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -221,9 +222,10 @@ public final class IngestChecker {
                 storeFactory,
                 configuration,
                 authorizer,
-                numSigs);
+                numSigs,
+                dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);
 
         return txInfo;
     }

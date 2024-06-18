@@ -18,10 +18,10 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.modules.ChildDispatchModule;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.modules.ChildQualifier;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -32,7 +32,7 @@ import dagger.Subcomponent;
 /**
  * The Dagger subcomponent to provide the bindings for the child transaction dispatch scope.
  */
-@Subcomponent
+@Subcomponent(modules = {ChildDispatchModule.class})
 @ChildDispatchScope
 public interface ChildDispatchComponent extends Dispatch {
     @Subcomponent.Factory
@@ -40,7 +40,6 @@ public interface ChildDispatchComponent extends Dispatch {
         ChildDispatchComponent create(
                 @BindsInstance SingleTransactionRecordBuilderImpl recordBuilder,
                 @BindsInstance @ChildQualifier TransactionInfo txnInfo,
-                @BindsInstance ComputeDispatchFeesAsTopLevel computeDispatchFeesAsTopLevel,
                 @BindsInstance AccountID syntheticPayer,
                 @BindsInstance HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,

@@ -788,8 +788,8 @@ public class SnapshotModeOp extends UtilOp implements SnapshotOp {
     }
 
     private List<String> hapiTestStreamLocs() {
-        final List<String> locs = new ArrayList<>(SharedNetworkLauncherSessionListener.DEFAULT_SHARED_NETWORK_SIZE);
-        for (int i = 0; i < SharedNetworkLauncherSessionListener.DEFAULT_SHARED_NETWORK_SIZE; i++) {
+        final List<String> locs = new ArrayList<>(SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE);
+        for (int i = 0; i < SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE; i++) {
             locs.add(String.format(HAPI_TEST_STREAMS_LOC_TPL, i, i + 3));
         }
         return locs;
