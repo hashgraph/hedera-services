@@ -218,7 +218,6 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesHollowFinalization() {
         given(evmFrameState.getAccount(EIP_1014_ADDRESS)).willReturn(proxyEvmContract);
-        given(evmFrameState.getAccount(PERMITTED_ADDRESS_CALLER)).willReturn(proxyEvmContract);
         given(proxyEvmContract.hederaContractId())
                 .willReturn(ContractID.newBuilder().contractNum(999L).build());
         subject.setupTopLevelLazyCreate(EIP_1014_ADDRESS);

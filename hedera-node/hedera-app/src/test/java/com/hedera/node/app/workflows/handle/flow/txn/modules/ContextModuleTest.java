@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.config;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
-import com.hedera.node.config.ConfigProvider;
-import dagger.Binds;
-import dagger.Module;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Module
-public interface ConfigModule {
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
 
-    @Binds
-    ConfigProvider configProvider(ConfigProviderImpl configProviderImpl);
+class ContextModuleTest {
+    @Test
+    void onlyLastHandledEpochIsGenesis() {
+        assertThat(ContextModule.provideIsGenesis(Instant.EPOCH)).isTrue();
+        assertThat(ContextModule.provideIsGenesis(Instant.EPOCH.plusNanos(1L))).isFalse();
+    }
 }

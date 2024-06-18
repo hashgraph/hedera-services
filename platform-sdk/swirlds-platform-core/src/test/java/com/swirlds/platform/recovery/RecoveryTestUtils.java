@@ -36,8 +36,8 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -72,7 +72,7 @@ public final class RecoveryTestUtils {
      * @param random a source of randomness
      * @return an event
      */
-    public static EventImpl generateRandomEvent(
+    public static DetailedConsensusEvent generateRandomEvent(
             final Random random, final long round, final boolean lastInRound, final Instant now) {
 
         final GossipEvent gossipEvent = new TestingEventBuilder(random)
@@ -89,10 +89,7 @@ public final class RecoveryTestUtils {
                 .setConsensusTimestamp(now)
                 .build();
 
-        final EventImpl event = new EventImpl(gossipEvent);
-        event.setRoundReceived(round);
-        event.setLastInRoundReceived(lastInRound);
-        return event;
+        return new DetailedConsensusEvent(gossipEvent, round, lastInRound);
     }
 
     /**
@@ -105,14 +102,14 @@ public final class RecoveryTestUtils {
      * @param evensPerRound   the number of events in each round
      * @return a list of events
      */
-    public static List<EventImpl> generateRandomEvents(
+    public static List<DetailedConsensusEvent> generateRandomEvents(
             final Random random,
             final long firstRound,
             final Duration timeToSimulate,
             final int roundsPerSecond,
             final int evensPerRound) {
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<DetailedConsensusEvent> events = new ArrayList<>();
 
         final FakeTime time = new FakeTime();
         final Instant stopTime = time.now().plus(timeToSimulate);
@@ -153,7 +150,10 @@ public final class RecoveryTestUtils {
      * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
-            final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
+            final Random random,
+            final Path destination,
+            final int secondsPerFile,
+            final List<DetailedConsensusEvent> events)
             throws IOException {
 
         final Configuration configuration = new TestConfigBuilder()
@@ -173,9 +173,9 @@ public final class RecoveryTestUtils {
         // Wrap events and count the number of times they are serialized.
         final AtomicInteger writeCount = new AtomicInteger(0);
 
-        final List<EventImpl> wrappedEvents = new ArrayList<>(events.size());
-        for (final EventImpl event : events) {
-            final EventImpl wrappedEvent = spy(event);
+        final List<DetailedConsensusEvent> wrappedEvents = new ArrayList<>(events.size());
+        for (final DetailedConsensusEvent event : events) {
+            final DetailedConsensusEvent wrappedEvent = spy(event);
 
             Mockito.doAnswer(invocation -> {
                         invocation.callRealMethod();

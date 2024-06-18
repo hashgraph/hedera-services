@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
@@ -40,6 +43,12 @@ public interface HandleWorkflowInjectionModule {
     @Provides
     static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
         return PlatformSigOps::createCryptoSigsFrom;
+    }
+
+    @Provides
+    @Singleton
+    static EthereumTransactionHandler provideEthereumTransactionHandler() {
+        return CONTRACT_SERVICE.handlers().ethereumTransactionHandler();
     }
 
     @Provides

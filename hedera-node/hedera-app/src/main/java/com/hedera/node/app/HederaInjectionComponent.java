@@ -84,6 +84,8 @@ import javax.inject.Singleton;
             ThrottleServiceModule.class
         })
 public interface HederaInjectionComponent {
+    InitTrigger initTrigger();
+
     /* Needed by ServicesState */
     Provider<QueryInjectionComponent.Factory> queryComponentFactory();
 
