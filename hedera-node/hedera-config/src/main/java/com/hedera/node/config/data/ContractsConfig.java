@@ -71,11 +71,11 @@ public record ContractsConfig(
                 boolean precompileHtsEnableTokenCreate,
         // @ConfigProperty(value = "precompile.unsupportedCustomFeeReceiverDebits", defaultValue = "")
         // Set<CustomFeeType> precompileUnsupportedCustomFeeReceiverDebits,
-        @ConfigProperty(value = "precompile.atomicCryptoTransfer.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "precompile.atomicCryptoTransfer.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileHrcFacadeAssociateEnabled,
-        @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,

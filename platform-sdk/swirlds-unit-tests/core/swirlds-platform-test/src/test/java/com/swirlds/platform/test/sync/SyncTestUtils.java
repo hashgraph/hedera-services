@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,7 +32,7 @@ public class SyncTestUtils {
         events.forEach(System.out::println);
     }
 
-    public static void printTasks(final String heading, final Collection<GossipEvent> events) {
+    public static void printTasks(final String heading, final Collection<PlatformEvent> events) {
         System.out.println("\n--- " + heading + " ---");
         events.forEach(System.out::println);
     }

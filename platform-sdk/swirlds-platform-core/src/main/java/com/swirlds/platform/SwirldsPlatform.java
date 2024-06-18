@@ -41,15 +41,13 @@ import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
-import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
-import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
@@ -232,8 +230,6 @@ public class SwirldsPlatform implements Platform {
         final StateSignatureCollector stateSignatureCollector =
                 new DefaultStateSignatureCollector(platformContext, signedStateMetrics);
 
-        final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
-
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
@@ -285,7 +281,6 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 eventWindowManager,
                 birthRoundMigrationShim,
-                latestCompleteStateNotifier,
                 latestImmutableStateNexus,
                 latestCompleteStateNexus,
                 savedStateController,
@@ -455,7 +450,7 @@ public class SwirldsPlatform implements Platform {
     private void replayPreconsensusEvents() {
         platformWiring.getStatusActionSubmitter().submitStatusAction(new StartedReplayingEventsAction());
 
-        final IOIterator<GossipEvent> iterator =
+        final IOIterator<PlatformEvent> iterator =
                 initialPcesFiles.getEventIterator(initialAncientThreshold, startingRound);
 
         logger.info(

@@ -84,4 +84,12 @@ public interface FeeContext {
      * @return the number of signatures
      */
     int numTxnSignatures();
+
+    /**
+     * Dispatches the computation of fees for the given transaction body and synthetic payer ID.
+     * @param txBody the transaction body
+     * @param syntheticPayerId the synthetic payer ID
+     * @return the computed fees
+     */
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
 }

@@ -435,16 +435,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return self();
     }
 
-    public T randomNode() {
-        useRandomNode = true;
-        return self();
-    }
-
-    public T unavailableNode() {
-        unavailableNode = true;
-        return noLogging();
-    }
-
     public T setNode(String account) {
         node = Optional.of(HapiPropertySource.asAccount(account));
         return self();

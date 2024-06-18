@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDE
 import static com.hedera.services.bdd.junit.ContextRequirement.UPGRADE_FILE_CONTENT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpecSetup.getDefaultProp;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -58,7 +59,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -102,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.KycNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
+import static java.lang.Long.parseLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -125,6 +126,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 
+@SuppressWarnings("java:S1192")
 public class FileUpdateSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
@@ -134,26 +136,16 @@ public class FileUpdateSuite {
     private static final String CHAIN_ID_GET_ABI = "getChainID";
     private static final String INVALID_ENTITY_ID = "1.2.3";
 
-    public static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
-    private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
-    private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
-    public static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
     private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     private static final long DEFAULT_CHAIN_ID =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));
+            parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));
     private static final long DEFAULT_MAX_LIFETIME =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+            parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final String DEFAULT_MAX_CUSTOM_FEES =
             HapiSpecSetup.getDefaultNodeProps().get(MAX_CUSTOM_FEES_PROP);
-    private static final String DEFAULT_MAX_KV_PAIRS_PER_CONTRACT =
-            HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
-    private static final String DEFAULT_MAX_KV_PAIRS =
-            HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
-    private static final String DEFAULT_MAX_CONS_GAS =
-            HapiSpecSetup.getDefaultNodeProps().get(CONS_MAX_GAS_PROP);
 
     public static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
     public static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
@@ -395,11 +387,11 @@ public class FileUpdateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> gasLimitOverMaxGasLimitFailsPrecheck() {
         return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
-                .preserving(CONS_MAX_GAS_PROP)
+                .preserving("contracts.maxGasPerSec")
                 .given(
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).gas(1_000_000L),
-                        overriding(CONS_MAX_GAS_PROP, "100"))
+                        overriding("contracts.maxGasPerSec", "100"))
                 .when()
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                         .gas(101L)
@@ -412,16 +404,14 @@ public class FileUpdateSuite {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
 
-        return defaultHapiSpec("KvLimitsEnforced")
+        return propertyPreservingHapiSpec("KvLimitsEnforced")
+                .preserving("contracts.maxKvPairs.individual", "contracts.maxKvPairs.aggregate")
                 .given(
                         uploadInitCode(contract),
                         /* This contract has 0 key/value mappings at creation */
                         contractCreate(contract),
                         /* Now we update the per-contract limit to 10 mappings */
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(INDIVIDUAL_KV_LIMIT_PROP, "10", CONS_MAX_GAS_PROP, "100000000")))
+                        overriding("contracts.maxKvPairs.individual", "10"))
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
@@ -438,28 +428,20 @@ public class FileUpdateSuite {
                                 .gas(gasToOffer),
                         /* Confirm the storage size didn't change */
                         getContractInfo(contract).has(contractWith().numKvPairs(8)),
-                        /* Now we update the per-contract limit to 1B mappings, but the aggregate limit to just 1 🤪 */
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of(
-                                        INDIVIDUAL_KV_LIMIT_PROP, "1000000000",
-                                        AGGREGATE_KV_LIMIT_PROP, "1")),
+                        /* Now we update the per-contract limit to 1B mappings, but the aggregate limit to just 1 */
+                        overridingTwo(
+                                "contracts.maxKvPairs.individual", "1000000000",
+                                "contracts.maxKvPairs.aggregate", "1"),
                         contractCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
                                 .gas(gasToOffer),
                         getContractInfo(contract).has(contractWith().numKvPairs(8)))
                 .then(
-                        /* Now restore the defaults and confirm we can use more storage */
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of(
-                                        INDIVIDUAL_KV_LIMIT_PROP,
-                                        DEFAULT_MAX_KV_PAIRS_PER_CONTRACT,
-                                        AGGREGATE_KV_LIMIT_PROP,
-                                        DEFAULT_MAX_KV_PAIRS,
-                                        CONS_MAX_GAS_PROP,
-                                        DEFAULT_MAX_CONS_GAS)),
+                        /* Now raise the limits and confirm we can use more storage */
+                        overridingTwo(
+                                "contracts.maxKvPairs.individual", "1000000000",
+                                "contracts.maxKvPairs.aggregate", "10000000000"),
                         contractCall(contract, INSERT_ABI, BigInteger.valueOf(3), BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
@@ -473,15 +455,15 @@ public class FileUpdateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
-        final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
+        final var gasToOffer = 15_000_000;
         final var civilian = "payer";
         final var unrefundedTxn = "unrefundedTxn";
         final var refundedTxn = "refundedTxn";
 
         return propertyPreservingHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
-                .preserving(CONS_MAX_GAS_PROP, USE_GAS_THROTTLE_PROP)
+                .preserving("contracts.maxGasPerSec")
                 .given(
-                        overridingTwo(CONS_MAX_GAS_PROP, DEFAULT_MAX_CONS_GAS, USE_GAS_THROTTLE_PROP, "true"),
+                        overriding("contracts.maxGasPerSec", gasToOffer + ""),
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
@@ -532,12 +514,12 @@ public class FileUpdateSuite {
         return propertyPreservingHapiSpec("ChainIdChangesDynamically")
                 .preserving(CHAIN_ID_PROP)
                 .given(
-                        resetToDefault(CHAIN_ID_PROP),
                         uploadInitCode(chainIdUser),
                         contractCreate(chainIdUser),
                         contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(firstCallTxn),
                         contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
-                                .has(resultWith().contractCallResult(bigIntResult(DEFAULT_CHAIN_ID))),
+                                .has(resultWith()
+                                        .contractCallResult(bigIntResult(parseLong(getDefaultProp(CHAIN_ID_PROP))))),
                         getTxnRecord(firstCallTxn)
                                 .hasPriority(recordWith()
                                         .contractCallResult(

@@ -24,7 +24,7 @@ import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -101,12 +101,12 @@ public class TestingEventBuilder {
     /**
      * The self parent of the event.
      */
-    private GossipEvent selfParent;
+    private PlatformEvent selfParent;
 
     /**
      * The other parents of the event.
      */
-    private List<GossipEvent> otherParents;
+    private List<PlatformEvent> otherParents;
 
     /**
      * Overrides the generation of the configured self parent.
@@ -297,7 +297,7 @@ public class TestingEventBuilder {
      * @param selfParent the self-parent
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setSelfParent(@Nullable final GossipEvent selfParent) {
+    public @NonNull TestingEventBuilder setSelfParent(@Nullable final PlatformEvent selfParent) {
         this.selfParent = selfParent;
         return this;
     }
@@ -310,7 +310,7 @@ public class TestingEventBuilder {
      * @param otherParent the other-parent
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setOtherParent(@Nullable final GossipEvent otherParent) {
+    public @NonNull TestingEventBuilder setOtherParent(@Nullable final PlatformEvent otherParent) {
         this.otherParents = otherParent == null ? null : List.of(otherParent);
         return this;
     }
@@ -323,7 +323,7 @@ public class TestingEventBuilder {
      * @param otherParents the other-parents
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setOtherParents(@NonNull final List<GossipEvent> otherParents) {
+    public @NonNull TestingEventBuilder setOtherParents(@NonNull final List<PlatformEvent> otherParents) {
         this.otherParents = otherParents;
         return this;
     }
@@ -475,7 +475,7 @@ public class TestingEventBuilder {
      */
     @Nullable
     private EventDescriptor createDescriptorFromParent(
-            @Nullable final GossipEvent parent,
+            @Nullable final PlatformEvent parent,
             @Nullable final Long generationOverride,
             @Nullable final Long birthRoundOverride) {
 
@@ -492,11 +492,9 @@ public class TestingEventBuilder {
         }
 
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
-        final long birthRound =
-                birthRoundOverride == null ? parent.getHashedData().getBirthRound() : birthRoundOverride;
+        final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
-        return new EventDescriptor(
-                parent.getHashedData().getHash(), parent.getHashedData().getCreatorId(), generation, birthRound);
+        return new EventDescriptor(parent.getHash(), parent.getCreatorId(), generation, birthRound);
     }
 
     /**
@@ -504,14 +502,14 @@ public class TestingEventBuilder {
      *
      * @return the new event
      */
-    public @NonNull GossipEvent build() {
+    public @NonNull PlatformEvent build() {
         if (softwareVersion == null) {
             softwareVersion = DEFAULT_SOFTWARE_VERSION;
         }
 
         if (creatorId == null) {
             if (selfParent != null) {
-                creatorId = selfParent.getHashedData().getCreatorId();
+                creatorId = selfParent.getCreatorId();
             } else {
                 creatorId = DEFAULT_CREATOR_ID;
             }
@@ -530,7 +528,7 @@ public class TestingEventBuilder {
             final long maxParentBirthRound = Stream.concat(
                             Stream.ofNullable(selfParent),
                             Stream.ofNullable(otherParents).flatMap(List::stream))
-                    .mapToLong(GossipEvent::getBirthRound)
+                    .mapToLong(PlatformEvent::getBirthRound)
                     .max()
                     .orElse(MINIMUM_ROUND_CREATED);
 
@@ -543,7 +541,7 @@ public class TestingEventBuilder {
                 timeCreated = DEFAULT_TIMESTAMP;
             } else {
                 // randomly add between 1 and 99 milliseconds to self parent time created
-                timeCreated = selfParent.getHashedData().getTimeCreated().plusMillis(random.nextLong(1, 100));
+                timeCreated = selfParent.getTimeCreated().plusMillis(random.nextLong(1, 100));
             }
         }
 
@@ -563,18 +561,18 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final GossipEvent gossipEvent = new GossipEvent(hashedData, signature);
+        final PlatformEvent platformEvent = new PlatformEvent(hashedData, signature);
 
-        gossipEvent.setHash(RandomUtils.randomHash(random));
+        platformEvent.setHash(RandomUtils.randomHash(random));
 
         if (consensusTimestamp != null || consensusOrder != null) {
-            gossipEvent.setConsensusData(new EventConsensusData.Builder()
+            platformEvent.setConsensusData(new EventConsensusData.Builder()
                     .consensusTimestamp(HapiUtils.asTimestamp(
                             Optional.ofNullable(consensusTimestamp).orElse(RandomUtils.randomInstant(random))))
                     .consensusOrder(Optional.ofNullable(consensusOrder).orElse(random.nextLong(1, Long.MAX_VALUE)))
                     .build());
         }
 
-        return gossipEvent;
+        return platformEvent;
     }
 }

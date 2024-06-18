@@ -27,12 +27,11 @@ import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -71,20 +70,21 @@ class IngestComponentTest {
                 10,
                 "127.0.0.1",
                 50211,
+                "127.0.0.4",
+                23456,
                 "0123456789012345678901234567890123456789012345678901234567890123",
-                "memo",
+                "Node7",
+                Bytes.wrap("cert7"),
                 new HederaSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build(),
                         SemanticVersion.newBuilder().major(2).build(),
                         0));
 
         final var configProvider = new ConfigProviderImpl(false);
-        final var genesisRecordBuilder = new GenesisRecordsConsensusHook();
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .bootstrapProps(new BootstrapProperties())
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
                 .self(selfNodeInfo)
@@ -92,7 +92,6 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
-                .genesisRecordsConsensusHook(genesisRecordBuilder)
                 .softwareVersion(mock(HederaSoftwareVersion.class))
                 .metrics(metrics)
                 .build();

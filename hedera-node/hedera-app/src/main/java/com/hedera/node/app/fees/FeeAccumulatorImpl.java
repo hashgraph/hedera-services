@@ -41,8 +41,8 @@ public class FeeAccumulatorImpl implements FeeAccumulator {
      */
     @Inject
     public FeeAccumulatorImpl(@NonNull final TokenServiceApi tokenApi, @NonNull final FeeRecordBuilder recordBuilder) {
-        this.tokenApi = tokenApi;
-        this.recordBuilder = recordBuilder;
+        this.tokenApi = requireNonNull(tokenApi);
+        this.recordBuilder = requireNonNull(recordBuilder);
     }
 
     /**

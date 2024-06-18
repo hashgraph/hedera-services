@@ -40,7 +40,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
@@ -165,7 +165,7 @@ class TipsetEventCreatorTests {
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
             for (final EventImpl event : events.values()) {
-                if (event.getHashedData().getHash().equals(newEvent.getHash())) {
+                if (event.getBaseEvent().getHash().equals(newEvent.getHash())) {
                     // comparing to self
                     continue;
                 }
@@ -192,7 +192,7 @@ class TipsetEventCreatorTests {
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getTransactions().length);
+            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getPayloadCount());
             final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
             assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }
@@ -240,7 +240,7 @@ class TipsetEventCreatorTests {
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
 
-        final EventImpl eventImpl = new EventImpl(new GossipEvent(event, new byte[0]), selfParent, otherParent);
+        final EventImpl eventImpl = new EventImpl(new PlatformEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
 
         return eventImpl;
@@ -801,14 +801,14 @@ class TipsetEventCreatorTests {
     }
 
     @NonNull
-    private GossipEvent createTestEvent(
+    private PlatformEvent createTestEvent(
             @NonNull final Random random,
             @NonNull final NodeId creator,
             long selfParentGeneration,
             @Nullable final NodeId otherParentId,
             final long otherParentGeneration) {
 
-        final GossipEvent selfParent =
+        final PlatformEvent selfParent =
                 new TestingEventBuilder(random).setCreatorId(creator).build();
 
         final TestingEventBuilder eventBuilder = new TestingEventBuilder(random)
@@ -817,7 +817,7 @@ class TipsetEventCreatorTests {
                 .overrideSelfParentGeneration(selfParentGeneration);
 
         if (otherParentId != null) {
-            final GossipEvent otherParent =
+            final PlatformEvent otherParent =
                     new TestingEventBuilder(random).setCreatorId(otherParentId).build();
 
             eventBuilder.setOtherParent(otherParent).overrideOtherParentGeneration(otherParentGeneration);
@@ -859,11 +859,11 @@ class TipsetEventCreatorTests {
         final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createTestEvent(
+        final PlatformEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createTestEvent(
+        final PlatformEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createTestEvent(
+        final PlatformEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -898,7 +898,7 @@ class TipsetEventCreatorTests {
             otherParentId = null;
         }
 
-        final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
+        final PlatformEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);
 
@@ -939,13 +939,13 @@ class TipsetEventCreatorTests {
         final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createTestEvent(
+        final PlatformEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createTestEvent(
+        final PlatformEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createTestEvent(
+        final PlatformEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventE1 = createTestEvent(
+        final PlatformEvent eventE1 = createTestEvent(
                 random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);

@@ -45,7 +45,7 @@ Next to this the `build.gradle.kts` file should look like this:
 
 ```
 plugins {
-    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.gradle.services")
 }
 
 description = "Hedera Foo Service API"
@@ -130,7 +130,7 @@ Based on the given definitions and constrains a minimalistic `build.gradle.kts` 
 
 ```
 plugins {
-    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.gradle.services")
 }
 
 description = "Default Hedera Foo Service Implementation"

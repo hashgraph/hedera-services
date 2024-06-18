@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface StateModule {
     @Provides
     @UserTxnScope
-    static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
+    static HederaState provideHederaState(@NonNull final WorkingStateAccessor workingStateAccessor) {
         return workingStateAccessor.getHederaState();
     }
 
@@ -44,7 +44,7 @@ public interface StateModule {
 
     @Provides
     @UserTxnScope
-    static ReadableStoreFactory provideReadableStoreFactory(SavepointStackImpl stack) {
+    static ReadableStoreFactory provideReadableStoreFactory(@NonNull final SavepointStackImpl stack) {
         return new ReadableStoreFactory(stack);
     }
 }

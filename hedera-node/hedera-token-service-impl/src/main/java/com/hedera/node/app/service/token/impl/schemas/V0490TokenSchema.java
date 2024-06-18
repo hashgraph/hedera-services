@@ -19,9 +19,7 @@ package com.hedera.node.app.service.token.impl.schemas;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.clampedStakePeriodStart;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.computeRewardFromDetails;
 import static com.hedera.node.app.service.token.api.StakingRewardsApi.stakePeriodAt;
-import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
-import static com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator.asAccountId;
-import static java.util.Collections.nCopies;
+import static com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator.asAccountId;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -56,7 +54,6 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.AliasUtils;
-import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -64,27 +61,24 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -117,11 +111,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
     public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
 
-    private final Supplier<SortedSet<Account>> sysAccts;
-    private final Supplier<SortedSet<Account>> stakingAccts;
-    private final Supplier<SortedSet<Account>> treasuryAccts;
-    private final Supplier<SortedSet<Account>> miscAccts;
-    private final Supplier<SortedSet<Account>> blocklistAccts;
+    private final SyntheticAccountCreator syntheticAccountCreator;
 
     /**
      * These fields hold data from a mono-service state.
@@ -137,28 +127,15 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     /**
      * Constructor for this schema. Each of the supplier params should produce a {@link SortedSet} of
      * {@link Account} objects, where each account object represents a _synthetic record_ (see {@link
-     * SyntheticRecordsGenerator} for more details). Even though these sorted sets contain account
+     * SyntheticAccountCreator} for more details). Even though these sorted sets contain account
      * objects, these account objects may or may not yet exist in state. They're usually not needed,
      * but are required for an event recovery situation.
-     * @param sysAccts a supplier of synthetic system account records
-     * @param stakingAccts a supplier of synthetic staking account records
-     * @param treasuryAccts a supplier of synthetic treasury account records
-     * @param miscAccts a supplier of synthetic miscellaneous account records
-     * @param blocklistAccts a supplier of synthetic account records that are to be blocked
+     *
      */
-    public V0490TokenSchema(
-            final Supplier<SortedSet<Account>> sysAccts,
-            final Supplier<SortedSet<Account>> stakingAccts,
-            final Supplier<SortedSet<Account>> treasuryAccts,
-            final Supplier<SortedSet<Account>> miscAccts,
-            final Supplier<SortedSet<Account>> blocklistAccts) {
+    public V0490TokenSchema(@NonNull final SyntheticAccountCreator syntheticAccountCreator) {
         super(VERSION);
 
-        this.sysAccts = sysAccts;
-        this.stakingAccts = stakingAccts;
-        this.treasuryAccts = treasuryAccts;
-        this.miscAccts = miscAccts;
-        this.blocklistAccts = blocklistAccts;
+        this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
     }
 
     @NonNull
@@ -399,114 +376,70 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
 
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
+        if (accounts.size() != 0) {
+            throw new IllegalStateException("Accounts map should be empty at genesis");
+        }
 
         // We will use these various configs for creating accounts. It would be nice to consolidate them somehow
         final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
         final var accountsConfig = ctx.configuration().getConfigData(AccountsConfig.class);
 
+        // Generate synthetic accounts based on the genesis configuration
+        final Consumer<SortedSet<Account>> noOpCb = ignore -> {};
+        syntheticAccountCreator.generateSyntheticAccounts(ctx.configuration(), noOpCb, noOpCb, noOpCb, noOpCb, noOpCb);
         // ---------- Create system accounts -------------------------
-        int counter = 0;
-        for (final Account acct : sysAccts.get()) {
-            final var id = requireNonNull(acct.accountId());
-            if (!accounts.contains(id)) {
-                accounts.put(id, acct);
-                counter++;
-            }
+        for (final Account acct : syntheticAccountCreator.systemAccounts()) {
+            accounts.put(acct.accountIdOrThrow(), acct);
         }
         log.info(
-                "Created {} system accounts (from {} total synthetic records)",
-                counter,
-                sysAccts.get().size());
-
+                "Created {} system accounts",
+                syntheticAccountCreator.systemAccounts().size());
         // ---------- Create staking fund accounts -------------------------
-        counter = 0;
-        for (final Account acct : stakingAccts.get()) {
-            final var id = requireNonNull(acct.accountId());
-            if (!accounts.contains(id)) {
-                accounts.put(id, acct);
-                counter++;
-            }
+        for (final Account acct : syntheticAccountCreator.stakingAccounts()) {
+            accounts.put(acct.accountIdOrThrow(), acct);
         }
         log.info(
-                "Created {} staking accounts (from {} total synthetic records)",
-                counter,
-                stakingAccts.get().size());
-
-        // ---------- Create miscellaneous accounts -------------------------
-        counter = 0;
-        for (final Account acct : treasuryAccts.get()) {
-            final var id = requireNonNull(acct.accountId());
-            if (!accounts.contains(id)) {
-                accounts.put(id, acct);
-                counter++;
-            }
-        }
-        log.info(
-                "Created {} treasury clones (from {} total synthetic records)",
-                counter,
-                treasuryAccts.get().size());
-
+                "Created {} staking accounts",
+                syntheticAccountCreator.stakingAccounts().size());
         // ---------- Create treasury clones -------------------------
-        counter = 0;
-        for (final Account acct : miscAccts.get()) {
-            final var id = requireNonNull(acct.accountId());
-            if (!accounts.contains(id)) {
-                accounts.put(id, acct);
-                counter++;
-            }
+        for (final Account acct : syntheticAccountCreator.treasuryClones()) {
+            accounts.put(acct.accountIdOrThrow(), acct);
         }
         log.info(
-                "Created {} miscellaneous accounts (from {} total synthetic records)",
-                counter,
-                miscAccts.get().size());
-
+                "Created {} treasury clones",
+                syntheticAccountCreator.treasuryClones().size());
+        // ---------- Create miscellaneous accounts -------------------------
+        for (final Account acct : syntheticAccountCreator.multiUseAccounts()) {
+            accounts.put(acct.accountIdOrThrow(), acct);
+        }
+        log.info(
+                "Created {} miscellaneous accounts",
+                syntheticAccountCreator.multiUseAccounts().size());
         // ---------- Create blocklist accounts -------------------------
-        counter = 0;
-        final var newBlocklistAccts = new TreeSet<>(ACCOUNT_COMPARATOR);
         if (accountsConfig.blocklistEnabled()) {
             final var existingAliases = ctx.newStates().<Bytes, AccountID>get(ALIASES_KEY);
-
-            for (final Account acctWithoutId : blocklistAccts.get()) {
-                final var acctWithIdBldr = acctWithoutId.copyBuilder();
-                final Account accountWithId;
-                if (!existingAliases.contains(acctWithoutId.alias())) {
-                    // The account does not yet exist in state, so we create it with a new entity ID. This is where we
-                    // replace the placeholder entity IDs assigned in the SyntheticRegordsGenerator with actual, real
-                    // entity IDs
-                    final var id = asAccountId(ctx.newEntityNum(), hederaConfig);
-                    accountWithId = acctWithIdBldr.accountId(id).build();
-
-                    // Put the account and its alias in state
-                    accounts.put(accountWithId.accountIdOrThrow(), accountWithId);
-                    existingAliases.put(accountWithId.alias(), accountWithId.accountIdOrThrow());
-                    counter++;
-                } else {
-                    // The account already exists in state, so we look up its existing ID, but do NOT re-add it to state
-                    final var existingAcctId = existingAliases.get(acctWithoutId.alias());
-                    accountWithId = acctWithIdBldr.accountId(existingAcctId).build();
+            if (existingAliases.size() != 0) {
+                throw new IllegalStateException("Aliases map should be empty at genesis");
+            }
+            for (final Account acct : syntheticAccountCreator.blocklistAccounts()) {
+                final var id = asAccountId(ctx.newEntityNum(), hederaConfig);
+                if (!Objects.equals(
+                        id.accountNumOrThrow(), acct.accountIdOrThrow().accountNumOrThrow())) {
+                    throw new IllegalStateException(
+                            "Next entity num " + id + " did not match synthetic block list account " + acct);
                 }
-                newBlocklistAccts.add(accountWithId);
+                // Put the account and its alias in state
+                accounts.put(id, acct);
+                existingAliases.put(acct.alias(), id);
             }
         }
-        // Since we may have replaced the placeholder entity IDs, we need to overwrite the builder's blocklist records.
-        // The overwritten "record" (here represented as an Account object) will simply be a copy of the record already
-        // there, but with a real entity ID instead of a placeholder entity ID
-        final var recordBuilder = ctx.genesisRecordsBuilder();
-        if (!newBlocklistAccts.isEmpty()) {
-            recordBuilder.blocklistAccounts(newBlocklistAccts);
-        }
         log.info(
-                "Overwrote {} blocklist records (from {} total synthetic records)",
-                newBlocklistAccts.size(),
-                blocklistAccts.get().size());
-        log.info(
-                "Created {} blocklist accounts (from {} total synthetic records)",
-                counter,
-                blocklistAccts.get().size());
+                "Created {} blocklist accounts",
+                syntheticAccountCreator.blocklistAccounts().size());
 
         // ---------- Balances Safety Check -------------------------
-        // Aadd up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
+        // Add up the balances of all accounts, they must match 50,000,000,000 HBARs (config)
         final var totalBalance = getTotalBalanceOfAllAccounts(accounts, hederaConfig);
         if (totalBalance != ledgerConfig.totalTinyBarFloat()) {
             throw new IllegalStateException("Total balance of all accounts does not match the total float: actual: "
@@ -544,6 +477,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
 
     /**
      * Get the entity numbers of all system entities that are not contracts.
+     *
      * @param numReservedSystemEntities The number of reserved system entities
      * @return The entity numbers of all system entities that are not contracts
      */
@@ -594,39 +528,9 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
         networkRewardsState.put(networkRewards);
     }
 
-    private void completeUpdateFromNewAddressBook(
-            @NonNull final WritableStakingInfoStore store,
-            @NonNull final List<NodeInfo> nodeInfos,
-            @NonNull final Configuration config) {
-        final var numberOfNodesInAddressBook = nodeInfos.size();
-        final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
-        final var numRewardHistoryStoredPeriods =
-                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
-        for (final var nodeId : nodeInfos) {
-            final var stakingInfo = store.get(nodeId.nodeId());
-            if (stakingInfo != null) {
-                if (stakingInfo.maxStake() != maxStakePerNode) {
-                    store.put(
-                            nodeId.nodeId(),
-                            stakingInfo.copyBuilder().maxStake(maxStakePerNode).build());
-                }
-            } else {
-                final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
-                        .nodeNumber(nodeId.nodeId())
-                        .maxStake(maxStakePerNode)
-                        .minStake(0L)
-                        .rewardSumHistory(
-                                nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
-                        .weight(0)
-                        .build();
-                store.put(nodeId.nodeId(), newNodeStakingInfo);
-            }
-        }
-    }
-
     /**
      * Sets the in-state NFTs to be migrated from.
+     *
      * @param fs the in-state NFTs
      */
     public static void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
@@ -635,6 +539,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
 
     /**
      * Sets the in-state token rels to be migrated from.
+     *
      * @param fs the in-state token rels
      */
     public static void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
@@ -643,6 +548,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
 
     /**
      * Sets the in-state accounts to be migrated from.
+     *
      * @param fs the in-state accounts
      */
     public static void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
@@ -651,6 +557,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
 
     /**
      * Sets the in-state tokens to be migrated from.
+     *
      * @param fs the in-state tokens
      */
     public static void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
@@ -659,6 +566,7 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
 
     /**
      * Sets the in-state staking info to be migrated from.
+     *
      * @param stakingFs the in-state staking info
      * @param mnc the in-state network context
      */
