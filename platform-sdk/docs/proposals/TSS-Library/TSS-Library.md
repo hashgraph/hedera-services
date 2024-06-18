@@ -311,6 +311,7 @@ This library implements the Groth21 TSS-specific primitives.
 
 ##### Constraints
 Once built, this library will depend on artifacts constructed in other repositories.
+This library would accept Integer.MAX_VALUE -1 participants.
 
 ##### Public API
 ###### `TssService`
@@ -321,7 +322,12 @@ Once built, this library will depend on artifacts constructed in other repositor
 **Description**: This class is used in the exchange of secret information between participants. Contains an encrypted message, a polynomial commitment, and a cryptographic proof that can be used to validate this message.
 ###### `TssShareId`
 **Description**: This class represents the unique identification of a share in the system. It a FieldElement, so it can be used as input in the polynomial.
-
+###### `TssPrivateShare`
+**Description**: A record that contains a share ID, and the corresponding private key.
+###### `TssPublicShare`
+**Description**: A record that contains a share ID, and the corresponding public key.
+###### `TssShareSignature`
+**Description**: Represents a signature created for a TSSPrivateShare.
 
 ##### Example
 ###### 1. Bootstrapping
@@ -329,62 +335,70 @@ Once built, this library will depend on artifacts constructed in other repositor
    TssService service = new TssService(signatureScheme);
    PairingPrivateKey persistentParticipantKey = Requirements.loadECPrivateKey();
    List<PairingPublicKey> persistentPublicKeys = Requirements.loadECPublicKeys();
-   TssParticipantDirectory directory = 
+   TssParticipantDirectory participantDirectory = 
         service.participantDirectoryBuilder()
            .self(/**/ 0, persistentParticipantKey)
            .withParticipant(/*Identification:*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
            .withParticipant(/*Identification:*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
            .withParticipant(/*Identification:*/2, /*Number of Shares*/1, persistentPublicKeys.get(2))
            .withParticipant(/*Identification:*/3, /*Number of Shares*/1, persistentPublicKeys.get(3))
-          .build();
+           .withThreshold(5)     
+          .build(signatureScheme);
    
    //One can then query the directory
    int n = directory.getTotalNumberOfShares();
-   List<TssShareId> privateShares = directory.getPrivateSharesIds();
+   List<TssShareId> privateShares = directory.getOwnedSharesIds();
    List<TssShareId> shareIds = directory.getShareIds();
 ```
 ###### 1. Create TssMessage
 ```java
 
    TssSecretShare s = directory.createRandomSecretShare();
-   TssMessage m = service.createTssMessage(directory, s, threshold);
+   TssMessage m = service.createTssMessage(directory);
 ```
 
 ###### 2. Validation of TssMessage
 ```java
    List<TssMessage> messages = Requirements.receiveTssMessages();
    for(TssMessage m : messages){
-     service.validate(directory, m);
+     service.validate(participantDirectory, m);
    }
 ```
 ###### 3. Processing of TssMessage
 ```java
-   Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/
+    Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/
+    //Get Private Shares    
+    List<TssPrivateShare> privateShares = service.decryptPrivateShares(participantDirectory, agreedValidMessages);
 
-   TssParticipantDirectory updatedDirectory = service.processMessages(directory, messages);
+    //Get Public Shares
+    List<TssPrivateShare> publicShares = service.computePublicShare(participantDirectory, agreedValidMessages);
+
 ```
 ######  Sign
 ```java
    byte[] message = Requirements.messageToSign();
 
-   List<TssSignature> signatures = service.produceSignatures(updatedDirectory, message);
+   List<TssShareSignature> signatures = service.sign(privateShares, message);
 
-   //The method produceSignatures would be implemented in this way:
-   List<PrivateShare> privateShares = updatedDirectory.getPrivateShares();
-   List<TssSignature> signatures = new ArrayList<>();
-   for(PrivateShare k: privateShares){
-      signatures.add(k.sign(message));    
-   }
-   
-   
 ```
 
 ######  Aggregate Signatures
-```java
-   byte[] message = Requirements.messageToSign();
 
-   List<TssSignature> signatures = Requirements.loadSignatures();
-   PairingSignature aggregatedSignature = service.aggregate(signatures);
+```java
+
+    List<TssShareSignature> signatures = Requirements.loadSignatures();
+
+    //Validation of individual signatures
+    List<TssShareSignature> validSignatures = new ArrayList<>(signatures.size());
+    for(TssShareSignature s:signatures){
+        if(service.verify(participantDirectory, publicShares, s)){
+            validSignatures.add(s);
+        }
+    }
+    
+    //Producing an aggregated signature
+    PairingSignature aggregatedSignature = service.aggregate(participantDirectory, validSignatures);
+
 ```
 
 #### Swirlds Crypto Pairings Signature Library
