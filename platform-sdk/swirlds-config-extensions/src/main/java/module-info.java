@@ -1,4 +1,5 @@
 module com.swirlds.config.extensions {
+    exports com.swirlds.config.extensions;
     exports com.swirlds.config.extensions.export;
     exports com.swirlds.config.extensions.reflection;
     exports com.swirlds.config.extensions.sources;

@@ -16,6 +16,7 @@
 
 package com.swirlds.logging.api.internal;
 
+import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
@@ -32,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -93,10 +95,18 @@ public class DefaultLoggingSystem {
                                     event.context()))
                     .forEach(internalLoggingSystem::accept);
             initialized.set(true);
+
+            BaseExecutorFactory.getInstance().scheduleAtFixedRate(this::updateConfiguration, 0, 10, TimeUnit.SECONDS);
+
         } catch (Exception e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Unable to initialize logging system", e);
             throw e;
         }
+    }
+
+    private void updateConfiguration() {
+        final Configuration configuration = createConfiguration();
+        this.internalLoggingSystem.update(configuration);
     }
 
     @NonNull

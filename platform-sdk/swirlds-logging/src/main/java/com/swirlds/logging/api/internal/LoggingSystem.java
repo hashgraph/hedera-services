@@ -18,6 +18,7 @@ package com.swirlds.logging.api.internal;
 
 import com.swirlds.base.internal.BaseExecutorFactory;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.ConfigUtils;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Marker;
 import com.swirlds.logging.api.extensions.emergency.EmergencyLogger;
@@ -130,6 +131,9 @@ public class LoggingSystem implements LogEventConsumer {
      * handlers are not removed for now.
      */
     public void update(final @NonNull Configuration configuration) {
+        if (ConfigUtils.haveSameProperties(this.configuration, configuration)) {
+            return;
+        }
         this.levelConfig.set(HandlerLoggingLevelConfig.create(configuration, null));
         this.handlers.forEach(handler -> handler.update(configuration));
     }
