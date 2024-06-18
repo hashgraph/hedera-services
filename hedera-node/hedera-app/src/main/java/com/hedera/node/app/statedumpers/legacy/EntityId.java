@@ -23,17 +23,9 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.IOException;
 import java.util.Objects;
 
-public class EntityId implements SelfSerializable {
-
-    static final int MERKLE_VERSION = 1;
-    static final long RUNTIME_CONSTRUCTABLE_ID = 0xf35ba643324efa37L;
-
+public class EntityId {
     public static final EntityId MISSING_ENTITY_ID = new EntityId(0, 0, 0);
 
     private long shard;
@@ -48,31 +40,6 @@ public class EntityId implements SelfSerializable {
         this.shard = shard;
         this.realm = realm;
         this.num = num;
-    }
-
-    /* --- SelfSerializable --- */
-    @Override
-    public long getClassId() {
-        return RUNTIME_CONSTRUCTABLE_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return MERKLE_VERSION;
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        shard = in.readLong();
-        realm = in.readLong();
-        num = in.readLong();
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(shard);
-        out.writeLong(realm);
-        out.writeLong(num);
     }
 
     /* --- Object --- */

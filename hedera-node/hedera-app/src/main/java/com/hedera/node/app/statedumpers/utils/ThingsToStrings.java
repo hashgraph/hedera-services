@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.statedumpers.legacy.EntityId;
 import com.hedera.node.app.statedumpers.legacy.EntityNum;
@@ -35,6 +34,7 @@ import com.hedera.node.app.statedumpers.legacy.FcTokenAllowanceId;
 import com.hedera.node.app.statedumpers.legacy.FixedFeeSpec;
 import com.hedera.node.app.statedumpers.legacy.FractionalFeeSpec;
 import com.hedera.node.app.statedumpers.legacy.JKey;
+import com.hedera.node.app.statedumpers.legacy.RichInstant;
 import com.hedera.node.app.statedumpers.legacy.RoyaltyFeeSpec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
@@ -241,6 +241,23 @@ public class ThingsToStrings {
         } catch (final InvalidKeyException ignored) {
             sb.append("<INVALID KEY>");
             return true;
+        }
+    }
+
+    /** Writes a cryptographic hash of the actual key */
+    @SuppressWarnings(
+            "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
+    // these days w/o running into deprecated methods
+    @NonNull
+    public static String toStringOfJKey(@NonNull final JKey jkey) {
+        if (jkey.isEmpty()) return "";
+        try {
+            final var ser = jkey.serialize();
+            final var hash = CryptographyHolder.get().digestBytesSync(ser);
+            return toStringOfByteArray(hash);
+
+        } catch (final IOException ex) {
+            return "**EXCEPTION SERIALIZING JKEY**";
         }
     }
 

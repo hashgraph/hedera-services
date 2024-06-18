@@ -19,11 +19,7 @@ package com.hedera.node.app.statedumpers.legacy;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -36,17 +32,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * <p>Having allowance on a token will grant the spender to transfer fungible or non-fungible token
  * units from the owner's account.
  */
-public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenAllowanceId> {
-    static final int RELEASE_023X_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_023X_VERSION;
-    static final long RUNTIME_CONSTRUCTABLE_ID = 0xf55baa544950f139L;
-
+public class FcTokenAllowanceId implements Comparable<FcTokenAllowanceId> {
     private EntityNum tokenNum;
     private EntityNum spenderNum;
-
-    public FcTokenAllowanceId() {
-        /* RuntimeConstructable */
-    }
 
     public FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
         this.tokenNum = tokenNum;
@@ -55,28 +43,6 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
 
     public static FcTokenAllowanceId from(final TokenID tokenId, final AccountID accountId) {
         return new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), EntityNum.fromAccountId(accountId));
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream din, final int i) throws IOException {
-        tokenNum = EntityNum.fromInt(din.readInt());
-        spenderNum = EntityNum.fromInt(din.readInt());
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream dos) throws IOException {
-        dos.writeInt(tokenNum.intValue());
-        dos.writeInt(spenderNum.intValue());
-    }
-
-    @Override
-    public long getClassId() {
-        return RUNTIME_CONSTRUCTABLE_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return CURRENT_VERSION;
     }
 
     @Override

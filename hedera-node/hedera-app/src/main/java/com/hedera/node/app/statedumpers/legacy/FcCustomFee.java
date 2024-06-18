@@ -51,16 +51,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * received, a fixed fee can be charged to the NFT's new owner, if desired.)
  */
 public class FcCustomFee {
-    static final byte FIXED_CODE = (byte) (1 << 0);
-    static final byte FRACTIONAL_CODE = (byte) (1 << 1);
-    static final byte ROYALTY_CODE = (byte) (1 << 2);
-
-    static final int RELEASE_016X_VERSION = 1;
-    static final int RELEASE_017X_VERSION = 2;
-    static final int RELEASE_0310_VERSION = 3;
-    static final int CURRENT_VERSION = RELEASE_0310_VERSION;
-    static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa433940f137L;
-
     private FeeType feeType;
     private EntityId feeCollector;
     private boolean allCollectorsAreExempt;
