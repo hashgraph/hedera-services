@@ -267,15 +267,15 @@ public class ReadableFreezeUpgradeActions {
             try {
                 bw.write(line.toString());
             } catch (IOException e) {
-                log.error("Failed to write line {}} with exception : {}", line, e);
+                log.error("Failed to write line {} with exception : {}", line, e);
             }
             try {
                 Files.write(pemFile, node.gossipCaCertificate().toByteArray());
             } catch (IOException e) {
-                log.error("Failed to write to {}} with exception : {}", pemFile, e);
+                log.error("Failed to write to {} with exception : {}", pemFile, e);
             }
         } else {
-            log.error("Node has {}} gossip endpoints, expected greater than 1", gossipEndpoints.size());
+            log.error("Node has {} gossip endpoints, expected greater than 1", gossipEndpoints.size());
         }
     }
 
