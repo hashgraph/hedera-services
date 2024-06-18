@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.util;
 
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.CONTRACT_STORAGE;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
@@ -29,13 +28,9 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
@@ -121,20 +116,6 @@ public class MonoMigrationUtils {
                 if (blockInfoFromState != null) {
                     V0490BlockRecordSchema.setFs(blockInfoFromState);
                     V0490BlockRecordSchema.setMnc(fromNetworkContext);
-                }
-
-                // --------------------- LEGACY_ADDRESS_BOOK (10)
-                // Not using anywhere; won't be migrated
-
-                // --------------------- CONTRACT_STORAGE (11)
-                final VirtualMap<ContractKey, IterableContractValue> contractFromStorage =
-                        state.getChild(CONTRACT_STORAGE);
-                if (contractFromStorage != null) {
-                    // Copy this virtual map, so it doesn't get released before the migration is done
-                    final var copy = contractFromStorage.copy();
-                    copy.registerMetrics(metrics);
-                    MONO_VIRTUAL_MAPS.add(copy);
-                    V0490ContractSchema.setStorageFromState(VirtualMapLike.from(contractFromStorage));
                 }
 
                 // --------------------- PAYER_RECORDS_OR_CONSOLIDATED_FCQ (13)
