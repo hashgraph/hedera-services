@@ -62,8 +62,7 @@ class PayloadUtilsTest {
     @MethodSource("buildArgumentsStateSignatureTransaction")
     void testSizeComparisonsStateSignatureTransaction(
             final OneOf<PayloadOneOfType> payload, final StateSignatureTransaction stateSignatureTransaction) {
-        assertEquals(
-                (int) PayloadUtils.getPayloadSize(payload), stateSignatureTransaction.getSerializedLength());
+        assertEquals((int) PayloadUtils.getPayloadSize(payload), stateSignatureTransaction.getSerializedLength());
         assertTrue(PayloadUtils.isSystemPayload(payload));
     }
 
