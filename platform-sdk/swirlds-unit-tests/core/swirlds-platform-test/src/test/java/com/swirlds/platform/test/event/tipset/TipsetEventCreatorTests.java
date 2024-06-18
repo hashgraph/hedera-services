@@ -45,7 +45,6 @@ import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
-import com.swirlds.platform.event.creation.tipset.TipsetUtils;
 import com.swirlds.platform.event.creation.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -236,10 +235,7 @@ class TipsetEventCreatorTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final BaseEventHashedData event) {
 
-        eventCreators
-                .get(event.getCreatorId())
-                .tipsetTracker
-                .addEvent(event.getDescriptor(), TipsetUtils.getParentDescriptors(event));
+        eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
 
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
@@ -260,7 +256,7 @@ class TipsetEventCreatorTests {
             eventCreator.eventCreator.registerEvent(eventImpl.getBaseEvent());
             eventCreator.tipsetTracker.addEvent(
                     eventImpl.getBaseEvent().getDescriptor(),
-                    TipsetUtils.getParentDescriptors(eventImpl.getBaseEvent().getHashedData()));
+                    eventImpl.getBaseEvent().getAllParents());
         }
     }
 

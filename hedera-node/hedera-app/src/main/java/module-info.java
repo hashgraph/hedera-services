@@ -16,12 +16,12 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive grpc.stub;
     requires transitive javax.inject;
@@ -31,9 +31,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
-    requires com.google.common;
-    requires com.google.protobuf;
-    requires com.hedera.evm;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.fcqueue;
@@ -41,6 +38,9 @@ module com.hedera.node.app {
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
+    requires com.google.common;
+    requires com.google.protobuf;
+    requires com.hedera.evm;
     requires grpc.netty;
     requires io.grpc;
     requires io.netty.handler;

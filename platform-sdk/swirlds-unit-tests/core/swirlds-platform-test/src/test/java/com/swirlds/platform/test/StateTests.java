@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import java.io.IOException;
@@ -72,7 +73,7 @@ class StateTests {
 
         io.startReading();
 
-        final State decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
+        final MerkleRoot decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);
 
         assertEquals(state.getHash(), decodedState.getHash(), "expected trees to be equal");
@@ -83,7 +84,7 @@ class StateTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("State Copy Test")
     void stateCopyTest() {
-        final State copiedState = state.copy();
+        final MerkleRoot copiedState = state.copy();
         MerkleCryptoFactory.getInstance().digestTreeSync(copiedState);
 
         assertEquals(state.getHash(), copiedState.getHash(), "expected trees to be equal");
