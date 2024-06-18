@@ -173,7 +173,7 @@ public class UserTxnWorkflow {
                     userTxn.tokenContext().readableStore(ReadableAccountStore.class));
             if (usedSelfFrontendThrottleCapacity(
                     numImplicitCreations, userTxn.txnInfo().txBody())) {
-                throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
+                throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations, 0);
             }
         }
     }

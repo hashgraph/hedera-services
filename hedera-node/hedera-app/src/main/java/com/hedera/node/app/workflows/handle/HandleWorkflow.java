@@ -40,6 +40,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.isGasThrottled;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
@@ -75,6 +76,7 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
@@ -692,14 +694,19 @@ public class HandleWorkflow {
             handleWorkflowMetrics.switchConsensusSecond();
         }
 
-        // If a transaction appeared to try an auto-creation, and hence used
+        // If a transaction appeared to try an auto-creation or auto-association, and hence used
         // frontend throttle capacity; but then failed, we need to reclaim the
         // frontend throttle capacity on the node that submitted the transaction
-        if (txBody != null && canAutoCreate(functionality) && recordBuilder.status() != SUCCESS) {
+        if (txBody != null
+                && canAutoCreate(functionality)
+                && canAutoAssociate(functionality)
+                && recordBuilder.status() != SUCCESS) {
             final var numImplicitCreations = throttleServiceManager.numImplicitCreations(
                     txBody, tokenServiceContext.readableStore(ReadableAccountStore.class));
-            if (usedSelfFrontendThrottleCapacity(numImplicitCreations, txBody)) {
-                throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
+            final var numAutoAssociations = throttleServiceManager.numAutoAssociations(
+                    txBody, tokenServiceContext.readableStore(ReadableTokenRelationStore.class));
+            if (usedSelfFrontendThrottleCapacity(numImplicitCreations, numAutoAssociations, txBody)) {
+                throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations, numAutoAssociations);
             }
         }
 
@@ -1034,8 +1041,9 @@ public class HandleWorkflow {
     }
 
     private boolean usedSelfFrontendThrottleCapacity(
-            final int numImplicitCreations, @NonNull final TransactionBody txnBody) {
-        return numImplicitCreations > 0
+            final int numImplicitCreations, final int numAutoAssociations, @NonNull final TransactionBody txnBody) {
+        return (numImplicitCreations > 0
+                || numAutoAssociations > 0)
                 && txnBody.nodeAccountIDOrThrow()
                         .equals(networkInfo.selfNodeInfo().accountId());
     }

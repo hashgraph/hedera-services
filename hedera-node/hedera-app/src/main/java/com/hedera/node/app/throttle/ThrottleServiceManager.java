@@ -17,6 +17,7 @@
 package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
@@ -36,6 +37,7 @@ import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
@@ -144,6 +146,11 @@ public class ThrottleServiceManager {
         return backendThrottle.getImplicitCreationsCount(body, accountStore);
     }
 
+    public int numAutoAssociations(
+            @NonNull final TransactionBody body, @NonNull final ReadableTokenRelationStore relationStore) {
+        return backendThrottle.getAutoAssociationsCount(body, relationStore);
+    }
+
     /**
      * Updates all metrics for the throttles.
      */
@@ -228,9 +235,10 @@ public class ThrottleServiceManager {
      *
      * @param numImplicitCreations the number of implicit creations
      */
-    public void reclaimFrontendThrottleCapacity(final int numImplicitCreations) {
+    public void reclaimFrontendThrottleCapacity(final int numImplicitCreations, final int numAutoAssociations) {
         try {
             ingestThrottle.leakCapacityForNOfUnscaled(numImplicitCreations, CRYPTO_CREATE);
+            ingestThrottle.leakCapacityForNOfUnscaled(numAutoAssociations, TOKEN_ASSOCIATE_TO_ACCOUNT);
         } catch (Exception ignore) {
             // Ignore if the frontend bucket has already leaked all the capacity
             // used for throttling the transaction on the frontend
