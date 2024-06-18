@@ -67,7 +67,9 @@ public record MigrationContextImpl(
     @Override
     public void copyAndReleaseOnDiskState(@NonNull final String stateKey) {
         requireNonNull(stateKey);
-        if (newStates instanceof FilteredWritableStates filteredWritableStates
+        if (newStates instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
+            merkleWritableStates.copyAndReleaseVirtualMap(stateKey);
+        } else if (newStates instanceof FilteredWritableStates filteredWritableStates
                 && filteredWritableStates.getDelegate()
                         instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
             merkleWritableStates.copyAndReleaseVirtualMap(stateKey);

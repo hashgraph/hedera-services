@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -32,12 +31,10 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -51,9 +48,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class AutoAccountCreator {
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
-    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
-            CryptoUpdateTransactionBody.newBuilder()
-                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
     /**
      * Constructs an {@link AutoAccountCreator} with the given {@link HandleContext}.
@@ -101,14 +95,6 @@ public class AutoAccountCreator {
         // "verification assistant" since we have no non-payer signatures to verify here
         final var childRecord = handleContext.dispatchRemovablePrecedingTransaction(
                 syntheticCreation.build(), CryptoCreateRecordBuilder.class, null, handleContext.payer());
-        // match mono - If superuser is the payer don't charge fee
-        if (!handleContext.isSuperUser()) {
-            var fee = autoCreationFeeFor(syntheticCreation);
-            if (isAliasEVMAddress) {
-                fee += getLazyCreationFinalizationFee();
-            }
-            childRecord.transactionFee(fee);
-        }
         childRecord.memo(memo);
 
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
@@ -120,28 +106,6 @@ public class AutoAccountCreator {
         final var createdAccountId = accountStore.getAccountIDByAlias(alias);
         validateTrue(createdAccountId != null, FAIL_INVALID);
         return createdAccountId;
-    }
-
-    /**
-     * Get fees for finalization of lazy creation.
-     * @return fee for finalization of lazy creation
-     */
-    private long getLazyCreationFinalizationFee() {
-        return autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER));
-    }
-
-    /**
-     * Get fees for auto creation.
-     * @param syntheticCreation transaction body for auto creation
-     * @return fee for auto creation
-     */
-    private long autoCreationFeeFor(@NonNull final TransactionBody.Builder syntheticCreation) {
-        final var topLevelPayer = handleContext.payer();
-        final var payerAccount = accountStore.get(topLevelPayer);
-        validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
-        final var fees = handleContext.dispatchComputeFees(
-                syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
-        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     /**
