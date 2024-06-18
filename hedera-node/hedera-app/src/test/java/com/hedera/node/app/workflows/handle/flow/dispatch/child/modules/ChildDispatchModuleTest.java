@@ -34,7 +34,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
@@ -44,9 +44,9 @@ import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -134,6 +134,9 @@ class ChildDispatchModuleTest {
     private BlockRecordManager blockRecordManager;
 
     @Mock
+    private ResourcePriceCalculator resourcePriceCalculator;
+
+    @Mock
     private FeeManager feeManager;
 
     @Mock
@@ -201,12 +204,12 @@ class ChildDispatchModuleTest {
                 configuration,
                 authorizer,
                 blockRecordManager,
+                resourcePriceCalculator,
                 feeManager,
                 readableStoreFactory,
                 syntheticPayer,
                 verifier,
                 payerkey,
-                feeAccumulator,
                 exchangeRateManager,
                 stack,
                 entityIdStore,
@@ -277,7 +280,7 @@ class ChildDispatchModuleTest {
     void providesFeeAccumulatorImpl() {
         given(serviceApiFactory.getApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         assertThat(ChildDispatchModule.provideFeeAccumulator(recordBuilder, serviceApiFactory))
-                .isInstanceOf(FeeAccumulatorImpl.class);
+                .isInstanceOf(FeeAccumulator.class);
     }
 
     @Test

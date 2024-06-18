@@ -37,12 +37,8 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
-import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -64,28 +60,14 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private NodeCreateRecordBuilder recordBuilder;
-
-    @Mock
     private ReadableAccountStore accountStore;
-
-    @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
-    private FeeAccumulator feeAccumulator;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     private TransactionBody txn;
     private NodeUpdateHandler subject;
 
-    private AddressBookValidator addressBookValidator;
-
     @BeforeEach
     void setUp() {
-        addressBookValidator = new AddressBookValidator();
+        final var addressBookValidator = new AddressBookValidator();
         subject = new NodeUpdateHandler(addressBookValidator);
     }
 
@@ -94,7 +76,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     void nodeIdCannotNegative() {
         txn = new NodeUpdateBuilder().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ID).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
@@ -105,7 +87,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withAccountId(AccountID.DEFAULT)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -113,7 +95,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     void accountIdCannotAlias() {
         txn = new NodeUpdateBuilder().withNodeId(1).withAccountId(alias).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -125,7 +107,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withGossipCaCertificate(Bytes.EMPTY)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_GOSSIP_CAE_CERTIFICATE).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CAE_CERTIFICATE);
     }
 
     @Test

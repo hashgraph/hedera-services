@@ -19,7 +19,8 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.user.modules;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -27,9 +28,9 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -70,6 +71,10 @@ public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
     HandleContext bindHandleContext(@NonNull DispatchHandleContext handleContext);
+
+    @Binds
+    @UserDispatchScope
+    ResourcePriceCalculator bindResourcePriceCalculator(@NonNull ResourcePriceCalculatorImpl feeFacility);
 
     @Binds
     @UserDispatchScope
@@ -124,7 +129,7 @@ public interface UserDispatchModule {
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
-        return new FeeAccumulatorImpl(tokenApi, recordBuilder);
+        return new FeeAccumulator(tokenApi, recordBuilder);
     }
 
     @Provides
