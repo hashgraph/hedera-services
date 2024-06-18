@@ -104,7 +104,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationHappyPath() {
         final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
+        final long transferFee = 188608L;
         return propertyPreservingHapiSpec(
                         "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -164,7 +164,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationsDisabled() {
         final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
+        final long transferFee = 188608L;
         return propertyPreservingHapiSpec(
                         "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
