@@ -23,7 +23,7 @@ platform module since it does not depend on the platform module's `nodeId` anymo
 ## Goals
 
 - Add a new concept called "metric labels" to the metrics module
-- Migrate the `category`, `name`, and `nodeId` information to labels
+- Migrate the `nodeId` information to a label
 - Make the metrics module independent of the platform module
 - Provide a public API to define labels for metrics
 - Add labels to the snapshot API
@@ -44,10 +44,22 @@ This chapter describes the changes that are needed to add labels to the metrics 
 ### About labels
 
 Before we start with the implementation we need to define what labels are.
-Labels are key-value pairs that can be used to filter and group metrics.
-Labels are used by monitoring systems like prometheus to create more dynamic dashboards.
-For example, a metric that counts the number of requests can have a label called `method` that defines if the request was a `GET` or `POST` request.
+Labels are key-value pairs that are used to define, filter and group metrics.
+Labels are used by monitoring systems like Grafana to create more dynamic dashboards.
+By adding labels to the metrics module a single metric is now uniquely defined by its name and the labels.
+For example, metrics that counts the number of requests can have a label called `method` that defines if the request was a `GET` or `POST` request.
+That metrics are defined by the name "api_http_requests_total" and the label `method`.
 By doing so the monitoring system can create a dashboard that shows the number of requests per method.
+In the given example we would have 2 metric instances: one for `GET` and one for `POST`:
+
+- Metric 1: `api_http_requests_total{method="GET"}`
+- Metric 2: `api_http_requests_total{method="POST"}`
+
+While today the name of a metric is the unique identifier of a metric the name and the labels are the unique identifier of a metric when using labels.
+By doing so both metrics can use the same name but are still unique as long as the labels are different.
+We will store measurements individually for each metric.
+If you later want to know the combined measurement of all metrics with the name `api_http_requests_total` you can use the prometheus query language to sum up the values of all metrics with that name.
+See https://prometheus.io/docs/prometheus/latest/querying/basics/#time-series-selectors for more information.
 
 In prometheus a concrete metric is defined like this (see https://prometheus.io/docs/concepts/data_model/#notation):
 
@@ -74,6 +86,8 @@ record Label(@NonNull String key, @Nullable String value) {}
 > [!NOTE]  
 The value of a label can be `null`.
 For our prometheus endpoint a label with a `null` value will be handled as if the label would not exist.
+This would allow us to define a label without a value and with a possible extension (see "Future Work") we define a concrete value for a label later.
+Today best practice is to not use labels with a `null` value.
 
 The `Metric` interface will be extended by a new method called `getLabels()` that returns a list of labels:
 
@@ -103,7 +117,7 @@ abstract class MetricConfig {
 }
 ```
 
-By adding labels the unique identifier of a metric is the key and the labels.
+By adding labels the unique identifier of a metric is the name and the labels.
 Based on that we need to modify the `Metrics` interface to use the labels as the unique identifier of a metric:
 
 ```java
@@ -140,7 +154,12 @@ The `MetricsFactory` interface will be defined like this:
 interface MetricsFactory {
     
     @NonNull
-    Metrics create(@NonNull Set<Label> labels);
+    default Metrics create() {
+        return create(Set.of());
+    }
+    
+    @NonNull
+    Metrics create(@NonNull Set<Label> defaultLabels);
 }
 ```
 
