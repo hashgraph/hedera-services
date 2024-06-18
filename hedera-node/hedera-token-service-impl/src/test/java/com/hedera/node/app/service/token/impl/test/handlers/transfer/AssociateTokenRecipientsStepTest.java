@@ -34,6 +34,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -55,8 +56,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Mock
     private ExpiryValidator expiryValidator;
 
-    //    @Mock
-    //    private EntitiesConfig entitiesConfig;
+    @Mock
+    private FeeAccumulator feeAccumulator;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -97,6 +98,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
 
         subject.doIn(transferContext);
 
