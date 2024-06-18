@@ -87,19 +87,23 @@ and loading of those keys is outside the scope of this proposal.
 
 Participants can hold one or more shares, each of which can be used to sign a message.
 The goal is to generate an aggregate signature which is valid if a threshold number of individual signatures are combined.
+
 Each participant brings their own Elliptic Curve (EC) key pair (private and public). They share their public keys with all other participants while securing their private keys.
 Before the protocol begins, all participants agree on the cryptographic parameters.
 A participant directory is needed when initiating the protocol for the first time.
 This directory includes the number of participants, each participant’s EC public key, and the shares they own.
+
 Each participant generates a random private key and distributes it among the others.
 This allows for verification and aggregation of signatures produced by all shares.
 A value derived from this random private key is created for each share using mathematical functions. Each value is encrypted with the share owner's public key, ensuring only the intended recipient can read it.
 When a message is created, all encrypted values are included. Only the intended receivers can decrypt their respective portions of the secret element.
 This setup allows participants to share secret information securely.
 The message also contains additional information necessary for signature validation.
+
 Upon receiving a threshold number of messages, each participant decrypts the information encrypted with their public key, aggregates it, and generates a private key for each owned share.
 They also retrieve a public key for each share in the system to validate signatures.
 Individual signing can now begin. Participants use the private information of their shares to sign messages.
+
 When signatures from at least threshold number of parties are combined, an aggregate signature is created. This aggregate signature can be validated using the combined value of the public shares in the directory.
 The process restarts whenever the number of participants or the shares assigned to each change.
 However, the initially generated group public key remains unchanged to maintain consistency. New secret information for shares is created using existing data, ensuring that the aggregate signature can still be verified with the original group public key.
