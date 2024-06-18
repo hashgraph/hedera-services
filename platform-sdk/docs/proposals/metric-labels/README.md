@@ -247,12 +247,14 @@ class TransactionFilter {
 
     void handle(Transaction transaction) {
         if(transaction.getType().equals("fileUploadTransaction")) {
-            config = config.withLabels(new Label("transactionType", "fileUpload"));
+            Counter.Config configWithLabel = config.withLabels(new Label("transactionType", "fileUpload"));
+            Counter counter = metrics.getOrCreate(config);
+            counter.increment();
         } else if(transaction.getType().equals("fileDeleteTransaction")) {
-            config = config.withLabels(new Label("transactionType", "fileDelete"));
+            Counter.Config configWithLabel = config.withLabels(new Label("transactionType", "fileDelete"));
+            Counter counter = metrics.getOrCreate(config);
+            counter.increment();
         }
-        final Counter counter = metrics.getOrCreate(config);
-        counter.increment();
     }
 }
 ```
@@ -305,6 +307,7 @@ Here the api can be extended by a new method that allows to add labels at measur
 ## Open Questions
 
 - Should we use this proposal to rename the `Metrics` interface to `MetricRegistry`?
+In most other libs it is called registry.
 
 ## Future Work
 
