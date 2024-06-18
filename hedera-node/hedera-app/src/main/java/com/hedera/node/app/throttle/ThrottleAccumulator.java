@@ -667,7 +667,7 @@ public class ThrottleAccumulator {
             @NonNull final TransactionBody txnBody, @NonNull final ReadableTokenRelationStore relationStore) {
         AtomicInteger autoAssociationsCount = new AtomicInteger();
         final var cryptoTransferBody = txnBody.cryptoTransfer();
-        if (cryptoTransferBody == null && !cryptoTransferBody.hasTransfers()) {
+        if (cryptoTransferBody == null || !cryptoTransferBody.hasTransfers()) {
             return 0;
         }
         for (var transfer : cryptoTransferBody.tokenTransfers()) {
