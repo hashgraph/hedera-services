@@ -32,7 +32,7 @@ public interface ReadableAirdropStore {
      * @param airdropId given airdrop id
      * @return {@link PendingAirdropValue} object if successfully fetched or {@code null} if the airdrop doesn't exist
      */
-    PendingAirdropValue getFungibleAirdropAmount(@NonNull final PendingAirdropId airdropId);
+    PendingAirdropValue get(@NonNull final PendingAirdropId airdropId);
 
     /**
      * Returns whether a given PendingAirdropId exists in state.

@@ -54,7 +54,7 @@ class ReadableAirdropStoreImplTest extends StateBuilderUtil {
     @Test
     void getsNullIfAirdropContainsOnlyNFT() {
         var nftAirdrop = getNonFungibleAirDrop();
-        assertThat(subject.getFungibleAirdropAmount(nftAirdrop)).isNull();
+        assertThat(subject.get(nftAirdrop)).isNull();
     }
 
     @Test
@@ -69,8 +69,8 @@ class ReadableAirdropStoreImplTest extends StateBuilderUtil {
                 .willReturn(airdrops);
         subject = new ReadableAirdropStoreImpl(readableStates);
 
-        assertThat(subject.getFungibleAirdropAmount(fungibleAirdrop)).isNotNull();
-        assertThat(subject.getFungibleAirdropAmount(fungibleAirdrop)).isEqualTo(airdropValue);
+        assertThat(subject.get(fungibleAirdrop)).isNotNull();
+        assertThat(subject.get(fungibleAirdrop)).isEqualTo(airdropValue);
     }
 
     @Test
@@ -82,15 +82,17 @@ class ReadableAirdropStoreImplTest extends StateBuilderUtil {
                 .willReturn(airdrops);
         subject = new ReadableAirdropStoreImpl(readableStates);
 
-        assertThat(subject.getFungibleAirdropAmount(fungibleAirdrop)).isNull();
-        assertThat(subject.getFungibleAirdropAmount(fungibleAirdrop)).isNull();
+        assertThat(subject.get(fungibleAirdrop)).isNull();
+        assertThat(subject.get(fungibleAirdrop)).isNull();
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void getsFungibleWithNullParam() {
-        assertThatThrownBy(() -> subject.getFungibleAirdropAmount(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.get(null)).isInstanceOf(NullPointerException.class);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorCallWithNull() {
         assertThatThrownBy(() -> subject = new ReadableAirdropStoreImpl(null)).isInstanceOf(NullPointerException.class);
