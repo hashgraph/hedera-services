@@ -314,6 +314,15 @@ This library implements the Groth21 TSS-specific primitives.
 Once built, this library will depend on artifacts constructed in other repositories.
 
 ##### Public API
+###### `TssService`
+**Description**: This class handles all tss specific operations. 
+###### `TssParticipantDirectory`
+**Description**: This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares. 
+###### `TssMessage`
+**Description**: This class is used in the exchange of secret information between participants. Contains an encrypted message, a polynomial commitment, and a cryptographic proof that can be used to validate this message.
+###### `TssShareId`
+**Description**: This class represents the unique identification of a share in the system. It is linked to a FieldElement, so it can be used as input in the polynomial.
+
 
 ##### Example
 ###### 1. Bootstrapping
@@ -324,15 +333,15 @@ Once built, this library will depend on artifacts constructed in other repositor
    TssParticipantDirectory directory = 
         service.participantDirectoryBuilder()
            .self(/**/ 0, persistentParticipantKey)
-           .withClaim(/*Identification*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
-           .withClaim(/*Identification*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
-           .withClaim(/*Identification*/2, /*Number of Shares*/1, persistentPublicKeys.get(2))
-           .withClaim(/*Identification*/3, /*Number of Shares*/1, persistentPublicKeys.get(3))
+           .withParticipant(/*Identification:*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
+           .withParticipant(/*Identification:*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
+           .withParticipant(/*Identification:*/2, /*Number of Shares*/1, persistentPublicKeys.get(2))
+           .withParticipant(/*Identification:*/3, /*Number of Shares*/1, persistentPublicKeys.get(3))
           .build();
    
    //One can then query the directory
    int n = directory.getTotalNumberOfShares();
-   List<TssShareId> privateShares = directory.getOwnedShares();
+   List<TssShareId> privateShares = directory.getPrivateSharesIds();
    List<TssShareId> shareIds = directory.getShareIds();
 ```
 ###### 1. Create TssMessage
@@ -346,23 +355,20 @@ Once built, this library will depend on artifacts constructed in other repositor
 ```java
    List<TssMessage> messages = Requirements.receiveTssMessages();
    for(TssMessage m : messages){
-     m.validate(directory);
+     service.validate(directory, m);
    }
 ```
 ###### 3. Processing of TssMessage
 ```java
-   List<TssMessage> messages = Requirements.receiveTssMessages();
-   TssService cachedService = service.withCache(size);
-   
-   TssProcessingResult result = cachedService.processMessages(directory, messages);
-   result.isValid();
-   TssParticipantDirectory updatedDirectory = result.getDirectory();
+   Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/
+
+   TssParticipantDirectory updatedDirectory = service.processMessages(directory, messages);
 ```
 ######  Sign
 ```java
    byte[] message = Requirements.messageToSign();
 
-   List<TssSignature> signatures = updatedDirectory.produceSignatures(updatedDirectory, message);
+   List<TssSignature> signatures = service.produceSignatures(updatedDirectory, message);
 
    //The method produceSignatures would be implemented in this way:
    List<PrivateShare> privateShares = updatedDirectory.getPrivateShares();
