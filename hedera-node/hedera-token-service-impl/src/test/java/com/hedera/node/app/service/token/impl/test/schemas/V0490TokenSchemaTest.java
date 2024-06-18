@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.test.schemas;
 
 import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
-import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
@@ -34,11 +33,8 @@ import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOf
 import static com.hedera.node.app.service.token.impl.test.handlers.staking.EndOfStakingPeriodUpdaterTest.STAKING_INFO_3;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.DEFAULT_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EVM_ADDRESSES;
-import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.EXPECTED_TREASURY_TINYBARS_BALANCE;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.NUM_RESERVED_SYSTEM_ENTITIES;
-import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.TREASURY_ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.buildConfig;
-import static com.hedera.node.app.service.token.impl.test.schemas.SyntheticAccountsData.configBuilder;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +53,6 @@ import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -68,19 +63,14 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.HashMap;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
-import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,9 +91,6 @@ final class V0490TokenSchemaTest {
         // Precondition check
         Assertions.assertThat(NON_CONTRACT_RESERVED_NUMS).hasSize(501);
     }
-
-    @Mock
-    private GenesisRecordsConsensusHook hook;
 
     private MapWritableKVState<AccountID, Account> accounts;
     private WritableStates newStates;
@@ -346,22 +333,6 @@ final class V0490TokenSchemaTest {
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).maxStake()).isEqualTo(1666666666666666666L);
     }
 
-    private Configuration overridingLedgerBalanceWithZero() {
-        return configBuilder(DEFAULT_NUM_SYSTEM_ACCOUNTS, true)
-                .withValue("ledger.totalTinyBarFloat", "0")
-                .getOrCreateConfig();
-    }
-
-    private void putNewAccount(final int num, final HashMap<AccountID, Account> accts, final String memo) {
-        final var balance = num == TREASURY_ACCOUNT_NUM ? EXPECTED_TREASURY_TINYBARS_BALANCE : 0L;
-        final var acct = Account.newBuilder()
-                .accountId(ACCT_IDS[num])
-                .tinybarBalance(balance)
-                .memo(memo)
-                .build();
-        accts.put(ACCT_IDS[num], acct);
-    }
-
     private WritableSingletonState<EntityNumber> newWritableEntityIdState() {
         return new WritableSingletonStateBase<>(
                 V0490EntityIdSchema.ENTITY_ID_STATE_KEY, () -> new EntityNumber(BEGINNING_ENTITY_ID), c -> {});
@@ -399,34 +370,5 @@ final class V0490TokenSchemaTest {
 
     private V0490TokenSchema newSubjectWithAllExpected() {
         return new V0490TokenSchema(new SyntheticAccountCreator());
-    }
-
-    /**
-     * @return true if the given account number is NOT a staking account number or system contract
-     */
-    private static boolean isRegularAcctNum(final long i) {
-        // Skip the staking account nums
-        if (Arrays.contains(new long[] {800, 801}, i)) return false;
-        // Skip the system contract account nums
-        return i < 350 || i > 399;
-    }
-
-    private static String testMemo() {
-        return "test-original" + Instant.now();
-    }
-
-    private static SortedSet<Account> newAccounts(final int lower, final int higher) {
-        final var accts = new TreeSet<>(ACCOUNT_COMPARATOR);
-        for (int i = lower; i <= higher; i++) {
-            accts.add(newAcctWithId(i));
-        }
-
-        return accts;
-    }
-
-    private static Account newAcctWithId(final int id) {
-        final var acctId = id <= ACCT_IDS.length ? ACCT_IDS[id] : asAccount(id);
-        final var balance = id == TREASURY_ACCOUNT_NUM ? EXPECTED_TREASURY_TINYBARS_BALANCE : 0;
-        return Account.newBuilder().accountId(acctId).tinybarBalance(balance).build();
     }
 }

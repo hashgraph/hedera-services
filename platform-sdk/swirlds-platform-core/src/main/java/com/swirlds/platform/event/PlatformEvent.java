@@ -30,8 +30,10 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,7 +48,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent extends AbstractSerializableHashable implements Event {
+public class PlatformEvent extends AbstractSerializableHashable implements ConsensusEvent {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
@@ -104,13 +106,13 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
     private long birthRound;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
-    public GossipEvent() {}
+    public PlatformEvent() {}
 
     /**
      * @param hashedData   the hashed data for the event
      * @param signature the signature for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final byte[] signature) {
+    public PlatformEvent(final BaseEventHashedData hashedData, final byte[] signature) {
         this(hashedData, Bytes.wrap(signature));
     }
 
@@ -118,7 +120,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      * @param hashedData   the hashed data for the event
      * @param signature the signature for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final Bytes signature) {
+    public PlatformEvent(final BaseEventHashedData hashedData, final Bytes signature) {
         this.hashedData = hashedData;
         this.signature = signature;
         this.timeReceived = Instant.now();
@@ -136,8 +138,8 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      *
      * @return a copy of this event
      */
-    public GossipEvent copyGossipedData() {
-        return new GossipEvent(hashedData, signature);
+    public PlatformEvent copyGossipedData() {
+        return new PlatformEvent(hashedData, signature);
     }
 
     /**
@@ -313,6 +315,12 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         return consensusTimestamp;
     }
 
+    @Override
+    public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
+        return Arrays.asList((ConsensusTransaction[]) hashedData.getTransactions())
+                .iterator();
+    }
+
     /**
      * @return the consensus order for this event, this will be
      * {@link com.swirlds.platform.consensus.ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
@@ -335,6 +343,24 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
         this.consensusData = consensusData;
         this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
+    }
+
+    /**
+     * Set the consensus timestamp on the payload wrappers for this event. This must be done after the consensus time is
+     * set for this event.
+     */
+    public void setConsensusTimestampsOnPayloads() {
+        if (this.consensusData == NO_CONSENSUS) {
+            throw new IllegalStateException("Consensus data must be set");
+        }
+        final ConsensusTransactionImpl[] transactions = hashedData.getTransactions();
+        if (transactions == null) {
+            return;
+        }
+
+        for (int i = 0; i < transactions.length; i++) {
+            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
+        }
     }
 
     /**
@@ -450,7 +476,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
             return false;
         }
 
-        final GossipEvent that = (GossipEvent) o;
+        final PlatformEvent that = (PlatformEvent) o;
         return Objects.equals(getHashedData(), that.getHashedData())
                 && Objects.equals(consensusData, that.consensusData);
     }
@@ -462,7 +488,7 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
      * @param that the other event
      * @return true if the gossiped data of this event is equal to the gossiped data of the other event
      */
-    public boolean equalsGossipedData(@NonNull final GossipEvent that) {
+    public boolean equalsGossipedData(@NonNull final PlatformEvent that) {
         return Objects.equals(getHashedData(), that.getHashedData())
                 && Objects.equals(getSignature(), that.getSignature());
     }

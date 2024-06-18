@@ -17,9 +17,6 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.logic;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -42,7 +39,9 @@ public class ChildRecordBuilderFactory {
      * Constructs the {@link ChildRecordBuilderFactory} instance.
      */
     @Inject
-    public ChildRecordBuilderFactory() {}
+    public ChildRecordBuilderFactory() {
+        // Dagger2
+    }
 
     /**
      * Provides the record builder for the child transaction category and initializes it.
@@ -50,20 +49,20 @@ public class ChildRecordBuilderFactory {
      * @param txnInfo the transaction info
      * @param recordListBuilder the record list builder
      * @param configuration the configuration
-     * @param childCategory the child category
+     * @param category the child category
      * @param reversingBehavior the reversing behavior
      * @param customizer the externalized record customizer
      * @return the record builder
      */
     public SingleTransactionRecordBuilderImpl recordBuilderFor(
-            TransactionInfo txnInfo,
-            final RecordListBuilder recordListBuilder,
-            final Configuration configuration,
-            HandleContext.TransactionCategory childCategory,
-            SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final Configuration configuration,
+            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable final ExternalizedRecordCustomizer customizer) {
         final var recordBuilder =
-                switch (childCategory) {
+                switch (category) {
                     case PRECEDING -> switch (reversingBehavior) {
                         case REMOVABLE -> recordListBuilder.addRemovablePreceding(configuration);
                         case REVERSIBLE -> recordListBuilder.addReversiblePreceding(configuration);
@@ -72,12 +71,11 @@ public class ChildRecordBuilderFactory {
                     case CHILD -> switch (reversingBehavior) {
                         case REMOVABLE -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(
                                 configuration, requireNonNull(customizer));
-                        case REVERSIBLE -> recordListBuilder.addChild(configuration, childCategory);
-                        case IRREVERSIBLE -> throw new IllegalArgumentException("Unsupported reversing behavior: "
-                                + reversingBehavior + " for child category: " + childCategory);
+                        case REVERSIBLE -> recordListBuilder.addChild(configuration, category);
+                        case IRREVERSIBLE -> throw new IllegalArgumentException("CHILD cannot be IRREVERSIBLE");
                     };
-                    case SCHEDULED -> recordListBuilder.addChild(configuration, childCategory);
-                    default -> throw new IllegalArgumentException("Unsupported child category: " + childCategory);
+                    case SCHEDULED -> recordListBuilder.addChild(configuration, category);
+                    case USER -> throw new IllegalArgumentException("USER not a valid child category");
                 };
         return initializedForChild(recordBuilder, txnInfo);
     }

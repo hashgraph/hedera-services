@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildRecordBuilderFactoryTest.asTxn;
@@ -145,11 +148,39 @@ public class RecordFinalizerTest {
     }
 
     @Test
+    public void testExtraRewardReceiversUnsuccessfulCryptoTransfer() {
+        recordBuilder.status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        Set<AccountID> extraRewardReceivers =
+                subject.extraRewardReceivers(TX_BODY, HederaFunctionality.CRYPTO_TRANSFER, recordBuilder);
+        assertTrue(extraRewardReceivers.isEmpty());
+    }
+
+    @Test
     public void testExtraRewardReceiversOtherFunctionality() {
         recordBuilder.status(SUCCESS);
 
         Set<AccountID> extraRewardReceivers =
                 subject.extraRewardReceivers(TX_BODY, HederaFunctionality.CONTRACT_CALL, recordBuilder);
+
+        assertTrue(extraRewardReceivers.isEmpty());
+    }
+
+    @Test
+    public void testExtraRewardReceiversNullBody() {
+        recordBuilder.status(INVALID_TRANSACTION);
+
+        Set<AccountID> extraRewardReceivers =
+                subject.extraRewardReceivers(null, HederaFunctionality.CONTRACT_CALL, recordBuilder);
+
+        assertTrue(extraRewardReceivers.isEmpty());
+    }
+
+    @Test
+    public void testExtraRewardReceiversIrrelevantFunctionality() {
+        recordBuilder.status(SUCCESS);
+
+        Set<AccountID> extraRewardReceivers =
+                subject.extraRewardReceivers(TX_BODY, CONSENSUS_SUBMIT_MESSAGE, recordBuilder);
 
         assertTrue(extraRewardReceivers.isEmpty());
     }

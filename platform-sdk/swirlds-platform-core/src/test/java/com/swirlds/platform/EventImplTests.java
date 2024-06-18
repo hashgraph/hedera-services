@@ -143,7 +143,7 @@ public class EventImplTests {
                 null,
                 null);
 
-        event.consensusReached();
+        event.getBaseEvent().setConsensusTimestampsOnPayloads();
 
         for (int i = 0; i < mixedTransactions.length; i++) {
             final Instant transConsTime = eventConsTime.plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.meta;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import javax.inject.Scope;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
+import dagger.Module;
 
 /**
- * A Dagger scope that indicates that a component's lifetime is for each handle.
+ * The module that adds the user dispatch and child dispatch subcomponents under user transaction component.
  */
-@Scope
-@Retention(RUNTIME)
-public @interface HandleScope {}
+@Module(subcomponents = {UserDispatchComponent.class, ChildDispatchComponent.class})
+public interface DispatchSubcomponentsModule {}

@@ -24,7 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class GossipEventTest {
+class PlatformEventTest {
 
     @BeforeAll
     public static void setup() throws FileNotFoundException, ConstructableRegistryException {
@@ -55,10 +55,10 @@ class GossipEventTest {
     void serializeDeserialize() throws IOException, ConstructableRegistryException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
-        final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
+        final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        final GossipEvent copy = SerializationUtils.serializeDeserialize(gossipEvent);
-        assertEquals(gossipEvent, copy, "deserialized version should be the same");
+        final PlatformEvent copy = SerializationUtils.serializeDeserialize(platformEvent);
+        assertEquals(platformEvent, copy, "deserialized version should be the same");
     }
 
     @Test

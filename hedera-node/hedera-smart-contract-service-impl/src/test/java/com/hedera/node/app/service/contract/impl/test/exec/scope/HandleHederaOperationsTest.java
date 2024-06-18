@@ -238,10 +238,9 @@ class HandleHederaOperationsTest {
     void lazyCreationCostInGasTest() {
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
         given(gasCalculator.canonicalPriceInTinybars(any(), eq(A_NEW_ACCOUNT_ID)))
-                .willReturn(6L)
                 .willReturn(5L);
         given(gasCalculator.topLevelGasPrice()).willReturn(1L);
-        assertEquals(11L, subject.lazyCreationCostInGas(NON_SYSTEM_LONG_ZERO_ADDRESS));
+        assertEquals(5L, subject.lazyCreationCostInGas(NON_SYSTEM_LONG_ZERO_ADDRESS));
     }
 
     @Test
@@ -627,7 +626,6 @@ class HandleHederaOperationsTest {
                 .build();
         var contractId = ContractID.newBuilder().contractNum(1001).build();
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(readableAccountStore.getContractById(ContractID.DEFAULT)).willReturn(parentAccount);
         given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(eq(contractId))).willReturn(contractCreateRecordBuilder);
@@ -637,7 +635,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
 
         // when
-        subject.externalizeHollowAccountMerge(contractId, ContractID.DEFAULT, VALID_CONTRACT_ADDRESS.evmAddress());
+        subject.externalizeHollowAccountMerge(contractId, VALID_CONTRACT_ADDRESS.evmAddress());
 
         // then
         verify(contractCreateRecordBuilder).contractID(contractId);

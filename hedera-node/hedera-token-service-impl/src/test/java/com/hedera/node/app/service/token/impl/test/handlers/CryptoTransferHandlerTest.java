@@ -73,8 +73,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.WarmupContextImpl;
+import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -173,7 +173,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .tokenTransfers(tokenTransferLists)
                 .build();
 
-        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeContext feeContext = mock(DispatchHandleContext.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
 
@@ -223,7 +223,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .tokenTransfers(tokenTransferLists)
                 .build();
 
-        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeContext feeContext = mock(DispatchHandleContext.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
 
@@ -268,7 +268,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .tokenTransfers(tokenTransferLists)
                 .build();
 
-        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeContext feeContext = mock(DispatchHandleContext.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
 

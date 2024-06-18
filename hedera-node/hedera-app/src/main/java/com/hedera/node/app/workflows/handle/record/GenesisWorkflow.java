@@ -48,8 +48,8 @@ import org.apache.logging.log4j.Logger;
  * the corresponding synthetic records when a consensus time becomes available.
  */
 @Singleton
-public class GenesisRecordsConsensusHook {
-    private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHook.class);
+public class GenesisWorkflow {
+    private static final Logger log = LogManager.getLogger(GenesisWorkflow.class);
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
@@ -63,8 +63,11 @@ public class GenesisRecordsConsensusHook {
     private SortedSet<Account> blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private final SyntheticAccountCreator syntheticAccountCreator;
 
+    /**
+     * Constructs a new {@link GenesisWorkflow}.
+     */
     @Inject
-    public GenesisRecordsConsensusHook(@NonNull final SyntheticAccountCreator syntheticAccountCreator) {
+    public GenesisWorkflow(@NonNull final SyntheticAccountCreator syntheticAccountCreator) {
         this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
     }
 
@@ -73,7 +76,7 @@ public class GenesisRecordsConsensusHook {
      *
      * @throws NullPointerException if called more than once
      */
-    public void process(@NonNull final TokenContext context) {
+    public void executeIn(@NonNull final TokenContext context) {
         final var firstConsensusTime = context.consensusTime();
         log.info("Exporting genesis records at {}", firstConsensusTime);
         // The account creator registers all its synthetics accounts based on the
