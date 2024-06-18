@@ -24,7 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -222,8 +222,8 @@ public class DefaultPcesWriter implements PcesWriter {
      */
     @Override
     @Nullable
-    public Long writeEvent(@NonNull final GossipEvent event) {
-        if (event.getStreamSequenceNumber() == GossipEvent.NO_STREAM_SEQUENCE_NUMBER) {
+    public Long writeEvent(@NonNull final PlatformEvent event) {
+        if (event.getStreamSequenceNumber() == PlatformEvent.NO_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
 
@@ -377,7 +377,7 @@ public class DefaultPcesWriter implements PcesWriter {
      * @param eventToWrite the event that is about to be written
      * @return true if this method call resulted in the current file being closed
      */
-    private boolean prepareOutputStream(@NonNull final GossipEvent eventToWrite) throws IOException {
+    private boolean prepareOutputStream(@NonNull final PlatformEvent eventToWrite) throws IOException {
         boolean fileClosed = false;
         if (currentMutableFile != null) {
             final boolean fileCanContainEvent =

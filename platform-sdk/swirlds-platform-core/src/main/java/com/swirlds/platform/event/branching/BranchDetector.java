@@ -18,7 +18,7 @@ package com.swirlds.platform.event.branching;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -34,7 +34,7 @@ public interface BranchDetector {
      * @return the event if it is a branching event or null if the event is not a branching event
      */
     @Nullable
-    GossipEvent checkForBranches(@NonNull GossipEvent event);
+    PlatformEvent checkForBranches(@NonNull PlatformEvent event);
 
     /**
      * Update the event window in the branch detector. This should be called whenever the event window is updated and

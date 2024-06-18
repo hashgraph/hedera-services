@@ -29,7 +29,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig_;
@@ -61,11 +61,11 @@ import java.util.function.Predicate;
  */
 public class SyncNode {
 
-    private final BlockingQueue<GossipEvent> receivedEventQueue;
+    private final BlockingQueue<PlatformEvent> receivedEventQueue;
     private final List<IndexedEvent> generatedEvents;
     private final List<IndexedEvent> discardedEvents;
 
-    private final List<GossipEvent> receivedEvents;
+    private final List<PlatformEvent> receivedEvents;
 
     private final NodeId nodeId;
 
@@ -232,7 +232,7 @@ public class SyncNode {
      * it.
      */
     public ShadowgraphSynchronizer getSynchronizer() {
-        final Consumer<GossipEvent> eventHandler = event -> {
+        final Consumer<PlatformEvent> eventHandler = event -> {
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
@@ -317,7 +317,7 @@ public class SyncNode {
         return syncManager;
     }
 
-    public List<GossipEvent> getReceivedEvents() {
+    public List<PlatformEvent> getReceivedEvents() {
         return receivedEvents;
     }
 
