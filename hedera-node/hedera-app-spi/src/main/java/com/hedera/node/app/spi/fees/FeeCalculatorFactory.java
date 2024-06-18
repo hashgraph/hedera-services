@@ -19,6 +19,9 @@ package com.hedera.node.app.spi.fees;
 import com.hedera.hapi.node.base.SubType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A factory for creating {@link FeeCalculator} instances.
+ */
 public interface FeeCalculatorFactory {
 
     /**

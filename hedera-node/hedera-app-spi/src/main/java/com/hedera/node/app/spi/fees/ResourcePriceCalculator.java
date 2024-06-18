@@ -21,6 +21,9 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A calculator for determining the resource prices for a given {@link HederaFunctionality} and {@link SubType}.
+ */
 public interface ResourcePriceCalculator {
 
     /**

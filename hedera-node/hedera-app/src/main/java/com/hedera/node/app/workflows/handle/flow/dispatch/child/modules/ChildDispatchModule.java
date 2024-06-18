@@ -77,7 +77,7 @@ public interface ChildDispatchModule {
 
     @Binds
     @ChildDispatchScope
-    ResourcePriceCalculator bindResourcePriceCalculator(@NonNull ResourcePriceCalculatorImpl feeFacility);
+    ResourcePriceCalculator bindResourcePriceCalculator(@NonNull ResourcePriceCalculatorImpl resourcePriceCalculator);
 
     @Binds
     @ChildDispatchScope
