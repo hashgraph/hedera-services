@@ -149,6 +149,9 @@ public class TestHelpers {
             .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
+    public static final Configuration V2_TRANSFER_DISABLED_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.precompile.atomicCryptoTransfer.enabled", "false")
+            .getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =

@@ -21,6 +21,8 @@ import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
+import java.time.Instant;
 
 /**
  * The module that provides the token context in UserTxnScope.
@@ -30,4 +32,10 @@ public interface ContextModule {
     @Binds
     @UserTxnScope
     TokenContext bindTokenContext(TokenContextImpl tokenContext);
+
+    @Provides
+    @UserTxnScope
+    static boolean provideIsGenesis(@LastHandledTime final Instant lastHandledConsensusTime) {
+        return lastHandledConsensusTime.equals(Instant.EPOCH);
+    }
 }

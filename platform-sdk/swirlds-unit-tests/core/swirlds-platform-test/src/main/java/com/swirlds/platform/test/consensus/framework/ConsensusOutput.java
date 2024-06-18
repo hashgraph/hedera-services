@@ -20,7 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.set.SequenceSet;
@@ -38,10 +38,10 @@ import java.util.List;
 public class ConsensusOutput implements Clearable {
     private final Time time;
     private final LinkedList<ConsensusRound> consensusRounds;
-    private final LinkedList<GossipEvent> addedEvents;
-    private final LinkedList<GossipEvent> staleEvents;
+    private final LinkedList<PlatformEvent> addedEvents;
+    private final LinkedList<PlatformEvent> staleEvents;
 
-    private final SequenceSet<GossipEvent> nonAncientEvents;
+    private final SequenceSet<PlatformEvent> nonAncientEvents;
     private final SequenceSet<EventDescriptor> nonAncientConsensusEvents;
 
     private long latestRound;
@@ -60,11 +60,11 @@ public class ConsensusOutput implements Clearable {
         staleEvents = new LinkedList<>();
 
         // FUTURE WORK: birth round compatibility
-        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, GossipEvent::getGeneration);
+        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, PlatformEvent::getGeneration);
         nonAncientConsensusEvents = new StandardSequenceSet<>(0, 1024, true, EventDescriptor::getGeneration);
     }
 
-    public void eventAdded(@NonNull final GossipEvent event) {
+    public void eventAdded(@NonNull final PlatformEvent event) {
         addedEvents.add(event);
         nonAncientEvents.add(event);
     }
@@ -94,7 +94,7 @@ public class ConsensusOutput implements Clearable {
     /**
      * @return a queue of all events that have been marked as stale
      */
-    public @NonNull LinkedList<GossipEvent> getStaleEvents() {
+    public @NonNull LinkedList<PlatformEvent> getStaleEvents() {
         return staleEvents;
     }
 
@@ -105,15 +105,15 @@ public class ConsensusOutput implements Clearable {
         return consensusRounds;
     }
 
-    public @NonNull LinkedList<GossipEvent> getAddedEvents() {
+    public @NonNull LinkedList<PlatformEvent> getAddedEvents() {
         return addedEvents;
     }
 
-    public @NonNull List<GossipEvent> sortedAddedEvents() {
-        final List<GossipEvent> sortedEvents = new ArrayList<>(addedEvents);
-        sortedEvents.sort(Comparator.comparingLong(GossipEvent::getGeneration)
-                .thenComparingLong(e -> e.getHashedData().getCreatorId().id())
-                .thenComparing(e -> e.getHashedData().getHash()));
+    public @NonNull List<PlatformEvent> sortedAddedEvents() {
+        final List<PlatformEvent> sortedEvents = new ArrayList<>(addedEvents);
+        sortedEvents.sort(Comparator.comparingLong(PlatformEvent::getGeneration)
+                .thenComparingLong(e -> e.getCreatorId().id())
+                .thenComparing(PlatformEvent::getHash));
         return sortedEvents;
     }
 
