@@ -3,6 +3,7 @@
 
 ## A
 - [Account Aliases](#account-aliases)
+- [Admin Transaction](#admin-transaction)
 - [Auto Associations](#asynchronous)
 - [Auto-Renew Accounts](#auto-renew-accounts)
 - [Address Book](#address-book)
@@ -38,7 +39,7 @@
 ## S
 - [Security Model V2](#security-model-v2)
 - [Sidecars](#sidecars)
-- [Synthetic Transactions](#synthetic-transactions)
+- [Synthetic Transaction](#synthetic-transactions)
 - [System Contracts](#system-contracts)
 - [System Transaction](#system-transaction)
 
@@ -60,12 +61,18 @@ The address book is stored as a file on disk at the moment but will be stored pu
 **Account Aliases**: These are identifiers which are public key values, and are mostly 33 byte EVM address values. The "triplet" form (e.g. 0.0.18273892) is the simpler and easier to "type".
 An alias is not intended to be user-friendly, but instead to offer a smart-contract friendly identifier. See https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583 for more information.
 
+
+## Admin Transaction 
+**Admin Transaction**: A HAPI transaction which has been signed by the council, for example a Freeze Transaction
+
+
 ## Application Accounts
 **Application Accounts:** Used by developers and users interacting with applications deployed on Hedera. These accounts enable users to interact with the functionality provided by dApps, such as gaming, finance, or other decentralized services.
 
 ## Auto Associations
 **Auto Associations**: The ability of accounts to automatically associate with tokens. An auto association is one or more slots you approve that allow tokens to be sent to your contract or account without explicit authorization for each token type. If this property is not set, you must approve each token manually (via the `TokenAssociateTransaction` in the SDKs) before it can be received, held, or sent by that account.
 https://hips.hedera.com/hip/hip-904 - currently in progress, will represent a significant change which allows for the number of "automatic association" slots to be set to -1 which represents infinite slots.
+
 
 ## Auto-Renew Accounts
 **Auto-Renew Accounts**: A feature designed to automatically renew the lifecycle of certain entities (like accounts, files, smart contracts, topics, or tokens) by funding their renewal fees. This feature is particularly useful for entities that require continuous operation over long periods, as it automates the process of keeping these entities active by periodically charging a linked auto-renew account. 
@@ -87,6 +94,8 @@ See https://hips.hedera.com/hip/hip-16 and https://hips.hedera.com/hip/hip-372 f
 
 ---
 
+## Child Transaction
+**Child Transaction**: A [Synthetic Transaction](#synthetic-transactions) that the EVM or Services initiates as a result of fulfilling a user-initiated transaction (e.g. [Hollow Accounts](#hollow-accounts) creation, or a scheduled execution).
 
 ## Civilian Accounts
 **Civilian Accounts**:  User accounts that are not associated with any special roles or permissions beyond standard user functionality. These are mostly used for testing purposes. By contrast, System Accounts and Node Accounts are accounts that have specific roles and responsibilities within the infrastructure and governance of the Hedera network.
@@ -137,15 +146,16 @@ Refer to this [official blog post](https://hedera.com/blog/hedera-smart-contract
 ## Sidecars
 **Sidecars**: In Services, a sidecar refers to additional records that are created alongside the main transaction records. These sidecar records provide more detailed information about the transactions, making it easier to debug and understand the state changes that occur as a result of the transactions. Note that these are related to the current record stream implementation and will be replaced by block streams in the future.
 
-## Synthetic Transactions
-**Synthetic Transactions**: Internal transactions generated to maintain state, execute specific functions, or handle administrative tasks. These transactions are not initiated by users but are created and processed by the Hedera network itself. They ensure the proper functioning and upkeep of the network.
+## Synthetic Transaction
+**Synthetic Transaction**: Any transaction that is neither submitted through HAPI nor created by the platform. An example of which is the the deletion of an expired entity that did not pay rent. It is any transaction that shows up in the record stream that was not directly submitted by a user. Furthermore, it will have a non-zero nonce OR scheduled=true in its TransactionID. Note: the fact that we have a scheduled flag instead of just a non-zero nonce for scheduled transactions is for legacy reasons.
+
 
 ## System Contracts
 **System Contracts**:  Smart contracts that have a permanent address in the network, meaning they will always be available at the same contract address. One example is the Token Service System Contract which allows smart contracts on Hedera to interact with the Hedera Token Service, offering functionalities like token creation, burning, and minting through the EVM
 
 ## System Transaction
-**System Transaction**: A transaction created by the platform software to communicate system level information such as state signatures.
-
+**System Transaction**: A transaction created by the platform (not services) software. An example of which is a node's signature on a state. Inside an event, every transaction has a flag saying whether it is a system transaction or not.
+admin transaction-a HAPI transaction signed by the council. Such as freeze.
 ---
 
 ## Token Allowance
