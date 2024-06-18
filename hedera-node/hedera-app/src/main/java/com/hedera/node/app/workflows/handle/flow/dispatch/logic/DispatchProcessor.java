@@ -220,15 +220,15 @@ public class DispatchProcessor {
      * @param report the due diligence report for the dispatch
      */
     private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final ErrorReport report) {
-        final var fees = dispatch.fees();
-        if (fees.nothingToCharge()) {
-            return;
-        }
         final var hasWaivedFees = authorizer.hasWaivedFees(
                 dispatch.payerId(),
                 dispatch.txnInfo().functionality(),
                 dispatch.txnInfo().txBody());
         if (hasWaivedFees) {
+            return;
+        }
+        final var fees = dispatch.fees();
+        if (fees.nothingToCharge()) {
             return;
         }
         final var shouldWaiveServiceFee =

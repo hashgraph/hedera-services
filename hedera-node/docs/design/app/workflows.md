@@ -94,23 +94,42 @@ When a platform transaction reaches consensus and needs to be handled, the `Hand
 is called.
 Few terms that will be used in the following sections:
 1. **Dispatch**: The context needed for executing business logic of a service. This has two implementations 
-- one for user transactions scope 
-- one for dispatched child transactions scope.
+- one for user transactions scope called `UserTxnDispatch`
+- one for dispatched child transactions scope called `ChildDispatch`
+
 
 Objects created while handling the transaction belong to one of the following Dagger scopes. 
-- **Singleton** - Tied to the lifecycle of the application
-- **UserTxnScope** - Tied to the lifecycle of the platform transaction.
-- **UserDispatchScope** - The lifecycle of the object is tied to the lifecycle of the user transaction dispatch.
-- **ChildDispatchScope** - The lifecycle of the object is tied to the lifecycle of the child transaction dispatch.
+- **Singleton** - Objects that are created once and used for the entire lifecycle of the application.
+Examples include the `NodeInfo` and `RecordListBuilder`.
+- **UserTxnScope** - Objects that are created once per each platform transaction. 
+Examples include the `Configuration`, `HederaState` and `TokenContext`. 
+They are provided in the modules [here](https://github.com/hashgraph/hedera-services/tree/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/modules) 
+and [UserTxnComponent](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/UserTransactionComponent.java)
+takes all the inputs that are needed to execute the user transaction.
+- **UserDispatchScope** - Objects that are created once for each user transaction dispatch. 
+Examples include the `SingleTransactionRecordBuilder` for user transaction and `FeeContext`.
+Dagger provides all the objects that can be constructed in this scope in [UserDispatchModule](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/user/modules/UserDispatchModule.java) and `UserDispatchComponent`.
+and [UserDispatchComponent](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/user/UserDispatchComponent.java)
+takes all the inputs that are needed to create the user dispatch.
+- **ChildDispatchScope** - Objects that are created once for each child transaction dispatch. 
+Examples include the `ReadableStoreFactory` and `ChildFeeContext`. 
+Dagger provides all the objects that can be constructed in the [ChildDispatchModule](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/child/modules/ChildDispatchModule.java) 
+and [ChildDispatchComponent](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/child/ChildDispatchComponent.java)
+takes all the inputs that are needed to create the child dispatch.
+
+
 ![dagger_scopes.png](dagger_scopes.png)
 
-
 #### HandleWorkflow overview:
-1. `BlockRecordManager` to update the new consensus time for the user transaction, puts the lastBlockInfo in state if needed.
+The `HandleWorkflow` class is responsible for handling the platform transaction and providing the record stream.
+
+1. Calls `BlockRecordManager` to update the new consensus time for the user transaction, puts the lastBlockInfo in state if needed.
 when blocks
-2. `UserTxnWorkflow` is called to handle the transaction and provide record stream
+2. Calls `UserTxnWorkflow` is called to handle the transaction and provide record stream
 3. Externalizes the record stream items
 4. Update metrics for the handled user transaction
+![handle_basic_overview.png](handle_basic_overview.png)
+
 
 #### UserTxnWorkflow overview:
 1. If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
@@ -126,8 +145,11 @@ This writes a record with `BUSY` status and adds to record cache
      The `DispatchProcessor` will call the `Dispatch` to execute the business logic of the transaction.
      This same code will be called for child transactions as well, since the user transaction and dispatch 
      and child transaction dispatches are treated the same way.
+   
+![user_txn_workflow.png](user_txn_workflow.png)
 
 #### DispatchProcessor overview:
 The `DispatchProcessor.processDispatch` will be called for child transactions as well, 
 since the user transaction and dispatch and child transaction dispatches are treated the same way.
 1. It will
+![dispatch_processor.png](dispatch_processor.png)
