@@ -17,7 +17,9 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
@@ -101,9 +103,13 @@ public class DispatchUsageManager {
                 } else {
                     leakUnusedGas(dispatch);
                 }
-                if ((canAutoCreate(function) || canAutoAssociate(function))
-                        && dispatch.recordBuilder().status() != SUCCESS) {
-                    reclaimFailedCryptoCreateCapacity(dispatch);
+                if (dispatch.recordBuilder().status() != SUCCESS) {
+                    if (canAutoCreate(function)) {
+                        reclaimFailedCryptoCreateCapacity(dispatch);
+                    }
+                    if (canAutoAssociate(function)) {
+                        reclaimFailedTokenAssociate(dispatch);
+                    }
                 }
             }
         }
@@ -142,28 +148,40 @@ public class DispatchUsageManager {
      */
     private void reclaimFailedCryptoCreateCapacity(@NonNull final Dispatch dispatch) {
         final var readableAccountStore = dispatch.readableStoreFactory().getStore(ReadableAccountStore.class);
-        final var readableTokenRelStore = dispatch.readableStoreFactory().getStore(ReadableTokenRelationStore.class);
         final var numImplicitCreations =
                 throttleServiceManager.numImplicitCreations(dispatch.txnInfo().txBody(), readableAccountStore);
+        if (usedSelfFrontendThrottleCapacity(
+                numImplicitCreations, dispatch.txnInfo().txBody())) {
+            throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations, CRYPTO_CREATE);
+        }
+    }
+
+    /**
+     * Reclaims the throttle capacity for a failed dispatch that tried to
+     * perform {@link HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT} operations for Auto Association.
+     *
+     * @param dispatch the dispatch
+     */
+    private void reclaimFailedTokenAssociate(@NonNull final Dispatch dispatch) {
+        final var readableTokenRelStore = dispatch.readableStoreFactory().getStore(ReadableTokenRelationStore.class);
         final var numAutoAssociations =
                 throttleServiceManager.numAutoAssociations(dispatch.txnInfo().txBody(), readableTokenRelStore);
         if (usedSelfFrontendThrottleCapacity(
-                numImplicitCreations, numAutoAssociations, dispatch.txnInfo().txBody())) {
-            throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations, numAutoAssociations);
+                numAutoAssociations, dispatch.txnInfo().txBody())) {
+            throttleServiceManager.reclaimFrontendThrottleCapacity(numAutoAssociations, TOKEN_ASSOCIATE_TO_ACCOUNT);
         }
     }
 
     /**
      * Returns true if the transaction used frontend throttle capacity on this node.
      *
-     * @param numImplicitCreations the number of implicit creations
-     * @param numAutoAssociations the number of automatic associations
+     * @param numUsedCapacity the number of used capacity for either create ot auto associate operations
      * @param txnBody the transaction body
      * @return true if the transaction used frontend throttle capacity on this node
      */
     private boolean usedSelfFrontendThrottleCapacity(
-            final int numImplicitCreations, final int numAutoAssociations, @NonNull final TransactionBody txnBody) {
-        return (numImplicitCreations > 0 || numAutoAssociations > 0)
+            final int numUsedCapacity, @NonNull final TransactionBody txnBody) {
+        return numUsedCapacity > 0
                 && txnBody.nodeAccountIDOrThrow()
                         .equals(networkInfo.selfNodeInfo().accountId());
     }

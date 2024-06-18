@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
@@ -27,6 +25,7 @@ import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
@@ -230,15 +229,14 @@ public class ThrottleServiceManager {
     }
 
     /**
-     * Reclaims the capacity used for throttling the given number of implicit creations
+     * Reclaims the capacity used for throttling the given number of implicit creations or auto associations
      * on the frontend.
      *
-     * @param numImplicitCreations the number of implicit creations
+     * @param numCapacity the number of implicit creations or auto associations
      */
-    public void reclaimFrontendThrottleCapacity(final int numImplicitCreations, final int numAutoAssociations) {
+    public void reclaimFrontendThrottleCapacity(final int numCapacity, final HederaFunctionality hederaFunctionality) {
         try {
-            ingestThrottle.leakCapacityForNOfUnscaled(numImplicitCreations, CRYPTO_CREATE);
-            ingestThrottle.leakCapacityForNOfUnscaled(numAutoAssociations, TOKEN_ASSOCIATE_TO_ACCOUNT);
+            ingestThrottle.leakCapacityForNOfUnscaled(numCapacity, hederaFunctionality);
         } catch (Exception ignore) {
             // Ignore if the frontend bucket has already leaked all the capacity
             // used for throttling the transaction on the frontend

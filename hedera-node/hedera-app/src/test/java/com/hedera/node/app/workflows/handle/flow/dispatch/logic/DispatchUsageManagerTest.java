@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -225,6 +226,7 @@ class DispatchUsageManagerTest {
         given(dispatch.txnInfo()).willReturn(SUBMIT_TXN_INFO);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
+        given(dispatch.recordBuilder()).willReturn(recordBuilder);
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
@@ -317,7 +319,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, 0);
+        verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, CRYPTO_CREATE);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
@@ -335,7 +337,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), anyInt());
+        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
@@ -355,7 +357,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), anyInt());
+        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 }
