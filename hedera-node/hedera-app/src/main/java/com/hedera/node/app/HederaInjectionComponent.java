@@ -65,9 +65,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
- * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
- * this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
  */
 @Singleton
 @Component(

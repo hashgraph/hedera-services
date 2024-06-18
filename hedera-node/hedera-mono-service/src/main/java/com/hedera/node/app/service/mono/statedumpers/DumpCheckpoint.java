@@ -29,11 +29,6 @@ import java.util.stream.Collectors;
  */
 public enum DumpCheckpoint {
     /**
-     * Immediately after loading a mono-service saved state, before
-     * any migration has been done or events have been replayed.
-     */
-    MONO_PRE_MIGRATION,
-    /**
      * After migrating from a mono-service saved state (so with a
      * mod-service state); but before any events have been replayed.
      */

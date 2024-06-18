@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -764,5 +765,22 @@ public class CommonPbjConverters {
                 .seconds(t.getSeconds())
                 .nanos(t.getNanos())
                 .build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.ExchangeRate fromPbj(@NonNull ExchangeRate exchangeRate) {
+        return com.hederahashgraph.api.proto.java.ExchangeRate.newBuilder()
+                .setCentEquiv(exchangeRate.centEquiv())
+                .setHbarEquiv(exchangeRate.hbarEquiv())
+                .build();
+    }
+
+    public static @NonNull TransactionBody toPbj(@NonNull com.hederahashgraph.api.proto.java.TransactionBody txBody) {
+        requireNonNull(txBody);
+        try {
+            final var bytes = txBody.toByteArray();
+            return TransactionBody.PROTOBUF.parse(BufferedData.wrap(bytes));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
