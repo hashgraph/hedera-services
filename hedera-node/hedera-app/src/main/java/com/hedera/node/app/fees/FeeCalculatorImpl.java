@@ -227,6 +227,11 @@ public class FeeCalculatorImpl implements FeeCalculator {
         return this;
     }
 
+    @Override
+    public long getVptPrice() {
+        return feeData.getNetworkdata().getVpt() / 1000L;
+    }
+
     @NonNull
     @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, com.hederahashgraph.api.proto.java.FeeData> callback) {

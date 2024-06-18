@@ -35,6 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -90,7 +91,15 @@ class ChildFeeContextImplTest {
     @BeforeEach
     void setUp() {
         subject = new ChildFeeContextImpl(
-                feeManager, context, SAMPLE_BODY, PAYER_ID, true, authorizer, storeFactory, NOW);
+                feeManager,
+                context,
+                SAMPLE_BODY,
+                PAYER_ID,
+                true,
+                authorizer,
+                storeFactory,
+                NOW,
+                TransactionCategory.CHILD);
     }
 
     @Test
@@ -117,7 +126,15 @@ class ChildFeeContextImplTest {
     @Test
     void propagatesInvalidBodyAsIllegalStateException() {
         subject = new ChildFeeContextImpl(
-                feeManager, context, TransactionBody.DEFAULT, PAYER_ID, true, authorizer, storeFactory, NOW);
+                feeManager,
+                context,
+                TransactionBody.DEFAULT,
+                PAYER_ID,
+                true,
+                authorizer,
+                storeFactory,
+                NOW,
+                TransactionCategory.CHILD);
         assertThrows(
                 IllegalStateException.class,
                 () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));

@@ -102,4 +102,10 @@ public interface FeeCalculator {
      */
     @NonNull
     FeeCalculator resetUsage();
+
+    /**
+     * Gets the price for signature verifications only.
+     * @return the vpt price
+     */
+    long getVptPrice();
 }
