@@ -149,7 +149,35 @@ This writes a record with `BUSY` status and adds to record cache
 ![user_txn_workflow.png](user_txn_workflow.png)
 
 #### DispatchProcessor overview:
-The `DispatchProcessor.processDispatch` will be called for child transactions as well, 
-since the user transaction and dispatch and child transaction dispatches are treated the same way.
-1. It will
+The `DispatchProcessor.processDispatch` will be called for user and child dispatches.
+1. Checks if there is any error by node or user.
+    - Checks the preHandleStatus is NODE_DUE_DILIGENCE_FAILURE.
+      If so, creates an error report where node pays the fees and returns.
+    - Verifies payer signature. If it is invalid or missing, creates an error report where
+      node pays the fee and returns. 
+    - checks if the transaction is duplicate. If the transaction is duplicate on same node, 
+      creates error report where node pays the fee. If it is duplicate from other node, creates
+      an error report where payer pays the fee and returns.
+2. If there is node error report in 1, charges the node
+3. Else, charges the payer for the transaction.
+4. If it has not already failed in steps 2 and 3 the transaction is handled.
+   - Checks if there is capacity to handle the transaction. This is only used for contract operations. 
+   If the previous transaction is gas throttled, this throws a `ThrottleException`
+   - Dispatches the transaction to the appropriate handler with appropriate handleContext constructed
+     based on the transaction scope. The handler will execute the business logic of the transaction.
+   - Updates the record to SUCCESS status
+   - If it is a user transaction, notifies if system fileis updated and platform state is modified to
+     the appropriate facilities
+5. If any HandleException is thrown in any of the sub-steps of 4, we rollback the complete stack and 
+   charge the payer. The payer is charged again because when we rollback full stack the previous charges to the payer
+are rolled back as well.
+6. If there is a `ThorttleException` thrown in step 4, we rollback complete stack and charge the payer without serviceFee.
+7. If there is any unhandled exception, we rollback the complete stack and charge the payer. Set the record to 
+`FAIL_INVALID` status. 
+8. Tracks network utilization for the transaction 
+9. Finalizes the record from state changes
+10. Commits all the changes to the state
+11. Updates any metrics that need to be updated
+12. Adds all the records to the record cache
+
 ![dispatch_processor.png](dispatch_processor.png)
