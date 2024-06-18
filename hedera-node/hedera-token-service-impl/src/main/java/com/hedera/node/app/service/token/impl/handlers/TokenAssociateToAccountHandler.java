@@ -208,11 +208,9 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var accountId = op.accountOrThrow();
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var account = readableAccountStore.getAccountById(accountId);
-        // final var unlimitedAutoAssociations =
-        //        feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
-        // TODO use real feature flag
+        final var unlimitedAutoAssociations =
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
-        final var unlimitedAutoAssociations = false;
         if (unlimitedAutoAssociations) {
             final var exchangeRateInfo = feeContext.exchangeRateInfo();
 
@@ -250,7 +248,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         return usdToTinyCents.multiply(usdFee).longValue();
     }
 
-    private long getTinybarsFromTinyCents(@NonNull final long tinyCents, @NonNull final ExchangeRate rate) {
+    private long getTinybarsFromTinyCents(final long tinyCents, final ExchangeRate rate) {
         final var aMultiplier = BigInteger.valueOf(rate.hbarEquiv());
         final var bDivisor = BigInteger.valueOf(rate.centEquiv());
         return BigInteger.valueOf(tinyCents)

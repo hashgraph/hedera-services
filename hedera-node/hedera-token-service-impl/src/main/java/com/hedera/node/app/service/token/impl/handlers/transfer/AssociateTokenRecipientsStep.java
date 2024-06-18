@@ -180,11 +180,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            // final var unlimitedAutoAssociations =
-            //        config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
-            // TODO fix flag
-
-            final var unlimitedAutoAssociations = false;
+            final var unlimitedAutoAssociations =
+                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
             if (unlimitedAutoAssociations) {
                 final var topLevelPayer = handleContext.payer();
                 final var syntheticCreation = TransactionBody.newBuilder()
@@ -220,10 +217,5 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             }
         }
         throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-    }
-
-    private boolean hasUnlimitedAutoAssociations(
-            @NonNull final Account account, @NonNull final EntitiesConfig entitiesConfig) {
-        return false;
     }
 }
