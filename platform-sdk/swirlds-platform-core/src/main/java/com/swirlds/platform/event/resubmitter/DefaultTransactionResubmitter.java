@@ -21,7 +21,7 @@ import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -60,7 +60,7 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
      */
     @Override
     @NonNull
-    public List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull final GossipEvent event) {
+    public List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
         if (eventWindow == null) {
             throw new IllegalStateException("Event window is not set");
         }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,7 +107,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withGossipCaCertificate(Bytes.EMPTY)
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CAE_CERTIFICATE);
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Test

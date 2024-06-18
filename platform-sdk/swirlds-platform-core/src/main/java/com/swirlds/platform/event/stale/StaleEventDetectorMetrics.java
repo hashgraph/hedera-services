@@ -21,7 +21,7 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
@@ -67,7 +67,7 @@ public class StaleEventDetectorMetrics {
      *
      * @param event the stale event
      */
-    public void reportStaleEvent(@NonNull final GossipEvent event) {
+    public void reportStaleEvent(@NonNull final PlatformEvent event) {
         int systemTransactions = 0;
         int appTransactions = 0;
 
