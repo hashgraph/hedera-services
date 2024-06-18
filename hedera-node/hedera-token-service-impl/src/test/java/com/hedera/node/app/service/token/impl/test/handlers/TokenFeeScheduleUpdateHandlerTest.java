@@ -61,6 +61,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import java.util.ArrayList;
@@ -90,6 +91,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private TransactionDispatcher transactionDispatcher;
 
     @BeforeEach
     void setup() {
@@ -281,7 +285,16 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);
 
         final var feeContext = new FeeContextImpl(
-                consensusInstant, txnInfo, payerKey, payerId, feeManager, storeFactory, configuration, null, -1);
+                consensusInstant,
+                txnInfo,
+                payerKey,
+                payerId,
+                feeManager,
+                storeFactory,
+                configuration,
+                null,
+                -1,
+                transactionDispatcher);
 
         final var calculateFees = subject.calculateFees(feeContext);
         assertEquals(calculateFees, Fees.FREE);

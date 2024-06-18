@@ -34,8 +34,6 @@ public class ConsensusData {
 
     /* if isConsensus, round where >=1/2 famous see me */
     private long roundReceived = NO_CONSENSUS;
-    /** is this event the last in consensus order of all those with the same received round? */
-    private boolean lastInRoundReceived = false;
 
     @Override
     public boolean equals(final Object o) {
@@ -49,20 +47,17 @@ public class ConsensusData {
 
         final ConsensusData that = (ConsensusData) o;
 
-        return (roundReceived == that.roundReceived) && (lastInRoundReceived == that.lastInRoundReceived);
+        return (roundReceived == that.roundReceived);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(roundReceived, lastInRoundReceived);
+        return Objects.hash(roundReceived);
     }
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("roundReceived", roundReceived)
-                .append("lastInRoundReceived", lastInRoundReceived)
-                .toString();
+        return new ToStringBuilder(this).append("roundReceived", roundReceived).toString();
     }
 
     public long getRoundReceived() {
@@ -71,13 +66,5 @@ public class ConsensusData {
 
     public void setRoundReceived(long roundReceived) {
         this.roundReceived = roundReceived;
-    }
-
-    public boolean isLastInRoundReceived() {
-        return lastInRoundReceived;
-    }
-
-    public void setLastInRoundReceived(boolean lastInRoundReceived) {
-        this.lastInRoundReceived = lastInRoundReceived;
     }
 }

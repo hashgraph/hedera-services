@@ -844,9 +844,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             numConsensus++;
             consensusMetrics.consensusReached(e);
         }
-        if (last != null) {
-            last.setLastInRoundReceived(true);
-        }
     }
 
     private boolean nonConsensusNonAncient(@NonNull final EventImpl e) {

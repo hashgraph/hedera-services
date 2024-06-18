@@ -42,6 +42,7 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,16 +60,18 @@ public class QueryChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
+    private final TransactionDispatcher dispatcher;
 
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
+     * @param authorizer            the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     * {@link HederaFunctionality#CRYPTO_TRANSFER}.
-     * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks if the payer has enough
-     * @param expiryValidation the {@link ExpiryValidation} that checks if an account is expired
-     * @param feeManager the {@link FeeManager} that calculates the fees
+     *                              {@link HederaFunctionality#CRYPTO_TRANSFER}.
+     * @param solvencyPreCheck      the {@link SolvencyPreCheck} that checks if the payer has enough
+     * @param expiryValidation      the {@link ExpiryValidation} that checks if an account is expired
+     * @param feeManager            the {@link FeeManager} that calculates the fees
+     * @param dispatcher
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -77,12 +80,14 @@ public class QueryChecker {
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
+        this.dispatcher = requireNonNull(dispatcher);
     }
 
     /**
@@ -221,7 +226,8 @@ public class QueryChecker {
                 configuration,
                 authorizer,
                 // Signatures aren't applicable to queries
-                -1);
+                -1,
+                dispatcher);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

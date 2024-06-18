@@ -102,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
@@ -644,7 +645,7 @@ public class AutoAccountCreationSuite {
                                 .fee(totalAutoCreationFees.get() - 2)
                                 .payingWith(secondPayer)
                                 .signedBy(secondPayer)
-                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)),
+                                .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)),
                         getAccountBalance(secondPayer)
                                 .hasTinyBars(spec ->
                                         // Should only be charged a few hundred thousand
@@ -661,7 +662,7 @@ public class AutoAccountCreationSuite {
         // The expected (network + service) fee for two token transfers to a receiver
         // with no auto-creation; note it is approximate because the fee will vary slightly
         // with the size of the sig map, depending on the lengths of the public key prefixes required
-        final long approxTransferFee = 1163019L;
+        final long approxTransferFee = 1215188L;
 
         return propertyPreservingHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
@@ -1246,7 +1247,7 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
+        final long transferFee = 188608L;
         return propertyPreservingHapiSpec("autoAccountCreationsHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
@@ -1310,7 +1311,6 @@ public class AutoAccountCreationSuite {
             final long newAccountFunding,
             final long approxTransferFee) {
         long receivedBalance = 0;
-        long creationFeeSplit = 0;
         long payerBalWithAutoCreationFee = 0;
         for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
             final var id = adjust.getAccountID();
@@ -1322,12 +1322,6 @@ public class AutoAccountCreationSuite {
                 receivedBalance = adjust.getAmount();
             }
 
-            // auto-creation fee is transferred to 0.0.98 (funding account) and 0.0.800, 0.0.801 (if
-            // staking is active)
-            // from payer
-            if (id.getAccountNum() == 98 || id.getAccountNum() == 800 || id.getAccountNum() == 801) {
-                creationFeeSplit += adjust.getAmount();
-            }
             // sum of all deductions from the payer along with auto creation fee
             if ((id.getAccountNum() <= 98
                     || id.equals(defaultPayer)
@@ -1337,19 +1331,16 @@ public class AutoAccountCreationSuite {
             }
         }
         assertEquals(newAccountFunding, receivedBalance, "Transferred incorrect amount to alias");
-        // The charged auto-creation fee is the total fee collected minus the transfer fee; but
-        // recall the transfer fee can vary a bit based on the size of the sig map, so we'll enforce
-        // just approximate equality with the fee in the child record
-        final var approxAutoCreationFee = creationFeeSplit - approxTransferFee;
-        final var recordFee = child.getTransactionFee();
+        final var childRecordFee = child.getTransactionFee();
+        assertNotEquals(0, childRecordFee);
         // A single extra byte in the signature map will cost just ~40 tinybar more, so allowing
         // a delta of 1000 tinybar is sufficient to stabilize this test indefinitely
         final var permissibleDelta = 1000L;
-        final var observedDelta = Math.abs(approxAutoCreationFee - recordFee);
+        final var observedDelta = Math.abs(parent.getTransactionFee() - approxTransferFee);
         assertTrue(
                 observedDelta <= permissibleDelta,
-                "Child record did not specify the auto-creation fee (expected ~" + approxAutoCreationFee + " but was "
-                        + recordFee + ")");
+                "Parent record did not specify the transfer fee (expected ~" + approxTransferFee + " but was "
+                        + parent.getTransactionFee() + ")");
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 

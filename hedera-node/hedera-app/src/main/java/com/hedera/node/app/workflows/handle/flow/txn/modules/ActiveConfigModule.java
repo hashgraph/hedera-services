@@ -32,13 +32,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface ActiveConfigModule {
     @Provides
     @UserTxnScope
-    static Configuration provideConfiguration(@NonNull ConfigProvider configProvider) {
+    static Configuration provideConfiguration(@NonNull final ConfigProvider configProvider) {
         return configProvider.getConfiguration();
     }
 
     @Provides
     @UserTxnScope
-    static HederaConfig provideHederaConfig(@NonNull Configuration configuration) {
+    static HederaConfig provideHederaConfig(@NonNull final Configuration configuration) {
         return configuration.getConfigData(HederaConfig.class);
     }
 }

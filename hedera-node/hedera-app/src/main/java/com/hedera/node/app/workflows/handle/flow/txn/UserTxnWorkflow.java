@@ -16,33 +16,21 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
-import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
-import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -56,14 +44,10 @@ public class UserTxnWorkflow {
     private final InitTrigger initTrigger;
     private final SkipHandleWorkflow skipHandleWorkflow;
     private final DefaultHandleWorkflow defaultHandleWorkflow;
-    private final GenesisRecordsConsensusHook genesisRecordsHook;
-    final UserTransactionComponent userTxn;
-    private final BlockRecordManager blockRecordManager;
+    private final GenesisWorkflow genesisWorkflow;
+    private final UserTransactionComponent userTxn;
     private final HederaRecordCache recordCache;
-    private final NetworkUtilizationManager networkUtilizationManager;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
-    private final ThrottleServiceManager throttleServiceManager;
-    private final NetworkInfo networkInfo;
     private final UserRecordInitializer userRecordInitializer;
 
     @Inject
@@ -72,152 +56,111 @@ public class UserTxnWorkflow {
             @NonNull final InitTrigger initTrigger,
             @NonNull final SkipHandleWorkflow skipHandleWorkflow,
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
-            final GenesisRecordsConsensusHook genesisRecordsHook,
+            @NonNull final GenesisWorkflow genesisWorkflow,
             @NonNull final UserTransactionComponent userTxn,
-            final BlockRecordManager blockRecordManager,
-            final HederaRecordCache recordCache,
-            final NetworkUtilizationManager networkUtilizationManager,
-            final HandleWorkflowMetrics handleWorkflowMetrics,
-            final ThrottleServiceManager throttleServiceManager,
-            final NetworkInfo networkInfo,
-            final UserRecordInitializer userRecordInitializer) {
-        this.version = version;
-        this.initTrigger = initTrigger;
-        this.skipHandleWorkflow = skipHandleWorkflow;
-        this.defaultHandleWorkflow = defaultHandleWorkflow;
-        this.genesisRecordsHook = genesisRecordsHook;
-        this.userTxn = userTxn;
-        this.blockRecordManager = blockRecordManager;
-        this.recordCache = recordCache;
-        this.networkUtilizationManager = networkUtilizationManager;
-        this.handleWorkflowMetrics = handleWorkflowMetrics;
-        this.throttleServiceManager = throttleServiceManager;
-        this.networkInfo = networkInfo;
-        this.userRecordInitializer = userRecordInitializer;
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
+            @NonNull final UserRecordInitializer userRecordInitializer) {
+        this.version = requireNonNull(version);
+        this.initTrigger = requireNonNull(initTrigger);
+        this.skipHandleWorkflow = requireNonNull(skipHandleWorkflow);
+        this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
+        this.genesisWorkflow = requireNonNull(genesisWorkflow);
+        this.userTxn = requireNonNull(userTxn);
+        this.recordCache = requireNonNull(recordCache);
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.userRecordInitializer = requireNonNull(userRecordInitializer);
     }
 
+    /**
+     * Executes the user transaction and returns a stream of records that capture all
+     * side effects on state that are stipulated by the pre-block-stream contract with
+     * mirror nodes.
+     *
+     * <p>Never throws an exception without a fundamental breakdown in the integrity
+     * of the system invariants. If there is an internal error when executing the
+     * transaction, returns a stream of a single {@link ResponseCodeEnum#FAIL_INVALID}
+     * record with no other side effects.
+     *
+     * <p><b>IMPORTANT:</b> With block streams, this contract will expand to include
+     * all side effects on state, no exceptions.
+     *
+     * @return the stream of records
+     */
     public Stream<SingleTransactionRecord> execute() {
         try {
-            return getComputedRecordStream();
+            return sideEffectsOfExecution();
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            return getFailInvalidRecordStream();
+            return failInvalidRecordStream();
         }
     }
 
-    private Stream<SingleTransactionRecord> getComputedRecordStream() {
+    /**
+     * Executes the user transaction and returns a stream of records that capture all
+     * side effects on state that are stipulated by the pre-block-stream contract with
+     * mirror nodes.
+     *
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> sideEffectsOfExecution() {
         if (isOlderSoftwareEvent()) {
             skipHandleWorkflow.execute(userTxn);
         } else {
-            final var isGenesisTxn = userTxn.lastHandledConsensusTime().equals(Instant.EPOCH);
-            if (isGenesisTxn) {
-                genesisRecordsHook.process(userTxn.tokenContext());
+            if (userTxn.isGenesisTxn()) {
+                genesisWorkflow.executeIn(userTxn.tokenContext());
             }
-            final var workDone = defaultHandleWorkflow.execute(userTxn);
-            updateMetrics(isGenesisTxn);
-            trackUsage(workDone);
+            defaultHandleWorkflow.execute(userTxn);
+            updateWorkflowMetrics();
         }
-
-        return buildAndCacheResult(userTxn.recordListBuilder());
+        return allSideEffectsFrom(userTxn.recordListBuilder());
     }
 
-    private Stream<SingleTransactionRecord> getFailInvalidRecordStream() {
+    /**
+     * Returns a stream of a single {@link ResponseCodeEnum#FAIL_INVALID} record.
+     *
+     * @return the failure record
+     */
+    private Stream<SingleTransactionRecord> failInvalidRecordStream() {
         final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
         final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
         userRecordInitializer.initializeUserRecord(recordBuilder, userTxn.txnInfo());
-        recordBuilder.status(ResponseCodeEnum.FAIL_INVALID);
+        recordBuilder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
-        return buildAndCacheResult(failInvalidRecordListBuilder);
+        return allSideEffectsFrom(failInvalidRecordListBuilder);
     }
 
-    private void updateMetrics(final boolean isFirstTxn) {
-        if (isFirstTxn
-                || userTxn.consensusNow().getEpochSecond()
-                        > blockRecordManager.consTimeOfLastHandledTxn().getEpochSecond()) {
-            handleWorkflowMetrics.switchConsensusSecond();
-        }
-    }
-
-    private Stream<SingleTransactionRecord> buildAndCacheResult(RecordListBuilder builder) {
+    /**
+     * Builds and caches the result of the user transaction.
+     *
+     * @param builder the record list builder
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> allSideEffectsFrom(@NonNull final RecordListBuilder builder) {
         final var result = builder.build();
         recordCache.add(
                 userTxn.creator().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
         return result.records().stream();
     }
 
-    private void trackUsage(final WorkDone workDone) {
-        if (workDone == WorkDone.FEES_ONLY) {
-            networkUtilizationManager.trackFeePayments(userTxn.consensusNow(), userTxn.stack());
-        } else if (workDone == WorkDone.USER_TRANSACTION) {
-            final var isContractOperation =
-                    CONTRACT_OPERATIONS.contains(userTxn.txnInfo().functionality());
-            if (!isContractOperation) {
-                // we track utilization for contract operations in HandleLogic
-                networkUtilizationManager.trackTxn(userTxn.txnInfo(), userTxn.consensusNow(), userTxn.stack());
-            } else {
-                leakUnusedGas(userTxn.recordListBuilder().userTransactionRecordBuilder());
-            }
-            if (canAutoCreate(userTxn.functionality())) {
-                reclaimCryptoCreateThrottle(userTxn.recordListBuilder().userTransactionRecordBuilder());
-            }
-        }
-        throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(userTxn.stack());
-    }
-
-    private void reclaimCryptoCreateThrottle(final SingleTransactionRecordBuilderImpl recordBuilder) {
-        if (recordBuilder.status() != ResponseCodeEnum.SUCCESS) {
-            final var numImplicitCreations = throttleServiceManager.numImplicitCreations(
-                    userTxn.txnInfo().txBody(),
-                    // userTxn.readableStoreFactory has extra one layer of indirection through the stack.
-                    // So use the userTxn.tokenContext() to get the readable store.
-                    userTxn.tokenContext().readableStore(ReadableAccountStore.class));
-            if (usedSelfFrontendThrottleCapacity(
-                    numImplicitCreations, userTxn.txnInfo().txBody())) {
-                throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
-            }
+    /**
+     * Updates the metrics for the handle workflow.
+     */
+    private void updateWorkflowMetrics() {
+        if (userTxn.isGenesisTxn()
+                || userTxn.consensusNow().getEpochSecond()
+                        > userTxn.lastHandledConsensusTime().getEpochSecond()) {
+            handleWorkflowMetrics.switchConsensusSecond();
         }
     }
 
-    private boolean usedSelfFrontendThrottleCapacity(
-            final int numImplicitCreations, @NonNull final TransactionBody txnBody) {
-        return numImplicitCreations > 0
-                && txnBody.nodeAccountIDOrThrow()
-                        .equals(networkInfo.selfNodeInfo().accountId());
-    }
-
-    private void leakUnusedGas(final SingleTransactionRecordBuilderImpl recordBuilder) {
-        if (recordBuilder.hasContractResult()) {
-            final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-            handleWorkflowMetrics.addGasUsed(gasUsed);
-            final var contractsConfig = userTxn.configuration().getConfigData(ContractsConfig.class);
-            if (contractsConfig.throttleThrottleByGas()) {
-                final var gasLimitForContractTx =
-                        getGasLimitForContractTx(userTxn.txnInfo().txBody(), userTxn.functionality());
-                final var excessAmount = gasLimitForContractTx - gasUsed;
-                networkUtilizationManager.leakUnusedGasPreviouslyReserved(userTxn.txnInfo(), excessAmount);
-            }
-        }
-    }
-
+    /**
+     * Returns true if the software event is older than the current software version.
+     *
+     * @return true if the software event is older than the current software version
+     */
     private boolean isOlderSoftwareEvent() {
         return this.initTrigger != EVENT_STREAM_RECOVERY
                 && version.compareTo(userTxn.platformEvent().getSoftwareVersion()) > 0;
-    }
-
-    private static long getGasLimitForContractTx(final TransactionBody txnBody, final HederaFunctionality function) {
-        return switch (function) {
-            case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
-            case CONTRACT_CALL -> txnBody.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
-            default -> 0L;
-        };
-    }
-
-    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
-        final var ethTxBody = txn.ethereumTransaction();
-        if (ethTxBody == null) return 0L;
-        final var ethTxData =
-                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
-        return ethTxData != null ? ethTxData.gasLimit() : 0L;
     }
 }
