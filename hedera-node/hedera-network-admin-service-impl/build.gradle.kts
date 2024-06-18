@@ -36,7 +36,6 @@ testModuleInfo {
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
-    requires("com.swirlds.fcqueue")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")

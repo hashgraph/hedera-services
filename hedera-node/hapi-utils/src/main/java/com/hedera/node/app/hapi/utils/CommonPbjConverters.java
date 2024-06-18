@@ -23,6 +23,8 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FeeComponents;
+import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -115,6 +117,7 @@ public class CommonPbjConverters {
 
     /**
      * Tries to convert a PBJ {@link ResponseType} to a {@link com.hederahashgraph.api.proto.java.ResponseType}
+     *
      * @param responseType the PBJ {@link ResponseType} to convert
      * @return the converted {@link com.hederahashgraph.api.proto.java.ResponseType} if valid
      */
@@ -695,5 +698,37 @@ public class CommonPbjConverters {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.FeeData fromPbj(@NonNull FeeData feeData) {
+        requireNonNull(feeData);
+        return com.hederahashgraph.api.proto.java.FeeData.newBuilder()
+                .setNodedata(fromPbj(feeData.nodedataOrElse(FeeComponents.DEFAULT)))
+                .setNetworkdata(fromPbj(feeData.networkdataOrElse(FeeComponents.DEFAULT)))
+                .setServicedata(fromPbj(feeData.servicedataOrElse(FeeComponents.DEFAULT)))
+                .setSubTypeValue(feeData.subType().protoOrdinal())
+                .build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.FeeComponents fromPbj(
+            @NonNull FeeComponents feeComponents) {
+        requireNonNull(feeComponents);
+        return com.hederahashgraph.api.proto.java.FeeComponents.newBuilder()
+                .setMin(feeComponents.min())
+                .setMax(feeComponents.max())
+                .setConstant(feeComponents.constant())
+                .setBpt(feeComponents.bpt())
+                .setVpt(feeComponents.vpt())
+                .setRbh(feeComponents.rbh())
+                .setSbh(feeComponents.sbh())
+                .setGas(feeComponents.gas())
+                .setTv(feeComponents.tv())
+                .setBpr(feeComponents.bpr())
+                .setSbpr(feeComponents.sbpr())
+                .build();
+    }
+
+    public static FileID toPbj(com.hederahashgraph.api.proto.java.FileID fileID) {
+        return protoToPbj(fileID, FileID.class);
     }
 }
