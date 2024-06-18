@@ -19,6 +19,8 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getFixedPriceInTinyCents;
+import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getTinybarsFromTinyCents;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
@@ -28,8 +30,10 @@ import com.hedera.hapi.node.addressbook.NodeInfo;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -47,9 +51,12 @@ import javax.inject.Singleton;
 @Singleton
 public class NodeGetInfoHandler extends PaidQueryHandler {
 
+    private final AssetsLoader assetsLoader;
+
     @Inject
-    public NodeGetInfoHandler() {
+    public NodeGetInfoHandler(@NonNull final AssetsLoader assetsLoader) {
         // Dagger 2
+        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
     }
 
     @Override
@@ -136,7 +143,11 @@ public class NodeGetInfoHandler extends PaidQueryHandler {
     @NonNull
     @Override
     public Fees computeFees(@NonNull QueryContext queryContext) {
-        final var feeCalculator = queryContext.feeCalculator();
-        return feeCalculator.addBytesPerTransaction(1).calculate();
+        final var exchangeRateInfo = queryContext.exchangeRateInfo();
+
+        var canonicalPrice = getFixedPriceInTinyCents(HederaFunctionality.NODE_GET_INFO, SubType.DEFAULT, assetsLoader);
+        var canonicalPriceTinyBar =
+                getTinybarsFromTinyCents(canonicalPrice, exchangeRateInfo.activeRate(queryContext.consensusNow()));
+        return new Fees(0L, canonicalPriceTinyBar, 0L);
     }
 }

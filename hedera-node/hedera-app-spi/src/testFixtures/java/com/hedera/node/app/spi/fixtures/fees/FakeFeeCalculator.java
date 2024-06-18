@@ -80,4 +80,9 @@ public class FakeFeeCalculator implements FeeCalculator {
     public FakeFeeCalculator resetUsage() {
         return this;
     }
+
+    @Override
+    public long getVptPrice() {
+        return 0;
+    }
 }

@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,22 +37,31 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeGetInfoHandler;
-import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,9 +77,15 @@ class NodeGetInfoHandlerTest extends AddressBookTestBase {
 
     private NodeGetInfoHandler subject;
 
+    @Mock
+    private AssetsLoader assetsLoader;
+
+    @Mock
+    private ExchangeRateInfo exchangeRateInfo;
+
     @BeforeEach
     void setUp() {
-        subject = new NodeGetInfoHandler();
+        subject = new NodeGetInfoHandler(assetsLoader);
     }
 
     @Test
@@ -213,14 +228,19 @@ class NodeGetInfoHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete node trx")
-    public void testCalculateFeesInvocations() {
-        final var queryContext = mock(QueryContext.class);
-        final var feeCalc = mock(FeeCalculator.class);
-        given(queryContext.feeCalculator()).willReturn(feeCalc);
-        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+    void testCalculateFeesInvocations() throws IOException {
+        final var feeCtx = mock(QueryContext.class);
+        final ExchangeRate exchangeRate = new ExchangeRate(1, 2, TimestampSeconds.DEFAULT);
+        Map<SubType, BigDecimal> subTypeMap = new HashMap<>();
+        subTypeMap.put(SubType.DEFAULT, BigDecimal.valueOf(0.001));
+        Map<HederaFunctionality, Map<SubType, BigDecimal>> map = new HashMap<>();
+        map.put(HederaFunctionality.NodeGetInfo, subTypeMap);
 
-        assertThat(subject.computeFees(queryContext)).isEqualTo(new Fees(1, 0, 0));
+        given(feeCtx.exchangeRateInfo()).willReturn(exchangeRateInfo);
+        given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
+        given(assetsLoader.loadCanonicalPrices()).willReturn(map);
+
+        assertThat(subject.computeFees(feeCtx)).isEqualTo(new Fees(0, 5000000, 0));
     }
 
     private NodeInfo getExpectedInfo(boolean deleted) {

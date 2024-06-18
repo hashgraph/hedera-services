@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -29,6 +30,7 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -48,21 +50,27 @@ public class FeeContextImpl implements FeeContext {
     private final Configuration configuration;
     private final Authorizer authorizer;
     private final int numSignatures;
+    private final HederaState state;
+    private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher transactionDispatcher;
+    private ExchangeRateInfo exchangeRateInfo;
 
     /**
      * Constructor of {@code FeeContextImpl}
      *
+     * @param state                 the {@link HederaState} of the node
      * @param consensusTime         the approximation of consensus time used during ingest
      * @param txInfo                the {@link TransactionInfo} of the transaction
      * @param payerKey              the {@link Key} of the payer
      * @param payerId               the {@link AccountID} of the payer
      * @param feeManager            the {@link FeeManager} to generate a {@link FeeCalculator}
      * @param storeFactory          the {@link ReadableStoreFactory} to create readable stores
+     * @param exchangeRateManager   the {@link ExchangeRateManager} to get the current exchange rate
      * @param numSignatures         the number of signatures in the transaction
      * @param transactionDispatcher the {@link TransactionDispatcher} to dispatch child transactions
      */
     public FeeContextImpl(
+            @NonNull final HederaState state,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo txInfo,
             @NonNull final Key payerKey,
@@ -71,8 +79,10 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             final int numSignatures,
             final TransactionDispatcher transactionDispatcher) {
+        this.state = state;
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
@@ -81,6 +91,7 @@ public class FeeContextImpl implements FeeContext {
         this.storeFactory = storeFactory;
         this.configuration = configuration;
         this.authorizer = authorizer;
+        this.exchangeRateManager = exchangeRateManager;
         this.numSignatures = numSignatures;
         this.transactionDispatcher = transactionDispatcher;
     }
@@ -135,6 +146,21 @@ public class FeeContextImpl implements FeeContext {
     @Override
     public int numTxnSignatures() {
         return numSignatures;
+    }
+
+    @NonNull
+    @Override
+    public ExchangeRateInfo exchangeRateInfo() {
+        if (exchangeRateInfo == null) {
+            exchangeRateInfo = exchangeRateManager.exchangeRateInfo(state);
+        }
+        return exchangeRateInfo;
+    }
+
+    @Override
+    @NonNull
+    public Instant consensusNow() {
+        return consensusTime;
     }
 
     @Override

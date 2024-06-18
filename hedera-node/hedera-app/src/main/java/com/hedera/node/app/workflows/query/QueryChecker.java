@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -45,6 +46,7 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -61,6 +63,7 @@ public class QueryChecker {
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
     private final TransactionDispatcher dispatcher;
+    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryChecker}
@@ -71,6 +74,7 @@ public class QueryChecker {
      * @param solvencyPreCheck      the {@link SolvencyPreCheck} that checks if the payer has enough
      * @param expiryValidation      the {@link ExpiryValidation} that checks if an account is expired
      * @param feeManager            the {@link FeeManager} that calculates the fees
+     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @param dispatcher
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -81,12 +85,14 @@ public class QueryChecker {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
             @NonNull final FeeManager feeManager,
+            @NonNull final ExchangeRateManager exchangeRateManager,
             final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
     }
 
@@ -204,6 +210,7 @@ public class QueryChecker {
     /**
      * Estimates the fees for a payment (CryptoTransfer) in a query
      *
+     * @param state current state
      * @param storeFactory the {@link ReadableStoreFactory} used to access stores
      * @param transactionInfo the {@link TransactionInfo} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
      * @param payerKey the {@link Key} of the payer
@@ -211,12 +218,14 @@ public class QueryChecker {
      * @return the estimated fees
      */
     public long estimateTxFees(
+            @NonNull final HederaState state,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration) {
         final var feeContext = new FeeContextImpl(
+                state,
                 consensusTime,
                 transactionInfo,
                 payerKey,
@@ -226,6 +235,7 @@ public class QueryChecker {
                 configuration,
                 authorizer,
                 // Signatures aren't applicable to queries
+                exchangeRateManager,
                 -1,
                 dispatcher);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();

@@ -36,12 +36,14 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 
 /**
  * Simple implementation of {@link QueryContext}.
  */
 public class QueryContextImpl implements QueryContext {
 
+    private final Instant consensusTime;
     private final ReadableStoreFactory storeFactory;
     private final Query query;
     private final Configuration configuration;
@@ -68,6 +70,7 @@ public class QueryContextImpl implements QueryContext {
      */
     public QueryContextImpl(
             @NonNull final HederaState state,
+            @NonNull final Instant consensusTime,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final Configuration configuration,
@@ -76,6 +79,7 @@ public class QueryContextImpl implements QueryContext {
             @NonNull final FeeCalculator feeCalculator,
             @Nullable final AccountID payer) {
         this.state = requireNonNull(state, "state must not be null");
+        this.consensusTime = requireNonNull(consensusTime, "consensus time must not be null");
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null");
         this.query = requireNonNull(query, "query must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
@@ -145,5 +149,11 @@ public class QueryContextImpl implements QueryContext {
     @Override
     public FeeCalculator feeCalculator() {
         return feeCalculator;
+    }
+
+    @Override
+    @NonNull
+    public Instant consensusNow() {
+        return consensusTime;
     }
 }

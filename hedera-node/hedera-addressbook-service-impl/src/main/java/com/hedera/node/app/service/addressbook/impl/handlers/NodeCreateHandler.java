@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODES_CREATED;
+import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getFixedPriceInTinyCents;
+import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getTinybarsFromTinyCents;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -32,6 +34,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
@@ -56,15 +59,18 @@ import javax.inject.Singleton;
 @Singleton
 public class NodeCreateHandler implements TransactionHandler {
     private final AddressBookValidator addressBookValidator;
+    private final AssetsLoader assetsLoader;
 
     /**
      * Constructs a {@link NodeCreateHandler} with the given {@link AddressBookValidator}.
      * @param addressBookValidator the validator for the crypto create transaction
      */
     @Inject
-    public NodeCreateHandler(@NonNull final AddressBookValidator addressBookValidator) {
+    public NodeCreateHandler(
+            @NonNull final AddressBookValidator addressBookValidator, @NonNull final AssetsLoader assetsLoader) {
         this.addressBookValidator =
                 requireNonNull(addressBookValidator, "The supplied argument 'addressBookValidator' must not be null");
+        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
     }
 
     @Override
@@ -125,7 +131,17 @@ public class NodeCreateHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
-        return feeCalculator.addBytesPerTransaction(1).calculate();
+        final var exchangeRateInfo = feeContext.exchangeRateInfo();
+
+        feeCalculator.resetUsage();
+        // The fees should be increased based on number of signatures.
+        final var price = getTinybarsFromTinyCents(
+                feeCalculator.getVptPrice(), exchangeRateInfo.activeRate(feeContext.consensusNow()));
+        var sigPrice = (feeContext.numTxnSignatures() - 1) * price;
+        var canonicalPrice = getFixedPriceInTinyCents(HederaFunctionality.NODE_CREATE, SubType.DEFAULT, assetsLoader);
+        var canonicalPriceTinyBar =
+                getTinybarsFromTinyCents(canonicalPrice, exchangeRateInfo.activeRate(feeContext.consensusNow()));
+        return new Fees(0L, sigPrice + canonicalPriceTinyBar, 0L);
     }
 
     private long getNextNodeID(@NonNull final WritableNodeStore nodeStore) {

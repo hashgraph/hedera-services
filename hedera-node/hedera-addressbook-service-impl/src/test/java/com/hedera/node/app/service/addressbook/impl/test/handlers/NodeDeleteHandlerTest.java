@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
@@ -31,14 +31,18 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -47,7 +51,13 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.swirlds.config.api.Configuration;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,12 +84,18 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    private AssetsLoader assetsLoader;
+
+    @Mock
+    private ExchangeRateInfo exchangeRateInfo;
+
     protected Configuration testConfig;
 
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableNodeStoreImpl.class);
-        subject = new NodeDeleteHandler();
+        subject = new NodeDeleteHandler(assetsLoader);
 
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
@@ -112,14 +128,21 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete node trx")
-    public void testCalculateFeesInvocations() {
+    public void testCalculateFeesInvocations() throws IOException {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
-        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+        final ExchangeRate exchangeRate = new ExchangeRate(1, 2, TimestampSeconds.DEFAULT);
+        Map<SubType, BigDecimal> subTypeMap = new HashMap<>();
+        subTypeMap.put(SubType.DEFAULT, BigDecimal.valueOf(0.001));
+        Map<HederaFunctionality, Map<SubType, BigDecimal>> map = new HashMap<>();
+        map.put(HederaFunctionality.NodeDelete, subTypeMap);
 
-        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
+        given(feeCtx.exchangeRateInfo()).willReturn(exchangeRateInfo);
+        given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
+        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(assetsLoader.loadCanonicalPrices()).willReturn(map);
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(0, 5000000, 0));
     }
 
     @Test
