@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.isContractOperation;
@@ -32,6 +33,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -99,7 +101,8 @@ public class DispatchUsageManager {
                 } else {
                     leakUnusedGas(dispatch);
                 }
-                if (canAutoCreate(function) && dispatch.recordBuilder().status() != SUCCESS) {
+                if ((canAutoCreate(function) || canAutoAssociate(function))
+                        && dispatch.recordBuilder().status() != SUCCESS) {
                     reclaimFailedCryptoCreateCapacity(dispatch);
                 }
             }
@@ -139,11 +142,14 @@ public class DispatchUsageManager {
      */
     private void reclaimFailedCryptoCreateCapacity(@NonNull final Dispatch dispatch) {
         final var readableAccountStore = dispatch.readableStoreFactory().getStore(ReadableAccountStore.class);
+        final var readableTokenRelStore = dispatch.readableStoreFactory().getStore(ReadableTokenRelationStore.class);
         final var numImplicitCreations =
                 throttleServiceManager.numImplicitCreations(dispatch.txnInfo().txBody(), readableAccountStore);
+        final var numAutoAssociations =
+                throttleServiceManager.numAutoAssociations(dispatch.txnInfo().txBody(), readableTokenRelStore);
         if (usedSelfFrontendThrottleCapacity(
-                numImplicitCreations, dispatch.txnInfo().txBody())) {
-            throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
+                numImplicitCreations, numAutoAssociations, dispatch.txnInfo().txBody())) {
+            throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations, numAutoAssociations);
         }
     }
 
@@ -151,12 +157,13 @@ public class DispatchUsageManager {
      * Returns true if the transaction used frontend throttle capacity on this node.
      *
      * @param numImplicitCreations the number of implicit creations
+     * @param numAutoAssociations the number of automatic associations
      * @param txnBody the transaction body
      * @return true if the transaction used frontend throttle capacity on this node
      */
     private boolean usedSelfFrontendThrottleCapacity(
-            final int numImplicitCreations, @NonNull final TransactionBody txnBody) {
-        return numImplicitCreations > 0
+            final int numImplicitCreations, final int numAutoAssociations, @NonNull final TransactionBody txnBody) {
+        return (numImplicitCreations > 0 || numAutoAssociations > 0)
                 && txnBody.nodeAccountIDOrThrow()
                         .equals(networkInfo.selfNodeInfo().accountId());
     }

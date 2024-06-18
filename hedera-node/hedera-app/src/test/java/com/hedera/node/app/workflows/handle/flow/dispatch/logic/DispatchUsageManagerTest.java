@@ -317,7 +317,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1);
+        verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, 0);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
@@ -335,7 +335,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt());
+        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), anyInt());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
@@ -355,7 +355,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt());
+        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), anyInt());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 }
