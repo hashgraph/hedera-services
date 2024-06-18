@@ -71,8 +71,12 @@ jobs:
           HAPI_VERSION=$(grep "val hapiProtoVersion = " settings.gradle.kts | sed -E 's/.+ = "(.+)"/\1/')
           HAPI_MAJOR="$(semver get major ${HAPI_VERSION})"
           HAPI_MINOR="$(semver get minor ${HAPI_VERSION})"
-          echo "Verifying that the tag ${TAG_MAJOR}.${TAG_MINOR} matches the hapiProtoVersion ${HAPI_MAJOR}.${HAPI_MINOR} in settings.gradle.kts"
-          test "${TAG_MAJOR}" = "${HAPI_MAJOR}" && test "${TAG_MINOR}" = "${HAPI_MINOR}"
+          if [[ "${TAG_MAJOR}" != "${HAPI_MAJOR}" || "${TAG_MINOR}" != "${HAPI_MINOR}" ]]; then
+             echo "::error title=HAPI Version Mismatch::The tag version (${TAG_MAJOR}.${TAG_MINOR}) does not match the hapiProtoVersion (${HAPI_MAJOR}.${HAPI_MINOR}) specified in settings.gradle.kts"
+             exit 1
+          else
+             echo "The tag version (${TAG_MAJOR}.${TAG_MINOR}) matches the hapiProtoVersion (${HAPI_MAJOR}.${HAPI_MINOR}) specified in settings.gradle.kts"
+          fi
 
   release-tag:
     name: Release [Tag]
