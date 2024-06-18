@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenReference;
 import com.hedera.hapi.node.token.TokenRejectTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -46,7 +47,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -133,7 +133,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     void calculateFeesFungibleReject() {
         final var txn = newTokenReject(ACCOUNT_3333, tokenRefFungible);
 
-        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeContext feeContext = mock(FeeContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         setupFeeTest(txn, feeContext, feeCalculator);
 
@@ -150,7 +150,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void calculateFeesNonFungibleReject() {
         final var txn = newTokenReject(ACCOUNT_3333, tokenRefNFT);
-        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeContext feeContext = mock(FeeContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         setupFeeTest(txn, feeContext, feeCalculator);
 
@@ -167,7 +167,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void calculateFeesFungibleAndNonFungibleRejects() {
         final var txn = newTokenReject(ACCOUNT_3333, tokenRefNFT, tokenRefFungible);
-        FeeContext feeContext = mock(HandleContextImpl.class);
+        FeeContext feeContext = mock(FeeContextImpl.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         setupFeeTest(txn, feeContext, feeCalculator);
 
