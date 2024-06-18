@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.Query;
@@ -684,5 +685,15 @@ public class CommonPbjConverters {
                 .setSeconds(now.seconds())
                 .setNanos(now.nanos())
                 .build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.ScheduleInfo fromPbj(@NonNull ScheduleInfo pbjValue) {
+        requireNonNull(pbjValue);
+        try {
+            final var bytes = asBytes(ScheduleInfo.PROTOBUF, pbjValue);
+            return com.hederahashgraph.api.proto.java.ScheduleInfo.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

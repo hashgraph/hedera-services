@@ -19,7 +19,6 @@ package com.hedera.node.app.util;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.NETWORK_CTX;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.RECORD_STREAM_RUNNING_HASH;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.SCHEDULE_TXS;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MONO_PRE_MIGRATION;
 import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.service.mono.statedumpers.StateDumper.dumpMonoChildrenFrom;
@@ -29,12 +28,10 @@ import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
-import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
@@ -101,15 +98,6 @@ public class MonoMigrationUtils {
                 // out
                 // to various services in the modular code, and will each be migrated in its appropriate service.
                 final MerkleNetworkContext fromNetworkContext = state.getChild(NETWORK_CTX);
-
-                // --------------------- SPECIAL_FILES (7)
-                // No longer useful; don't migrate
-
-                // --------------------- SCHEDULE_TXS (8)
-                final MerkleScheduledTransactions scheduleFromState = state.getChild(SCHEDULE_TXS);
-                if (scheduleFromState != null) {
-                    V0490ScheduleSchema.setFs(scheduleFromState);
-                }
 
                 // --------------------- RECORD_STREAM_RUNNING_HASH (9)
                 final RecordsRunningHashLeaf blockInfoFromState = state.getChild(RECORD_STREAM_RUNNING_HASH);
