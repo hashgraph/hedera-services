@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static java.util.Objects.requireNonNull;

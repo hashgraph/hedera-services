@@ -731,4 +731,38 @@ public class CommonPbjConverters {
     public static FileID toPbj(com.hederahashgraph.api.proto.java.FileID fileID) {
         return protoToPbj(fileID, FileID.class);
     }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.AccountID fromPbj(@NonNull AccountID accountID) {
+        requireNonNull(accountID);
+        final var builder = com.hederahashgraph.api.proto.java.AccountID.newBuilder()
+                .setShardNum(accountID.shardNum())
+                .setRealmNum(accountID.realmNum());
+
+        final var account = accountID.account();
+        switch (account.kind()) {
+            case ACCOUNT_NUM -> builder.setAccountNum(account.as());
+            case ALIAS -> builder.setAlias(fromPbj((Bytes) account.as()));
+            case UNSET -> throw new RuntimeException("Invalid account ID, no account type!");
+        }
+
+        return builder.build();
+    }
+
+    public static @NonNull Key toPbj(@NonNull com.hederahashgraph.api.proto.java.Key keyValue) {
+        requireNonNull(keyValue);
+        try {
+            final var bytes = keyValue.toByteArray();
+            return Key.PROTOBUF.parse(BufferedData.wrap(bytes));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Timestamp toPbj(@NonNull com.hederahashgraph.api.proto.java.Timestamp t) {
+        requireNonNull(t);
+        return Timestamp.newBuilder()
+                .seconds(t.getSeconds())
+                .nanos(t.getNanos())
+                .build();
+    }
 }
