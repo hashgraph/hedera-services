@@ -27,24 +27,31 @@ additional latency.
 Nodes in the network create new "self-events" on a regular basis. These self-events carry transactions that were
 submitted to the node, and advance the hashgraph. When a node creates a self-event, it must build upon the previous
 self-event and some "other parent" event (see the hashgraph algorithm for more details). If a node builds two
-self-events on the same self-event parent, then the hashgraph will branch. Branching in the hashgraph is considered an
-attack on consensus. It can be detected deterministically and the offending node punished accordingly, protecting the
-integrity of the hashgraph. Therefore, no honest node should ever branch.
+self-events on the same self-event parent or if it creates an event with no self parent and there is a non-ancient self
+event that could have been a self parent, that is considered to be a branch in the hashgraph. Branching in the
+hashgraph is considered an attack on consensus. It can be detected deterministically and the offending node punished
+accordingly, protecting the integrity of the hashgraph. Therefore, no honest node should ever branch.
 
-Today even honest nodes can branch. This happens when a node gossips a self-event and is shutdown before the event has
-been persisted to disk in the Pre-Consensus Event Stream (PCES). On restart, the PCES is replayed to populate the
-system with missing events, and other events that occurred since the node went down are retrieved via gossip. But there
-is a time between when the node starts up and sends a new self-event and when it receives its old self-event from other
-nodes. During this time, the node will build a new self-event on the same parent as the previous self-event, causing a
-branch.
+Today even honest nodes can accidentally branch (in practice the probability low but not unheard of). This happens
+when a node gossips a self-event and is shutdown before the event has been persisted to disk in the
+Pre-Consensus Event Stream (PCES). On restart, the PCES is replayed to populate the system with missing events,
+and other events that occurred since the node went down are retrieved via gossip. But there is a time between when
+the node starts up and sends a new self-event and when it receives its old self-event from other nodes. During this
+time, the node will build a new self-event on the same parent as the previous self-event (or with no self parent),
+causing a branch.
 
-This happens today on update boundaries when **every node** deterministically shutdown and then start back up.
+This happens today most frequently on update boundaries when **every node** deterministically shutdown and then
+start back up. In theory it can also happen when individual nodes are restarted.
 
 ### Requirements
 
 1. There must not be any noticeable impact in time-to-consensus.
+    a) if there is an observed impact, all product stakeholders must agree that the impact is negligible
 2. Self-events must be persisted before they are gossiped or handled by Hashgraph
 3. Persistence must be durable even if the JVM crashes
+    a) If the host OS crashes, we accept the possibility of the loss of a few seconds of events. But such loss
+       should be minimized through whatever technical mechanisms are available (as long as they don't compromise
+       performance).
 
 ### Design Decisions
 
@@ -85,6 +92,10 @@ In this case, we are only interested in _self events_. These are created by the 
 the `Event Intake System`. Here, they are ordered and validated and sent to the `Preconsensus Recording System`. Here,
 they will be immediately persisted using `MemoryMappedFile` and then sent to the `Consensus System` and to the
 `Gossip System`.
+
+In the short term, we will not send any events to the gossip system before they pass through the PCES system. When we
+eventually deploy gossip algorithms that call for out of order transmission (e.g. chatter), we may decide to expose
+other events (i.e. events not created by ourselves) to gossip before they pass through the orphan buffer.
 
 ### Impact on Wiring
 
@@ -142,6 +153,12 @@ However, it also limits support for these more rigorous semantics to Linux:
 Only Linux is used today in production deployments. Should MacOS or Windows be used in the future, we may need to look
 into equivalent solutions for those platforms, or use something other than memory mapped files on those platforms, with
 a corresponding impact on time to finality for those hosts.
+
+In the short term, an implementation that does not use memory mapped files will be developed for use on MacOS and
+Windows. The goal of this solution is to allow developers to run the software locally. Since this will not be code
+we intend to deploy (in the short term), we just need to make it "fast enough" such that local tests work as intended.
+It will not be necessary to fine tune the performance of this implementation until we derive a use case that requires
+it.
 
 The [Man Page for mmap(2)](https://man7.org/linux/man-pages/man2/mmap.2.html) on Linux describes the MAP_SYNC flag:
 
