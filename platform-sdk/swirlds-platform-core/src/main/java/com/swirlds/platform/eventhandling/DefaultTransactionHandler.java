@@ -191,7 +191,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         try {
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final EventImpl event : consensusRound.getConsensusEvents()) {
-                event.consensusReached();
+                event.getBaseEvent().setConsensusTimestampsOnPayloads();
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
@@ -271,7 +271,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
             // here anyway, for when that changes in the future.
             if (!round.isEmpty()) {
-                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                previousRoundLegacyRunningEventHash = round.getStreamedEvents()
                         .getLast()
                         .getRunningHash()
                         .getFutureHash()

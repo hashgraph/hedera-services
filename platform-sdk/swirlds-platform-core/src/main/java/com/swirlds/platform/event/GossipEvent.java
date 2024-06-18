@@ -30,8 +30,10 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,7 +48,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class GossipEvent extends AbstractSerializableHashable implements Event {
+public class GossipEvent extends AbstractSerializableHashable implements ConsensusEvent {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
@@ -313,6 +315,12 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         return consensusTimestamp;
     }
 
+    @Override
+    public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
+        return Arrays.asList((ConsensusTransaction[]) hashedData.getTransactions())
+                .iterator();
+    }
+
     /**
      * @return the consensus order for this event, this will be
      * {@link com.swirlds.platform.consensus.ConsensusConstants#NO_CONSENSUS_ORDER} if the event has not reached
@@ -335,6 +343,24 @@ public class GossipEvent extends AbstractSerializableHashable implements Event {
         Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
         this.consensusData = consensusData;
         this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
+    }
+
+    /**
+     * Set the consensus timestamp on the payload wrappers for this event. This must be done after the consensus time is
+     * set for this event.
+     */
+    public void setConsensusTimestampsOnPayloads() {
+        if (this.consensusData == NO_CONSENSUS) {
+            throw new IllegalStateException("Consensus data must be set");
+        }
+        final ConsensusTransactionImpl[] transactions = hashedData.getTransactions();
+        if (transactions == null) {
+            return;
+        }
+
+        for (int i = 0; i < transactions.length; i++) {
+            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(this, i));
+        }
     }
 
     /**

@@ -20,11 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
@@ -57,16 +54,6 @@ public class DetailedConsensusEventTest {
             final DetailedConsensusEvent deserialized = io.getInput().readSerializable();
             assertEquals(consensusEvent, deserialized);
         }
-    }
-
-    @Test
-    public void EventImplGetHashTest() {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
-        EventImpl event = new EventImpl(consensusEvent);
-        CryptographyHolder.get().digestSync(consensusEvent);
-        Hash expectedHash = consensusEvent.getHash();
-        CryptographyHolder.get().digestSync(event);
-        assertEquals(expectedHash, event.getHash());
     }
 
     private DetailedConsensusEvent generateConsensusEvent() {

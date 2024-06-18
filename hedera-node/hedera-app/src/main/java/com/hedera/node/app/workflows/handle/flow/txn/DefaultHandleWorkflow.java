@@ -19,12 +19,14 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -45,26 +47,27 @@ public class DefaultHandleWorkflow {
 
     @Inject
     public DefaultHandleWorkflow(
-            final StakingPeriodTimeHook stakingPeriodTimeHook,
-            final BlockRecordManager blockRecordManager,
-            final SchedulePurger schedulePurger,
-            final DispatchProcessor dispatchProcessor,
-            final HollowAccountCompleter hollowAccountFinalization) {
-        this.stakingPeriodTimeHook = stakingPeriodTimeHook;
-        this.blockRecordManager = blockRecordManager;
-        this.schedulePurger = schedulePurger;
-        this.dispatchProcessor = dispatchProcessor;
-        this.hollowAccountFinalization = hollowAccountFinalization;
+            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final SchedulePurger schedulePurger,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final HollowAccountCompleter hollowAccountFinalization) {
+        this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook);
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.schedulePurger = requireNonNull(schedulePurger);
+        this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.hollowAccountFinalization = requireNonNull(hollowAccountFinalization);
     }
 
     /**
      * Executes the handle workflow. This method is the entry point for handling a user transaction.
      * It processes the staking period time hook, advances the consensus clock, expires schedules, logs the
-     * user transaction,
+     * user transaction, finalizes hollow accounts, and processes the dispatch.
+     *
      * @param userTxn the user transaction component
-     * @return the work done
      */
-    public WorkDone execute(UserTransactionComponent userTxn) {
+    public void execute(@NonNull final UserTransactionComponent userTxn) {
+        requireNonNull(userTxn);
         processStakingPeriodTimeHook(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         schedulePurger.expireSchedules(userTxn);
@@ -73,8 +76,7 @@ public class DefaultHandleWorkflow {
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
         hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
-
-        return dispatchProcessor.processDispatch(userDispatch);
+        dispatchProcessor.processDispatch(userDispatch);
     }
 
     private void processStakingPeriodTimeHook(UserTransactionComponent userTxn) {
@@ -86,7 +88,7 @@ public class DefaultHandleWorkflow {
         }
     }
 
-    public void logUserTxn(UserTransactionComponent userTxn) {
+    private void logUserTxn(@NonNull final UserTransactionComponent userTxn) {
         // Log start of user transaction to transaction state log
         logStartUserTransaction(
                 userTxn.platformTxn(),

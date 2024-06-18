@@ -67,7 +67,6 @@ public class TransactionDispatcher {
      */
     public void dispatchPureChecks(@NonNull final TransactionBody txBody) throws PreCheckException {
         requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
-
         try {
             final var handler = getHandler(txBody);
             handler.pureChecks(txBody);

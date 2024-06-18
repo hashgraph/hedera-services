@@ -1370,8 +1370,6 @@ public final class PbjConverter {
             case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case INVALID_OWNER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
-
-                //            case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
 
