@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
@@ -735,12 +734,12 @@ public class AssociatePrecompileV2SecurityModelSuite {
                         // associating ACCOUNT to the token
                         // SIGNER → call → CONTRACT A → call → HTS
                         contractCall(
-                                ASSOCIATE_CONTRACT,
-                                "tokenAssociate",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                        ASSOCIATE_CONTRACT,
+                                        "tokenAssociate",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasRetryPrecheckFrom(BUSY)
@@ -753,12 +752,12 @@ public class AssociatePrecompileV2SecurityModelSuite {
                         // SIGNER → call → CONTRACT A → call → HTS
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
                         contractCall(
-                                ASSOCIATE_CONTRACT,
-                                "tokenAssociate",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                        ASSOCIATE_CONTRACT,
+                                        "tokenAssociate",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasRetryPrecheckFrom(BUSY)
@@ -766,35 +765,32 @@ public class AssociatePrecompileV2SecurityModelSuite {
                                 .gas(750_000L)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(
-                                ASSOCIATE_CONTRACT,
-                                "tokensAssociate",
-                                HapiParserUtil.asHeadlongAddress(
-                                        asAddress(spec.registry().getAccountID(ACCOUNT))),
-                                new Address[] {
+                                        ASSOCIATE_CONTRACT,
+                                        "tokensAssociate",
                                         HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
-                                })
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        new Address[] {
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
+                                        })
                                 .signedBy(SIGNER)
                                 .payingWith(SIGNER)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .via("multipleTokensAssociate")
                                 .gas(1_600_000L)
                                 .hasKnownStatus(SUCCESS))))
-                .then(getAccountInfo(ACCOUNT)
-                        .hasToken(relationshipWith(FUNGIBLE_TOKEN)
-                                .kyc(KycNotApplicable)
-                                .freeze(FreezeNotApplicable))
-                        .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)
-                                .kyc(KycNotApplicable)
-                                .freeze(FreezeNotApplicable)),
-                        validateChargedUsd(
-                                "fungibleTokenAssociate", expectedFeeForOneAssociation),
-                        validateChargedUsd(
-                                "nonFungibleTokenAssociate", expectedFeeForOneAssociation),
-                        validateChargedUsd(
-                                "multipleTokensAssociate", expectedFeeForTwoAssociations));
+                .then(
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FUNGIBLE_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable)),
+                        validateChargedUsd("fungibleTokenAssociate", expectedFeeForOneAssociation),
+                        validateChargedUsd("nonFungibleTokenAssociate", expectedFeeForOneAssociation),
+                        validateChargedUsd("multipleTokensAssociate", expectedFeeForTwoAssociations));
     }
-
 }
