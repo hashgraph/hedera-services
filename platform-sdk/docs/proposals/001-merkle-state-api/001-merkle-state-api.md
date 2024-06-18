@@ -2,14 +2,14 @@
 
 ## Summary
 
-Refactor the Merkle tree so that it can be fully represented by the State API objects.
+Refactor the Merkle tree so that it can be fully represented by the State API.
 Create a module that will provide a simple and easy-to-use API for the Merkle tree.
 
 ## Purpose and Context
 
 ### Why?
 
-The Merkle tree is a rather complex data structure, and to make interaction easier, we need to hide this complexity behind the API.
+The Merkle tree is a rather complex data structure, and to make interaction easier, we need to hide this complexity behind an API.
 Another reason to have this API is to provide additional flexibility in changing the implementation details of the Merkle tree.
 As long as they are hidden, we are free to change them. This API will be critically important for the Block Node to 
 interact with the state without knowing the details of the Merkle tree.
@@ -28,7 +28,7 @@ There are two issues that need to be addressed:
 
 A singleton is a node with 2 children:
 
-- string label for State Name
+- label of type `String` for the state name
 - protobuf message for child data
 
 In Java code it's represented by the following classes:
@@ -252,4 +252,4 @@ Migration testing:
 
 - Move State API implementation classes from `swirlds-platform-core` to `swirlds-state-api`.
 - Refactor `PlatformState` into a singleton. Migrate the data.
-- Move `MerlkeHederaState` to `swirlds-state-api`
+- Move `MerkleHederaState` to `swirlds-state-api`
