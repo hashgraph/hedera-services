@@ -22,7 +22,21 @@ to a separate module as a part of this proposal.
 There are two issues that need to be addressed:
 
 * We need to have a public API for the Merkle tree that is simple and easy to use, residing in a separate module with a minimal set of dependencies.
-* The Merkle tree has to be fully expressed in terms of State API. Currently, `PlatformState` stands out and needs to be refactored.
+* The Merkle tree has to be fully expressed in terms of State API. Currently, `PlatformState` stands out and needs to be refactored. 
+See more details in the [Platform State](#platform-state) section.
+
+List of `swirlds-state-api` dependencies:
+```java
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.virtualmap;
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.merkledb;
+    requires transitive com.swirlds.merkle;
+    requires com.swirlds.fcqueue;
+```
+
 
 #### Singleton
 
@@ -33,18 +47,60 @@ A singleton is a node with 2 children:
 
 In Java code it's represented by the following classes:
 ```java
+/**
+ * Provides stateful access to a singleton type. Most state in Hedera is k/v state, represented by
+ * {@link ReadableKVState}. But some state is not based on a map, but is rather a single instance,
+ * such as the AddressBook information. This type can be used to access that state.
+ *
+ * @param <T> The type of the state, such as an AddressBook or NetworkData.
+ */
 public interface ReadableSingletonState<T> {
+  /**
+   * Gets the "state key" that uniquely identifies this {@link ReadableKVState} within the {@link
+   * Schema} which are scoped to the service implementation. The key is therefore not globally
+   * unique, only unique within the service implementation itself.
+   *
+   * <p>The call is idempotent, always returning the same value. It must never return null.
+   *
+   * @return The state key. This will never be null, and will always be the same value for an
+   *     instance of {@link ReadableKVState}.
+   */
   @NonNull
   String getStateKey();
-  
+
+  /**
+   * Gets the singleton value.
+   *
+   * @return The value, or null if there is no value.
+   */
+  @Nullable
   T get();
-  
+
+  /**
+   * Gets whether the value of this {@link ReadableSingletonState} has been read.
+   *
+   * @return true if {@link #get()} has been called on this instance
+   */
   boolean isRead();
 }
-
+/**
+ * Provides mutable access to singleton state.
+ *
+ * @param <T> The type of the state
+ */
 public interface WritableSingletonState<T> extends ReadableSingletonState<T> {
+  /**
+   * Sets the given value on this state.
+   *
+   * @param value The value. May be null.
+   */
   void put(@Nullable T value);
 
+  /**
+   * Gets whether the {@link #put(Object)} method has been called on this instance.
+   *
+   * @return True if the {@link #put(Object)} method has been called
+   */
   boolean isModified();
 }
 ```
@@ -73,7 +129,7 @@ private PlatformState findPlatformState(HederaState state) {
 
 ## Components and Architecture
 
-### Platform State
+[### Platform State](#platform-state)
 
 Currently `PlatformState` is a special case node of the merkle tree. That is, it doesn't conform to State API. 
 As a part of the simplification effort **it should be refactored to a singleton state**. 
