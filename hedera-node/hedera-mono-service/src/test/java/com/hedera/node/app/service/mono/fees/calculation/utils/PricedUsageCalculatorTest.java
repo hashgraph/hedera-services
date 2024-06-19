@@ -103,7 +103,8 @@ class PricedUsageCalculatorTest {
 
         given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
         given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
-        given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier)).willReturn(mockFees);
+        given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier, true))
+                .willReturn(mockFees);
 
         // when:
         final var actual = subject.inHandleFees(accessor, mockPrices, mockRate, payerKey);
@@ -123,7 +124,8 @@ class PricedUsageCalculatorTest {
         final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
         given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
         given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
-        given(calculator.fees(feesCaptor.capture(), eq(mockPrices), eq(mockRate), longThat(l -> l == multiplier)))
+        given(calculator.fees(
+                        feesCaptor.capture(), eq(mockPrices), eq(mockRate), longThat(l -> l == multiplier), eq(true)))
                 .willReturn(mockFees);
 
         // when:
