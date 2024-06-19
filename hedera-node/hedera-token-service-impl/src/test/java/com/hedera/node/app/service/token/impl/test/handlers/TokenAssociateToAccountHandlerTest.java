@@ -44,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -52,14 +54,12 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
-import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -67,9 +67,9 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
-import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -558,6 +558,9 @@ class TokenAssociateToAccountHandlerTest {
     @ExtendWith(MockitoExtension.class)
     class CalculateFeesTests extends ParityTestBase {
 
+        private final TokenAssociateTransactionBody tokenAssociateTransactionBody =
+                mock(TokenAssociateTransactionBody.class);
+
         @Test
         void onUnlimitedAutoAssociationsDisabledCallLegacyCalculateImplementation() {
             final var feeContext = mock(FeeContext.class);
@@ -587,29 +590,36 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void oneSignatureAndOneAssociationCharged() {
             final var feeContext = mock(FeeContext.class);
-            final var tokenAssociateTransactionBody = setupContextForNewCalculation(feeContext);
+            final var feeCalculator = setupContextForNewCalculation(feeContext);
+            final var associationPrice = 41666666L; // 0.05$ in tinybars
+            final var signatureFee = new Fees(0, 24377406L, 0);
 
             given(feeContext.transactionCategory()).willReturn(TransactionCategory.USER);
             given(feeContext.numTxnSignatures()).willReturn(2); // the first signature is free
             given(tokenAssociateTransactionBody.tokens()).willReturn(List.of(TOKEN_300));
+            given(feeCalculator.calculate(anyBoolean())).willReturn(signatureFee);
+            given(feeCalculator.calculateCanonicalFeeForFunctionality(any(), any(), anyInt()))
+                    .willReturn(new Fees(0, associationPrice, 0));
 
-            final var associationPrice = 41666666L; // 0.05$ in tinybars
-            final var signaturePrice = 1523587889L; // token associate vpt in tinybars
             final var fees = subject.calculateFees(feeContext);
 
-            assertEquals(associationPrice + signaturePrice, fees.networkFee());
+            assertEquals(associationPrice + signatureFee.networkFee(), fees.networkFee());
         }
 
         @Test
         void noChargedSignaturesAndOneAssociation() {
             final var feeContext = mock(FeeContext.class);
-            final var tokenAssociateTransactionBody = setupContextForNewCalculation(feeContext);
+            final var feeCalculator = setupContextForNewCalculation(feeContext);
+            final var associationPrice = 41666666L; // 0.05$ in tinybars
+            final var signatureFee = Fees.FREE;
 
             given(feeContext.transactionCategory()).willReturn(TransactionCategory.USER);
             given(feeContext.numTxnSignatures()).willReturn(1); // the first signature is free
             given(tokenAssociateTransactionBody.tokens()).willReturn(List.of(TOKEN_300));
+            given(feeCalculator.calculate(anyBoolean())).willReturn(signatureFee);
+            given(feeCalculator.calculateCanonicalFeeForFunctionality(any(), any(), anyInt()))
+                    .willReturn(new Fees(0, associationPrice, 0));
 
-            final var associationPrice = 41666666L; // 0.05$ in tinybars
             final var fees = subject.calculateFees(feeContext);
 
             assertEquals(associationPrice, fees.networkFee());
@@ -618,7 +628,9 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void noChargedSignaturesAndTenAssociations() {
             final var feeContext = mock(FeeContext.class);
-            final var tokenAssociateTransactionBody = setupContextForNewCalculation(feeContext);
+            final var feeCalculator = setupContextForNewCalculation(feeContext);
+            final var associationPrice = 41666666L; // 0.05$ in tinybars
+            final var signatureFee = Fees.FREE;
 
             given(feeContext.transactionCategory()).willReturn(TransactionCategory.USER);
             given(feeContext.numTxnSignatures()).willReturn(1); // the first signature is free
@@ -634,8 +646,10 @@ class TokenAssociateToAccountHandlerTest {
                             TokenID.newBuilder().tokenNum(307).build(),
                             TokenID.newBuilder().tokenNum(308).build(),
                             TokenID.newBuilder().tokenNum(309).build()));
+            given(feeCalculator.calculate(anyBoolean())).willReturn(signatureFee);
+            given(feeCalculator.calculateCanonicalFeeForFunctionality(any(), any(), anyInt()))
+                    .willReturn(new Fees(0, 10 * associationPrice, 0));
 
-            final var associationPrice = 41666666L; // 0.05$ in tinybars
             final var fees = subject.calculateFees(feeContext);
 
             assertEquals(10 * associationPrice, fees.networkFee());
@@ -644,41 +658,45 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void threeSignaturesAndOneAssociationCharged() {
             final var feeContext = mock(FeeContext.class);
-            final var tokenAssociateTransactionBody = setupContextForNewCalculation(feeContext);
+            final var feeCalculator = setupContextForNewCalculation(feeContext);
+            final var associationPrice = 41666666L; // 0.05$ in tinybars
+            final var signatureFee = new Fees(0, 3 * 24377406L, 0);
 
             given(feeContext.transactionCategory()).willReturn(TransactionCategory.USER);
             given(feeContext.numTxnSignatures()).willReturn(4); // the first signature is free
             given(tokenAssociateTransactionBody.tokens()).willReturn(List.of(TOKEN_300));
+            given(feeCalculator.calculate(anyBoolean())).willReturn(signatureFee);
+            given(feeCalculator.calculateCanonicalFeeForFunctionality(any(), any(), anyInt()))
+                    .willReturn(new Fees(0, associationPrice, 0));
 
-            final var associationPrice = 41666666L; // 0.05$ in tinybars
-            final var signaturePrice = 1523587889L; // token associate vpt in tinybars
             final var fees = subject.calculateFees(feeContext);
 
-            assertEquals(associationPrice + 3 * signaturePrice, fees.networkFee());
+            assertEquals(associationPrice + signatureFee.networkFee(), fees.networkFee());
         }
 
         @Test
         void noSignaturesChargedOnDispatchedTransaction() {
             final var feeContext = mock(FeeContext.class);
-            final var tokenAssociateTransactionBody = setupContextForNewCalculation(feeContext);
+            final var feeCalculator = setupContextForNewCalculation(feeContext);
+            final var associationPrice = 41666666L; // 0.05$ in tinybars
+            final var signatureFee = Fees.FREE;
 
             given(feeContext.transactionCategory()).willReturn(TransactionCategory.CHILD);
             given(tokenAssociateTransactionBody.tokens()).willReturn(List.of(TOKEN_300));
+            given(feeCalculator.calculate(anyBoolean())).willReturn(signatureFee);
+            given(feeCalculator.calculateCanonicalFeeForFunctionality(any(), any(), anyInt()))
+                    .willReturn(new Fees(0, associationPrice, 0));
 
-            final var associationPrice = 41666666L; // 0.05$ in tinybars
             final var fees = subject.calculateFees(feeContext);
 
             assertEquals(associationPrice, fees.networkFee());
         }
 
-        private TokenAssociateTransactionBody setupContextForNewCalculation(final FeeContext feeContext) {
+        private FeeCalculator setupContextForNewCalculation(final FeeContext feeContext) {
             final var entitiesConfig = mock(EntitiesConfig.class);
             final var config = mock(Configuration.class);
             final var feeCalculator = mock(FeeCalculator.class);
             final var body = mock(TransactionBody.class);
-            final var tokenAssociateTransactionBody = mock(TokenAssociateTransactionBody.class);
-            final var exchangeRateInfo = mock(ExchangeRateInfo.class);
-            final ExchangeRate exchangeRate = new ExchangeRate(1, 12, TimestampSeconds.DEFAULT);
 
             given(config.getConfigData(EntitiesConfig.class)).willReturn(entitiesConfig);
             given(entitiesConfig.unlimitedAutoAssociationsEnabled()).willReturn(true);
@@ -686,11 +704,8 @@ class TokenAssociateToAccountHandlerTest {
             given(feeContext.configuration()).willReturn(config);
             given(feeContext.body()).willReturn(body);
             given(body.tokenAssociateOrThrow()).willReturn(tokenAssociateTransactionBody);
-            given(feeContext.exchangeRateInfo()).willReturn(exchangeRateInfo);
-            given(exchangeRateInfo.activeRate(any())).willReturn(exchangeRate);
-            given(feeCalculator.getVptPrice()).willReturn(18283054670L);
 
-            return tokenAssociateTransactionBody;
+            return feeCalculator;
         }
     }
 }
