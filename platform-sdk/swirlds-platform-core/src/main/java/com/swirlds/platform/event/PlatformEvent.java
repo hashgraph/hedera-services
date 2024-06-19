@@ -29,9 +29,9 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -62,7 +62,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         public static final int BIRTH_ROUND = 3;
     }
 
-    private BaseEventHashedData hashedData;
+    private UnsignedEvent hashedData;
     /** creator's signature for this event */
     private Bytes signature;
 
@@ -112,7 +112,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @param hashedData   the hashed data for the event
      * @param signature the signature for the event
      */
-    public PlatformEvent(final BaseEventHashedData hashedData, final byte[] signature) {
+    public PlatformEvent(final UnsignedEvent hashedData, final byte[] signature) {
         this(hashedData, Bytes.wrap(signature));
     }
 
@@ -120,7 +120,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * @param hashedData   the hashed data for the event
      * @param signature the signature for the event
      */
-    public PlatformEvent(final BaseEventHashedData hashedData, final Bytes signature) {
+    public PlatformEvent(final UnsignedEvent hashedData, final Bytes signature) {
         this.hashedData = hashedData;
         this.signature = signature;
         this.timeReceived = Instant.now();
@@ -185,7 +185,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        hashedData = BaseEventHashedData.deserialize(in, version);
+        hashedData = UnsignedEvent.deserialize(in, version);
         final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
         this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
@@ -195,7 +195,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     /**
      * Get the hashed data for the event.
      */
-    public BaseEventHashedData getHashedData() {
+    public UnsignedEvent getHashedData() {
         return hashedData;
     }
 

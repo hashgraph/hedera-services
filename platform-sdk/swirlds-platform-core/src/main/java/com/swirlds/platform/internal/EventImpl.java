@@ -206,7 +206,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     //////////////////////////////////////////
 
     //////////////////////////////////////////
-    // BaseEventHashedData
+    // Unsigned Event
     //////////////////////////////////////////
 
     public Instant getTimeCreated() {

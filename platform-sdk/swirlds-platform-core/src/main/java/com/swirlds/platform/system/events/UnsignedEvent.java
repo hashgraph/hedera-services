@@ -55,7 +55,7 @@ import java.util.stream.Stream;
  * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
  * data is additional and does not affect the hash.
  */
-public class BaseEventHashedData extends AbstractHashable {
+public class UnsignedEvent extends AbstractHashable {
     public static final int TO_STRING_BYTE_ARRAY_LENGTH = 5;
     private static final long CLASS_ID = 0x21c2620e9b6a2243L;
 
@@ -131,7 +131,7 @@ public class BaseEventHashedData extends AbstractHashable {
     private final List<EventPayload> payloads;
 
     /**
-     * Create a BaseEventHashedData object
+     * Create a UnsignedEvent object
      *
      * @param softwareVersion the software version of the node that created this event.
      * @param creatorId       ID of this event's creator
@@ -141,7 +141,7 @@ public class BaseEventHashedData extends AbstractHashable {
      * @param timeCreated     creation time, as claimed by its creator
      * @param transactions    the payload: an array of transactions included in this event instance
      */
-    public BaseEventHashedData(
+    public UnsignedEvent(
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptor selfParent,
@@ -240,7 +240,7 @@ public class BaseEventHashedData extends AbstractHashable {
         }
     }
 
-    public static BaseEventHashedData deserialize(final SerializableDataInputStream in, final int version)
+    public static UnsignedEvent deserialize(final SerializableDataInputStream in, final int version)
             throws IOException {
         in.readInt(); // read and ignore version
         final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
@@ -267,7 +267,7 @@ public class BaseEventHashedData extends AbstractHashable {
                 .map(ConsensusTransactionImpl::getPayload)
                 .toList();
 
-        return new BaseEventHashedData(
+        return new UnsignedEvent(
                 softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated, transactionList);
     }
 
@@ -281,7 +281,7 @@ public class BaseEventHashedData extends AbstractHashable {
             return false;
         }
 
-        final BaseEventHashedData that = (BaseEventHashedData) o;
+        final UnsignedEvent that = (UnsignedEvent) o;
 
         return (Objects.equals(creatorId, that.creatorId))
                 && Objects.equals(selfParent, that.selfParent)

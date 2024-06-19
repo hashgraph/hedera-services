@@ -32,8 +32,8 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -553,7 +553,7 @@ public class TestingEventBuilder {
             transactions = generateTransactions();
         }
 
-        final BaseEventHashedData hashedData = new BaseEventHashedData(
+        final UnsignedEvent hashedData = new UnsignedEvent(
                 softwareVersion,
                 creatorId,
                 selfParentDescriptor,

@@ -25,8 +25,8 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -54,7 +54,7 @@ public class RandomEventUtils {
             final EventImpl otherParent,
             final boolean fakeHash) {
 
-        final BaseEventHashedData hashedData = randomEventHashedDataWithTimestamp(
+        final UnsignedEvent hashedData = randomEventHashedDataWithTimestamp(
                 random, creatorId, timestamp, birthRound, transactions, selfParent, otherParent, fakeHash);
 
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
@@ -67,7 +67,7 @@ public class RandomEventUtils {
      * Similar to randomEventHashedData but where the timestamp provided to this
      * method is the timestamp used as the creation timestamp for the event.
      */
-    public static BaseEventHashedData randomEventHashedDataWithTimestamp(
+    public static UnsignedEvent randomEventHashedDataWithTimestamp(
             @NonNull final Random random,
             @NonNull final NodeId creatorId,
             @NonNull final Instant timestamp,
@@ -99,7 +99,7 @@ public class RandomEventUtils {
                     .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
                     .forEach(convertedTransactions::add);
         }
-        final BaseEventHashedData hashedData = new BaseEventHashedData(
+        final UnsignedEvent hashedData = new UnsignedEvent(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
