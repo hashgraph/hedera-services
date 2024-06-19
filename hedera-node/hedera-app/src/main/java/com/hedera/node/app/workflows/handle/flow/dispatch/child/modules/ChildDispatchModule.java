@@ -27,6 +27,7 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
@@ -38,6 +39,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -145,6 +147,10 @@ public interface ChildDispatchModule {
         return storeFactory.getStore(WritableEntityIdStore.class);
     }
 
+    @Binds
+    @ChildDispatchScope
+    EntityNumGenerator bindEntityNumGenerator(@NonNull EntityNumGeneratorImpl entityNumGenerator);
+
     @Provides
     @ChildDispatchScope
     static WritableStoreFactory provideWritableStoreFactory(
@@ -198,7 +204,7 @@ public interface ChildDispatchModule {
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull @ChildQualifier final SavepointStackImpl stack,
-            @NonNull final WritableEntityIdStore entityIdStore,
+            @NonNull final EntityNumGenerator entityNumGenerator,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
             @NonNull final WritableStoreFactory writableStoreFactory,
@@ -224,7 +230,7 @@ public interface ChildDispatchModule {
                 feeAccumulator,
                 exchangeRateManager,
                 stack,
-                entityIdStore,
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 writableStoreFactory,

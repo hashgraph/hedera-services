@@ -10,6 +10,7 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.fees;
     exports com.hedera.node.app.spi.api;
+    exports com.hedera.node.app.spi.ids;
     exports com.hedera.node.app.spi.key;
     exports com.hedera.node.app.spi.numbers;
     exports com.hedera.node.app.spi.workflows;

@@ -138,7 +138,7 @@ public class FileCreateHandler implements TransactionHandler {
             final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
-                    .fileNum(handleContext.newEntityNum())
+                    .fileNum(handleContext.entityNumGenerator().newEntityNum())
                     .shardNum(
                             fileCreateTransactionBody.hasShardID()
                                     ? fileCreateTransactionBody.shardIDOrThrow().shardNum()

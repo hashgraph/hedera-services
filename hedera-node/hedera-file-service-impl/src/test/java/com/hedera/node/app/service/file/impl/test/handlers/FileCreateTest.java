@@ -53,6 +53,7 @@ import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -102,6 +103,9 @@ class FileCreateTest extends FileTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
+
     private FilesConfig config;
 
     private WritableFileStore fileStore;
@@ -136,6 +140,7 @@ class FileCreateTest extends FileTestBase {
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
         lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
+        lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }
 
     @Test
@@ -211,7 +216,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
@@ -244,7 +249,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);

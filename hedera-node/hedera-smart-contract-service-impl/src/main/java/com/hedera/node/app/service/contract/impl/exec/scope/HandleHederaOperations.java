@@ -152,7 +152,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long peekNextEntityNumber() {
-        return context.peekAtNewEntityNum();
+        return context.entityNumGenerator().peekAtNewEntityNum();
     }
 
     /**
@@ -160,7 +160,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long useNextEntityNumber() {
-        return context.newEntityNum();
+        return context.entityNumGenerator().newEntityNum();
     }
 
     @Override

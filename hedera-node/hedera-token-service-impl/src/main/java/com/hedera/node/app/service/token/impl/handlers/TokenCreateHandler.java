@@ -138,7 +138,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
 
         // build a new token
-        final var newTokenNum = context.newEntityNum();
+        final var newTokenNum = context.entityNumGenerator().newEntityNum();
         final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
         final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
 

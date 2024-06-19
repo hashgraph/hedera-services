@@ -437,7 +437,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         builder.accountId(AccountID.newBuilder()
                 .shardNum(hederaConfig.shard())
                 .realmNum(hederaConfig.realm())
-                .accountNum(handleContext.newEntityNum())
+                .accountNum(handleContext.entityNumGenerator().newEntityNum())
                 .build());
 
         return builder.build();

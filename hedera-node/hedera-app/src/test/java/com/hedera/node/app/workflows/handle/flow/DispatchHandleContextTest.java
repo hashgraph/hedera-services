@@ -74,7 +74,6 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -91,6 +90,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -229,7 +229,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private WritableEntityIdStore entityIdStore;
+    private EntityNumGenerator entityNumGenerator;
 
     @Mock
     private SingleTransactionRecordBuilderImpl oneChildBuilder;
@@ -410,7 +410,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             accumulator,
             exchangeRateManager,
             stack,
-            entityIdStore,
+            entityNumGenerator,
             dispatcher,
             recordCache,
             writableStoreFactory,
@@ -482,51 +482,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
     }
 
-    @Nested
-    @DisplayName("Handling new EntityNumber")
-    final class EntityIdNumTest {
-        @Test
-        void testNewEntityNumWithInitialState() {
-            when(entityIdStore.incrementAndGet()).thenReturn(1L);
-            final var actual = subject.newEntityNum();
-
-            assertThat(actual).isEqualTo(1L);
-            verify(entityIdStore).incrementAndGet();
-        }
-
-        @Test
-        void testPeekingAtNewEntityNumWithInitialState() {
-            when(entityIdStore.peekAtNextNumber()).thenReturn(1L);
-            final var actual = subject.peekAtNewEntityNum();
-
-            assertThat(actual).isEqualTo(1L);
-
-            verify(entityIdStore).peekAtNextNumber();
-        }
-
-        @Test
-        void testNewEntityNum() {
-            when(entityIdStore.incrementAndGet()).thenReturn(43L);
-
-            final var actual = subject.newEntityNum();
-
-            assertThat(actual).isEqualTo(43L);
-            verify(entityIdStore).incrementAndGet();
-            verify(entityIdStore, never()).peekAtNextNumber();
-        }
-
-        @Test
-        void testPeekingAtNewEntityNum() {
-            when(entityIdStore.peekAtNextNumber()).thenReturn(43L);
-
-            final var actual = subject.peekAtNewEntityNum();
-
-            assertThat(actual).isEqualTo(43L);
-            verify(entityIdStore).peekAtNextNumber();
-            verify(entityIdStore, never()).incrementAndGet();
-        }
-    }
-
     @Test
     void getsExpectedValues() {
         assertThat(subject.body()).isSameAs(txBody);
@@ -537,6 +492,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.savepointStack()).isEqualTo(stack);
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
+        assertThat(subject.entityNumGenerator()).isEqualTo(entityNumGenerator);
     }
 
     @Nested
@@ -1027,7 +983,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 accumulator,
                 exchangeRateManager,
                 stack,
-                entityIdStore,
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 writableStoreFactory,

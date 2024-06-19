@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -97,6 +98,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
+
     private WritableTopicStore topicStore;
     private Configuration config;
     private ConsensusCreateTopicHandler subject;
@@ -136,6 +140,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
         lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
         lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
+        lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }
 
     @Test
@@ -271,7 +276,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -309,7 +314,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 

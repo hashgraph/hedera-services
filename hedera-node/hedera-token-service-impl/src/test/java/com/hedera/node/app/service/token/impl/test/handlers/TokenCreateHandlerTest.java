@@ -73,6 +73,7 @@ import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -108,6 +109,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
+
+    @Mock(strictness = LENIENT)
+    private EntityNumGenerator entityNumGenerator;
 
     private TokenCreateRecordBuilder recordBuilder;
     private TokenCreateHandler subject;
@@ -1016,6 +1020,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         given(dynamicProperties.maxAutoRenewDuration()).willReturn(3000000L);
         given(dynamicProperties.minAutoRenewDuration()).willReturn(10L);
         given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
-        given(handleContext.newEntityNum()).willReturn(newTokenId.tokenNum());
+
+        given(handleContext.entityNumGenerator()).willReturn(entityNumGenerator);
+        given(entityNumGenerator.newEntityNum()).willReturn(newTokenId.tokenNum());
     }
 }

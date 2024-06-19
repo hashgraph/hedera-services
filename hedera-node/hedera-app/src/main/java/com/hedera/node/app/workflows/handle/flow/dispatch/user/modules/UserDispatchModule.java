@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
@@ -30,6 +31,7 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -137,6 +139,10 @@ public interface UserDispatchModule {
                 new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class);
     }
+
+    @Binds
+    @UserDispatchScope
+    EntityNumGenerator bindEntityNumGenerator(@NonNull EntityNumGeneratorImpl entityNumGenerator);
 
     @Provides
     @UserDispatchScope

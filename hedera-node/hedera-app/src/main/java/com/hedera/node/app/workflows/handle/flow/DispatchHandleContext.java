@@ -38,7 +38,6 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -48,6 +47,7 @@ import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -111,7 +111,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final FeeAccumulator feeAccumulator;
     private final ExchangeRateManager exchangeRateManager;
     private final SavepointStackImpl stack;
-    private final WritableEntityIdStore entityIdStore;
+    private final EntityNumGenerator entityNumGenerator;
     private final AttributeValidator attributeValidator;
     private final ExpiryValidator expiryValidator;
     private final TransactionDispatcher dispatcher;
@@ -142,7 +142,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final WritableEntityIdStore entityIdStore,
+            @NonNull final EntityNumGenerator entityNumGenerator,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
             @NonNull final WritableStoreFactory writableStoreFactory,
@@ -167,7 +167,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.stack = requireNonNull(stack);
-        this.entityIdStore = requireNonNull(entityIdStore);
+        this.entityNumGenerator = requireNonNull(entityNumGenerator);
         this.childDispatchProvider = requireNonNull(childDispatchProvider);
         this.childDispatchFactory = requireNonNull(childDispatchLogic);
         this.currentDispatch = requireNonNull(parentDispatch);
@@ -269,13 +269,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     }
 
     @Override
-    public long newEntityNum() {
-        return entityIdStore.incrementAndGet();
-    }
-
-    @Override
-    public long peekAtNewEntityNum() {
-        return entityIdStore.peekAtNextNumber();
+    public EntityNumGenerator entityNumGenerator() {
+        return entityNumGenerator;
     }
 
     @NonNull
