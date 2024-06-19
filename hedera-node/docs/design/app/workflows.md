@@ -93,20 +93,21 @@ If at anytime an error occurs, a response with the error code is returned.
 When a platform transaction reaches consensus and needs to be handled, the `HandleWorkflow.handlePlatformTransaction()` 
 is called.
 Few terms that will be used in the following sections:
-1. **Dispatch**: The context needed for executing business logic of a service. This has two implementations 
-- one for user transactions scope called `UserTxnDispatch`
-- one for dispatched child transactions scope called `ChildDispatch`
+1. **Dispatch**: The context needed for executing business logic of a service. 
+All the transactions are handled by creating a Dispatch and executing business logic. This has two implementations 
+- user transactions scope called `UserTxnDispatch`
+- child transactions scope called `ChildDispatch`
 
-
-Objects created while handling the transaction belong to one of the following Dagger scopes. 
+#### Dagger Scopes
+All the objects created while handling the transaction belong to one of the following Dagger scopes. 
 - **Singleton** - Objects that are created once and used for the entire lifecycle of the application.
 Examples include the `NodeInfo` and `RecordListBuilder`.
-- **UserTxnScope** - Objects that are created once per each platform transaction. 
-Examples include the `Configuration`, `HederaState` and `TokenContext`. 
-They are provided in the modules [here](https://github.com/hashgraph/hedera-services/tree/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/modules) 
+- **UserTxnScope** - Objects that are created once for platform transaction. 
+Examples include the `Configuration`, `HederaState` and `TokenContext`.
+Dagger provides all the objects that can be constructed in this scope [here](https://github.com/hashgraph/hedera-services/tree/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/modules) 
 and [UserTxnComponent](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/UserTransactionComponent.java)
 takes all the inputs that are needed to execute the user transaction.
-- **UserDispatchScope** - Objects that are created once for each user transaction dispatch. 
+- **UserDispatchScope** - Objects that are created once for each user transaction that will be dispatched. 
 Examples include the `SingleTransactionRecordBuilder` for user transaction and `FeeContext`.
 Dagger provides all the objects that can be constructed in this scope in [UserDispatchModule](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/user/modules/UserDispatchModule.java) and `UserDispatchComponent`.
 and [UserDispatchComponent](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/user/UserDispatchComponent.java)
@@ -122,62 +123,67 @@ takes all the inputs that are needed to create the child dispatch.
 
 #### HandleWorkflow overview:
 The `HandleWorkflow` class is responsible for handling the platform transaction and providing the record stream.
+The overall high level steps are as follows:
 
 1. Calls `BlockRecordManager` to update the new consensus time for the user transaction, puts the lastBlockInfo in state if needed.
 when blocks
-2. Calls `UserTxnWorkflow` is called to handle the transaction and provide record stream
+2. `UserTxnWorkflow` is called to handle the transaction and provide record stream
 3. Externalizes the record stream items
 4. Update metrics for the handled user transaction
 ![handle_basic_overview.png](handle_basic_overview.png)
 
-
 #### UserTxnWorkflow overview:
-1. If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
+1. **SkipHandleWorkflow**: If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
 This writes a record with `BUSY` status and adds to record cache
-2. If the transaction is from a valid software version, we call `DefaultHandleWorkflow`
+2. **DefaultHandleWorkflow**: If the transaction is from a valid software version, we call `DefaultHandleWorkflow`. This workflow 
+handles valid user transaction. It has the following steps:
    - Exports synthetic records of system accounts creation that need to be externalized on genesis start 
    - Process staking period hook that is responsible for staking updates and staking rewards distribution
    - Advances consensus clock by updating the last consensus time that node has handled
    - Expire schedules if any
    - Creates a `Dispatch` for the user transaction
    - Finalizes hollow accounts
-   - Gives the dispatch to the `DispatchProcessor` to process the dispatch. 
-     The `DispatchProcessor` will call the `Dispatch` to execute the business logic of the transaction.
-     This same code will be called for child transactions as well, since the user transaction and dispatch 
-     and child transaction dispatches are treated the same way.
+   - Gives the created dispatch to the `DispatchProcessor` to process it. 
+     The `DispatchProcessor` will execute the business logic for the dispatch. This is common logic that
+     is executed for all user and child transactions, since the user dispatch child dispatches are 
+     treated the same way to avoid duplicating any logic.
    
 ![user_txn_workflow.png](user_txn_workflow.png)
 
+
 #### DispatchProcessor overview:
 The `DispatchProcessor.processDispatch` will be called for user and child dispatches.
-1. Checks if there is any error by node or user.
-    - Checks the preHandleStatus is NODE_DUE_DILIGENCE_FAILURE.
-      If so, creates an error report where node pays the fees and returns.
-    - Verifies payer signature. If it is invalid or missing, creates an error report where
+1. **Error Validation:** Checks if there is any error by node or user. It validates the following:
+    - Checks the preHandleStatus is `NODE_DUE_DILIGENCE_FAILURE`.
+      If so, creates an error report with node error. So, node pays the fees and returns.
+    - Verifies payer signature. If it is invalid or missing, creates an error report with node error where
       node pays the fee and returns. 
-    - checks if the transaction is duplicate. If the transaction is duplicate on same node, 
-      creates error report where node pays the fee. If it is duplicate from other node, creates
-      an error report where payer pays the fee and returns.
-2. If there is node error report in 1, charges the node
-3. Else, charges the payer for the transaction.
-4. If it has not already failed in steps 2 and 3 the transaction is handled.
+    - Checks if the transaction is duplicate. If the transaction is duplicate on same node, 
+      creates error report with node error where node pays the fee. If it is duplicate from other node,
+      creates an error report with payer error where payer pays the fee and returns.
+2. If there is node error report in 1, charges the node. Steps 3-5 are skipped.
+3. Else, charges the payer for the transaction. 
+4. **Handling Transaction:** If it has not already failed in steps 2 and 3 the transaction is handled. 
+   The following steps are executed:
    - Checks if there is capacity to handle the transaction. This is only used for contract operations. 
-   If the previous transaction is gas throttled, this throws a `ThrottleException`
+     If the previous transaction is gas throttled, this throws a `ThrottleException` and next steps 
+     under 4 are skipped.
    - Dispatches the transaction to the appropriate handler with appropriate handleContext constructed
      based on the transaction scope. The handler will execute the business logic of the transaction.
    - Updates the record to SUCCESS status
-   - If it is a user transaction, notifies if system fileis updated and platform state is modified to
+   - If it is a user transaction, notifies if system file is updated and platform state is modified to
      the appropriate facilities
-5. If any HandleException is thrown in any of the sub-steps of 4, we rollback the complete stack and 
-   charge the payer. The payer is charged again because when we rollback full stack the previous charges to the payer
-are rolled back as well.
-6. If there is a `ThorttleException` thrown in step 4, we rollback complete stack and charge the payer without serviceFee.
-7. If there is any unhandled exception, we rollback the complete stack and charge the payer. Set the record to 
-`FAIL_INVALID` status. 
-8. Tracks network utilization for the transaction 
-9. Finalizes the record from state changes
-10. Commits all the changes to the state
-11. Updates any metrics that need to be updated
-12. Adds all the records to the record cache
+5. **Exception Handling:** When any exception is thrown in the steps under 4, the following steps are executed:
+   - If any HandleException is thrown, rolls back the complete stack and 
+     charges the payer. The payer is charged again because when stack is rolled back the previous
+     charges to the payer are rolled back as well. 
+   - If there is a `ThorttleException` thrown, stack is rolled back and payer is charged without serviceFee. 
+   - If there is any unhandled exception, stack is rolled back and payer is charged. The record is set to 
+    `FAIL_INVALID` status. 
+6. **Track Utilization:** Tracks network utilization for the transaction handled
+7. **Record Finalization:** Finalizes the record from state changes
+8. **Commit:** Commits all the changes to the state
+9. **Metrics Update:** Updates any metrics that need to be updated
+10. **Record Stream:** Adds all the records to the record cache
 
 ![dispatch_processor.png](dispatch_processor.png)
