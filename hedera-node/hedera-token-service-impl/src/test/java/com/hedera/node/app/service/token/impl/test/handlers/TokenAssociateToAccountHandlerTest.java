@@ -574,7 +574,7 @@ class TokenAssociateToAccountHandlerTest {
 
             given(config.getConfigData(EntitiesConfig.class)).willReturn(entitiesConfig);
             given(entitiesConfig.unlimitedAutoAssociationsEnabled()).willReturn(false);
-            given(feeContext.feeCalculator(any())).willReturn(feeCalculator);
+            given(feeContext.feeCalculatorFactory().feeCalculator(any())).willReturn(feeCalculator);
             given(feeContext.configuration()).willReturn(config);
             given(feeContext.body()).willReturn(body);
             given(body.tokenAssociateOrThrow()).willReturn(op);
@@ -700,7 +700,7 @@ class TokenAssociateToAccountHandlerTest {
 
             given(config.getConfigData(EntitiesConfig.class)).willReturn(entitiesConfig);
             given(entitiesConfig.unlimitedAutoAssociationsEnabled()).willReturn(true);
-            given(feeContext.feeCalculator(any())).willReturn(feeCalculator);
+            given(feeContext.feeCalculatorFactory().feeCalculator(any())).willReturn(feeCalculator);
             given(feeContext.configuration()).willReturn(config);
             given(feeContext.body()).willReturn(body);
             given(body.tokenAssociateOrThrow()).willReturn(tokenAssociateTransactionBody);

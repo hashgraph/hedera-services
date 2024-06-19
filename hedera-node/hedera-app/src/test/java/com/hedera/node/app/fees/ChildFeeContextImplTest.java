@@ -120,7 +120,9 @@ class ChildFeeContextImplTest {
                         eq(true),
                         any(ReadableStoreFactory.class)))
                 .willReturn(feeCalculator);
-        assertSame(feeCalculator, subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertSame(
+                feeCalculator,
+                subject.feeCalculatorFactory().feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }
 
     @Test
@@ -135,9 +137,8 @@ class ChildFeeContextImplTest {
                 storeFactory,
                 NOW,
                 TransactionCategory.CHILD);
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertThrows(IllegalStateException.class, () -> subject.feeCalculatorFactory()
+                .feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }
 
     @Test

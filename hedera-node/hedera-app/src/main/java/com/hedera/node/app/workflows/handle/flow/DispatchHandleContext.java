@@ -44,10 +44,11 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -55,7 +56,6 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
-import com.hedera.node.app.spi.workflows.FunctionalityResourcePrices;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -103,12 +103,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final Configuration configuration;
     private final Authorizer authorizer;
     private final BlockRecordManager blockRecordManager;
+    private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
     private final ReadableStoreFactory readableStoreFactory;
     private final AccountID syntheticPayer;
     private final KeyVerifier verifier;
     private final Key payerKey;
-    private final FeeAccumulator feeAccumulator;
     private final ExchangeRateManager exchangeRateManager;
     private final SavepointStackImpl stack;
     private final WritableEntityIdStore entityIdStore;
@@ -134,12 +134,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
             @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
             @NonNull final Key payerKey,
-            @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SavepointStackImpl stack,
             @NonNull final WritableEntityIdStore entityIdStore,
@@ -159,12 +159,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.configuration = requireNonNull(configuration);
         this.authorizer = requireNonNull(authorizer);
         this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
         this.readableStoreFactory = requireNonNull(storeFactory);
         this.syntheticPayer = requireNonNull(syntheticPayer);
         this.verifier = requireNonNull(verifier);
         this.payerKey = requireNonNull(payerKey);
-        this.feeAccumulator = requireNonNull(feeAccumulator);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.stack = requireNonNull(stack);
         this.entityIdStore = requireNonNull(entityIdStore);
@@ -239,16 +239,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public FunctionalityResourcePrices resourcePricesFor(
-            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType) {
-        return new FunctionalityResourcePrices(
-                requireNonNull(feeManager.getFeeData(functionality, consensusNow, subType)),
-                feeManager.congestionMultiplierFor(txnInfo.txBody(), functionality, readableStoreFactory));
+    public ResourcePriceCalculator resourcePriceCalculator() {
+        return resourcePriceCalculator;
     }
 
     @NonNull
-    @Override
-    public FeeCalculator feeCalculator(@NonNull final SubType subType) {
+    private FeeCalculator createFeeCalculator(@NonNull final SubType subType) {
         return feeManager.createFeeCalculator(
                 ensureTxnId(txnInfo.txBody()),
                 payerKey,
@@ -263,8 +259,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public FeeAccumulator feeAccumulator() {
-        return feeAccumulator;
+    public FeeCalculatorFactory feeCalculatorFactory() {
+        return this::createFeeCalculator;
     }
 
     @NonNull

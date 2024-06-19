@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -57,7 +58,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hederahashgraph.api.proto.java.SubType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -198,7 +198,7 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
 
         final var body = feeContext.body();
         final var op = body.tokenAssociateOrThrow();
-        final var calculator = feeContext.feeCalculator(DEFAULT);
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(DEFAULT);
         final var unlimitedAutoAssociations =
                 feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
@@ -217,16 +217,18 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             final var newAssociationsCount = op.tokens().size();
             final var associationFee = calculator.calculateCanonicalFeeForFunctionality(
                     com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount,
-                    SubType.DEFAULT,
+                    com.hederahashgraph.api.proto.java.SubType.DEFAULT,
                     newAssociationsCount);
             return signatureFee.plus(associationFee);
         } else {
             final var accountId = op.accountOrThrow();
             final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
             final var account = readableAccountStore.getAccountById(accountId);
-
-            return calculator.legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(txnEstimateFactory)
-                    .usageGiven(fromPbj(body), sigValueObj, account));
+            return feeContext
+                    .feeCalculatorFactory()
+                    .feeCalculator(SubType.DEFAULT)
+                    .legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(txnEstimateFactory)
+                            .usageGiven(fromPbj(body), sigValueObj, account));
         }
     }
 }

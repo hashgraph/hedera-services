@@ -26,6 +26,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -81,8 +82,7 @@ public class ChildFeeContextImpl implements FeeContext {
         return body;
     }
 
-    @Override
-    public @NonNull FeeCalculator feeCalculator(@NonNull final SubType subType) {
+    private @NonNull FeeCalculator createFeeCalculator(@NonNull final SubType subType) {
         try {
             return feeManager.createFeeCalculator(
                     body,
@@ -98,6 +98,12 @@ public class ChildFeeContextImpl implements FeeContext {
             throw new IllegalStateException(
                     "Child fee context was constructed with invalid transaction body " + body, e);
         }
+    }
+
+    @NonNull
+    @Override
+    public FeeCalculatorFactory feeCalculatorFactory() {
+        return this::createFeeCalculator;
     }
 
     @Override

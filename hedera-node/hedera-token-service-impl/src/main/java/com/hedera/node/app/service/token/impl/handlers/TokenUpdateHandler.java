@@ -611,9 +611,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var readableStore = feeContext.readableStore(ReadableTokenStore.class);
         final var token = readableStore.get(op.tokenOrThrow());
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenUpdateResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(body), sigValueObj, token));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        new TokenUpdateResourceUsage(txnEstimateFactory).usageGiven(fromPbj(body), sigValueObj, token));
     }
 
     private boolean isHapiCallOrNonZeroTreasuryAccount(final boolean isHapiCall, final TokenUpdateTransactionBody op) {
