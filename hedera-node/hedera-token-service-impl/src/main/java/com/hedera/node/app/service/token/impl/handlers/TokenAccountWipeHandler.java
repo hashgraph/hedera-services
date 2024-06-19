@@ -229,6 +229,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 .orElse(TokenType.FUNGIBLE_COMMON);
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(
                         tokenType.equals(TokenType.FUNGIBLE_COMMON)
                                 ? SubType.TOKEN_FUNGIBLE_COMMON
