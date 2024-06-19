@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -67,6 +68,7 @@ import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
@@ -133,7 +135,8 @@ public class SingleTransactionRecordBuilderImpl
                 GenesisAccountRecordBuilder,
                 ContractOperationRecordBuilder,
                 TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder {
+                CryptoUpdateRecordBuilder,
+                TokenAirdropsRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -148,6 +151,8 @@ public class SingleTransactionRecordBuilderImpl
     private TransactionID transactionID;
     private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
     private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
+
+    private List<PendingAirdropRecord> pendingAirdropRecords = new LinkedList<>();
     private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
 
     private List<AccountAmount> paidStakingRewards = new LinkedList<>();
@@ -294,6 +299,7 @@ public class SingleTransactionRecordBuilderImpl
                 .parentConsensusTimestamp(parentConsensusTimestamp)
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
+                .newPendingAirdrops(pendingAirdropRecords)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
@@ -330,6 +336,7 @@ public class SingleTransactionRecordBuilderImpl
     public void nullOutSideEffectFields() {
         serialNumbers.clear();
         tokenTransferLists.clear();
+        pendingAirdropRecords.clear();
         automaticTokenAssociations.clear();
         transferList = TransferList.DEFAULT;
         paidStakingRewards.clear();
@@ -577,6 +584,20 @@ public class SingleTransactionRecordBuilderImpl
             @NonNull final List<TokenTransferList> tokenTransferLists) {
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
+        return this;
+    }
+
+    @Override
+    public TokenAirdropsRecordBuilder pendingAirdropList(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.pendingAirdropRecords = pendingAirdropRecords;
+        return this;
+    }
+
+    @Override
+    public TokenAirdropsRecordBuilder pendingAirdropList(@NonNull PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 

@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
@@ -91,6 +92,7 @@ public class TokenHandlersTest {
     private TokenGetNftInfoHandler tokenGetNftInfoHandler;
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private TokenUpdateNftsHandler tokenUpdateNftsHandler;
+    private TokenAirdropsHandler tokenAirdropsHandler;
 
     private TokenHandlers tokenHandlers;
 
@@ -129,6 +131,7 @@ public class TokenHandlersTest {
         tokenGetNftInfoHandler = mock(TokenGetNftInfoHandler.class);
         tokenGetNftInfosHandler = mock(TokenGetNftInfosHandler.class);
         tokenUpdateNftsHandler = mock(TokenUpdateNftsHandler.class);
+        tokenAirdropsHandler = mock(TokenAirdropsHandler.class);
 
         tokenHandlers = new TokenHandlers(
                 cryptoCreateHandler,
@@ -163,7 +166,8 @@ public class TokenHandlersTest {
                 tokenGetAccountNftInfosHandler,
                 tokenGetNftInfoHandler,
                 tokenGetNftInfosHandler,
-                tokenUpdateNftsHandler);
+                tokenUpdateNftsHandler,
+                tokenAirdropsHandler);
     }
 
     @Test
@@ -329,5 +333,10 @@ public class TokenHandlersTest {
     @Test
     public void tokenUpdateNftsHandlerReturnsCorrectInstance() {
         assertEquals(tokenUpdateNftsHandler, tokenHandlers.tokenUpdateNftsHandler());
+    }
+
+    @Test
+    public void tokenAirdropsHandlerReturnsCorrectInstance() {
+        assertEquals(tokenAirdropsHandler, tokenHandlers.tokenAirdropsHandler());
     }
 }

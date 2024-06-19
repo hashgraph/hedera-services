@@ -804,6 +804,7 @@ public final class PbjConverter {
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
             case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
             case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -1371,6 +1372,8 @@ public final class PbjConverter {
             case TOKEN_REFERENCE_REPEATED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .TOKEN_REFERENCE_REPEATED;
             case INVALID_OWNER_ID -> com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
         };
     }
 
