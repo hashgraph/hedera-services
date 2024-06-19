@@ -1,22 +1,37 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
-
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.List;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 
-public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBase{
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import java.util.Collections;
+import java.util.List;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBase {
 
     @SuppressWarnings("DataFlowIssue")
     @Test
@@ -215,24 +230,22 @@ public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBa
         // together
         final var token9753 = asToken(9753);
         final var token9754 = asToken(9754);
-        final var txn = newTokenAirdrop(
-                    List.of(
-                        // Valid fungible token transfers
-                        TokenTransferList.newBuilder()
-                                .token(TOKEN_2468)
-                                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
-                                .build(),
-                        TokenTransferList.newBuilder()
-                                .token(token9754)
-                                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
-                                .build(),
-                        // Valid nft token transfers
-                        TokenTransferList.newBuilder()
-                                .token(token9753)
-                                .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_2_FROM_4444_TO_3333)
-                                .build()));
+        final var txn = newTokenAirdrop(List.of(
+                // Valid fungible token transfers
+                TokenTransferList.newBuilder()
+                        .token(TOKEN_2468)
+                        .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
+                        .build(),
+                TokenTransferList.newBuilder()
+                        .token(token9754)
+                        .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
+                        .build(),
+                // Valid nft token transfers
+                TokenTransferList.newBuilder()
+                        .token(token9753)
+                        .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_2_FROM_4444_TO_3333)
+                        .build()));
 
         Assertions.assertThatCode(() -> subject.pureChecks(txn)).doesNotThrowAnyException();
     }
-
 }

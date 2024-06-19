@@ -26,6 +26,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -35,12 +37,26 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableAirdropStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -50,6 +66,9 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -102,11 +121,162 @@ public class TokenAirdropsHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
+
         final var txn = context.body();
         final var op = txn.tokenAirdrop();
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var pendingStore = context.writableStore(WritableAirdropStore.class);
 
-        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
+        // validate sender and his balance
+
+        // check for custom fees
+
+        List<TokenTransferList> tokenTransferList = new ArrayList<>();
+        for (final var xfers : op.tokenTransfers()) {
+            final var tokenId = xfers.tokenOrThrow();
+            final var token = getIfUsable(tokenId, tokenStore);
+
+            List<AccountAmount> transferAmounts = new ArrayList<>();
+            List<AccountAmount> pendingAmounts = new ArrayList<>();
+
+            var senderAccount =
+                    xfers.transfers().stream().filter(item -> item.amount() < 0).findFirst();
+            // fungible tokens
+            for (final var aa : xfers.transfers()) {
+                // find associations
+                final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
+                // if not existing account, create transfer
+                if (!accountStore.contains(accountId)) {
+                    transferAmounts.add(aa);
+                    continue;
+                }
+
+                final var account =
+                        getIfUsableForAliasedId(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+                final var tokenRel = tokenRelStore.get(accountId, tokenId);
+
+                var shouldAddAirdropToPendingState = shouldAddAirdropToPendingState(account, tokenRel);
+
+                if (shouldAddAirdropToPendingState) {
+                    pendingAmounts.add(aa);
+                } else {
+                    transferAmounts.add(aa);
+                }
+            }
+
+            // nft
+            List<NftTransfer> transferNftList = new ArrayList<>();
+            List<NftTransfer> pendingNftList = new ArrayList<>();
+            for (final var nftTransfer : xfers.nftTransfers()) {
+                var receiverId = nftTransfer.receiverAccountID();
+                // if not existing account, create transfer
+                if (!accountStore.contains(receiverId)) {
+                    transferNftList.add(nftTransfer);
+                    continue;
+                }
+                var account = getIfUsable(receiverId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+                var tokenRel = tokenRelStore.get(receiverId, tokenId);
+
+                var shouldAddAirdropToPendingState = shouldAddAirdropToPendingState(account, tokenRel);
+
+                if (shouldAddAirdropToPendingState) {
+                    pendingNftList.add(nftTransfer);
+                } else {
+                    transferNftList.add(nftTransfer);
+                }
+            }
+
+            // process pending airdrops
+            var recordBuilder = context.recordBuilder(TokenAirdropsRecordBuilder.class);
+            pendingAmounts.stream().forEach(amount -> {
+                var pendingId = PendingAirdropId.newBuilder()
+                        .receiverId(amount.accountID())
+                        .senderId(senderAccount.get().accountID())
+                        .fungibleTokenType(tokenId)
+                        .build();
+                var pendingValue =
+                        PendingAirdropValue.newBuilder().amount(amount.amount()).build();
+                var record = PendingAirdropRecord.newBuilder()
+                        .pendingAirdropId(pendingId)
+                        .pendingAirdropValue(pendingValue)
+                        .build();
+                pendingStore.put(pendingId, pendingValue);
+                recordBuilder.pendingAirdropList(record);
+            });
+
+            pendingNftList.stream().forEach(item -> {
+                var nftId = NftID.newBuilder()
+                        .tokenId(tokenId)
+                        .serialNumber(item.serialNumber())
+                        .build();
+                var pendingId = PendingAirdropId.newBuilder()
+                        .receiverId(item.receiverAccountID())
+                        .senderId(item.senderAccountID())
+                        .nonFungibleToken(nftId)
+                        .build();
+                pendingStore.put(pendingId, PendingAirdropValue.DEFAULT);
+                var record = PendingAirdropRecord.newBuilder()
+                        .pendingAirdropId(pendingId)
+                        .pendingAirdropValue(PendingAirdropValue.DEFAULT)
+                        .build();
+                recordBuilder.pendingAirdropList(record);
+            });
+
+            // transfer fungible tokens and nft
+            if (transferAmounts.size() > 1 || !transferNftList.isEmpty()) {
+
+                // build account amount list
+                List<AccountAmount> amounts = new LinkedList<>();
+                if (transferAmounts.size() > 1) {
+                    var receiversAmountList = transferAmounts.stream()
+                            .filter(item -> item.amount() > 0)
+                            .toList();
+                    var senderAmount = receiversAmountList.stream()
+                            .mapToLong(AccountAmount::amount)
+                            .sum();
+                    var senderAccountAmount = AccountAmount.newBuilder()
+                            .amount(-senderAmount)
+                            .accountID(senderAccount.get().accountIDOrThrow())
+                            .isApproval(senderAccount.get().isApproval())
+                            .build();
+                    amounts.add(senderAccountAmount);
+                    amounts.addAll(receiversAmountList);
+                }
+
+                // create the transfer list
+                var newTransferListBuilder = TokenTransferList.newBuilder().token(tokenId);
+
+                if (!amounts.isEmpty()) {
+                    newTransferListBuilder.transfers(amounts);
+                }
+
+                if (!transferNftList.isEmpty()) {
+                    newTransferListBuilder.nftTransfers(transferNftList);
+                }
+
+                tokenTransferList.add(newTransferListBuilder.build());
+            }
+        }
+
+        if (!tokenTransferList.isEmpty()) {
+            var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
+                    .tokenTransfers(tokenTransferList)
+                    .build();
+
+            final var syntheticCryptoTranferTxn = TransactionBody.newBuilder()
+                    .cryptoTransfer(cryptoTransferBody)
+                    .build();
+            context.dispatchChildTransaction(
+                    syntheticCryptoTranferTxn,
+                    CryptoTransferRecordBuilder.class,
+                    null,
+                    context.payer(),
+                    HandleContext.TransactionCategory.CHILD);
+        }
     }
 
     @NonNull
@@ -246,5 +416,15 @@ public class TokenAirdropsHandler implements TransactionHandler {
             // Token Airdrops does not support royalty with fallback fees
             throw new PreCheckException(INVALID_TRANSACTION);
         }
+    }
+
+    private boolean shouldAddAirdropToPendingState(@Nullable Account receiver, @Nullable TokenRelation tokenRelation) {
+        if (receiver == null) {
+            return false;
+        }
+        // check if we have existing association or free auto associations slots or unlimited auto associations
+        return tokenRelation == null
+                && receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
+                && receiver.maxAutoAssociations() != -1;
     }
 }

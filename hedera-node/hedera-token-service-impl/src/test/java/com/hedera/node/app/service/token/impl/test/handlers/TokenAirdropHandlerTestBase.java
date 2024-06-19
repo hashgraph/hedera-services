@@ -1,4 +1,23 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
+
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -11,12 +30,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.util.List;
-
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import org.junit.jupiter.api.BeforeEach;
 
 public class TokenAirdropHandlerTestBase extends StepsBase {
 
@@ -57,16 +72,14 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
     protected TransactionBody newTokenAirdrop(final TokenTransferList... tokenTransferLists) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                .tokenAirdrop(TokenAirdropTransactionBody.newBuilder()
-                        .tokenTransfers(tokenTransferLists))
+                .tokenAirdrop(TokenAirdropTransactionBody.newBuilder().tokenTransfers(tokenTransferLists))
                 .build();
     }
 
     protected TransactionBody newTokenAirdrop(final List<TokenTransferList> tokenTransferLists) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                .tokenAirdrop(TokenAirdropTransactionBody.newBuilder()
-                        .tokenTransfers(tokenTransferLists))
+                .tokenAirdrop(TokenAirdropTransactionBody.newBuilder().tokenTransfers(tokenTransferLists))
                 .build();
     }
 }

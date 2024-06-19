@@ -336,7 +336,7 @@ public class TokenHandlersTest {
     }
 
     @Test
-    public void tokenAirdropsHandlerReturnsCorrectInstance(){
-        assertEquals(tokenAirdropsHandler,tokenHandlers.tokenAirdropsHandler());
+    public void tokenAirdropsHandlerReturnsCorrectInstance() {
+        assertEquals(tokenAirdropsHandler, tokenHandlers.tokenAirdropsHandler());
     }
 }
