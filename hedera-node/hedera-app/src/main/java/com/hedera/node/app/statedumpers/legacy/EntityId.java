@@ -42,6 +42,10 @@ public class EntityId {
         this.num = num;
     }
 
+    public static EntityId fromNum(final long num) {
+        return new EntityId(0, 0, num);
+    }
+
     /* --- Object --- */
     @Override
     public boolean equals(final Object o) {

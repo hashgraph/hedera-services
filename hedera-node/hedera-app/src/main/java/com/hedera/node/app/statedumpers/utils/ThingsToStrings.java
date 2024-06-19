@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.statedumpers.legacy.EntityId;
 import com.hedera.node.app.statedumpers.legacy.EntityNum;
 import com.hedera.node.app.statedumpers.legacy.EntityNumPair;
@@ -218,17 +217,6 @@ public class ThingsToStrings {
             case DELEGATABLE_CONTRACT_ID -> sb.append("dCID");
             case KEY_NOT_SET -> sb.append("MISSING-KEY");
         }
-    }
-
-    public static boolean toStringOfContractKey(@NonNull final StringBuilder sb, @Nullable final ContractKey ckey) {
-        if (ckey == null) return false;
-
-        sb.append("(");
-        sb.append(ckey.getContractId());
-        sb.append(",");
-        sb.append(ckey.getKeyAsBigInteger());
-        sb.append(")");
-        return true;
     }
 
     public static boolean toStringOfKey(
@@ -535,5 +523,19 @@ public class ThingsToStrings {
     @NonNull
     public static String toStringOfInstant(@NonNull final Instant instant) {
         return "%d.%d".formatted(instant.getEpochSecond(), instant.getNano());
+    }
+
+    public static boolean toStructureSummaryOfJKey(@NonNull final StringBuilder sb, @Nullable final JKey jkey) {
+        if (jkey == null || jkey.isEmpty()) return false;
+        try {
+            final var key = JKey.mapJKey(jkey);
+            if (null == key) return false; // This is some kind of _invalid_ key; should it say so somehow?
+            sb.append("Key[");
+            toStructureSummaryOfKey(sb, key);
+            sb.append("]");
+        } catch (InvalidKeyException unknown) {
+            sb.append("<invalid-key>");
+        }
+        return true;
     }
 }
