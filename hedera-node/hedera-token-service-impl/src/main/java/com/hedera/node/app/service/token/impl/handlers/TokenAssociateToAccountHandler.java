@@ -41,7 +41,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -71,14 +70,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAssociateToAccountHandler extends BaseTokenHandler implements TransactionHandler {
-
-    private final AssetsLoader assetsLoader;
     /**
      * Default constructor for injection.
      */
     @Inject
-    public TokenAssociateToAccountHandler(@NonNull final AssetsLoader assetsLoader) {
-        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
+    public TokenAssociateToAccountHandler() {
+        // Exists for injection
     }
 
     @Override
