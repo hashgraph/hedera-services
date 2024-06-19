@@ -43,7 +43,8 @@ class OverflowCheckingCalcTest {
         final var usage = new UsageAccumulator();
         copyData(mockUsage, usage);
 
-        assertThrows(IllegalArgumentException.class, () -> subject.fees(usage, mockPrices, mockRate, Long.MAX_VALUE));
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.fees(usage, mockPrices, mockRate, Long.MAX_VALUE, true));
     }
 
     @Test
@@ -62,7 +63,7 @@ class OverflowCheckingCalcTest {
         final var usage = new UsageAccumulator();
         copyData(mockUsage, usage);
 
-        final var refactoredFees = subject.fees(usage, mockPrices, mockRate, multiplier);
+        final var refactoredFees = subject.fees(usage, mockPrices, mockRate, multiplier, true);
 
         assertEquals(legacyFees.nodeFee(), refactoredFees.nodeFee());
         assertEquals(legacyFees.networkFee(), refactoredFees.networkFee());
@@ -75,7 +76,7 @@ class OverflowCheckingCalcTest {
         final var usage = new UsageAccumulator();
         copyData(mockUsage, usage);
 
-        final var refactoredFees = subject.fees(usage, mockLowCeilPrices, mockRate, multiplier);
+        final var refactoredFees = subject.fees(usage, mockLowCeilPrices, mockRate, multiplier, true);
 
         assertEquals(cappedFees.nodeFee(), refactoredFees.nodeFee());
         assertEquals(cappedFees.networkFee(), refactoredFees.networkFee());
@@ -88,7 +89,7 @@ class OverflowCheckingCalcTest {
         final var usage = new UsageAccumulator();
         copyData(mockUsage, usage);
 
-        final var refactoredFees = subject.fees(usage, mockHighFloorPrices, mockRate, multiplier);
+        final var refactoredFees = subject.fees(usage, mockHighFloorPrices, mockRate, multiplier, true);
 
         assertEquals(cappedFees.nodeFee(), refactoredFees.nodeFee());
         assertEquals(cappedFees.networkFee(), refactoredFees.networkFee());
