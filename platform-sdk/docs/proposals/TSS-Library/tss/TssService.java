@@ -28,30 +28,37 @@ import java.util.List;
  * <p>
  * Contract of TSS:
  * <ul>
- *     <li>produce a public key for each share</li>
- *     <li>give the corresponding secret to the shareholder</li>
+ *     <li>Generate TSSMessages out of PrivateShares</li>
+ *     <li>Verify TSSMessages out of a ParticipantDirectory</li>
+ *     <li>Obtain PrivateShares out of TssMessages for each owned share</li>
+ *     <li>Aggregate PrivateShares</li>
+ *     <li>Obtain PublicShares out of TssMessages for each share</li>
+ *     <li>Aggregate PublicShares</li>
+ *     <li>sign Messages</li>
+ *     <li>verify Signatures</li>
+ *     <li>Aggregate Signatures</li>
  * </ul>
- * @implNote an instance of the service would require  a source of randomness {@link java.util.Random}, and {@link com.swirlds.signaturescheme.api.SignatureSchema}
+ * @implNote an instance of the service would require a source of randomness {@link java.util.Random}, and a{@link com.swirlds.signaturescheme.api.SignatureSchema}
  */
 public interface TssService {
 
     /**
      * Verify that the message is valid.
      *
-     * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
+     * @param pendingParticipantDirectory the participant directory used to generate the message
      * @return true if the message is valid, false otherwise
      */
      boolean verifyTssMessage(@NonNull final ParticipantDirectory participantDirectory, @NonNull final TssMessage message);
 
     /**
-     * Generate a TSS message for a pendingParticipantDirectory, from a private share.
+     * Generate a TSS message for a pendingParticipantDirectory, for each private share owned.
      *
      * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
      * @param privateShare       the secret to use for generating new keys
-     * @return the TSS message produced for the input share claims
+     * @return a TSSMessage for each owned share.
      */
     @NonNull
-    TssMessage generateTssMessage(
+    List<TssMessage> generateTssMessages(
             @NonNull final ParticipantDirectory pendingParticipantDirectory,
             @NonNull final TssPrivateShare privateShare);
 
@@ -60,7 +67,7 @@ public interface TssService {
      *
      * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
      * @param privateShare       the secret to use for generating new keys
-     * @return the TSS message produced for the input share claims
+     * @return a TSSMessage produced out of a random share.
      */
     @NonNull
     TssMessage generateTssMessage(@NonNull final ParticipantDirectory pendingParticipantDirectory);
@@ -78,6 +85,18 @@ public interface TssService {
             @NonNull final List<TssMessage> validTssMessages);
 
     /**
+     * Aggregate a threshold number of {@link TssPrivateShare}s.
+     * <p>
+     * It is the responsibility of the caller to ensure that the list of private shares meets the required threshold.
+     * If the threshold is not met, the private key returned by this method will be invalid.
+     *
+     * @param privateShares   the private shares to aggregate
+     * @return the aggregate private key
+     */
+    @NonNull
+    PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
+
+    /**
      * Compute all public shares.
      *
      * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
@@ -85,21 +104,9 @@ public interface TssService {
      * @return the list of public shares, or null if there aren't enough messages to meet the threshold
      */
     @Nullable
-    TssPublicShare computePublicShares(
+    List<TssPublicShare> computePublicShares(
             @NonNull final ParticipantDirectory participantDirectory,
             @NonNull final List<TssMessage> tssMessages) ;
-
-    /**
-     * Aggregate a threshold number of {@link TssShareSignature}s.
-     * <p>
-     * It is the responsibility of the caller to ensure that the list of partial signatures meets the required
-     * threshold. If the threshold is not met, the signature returned by this method will be invalid.
-     *
-     * @param partialSignatures the list of signatures to aggregate
-     * @return the interpolated signature
-     */
-    @NonNull
-    PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
@@ -120,18 +127,6 @@ public interface TssService {
     PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
 
     /**
-     * Aggregate a threshold number of {@link TssPrivateShare}s.
-     * <p>
-     * It is the responsibility of the caller to ensure that the list of private shares meets the required threshold.
-     * If the threshold is not met, the private key returned by this method will be invalid.
-     *
-     * @param privateShares   the private shares to aggregate
-     * @return the aggregate private key
-     */
-    @NonNull
-    PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
-
-    /**
      * Sign a message using the private share's key.
      * <p>
      * @param privateShare the private share to sign the message with
@@ -142,12 +137,24 @@ public interface TssService {
     TssShareSignature sign(final @NonNull TssPrivateShare privateShare, final @NonNull byte[] message) ;
 
     /**
-     * verifies a signature using the participantDirectory.
+     * verifies a signature using the participantDirectory and the list of public shares.
      * <p>
      * @param participantDirectory the pending share claims the TSS message was created for
      * @param privateShare the private share to sign the message with
      * @return true if the signature is valid, false otherwise.
      */
-    boolean verify(@NonNull final ParticipantDirectory participantDirectory, final @NonNull TssShareSignature privateShare) ;
+    boolean verify(@NonNull final ParticipantDirectory participantDirectory,
+            @NonNull final List<TssPublicShare> publicShares, final @NonNull TssShareSignature signature) ;
 
+    /**
+     * Aggregate a threshold number of {@link TssShareSignature}s.
+     * <p>
+     * It is the responsibility of the caller to ensure that the list of partial signatures meets the required
+     * threshold. If the threshold is not met, the signature returned by this method will be invalid.
+     *
+     * @param partialSignatures the list of signatures to aggregate
+     * @return the interpolated signature
+     */
+    @NonNull
+    PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures);
 }

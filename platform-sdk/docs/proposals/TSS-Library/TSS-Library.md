@@ -263,7 +263,7 @@ Once finished, the list of `SecretShare`s will be updated.
 After genesis keying or rekeying stages, the library can sign any message.
 Using each `SecretShare` owned by the participant, a message can be signed, producing a `TssSignature`
 
-Multiple signatures can be aggregated to create an aggregated `TssSignature`. An aggregated `TssSignature` can be validated against the LedgerId if
+Multiple signatures can be aggregated to create an aggregate `TssSignature`. An aggregate `TssSignature` can be validated against the LedgerId if
 `t` (t=threshold) valid signatures are aggregated. If the threshold is met and the signature is valid, the library will respond with true; if not, it will be false.
 
 
@@ -271,13 +271,13 @@ Multiple signatures can be aggregated to create an aggregated `TssSignature`. An
 The following diagram exposes the steps necessary for bootstrapping and using the library. In orange are all the steps where the library is involved.
 The rest of the steps need to happen but are outside the scope of the described library.
 
-![img_12.png](img_12.png)
+![img_2.png](img_2.png)
 
 
 ### Architecture
 To implement the functionality detailed in the previous section, the following code structure is proposed:
 
-![img_10.png](img_10.png)
+![img_5.png](img_5.png)
 
 1. **TSS Lib**: The consensus node will use the TSS library to create shares, create TSS messages to send to other nodes,
    assemble shared public keys (ledgerId), and sign the block node Merkle tree hash.
@@ -295,7 +295,7 @@ To implement the functionality detailed in the previous section, the following c
 7. **EC-Key Utils ** is a utility module that enables the node operator to generate a bootstrapping public/private key pair.
 
 ### Module organization and repositories
-![img_13.png](img_13.png)
+![img_6.png](img_6.png)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries.
    It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and block node code.
 2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
@@ -319,28 +319,48 @@ This library would accept Integer.MAX_VALUE -1 participants.
 
 ##### Public API
 ###### `TssService`
-**Description**: This class handles all tss specific operations. 
+**Description**: This class handles all tss specific operations.
+
+**Link**: [TssService.java](tss%2FTssService.java)
+
 ###### `TssParticipantDirectory`
 **Description**: This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares. 
+
+**Link**: [TssParticipantDirectory.java](tss%2FTssParticipantDirectory.java)
+
 ###### `TssMessage`
 **Description**: This class is used in the exchange of secret information between participants. Contains an encrypted message, a polynomial commitment, and a cryptographic proof that can be used to validate this message.
+
+**Link**:[TssMessage.java](tss%2FTssMessage.java)
+
 ###### `TssShareId`
 **Description**: This class represents the unique identification of a share in the system. It a FieldElement, so it can be used as input in the polynomial.
+
+**Link**:[TssShareId.java](tss%2FTssShareId.java)
+
 ###### `TssPrivateShare`
 **Description**: A record that contains a share ID, and the corresponding private key.
+
+**Link**:[TssPrivateShare.java](tss%2FTssPrivateShare.java)
+
 ###### `TssPublicShare`
 **Description**: A record that contains a share ID, and the corresponding public key.
+
+**Link**:[TssPublicShare.java](tss%2FTssPublicShare.java)
+
 ###### `TssShareSignature`
 **Description**: Represents a signature created for a TSSPrivateShare.
+
+**Link**:[TssShareSignature.java](tss%2FTssShareSignature.java)
 
 ##### Example
 ###### 1. Bootstrapping
 ```java
-   TssService service = new TssService(signatureScheme);
+   TssService service = new TssService(signatureScheme, new Random());
    PairingPrivateKey persistentParticipantKey = Requirements.loadECPrivateKey();
    List<PairingPublicKey> persistentPublicKeys = Requirements.loadECPublicKeys();
-   TssParticipantDirectory participantDirectory = 
-        service.participantDirectoryBuilder()
+   TssParticipantDirectory participantDirectory =
+           TssParticipantDirectory.createBuilder()
            .self(/**/ 0, persistentParticipantKey)
            .withParticipant(/*Identification:*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
            .withParticipant(/*Identification:*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
@@ -356,9 +376,8 @@ This library would accept Integer.MAX_VALUE -1 participants.
 ```
 ###### 1. Create TssMessage
 ```java
-
-   TssSecretShare s = directory.createRandomSecretShare();
-   TssMessage m = service.createTssMessage(directory);
+   //Creates a TssMessage out of a randomly generated share 
+   TssMessage m = service.generateTssMessage(directory);
 ```
 
 ###### 2. Validation of TssMessage
@@ -400,8 +419,8 @@ This library would accept Integer.MAX_VALUE -1 participants.
         }
     }
     
-    //Producing an aggregated signature
-    PairingSignature aggregatedSignature = service.aggregate(participantDirectory, validSignatures);
+    //Producing an aggregate signature
+    PairingSignature aggregateSignature = service.aggregate(participantDirectory, validSignatures);
 
 ```
 
