@@ -42,7 +42,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -143,7 +143,7 @@ class ChildDispatchModuleTest {
     private AccountID syntheticPayer;
 
     @Mock
-    private KeyVerifier verifier;
+    private AppKeyVerifier verifier;
 
     @Mock
     private Key payerkey;

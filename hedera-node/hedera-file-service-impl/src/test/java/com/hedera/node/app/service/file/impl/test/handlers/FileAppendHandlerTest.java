@@ -35,7 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
@@ -73,7 +72,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -213,8 +211,6 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         assertFailsWith(FILE_DELETED, () -> subject.handle(handleContext));
@@ -234,8 +230,7 @@ class FileAppendHandlerTest extends FileTestBase {
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
@@ -254,8 +249,6 @@ class FileAppendHandlerTest extends FileTestBase {
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         subject.handle(handleContext);
@@ -282,8 +275,6 @@ class FileAppendHandlerTest extends FileTestBase {
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -305,8 +296,6 @@ class FileAppendHandlerTest extends FileTestBase {
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -375,8 +364,6 @@ class FileAppendHandlerTest extends FileTestBase {
                 .build();
 
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(true);
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
     }

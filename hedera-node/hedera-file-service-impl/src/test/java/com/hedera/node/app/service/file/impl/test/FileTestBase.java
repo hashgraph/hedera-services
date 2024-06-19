@@ -40,7 +40,6 @@ import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -132,9 +131,6 @@ public class FileTestBase {
 
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
-
-    @Mock(strictness = LENIENT)
-    protected SignatureVerification signatureVerification;
 
     @Mock
     private StoreMetricsService storeMetricsService;

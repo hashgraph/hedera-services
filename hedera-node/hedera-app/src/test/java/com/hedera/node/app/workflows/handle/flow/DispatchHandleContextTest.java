@@ -81,7 +81,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -190,7 +190,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private FeeAccumulator accumulator;
 
     @Mock
-    private KeyVerifier verifier;
+    private AppKeyVerifier verifier;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -537,6 +537,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.savepointStack()).isEqualTo(stack);
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
+        assertThat(subject.keyVerifier()).isEqualTo(verifier);
     }
 
     @Nested
@@ -572,38 +573,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThatThrownBy(() -> context.readableStore(null)).isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> context.readableStore(List.class)).isInstanceOf(IllegalArgumentException.class);
             assertThatThrownBy(() -> context.writableStore(null)).isInstanceOf(NullPointerException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling of verification data")
-    final class VerificationDataTest {
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testVerificationForWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void testVerificationForKey() {
-            when(verifier.verificationFor(Key.DEFAULT)).thenReturn(verification);
-            final var context = createContext(txBody);
-
-            final var actual = context.verificationFor(Key.DEFAULT);
-
-            assertThat(actual).isEqualTo(verification);
-        }
-
-        @Test
-        void testVerificationForAlias() {
-            when(verifier.verificationFor(ERIN.account().alias())).thenReturn(verification);
-            final var context = createContext(txBody);
-            final var actual = context.verificationFor(ERIN.account().alias());
-
-            assertThat(actual).isEqualTo(verification);
         }
     }
 
@@ -942,7 +911,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Test
     void usesAssistantInVerification() {
         given(verifier.verificationFor(Key.DEFAULT, assistant)).willReturn(FAILED_VERIFICATION);
-        assertThat(subject.verificationFor(Key.DEFAULT, assistant)).isSameAs(FAILED_VERIFICATION);
+        assertThat(subject.keyVerifier().verificationFor(Key.DEFAULT, assistant))
+                .isSameAs(FAILED_VERIFICATION);
     }
 
     @Test

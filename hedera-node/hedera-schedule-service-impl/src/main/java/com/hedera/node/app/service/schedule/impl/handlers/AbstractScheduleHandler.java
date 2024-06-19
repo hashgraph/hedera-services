@@ -384,7 +384,7 @@ abstract class AbstractScheduleHandler {
         final var assistant = new ScheduleVerificationAssistant(currentSignatories, currentUnverifiedKeys);
         for (final Key next : scheduledRequiredKeys) {
             // The schedule verification assistant observes each primitive key in the tree
-            final SignatureVerification isVerified = context.verificationFor(next, assistant);
+            final SignatureVerification isVerified = context.keyVerifier().verificationFor(next, assistant);
             // unverified primitive keys only count if the top-level key failed verification.
             // @todo('9447') The comparison to originalPayerKey here is to match monoservice
             //      "hidden default payer" behavior. We intend to remove that behavior after v1

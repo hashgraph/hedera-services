@@ -25,8 +25,8 @@ import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -95,7 +95,7 @@ public interface UserDispatchModule {
 
     @Provides
     @UserDispatchScope
-    static KeyVerifier provideKeyVerifier(
+    static AppKeyVerifier provideKeyVerifier(
             @NonNull final HederaConfig hederaConfig,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final PreHandleResult preHandleResult) {
