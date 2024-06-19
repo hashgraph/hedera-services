@@ -35,6 +35,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.ParseException;
@@ -94,12 +95,16 @@ public final class FeeManager {
 
     private final CongestionMultipliers congestionMultipliers;
 
+    private final AssetsLoader assetsLoader;
+
     @Inject
     public FeeManager(
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull CongestionMultipliers congestionMultipliers) {
+            @NonNull CongestionMultipliers congestionMultipliers,
+            @NonNull final AssetsLoader assetsLoader) {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.congestionMultipliers = requireNonNull(congestionMultipliers);
+        this.assetsLoader = requireNonNull(assetsLoader);
     }
 
     /**
@@ -196,7 +201,8 @@ public final class FeeManager {
                 exchangeRateManager.activeRate(consensusTime),
                 isInternalDispatch,
                 congestionMultipliers,
-                storeFactory);
+                storeFactory,
+                assetsLoader);
     }
 
     public long congestionMultiplierFor(
@@ -221,7 +227,8 @@ public final class FeeManager {
                 exchangeRateManager.activeRate(consensusTime),
                 congestionMultipliers,
                 storeFactory,
-                functionality);
+                functionality,
+                assetsLoader);
     }
 
     /**

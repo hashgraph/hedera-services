@@ -20,6 +20,8 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 
@@ -64,6 +66,19 @@ public class FakeFeeCalculator implements FeeCalculator {
         return new Fees(0, 0, 0);
     }
 
+    @NonNull
+    @Override
+    public Fees calculate(final boolean includeBasePrice) {
+        return new Fees(0, 0, 0);
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateCanonicalFeeForFunctionality(
+            final HederaFunctionality hederaFunctionality, final SubType subType, final int multiplier) {
+        return new Fees(0, 0, 0);
+    }
+
     @Override
     public long getCongestionMultiplier() {
         return 1;
@@ -79,10 +94,5 @@ public class FakeFeeCalculator implements FeeCalculator {
     @NonNull
     public FakeFeeCalculator resetUsage() {
         return this;
-    }
-
-    @Override
-    public long getVptPrice() {
-        return 0;
     }
 }

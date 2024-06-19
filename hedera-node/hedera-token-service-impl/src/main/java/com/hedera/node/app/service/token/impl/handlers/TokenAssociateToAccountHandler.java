@@ -40,7 +40,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
@@ -59,10 +58,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.SubType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -209,26 +206,23 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
                 feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
         if (unlimitedAutoAssociations) {
-            final var exchangeRateInfo = feeContext.exchangeRateInfo();
-
             calculator.resetUsage();
-            final var singleSigPrice = getTinybarsFromTinyCents(
-                    calculator.getVptPrice(), exchangeRateInfo.activeRate(feeContext.consensusNow()));
-            final var newAssociationsCount = op.tokens().size();
 
-            final var associateInTinyCents = getFixedAssociatePriceInTinyCents();
-            final var associateInTinybars = getTinybarsFromTinyCents(
-                    associateInTinyCents, exchangeRateInfo.activeRate(feeContext.consensusNow()));
-
-            var totalSigPrice = 0L;
             // If the transaction category is USER then this is the main transaction. If it is CHILD
             // then this is a transaction that was internally dispatched and the signature verifications
-            // were already performed and charged in the main transaction so we don't need to
+            // were already performed and charged in the main transaction, so we don't need to
             // calculate them again here.
             if (feeContext.transactionCategory() == TransactionCategory.USER) {
-                totalSigPrice = Math.max(0, feeContext.numTxnSignatures() - 1) * singleSigPrice;
+                calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
             }
-            return new Fees(0L, totalSigPrice + newAssociationsCount * associateInTinybars, 0L);
+            final var signatureFee = calculator.calculate(false);
+
+            final var newAssociationsCount = op.tokens().size();
+            final var associationFee = calculator.calculateCanonicalFeeForFunctionality(
+                    com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount,
+                    SubType.DEFAULT,
+                    newAssociationsCount);
+            return signatureFee.plus(associationFee);
         } else {
             final var accountId = op.accountOrThrow();
             final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
@@ -237,28 +231,5 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
             return calculator.legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(txnEstimateFactory)
                     .usageGiven(fromPbj(body), sigValueObj, account));
         }
-    }
-
-    private long getFixedAssociatePriceInTinyCents() {
-        BigDecimal usdFee;
-        try {
-            usdFee = assetsLoader
-                    .loadCanonicalPrices()
-                    .get(com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount)
-                    .get(com.hederahashgraph.api.proto.java.SubType.DEFAULT);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load canonical prices", e);
-        }
-        final var usdToTinyCents = BigDecimal.valueOf(100 * 100_000_000L);
-        return usdToTinyCents.multiply(usdFee).longValue();
-    }
-
-    private long getTinybarsFromTinyCents(final long tinyCents, final ExchangeRate rate) {
-        final var aMultiplier = BigInteger.valueOf(rate.hbarEquiv());
-        final var bDivisor = BigInteger.valueOf(rate.centEquiv());
-        return BigInteger.valueOf(tinyCents)
-                .multiply(aMultiplier)
-                .divide(bDivisor)
-                .longValueExact();
     }
 }

@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -130,17 +129,5 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public TransactionCategory transactionCategory() {
         return transactionCategory;
-    }
-
-    @Override
-    @NonNull
-    public ExchangeRateInfo exchangeRateInfo() {
-        return context.exchangeRateInfo();
-    }
-
-    @Override
-    @NonNull
-    public Instant consensusNow() {
-        return context.consensusNow();
     }
 }

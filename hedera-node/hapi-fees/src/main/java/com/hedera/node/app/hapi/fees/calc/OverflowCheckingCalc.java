@@ -68,10 +68,14 @@ public final class OverflowCheckingCalc {
      * @throws IllegalArgumentException if any step of the calculation overflows
      */
     public FeeObject fees(
-            final UsageAccumulator usage, final FeeData prices, final ExchangeRate rate, final long multiplier) {
-        final long networkFeeTinycents = networkFeeInTinycents(usage, prices.getNetworkdata());
-        final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata());
-        final long serviceFeeTinycents = serviceFeeInTinycents(usage, prices.getServicedata());
+            final UsageAccumulator usage,
+            final FeeData prices,
+            final ExchangeRate rate,
+            final long multiplier,
+            final boolean includeBasePrice) {
+        final long networkFeeTinycents = networkFeeInTinycents(usage, prices.getNetworkdata(), includeBasePrice);
+        final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata(), includeBasePrice);
+        final long serviceFeeTinycents = serviceFeeInTinycents(usage, prices.getServicedata(), includeBasePrice);
 
         final long unscaledNetworkFee = tinycentsToTinybars(networkFeeTinycents, rate);
         final long unscaledNodeFee = tinycentsToTinybars(nodeFeeTinycents, rate);
@@ -94,18 +98,20 @@ public final class OverflowCheckingCalc {
         return amount * hbarEquiv / rate.getCentEquiv();
     }
 
-    private long networkFeeInTinycents(final UsageAccumulator usage, final FeeComponents networkPrices) {
+    private long networkFeeInTinycents(
+            final UsageAccumulator usage, final FeeComponents networkPrices, final boolean includeBasePrice) {
         final var nominal = safeAccumulateThree(
-                networkPrices.getConstant(),
+                includeBasePrice ? networkPrices.getConstant() : 0,
                 usage.getUniversalBpt() * networkPrices.getBpt(),
                 usage.getNetworkVpt() * networkPrices.getVpt(),
                 usage.getNetworkRbh() * networkPrices.getRbh());
         return constrainedTinycentFee(nominal, networkPrices.getMin(), networkPrices.getMax());
     }
 
-    private long nodeFeeInTinycents(final UsageAccumulator usage, final FeeComponents nodePrices) {
+    private long nodeFeeInTinycents(
+            final UsageAccumulator usage, final FeeComponents nodePrices, final boolean includeBasePrice) {
         final var nominal = safeAccumulateFour(
-                nodePrices.getConstant(),
+                includeBasePrice ? nodePrices.getConstant() : 0,
                 usage.getUniversalBpt() * nodePrices.getBpt(),
                 usage.getNodeBpr() * nodePrices.getBpr(),
                 usage.getNodeSbpr() * nodePrices.getSbpr(),
@@ -113,9 +119,10 @@ public final class OverflowCheckingCalc {
         return constrainedTinycentFee(nominal, nodePrices.getMin(), nodePrices.getMax());
     }
 
-    private long serviceFeeInTinycents(final UsageAccumulator usage, final FeeComponents servicePrices) {
+    private long serviceFeeInTinycents(
+            final UsageAccumulator usage, final FeeComponents servicePrices, final boolean includeBasePrice) {
         final var nominal = safeAccumulateTwo(
-                servicePrices.getConstant(),
+                includeBasePrice ? servicePrices.getConstant() : 0,
                 usage.getServiceRbh() * servicePrices.getRbh(),
                 usage.getServiceSbh() * servicePrices.getSbh());
         return constrainedTinycentFee(nominal, servicePrices.getMin(), servicePrices.getMax());

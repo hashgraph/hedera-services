@@ -28,6 +28,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.OneOf;
@@ -68,7 +69,8 @@ public class FeeCalculatorImplTest {
                 ExchangeRate.DEFAULT,
                 false,
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeHederaState()));
+                new ReadableStoreFactory(new FakeHederaState()),
+                new AssetsLoader());
         assertNotNull(calculator);
 
         calculator = new FeeCalculatorImpl(
@@ -76,7 +78,8 @@ public class FeeCalculatorImplTest {
                 new ExchangeRate(0, 0, null),
                 congestionMultipliers,
                 new ReadableStoreFactory(new FakeHederaState()),
-                HederaFunctionality.CONTRACT_CALL);
+                HederaFunctionality.CONTRACT_CALL,
+                new AssetsLoader());
         assertNotNull(calculator);
     }
 
@@ -96,7 +99,8 @@ public class FeeCalculatorImplTest {
                         ExchangeRate.DEFAULT,
                         false,
                         congestionMultipliers,
-                        new ReadableStoreFactory(new FakeHederaState())));
+                        new ReadableStoreFactory(new FakeHederaState()),
+                        new AssetsLoader()));
     }
 
     @Test
@@ -107,7 +111,8 @@ public class FeeCalculatorImplTest {
                 new ExchangeRate(0, 0, null),
                 congestionMultipliers,
                 storeFactory,
-                HederaFunctionality.CONTRACT_CALL);
+                HederaFunctionality.CONTRACT_CALL,
+                new AssetsLoader());
 
         calculator.getCongestionMultiplier();
         verify(congestionMultipliers).maxCurrentMultiplier(any(TransactionInfo.class), eq(storeFactory));

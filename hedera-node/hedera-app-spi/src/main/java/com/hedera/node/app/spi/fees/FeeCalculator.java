@@ -19,6 +19,8 @@ package com.hedera.node.app.spi.fees;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 
@@ -94,6 +96,13 @@ public interface FeeCalculator {
     @NonNull
     Fees calculate();
 
+    @NonNull
+    Fees calculate(final boolean includeBasePrice);
+
+    @NonNull
+    Fees calculateCanonicalFeeForFunctionality(
+            final HederaFunctionality hederaFunctionality, final SubType subType, final int multiplier);
+
     long getCongestionMultiplier();
 
     /**
@@ -102,10 +111,4 @@ public interface FeeCalculator {
      */
     @NonNull
     FeeCalculator resetUsage();
-
-    /**
-     * Gets the price for signature verifications only.
-     * @return the vpt price
-     */
-    long getVptPrice();
 }

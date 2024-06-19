@@ -73,7 +73,8 @@ public class PricedUsageCalculator {
 
         accessorBasedUsages.assess(sigUsage, accessor, accumulator);
 
-        return calculator.fees(accumulator, resourcePrices, rate, feeMultiplierSource.currentMultiplier(accessor));
+        return calculator.fees(
+                accumulator, resourcePrices, rate, feeMultiplierSource.currentMultiplier(accessor), true);
     }
 
     UsageAccumulator getHandleScopedAccumulator() {

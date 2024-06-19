@@ -31,6 +31,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
@@ -43,6 +44,9 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
@@ -68,6 +72,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
     private final ReadableStoreFactory storeFactory;
 
     private final TransactionInfo txInfo;
+
+    private final AssetsLoader assetsLoader;
 
     /**
      * Create a new instance. One is created per transaction.
@@ -96,12 +102,14 @@ public class FeeCalculatorImpl implements FeeCalculator {
             @NonNull final ExchangeRate currentRate,
             final boolean isInternalDispatch,
             final CongestionMultipliers congestionMultipliers,
-            final ReadableStoreFactory storeFactory) {
+            final ReadableStoreFactory storeFactory,
+            final AssetsLoader assetsLoader) {
         //  Perform basic validations, and convert the PBJ objects to Google protobuf objects for `hapi-fees`.
         requireNonNull(txBody);
         requireNonNull(payerKey);
         this.feeData = fromPbj(feeData);
         this.currentRate = fromPbj(currentRate);
+        this.assetsLoader = assetsLoader;
         if (numVerifications < 0) {
             throw new IllegalArgumentException("numVerifications must be >= 0");
         }
@@ -145,7 +153,8 @@ public class FeeCalculatorImpl implements FeeCalculator {
             @NonNull final ExchangeRate currentRate,
             final CongestionMultipliers congestionMultipliers,
             final ReadableStoreFactory storeFactory,
-            final HederaFunctionality functionality) {
+            final HederaFunctionality functionality,
+            final AssetsLoader assetsLoader) {
         if (feeData == null) {
             this.feeData = null;
             this.usage = null;
@@ -158,6 +167,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
         }
         this.currentRate = fromPbj(currentRate);
         this.sigUsage = new SigUsage(0, 0, 0);
+        this.assetsLoader = assetsLoader;
 
         this.congestionMultipliers = congestionMultipliers;
         this.storeFactory = storeFactory;
@@ -227,11 +237,6 @@ public class FeeCalculatorImpl implements FeeCalculator {
         return this;
     }
 
-    @Override
-    public long getVptPrice() {
-        return feeData.getNetworkdata().getVpt() / 1000L;
-    }
-
     @NonNull
     @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, com.hederahashgraph.api.proto.java.FeeData> callback) {
@@ -244,13 +249,59 @@ public class FeeCalculatorImpl implements FeeCalculator {
     @Override
     @NonNull
     public Fees calculate() {
+        return calculate(true);
+    }
+
+    @NonNull
+    @Override
+    public Fees calculate(final boolean includeBasePrice) {
         failIfLegacyOnly();
         // Use the "hapi-fees" module to calculate the fees, and convert to one of our "Fees" objects.
         final var overflowCalc = new OverflowCheckingCalc();
 
         final var feeObject = overflowCalc.fees(
-                usage, feeData, currentRate, congestionMultipliers.maxCurrentMultiplier(txInfo, storeFactory));
+                usage,
+                feeData,
+                currentRate,
+                congestionMultipliers.maxCurrentMultiplier(txInfo, storeFactory),
+                includeBasePrice);
         return new Fees(feeObject.nodeFee(), feeObject.networkFee(), feeObject.serviceFee());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateCanonicalFeeForFunctionality(
+            final com.hederahashgraph.api.proto.java.HederaFunctionality hederaFunctionality,
+            final com.hederahashgraph.api.proto.java.SubType subType,
+            final int multiplier) {
+        return new Fees(
+                0L,
+                getTinybarsFromTinyCents(
+                        multiplier * getCanonicalPriceInTinyCents(hederaFunctionality, subType), currentRate),
+                0L);
+    }
+
+    private long getCanonicalPriceInTinyCents(
+            com.hederahashgraph.api.proto.java.HederaFunctionality hederaFunctionality,
+            com.hederahashgraph.api.proto.java.SubType subType) {
+        BigDecimal usdFee;
+        try {
+            usdFee = assetsLoader.loadCanonicalPrices().get(hederaFunctionality).get(subType);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to load canonical prices", e);
+        }
+        final var usdToTinyCents = BigDecimal.valueOf(100 * 100_000_000L);
+        return usdToTinyCents.multiply(usdFee).longValue();
+    }
+
+    private long getTinybarsFromTinyCents(
+            final long tinyCents, final com.hederahashgraph.api.proto.java.ExchangeRate rate) {
+        final var aMultiplier = BigInteger.valueOf(rate.getHbarEquiv());
+        final var bDivisor = BigInteger.valueOf(rate.getCentEquiv());
+        return BigInteger.valueOf(tinyCents)
+                .multiply(aMultiplier)
+                .divide(bDivisor)
+                .longValueExact();
     }
 
     public long getCongestionMultiplier() {

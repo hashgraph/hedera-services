@@ -171,17 +171,4 @@ public class FeeContextImpl implements FeeContext {
     public TransactionCategory transactionCategory() {
         return transactionCategory;
     }
-
-    @Override
-    public ExchangeRateInfo exchangeRateInfo() {
-        if (exchangeRateInfo == null) {
-            exchangeRateInfo = exchangeRateManager.exchangeRateInfo(state);
-        }
-        return exchangeRateInfo;
-    }
-
-    @Override
-    public Instant consensusNow() {
-        return consensusTime;
-    }
 }
