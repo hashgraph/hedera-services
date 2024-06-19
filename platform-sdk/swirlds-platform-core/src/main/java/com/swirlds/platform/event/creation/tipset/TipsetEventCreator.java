@@ -34,6 +34,7 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -114,6 +115,8 @@ public class TipsetEventCreator implements EventCreator {
 
     private final RateLimitedLogger zeroAdvancementWeightLogger;
     private final RateLimitedLogger noParentFoundLogger;
+
+    private final StatefulEventHasher statefulEventHasher = new StatefulEventHasher();
 
     /**
      * Create a new tipset event creator.
@@ -435,7 +438,7 @@ public class TipsetEventCreator implements EventCreator {
                         : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
-        cryptography.digestSync(event);
+        statefulEventHasher.hashEvent(event);
 
         return event;
     }

@@ -21,6 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -36,6 +37,17 @@ public class StatefulEventHasher implements EventHasher {
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         try {
             event.serializeLegacyHashBytes(outputStream);
+            event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
+            return event;
+        } catch (final IOException e) {
+            throw new RuntimeException("An exception occurred while trying to hash an event!", e);
+        }
+    }
+
+    @NonNull
+    public BaseEventHashedData hashEvent(@NonNull final BaseEventHashedData event) {
+        try {
+            event.serialize(outputStream);
             event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
             return event;
         } catch (final IOException e) {

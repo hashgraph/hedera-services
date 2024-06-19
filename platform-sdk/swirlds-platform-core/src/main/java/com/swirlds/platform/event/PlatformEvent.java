@@ -173,19 +173,19 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      */
     public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out);
-        out.writeSerializable(hashedData, true);
+        hashedData.serializeForHash(out);
     }
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeSerializable(hashedData, false);
+        hashedData.serialize(out);
         out.writeInt((int) signature.length());
         signature.writeTo(out);
     }
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        hashedData = in.readSerializable(false, BaseEventHashedData::new);
+        hashedData = BaseEventHashedData.deserialize(in, version);
         final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
         this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();

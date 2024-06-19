@@ -271,7 +271,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
                 break;
             }
 
-            currEventSize += (int) PayloadUtils.getPayloadSize(transaction);
+            currEventSize += PayloadUtils.getPayloadSize(transaction);
             selectedTrans.add(transaction);
 
             if (STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {

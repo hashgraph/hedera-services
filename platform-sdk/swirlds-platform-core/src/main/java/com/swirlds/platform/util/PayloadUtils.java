@@ -16,17 +16,49 @@
 
 package com.swirlds.platform.util;
 
+import static com.swirlds.common.io.streams.SerializableStreamConstants.BOOLEAN_BYTES;
+import static com.swirlds.common.io.streams.SerializableStreamConstants.CLASS_ID_BYTES;
+import static com.swirlds.common.io.streams.SerializableStreamConstants.VERSION_BYTES;
+
+import com.hedera.hapi.platform.event.EventPayload;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * Utility class for handling PJB payloads.
+ * <p>
+ * <b>IMPORTANT:</b> This class is subject to deletion in the future. It's only needed for the transition period
+ * from old serialization to PBJ serialization.
  */
 public final class PayloadUtils {
     private PayloadUtils() {}
+
+    /**
+     * Get the size of an list of payloads.
+     *
+     * @param payloads the payloads to get the size of
+     * @return the size of the payloads
+     */
+    public static int getObjectSize(@NonNull final List<EventPayload> payloads) {
+        int totalByteLength = Integer.BYTES; // length of array size
+        if (payloads.isEmpty()) {
+            return totalByteLength;
+        }
+
+        totalByteLength += BOOLEAN_BYTES;
+
+        for (final EventPayload payload : payloads) {
+            totalByteLength += CLASS_ID_BYTES;
+            totalByteLength += VERSION_BYTES;
+            totalByteLength += getPayloadSize(payload.payload());
+        }
+
+        return totalByteLength;
+    }
 
     /**
      * Get the size of a payload.
@@ -34,17 +66,17 @@ public final class PayloadUtils {
      * @param payload the payload to get the size of
      * @return the size of the payload
      */
-    public static long getPayloadSize(@NonNull final OneOf<PayloadOneOfType> payload) {
+    public static int getPayloadSize(@NonNull final OneOf<PayloadOneOfType> payload) {
         if (PayloadOneOfType.APPLICATION_PAYLOAD.equals(payload.kind())) {
             return Integer.BYTES // add the the size of array length field
-                    + ((Bytes) payload.as()).length(); // add the size of the array
+                    + (int) ((Bytes) payload.as()).length(); // add the size of the array
         } else if (PayloadOneOfType.STATE_SIGNATURE_PAYLOAD.equals(payload.kind())) {
             final StateSignaturePayload stateSignaturePayload = payload.as();
             return Long.BYTES // round
                     + Integer.BYTES // signature array length
-                    + stateSignaturePayload.signature().length()
+                    + (int) stateSignaturePayload.signature().length()
                     + Integer.BYTES // hash array length
-                    + stateSignaturePayload.hash().length()
+                    + (int) stateSignaturePayload.hash().length()
                     + Integer.BYTES; // epochHash, always null, which is SerializableStreamConstants.NULL_VERSION
         } else {
             throw new IllegalArgumentException("Unknown payload type: " + payload.kind());

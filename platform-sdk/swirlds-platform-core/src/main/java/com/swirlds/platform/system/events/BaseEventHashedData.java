@@ -16,18 +16,17 @@
 
 package com.swirlds.platform.system.events;
 
-import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
-
 import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventPayload;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
+import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
@@ -38,6 +37,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -46,7 +46,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -56,9 +55,14 @@ import java.util.stream.Stream;
  * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
  * data is additional and does not affect the hash.
  */
-public class BaseEventHashedData extends AbstractSerializableHashable implements SelfSerializable {
+public class BaseEventHashedData extends AbstractHashable {
     public static final int TO_STRING_BYTE_ARRAY_LENGTH = 5;
     private static final long CLASS_ID = 0x21c2620e9b6a2243L;
+
+    private static final long APPLICATION_TRANSACTION_CLASS_ID = 0x9ff79186f4c4db97L;
+    private static final int APPLICATION_TRANSACTION_VERSION = 1;
+    private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
+    private static final int STATE_SIGNATURE_VERSION = 3;
 
     public static class ClassVersion {
         /**
@@ -124,8 +128,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
             Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
     private final EventCore eventCore;
-    private final List<OneOf<PayloadOneOfType>> payloads;
-
+    private final List<EventPayload> payloads;
 
     /**
      * Create a BaseEventHashedData object
@@ -139,7 +142,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
      * @param transactions    the payload: an array of transactions included in this event instance
      */
     public BaseEventHashedData(
-            @NonNull SoftwareVersion softwareVersion,
+            @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptor selfParent,
             @NonNull final List<EventDescriptor> otherParents,
@@ -157,18 +160,15 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         this.birthRound = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
 
-        this.payloads = transactions;
+        this.payloads = transactions.stream().map(EventPayload::new).toList();
         this.eventCore = new EventCore(
                 creatorId.id(),
                 birthRound,
                 HapiUtils.asTimestamp(timeCreated),
-                this.allParents.stream().map(
-                        ed -> new com.hedera.hapi.platform.event.EventDescriptor(
-                                ed.getHash().getBytes(),
-                                ed.getCreator().id(),
-                                ed.getGeneration(),
-                                ed.getBirthRound())
-                ).toList(),
+                this.allParents.stream()
+                        .map(ed -> new com.hedera.hapi.platform.event.EventDescriptor(
+                                ed.getHash().getBytes(), ed.getCreator().id(), ed.getGeneration(), ed.getBirthRound()))
+                        .toList(),
                 softwareVersion.getPbjSemanticVersion());
         this.transactions = transactions.stream()
                 .map(t -> switch (t.kind()) {
@@ -180,53 +180,95 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 .toArray(new ConsensusTransactionImpl[0]);
     }
 
-    @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.BIRTH_ROUND;
     }
 
-    @Override
+    public void serializeForHash(final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(CLASS_ID);
+        serialize(out);
+    }
+
     public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeInt(ClassVersion.BIRTH_ROUND);
         out.writeSerializable(softwareVersion, true);
-        out.writeSerializable(creatorId, false);
+        out.writeInt(NodeId.ClassVersion.ORIGINAL);
+        out.writeLong(eventCore.creatorNodeId());
         out.writeSerializable(selfParent, false);
         out.writeSerializableList(otherParents, false, true);
-        out.writeLong(birthRound);
-        out.writeInstant(timeCreated);
+        out.writeLong(eventCore.birthRound());
+        out.writeInstant(HapiUtils.asInstant(eventCore.timeCreated()));
 
         // write serialized length of transaction array first, so during the deserialization proces
         // it is possible to skip transaction array and move on to the next object
-        out.writeInt(getSerializedLength(transactions, true, false));
+        out.writeInt(PayloadUtils.getObjectSize(payloads));
         // transactions may include both system transactions and application transactions
         // so writeClassId set to true and allSameClass set to false
-        out.writeSerializableArray(transactions, true, false);
+        final boolean allSameClass = false;
+        out.writeInt(payloads.size());
+        if (!payloads.isEmpty()) {
+            out.writeBoolean(allSameClass);
+        }
+        for (final EventPayload payload : payloads) {
+            switch (payload.payload().kind()) {
+                case APPLICATION_PAYLOAD:
+                    out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
+                    out.writeInt(APPLICATION_TRANSACTION_VERSION);
+                    final Bytes bytes = payload.payload().as();
+                    out.writeInt((int) bytes.length());
+                    bytes.writeTo(out);
+                    break;
+                case STATE_SIGNATURE_PAYLOAD:
+                    final StateSignaturePayload stateSignaturePayload =
+                            payload.payload().as();
+
+                    out.writeLong(STATE_SIGNATURE_CLASS_ID);
+                    out.writeInt(STATE_SIGNATURE_VERSION);
+                    out.writeInt((int) stateSignaturePayload.signature().length());
+                    stateSignaturePayload.signature().writeTo(out);
+
+                    out.writeInt((int) stateSignaturePayload.hash().length());
+                    stateSignaturePayload.hash().writeTo(out);
+
+                    out.writeLong(stateSignaturePayload.round());
+                    out.writeInt(Integer.MIN_VALUE); // epochHash is always null
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                            "Unknown payload type: " + payload.payload().kind());
+            }
+        }
     }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
-        deserialize(in, version, transactionConfig.maxTransactionCountPerEvent());
-    }
-
-    private void deserialize(
-            @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
+    public static BaseEventHashedData deserialize(final SerializableDataInputStream in, final int version)
             throws IOException {
+        in.readInt(); // read and ignore version
+        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
         Objects.requireNonNull(in, "The input stream must not be null");
-        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
+        final SoftwareVersion softwareVersion =
+                in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
 
-        creatorId = in.readSerializable(false, NodeId::new);
+        final var creatorId = in.readSerializable(false, NodeId::new);
         if (creatorId == null) {
             throw new IOException("creatorId is null");
         }
-        selfParent = in.readSerializable(false, EventDescriptor::new);
-        otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
-        allParents = createAllParentsList();
-        birthRound = in.readLong();
+        final var selfParent = in.readSerializable(false, EventDescriptor::new);
+        final var otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        final var birthRound = in.readLong();
 
-        timeCreated = in.readInstant();
+        final var timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions =
-                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
+        final var transactions = in.readSerializableArray(
+                ConsensusTransactionImpl[]::new,
+                transactionConfig.maxTransactionCountPerEvent(),
+                true,
+                TRANSACTION_TYPES);
+        final var transactionList = Arrays.stream(transactions)
+                .map(ConsensusTransactionImpl::getPayload)
+                .toList();
+
+        return new BaseEventHashedData(
+                softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated, transactionList);
     }
 
     @Override
@@ -269,16 +311,6 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 .append("transactions size", transactions == null ? "null" : transactions.length)
                 .append("hash", getHash() == null ? "null" : getHash().toHex(TO_STRING_BYTE_ARRAY_LENGTH))
                 .toString();
-    }
-
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return ClassVersion.BIRTH_ROUND;
     }
 
     /**
@@ -471,5 +503,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         }
 
         return descriptor;
+    }
+
+    public EventCore getEventCore() {
+        return eventCore;
+    }
+
+    public List<EventPayload> getPayloads() {
+        return payloads;
     }
 }

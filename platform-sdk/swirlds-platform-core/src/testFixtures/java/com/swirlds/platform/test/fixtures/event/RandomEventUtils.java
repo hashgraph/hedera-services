@@ -18,11 +18,11 @@ package com.swirlds.platform.test.fixtures.event;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -111,7 +111,7 @@ public class RandomEventUtils {
         if (fakeHash) {
             hashedData.setHash(RandomUtils.randomHash(random));
         } else {
-            CryptographyHolder.get().digestSync(hashedData);
+            new StatefulEventHasher().hashEvent(hashedData);
         }
         return hashedData;
     }
