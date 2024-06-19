@@ -49,7 +49,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -518,7 +517,6 @@ class QueryCheckerTest extends AppTestBase {
     @Test
     void testEstimateTxFees(@Mock final ReadableStoreFactory storeFactory) {
         // given
-        final var hederaState = new FakeHederaState();
         final var consensusNow = Instant.ofEpochSecond(0);
         final var txInfo = createPaymentInfo(ALICE.accountID());
         final var configuration = HederaTestConfigBuilder.createConfig();
@@ -527,7 +525,7 @@ class QueryCheckerTest extends AppTestBase {
 
         // when
         final var result = checker.estimateTxFees(
-                hederaState, storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
+                storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
 
         // then
         assertThat(result).isEqualTo(fees.totalFee());

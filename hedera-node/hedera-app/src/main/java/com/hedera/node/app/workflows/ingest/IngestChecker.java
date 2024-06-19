@@ -39,7 +39,6 @@ import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.annotations.NodeSelfId;
-import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -98,7 +97,6 @@ public final class IngestChecker {
     private final AccountID nodeAccount;
     private final Authorizer authorizer;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
-    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -112,7 +110,6 @@ public final class IngestChecker {
      * @param dispatcher the {@link TransactionDispatcher} that dispatches transactions
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
-     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -127,8 +124,7 @@ public final class IngestChecker {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -140,7 +136,6 @@ public final class IngestChecker {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
-        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     /**
@@ -220,7 +215,6 @@ public final class IngestChecker {
         // 7. Check payer solvency
         final var numSigs = txInfo.signatureMap().sigPair().size();
         final FeeContext feeContext = new FeeContextImpl(
-                state,
                 consensusTime,
                 txInfo,
                 payerKey,
@@ -231,7 +225,6 @@ public final class IngestChecker {
                 authorizer,
                 numSigs,
                 dispatcher,
-                exchangeRateManager,
                 TransactionCategory.USER);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
         solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);

@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -31,7 +30,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -52,15 +50,11 @@ public class FeeContextImpl implements FeeContext {
     private final Authorizer authorizer;
     private final int numSignatures;
     private final TransactionDispatcher transactionDispatcher;
-    private final HederaState state;
-    private final ExchangeRateManager exchangeRateManager;
     private final TransactionCategory transactionCategory;
-    private ExchangeRateInfo exchangeRateInfo;
 
     /**
      * Constructor of {@code FeeContextImpl}
      *
-     * @param state current state
      * @param consensusTime         the approximation of consensus time used during ingest
      * @param txInfo                the {@link TransactionInfo} of the transaction
      * @param payerKey              the {@link Key} of the payer
@@ -72,7 +66,6 @@ public class FeeContextImpl implements FeeContext {
      *
      */
     public FeeContextImpl(
-            @NonNull final HederaState state,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo txInfo,
             @NonNull final Key payerKey,
@@ -83,9 +76,7 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Authorizer authorizer,
             final int numSignatures,
             final TransactionDispatcher transactionDispatcher,
-            @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionCategory transactionCategory) {
-        this.state = state;
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
@@ -96,7 +87,6 @@ public class FeeContextImpl implements FeeContext {
         this.authorizer = authorizer;
         this.numSignatures = numSignatures;
         this.transactionDispatcher = transactionDispatcher;
-        this.exchangeRateManager = exchangeRateManager;
         this.transactionCategory = transactionCategory;
     }
 

@@ -47,7 +47,6 @@ import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -218,14 +217,12 @@ public class QueryChecker {
      * @return the estimated fees
      */
     public long estimateTxFees(
-            @NonNull final HederaState state,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Key payerKey,
             @NonNull final Configuration configuration) {
         final var feeContext = new FeeContextImpl(
-                state,
                 consensusTime,
                 transactionInfo,
                 payerKey,
@@ -237,7 +234,6 @@ public class QueryChecker {
                 // Signatures aren't applicable to queries
                 -1,
                 dispatcher,
-                exchangeRateManager,
                 TransactionCategory.USER);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
