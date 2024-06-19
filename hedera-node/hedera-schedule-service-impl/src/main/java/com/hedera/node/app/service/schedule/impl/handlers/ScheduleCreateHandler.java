@@ -352,12 +352,14 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 ? SubType.SCHEDULE_CREATE_CONTRACT_CALL
                 : SubType.DEFAULT;
 
-        return feeContext.feeCalculator(subType).legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(
-                        new ScheduleOpsUsage(), null)
-                .usageGiven(
-                        fromPbj(op),
-                        sigValueObj,
-                        schedulingConfig.longTermEnabled(),
-                        ledgerConfig.scheduleTxExpiryTimeSecs()));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(subType)
+                .legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(new ScheduleOpsUsage(), null)
+                        .usageGiven(
+                                fromPbj(op),
+                                sigValueObj,
+                                schedulingConfig.longTermEnabled(),
+                                ledgerConfig.scheduleTxExpiryTimeSecs()));
     }
 }

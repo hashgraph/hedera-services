@@ -60,6 +60,7 @@ public class FileCreateHandler implements TransactionHandler {
 
     /**
      * Constructs a {@link FileCreateHandler} with the given {@link FileOpsUsage}.
+     *
      * @param fileOpsUsage the file operation usage calculator
      */
     @Inject
@@ -69,6 +70,7 @@ public class FileCreateHandler implements TransactionHandler {
 
     /**
      * Performs checks independent of state or context
+     *
      * @param txn the transaction to check
      */
     @Override
@@ -170,8 +172,10 @@ public class FileCreateHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
-            return new FileCreateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj);
-        });
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(
+                        sigValueObj -> new FileCreateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj));
     }
 }

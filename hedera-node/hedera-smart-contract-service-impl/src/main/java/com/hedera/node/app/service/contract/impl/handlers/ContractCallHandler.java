@@ -99,8 +99,10 @@ public class ContractCallHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractCallResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new ContractCallResourceUsage(new SmartContractFeeBuilder())
+                        .usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

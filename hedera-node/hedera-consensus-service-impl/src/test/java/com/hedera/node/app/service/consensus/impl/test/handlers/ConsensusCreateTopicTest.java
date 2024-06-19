@@ -37,7 +37,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
@@ -48,9 +47,6 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -88,12 +84,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock
     private ConsensusCreateTopicRecordBuilder recordBuilder;
-
-    @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
-    private FeeAccumulator feeAccumulator;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -136,10 +126,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);
-        lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
-        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
-        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }
 

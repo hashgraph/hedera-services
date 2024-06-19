@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.util.UtilService;
@@ -165,7 +165,7 @@ class UserDispatchModuleTest {
     void providesFeeAccumulatorImpl() {
         given(serviceApiFactory.getApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         assertThat(UserDispatchModule.provideFeeAccumulator(recordBuilder, serviceApiFactory))
-                .isInstanceOf(FeeAccumulatorImpl.class);
+                .isInstanceOf(FeeAccumulator.class);
     }
 
     @Test

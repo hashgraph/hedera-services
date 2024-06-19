@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction;
+package com.hedera.node.app.spi.fees;
 
-import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.pbj.runtime.OneOf;
+import com.hedera.hapi.node.base.SubType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
- * A source of transactions.
+ * A factory for creating {@link FeeCalculator} instances.
  */
-@FunctionalInterface
-public interface TransactionSupplier {
+public interface FeeCalculatorFactory {
 
     /**
-     * Returns an array of transactions. May return an empty array.
+     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
+     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
      *
-     * @return an list with 0 or more transactions
+     * @param subType The {@link SubType} of the transaction.
+     * @return The {@link FeeCalculator} to use.
      */
     @NonNull
-    List<OneOf<PayloadOneOfType>> getTransactions();
+    FeeCalculator feeCalculator(@NonNull final SubType subType);
 }
