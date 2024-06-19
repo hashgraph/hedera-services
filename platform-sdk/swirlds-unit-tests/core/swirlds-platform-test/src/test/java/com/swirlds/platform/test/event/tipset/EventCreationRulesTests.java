@@ -33,7 +33,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig_;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
@@ -193,7 +193,7 @@ class EventCreationRulesTests {
         final EventCreator baseEventCreator = mock(EventCreator.class);
         when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
             eventCreationCount.incrementAndGet();
-            return mock(GossipEvent.class);
+            return mock(PlatformEvent.class);
         });
 
         final EventCreationRule rule = new MaximumRateRule(platformContext);
