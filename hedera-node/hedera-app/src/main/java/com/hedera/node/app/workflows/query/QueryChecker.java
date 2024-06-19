@@ -63,7 +63,6 @@ public class QueryChecker {
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
     private final TransactionDispatcher dispatcher;
-    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryChecker}
@@ -75,7 +74,6 @@ public class QueryChecker {
      * @param expiryValidation      the {@link ExpiryValidation} that checks if an account is expired
      * @param feeManager            the {@link FeeManager} that calculates the fees
      * @param dispatcher
-     * @param exchangeRateManager The {@link ExchangeRateManager} used to obtain exchange rate information
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -85,15 +83,13 @@ public class QueryChecker {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
             @NonNull final FeeManager feeManager,
-            final TransactionDispatcher dispatcher,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
         this.dispatcher = requireNonNull(dispatcher);
-        this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
     /**
