@@ -18,7 +18,7 @@ package com.swirlds.platform.event.resubmitter;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -36,7 +36,7 @@ public interface TransactionResubmitter {
      */
     @InputWireLabel("stale events")
     @NonNull
-    List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull GossipEvent event);
+    List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull PlatformEvent event);
 
     /**
      * Update the current event window. The transaction resubmitter may use this information to decide which

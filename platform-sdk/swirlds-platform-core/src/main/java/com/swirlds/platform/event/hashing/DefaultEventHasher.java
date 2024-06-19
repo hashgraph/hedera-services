@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.hashing;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class DefaultEventHasher implements EventHasher {
     @Override
     @NonNull
-    public GossipEvent hashEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         new StatefulEventHasher().hashEvent(event);
         return event;
     }

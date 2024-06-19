@@ -30,9 +30,11 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -145,6 +147,8 @@ public class FreezeHandler implements TransactionHandler {
         final var txn = context.body();
         final NetworkAdminConfig adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
         final ReadableUpgradeFileStore upgradeFileStore = context.readableStore(ReadableUpgradeFileStore.class);
+        final ReadableNodeStore nodeStore = context.readableStore(ReadableNodeStore.class);
+        final ReadableStakingInfoStore stakingInfoStore = context.readableStore(ReadableStakingInfoStore.class);
         final WritableFreezeStore freezeStore = context.writableStore(WritableFreezeStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
@@ -154,8 +158,8 @@ public class FreezeHandler implements TransactionHandler {
         final FileID updateFileID = freezeTxn.updateFile();
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
-        final FreezeUpgradeActions upgradeActions =
-                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore);
+        final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(
+                adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {
