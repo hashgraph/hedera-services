@@ -85,7 +85,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         requireNonNull(context, "The argument 'context' must not be null");
 
         final var op = context.body().consensusDeleteTopicOrThrow();
-        final var topicStore = context.writableStore(WritableTopicStore.class);
+        final var topicStore = context.storeFactory().writableStore(WritableTopicStore.class);
         final var topicId = op.topicIDOrElse(TopicID.DEFAULT);
         final Topic topic = topicStore.getTopic(topicId);
         // preHandle already checks for topic existence, so topic should never be null.

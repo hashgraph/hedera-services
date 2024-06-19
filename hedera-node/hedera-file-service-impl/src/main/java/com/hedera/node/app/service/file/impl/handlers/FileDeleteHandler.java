@@ -110,7 +110,7 @@ public class FileDeleteHandler implements TransactionHandler {
         var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
 
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 

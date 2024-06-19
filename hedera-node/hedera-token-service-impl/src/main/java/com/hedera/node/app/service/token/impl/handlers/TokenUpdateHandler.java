@@ -133,9 +133,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var token = validationResult.token();
         final var resolvedExpiry = validationResult.resolvedExpiryMeta();
 
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var config = context.configuration();
         final var tokensConfig = config.getConfigData(TokensConfig.class);
 

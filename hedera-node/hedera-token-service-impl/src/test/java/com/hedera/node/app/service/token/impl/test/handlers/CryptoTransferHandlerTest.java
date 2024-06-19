@@ -72,7 +72,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.WarmupContextImpl;
 import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -447,9 +447,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void failsWhenAutoAssociatedTokenHasKycKey() {
         subject = new CryptoTransferHandler(validator, false);
-        givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
+        givenTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
@@ -467,7 +467,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -477,11 +477,11 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void happyPathWorksWithAutoCreation() {
         subject = new CryptoTransferHandler(validator, false);
-        givenTxn();
         refreshWritableStores();
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
         writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
+        givenTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
@@ -504,7 +504,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             .build());
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var initialSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
         final var initialFeeCollectorBalance =
@@ -555,9 +555,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
-        givenTxn(txnBody, payerId);
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
+        givenTxn(txnBody, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
@@ -575,7 +575,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -601,9 +601,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
-        givenTxn(txnBody, payerId);
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
+        givenTxn(txnBody, payerId);
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(payerId)))
@@ -621,7 +621,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)

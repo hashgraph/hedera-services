@@ -77,7 +77,7 @@ public class TransferContextImpl implements TransferContext {
     public TransferContextImpl(
             final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
-        this.accountStore = context.writableStore(WritableAccountStore.class);
+        this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
         this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);

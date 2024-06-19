@@ -57,7 +57,6 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.FilesConfig;
@@ -80,9 +79,6 @@ class FileCreateTest extends FileTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
-
-    @Mock
-    private HandleContext handleContext;
 
     @Mock
     private AttributeValidator validator;
@@ -135,7 +131,7 @@ class FileCreateTest extends FileTestBase {
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
-        lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
+        lenient().when(storeFactory.writableStore(WritableFileStore.class)).thenReturn(fileStore);
     }
 
     @Test
@@ -207,7 +203,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
@@ -240,7 +236,7 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(DEFAULT_CONFIG.getConfigData(HederaConfig.class));
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
@@ -271,7 +267,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
@@ -287,7 +283,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
@@ -310,7 +306,7 @@ class FileCreateTest extends FileTestBase {
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(fileStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());
 

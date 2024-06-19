@@ -149,7 +149,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var target = op.accountIDToUpdateOrThrow();
 
         // validate update account exists
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var targetAccount = accountStore.get(target);
         validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
         context.attributeValidator().validateMemo(op.memo());

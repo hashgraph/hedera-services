@@ -76,7 +76,6 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
@@ -103,12 +102,13 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchFactory;
@@ -284,6 +284,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
+    private StoreFactoryImpl storeFactory;
     private DispatchHandleContext subject;
 
     private static final AccountID payerId = ALICE.accountID();
@@ -314,6 +315,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
         readableStoreFactory = new ReadableStoreFactory(baseState);
         apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
+        storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
         subject = createContext(txBody);
 
         mockNeeded();
@@ -403,7 +405,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             authorizer,
             blockRecordManager,
             feeManager,
-            readableStoreFactory,
+            storeFactory,
             payerId,
             verifier,
             Key.newBuilder().build(),
@@ -413,8 +415,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             entityIdStore,
             dispatcher,
             recordCache,
-            writableStoreFactory,
-            apiFactory,
             networkInfo,
             parentRecordBuilder,
             childDispatchProvider,
@@ -537,6 +537,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.savepointStack()).isEqualTo(stack);
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
+        assertThat(subject.storeFactory()).isEqualTo(storeFactory);
     }
 
     @Nested
@@ -547,31 +548,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var context = createContext(txBody);
             final var actual = context.savepointStack();
             assertThat(actual).isEqualTo(stack);
-        }
-
-        @Test
-        void testCreateReadableStore() {
-            final var context = createContext(txBody);
-
-            final var store = context.readableStore(ReadableAccountStore.class);
-            assertThat(store).isNotNull();
-        }
-
-        @Test
-        void testCreateWritableStore() {
-            final var context = createContext(txBody);
-            given(writableStoreFactory.getStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            assertThat(context.writableStore(WritableAccountStore.class)).isSameAs(writableAccountStore);
-        }
-
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testCreateStoreWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.readableStore(null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.readableStore(List.class)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.writableStore(null)).isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -695,7 +671,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @SuppressWarnings("ConstantConditions")
     @Test
     void failsAsExpectedWithoutAvailableApi() {
-        assertThrows(IllegalArgumentException.class, () -> subject.serviceApi(Object.class));
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.storeFactory().serviceApi(Object.class));
     }
 
     @Nested
@@ -1020,7 +997,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 authorizer,
                 blockRecordManager,
                 feeManager,
-                readableStoreFactory,
+                storeFactory,
                 payerId,
                 verifier,
                 Key.DEFAULT,
@@ -1030,8 +1007,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 entityIdStore,
                 dispatcher,
                 recordCache,
-                writableStoreFactory,
-                apiFactory,
                 networkInfo,
                 parentRecordBuilder,
                 childDispatchProvider,

@@ -69,10 +69,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
     public void doIn(@NonNull final TransferContext transferContext) {
         requireNonNull(transferContext);
         final var handleContext = transferContext.getHandleContext();
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var nftStore = handleContext.writableStore(WritableNftStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
         final List<TokenAssociation> newAssociations = new ArrayList<>();
 
         for (final var xfers : op.tokenTransfers()) {

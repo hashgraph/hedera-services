@@ -74,6 +74,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -102,6 +103,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
+
+    @Mock(strictness = Strictness.LENIENT)
+    private StoreFactory storeFactory;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -962,7 +966,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private void givenTxnWith(TransactionBody txn) {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableStore);
         given(handleContext.configuration()).willReturn(configuration);
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.attributeValidator()).willReturn(attributeValidator);

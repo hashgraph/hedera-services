@@ -82,6 +82,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -109,6 +110,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
     private LongSupplier consensusSecondNow;
@@ -163,7 +167,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
         given(dynamicProperties.minAutoRenewDuration()).willReturn(2592000L);
@@ -718,7 +723,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
-        when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ALIAS_ALREADY_ASSIGNED, msg.getStatus());

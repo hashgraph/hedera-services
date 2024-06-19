@@ -63,6 +63,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -146,11 +147,15 @@ class TokenUnfreezeAccountHandlerTest {
         @Mock
         private ExpiryValidator expiryValidator;
 
+        @Mock(strictness = Strictness.LENIENT)
+        private StoreFactory storeFactory;
+
         @BeforeEach
         void setup() {
-            given(context.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
-            given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
+            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(context.expiryValidator()).willReturn(expiryValidator);
         }
 

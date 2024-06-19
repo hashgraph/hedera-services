@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -65,6 +66,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -623,10 +625,12 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochMilli(0L));
 
-        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
-        lenient().when(handleContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        final var storeFactory = mock(StoreFactory.class);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        lenient().when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
+        lenient().when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         lenient()
-                .when(handleContext.writableStore(WritableTokenRelationStore.class))
+                .when(storeFactory.writableStore(WritableTokenRelationStore.class))
                 .thenReturn(writableTokenRelStore);
 
         return handleContext;

@@ -97,14 +97,15 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         requireNonNull(handleContext);
 
         final var txnBody = handleContext.body();
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
 
         final var op = txnBody.tokenGrantKycOrThrow();
 
         final var targetTokenId = op.tokenOrThrow();
         final var targetAccountId = op.accountOrThrow();
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var expiryValidator = handleContext.expiryValidator();
         final var tokenRelation = validateSemantics(
                 targetAccountId, targetTokenId, tokenRelStore, accountStore, expiryValidator, tokenStore);

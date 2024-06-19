@@ -62,6 +62,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -76,8 +77,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenAssociateToAccountHandlerTest {
     private static final AccountID ACCOUNT_888 =
             AccountID.newBuilder().accountNum(888).build();
@@ -87,6 +90,12 @@ class TokenAssociateToAccountHandlerTest {
     private static final TokenID TOKEN_400 = TokenID.newBuilder().tokenNum(400).build();
 
     private TokenAssociateToAccountHandler subject;
+
+    @Mock
+    private HandleContext context;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @BeforeEach
     void setUp() {
@@ -104,9 +113,9 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void txnWithoutAccountThrows() throws PreCheckException {
             final var txn = newAssociateTxn(null, List.of(TOKEN_300));
-            final var context = new FakePreHandleContext(readableAccountStore, txn);
+            final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
 
-            assertThatThrownBy(() -> subject.preHandle(context))
+            assertThatThrownBy(() -> subject.preHandle(preHandleContext))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
@@ -123,10 +132,10 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void txnWithEmptyTokenIdsSucceeds() throws PreCheckException {
             final var txn = newAssociateTxn(ACCOUNT_888, Collections.emptyList());
-            final var context = new FakePreHandleContext(readableAccountStore, txn);
+            final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
 
-            subject.preHandle(context);
-            Assertions.assertThat(context.requiredNonPayerKeys()).isNotEmpty();
+            subject.preHandle(preHandleContext);
+            Assertions.assertThat(preHandleContext.requiredNonPayerKeys()).isNotEmpty();
         }
 
         private TransactionBody newAssociateTxn(AccountID account, List<TokenID> tokens) {
@@ -152,19 +161,20 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokenStoreNotCreated() {
-            final var context = mock(HandleContext.class);
-            given(context.readableStore(ReadableTokenStore.class)).willReturn(null);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(null);
 
             assertThatThrownBy(() -> subject.handle(context)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void newTokenRelsExceedsSystemMax() {
-            final var context = mockContext(1, 2000L);
+            mockContext(1, 2000L);
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_IMMUTABLE), toPbj(KNOWN_TOKEN_WITH_KYC));
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -173,7 +183,7 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void accountNotFound() {
-            final var context = mockContext();
+            mockContext();
             final var missingAcctId = AccountID.newBuilder().accountNum(99999L);
             final var txn = TransactionBody.newBuilder()
                     .transactionID(
@@ -184,8 +194,9 @@ class TokenAssociateToAccountHandlerTest {
                             .build())
                     .build();
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -194,11 +205,12 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void anyTokenNotFound() {
-            final var context = mockContext();
+            mockContext();
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_IMMUTABLE), TOKEN_300);
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -207,11 +219,12 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokenIsDeleted() {
-            final var context = mockContext();
+            mockContext();
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_IMMUTABLE), toPbj(DELETED_TOKEN));
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -220,11 +233,12 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokenIsPaused() {
-            final var context = mockContext();
+            mockContext();
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_IMMUTABLE), toPbj(KNOWN_TOKEN_WITH_PAUSE));
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -235,12 +249,12 @@ class TokenAssociateToAccountHandlerTest {
         void exceedsTokenAssociationLimitForAccount() {
             // There are 3 tokens already associated with the account we're putting in the transaction, so we
             // need maxTokensPerAccount to be at least 3
-            final var context = mock(HandleContext.class);
-            mockConfig(context, 2000L, true, 3);
+            mockConfig(2000L, true, 3);
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_WITH_FREEZE));
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -249,11 +263,12 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokenAlreadyAssociatedWithAccount() {
-            final var context = mockContext();
+            mockContext();
             final var txn = newAssociateTxn(toPbj(KNOWN_TOKEN_WITH_KYC));
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
@@ -262,12 +277,11 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokensAssociateToAccountWithNoTokenRels() {
-            // Mock config context to allow unlimited token associations
-            var context = mock(HandleContext.class);
             // Set maxTokensPerAccount to a value that will fail if areTokenAssociationsLimited
             // is incorrectly ignored
-            mockConfig(context, 2000L, false, 4);
-            given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            mockConfig(2000L, false, 4);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
             // Put a new account into the account store that has no tokens associated with it
             final var newAcctNum = 12345L;
@@ -285,8 +299,8 @@ class TokenAssociateToAccountHandlerTest {
                             .build())
                     .build();
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             subject.handle(context);
             Assertions.assertThat(writableTokenRelStore.modifiedTokens())
@@ -316,7 +330,7 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void tokensAssociateToAccountWithExistingTokenRels() {
-            final var context = mockContext();
+            mockContext();
             final var newAcctNum = 21212L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
             // put a new account into the account store that has two tokens associated with it
@@ -348,8 +362,9 @@ class TokenAssociateToAccountHandlerTest {
                             .build())
                     .build();
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             subject.handle(context);
 
@@ -403,7 +418,7 @@ class TokenAssociateToAccountHandlerTest {
 
         @Test
         void missingAccountHeadTokenDoesntStopTokenAssociation() {
-            final var context = mockContext();
+            mockContext();
             final var newAcctNum = 21212L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
             // put a new account into the account store that has a bogus head token number
@@ -421,8 +436,9 @@ class TokenAssociateToAccountHandlerTest {
                             .build())
                     .build();
             given(context.body()).willReturn(txn);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
             subject.handle(context);
 
@@ -458,30 +474,21 @@ class TokenAssociateToAccountHandlerTest {
                     .build();
         }
 
-        private HandleContext mockContext() {
-            return mockContext(1000L, 2000L);
+        private void mockContext() {
+            mockContext(1000L, 2000L);
         }
 
-        private HandleContext mockContext(final long maxNumTokenRels, final long maxTokensPerAccount) {
-            final var handleContext = mock(HandleContext.class);
-            mockConfig(handleContext, maxNumTokenRels, false, (int) maxTokensPerAccount);
+        private void mockContext(final long maxNumTokenRels, final long maxTokensPerAccount) {
+            mockConfig(maxNumTokenRels, false, (int) maxTokensPerAccount);
 
-            given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-
-            return handleContext;
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
         }
 
         // The context passed in needs to be a mock
-        private void mockConfig(
-                final HandleContext mockedContext,
-                final long maxAggregateRels,
-                final boolean limitedRels,
-                final int maxRelsPerAccount) {
-            lenient()
-                    .when(mockedContext.readableStore(ReadableTokenStore.class))
-                    .thenReturn(readableTokenStore);
+        private void mockConfig(final long maxAggregateRels, final boolean limitedRels, final int maxRelsPerAccount) {
+            lenient().when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
             final var config = mock(Configuration.class);
-            lenient().when(mockedContext.configuration()).thenReturn(config);
+            lenient().when(context.configuration()).thenReturn(config);
             final var tokensConfig = mock(TokensConfig.class);
             lenient().when(tokensConfig.maxAggregateRels()).thenReturn(maxAggregateRels);
             lenient().when(tokensConfig.maxPerAccount()).thenReturn(maxRelsPerAccount);

@@ -226,7 +226,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenAllowances(List.of())
                 .approveForAllNftAllowances(List.of())
                 .build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,
@@ -470,7 +470,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenAllowances(List.of())
                 .approveForAllNftAllowances(List.of())
                 .build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,

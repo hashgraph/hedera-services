@@ -129,11 +129,11 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var op = txn.contractUpdateInstanceOrThrow();
         final var target = op.contractIDOrThrow();
 
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
         validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(requireNonNull(toBeUpdated), context, op);
-        context.serviceApi(TokenServiceApi.class).updateContract(changed);
+        context.storeFactory().serviceApi(TokenServiceApi.class).updateContract(changed);
         context.recordBuilder(ContractUpdateRecordBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
@@ -188,7 +188,8 @@ public class ContractUpdateHandler implements TransactionHandler {
                 null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
 
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .assertValidStakingElectionForUpdate(
                         context.configuration()
                                 .getConfigData(StakingConfig.class)

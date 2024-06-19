@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -134,6 +135,9 @@ public class FileTestBase {
     protected HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
+    protected StoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     protected SignatureVerification signatureVerification;
 
     @Mock
@@ -182,8 +186,9 @@ public class FileTestBase {
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
@@ -207,8 +212,8 @@ public class FileTestBase {
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
     @NonNull

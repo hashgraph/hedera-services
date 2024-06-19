@@ -51,11 +51,10 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -68,7 +67,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,9 +77,6 @@ class FileDeleteTest extends FileTestBase {
 
     @Mock
     private ReadableFileStoreImpl mockStore;
-
-    @Mock(strictness = Strictness.LENIENT)
-    private HandleContext handleContext;
 
     @Mock
     private FileDeleteHandler subject;
@@ -223,11 +218,9 @@ class FileDeleteTest extends FileTestBase {
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_FILE_ID);
@@ -243,11 +236,10 @@ class FileDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
     }
@@ -263,7 +255,7 @@ class FileDeleteTest extends FileTestBase {
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -288,7 +280,7 @@ class FileDeleteTest extends FileTestBase {
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         // expect:
         assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
     }

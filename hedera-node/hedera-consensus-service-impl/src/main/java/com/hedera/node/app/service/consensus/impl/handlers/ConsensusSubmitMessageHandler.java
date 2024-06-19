@@ -112,7 +112,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
 
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
+        final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
         // preHandle already checks for topic existence, so topic should never be null.
 

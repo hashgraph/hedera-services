@@ -112,7 +112,7 @@ public class FileCreateHandler implements TransactionHandler {
         }
 
         /* Validate if the current file can be created */
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }

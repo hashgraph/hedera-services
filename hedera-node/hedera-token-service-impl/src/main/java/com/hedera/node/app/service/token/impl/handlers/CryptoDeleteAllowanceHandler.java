@@ -111,7 +111,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var payer = context.payer();
 
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         // validate payer account exists
         final var payerAccount = accountStore.getAccountById(payer);
         validateTrue(payerAccount != null, INVALID_PAYER_ACCOUNT_ID);
@@ -146,8 +146,9 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var op = context.body().cryptoDeleteAllowanceOrThrow();
         final var nftAllowances = op.nftAllowances();
 
-        final var nftStore = context.writableStore(WritableNftStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
 
         deleteNftSerials(nftAllowances, payer, accountStore, tokenStore, nftStore, context.expiryValidator());
     }

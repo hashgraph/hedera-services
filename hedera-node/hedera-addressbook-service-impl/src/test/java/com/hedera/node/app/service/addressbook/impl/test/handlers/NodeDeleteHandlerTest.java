@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -57,6 +58,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NodeDeleteHandlerTest extends AddressBookTestBase {
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -125,14 +129,15 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     void fileDoesntExist() {
         final var txn = newDeleteTxn().nodeDeleteOrThrow();
 
+        given(handleContext.storeFactory()).willReturn(storeFactory);
         writableNodeState = emptyWritableNodeState();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
@@ -145,14 +150,15 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
         node = null;
 
+        given(handleContext.storeFactory()).willReturn(storeFactory);
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
@@ -168,7 +174,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -192,7 +199,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         // expect:
         assertFailsWith(() -> subject.handle(handleContext), ResponseCodeEnum.NODE_DELETED);
     }

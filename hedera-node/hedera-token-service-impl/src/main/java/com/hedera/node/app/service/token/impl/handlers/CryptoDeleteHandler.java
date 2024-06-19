@@ -86,7 +86,8 @@ public class CryptoDeleteHandler implements TransactionHandler {
         requireNonNull(context);
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
         final var op = context.body().cryptoDeleteOrThrow();
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .deleteAndTransfer(
                         op.deleteAccountIDOrThrow(),
                         op.transferAccountIDOrThrow(),

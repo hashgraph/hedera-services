@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;

@@ -103,7 +103,7 @@ public class ContractDeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var op = context.body().contractDeleteInstanceOrThrow();
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var toBeDeleted = requireNonNull(accountStore.getContractById(op.contractIDOrThrow()));
         validateFalse(toBeDeleted.deleted(), CONTRACT_DELETED);
         final var obtainer = getObtainer(accountStore, op);
@@ -114,7 +114,8 @@ public class ContractDeleteHandler implements TransactionHandler {
         validateFalse(toBeDeleted.accountIdOrThrow().equals(obtainer.accountIdOrThrow()), OBTAINER_SAME_CONTRACT_ID);
         final var recordBuilder = context.recordBuilder(ContractDeleteRecordBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .deleteAndTransfer(
                         deletedId,
                         obtainer.accountIdOrThrow(),

@@ -103,9 +103,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
      */
     public void handle(@NonNull final HandleContext context) {
         requireNonNull(context);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = context.expiryValidator();
         final var txn = context.body();
         final var op = txn.tokenDissociateOrThrow();

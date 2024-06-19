@@ -224,7 +224,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         try {
             final var account = accountStore.getAccountById(accountID);
             if (account == null || account.deleted()) {

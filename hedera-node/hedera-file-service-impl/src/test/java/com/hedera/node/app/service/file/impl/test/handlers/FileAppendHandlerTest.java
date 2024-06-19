@@ -60,7 +60,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -233,7 +233,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
         // expect:
@@ -253,7 +253,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
 
@@ -281,7 +281,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
 
@@ -304,7 +304,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
 
@@ -331,7 +331,7 @@ class FileAppendHandlerTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
 
         subject.handle(handleContext);
         final var iterator = writableUpgradeStates.iterator();
@@ -360,9 +360,8 @@ class FileAppendHandlerTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates, testConfig, mock(StoreMetricsService.class));
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());

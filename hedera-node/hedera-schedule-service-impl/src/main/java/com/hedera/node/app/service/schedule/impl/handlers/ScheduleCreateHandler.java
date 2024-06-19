@@ -133,7 +133,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
-        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();

@@ -182,7 +182,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var payer = context.payer();
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
 
         // Validate payer account exists
         final var payerAccount = accountStore.getAccountById(payer);
@@ -234,8 +234,9 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var nftAllowances = op.nftAllowances();
 
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var uniqueTokenStore = context.writableStore(WritableNftStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var uniqueTokenStore = storeFactory.writableStore(WritableNftStore.class);
 
         /* --- Apply changes to state --- */
         final var allowanceMaxAccountLimit = hederaConfig.allowancesMaxAccountLimit();
