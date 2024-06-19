@@ -52,8 +52,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT}.
+ * This class contains all workflow-related functionality regarding
+ * {@link HederaFunctionality#TOKEN_GRANT_KYC_TO_ACCOUNT}.
  */
 @Singleton
 public class TokenGrantKycToAccountHandler implements TransactionHandler {
@@ -71,7 +71,9 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-        if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMeta == null) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
         validateTruePreCheck(tokenMeta.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
         context.requireKey(tokenMeta.kycKey());
     }
@@ -145,6 +147,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(op), sigValueObj));
     }

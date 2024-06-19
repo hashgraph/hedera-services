@@ -357,6 +357,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 : SubType.DEFAULT;
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(subType)
                 .legacyCalculate(sigValueObj -> usageGiven(
                         fromPbj(op),

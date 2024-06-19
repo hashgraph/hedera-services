@@ -197,6 +197,7 @@ public class FileUpdateHandler implements TransactionHandler {
         }
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj ->
                         usageGiven(CommonPbjConverters.fromPbj(op), sigValueObj, CommonPbjConverters.fromPbj(file)));

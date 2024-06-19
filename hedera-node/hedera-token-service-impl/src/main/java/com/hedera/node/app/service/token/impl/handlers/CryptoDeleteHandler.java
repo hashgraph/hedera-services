@@ -102,6 +102,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var body = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj ->
                         usageEstimator.getCryptoDeleteTxFeeMatrices(CommonPbjConverters.fromPbj(body), sigValueObj));

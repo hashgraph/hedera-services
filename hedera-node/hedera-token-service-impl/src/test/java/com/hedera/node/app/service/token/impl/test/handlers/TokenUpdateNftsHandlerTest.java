@@ -53,6 +53,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -323,10 +324,13 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var txnBody =
                 new TokenUpdateNftBuilder().newNftUpdateTransactionBody(TOKEN_123, metadata1, serialNumbers.get(1));
         final var feeCalculator = mock(FeeCalculator.class);
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeContext = mock(FeeContext.class);
 
         given(feeContext.body()).willReturn(txnBody);
-        given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE))
+                .willReturn(feeCalculator);
         given(feeCalculator.addBytesPerTransaction(1L)).willReturn(feeCalculator);
         subject.calculateFees(feeContext);
 

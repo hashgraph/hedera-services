@@ -100,6 +100,7 @@ public class ContractCallHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj ->
                         usageEstimator.getContractCallTxFeeMatrices(CommonPbjConverters.fromPbj(op), sigValueObj));

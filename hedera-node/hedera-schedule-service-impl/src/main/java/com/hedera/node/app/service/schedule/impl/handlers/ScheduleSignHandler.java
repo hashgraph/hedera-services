@@ -211,6 +211,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var schedule = scheduleStore.get(op.scheduleSignOrThrow().scheduleIDOrThrow());
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(
                         fromPbj(op),

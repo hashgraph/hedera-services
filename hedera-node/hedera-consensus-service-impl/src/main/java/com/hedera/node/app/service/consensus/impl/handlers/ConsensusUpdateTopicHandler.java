@@ -176,6 +176,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topic = feeContext.readableStore(ReadableTopicStore.class).getTopic(topicId);
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGivenExplicit(op, sigValueObj, topic));
     }

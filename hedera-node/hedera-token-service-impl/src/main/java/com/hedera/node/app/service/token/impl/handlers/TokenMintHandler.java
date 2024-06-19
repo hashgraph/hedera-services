@@ -279,7 +279,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var op = feeContext.body().tokenMintOrThrow();
         final var subType = op.amount() > 0 ? SubType.TOKEN_FUNGIBLE_COMMON : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
-        final var calculator = feeContext.feeCalculator(subType);
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(subType);
         if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
             calculator.resetUsage();
             // The price of nft mint should be increased based on number of signatures.

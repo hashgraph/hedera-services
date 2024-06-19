@@ -307,6 +307,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var contract = accountStore.getContractById(contractId);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(fromPbj(op), sigValueObj, contract));
     }

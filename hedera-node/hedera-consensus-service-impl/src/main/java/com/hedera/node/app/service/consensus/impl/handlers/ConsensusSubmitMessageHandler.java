@@ -65,7 +65,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_SUBMIT_MESSAGE}.
+ * This class contains all workflow-related functionality regarding
+ * {@link HederaFunctionality#CONSENSUS_SUBMIT_MESSAGE}.
  */
 @Singleton
 public class ConsensusSubmitMessageHandler implements TransactionHandler {
@@ -140,6 +141,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
     /**
      * Validates te transaction body. Throws {@link HandleException} if any of the validations fail.
+     *
      * @param txn the {@link TransactionBody} of the active transaction
      * @param config the {@link ConsensusConfig}
      * @param topic the topic to which the message is being submitted
@@ -167,9 +169,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     }
 
     /**
-     * If the message is too large, user will be able to submit the message fragments in chunks.
-     * Validates the chunk info in the transaction body.
-     * Throws {@link HandleException} if any of the validations fail.
+     * If the message is too large, user will be able to submit the message fragments in chunks. Validates the chunk
+     * info in the transaction body. Throws {@link HandleException} if any of the validations fail.
+     *
      * @param txnId the {@link TransactionID} of the active transaction
      * @param payer the {@link AccountID} of the payer
      * @param op the {@link ConsensusSubmitMessageTransactionBody} of the active transaction
@@ -204,6 +206,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
     /**
      * Updates the running hash and sequence number of the topic.
+     *
      * @param txn the {@link TransactionBody} of the active transaction
      * @param topic the topic to which the message is being submitted
      * @param consensusNow the consensus time of the active transaction
@@ -273,6 +276,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var op = feeContext.body().consensusSubmitMessageOrThrow();
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + op.message().length())
                 .addNetworkRamByteSeconds((LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC)

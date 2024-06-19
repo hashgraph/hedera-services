@@ -280,6 +280,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var account = readableAccountStore.getAccountById(accountId);
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
     }

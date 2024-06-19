@@ -174,6 +174,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var op = feeContext.body();
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenBurnUsageFrom(CommonPbjConverters.fromPbj(op));
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(
                         meta.getSerialNumsCount() > 0
                                 ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE

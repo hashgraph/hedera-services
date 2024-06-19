@@ -128,6 +128,7 @@ public class TokenDeleteHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(op), sigValueObj));
     }

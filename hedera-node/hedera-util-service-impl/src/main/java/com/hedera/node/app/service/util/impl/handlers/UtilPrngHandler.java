@@ -82,6 +82,7 @@ public class UtilPrngHandler implements TransactionHandler {
         // been determined and loaded into the calculator.
         final var range = feeContext.body().utilPrngOrThrow().range();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
                 .calculate();

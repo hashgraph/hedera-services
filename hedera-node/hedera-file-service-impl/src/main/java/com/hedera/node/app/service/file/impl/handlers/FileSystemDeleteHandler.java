@@ -135,6 +135,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         final var txnBody = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageEstimator.getSystemDeleteFileTxFeeMatrices(
                         CommonPbjConverters.fromPbj(txnBody), sigValueObj));

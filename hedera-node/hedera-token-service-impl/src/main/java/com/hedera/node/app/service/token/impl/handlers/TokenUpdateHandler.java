@@ -618,6 +618,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var token = readableStore.get(op.tokenOrThrow());
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, token));
     }

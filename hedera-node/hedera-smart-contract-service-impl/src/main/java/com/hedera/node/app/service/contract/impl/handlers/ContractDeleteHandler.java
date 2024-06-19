@@ -138,6 +138,7 @@ public class ContractDeleteHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(
                         sigValueObj -> usageEstimator.getContractDeleteTxFeeMatrices(fromPbj(op), sigValueObj));

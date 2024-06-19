@@ -190,6 +190,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var existingFeeReprBytes = currentFeeScheduleSize(token.customFees(), tokenOpsUsage);
         final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(existingFeeReprBytes, lifetime, newReprBytes, lifetime);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + newReprBytes)
                 .addRamByteSeconds(rbsDelta)

@@ -180,6 +180,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
         final var schedule = scheduleStore.get(op.scheduleDeleteOrThrow().scheduleIDOrThrow());
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> usageGiven(
                         fromPbj(op),
