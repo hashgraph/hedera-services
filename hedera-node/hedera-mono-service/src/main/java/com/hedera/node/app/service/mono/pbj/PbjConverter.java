@@ -787,7 +787,7 @@ public final class PbjConverter {
             case INVALID_NODE_ACCOUNT_ID -> ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
             case INVALID_NODE_DESCRIPTION -> ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
             case INVALID_SERVICE_ENDPOINT -> ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
-            case INVALID_GOSSIP_CAE_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+            case INVALID_GOSSIP_CA_CERTIFICATE -> ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
             case INVALID_GRPC_CERTIFICATE -> ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
             case MAX_NODES_CREATED -> ResponseCodeEnum.MAX_NODES_CREATED;
@@ -1342,8 +1342,8 @@ public final class PbjConverter {
                     .INVALID_NODE_DESCRIPTION;
             case INVALID_SERVICE_ENDPOINT -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .INVALID_SERVICE_ENDPOINT;
-            case INVALID_GOSSIP_CAE_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
-                    .INVALID_GOSSIP_CAE_CERTIFICATE;
+            case INVALID_GOSSIP_CA_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
+                    .INVALID_GOSSIP_CA_CERTIFICATE;
             case INVALID_GRPC_CERTIFICATE -> com.hederahashgraph.api.proto.java.ResponseCodeEnum
                     .INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> com.hederahashgraph.api.proto.java.ResponseCodeEnum

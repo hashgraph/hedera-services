@@ -16,9 +16,14 @@
 
 package com.swirlds.platform.pool;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
@@ -27,12 +32,12 @@ import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -52,13 +57,13 @@ public class TransactionPoolNexus implements TransactionSupplier {
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
      */
-    private final Queue<ConsensusTransactionImpl> bufferedTransactions = new LinkedList<>();
+    private final Queue<OneOf<PayloadOneOfType>> bufferedTransactions = new LinkedList<>();
 
     /**
      * A list of high-priority transactions created by this node waiting to be put into a self-event. Transactions in
      * this queue are always inserted into an event before transactions waiting in {@link #bufferedTransactions}.
      */
-    private final Queue<ConsensusTransactionImpl> priorityBufferedTransactions = new LinkedList<>();
+    private final Queue<OneOf<PayloadOneOfType>> priorityBufferedTransactions = new LinkedList<>();
 
     /**
      * The number of buffered signature transactions waiting to be put into events.
@@ -132,28 +137,28 @@ public class TransactionPoolNexus implements TransactionSupplier {
 
     /**
      * Attempt to submit an application transaction. Similar to
-     * {@link #submitTransaction(ConsensusTransactionImpl, boolean)} but with extra safeguards.
+     * {@link #submitTransaction} but with extra safeguards.
      *
-     * @param transaction the transaction to submit
+     * @param payload the transaction to submit
      * @return true if the transaction passed all validity checks and was accepted by the consumer
      */
-    public synchronized boolean submitApplicationTransaction(@NonNull final SwirldTransaction transaction) {
+    public synchronized boolean submitApplicationTransaction(@NonNull final Bytes payload) {
         if (!healthy || platformStatus != PlatformStatus.ACTIVE) {
             return false;
         }
 
-        if (transaction == null) {
+        if (payload == null) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(EXCEPTION.getMarker(), "transaction is null");
             return false;
         }
-
-        if (transaction.getSize() > maximumTransactionSize) {
+        final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, payload);
+        if (PayloadUtils.getPayloadSize(transaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
                     EXCEPTION.getMarker(),
                     "transaction has {} bytes, maximum permissible transaction size is {}",
-                    transaction.getSize(),
+                    payload.length(),
                     maximumTransactionSize);
             return false;
         }
@@ -172,22 +177,21 @@ public class TransactionPoolNexus implements TransactionSupplier {
      * @return true if successful
      */
     public synchronized boolean submitTransaction(
-            @NonNull final ConsensusTransactionImpl transaction, final boolean priority) {
+            @NonNull final OneOf<PayloadOneOfType> transaction, final boolean priority) {
 
         Objects.requireNonNull(transaction);
+        final boolean isSystem = PayloadUtils.isSystemPayload(transaction);
 
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
-        if (!transaction.isSystem()
+        if (!isSystem
                 && (bufferedTransactions.size() + priorityBufferedTransactions.size()) > throttleTransactionQueueSize) {
             transactionPoolMetrics.recordRejectedAppTransaction();
             return false;
         }
 
-        if (transaction.isSystem()) {
-            if (isSignatureTransaction(transaction)) {
-                bufferedSignatureTransactionCount++;
-            }
+        if (isSystem) {
+            bufferedSignatureTransactionCount++;
             transactionPoolMetrics.recordSubmittedPlatformTransaction();
         } else {
             transactionPoolMetrics.recordAcceptedAppTransaction();
@@ -228,15 +232,15 @@ public class TransactionPoolNexus implements TransactionSupplier {
      * @return the next transaction, or null if no transaction is available
      */
     @Nullable
-    private ConsensusTransactionImpl getNextTransaction(final int currentEventSize) {
+    private OneOf<PayloadOneOfType> getNextTransaction(final int currentEventSize) {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
         if (!priorityBufferedTransactions.isEmpty()
-                && priorityBufferedTransactions.peek().getSerializedLength() <= maxSize) {
+                && PayloadUtils.getPayloadSize(priorityBufferedTransactions.peek()) <= maxSize) {
             return priorityBufferedTransactions.poll();
         }
 
-        if (!bufferedTransactions.isEmpty() && bufferedTransactions.peek().getSerializedLength() <= maxSize) {
+        if (!bufferedTransactions.isEmpty() && PayloadUtils.getPayloadSize(bufferedTransactions.peek()) <= maxSize) {
             return bufferedTransactions.poll();
         }
 
@@ -250,32 +254,32 @@ public class TransactionPoolNexus implements TransactionSupplier {
      */
     @NonNull
     @Override
-    public synchronized ConsensusTransactionImpl[] getTransactions() {
+    public synchronized List<OneOf<PayloadOneOfType>> getTransactions() {
         // Early return due to no transactions waiting
         if (bufferedTransactions.isEmpty() && priorityBufferedTransactions.isEmpty()) {
-            return new ConsensusTransactionImpl[0];
+            return Collections.emptyList();
         }
 
-        final List<ConsensusTransactionImpl> selectedTrans = new LinkedList<>();
+        final List<OneOf<PayloadOneOfType>> selectedTrans = new LinkedList<>();
         int currEventSize = 0;
 
         while (true) {
-            final ConsensusTransactionImpl transaction = getNextTransaction(currEventSize);
+            final OneOf<PayloadOneOfType> transaction = getNextTransaction(currEventSize);
 
             if (transaction == null) {
                 // No transaction of suitable size is available
                 break;
             }
 
-            currEventSize += transaction.getSerializedLength();
+            currEventSize += (int) PayloadUtils.getPayloadSize(transaction);
             selectedTrans.add(transaction);
 
-            if (transaction.isSystem() && isSignatureTransaction(transaction)) {
+            if (STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {
                 bufferedSignatureTransactionCount--;
             }
         }
 
-        return selectedTrans.toArray(new ConsensusTransactionImpl[0]);
+        return selectedTrans;
     }
 
     /**
