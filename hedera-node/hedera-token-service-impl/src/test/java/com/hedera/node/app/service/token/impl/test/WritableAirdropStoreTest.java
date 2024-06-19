@@ -184,12 +184,14 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         assertThat(readNft).isNull();
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorCallWithNull() {
         assertThatThrownBy(() -> subject = new WritableAirdropStore(null, configuration, storeMetricsService))
                 .isInstanceOf(NullPointerException.class);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testGetWithNullParam() {
         assertThatThrownBy(() -> subject.getForModify(null)).isInstanceOf(NullPointerException.class);
