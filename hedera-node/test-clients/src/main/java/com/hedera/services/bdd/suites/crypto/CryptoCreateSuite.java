@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -53,7 +52,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -93,6 +91,7 @@ public class CryptoCreateSuite {
     public static final String NO_KEYS = "noKeys";
     public static final String SHORT_KEY = "shortKey";
     public static final String EMPTY_KEY_STRING = "emptyKey";
+    public static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
     private static final String ED_KEY = "EDKEY";
 
     @HapiTest
@@ -287,11 +286,10 @@ public class CryptoCreateSuite {
                         getAccountInfo(unlimitedAutoAssocSlots).hasMaxAutomaticAssociations(-1));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> createFailsIfMaxAutoAssocIsNegativeAndUnlimitedFlagDisabled() {
-        return propertyPreservingHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
-                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
-                .given(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, FALSE_VALUE))
+        return defaultHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
+                .given()
                 .when()
                 .then(
                         cryptoCreate(CIVILIAN)

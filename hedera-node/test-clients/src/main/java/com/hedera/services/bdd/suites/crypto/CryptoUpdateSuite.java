@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -194,13 +195,10 @@ public class CryptoUpdateSuite {
 
         AtomicLong expiration = new AtomicLong();
         return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled", "ledger.maxAutoAssociations")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "ledger.maxAutoAssociations")
                 .given(
                         overridingTwo(
-                                "entities.unlimitedAutoAssociationsEnabled",
-                                TRUE_VALUE,
-                                "ledger.maxAutoAssociations",
-                                "5000"),
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE, "ledger.maxAutoAssociations", "5000"),
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
                         cryptoCreate("canonicalAccount")
@@ -471,15 +469,12 @@ public class CryptoUpdateSuite {
         final String ADMIN_KEY = "adminKey";
 
         return propertyPreservingHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.allowAutoAssociations", "entities.unlimitedAutoAssociationsEnabled")
+                .preserving("contracts.allowAutoAssociations", UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
                         overridingTwo(
-                                "contracts.allowAutoAssociations",
-                                "true",
-                                "entities.unlimitedAutoAssociationsEnabled",
-                                "true"),
+                                "contracts.allowAutoAssociations", "true", UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)
