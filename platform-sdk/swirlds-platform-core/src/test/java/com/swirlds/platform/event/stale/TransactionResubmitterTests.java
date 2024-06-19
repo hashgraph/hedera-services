@@ -16,10 +16,15 @@
 
 package com.swirlds.platform.event.stale;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
@@ -31,11 +36,10 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.resubmitter.DefaultTransactionResubmitter;
 import com.swirlds.platform.event.resubmitter.TransactionResubmitter;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -66,11 +70,11 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final int transactionCount = randotron.nextInt(1, 100);
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
-        final List<ConsensusTransactionImpl> systemTransactions = new ArrayList<>();
+        final List<OneOf<PayloadOneOfType>> transactions = new ArrayList<>();
+        final List<OneOf<PayloadOneOfType>> systemTransactions = new ArrayList<>();
         for (int i = 0; i < transactionCount; i++) {
             final boolean systemTransaction = randotron.nextBoolean();
-            final ConsensusTransactionImpl transaction;
+            final OneOf<PayloadOneOfType> transaction;
             if (systemTransaction) {
 
                 final boolean tooOld = randotron.nextBoolean(0.1);
@@ -88,21 +92,24 @@ class TransactionResubmitterTests {
 
                 final StateSignaturePayload payload = new StateSignaturePayload(
                         round, randotron.nextSignature().getBytes(), randotron.nextHashBytes());
-                transaction = new StateSignatureTransaction(payload);
+                transaction = new OneOf<>(STATE_SIGNATURE_PAYLOAD, payload);
 
                 if (!tooOld) {
                     systemTransactions.add(transaction);
                 }
             } else {
-                transaction = new SwirldTransaction(new byte[1]);
+                final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+                buffer.putLong(randotron.nextLong());
+                transaction = new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
             }
-            transactions[i] = transaction;
+            transactions.add(transaction);
         }
 
         final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
-        final List<ConsensusTransactionImpl> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+
         assertEquals(systemTransactions.size(), transactionsToResubmit.size());
         for (int i = 0; i < systemTransactions.size(); i++) {
             assertEquals(systemTransactions.get(i), transactionsToResubmit.get(i));
@@ -127,15 +134,18 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final int transactionCount = randotron.nextInt(1, 100);
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
+        final List<OneOf<PayloadOneOfType>> transactions = new ArrayList<>();
         for (int i = 0; i < transactionCount; i++) {
-            transactions[i] = new SwirldTransaction(new byte[1]);
+            final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.putLong(randotron.nextLong());
+            final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(buffer.array()));
+            transactions.add(transaction);
         }
 
         final PlatformEvent event =
                 new TestingEventBuilder(randotron).setTransactions(transactions).build();
 
-        final List<ConsensusTransactionImpl> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(0, transactionsToResubmit.size());
     }
 
@@ -157,10 +167,10 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final PlatformEvent event = new TestingEventBuilder(randotron)
-                .setTransactions(new ConsensusTransactionImpl[0])
+                .setTransactions(Collections.emptyList())
                 .build();
 
-        final List<ConsensusTransactionImpl> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
+        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
         assertEquals(0, transactionsToResubmit.size());
     }
 
@@ -174,7 +184,7 @@ class TransactionResubmitterTests {
         final TransactionResubmitter resubmitter = new DefaultTransactionResubmitter(platformContext);
 
         final PlatformEvent event = new TestingEventBuilder(randotron)
-                .setTransactions(new ConsensusTransactionImpl[0])
+                .setTransactions(Collections.emptyList())
                 .build();
 
         assertThrows(IllegalStateException.class, () -> resubmitter.resubmitStaleTransactions(event));
