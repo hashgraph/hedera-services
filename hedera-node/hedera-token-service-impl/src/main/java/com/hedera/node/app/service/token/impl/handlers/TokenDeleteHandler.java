@@ -125,8 +125,10 @@ public class TokenDeleteHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var op = feeContext.body();
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenDeleteResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        new TokenDeleteResourceUsage(txnEstimateFactory).usageGiven(fromPbj(op), sigValueObj, null));
     }
 }

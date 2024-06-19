@@ -199,8 +199,10 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var account = readableAccountStore.getAccountById(accountId);
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(
-                        txnEstimateFactory)
-                .usageGiven(fromPbj(body), sigValueObj, account));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new TokenAssociateResourceUsage(txnEstimateFactory)
+                        .usageGiven(fromPbj(body), sigValueObj, account));
     }
 }

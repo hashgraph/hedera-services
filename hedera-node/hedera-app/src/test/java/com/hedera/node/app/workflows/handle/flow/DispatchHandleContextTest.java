@@ -53,7 +53,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -84,10 +83,10 @@ import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -187,9 +186,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
 
     @Mock
-    private FeeAccumulator accumulator;
-
-    @Mock
     private KeyVerifier verifier;
 
     @Mock
@@ -208,10 +204,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private HederaRecordCache recordCache;
 
     @Mock
-    private FeeManager feeManager;
+    private ResourcePriceCalculator resourcePriceCalculator;
 
     @Mock
-    private FeeCalculator feeCalculator;
+    private FeeManager feeManager;
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
@@ -356,14 +352,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Test
     void getsResourcePrices() {
-        given(feeManager.getFeeData(CRYPTO_TRANSFER, CONSENSUS_NOW, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
-                .willReturn(FeeData.DEFAULT);
-        assertThat(subject.resourcePricesFor(CRYPTO_TRANSFER, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
-                .isNotNull();
+        assertThat(subject.resourcePriceCalculator()).isNotNull();
     }
 
     @Test
-    void getsFeeCalculator() {
+    void getsFeeCalculator(@Mock FeeCalculator feeCalculator) {
         given(verifier.numSignaturesVerified()).willReturn(2);
         given(feeManager.createFeeCalculator(
                         any(),
@@ -376,13 +369,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         eq(false),
                         eq(readableStoreFactory)))
                 .willReturn(feeCalculator);
-        assertThat(subject.feeCalculator(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
+        final var factory = subject.feeCalculatorFactory();
+        assertThat(factory.feeCalculator(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
                 .isSameAs(feeCalculator);
-    }
-
-    @Test
-    void getsFeeAccumulator() {
-        assertThat(subject.feeAccumulator()).isSameAs(accumulator);
     }
 
     @Test
@@ -404,12 +393,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             configuration,
             authorizer,
             blockRecordManager,
+            resourcePriceCalculator,
             feeManager,
             storeFactory,
             payerId,
             verifier,
             Key.newBuilder().build(),
-            accumulator,
             exchangeRateManager,
             stack,
             entityIdStore,
@@ -996,12 +985,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 configuration,
                 authorizer,
                 blockRecordManager,
+                resourcePriceCalculator,
                 feeManager,
                 storeFactory,
                 payerId,
                 verifier,
                 Key.DEFAULT,
-                accumulator,
                 exchangeRateManager,
                 stack,
                 entityIdStore,

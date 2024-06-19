@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
@@ -37,7 +36,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
@@ -52,8 +50,8 @@ import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -96,12 +94,6 @@ class FileAppendHandlerTest extends FileTestBase {
     protected Account payerAccount;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    FeeCalculator feeCalculator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private FeeAccumulator feeAccumulator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
     private FileSignatureWaiversImpl waivers;
 
     protected Configuration testConfig;
@@ -114,12 +106,6 @@ class FileAppendHandlerTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         when(preHandleContext.configuration()).thenReturn(testConfig);
         when(handleContext.configuration()).thenReturn(testConfig);
-        when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
-        when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test
@@ -394,8 +380,10 @@ class FileAppendHandlerTest extends FileTestBase {
         final var feeCtx = mock(FeeContext.class);
         given(feeCtx.body()).willReturn(txBody);
 
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCtx.configuration()).willReturn(testConfig);
         given(feeCtx.readableStore(ReadableFileStore.class)).willReturn(readableStore);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);

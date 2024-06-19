@@ -61,7 +61,6 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
@@ -75,8 +74,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTe
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
@@ -139,12 +137,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
-    private FeeAccumulator feeAccumulator;
-
-    @Mock
     private StoreMetricsService storeMetricsService;
 
     private CryptoCreateHandler subject;
@@ -175,13 +167,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         lenient().when(dynamicProperties.maxAutoRenewDuration()).thenReturn(8000001L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(new Fees(1, 1, 1));
-        lenient().when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        lenient().when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
-        lenient().when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
-        lenient().when(feeCalculator.addNetworkRamByteSeconds(anyLong())).thenReturn(feeCalculator);
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
@@ -191,15 +176,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("test CalculateFees When Free")
-    void testCalculateFeesWhenFree() {
+    void testCalculateFeesWhenFree(@Mock FeeCalculatorFactory feeCalculatorFactory) {
         var transactionBody = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
                 .withMemo("blank")
                 .withKey(A_COMPLEX_KEY)
                 .build();
-        feeCalculator = new FakeFeeCalculator();
+        final var feeCalculator = new FakeFeeCalculator();
         given(feeContext.body()).willReturn(transactionBody);
-        given(feeContext.feeCalculator(DEFAULT)).willReturn(feeCalculator);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(DEFAULT)).willReturn(feeCalculator);
         final var result = subject.calculateFees(feeContext);
         assertThat(result).isEqualTo(Fees.FREE);
     }

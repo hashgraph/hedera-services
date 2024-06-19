@@ -101,8 +101,10 @@ public class CryptoDeleteHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var body = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new CryptoDeleteResourceUsage(
-                        new CryptoFeeBuilder())
-                .usageGiven(fromPbj(body), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new CryptoDeleteResourceUsage(new CryptoFeeBuilder())
+                        .usageGiven(fromPbj(body), sigValueObj, null));
     }
 }

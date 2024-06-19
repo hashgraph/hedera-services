@@ -137,7 +137,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
         final var serials = op.tokenUpdateNftsOrThrow().serialNumbers();
-        final var feeCalculator = feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
         feeCalculator.resetUsage();
         return feeCalculator.addBytesPerTransaction(serials.size()).calculate();
     }

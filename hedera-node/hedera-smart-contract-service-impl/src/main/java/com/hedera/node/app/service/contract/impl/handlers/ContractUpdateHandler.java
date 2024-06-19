@@ -302,8 +302,10 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var contractId = op.contractUpdateInstanceOrThrow().contractIDOrElse(ContractID.DEFAULT);
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var contract = accountStore.getContractById(contractId);
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, contract));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(new SmartContractFeeBuilder())
+                        .usageGiven(fromPbj(op), sigValueObj, contract));
     }
 }

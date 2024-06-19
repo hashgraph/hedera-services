@@ -70,6 +70,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -754,6 +755,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void testCalculateFeesHappyPath() {
         FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
 
         TransactionBody cryptoUpdateTransaction = new CryptoUpdateBuilder()
@@ -776,7 +778,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableStore);
         when(feeContext.body()).thenReturn(cryptoUpdateTransaction);
         when(feeContext.configuration()).thenReturn(configuration);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);

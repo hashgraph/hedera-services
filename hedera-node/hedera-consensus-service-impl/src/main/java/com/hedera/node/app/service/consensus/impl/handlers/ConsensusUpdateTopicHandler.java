@@ -168,8 +168,11 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topicId = topicUpdate.topicIDOrElse(TopicID.DEFAULT);
         final var topic = feeContext.readableStore(ReadableTopicStore.class).getTopic(topicId);
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new UpdateTopicResourceUsage()
-                .usageGivenExplicit(fromPbj(op), sigValueObj, topic != null ? pbjToState(topic) : null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> new UpdateTopicResourceUsage()
+                        .usageGivenExplicit(fromPbj(op), sigValueObj, topic != null ? pbjToState(topic) : null));
     }
 
     private void resolveMutableBuilderAttributes(

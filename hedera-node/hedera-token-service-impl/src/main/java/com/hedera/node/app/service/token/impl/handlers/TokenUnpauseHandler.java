@@ -103,6 +103,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenUnpauseUsageFrom();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(meta.getBpt())
                 .calculate();

@@ -329,7 +329,10 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var body = feeContext.body();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         return cryptoUpdateFees(
-                body, feeContext.feeCalculator(SubType.DEFAULT), accountStore, feeContext.configuration());
+                body,
+                feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT),
+                accountStore,
+                feeContext.configuration());
     }
 
     /**

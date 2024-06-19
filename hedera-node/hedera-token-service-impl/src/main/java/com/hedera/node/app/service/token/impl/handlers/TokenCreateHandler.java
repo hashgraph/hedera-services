@@ -434,6 +434,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 * USAGE_PROPERTIES.legacyReceiptStorageSecs();
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(tokenSubTypeFrom(
                         type, op.hasFeeScheduleKey() || !op.customFees().isEmpty()))
                 .addBytesPerTransaction(meta.getBaseSize())

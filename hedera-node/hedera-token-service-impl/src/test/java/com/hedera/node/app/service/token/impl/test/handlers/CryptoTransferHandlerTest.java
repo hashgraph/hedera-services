@@ -67,6 +67,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -174,6 +175,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
 
         FeeContext feeContext = mock(DispatchHandleContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
 
@@ -183,7 +185,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
@@ -191,8 +194,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         subject.calculateFees(feeContext);
 
         // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.DEFAULT);
+        InOrder inOrder = inOrder(feeCalculatorFactory, feeCalculator);
+        inOrder.verify(feeCalculatorFactory, times(1)).feeCalculator(SubType.DEFAULT);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(64L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(64L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();
@@ -224,6 +227,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
 
         FeeContext feeContext = mock(DispatchHandleContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
 
@@ -236,7 +240,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
         when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
@@ -244,8 +249,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         subject.calculateFees(feeContext);
 
         // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+        InOrder inOrder = inOrder(feeCalculatorFactory, feeCalculator);
+        inOrder.verify(feeCalculatorFactory, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(176L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(320L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();
@@ -269,6 +274,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
 
         FeeContext feeContext = mock(DispatchHandleContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
         Fees fees = mock(Fees.class);
 
@@ -281,7 +287,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
         when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
@@ -289,8 +296,9 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         subject.calculateFees(feeContext);
 
         // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+        InOrder inOrder = inOrder(feeCalculatorFactory, feeCalculator);
+        inOrder.verify(feeCalculatorFactory, times(1))
+                .feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(104L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(136L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();

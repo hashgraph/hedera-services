@@ -24,8 +24,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -35,9 +36,9 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -74,6 +75,10 @@ public interface ChildDispatchModule {
     @Binds
     @ChildDispatchScope
     HandleContext bindHandleContext(DispatchHandleContext handleContext);
+
+    @Binds
+    @ChildDispatchScope
+    ResourcePriceCalculator bindResourcePriceCalculator(@NonNull ResourcePriceCalculatorImpl resourcePriceCalculator);
 
     @Binds
     @ChildDispatchScope
@@ -114,7 +119,7 @@ public interface ChildDispatchModule {
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final ServiceApiFactory serviceApiFactory) {
         final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
-        return new FeeAccumulatorImpl(tokenApi, recordBuilder);
+        return new FeeAccumulator(tokenApi, recordBuilder);
     }
 
     @Provides
@@ -200,12 +205,12 @@ public interface ChildDispatchModule {
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
             @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
             @NonNull @ChildQualifier final Key payerkey,
-            @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull @ChildQualifier final SavepointStackImpl stack,
             @NonNull final WritableEntityIdStore entityIdStore,
@@ -226,12 +231,12 @@ public interface ChildDispatchModule {
                 configuration,
                 authorizer,
                 blockRecordManager,
+                resourcePriceCalculator,
                 feeManager,
                 storeFactory,
                 syntheticPayer,
                 verifier,
                 payerkey,
-                feeAccumulator,
                 exchangeRateManager,
                 stack,
                 entityIdStore,

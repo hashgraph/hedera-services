@@ -191,7 +191,7 @@ public class FileUpdateHandler implements TransactionHandler {
             return Fees.FREE;
         }
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+        return feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             return new FileUpdateResourceUsage(fileOpsUsage).usageGiven(fromPbj(op), sigValueObj, fromPbj(file));
         });
     }

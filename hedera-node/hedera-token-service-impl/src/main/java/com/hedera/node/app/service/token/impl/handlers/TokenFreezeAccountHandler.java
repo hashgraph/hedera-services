@@ -156,6 +156,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var meta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(meta.getBpt())
                 .calculate();

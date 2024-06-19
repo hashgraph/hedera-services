@@ -131,6 +131,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         final var op = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj ->
                         new SystemUndeleteFileResourceUsage(usageEstimator).usageGiven(fromPbj(op), sigValueObj));
