@@ -17,8 +17,8 @@
 package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
@@ -33,8 +33,8 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
@@ -257,10 +257,10 @@ public class ThrottleServiceManager {
             final var sourceSnapshots = requireNonNull(throttleUsageSnapshots.get());
             return new UsageSnapshots(
                     sourceSnapshots.tpsThrottles().stream()
-                            .map(PbjConverter::fromPbj)
+                            .map(CommonPbjConverters::fromPbj)
                             .toList(),
                     Optional.ofNullable(sourceSnapshots.gasThrottle())
-                            .map(PbjConverter::fromPbj)
+                            .map(CommonPbjConverters::fromPbj)
                             .orElse(null));
         }
     }

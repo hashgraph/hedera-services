@@ -16,10 +16,8 @@
 
 package com.hedera.services.cli.signedstate;
 
-import com.hedera.services.cli.signedstate.SignedStateHolder.Contract;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import java.lang.reflect.Array;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
@@ -38,23 +36,7 @@ public class SummarizeSignedStateFileCommand extends AbstractCommand {
     public Integer call() {
 
         try {
-            final var signedState = parent.openSignedState();
-
-            final var contractsInfo = signedState.getContracts();
-            final var nContractsWithBytecodeFound = contractsInfo.contracts().size();
-            final var nDeletedContracts = contractsInfo.deletedContracts().size();
-            final var bytesFound = contractsInfo.contracts().stream()
-                    .map(Contract::bytecode)
-                    .mapToInt(Array::getLength)
-                    .sum();
-
-            System.out.printf(
-                    "signed-state summarize: %d contractIds found (%d deleted), %d contracts with bytecode, %d bytes total%n",
-                    contractsInfo.registeredContractsCount(),
-                    nDeletedContracts,
-                    nContractsWithBytecodeFound,
-                    bytesFound);
-
+            // (FUTURE) Replace for mod-service
         } finally {
             parent.closeSignedState();
         }

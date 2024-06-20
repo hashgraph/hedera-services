@@ -12,16 +12,9 @@
  * platform will then be a library that the application can use to build a node. This makes testing much easier and the
  * code easier to understand.
  *
- * <p>In addition, the Hedera Consensus Node application has two possible code paths: one that leads through
- * the mono-service (this is the current production code path), and one that leads through the "workflows" of the
- * modular application. The {@link com.hedera.node.app.service.mono.context.properties.PropertyNames#WORKFLOWS_ENABLED}
- * flag indicates whether to use the modular workflows or to use the mono-service.
- *
  * <p>The main entry point for the application today is {@link com.swirlds.platform.Browser}, which is
- * configured to find and load {@link com.hedera.node.app.ServicesMain} as the {@link
- * com.swirlds.platform.system.SwirldMain} of the application. If the {@code WORKFLOWS_ENABLED} flag is set, then {@link
- * com.hedera.node.app.ServicesMain} will create an instance of {@link com.hedera.node.app.Hedera} and delegate to it.
- * Otherwise, it will create an instance of {@link com.hedera.node.app.MonoServicesMain} and delegate to it.
+ * configured to find and load {@link com.hedera.node.app.ServicesMain} as the
+ * {@link com.swirlds.platform.system.SwirldMain} of the application.
  *
  * <p><img src="startup-flow.png" alt="Startup Flow">
  */

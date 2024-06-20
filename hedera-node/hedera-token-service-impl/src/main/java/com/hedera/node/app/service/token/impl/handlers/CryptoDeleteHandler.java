@@ -20,15 +20,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.api.TokenServiceApi.FreeAliasOnDeletion;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
@@ -49,6 +48,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
+    private final CryptoFeeBuilder usageEstimator = new CryptoFeeBuilder();
+
     /**
      * Default constructor for injection.
      */
@@ -103,7 +104,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new CryptoDeleteResourceUsage(new CryptoFeeBuilder())
-                        .usageGiven(fromPbj(body), sigValueObj, null));
+                .legacyCalculate(sigValueObj ->
+                        usageEstimator.getCryptoDeleteTxFeeMatrices(CommonPbjConverters.fromPbj(body), sigValueObj));
     }
 }
