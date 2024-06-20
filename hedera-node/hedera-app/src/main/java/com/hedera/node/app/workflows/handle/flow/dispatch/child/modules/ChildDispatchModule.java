@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -133,7 +134,7 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
-    static StoreFactoryImpl storeFactory(
+    static StoreFactory storeFactory(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final ServiceApiFactory serviceApiFactory) {

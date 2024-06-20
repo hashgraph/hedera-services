@@ -32,6 +32,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -127,7 +128,7 @@ public interface UserDispatchModule {
 
     @Provides
     @UserDispatchScope
-    static StoreFactoryImpl storeFactoryImpl(
+    static StoreFactory storeFactoryImpl(
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final ServiceApiFactory serviceApiFactory) {
