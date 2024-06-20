@@ -119,6 +119,7 @@ public class AtomicCryptoTransferHTSSuite {
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT = "AtomicCryptoTransfer";
     private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
+    private static final String TRANSFER_MULTIPLE_TOKENS_DELEGATE_CALL = "transferMultipleTokensDelegateCall";
     private static final String BASE_APPROVAL_TXN = "baseApproveTxn";
 
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
@@ -1405,6 +1406,56 @@ public class AtomicCryptoTransferHTSSuite {
                                 .contractCallResult(resultWith()
                                         .contractCallResult(htsPrecompileResult()
                                                 .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> delegateCallShouldFail() {
+        final var failedTransferFromTxn = "failed_txn";
+        final long allowance = 20L;
+
+        return propertyPreservingHapiSpec(
+                "delegateCallShouldFail",
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
+                .given(
+                        overridingTwo(
+                                "contracts.allowAutoAssociations", "true",
+                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            final var sender = spec.registry().getAccountID(SENDER);
+                            final var receiver = spec.registry().getAccountID(RECEIVER);
+                            final var amountToBeSent = 50 * ONE_HBAR;
+
+                            allRunFor(
+                                    spec,
+                                    newKeyNamed(DELEGATE_KEY)
+                                            .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, CONTRACT))),
+                                    cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                                    contractCall(
+                                            CONTRACT,
+                                            TRANSFER_MULTIPLE_TOKENS_DELEGATE_CALL,
+                                            transferList()
+                                                    .withAccountAmounts(
+                                                            accountAmount(sender, -amountToBeSent, false),
+                                                            accountAmount(receiver, amountToBeSent, false))
+                                                    .build(),
+                                            EMPTY_TUPLE_ARRAY)
+                                            .payingWith(GENESIS)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .via(failedTransferFromTxn)
+                                            .gas(GAS_TO_OFFER));
+                        }),
+                        getTxnRecord(failedTransferFromTxn).andAllChildRecords().logged())
+                .then(childRecordsCheck(
+                        failedTransferFromTxn,
+                        CONTRACT_REVERT_EXECUTED));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
