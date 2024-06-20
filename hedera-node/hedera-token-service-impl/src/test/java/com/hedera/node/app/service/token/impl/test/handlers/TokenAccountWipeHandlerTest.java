@@ -33,18 +33,10 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStor
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithNfts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_FOR_TOKEN_WITHOUT_KEY;
-import static com.hedera.test.factories.scenarios.TokenWipeScenarios.WIPE_WITH_MISSING_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -66,7 +58,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -78,7 +69,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -224,49 +214,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_NFT_ID));
-        }
-    }
-
-    @Nested
-    // Tests that check prehandle parity with old prehandle code
-    class PreHandle {
-        @SuppressWarnings("DataFlowIssue")
-        @Test
-        void nullArgsThrows() {
-            assertThatThrownBy(() -> subject.preHandle(null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void tokenWipeWithValidExtantTokenScenario() throws PreCheckException {
-            final var theTxn = txnFrom(VALID_WIPE_WITH_EXTANT_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_WIPE_KT.asPbjKey()));
-        }
-
-        @Test
-        void tokenWipeWithMissingTokenScenario() throws PreCheckException {
-            final var theTxn = txnFrom(WIPE_WITH_MISSING_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
-        }
-
-        @Test
-        void tokenWipeWithoutKeyScenario() throws PreCheckException {
-            final var theTxn = txnFrom(WIPE_FOR_TOKEN_WITHOUT_KEY);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertEquals(0, context.requiredNonPayerKeys().size());
         }
     }
 

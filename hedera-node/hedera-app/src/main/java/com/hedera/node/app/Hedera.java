@@ -19,9 +19,9 @@ package com.hedera.node.app;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.config.IsEmbeddedTest.NO;
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
@@ -49,9 +49,6 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.statedumpers.MerkleStateChild;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
@@ -62,6 +59,8 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -99,6 +98,7 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -482,9 +482,9 @@ public final class Hedera implements SwirldMain {
     /**
      * Gets whether the sha384 digest is available
      */
-    private boolean sha384DigestIsAvailable(@NonNull final NamedDigestFactory digestFactory) {
+    private boolean sha384DigestIsAvailable() {
         try {
-            digestFactory.forName("SHA-384");
+            MessageDigest.getInstance("SHA-384");
             return true;
         } catch (final NoSuchAlgorithmException e) {
             logger.error(e);
@@ -764,15 +764,14 @@ public final class Hedera implements SwirldMain {
                     System.getenv("LC_ALL"),
                     System.getenv("LANG"),
                     System.getProperty("file.encoding"));
-            daggerApp.systemExits().fail(1);
+            System.exit(1);
         }
 
         // Check that the digest factory supports SHA-384.
-        final var digestFactory = daggerApp.digestFactory();
-        if (!sha384DigestIsAvailable(digestFactory)) {
+        if (!sha384DigestIsAvailable()) {
             logger.error(
                     "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384", nodeId);
-            daggerApp.systemExits().fail(1);
+            System.exit(1);
         }
     }
 

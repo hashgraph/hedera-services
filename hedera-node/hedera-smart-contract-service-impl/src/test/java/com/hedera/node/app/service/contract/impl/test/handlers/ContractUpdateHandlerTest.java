@@ -71,7 +71,6 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.test.utils.KeyUtils;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -461,7 +460,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     void adminKeyUpdated() {
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder()
-                .adminKey(KeyUtils.A_COMPLEX_KEY)
+                .adminKey(A_COMPLEX_KEY)
                 .build();
 
         final var updatedContract = subject.update(contract, context, op);
@@ -471,7 +470,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     void adminKeyNotUpdatedWhenKeyIsEmpty() {
-        final var contract = Account.newBuilder().key(KeyUtils.A_COMPLEX_KEY).build();
+        final var contract = Account.newBuilder().key(A_COMPLEX_KEY).build();
         final var op = ContractUpdateTransactionBody.newBuilder()
                 .adminKey(EMPTY_KEY_LIST)
                 .build();
@@ -609,7 +608,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         final var contract = Account.newBuilder().build();
         final var op = ContractUpdateTransactionBody.newBuilder()
-                .adminKey(KeyUtils.A_COMPLEX_KEY)
+                .adminKey(A_COMPLEX_KEY)
                 .expirationTime(Timestamp.newBuilder().seconds(10))
                 .autoRenewPeriod(Duration.newBuilder().seconds(10))
                 .memo("memo")

@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TO
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -221,7 +220,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
 
         final var existingTopic = writableStore.getTopic(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
         assertNotNull(existingTopic);
         assertFalse(existingTopic.deleted());
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
@@ -229,7 +228,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         subject.handle(handleContext);
 
         final var changedTopic = writableStore.getTopic(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
 
         assertNotNull(changedTopic);
         assertTrue(changedTopic.deleted());

@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -739,7 +738,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @Test
             @DisplayName("An internal transaction should fail")
             void testInternalTransactionFails() {
-                final var body = bodyBuilder(txIdBuilder().nonce(USER_TRANSACTION_NONCE + 1));
+                final var body = bodyBuilder(txIdBuilder().nonce(1));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException

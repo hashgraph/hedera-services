@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.fees.congestion;
 
-import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.NFT;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.TOKEN;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.TOKEN_ASSOCIATION;
-import static com.hedera.node.app.service.mono.context.properties.EntityType.TOPIC;
+import static com.hedera.node.config.types.EntityType.ACCOUNT;
+import static com.hedera.node.config.types.EntityType.CONTRACT;
+import static com.hedera.node.config.types.EntityType.FILE;
+import static com.hedera.node.config.types.EntityType.NFT;
+import static com.hedera.node.config.types.EntityType.TOKEN;
+import static com.hedera.node.config.types.EntityType.TOKEN_ASSOCIATION;
+import static com.hedera.node.config.types.EntityType.TOPIC;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
