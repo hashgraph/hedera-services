@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_D
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,6 +49,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -149,14 +149,16 @@ class FileSystemDeleteTest extends FileTestBase {
     @DisplayName("calculateFees method invocations")
     public void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
 
         subject.calculateFees(feeContext);
 
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
+        InOrder inOrder = inOrder(feeContext, feeCalculatorFactory, feeCalculator);
         inOrder.verify(feeContext).body();
-        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
+        inOrder.verify(feeCalculatorFactory).feeCalculator(SubType.DEFAULT);
         inOrder.verify(feeCalculator).legacyCalculate(any());
     }
 

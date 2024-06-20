@@ -34,7 +34,7 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -91,7 +91,7 @@ public class ShadowgraphSynchronizer {
     /**
      * consumes events received by the peer
      */
-    private final Consumer<GossipEvent> eventHandler;
+    private final Consumer<PlatformEvent> eventHandler;
 
     /**
      * manages sync related decisions
@@ -151,7 +151,7 @@ public class ShadowgraphSynchronizer {
             @NonNull final Shadowgraph shadowGraph,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final Consumer<PlatformEvent> receivedEventHandler,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor) {

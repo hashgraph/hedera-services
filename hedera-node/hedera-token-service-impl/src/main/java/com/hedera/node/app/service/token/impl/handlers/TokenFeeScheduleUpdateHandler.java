@@ -34,7 +34,7 @@ import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -182,7 +182,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
                 .toList();
 
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
-                newFees.stream().map(PbjConverter::fromPbj).toList());
+                newFees.stream().map(CommonPbjConverters::fromPbj).toList());
         final var effConsTime =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);
@@ -190,6 +190,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var existingFeeReprBytes = currentFeeScheduleSize(token.customFees(), tokenOpsUsage);
         final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(existingFeeReprBytes, lifetime, newReprBytes, lifetime);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(LONG_BASIC_ENTITY_ID_SIZE + newReprBytes)
                 .addRamByteSeconds(rbsDelta)

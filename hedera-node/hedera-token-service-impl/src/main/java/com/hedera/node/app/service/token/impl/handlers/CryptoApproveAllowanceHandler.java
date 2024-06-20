@@ -545,6 +545,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         // slightly less than the base price
         final var adjustedBytes = getNewBytes(body.cryptoApproveAllowanceOrThrow(), account);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(bytesUsedInTxn(op))
                 .addRamByteSeconds(adjustedBytes > 0 ? (adjustedBytes * lifeTime) : 0)

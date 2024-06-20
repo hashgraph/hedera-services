@@ -26,8 +26,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CON
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -42,9 +43,9 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractUpdateResourceUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -61,6 +62,7 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -72,6 +74,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
     public ContractUpdateHandler() {
@@ -150,7 +153,8 @@ public class ContractUpdateHandler implements TransactionHandler {
 
         if (op.hasExpirationTime()) {
             try {
-                context.attributeValidator().validateExpiry(op.expirationTime().seconds());
+                context.attributeValidator()
+                        .validateExpiry(op.expirationTimeOrThrow().seconds());
             } catch (HandleException e) {
                 validateFalse(contract.expiredAndPendingRemoval(), CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
                 throw e;
@@ -183,8 +187,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var currentMetadata =
                 new ExpiryMeta(contract.expirationSecond(), contract.autoRenewSeconds(), contract.autoRenewAccountId());
         final var updateMeta = new ExpiryMeta(
-                op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
-                op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
+                op.hasExpirationTime() ? op.expirationTimeOrThrow().seconds() : NA,
+                op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA,
                 null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
 
@@ -222,8 +226,8 @@ public class ContractUpdateHandler implements TransactionHandler {
                 || op.hasMaxAutomaticTokenAssociations();
     }
 
-    private boolean affectsMemo(ContractUpdateTransactionBody op) {
-        return op.hasMemoWrapper() || (op.memo() != null && op.memo().length() > 0);
+    private boolean affectsMemo(@NonNull final ContractUpdateTransactionBody op) {
+        return op.hasMemoWrapper() || (op.hasMemo() && !op.memoOrThrow().isEmpty());
     }
 
     private boolean isMutable(final Account contract) {
@@ -233,7 +237,7 @@ public class ContractUpdateHandler implements TransactionHandler {
     }
 
     private boolean reducesExpiry(ContractUpdateTransactionBody op, long curExpiry) {
-        return op.hasExpirationTime() && op.expirationTime().seconds() < curExpiry;
+        return op.hasExpirationTime() && op.expirationTimeOrThrow().seconds() < curExpiry;
     }
 
     public Account update(
@@ -262,13 +266,14 @@ public class ContractUpdateHandler implements TransactionHandler {
             if (contract.expiredAndPendingRemoval()) {
                 builder.expiredAndPendingRemoval(false);
             }
-            builder.expirationSecond(op.expirationTime().seconds());
+            builder.expirationSecond(op.expirationTimeOrThrow().seconds());
         }
         if (op.hasAutoRenewPeriod()) {
-            builder.autoRenewSeconds(op.autoRenewPeriod().seconds());
+            builder.autoRenewSeconds(op.autoRenewPeriodOrThrow().seconds());
         }
         if (affectsMemo(op)) {
-            final var newMemo = op.hasMemoWrapper() ? op.memoWrapper() : op.memo();
+            final var newMemo = op.hasMemoWrapper() ? op.memoWrapperOrThrow() : op.memo();
+            requireNonNull(newMemo);
             context.attributeValidator().validateMemo(newMemo);
             builder.memo(newMemo);
         }
@@ -279,16 +284,16 @@ public class ContractUpdateHandler implements TransactionHandler {
                 builder.stakedAccountId(op.stakedAccountId());
             }
         } else if (op.hasStakedNodeId()) {
-            builder.stakedNodeId(op.stakedNodeId());
+            builder.stakedNodeId(op.stakedNodeIdOrThrow());
         }
         if (op.hasDeclineReward()) {
-            builder.declineReward(op.declineReward());
+            builder.declineReward(op.declineRewardOrThrow());
         }
         if (op.hasAutoRenewAccountId()) {
             builder.autoRenewAccountId(op.autoRenewAccountId());
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            builder.maxAutoAssociations(op.maxAutomaticTokenAssociations());
+            builder.maxAutoAssociations(op.maxAutomaticTokenAssociationsOrThrow());
         }
         return builder.build();
     }
@@ -301,8 +306,20 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var contractId = op.contractUpdateInstanceOrThrow().contractIDOrElse(ContractID.DEFAULT);
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         final var contract = accountStore.getContractById(contractId);
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractUpdateResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, contract));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGiven(fromPbj(op), sigValueObj, contract));
+    }
+
+    private FeeData usageGiven(
+            @NonNull com.hederahashgraph.api.proto.java.TransactionBody txn,
+            @NonNull SigValueObj sigUsage,
+            @Nullable Account contract) {
+        if (contract == null) {
+            return CONSTANT_FEE_DATA;
+        }
+        return usageEstimator.getContractUpdateTxFeeMatrices(
+                txn, fromPbj(new com.hedera.hapi.node.base.Timestamp(contract.expirationSecond(), 0)), sigUsage);
     }
 }

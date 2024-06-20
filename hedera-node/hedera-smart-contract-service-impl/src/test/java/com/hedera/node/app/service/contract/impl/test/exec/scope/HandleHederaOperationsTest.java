@@ -620,12 +620,7 @@ class HandleHederaOperationsTest {
     @Test
     void externalizeHollowAccountMerge() {
         // given
-        var parentAccount = Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(1001).build())
-                .key(Key.DEFAULT)
-                .build();
         var contractId = ContractID.newBuilder().contractNum(1001).build();
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class)))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(eq(contractId))).willReturn(contractCreateRecordBuilder);

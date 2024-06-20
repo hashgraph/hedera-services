@@ -26,7 +26,7 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -102,7 +102,7 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      */
     @Override
     @NonNull
-    public List<ConsensusRound> addEvent(@NonNull final GossipEvent event) {
+    public List<ConsensusRound> addEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
 
         final EventImpl linkedEvent = linker.linkEvent(event);

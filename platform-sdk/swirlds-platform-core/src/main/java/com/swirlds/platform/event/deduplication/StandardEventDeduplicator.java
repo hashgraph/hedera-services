@@ -27,7 +27,7 @@ import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.sequence.map.SequenceMap;
@@ -123,7 +123,7 @@ public class StandardEventDeduplicator implements EventDeduplicator {
      */
     @Override
     @Nullable
-    public GossipEvent handleEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent handleEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());

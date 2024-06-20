@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.fixtures.turtle.gossip;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -28,7 +28,7 @@ import java.time.Instant;
  * @param sender      the node that sent the event
  * @param arrivalTime the time the event is scheduled to arrive at its destination
  */
-public record EventInTransit(@NonNull GossipEvent event, @NonNull NodeId sender, @NonNull Instant arrivalTime)
+public record EventInTransit(@NonNull PlatformEvent event, @NonNull NodeId sender, @NonNull Instant arrivalTime)
         implements Comparable<EventInTransit> {
     @Override
     public int compareTo(@NonNull final EventInTransit that) {
