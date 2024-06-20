@@ -19,7 +19,7 @@ package com.swirlds.platform.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
+import com.swirlds.state.test.fixtures.ListWritableQueueState;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
 import org.junit.jupiter.api.Nested;

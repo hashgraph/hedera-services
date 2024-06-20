@@ -48,7 +48,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

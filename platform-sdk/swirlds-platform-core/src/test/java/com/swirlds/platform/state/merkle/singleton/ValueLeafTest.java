@@ -18,7 +18,8 @@ package com.swirlds.platform.state.merkle.singleton;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.platform.test.fixtures.state.merkle.MerkleTestBase;
+import com.swirlds.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
 import org.junit.jupiter.api.Test;
 
 class ValueLeafTest extends MerkleTestBase {

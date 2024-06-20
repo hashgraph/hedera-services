@@ -26,6 +26,7 @@ import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.SETTING
 import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE;
 import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.UPDATING_PLATFORM_STATE_RUNNING_HASH;
 import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.WAITING_FOR_PREHANDLE;
+import static com.swirlds.state.HederaState.TRANSACTION_HANDLING_THREAD_NAME;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;

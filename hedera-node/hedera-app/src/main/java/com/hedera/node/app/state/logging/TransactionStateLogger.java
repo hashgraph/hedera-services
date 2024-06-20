@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.logging;
 
-import static com.swirlds.platform.eventhandling.TransactionHandler.TRANSACTION_HANDLING_THREAD_NAME;
+import static com.swirlds.state.HederaState.TRANSACTION_HANDLING_THREAD_NAME;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -28,14 +28,14 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.platform.state.merkle.disk.OnDiskKey;
-import com.swirlds.platform.state.merkle.disk.OnDiskValue;
-import com.swirlds.platform.state.merkle.memory.InMemoryKey;
-import com.swirlds.platform.state.merkle.memory.InMemoryValue;
-import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.memory.InMemoryKey;
+import com.swirlds.state.merkle.memory.InMemoryValue;
+import com.swirlds.state.merkle.singleton.ValueLeaf;
 import com.swirlds.state.spi.info.NodeInfo;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
