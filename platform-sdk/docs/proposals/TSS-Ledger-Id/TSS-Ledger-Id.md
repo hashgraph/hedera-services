@@ -14,7 +14,7 @@ verifiable by the public key.
 |--------------------|--------------------------------------------|
 | Designers          | Edward, Cody, Austin, Kore, Anthony, Artem |
 | Functional Impacts | Services, DevOps                           |
-| Related Proposals  | TSS-Library, TSS-Block-Signing, TSS-Roster |
+| Related Proposals  | TSS-Library, TSS-Roster, TSS-Block-Signing |
 | HIPS               | N/A                                        |
 
 ---
@@ -101,30 +101,31 @@ TSS Core Requirements
 
 #### New Address Book Life-Cycle
 
-This design proposal will deliver after Dynamic Address Book  (DAB) Phase 2 and before DAB Phase 3.  In Phase 2 the 
-address book is updated on software upgrades.  In Phase 3 the address book is updated dynamically without restarting 
-the node. Since the TSS effort requires keying a roster with enough `TssMessages` to generate ledger signatures, a 
-modified life-cycle is needed.  Some of the dynamic work in Phase 3 will be needed.  This work is being encapsulated 
+This design proposal will deliver after Dynamic Address Book  (DAB) Phase 2 and before DAB Phase 3. In Phase 2 the
+address book is updated on software upgrades. In Phase 3 the address book is updated dynamically without restarting
+the node. Since the TSS effort requires keying a roster with enough `TssMessages` to generate ledger signatures, a
+modified life-cycle is needed. Some of the dynamic work in Phase 3 will be needed. This work is being encapsulated
 in the TSS-Roster proposal, which will need to be completed before the TSS-Ledger-Id proposal can be fully implemented.
 
-The relevant Address Book life-cycle changes are the following: 
+The relevant Address Book life-cycle changes are the following:
+
 1. The platform only receives a Roster, a subset of the Address Book.
 2. The application address book has 3 states: `Active` (AAB), `Candidate` (CAB), and `Future` (FAB).
 3. The FAB is updated by every HAPI transaction that is already received in DAB Phase 2.
-4. The CAB is a snapshot of the FAB when the APP is ready to initiate an address book rotation. 
-5. The AAB is replaced by the CAB on a software upgrade if the consensus roster derived from the CAB has enough key 
-   material to generate ledger signatures.  
-6. The CAB is not adopted and the previous AAB remains the existing AAB after a software upgrade if the CAB does not 
-   have enough key material to generate ledger signatures. 
+4. The CAB is a snapshot of the FAB when the APP is ready to initiate an address book rotation.
+5. The AAB is replaced by the CAB on a software upgrade if the consensus roster derived from the CAB has enough key
+   material to generate ledger signatures.
+6. The CAB is not adopted and the previous AAB remains the existing AAB after a software upgrade if the CAB does not
+   have enough key material to generate ledger signatures.
 
-Prior to restart for upgrade,  `candidate` consensus roster will be set in the platform state by the app in such a way 
-as to mark it clearly as the next consensus roster.  This methodology replaces the previous methodology in DAB Phase 
-2, which was to write a new `config.txt` to disk.  After the `TSS-Roster` proposal has been implemented, the only 
-need for a file on disk is the genesis address book at the start of a new network.  
+Prior to restart for upgrade,  `candidate` consensus roster will be set in the platform state by the app in such a way
+as to mark it clearly as the next consensus roster. This methodology replaces the previous methodology in DAB Phase
+2, which was to write a new `config.txt` to disk. After the `TSS-Roster` proposal has been implemented, the only
+need for a file on disk is the genesis address book at the start of a new network.
 
-Once the correct address book and consensus roster life-cycle is in place through the `TSS-Roster` proposal, this 
-proposal only introduces the logistics of generating the key material and the logic for deciding to adopt the CAB in 
-replacement of the AAB. 
+Once the correct address book and consensus roster life-cycle is in place through the `TSS-Roster` proposal, this
+proposal only introduces the logistics of generating the key material and the logic for deciding to adopt the CAB in
+replacement of the AAB.
 
 #### TSS Algorithm
 
@@ -171,10 +172,10 @@ If and when the Ethereum ecosystem adopts BLS12_381, we will likely switch over 
 
 ##### New Elliptic Curve Node Keys
 
-Each node will need a new long-term EC key pair in addition to the existing RSA key pair.  The EC key pair will be
-used in the Groth21 algorithm to generate and decrypt `TSS-Messages`.  These new EC Keys will not be used for 
-signing messages, only for generating the shares.   It is the share keys that are used to sign messages.  The public 
-keys of these long-term node specific EC keys must be in the address book.   
+Each node will need a new long-term EC key pair in addition to the existing RSA key pair. The EC key pair will be
+used in the Groth21 algorithm to generate and decrypt `TSS-Messages`. These new EC Keys will not be used for
+signing messages, only for generating the shares. It is the share keys that are used to sign messages. The public
+keys of these long-term node specific EC keys must be in the address book.
 
 ##### Groth21 Drawbacks
 
@@ -182,7 +183,7 @@ The Groth21 algorithm is not able to model arbitrary precision proportions of we
 network. For example if each node in a 4 node network received 1 share, then every share has a weight of 1/4.
 If there are a total of N shares, then the distribution of weight can only be modeled in increments of (1/N) * total
 weight. The cost of re-keying the network in an address book change is quadratic in the number of shares. This forces us
-to pick a number of total shares with a max value in the thousands.  This modeling of weight is a discrete using small 
+to pick a number of total shares with a max value in the thousands. This modeling of weight is a discrete using small
 integer precision.
 
 #### Alternatives Considered
@@ -214,19 +215,29 @@ recursive proof proved too expensive for EVM smart contracts.
 
 ### Goals
 
-TSS Genesis 
-1. 
-2. That the next consensus roster is set by the app with enough time to key the next roster. 
-2. 
+The following capabilities are the goals of this proposal:
+
+1. `Ledger Signing API` - Given a message, the consensus nodes sign the message with shares and aggregate the signatures
+   into a ledger signature after they come to consensus.
+2. `TSS Genesis on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
+3. `TSS Genesis for New Network` - Able to setup a new network with a ledger public/private key pair.
+4. `Keying A New Roster` - Able to transfer the ability to sign a message with the ledger private key from one set of
+   consensus nodes to another.
 
 ### Non-Goals
+
+The following are not goals of this proposal:
+
+1. Achieving a fully dynamic address book life-cycle.
+2. Block Proofs or the signing of blocks.
+3. Verification of signed messages beyond the consensus node.
 
 ---
 
 ## Changes
 
-Integrating a Threshold Signature Scheme into the consensus node requires significant changes to the startup 
-process for a node and the process of changing the consensus roster. 
+Integrating a Threshold Signature Scheme into the consensus node requires significant changes to the startup
+process for a node and the process of changing the consensus roster.
 
 ### Architecture and/or Components
 
@@ -234,6 +245,10 @@ Describe any new or modified components or architectural changes. This includes 
 changes, disk I/O changes, platform wiring changes, etc. Include diagrams of architecture changes.
 
 Remove this section if not applicable.
+
+#### State Datastructures
+
+#### New Wiring Components
 
 ### Module Organization and Repositories
 
@@ -248,7 +263,21 @@ help explain the behavior.
 
 Remove this section if not applicable.
 
+#### TSS Genesis for New Networks
+
+#### TSS Genesis for Existing Networks
+
+#### Keying A New Roster
+
+#### Ledger Signing API
+
 ### Public API
+
+#### Ledger Signing API
+
+#### Ledger Signature Protobuf
+
+#### State Data Structures
 
 Describe any public API changes or additions. Include stakeholders of the API.
 
