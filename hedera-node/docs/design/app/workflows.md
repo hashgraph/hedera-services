@@ -99,6 +99,9 @@ All the transactions are handled by creating a Dispatch and executing business l
 - child transactions scope called `ChildDispatch`
 
 #### Dagger Scopes
+
+![Dagger Scopes](images/dagger_scopes.png)
+
 All the objects used while handling the transaction belong to one of the following Dagger scopes. 
 - **Singleton** - Objects that are created once and used for the entire lifecycle of the application.
 Examples include the `NodeInfo` and `WorkingStateAccessor`.
@@ -119,9 +122,10 @@ and [ChildDispatchComponent](https://github.com/hashgraph/hedera-services/blob/d
 takes all the inputs that are needed to create the child dispatch.
 
 
-![dagger_scopes.png](images/dagger_scopes.pngpes.png)
-
 #### HandleWorkflow overview:
+
+![Basic Overview](images/handle_basic_overview.png)
+
 The `HandleWorkflow` class is responsible for handling the platform transaction and providing the record stream.
 The overall high level steps are as follows:
 
@@ -130,9 +134,12 @@ when blocks
 2. `UserTxnWorkflow` is called to handle the transaction and provide record stream
 3. Externalizes the record stream items
 4. Update metrics for the handled user transaction
-![handle_basic_overview.png](images/handle_basic_overview.pngiew.png)
+
 
 #### UserTxnWorkflow overview:
+
+![User Transaction Workflow](images/user_txn_workflow.png)
+
 1. **SkipHandleWorkflow**: If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
 This writes a record with `BUSY` status and adds to record cache
 2. **DefaultHandleWorkflow**: If the transaction is from a valid software version, we call `DefaultHandleWorkflow`. This workflow 
@@ -147,11 +154,12 @@ handles valid user transaction. It has the following steps:
      The `DispatchProcessor` will execute the business logic for the dispatch. This is common logic that
      is executed for all user and child transactions, since the user dispatch child dispatches are 
      treated the same way to avoid duplicating any logic.
-   
-![user_txn_workflow.png](images/user_txn_workflow.pnglow.png)
 
 
 #### DispatchProcessor overview:
+
+![Dispatch Processor Flow](images/dispatch_processor.png)
+
 The `DispatchProcessor.processDispatch` will be called for user and child dispatches. This avoids duplicating
 any logic between user and child transactions, since both are treated as dispatches.
 For the child transactions, when a service calls one of the [dispatchXXXTransaction](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/DispatchHandleContext.java#L459) 
@@ -189,5 +197,3 @@ methods in `DispatchHandleContext`, a new child dispatch is created and `Dispatc
 8. **Commit:** Commits all the changes to the state
 9. **Metrics Update:** Updates any metrics that need to be updated
 10. **Record Stream:** Adds all the records to the record cache
-
-![dispatch_processor.png](images/dispatch_processor.pngsor.png)
