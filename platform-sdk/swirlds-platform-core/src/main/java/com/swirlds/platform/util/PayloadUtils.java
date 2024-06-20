@@ -43,7 +43,7 @@ public final class PayloadUtils {
      * @param payloads the payloads to get the size of
      * @return the size of the payloads
      */
-    public static int getObjectSize(@NonNull final List<EventPayload> payloads) {
+    public static int getLegacyObjectSize(@NonNull final List<EventPayload> payloads) {
         int totalByteLength = Integer.BYTES; // length of array size
         if (payloads.isEmpty()) {
             return totalByteLength;
@@ -54,7 +54,7 @@ public final class PayloadUtils {
         for (final EventPayload payload : payloads) {
             totalByteLength += CLASS_ID_BYTES;
             totalByteLength += VERSION_BYTES;
-            totalByteLength += getPayloadSize(payload.payload());
+            totalByteLength += getLegacyPayloadSize(payload.payload());
         }
 
         return totalByteLength;
@@ -66,7 +66,7 @@ public final class PayloadUtils {
      * @param payload the payload to get the size of
      * @return the size of the payload
      */
-    public static int getPayloadSize(@NonNull final OneOf<PayloadOneOfType> payload) {
+    public static int getLegacyPayloadSize(@NonNull final OneOf<PayloadOneOfType> payload) {
         if (PayloadOneOfType.APPLICATION_PAYLOAD.equals(payload.kind())) {
             return Integer.BYTES // add the the size of array length field
                     + (int) ((Bytes) payload.as()).length(); // add the size of the array

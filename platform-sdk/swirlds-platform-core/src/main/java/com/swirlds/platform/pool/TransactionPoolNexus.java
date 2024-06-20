@@ -153,7 +153,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             return false;
         }
         final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, payload);
-        if (PayloadUtils.getPayloadSize(transaction) > maximumTransactionSize) {
+        if (PayloadUtils.getLegacyPayloadSize(transaction) > maximumTransactionSize) {
             // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
             illegalTransactionLogger.error(
                     EXCEPTION.getMarker(),
@@ -236,11 +236,11 @@ public class TransactionPoolNexus implements TransactionSupplier {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
         if (!priorityBufferedTransactions.isEmpty()
-                && PayloadUtils.getPayloadSize(priorityBufferedTransactions.peek()) <= maxSize) {
+                && PayloadUtils.getLegacyPayloadSize(priorityBufferedTransactions.peek()) <= maxSize) {
             return priorityBufferedTransactions.poll();
         }
 
-        if (!bufferedTransactions.isEmpty() && PayloadUtils.getPayloadSize(bufferedTransactions.peek()) <= maxSize) {
+        if (!bufferedTransactions.isEmpty() && PayloadUtils.getLegacyPayloadSize(bufferedTransactions.peek()) <= maxSize) {
             return bufferedTransactions.poll();
         }
 
@@ -271,7 +271,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
                 break;
             }
 
-            currEventSize += PayloadUtils.getPayloadSize(transaction);
+            currEventSize += PayloadUtils.getLegacyPayloadSize(transaction);
             selectedTrans.add(transaction);
 
             if (STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {

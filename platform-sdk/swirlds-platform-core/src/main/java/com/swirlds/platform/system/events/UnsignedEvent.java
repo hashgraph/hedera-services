@@ -212,7 +212,7 @@ public class UnsignedEvent extends AbstractHashable {
 
         // write serialized length of transaction array first, so during the deserialization proces
         // it is possible to skip transaction array and move on to the next object
-        out.writeInt(PayloadUtils.getObjectSize(payloads));
+        out.writeInt(PayloadUtils.getLegacyObjectSize(payloads));
         // transactions may include both system transactions and application transactions
         // so writeClassId set to true and allSameClass set to false
         final boolean allSameClass = false;
