@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -32,6 +33,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -106,5 +108,15 @@ public class ChildFeeContextImpl implements FeeContext {
     @Override
     public int numTxnSignatures() {
         return context.numTxnSignatures();
+    }
+
+    @Override
+    public ExchangeRateInfo exchangeRateInfo() {
+        return context.exchangeRateInfo();
+    }
+
+    @Override
+    public Instant consensusNow() {
+        return context.consensusNow();
     }
 }

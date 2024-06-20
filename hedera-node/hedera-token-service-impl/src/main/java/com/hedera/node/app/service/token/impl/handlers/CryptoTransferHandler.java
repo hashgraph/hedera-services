@@ -87,6 +87,7 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -549,22 +550,29 @@ public class CryptoTransferHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        // TODO: skip if the main record is Airdrop
+
         final var body = feeContext.body();
         final var op = body.cryptoTransferOrThrow();
+
+        return calculateCryptoTransferFees(feeContext, op.transfersOrElse(TransferList.DEFAULT), op.tokenTransfers());
+    }
+
+    public static Fees calculateCryptoTransferFees(
+            FeeContext feeContext, @Nullable TransferList transfers, List<TokenTransferList> tokenTransfers) {
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
 
         /* BPT calculations shouldn't include any custom fee payment usage */
-        int totalXfers =
-                op.transfersOrElse(TransferList.DEFAULT).accountAmounts().size();
+        int totalXfers = transfers != null ? transfers.accountAmounts().size() : 0;
 
         var totalTokensInvolved = 0;
         var totalTokenTransfers = 0;
         var numNftOwnershipChanges = 0;
-        for (final var tokenTransfers : op.tokenTransfers()) {
+        for (final var tokenTransfer : tokenTransfers) {
             totalTokensInvolved++;
-            totalTokenTransfers += tokenTransfers.transfers().size();
-            numNftOwnershipChanges += tokenTransfers.nftTransfers().size();
+            totalTokenTransfers += tokenTransfer.transfers().size();
+            numNftOwnershipChanges += tokenTransfer.nftTransfers().size();
         }
 
         int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;
@@ -577,7 +585,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         var customFeeHbarTransfers = 0;
         var customFeeTokenTransfers = 0;
         final var involvedTokens = new HashSet<TokenID>();
-        final var customFeeAssessor = new CustomFeeAssessmentStep(op);
+        final var customFeeAssessor = new CustomFeeAssessmentStep(CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(tokenTransfers)
+                .transfers(transfers)
+                .build());
         List<AssessedCustomFee> assessedCustomFees;
         boolean triedAndFailedToUseCustomFees = false;
         try {
@@ -633,7 +644,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      *                                      use SubType.DEFAULT.
      * @return the subType
      */
-    private SubType getSubType(
+    public static SubType getSubType(
             final int numNftOwnershipChanges,
             final int numFungibleTokenTransfers,
             final int customFeeHbarTransfers,

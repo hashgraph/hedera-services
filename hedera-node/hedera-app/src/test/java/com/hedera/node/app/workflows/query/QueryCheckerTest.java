@@ -92,25 +92,27 @@ class QueryCheckerTest extends AppTestBase {
 
     @BeforeEach
     void setup() {
-        checker = new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager);
+        checker = new QueryChecker(
+                authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, null); // TODO: fix
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() ->
-                        new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, null)) // TODO: fix
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, null, solvencyPreCheck, expiryValidation, feeManager, null)) // TODO: fix
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, null, expiryValidation, feeManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, null, expiryValidation, feeManager, null)) // TODO: fix
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager, null)) // TODO: fix
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null))
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null, null)) // TODO: fix
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -469,7 +471,12 @@ class QueryCheckerTest extends AppTestBase {
 
         // when
         final var result = checker.estimateTxFees(
-                storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
+                null, // TODO: fix
+                storeFactory,
+                consensusNow,
+                txInfo,
+                ALICE.account().key(),
+                configuration);
 
         // then
         assertThat(result).isEqualTo(fees.totalFee());
