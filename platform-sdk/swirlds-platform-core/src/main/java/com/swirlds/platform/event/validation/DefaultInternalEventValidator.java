@@ -26,7 +26,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventConstants;
@@ -156,7 +156,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the required fields of the event are non-null, otherwise false
      */
-    private boolean areRequiredFieldsNonNull(@NonNull final GossipEvent event) {
+    private boolean areRequiredFieldsNonNull(@NonNull final PlatformEvent event) {
         if (event.getSignature() == null) {
             // do not log the event itself, since toString would throw a NullPointerException
             nullUnhashedDataLogger.error(EXCEPTION.getMarker(), "Event has null signature");
@@ -173,7 +173,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the total byte count of transactions in the event is less than the maximum, otherwise false
      */
-    private boolean isTransactionByteCountValid(@NonNull final GossipEvent event) {
+    private boolean isTransactionByteCountValid(@NonNull final PlatformEvent event) {
         int totalTransactionBytes = 0;
         final Iterator<Transaction> iterator = event.transactionIterator();
         while (iterator.hasNext()) {
@@ -199,7 +199,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the parent hashes and generations of the event are internally consistent, otherwise false
      */
-    private boolean areParentsInternallyConsistent(@NonNull final GossipEvent event) {
+    private boolean areParentsInternallyConsistent(@NonNull final PlatformEvent event) {
         // If a parent is not missing, then the generation and birth round must be valid.
 
         final EventDescriptor selfParent = event.getSelfParent();
@@ -249,7 +249,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the generation of the event is valid, otherwise false
      */
-    private boolean isEventGenerationValid(@NonNull final GossipEvent event) {
+    private boolean isEventGenerationValid(@NonNull final PlatformEvent event) {
         final long eventGeneration = event.getGeneration();
 
         if (eventGeneration < FIRST_GENERATION) {
@@ -285,7 +285,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      * @param event the event to check
      * @return true if the birth round of the event is valid, otherwise false
      */
-    private boolean isEventBirthRoundValid(@NonNull final GossipEvent event) {
+    private boolean isEventBirthRoundValid(@NonNull final PlatformEvent event) {
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
             // Don't validate birth rounds in generation mode.
             return true;
@@ -316,7 +316,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
      */
     @Override
     @Nullable
-    public GossipEvent validateEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent validateEvent(@NonNull final PlatformEvent event) {
         if (areRequiredFieldsNonNull(event)
                 && isTransactionByteCountValid(event)
                 && areParentsInternallyConsistent(event)

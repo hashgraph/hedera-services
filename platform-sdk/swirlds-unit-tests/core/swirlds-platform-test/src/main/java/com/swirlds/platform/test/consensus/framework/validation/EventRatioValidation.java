@@ -18,7 +18,7 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -98,7 +98,7 @@ public class EventRatioValidation implements ConsensusOutputValidation {
     public void validate(@NonNull final ConsensusOutput output1, @NonNull final ConsensusOutput ignored) {
         // For each statistic we only need to check one list since other validators can verify them
         // to be identical.
-        final List<GossipEvent> allEvents1 = output1.getAddedEvents();
+        final List<PlatformEvent> allEvents1 = output1.getAddedEvents();
         final int numConsensus = output1.getConsensusRounds().stream()
                 .mapToInt(r -> r.getConsensusEvents().size())
                 .sum();

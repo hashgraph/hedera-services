@@ -216,6 +216,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var body = feeContext.body();
         final var op = body.cryptoDeleteAllowanceOrThrow();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(op.nftAllowances().size() * NFT_DELETE_ALLOWANCE_SIZE
                         + countNftDeleteSerials(op.nftAllowances()) * LONG_SIZE)

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface GraphGenerations {
@@ -75,7 +75,7 @@ public interface GraphGenerations {
      * @param event the event to check
      * @return true if the event is ancient, false otherwise
      */
-    default boolean isAncient(@NonNull final GossipEvent event) {
+    default boolean isAncient(@NonNull final PlatformEvent event) {
         return event.getGeneration() < getMinGenerationNonAncient();
     }
 }

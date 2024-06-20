@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.DEFA
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.LAZY_CREATION_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationForExternalization;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
 import static org.junit.jupiter.api.Assertions.*;
@@ -95,6 +96,13 @@ class SynthTxnUtilsTest {
                 parent.autoRenewSeconds(), matchingCreation.autoRenewPeriod().seconds());
         assertEquals(parent.autoRenewAccountId(), matchingCreation.autoRenewAccountId());
         assertEquals(parent.key(), matchingCreation.adminKey());
+    }
+
+    @Test
+    void onlySetContractKeyForExternalization() {
+        final var matchingKey = Key.newBuilder().contractID(CALLED_CONTRACT_ID).build();
+        final var matchingCreation = synthContractCreationForExternalization(CALLED_CONTRACT_ID);
+        assertEquals(matchingKey, matchingCreation.adminKey());
     }
 
     @Test
