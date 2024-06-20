@@ -31,14 +31,12 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
+import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
@@ -66,9 +64,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
- * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
- * this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
  */
 @Singleton
 @Component(
@@ -99,10 +95,6 @@ public interface HederaInjectionComponent {
     GrpcServerManager grpcServerManager();
 
     Supplier<Charset> nativeCharset();
-
-    SystemExits systemExits();
-
-    NamedDigestFactory digestFactory();
 
     NetworkInfo networkInfo();
 

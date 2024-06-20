@@ -28,12 +28,10 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -66,9 +64,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Main entry point.
  *
- * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
- * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * <p>This class simply delegates to {@link Hedera}.
  */
 public class ServicesMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
@@ -82,15 +78,7 @@ public class ServicesMain implements SwirldMain {
      * Create a new instance
      */
     public ServicesMain() {
-        final var configProvider = new ConfigProviderImpl(false);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        if (hederaConfig.workflowsEnabled().isEmpty()) {
-            logger.info("No workflows enabled, using mono-service");
-            delegate = new MonoServicesMain();
-        } else {
-            logger.info("One or more workflows enabled, using Hedera");
-            delegate = newHedera();
-        }
+        delegate = newHedera();
     }
 
     /**
@@ -245,7 +233,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun        the list of nodes configured to run based on the address book.
+     * @param nodesToRun the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.

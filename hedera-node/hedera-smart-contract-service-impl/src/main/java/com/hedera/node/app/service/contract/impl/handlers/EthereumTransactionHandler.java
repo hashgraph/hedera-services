@@ -21,9 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.nonNull;
@@ -43,7 +43,6 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.mono.fees.calculation.ethereum.txns.EthereumTransactionResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -64,8 +63,7 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#ETHEREUM_TRANSACTION}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#ETHEREUM_TRANSACTION}.
  */
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
@@ -73,6 +71,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
     private final GasCalculator gasCalculator;
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
     public EthereumTransactionHandler(
@@ -165,9 +164,10 @@ public class EthereumTransactionHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var body = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
-                        .usageGiven(fromPbj(body), sigValueObj, null));
+                .legacyCalculate(
+                        sigValueObj -> usageEstimator.getEthereumTransactionFeeMatrices(fromPbj(body), sigValueObj));
     }
 
     private EthTxSigs computeEthTxSigsFor(

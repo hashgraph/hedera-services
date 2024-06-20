@@ -618,6 +618,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())
