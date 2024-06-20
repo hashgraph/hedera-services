@@ -240,7 +240,8 @@ public class TransactionPoolNexus implements TransactionSupplier {
             return priorityBufferedTransactions.poll();
         }
 
-        if (!bufferedTransactions.isEmpty() && PayloadUtils.getLegacyPayloadSize(bufferedTransactions.peek()) <= maxSize) {
+        if (!bufferedTransactions.isEmpty()
+                && PayloadUtils.getLegacyPayloadSize(bufferedTransactions.peek()) <= maxSize) {
             return bufferedTransactions.poll();
         }
 
