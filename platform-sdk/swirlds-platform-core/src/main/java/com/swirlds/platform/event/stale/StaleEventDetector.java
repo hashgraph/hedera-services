@@ -19,7 +19,7 @@ package com.swirlds.platform.event.stale;
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -44,7 +44,7 @@ public interface StaleEventDetector {
      */
     @InputWireLabel("self events")
     @NonNull
-    List<RoutableData<StaleEventDetectorOutput>> addSelfEvent(@NonNull GossipEvent event);
+    List<RoutableData<StaleEventDetectorOutput>> addSelfEvent(@NonNull PlatformEvent event);
 
     /**
      * Add a round that has just reached consensus.

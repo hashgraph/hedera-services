@@ -38,7 +38,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
-import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -190,7 +189,31 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         }
 
         // multiply node fees to include duplicate and/or child records
-        final FeeData feeData = FeeCalcUtils.multiplierOfUsages(perRecordFeeData, recordCount);
+        final FeeData feeData = multiplierOfUsages(perRecordFeeData, recordCount);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> feeData);
+    }
+
+    private static FeeData multiplierOfUsages(final FeeData a, final int multiplier) {
+        return FeeData.newBuilder()
+                .setNodedata(multiplierOfScopedUsages(a.getNodedata(), multiplier))
+                .setNetworkdata(multiplierOfScopedUsages(a.getNetworkdata(), multiplier))
+                .setServicedata(multiplierOfScopedUsages(a.getServicedata(), multiplier))
+                .build();
+    }
+
+    private static FeeComponents multiplierOfScopedUsages(final FeeComponents a, final int multiplier) {
+        return FeeComponents.newBuilder()
+                .setMin(a.getMin())
+                .setMax(a.getMax())
+                .setConstant(a.getConstant() * multiplier)
+                .setBpt(a.getBpt() * multiplier)
+                .setVpt(a.getVpt() * multiplier)
+                .setRbh(a.getRbh() * multiplier)
+                .setSbh(a.getSbh() * multiplier)
+                .setGas(a.getGas() * multiplier)
+                .setTv(a.getTv() * multiplier)
+                .setBpr(a.getBpr() * multiplier)
+                .setSbpr(a.getSbpr() * multiplier)
+                .build();
     }
 }

@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -97,8 +98,7 @@ public class FeeContextImpl implements FeeContext {
     }
 
     @NonNull
-    @Override
-    public FeeCalculator feeCalculator(@NonNull SubType subType) {
+    private FeeCalculator createFeeCalculator(@NonNull SubType subType) {
         // For mono-service compatibility, we treat the sig map size as the number of verifications
         final var numVerifications = txInfo.signatureMap().sigPair().size();
         final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
@@ -112,6 +112,12 @@ public class FeeContextImpl implements FeeContext {
                 subType,
                 false,
                 storeFactory);
+    }
+
+    @NonNull
+    @Override
+    public FeeCalculatorFactory feeCalculatorFactory() {
+        return this::createFeeCalculator;
     }
 
     @NonNull

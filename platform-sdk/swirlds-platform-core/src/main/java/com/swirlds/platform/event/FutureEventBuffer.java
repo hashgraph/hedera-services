@@ -42,7 +42,7 @@ public interface FutureEventBuffer {
      */
     @InputWireLabel("preconsensus event")
     @Nullable
-    List<GossipEvent> addEvent(@NonNull GossipEvent event);
+    List<PlatformEvent> addEvent(@NonNull PlatformEvent event);
 
     /**
      * Update the current event window. As the event window advances, time catches up to time travelers, and events that
@@ -53,7 +53,7 @@ public interface FutureEventBuffer {
      */
     @InputWireLabel("event window")
     @Nullable
-    List<GossipEvent> updateEventWindow(@NonNull EventWindow eventWindow);
+    List<PlatformEvent> updateEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Clear all data from the future event buffer.

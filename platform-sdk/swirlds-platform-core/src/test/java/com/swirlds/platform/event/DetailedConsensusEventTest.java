@@ -58,10 +58,10 @@ public class DetailedConsensusEventTest {
 
     private DetailedConsensusEvent generateConsensusEvent() {
         final Randotron random = Randotron.create(68651684861L);
-        final GossipEvent gossipEvent = new TestingEventBuilder(random)
+        final PlatformEvent platformEvent = new TestingEventBuilder(random)
                 .setConsensusTimestamp(random.nextInstant())
                 .build();
 
-        return new DetailedConsensusEvent(gossipEvent, random.nextPositiveLong(), random.nextBoolean());
+        return new DetailedConsensusEvent(platformEvent, random.nextPositiveLong(), random.nextBoolean());
     }
 }

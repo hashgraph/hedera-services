@@ -41,7 +41,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -323,7 +323,7 @@ public final class EventRecoveryWorkflow {
         ReservedSignedState signedState = initialState;
 
         // Apply events to the state
-        GossipEvent lastEvent = null;
+        PlatformEvent lastEvent = null;
         while (roundIterator.hasNext()
                 && (finalRound == -1 || roundIterator.peek().getRoundNum() <= finalRound)) {
             final StreamedRound round = roundIterator.next();
@@ -379,7 +379,7 @@ public final class EventRecoveryWorkflow {
         previousState.get().getState().throwIfImmutable();
         final MerkleRoot newState = previousState.get().getState().copy();
         final DetailedConsensusEvent lastEvent = (DetailedConsensusEvent) getLastEvent(round);
-        new StatefulEventHasher().hashEvent(lastEvent.getGossipEvent());
+        new StatefulEventHasher().hashEvent(lastEvent.getPlatformEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 
@@ -392,7 +392,7 @@ public final class EventRecoveryWorkflow {
                 lastEvent.getConsensusOrder(),
                 currentRoundTimestamp,
                 config,
-                lastEvent.getGossipEvent()));
+                lastEvent.getPlatformEvent()));
         platformState.setCreationSoftwareVersion(
                 previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
