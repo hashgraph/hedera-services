@@ -16,32 +16,19 @@
 
 package com.swirlds.platform.internal;
 
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.stream.StreamAligned;
-import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.EventMetadata;
-import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,29 +40,12 @@ import java.util.TreeSet;
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.
  */
-@ConstructableIgnored
-public class EventImpl extends EventMetadata
-        implements Comparable<EventImpl>,
-                ConsensusEvent,
-                SerializableHashable,
-                SelfSerializable,
-                RunningHashable,
-                StreamAligned,
-                Timestamped {
+public class EventImpl extends EventMetadata implements Comparable<EventImpl>, ConsensusEvent {
 
     /** The base event information, including some gossip specific information */
     private GossipEvent baseEvent;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
-    /**
-     * The consensus hash of this event. This hash includes all information for an event that was a result of it
-     * reaching consensus. So the hash includes the consensus timestamp, the consensus order and other consensus info.
-     * This hash should not be confused with the hash of the base event which is calculated before consensus is reached,
-     * right after the event is created.
-     */
-    private Hash hash = null;
-
-    private RunningHash runningHash;
 
     /**
      * An unmodifiable ordered set of system transaction indices in the array of all transactions, from lowest to
@@ -96,15 +66,6 @@ public class EventImpl extends EventMetadata
         this(gossipEvent, new ConsensusData(), null, null);
     }
 
-    /**
-     * Create an instance based on the given {@link DetailedConsensusEvent}
-     * @param detailedConsensusEvent the detailed consensus event to build from
-     */
-    public EventImpl(@NonNull final DetailedConsensusEvent detailedConsensusEvent) {
-        Objects.requireNonNull(detailedConsensusEvent);
-        buildFromConsensusEvent(detailedConsensusEvent);
-    }
-
     private EventImpl(
             final GossipEvent baseEvent,
             final ConsensusData consensusData,
@@ -112,22 +73,13 @@ public class EventImpl extends EventMetadata
             final EventImpl otherParent) {
         super(selfParent, otherParent);
         Objects.requireNonNull(baseEvent, "baseEvent");
-        Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
         Objects.requireNonNull(baseEvent.getSignature(), "signature");
         Objects.requireNonNull(consensusData, "consensusData");
 
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;
 
-        setDefaultValues();
         findSystemTransactions();
-    }
-
-    /**
-     * initialize RunningHash instance
-     */
-    private void setDefaultValues() {
-        runningHash = new RunningHash();
     }
 
     /**
@@ -168,63 +120,6 @@ public class EventImpl extends EventMetadata
         return Long.compare(getGeneration(), other.getGeneration());
     }
 
-    //////////////////////////////////////////
-    // Serialization methods
-    // Note: this class serializes itself as a com.swirlds.common.event.ConsensusEvent object
-    //////////////////////////////////////////
-
-    /**
-     * This class serializes itself as a {@link DetailedConsensusEvent} object
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        DetailedConsensusEvent.serialize(
-                out, baseEvent, consensusData.getRoundReceived(), consensusData.isLastInRoundReceived());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final DetailedConsensusEvent consensusEvent = new DetailedConsensusEvent();
-        consensusEvent.deserialize(in, version);
-        buildFromConsensusEvent(consensusEvent);
-    }
-
-    /**
-     * build current Event from consensusEvent
-     *
-     * @param consensusEvent the consensus event to build from
-     */
-    void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
-        baseEvent = consensusEvent.getGossipEvent();
-        // clears metadata in case there is any
-        super.clear();
-
-        setDefaultValues();
-        findSystemTransactions();
-        consensusData = new ConsensusData();
-        consensusData.setRoundReceived(consensusEvent.getRoundReceived());
-        consensusData.setLastInRoundReceived(consensusEvent.isLastInRoundReceived());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return DetailedConsensusEvent.CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return DetailedConsensusEvent.CLASS_VERSION;
-    }
-
     /**
      * Iterates through all the transactions and stores the indices of the system transactions.
      */
@@ -253,21 +148,6 @@ public class EventImpl extends EventMetadata
      */
     public int getNumAppTransactions() {
         return numAppTransactions;
-    }
-
-    /**
-     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all consensus
-     * data is set.
-     */
-    public void consensusReached() {
-        final ConsensusTransactionImpl[] transactions = getTransactions();
-        if (transactions == null) {
-            return;
-        }
-
-        for (int i = 0; i < transactions.length; i++) {
-            transactions[i].setConsensusTimestamp(EventUtils.getTransactionTime(baseEvent, i));
-        }
     }
 
     /**
@@ -304,17 +184,21 @@ public class EventImpl extends EventMetadata
     }
 
     /**
-     * @return The hashed part of a base event
+     * Check if the event has a self parent.
+     *
+     * @return true if the event has a self parent
      */
-    public BaseEventHashedData getHashedData() {
-        return baseEvent.getHashedData();
+    public boolean hasSelfParent() {
+        return baseEvent.getSelfParent() != null;
     }
 
     /**
-     * @return Consensus data calculated for an event
+     * Check if the event has other parents.
+     *
+     * @return true if the event has other parents
      */
-    public ConsensusData getConsensusData() {
-        return consensusData;
+    public boolean hasOtherParent() {
+        return !baseEvent.getOtherParents().isEmpty();
     }
 
     //////////////////////////////////////////
@@ -348,32 +232,8 @@ public class EventImpl extends EventMetadata
     // ConsensusData
     //////////////////////////////////////////
 
-    /**
-     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
-     */
-    @Deprecated(forRemoval = true)
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
-    }
-
-    /**
-     * is this event the last in consensus order of all those with the same received round
-     *
-     * @return is this event the last in consensus order of all those with the same received round
-     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one
-     *     can be determined by looking at its position within the round
-     */
-    @Deprecated(forRemoval = true)
-    public boolean isLastInRoundReceived() {
-        return consensusData.isLastInRoundReceived();
-    }
-
-    /**
-     * @deprecated this will be remove once we start serializing {@link DetailedConsensusEvent} instead of {@link EventImpl}
-     */
-    @Deprecated(forRemoval = true)
-    public void setLastInRoundReceived(final boolean lastInRoundReceived) {
-        consensusData.setLastInRoundReceived(lastInRoundReceived);
     }
 
     //////////////////////////////////////////
@@ -448,43 +308,11 @@ public class EventImpl extends EventMetadata
      * @return true iff this event has no transactions
      */
     public boolean isEmpty() {
-        return getTransactions() == null || getTransactions().length == 0;
+        return baseEvent.getPayloadCount() == 0;
     }
 
     @Override
     public String toString() {
         return baseEvent.toString();
-    }
-
-    //
-    // Timestamped
-    //
-
-    @Override
-    public Instant getTimestamp() {
-        return getConsensusTimestamp();
-    }
-
-    //
-    // RunningHashable
-    //
-
-    @Override
-    public RunningHash getRunningHash() {
-        return runningHash;
-    }
-
-    //
-    // Hashable
-    //
-
-    @Override
-    public Hash getHash() {
-        return hash;
-    }
-
-    @Override
-    public void setHash(final Hash hash) {
-        this.hash = hash;
     }
 }

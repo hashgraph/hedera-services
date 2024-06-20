@@ -29,24 +29,12 @@ public class IndexedEvent extends EventImpl {
 
     private long generatorIndex;
 
-    private static final long CLASS_ID = 0x284d35dc6f9265d0L;
-
-    public IndexedEvent() {}
-
     public IndexedEvent(final GossipEvent gossipEvent) {
         super(gossipEvent);
     }
 
     public IndexedEvent(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
         super(gossipEvent, selfParent, otherParent);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
     }
 
     /** Get the index of this event with respect to the generator that created it. */

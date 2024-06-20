@@ -103,7 +103,9 @@ public final class FeeManager {
     }
 
     /**
-     * Updates the fee schedule based on the given file content. THIS MUST BE CALLED ON THE HANDLE THREAD!!
+     * Updates the fee schedule based on the given file content.
+     *
+     * <p>IMPORTANT:</p> This can only be called when initializing a state or handling a transaction.
      *
      * @param bytes The new fee schedule file content.
      */

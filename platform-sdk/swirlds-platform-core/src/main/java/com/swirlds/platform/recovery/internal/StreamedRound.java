@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
@@ -31,17 +32,21 @@ import java.util.Objects;
  */
 public class StreamedRound implements Round {
 
-    private final List<EventImpl> events;
+    private final List<DetailedConsensusEvent> events;
     private final long roundNumber;
     private final Instant consensusTimestamp;
     private final AddressBook consensusRoster;
 
     public StreamedRound(
-            @NonNull final AddressBook consensusRoster, @NonNull final List<EventImpl> events, final long roundNumber) {
+            @NonNull final AddressBook consensusRoster,
+            @NonNull final List<DetailedConsensusEvent> events,
+            final long roundNumber) {
         this.events = events;
         this.roundNumber = roundNumber;
-        events.forEach(EventImpl::consensusReached);
-        consensusTimestamp = events.get(events.size() - 1).getConsensusTimestamp();
+        events.stream()
+                .map(DetailedConsensusEvent::getGossipEvent)
+                .forEach(GossipEvent::setConsensusTimestampsOnPayloads);
+        consensusTimestamp = events.get(events.size() - 1).getGossipEvent().getConsensusTimestamp();
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
     }
 
@@ -51,7 +56,7 @@ public class StreamedRound implements Round {
     @Override
     @NonNull
     public Iterator<ConsensusEvent> iterator() {
-        final Iterator<EventImpl> iterator = events.iterator();
+        final Iterator<DetailedConsensusEvent> iterator = events.iterator();
         return new Iterator<>() {
             @Override
             public boolean hasNext() {
@@ -60,9 +65,13 @@ public class StreamedRound implements Round {
 
             @Override
             public ConsensusEvent next() {
-                return iterator.next();
+                return iterator.next().getGossipEvent();
             }
         };
+    }
+
+    public @NonNull List<DetailedConsensusEvent> getEvents() {
+        return events;
     }
 
     /**

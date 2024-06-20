@@ -125,6 +125,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
             @NonNull final EthereumTransactionBody op,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final Configuration config) {
+        requireNonNull(op);
+        requireNonNull(config);
+        requireNonNull(fileStore);
         try {
             return computeEthTxSigsFor(op, fileStore, config);
         } catch (PreCheckException ignore) {

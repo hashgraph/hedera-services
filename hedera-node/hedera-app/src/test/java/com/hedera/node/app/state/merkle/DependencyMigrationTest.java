@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,10 +24,9 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.OrderedServiceMigrator;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -75,16 +75,6 @@ class DependencyMigrationTest extends MerkleTestBase {
 
     @Nested
     @SuppressWarnings("DataFlowIssue")
-    final class ConstructorTests {
-        @Test
-        void servicesRegistryRequired() {
-            Assertions.assertThatThrownBy(() -> new OrderedServiceMigrator(null))
-                    .isInstanceOf(NullPointerException.class);
-        }
-    }
-
-    @Nested
-    @SuppressWarnings("DataFlowIssue")
     @ExtendWith(MockitoExtension.class)
     final class DoMigrationsNullParams {
         @Mock
@@ -92,41 +82,65 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         @Test
         void stateRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry);
+            final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            null, CURRENT_VERSION, null, VERSIONED_CONFIG, networkInfo, mock(Metrics.class)))
+                            null,
+                            servicesRegistry,
+                            null,
+                            CURRENT_VERSION,
+                            VERSIONED_CONFIG,
+                            networkInfo,
+                            mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void currentVersionRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry);
+            final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, null, null, VERSIONED_CONFIG, networkInfo, mock(Metrics.class)))
+                            merkleTree,
+                            servicesRegistry,
+                            null,
+                            null,
+                            VERSIONED_CONFIG,
+                            networkInfo,
+                            mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void versionedConfigRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry);
+            final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, CURRENT_VERSION, null, null, networkInfo, mock(Metrics.class)))
+                            merkleTree,
+                            servicesRegistry,
+                            null,
+                            CURRENT_VERSION,
+                            null,
+                            networkInfo,
+                            mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void networkInfoRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry);
+            final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, CURRENT_VERSION, null, VERSIONED_CONFIG, null, mock(Metrics.class)))
+                            merkleTree,
+                            servicesRegistry,
+                            null,
+                            CURRENT_VERSION,
+                            VERSIONED_CONFIG,
+                            null,
+                            mock(Metrics.class)))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void metricsRequired() {
-            final var subject = new OrderedServiceMigrator(servicesRegistry);
+            final var subject = new OrderedServiceMigrator();
             Assertions.assertThatThrownBy(() -> subject.doMigrations(
-                            merkleTree, CURRENT_VERSION, null, VERSIONED_CONFIG, networkInfo, null))
+                            merkleTree, servicesRegistry, null, CURRENT_VERSION, VERSIONED_CONFIG, networkInfo, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -135,7 +149,7 @@ class DependencyMigrationTest extends MerkleTestBase {
     @DisplayName("Genesis inter-service dependency migration works")
     void genesisWithNullVersion() {
         // Given: register the EntityIdService and the DependentService (order of registration shouldn't matter)
-        final var servicesRegistry = new ServicesRegistryImpl(registry, new NoOpGenesisRecordsBuilder());
+        final var servicesRegistry = new ServicesRegistryImpl(registry, DEFAULT_CONFIG);
         final var entityService = new EntityIdService() {
             @Override
             public void registerSchemas(@NonNull final SchemaRegistry registry) {
@@ -157,11 +171,12 @@ class DependencyMigrationTest extends MerkleTestBase {
         Set.of(entityService, dsService).forEach(service -> servicesRegistry.register(service));
 
         // When: the migrations are run
-        final var subject = new OrderedServiceMigrator(servicesRegistry);
+        final var subject = new OrderedServiceMigrator();
         subject.doMigrations(
                 merkleTree,
-                SemanticVersion.newBuilder().major(2).build(),
+                servicesRegistry,
                 null,
+                SemanticVersion.newBuilder().major(2).build(),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
@@ -191,7 +206,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         // Given: register four services, each with their own schema migration, that will add an object to
         // orderedInvocations during migration. We'll do this to track the order of the service migrations
-        final var servicesRegistry = new ServicesRegistryImpl(registry, new NoOpGenesisRecordsBuilder());
+        final var servicesRegistry = new ServicesRegistryImpl(registry, DEFAULT_CONFIG);
         // Define the Entity ID Service:
         final EntityIdService entityIdService = new EntityIdService() {
             @Override
@@ -257,11 +272,12 @@ class DependencyMigrationTest extends MerkleTestBase {
         List.of(dsService, serviceA, entityIdService, serviceB).forEach(service -> servicesRegistry.register(service));
 
         // When: the migrations are run
-        final var subject = new OrderedServiceMigrator(servicesRegistry);
+        final var subject = new OrderedServiceMigrator();
         subject.doMigrations(
                 merkleTree,
-                SemanticVersion.newBuilder().major(1).build(),
+                servicesRegistry,
                 null,
+                SemanticVersion.newBuilder().major(1).build(),
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class));
