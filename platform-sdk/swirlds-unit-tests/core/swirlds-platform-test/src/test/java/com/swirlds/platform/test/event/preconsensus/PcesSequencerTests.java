@@ -23,7 +23,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.utility.ValueReference;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.DefaultPcesSequencer;
 import com.swirlds.platform.event.preconsensus.PcesSequencer;
 import org.junit.jupiter.api.DisplayName;
@@ -39,8 +39,8 @@ class PcesSequencerTests {
 
         long prev = -1;
         for (int i = 0; i < 1000; i++) {
-            final ValueReference<Long> seq = new ValueReference<>(GossipEvent.NO_STREAM_SEQUENCE_NUMBER);
-            final GossipEvent event = mock(GossipEvent.class);
+            final ValueReference<Long> seq = new ValueReference<>(PlatformEvent.NO_STREAM_SEQUENCE_NUMBER);
+            final PlatformEvent event = mock(PlatformEvent.class);
             doAnswer(invocation -> {
                         seq.setValue(invocation.getArgument(0));
                         return null;
@@ -60,7 +60,7 @@ class PcesSequencerTests {
     void setValueTwiceTest() {
         final PcesSequencer sequencer = new DefaultPcesSequencer();
 
-        final GossipEvent event = new GossipEvent();
+        final PlatformEvent event = new PlatformEvent();
 
         sequencer.assignStreamSequenceNumber(event);
         assertThrows(IllegalStateException.class, () -> sequencer.assignStreamSequenceNumber(event));

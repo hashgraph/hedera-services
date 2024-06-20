@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.suites.HapiSuite.ZERO_ADDRESS;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType.FREEZE_KEY;
@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVIDED;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
@@ -47,6 +48,8 @@ import org.junit.jupiter.api.Tag;
 @SuppressWarnings("java:S1192")
 @HapiTestLifecycle
 public class GetTokenKeyPrecompileTest {
+    private static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
+
     @ContractSpec(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
     static SpecContract getTokenKeyContract;
 

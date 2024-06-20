@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -52,8 +51,7 @@ public class EventMigrationTest {
      * The file being read is from mainnet written by the SDK 0.46.3.
      * <p>
      * Even though this could be considered a platform test, it needs to be in the services module because the event
-     * contains a {@link com.hedera.node.app.service.mono.context.properties.SerializableSemVers} which is a services
-     * class
+     * contains a {@link SerializableSemVers} which is a services class
      */
     @Test
     public void migration() throws URISyntaxException, IOException {
@@ -69,11 +67,11 @@ public class EventMigrationTest {
                         .toPath(),
                 false)) {
             while (iterator.hasNext()) {
-                final GossipEvent gossipEvent = iterator.next().getGossipEvent();
-                new StatefulEventHasher().hashEvent(gossipEvent);
+                final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
+                new StatefulEventHasher().hashEvent(platformEvent);
                 numEvents++;
-                eventHashes.add(gossipEvent.getHash());
-                gossipEvent.getAllParents().stream()
+                eventHashes.add(platformEvent.getHash());
+                platformEvent.getAllParents().stream()
                         .filter(Objects::nonNull)
                         .map(EventDescriptor::getHash)
                         .forEach(parentHashes::add);

@@ -18,64 +18,31 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.schemas.SyntheticRecordsGenerator;
+import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
-import java.util.SortedSet;
-import java.util.function.Supplier;
+import java.time.ZoneId;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
-    private final Supplier<SortedSet<Account>> sysAccts;
-    private final Supplier<SortedSet<Account>> stakingAccts;
-    private final Supplier<SortedSet<Account>> treasuryAccts;
-    private final Supplier<SortedSet<Account>> miscAccts;
-    private final Supplier<SortedSet<Account>> blocklistAccts;
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    public static final long MAX_SERIAL_NO_ALLOWED = 0xFFFFFFFFL;
+    public static final long HBARS_TO_TINYBARS = 100_000_000L;
+    public static final String AUTO_MEMO = "auto-created account";
+    public static final String LAZY_MEMO = "lazy-created account";
+    public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
 
-    /**
-     * Constructor for the token service. Each of the given suppliers should produce a {@link SortedSet}
-     * of {@link Account} objects, where each account object represents a SYNTHETIC RECORD (see {@link
-     * SyntheticRecordsGenerator} for more details). Even though these sorted sets contain account objects,
-     * these account objects may or may not yet exist in state. They're needed for event recovery circumstances
-     * @param sysAccts the supplier for system accounts
-     * @param stakingAccts the supplier for staking accounts
-     * @param treasuryAccts the supplier for treasury accounts
-     * @param miscAccts the supplier for miscellaneous accounts
-     * @param blocklistAccts the supplier for blocklisted accounts
-     */
-    public TokenServiceImpl(
-            @NonNull final Supplier<SortedSet<Account>> sysAccts,
-            @NonNull final Supplier<SortedSet<Account>> stakingAccts,
-            @NonNull final Supplier<SortedSet<Account>> treasuryAccts,
-            @NonNull final Supplier<SortedSet<Account>> miscAccts,
-            @NonNull final Supplier<SortedSet<Account>> blocklistAccts) {
-        this.sysAccts = requireNonNull(sysAccts);
-        this.stakingAccts = requireNonNull(stakingAccts);
-        this.treasuryAccts = requireNonNull(treasuryAccts);
-        this.miscAccts = requireNonNull(miscAccts);
-        this.blocklistAccts = requireNonNull(blocklistAccts);
-    }
-
-    /**
-     * Necessary default constructor. See all params constructor for more details
-     */
     public TokenServiceImpl() {
-        this.sysAccts = Collections::emptySortedSet;
-        this.stakingAccts = Collections::emptySortedSet;
-        this.treasuryAccts = Collections::emptySortedSet;
-        this.miscAccts = Collections::emptySortedSet;
-        this.blocklistAccts = Collections::emptySortedSet;
+        // No-op
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0490TokenSchema(sysAccts, stakingAccts, treasuryAccts, miscAccts, blocklistAccts));
+        registry.register(new V0490TokenSchema(new SyntheticAccountCreator()));
         registry.register(new V0500TokenSchema());
     }
 }

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
@@ -33,13 +33,13 @@ import java.util.Random;
 public abstract class ConsensusUtils {
 
     public static void loadEventsIntoGenerator(
-            @NonNull final List<GossipEvent> events,
+            @NonNull final List<PlatformEvent> events,
             @NonNull final GraphGenerator<?> generator,
             @NonNull final Random random) {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
             final EventSource<?> source = generator.getSource(address.getNodeId());
-            final List<GossipEvent> eventsByCreator = events.stream()
+            final List<PlatformEvent> eventsByCreator = events.stream()
                     .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
                     .toList();
             eventsByCreator.forEach(e -> {
@@ -47,7 +47,7 @@ public abstract class ConsensusUtils {
                 source.setLatestEvent(random, indexedEvent);
             });
             final Instant creatorMax = eventsByCreator.stream()
-                    .max(Comparator.comparingLong(GossipEvent::getGeneration))
+                    .max(Comparator.comparingLong(PlatformEvent::getGeneration))
                     .map(e -> e.getTimeCreated())
                     .orElse(Instant.MIN);
             lastTimestamp = Collections.max(Arrays.asList(lastTimestamp, creatorMax));

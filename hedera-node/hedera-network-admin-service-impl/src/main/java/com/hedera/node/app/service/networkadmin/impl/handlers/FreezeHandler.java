@@ -21,21 +21,20 @@ import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
-import com.hedera.node.app.service.mono.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -148,6 +147,8 @@ public class FreezeHandler implements TransactionHandler {
         final var txn = context.body();
         final NetworkAdminConfig adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
         final ReadableUpgradeFileStore upgradeFileStore = context.readableStore(ReadableUpgradeFileStore.class);
+        final ReadableNodeStore nodeStore = context.readableStore(ReadableNodeStore.class);
+        final ReadableStakingInfoStore stakingInfoStore = context.readableStore(ReadableStakingInfoStore.class);
         final WritableFreezeStore freezeStore = context.writableStore(WritableFreezeStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
@@ -157,8 +158,8 @@ public class FreezeHandler implements TransactionHandler {
         final FileID updateFileID = freezeTxn.updateFile();
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
 
-        final FreezeUpgradeActions upgradeActions =
-                new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore);
+        final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(
+                adminServiceConfig, freezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
 
         switch (freezeTxn.freezeType()) {
@@ -208,10 +209,8 @@ public class FreezeHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
-        final var op = feeContext.body();
-
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new FreezeResourceUsage()
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        // Can only reach consensus with a privileged account as payer
+        return Fees.FREE;
     }
 
     /**

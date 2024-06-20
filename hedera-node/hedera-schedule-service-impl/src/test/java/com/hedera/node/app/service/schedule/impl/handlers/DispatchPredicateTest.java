@@ -16,20 +16,54 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.A_THRESHOLD_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class DispatchPredicateTest {
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Key.Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+    public static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
+            .build();
 
     private Set<Key> validKeys;
     private DispatchPredicate predicate;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 
 /**
@@ -29,24 +29,12 @@ public class IndexedEvent extends EventImpl {
 
     private long generatorIndex;
 
-    private static final long CLASS_ID = 0x284d35dc6f9265d0L;
-
-    public IndexedEvent() {}
-
-    public IndexedEvent(final GossipEvent gossipEvent) {
-        super(gossipEvent);
+    public IndexedEvent(final PlatformEvent platformEvent) {
+        super(platformEvent);
     }
 
-    public IndexedEvent(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
-        super(gossipEvent, selfParent, otherParent);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
+    public IndexedEvent(final PlatformEvent platformEvent, final EventImpl selfParent, final EventImpl otherParent) {
+        super(platformEvent, selfParent, otherParent);
     }
 
     /** Get the index of this event with respect to the generator that created it. */

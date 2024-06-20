@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -56,8 +56,8 @@ public class InputEventsValidation {
      */
     private static void assertBaseEventLists(
             @NonNull final String description,
-            @NonNull final List<GossipEvent> l1,
-            @NonNull final List<GossipEvent> l2,
+            @NonNull final List<PlatformEvent> l1,
+            @NonNull final List<PlatformEvent> l2,
             final boolean shouldBeEqual) {
 
         if (l1.size() != l2.size()) {
@@ -65,8 +65,8 @@ public class InputEventsValidation {
         }
 
         for (int index = 0; index < l1.size(); index++) {
-            final GossipEvent e1 = l1.get(index);
-            final GossipEvent e2 = l2.get(index);
+            final PlatformEvent e1 = l1.get(index);
+            final PlatformEvent e2 = l2.get(index);
             final boolean equals = e1.equalsGossipedData(e2);
             if (shouldBeEqual && !equals) {
                 final String sb = description

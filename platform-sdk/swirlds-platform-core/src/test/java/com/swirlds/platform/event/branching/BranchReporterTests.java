@@ -25,7 +25,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -56,12 +56,12 @@ class BranchReporterTests {
         reporter.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             events.addAll(generateSimpleSequenceOfEvents(randotron, nodeId, ancientThreshold, 512));
         }
 
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             reporter.reportBranch(event);
 
             if (randotron.nextBoolean(0.1)) {
@@ -98,12 +98,12 @@ class BranchReporterTests {
         reporter.updateEventWindow(
                 new EventWindow(1 /* ignored */, ancientThreshold, 1 /* ignored */, BIRTH_ROUND_THRESHOLD));
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             events.addAll(generateSimpleSequenceOfEvents(randotron, nodeId, ancientThreshold, 512));
         }
 
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             reporter.reportBranch(event);
 
             if (randotron.nextBoolean(0.01)) {
@@ -131,7 +131,7 @@ class BranchReporterTests {
 
         final DefaultBranchReporter reporter = new DefaultBranchReporter(platformContext, addressBook);
 
-        final GossipEvent event = new TestingEventBuilder(randotron)
+        final PlatformEvent event = new TestingEventBuilder(randotron)
                 .setCreatorId(addressBook.getNodeId(0))
                 .build();
         assertThrows(IllegalStateException.class, () -> reporter.reportBranch(event));

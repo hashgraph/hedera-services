@@ -25,8 +25,4 @@ public enum AutoSnapshotRecordSource {
      * The record stream source is a {@link com.hedera.services.bdd.junit.HapiTest} network.
      */
     HAPI_TEST,
-    /**
-     * The record stream source is a standalone mono-service network.
-     */
-    MONO_SERVICE
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -28,7 +29,7 @@ import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
-import com.hedera.services.bdd.junit.hedera.AbstractNode;
+import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.swirlds.base.function.BooleanFunction;
@@ -47,7 +48,7 @@ import java.util.regex.Pattern;
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
-public class SubProcessNode extends AbstractNode implements HederaNode {
+public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements HederaNode {
     /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
@@ -72,10 +73,6 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
      */
     @Nullable
     private ProcessHandle processHandle;
-    /**
-     * Whether the working directory has been initialized.
-     */
-    private boolean workingDirInitialized;
 
     public SubProcessNode(
             @NonNull final NodeMetadata metadata,
@@ -83,7 +80,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
             @NonNull final PrometheusClient prometheusClient) {
         super(metadata);
         this.grpcPinger = requireNonNull(grpcPinger);
-        this.statusPattern = Pattern.compile(".*Hederanode#" + getNodeId() + " is (\\w+)");
+        this.statusPattern = Pattern.compile(".*HederaNode#" + getNodeId() + " is (\\w+)");
         this.prometheusClient = requireNonNull(prometheusClient);
         // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.app
         requireNonNull(Hedera.class);
@@ -91,7 +88,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
 
     @Override
     public SubProcessNode initWorkingDir(@NonNull final String configTxt) {
-        recreateWorkingDir(metadata.workingDir(), configTxt);
+        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
         workingDirInitialized = true;
         return this;
     }
@@ -150,6 +147,11 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         return "SubProcessNode{" + "metadata=" + metadata + ", workingDirInitialized=" + workingDirInitialized + '}';
     }
 
+    @Override
+    protected SubProcessNode self() {
+        return this;
+    }
+
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
         if (processHandle == null) {
             return false;
@@ -165,15 +167,9 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         }
     }
 
-    private void assertWorkingDirInitialized() {
-        if (!workingDirInitialized) {
-            throw new IllegalStateException("Working directory not initialized");
-        }
-    }
-
     private StatusLookupAttempt statusFromLog() {
         final AtomicReference<String> status = new AtomicReference<>();
-        try (final var lines = Files.lines(getApplicationLogPath())) {
+        try (final var lines = Files.lines(getExternalPath(APPLICATION_LOG))) {
             lines.map(statusPattern::matcher).filter(Matcher::matches).forEach(matcher -> status.set(matcher.group(1)));
             return newLogAttempt(status.get(), status.get() == null ? "No status line in log" : null);
         } catch (IOException e) {

@@ -22,7 +22,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
@@ -103,7 +103,7 @@ public class DefaultBirthRoundMigrationShim implements BirthRoundMigrationShim {
      */
     @Override
     @NonNull
-    public GossipEvent migrateEvent(@NonNull final GossipEvent event) {
+    public PlatformEvent migrateEvent(@NonNull final PlatformEvent event) {
         if (CompareTo.isLessThan(event.getSoftwareVersion(), firstVersionInBirthRoundMode)) {
             // The event was created before the birth round mode was enabled.
             // We need to migrate the event's birth round.

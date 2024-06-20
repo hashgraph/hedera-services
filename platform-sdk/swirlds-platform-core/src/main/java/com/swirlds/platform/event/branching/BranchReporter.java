@@ -18,7 +18,7 @@ package com.swirlds.platform.event.branching;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -31,7 +31,7 @@ public interface BranchReporter {
      *
      * @param event the branching event
      */
-    void reportBranch(@NonNull GossipEvent event);
+    void reportBranch(@NonNull PlatformEvent event);
 
     /**
      * Update the event window.  This should be called whenever the event window is updated and before the first

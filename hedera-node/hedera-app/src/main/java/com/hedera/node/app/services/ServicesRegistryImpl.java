@@ -21,8 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.SchemaApplications;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.Service;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -38,22 +38,27 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class ServicesRegistryImpl implements ServicesRegistry {
     private static final Logger logger = LogManager.getLogger(ServicesRegistryImpl.class);
+
     /** We have to register with the {@link ConstructableRegistry} based on the schemas of the services */
     private final ConstructableRegistry constructableRegistry;
     /** The set of registered services */
     private final SortedSet<Registration> entries;
-
-    private final GenesisRecordsBuilder genesisRecords;
+    /**
+     * The current bootstrap configuration of the network; note this ideally would be a
+     * provider of {@link com.hedera.node.config.VersionedConfiguration}s per version,
+     * in case a service's states evolved with changing config. But this is a very edge
+     * affordance that we have no example of needing.
+     */
+    private final Configuration bootstrapConfig;
 
     /**
      * Creates a new registry.
      */
     @Inject
     public ServicesRegistryImpl(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @NonNull final GenesisRecordsBuilder genesisRecords) {
+            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final Configuration bootstrapConfig) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
-        this.genesisRecords = requireNonNull(genesisRecords);
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.entries = new TreeSet<>();
     }
 
@@ -68,7 +73,7 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
 
         logger.debug("Registering schemas for service {}", serviceName);
         final var registry =
-                new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecords, new SchemaApplications());
+                new MerkleSchemaRegistry(constructableRegistry, serviceName, bootstrapConfig, new SchemaApplications());
         service.registerSchemas(registry);
 
         entries.add(new Registration(service, registry));
@@ -79,11 +84,5 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
     @Override
     public SortedSet<Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
-    }
-
-    @NonNull
-    @Override
-    public GenesisRecordsBuilder getGenesisRecords() {
-        return genesisRecords;
     }
 }

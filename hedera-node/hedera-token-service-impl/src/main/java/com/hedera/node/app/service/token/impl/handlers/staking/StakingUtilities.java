@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
