@@ -17,10 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.*;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.SUPPRESSING_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;

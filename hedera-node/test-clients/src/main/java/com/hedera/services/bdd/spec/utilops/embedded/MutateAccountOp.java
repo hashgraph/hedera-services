@@ -16,10 +16,10 @@
 
 package com.hedera.services.bdd.spec.utilops.embedded;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
@@ -38,7 +38,7 @@ public class MutateAccountOp extends UtilOp {
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var accounts = spec.embeddedAccountsOrThrow();
-        final var targetId = PbjConverter.toPbj(TxnUtils.asId(account, spec));
+        final var targetId = toPbj(TxnUtils.asId(account, spec));
         final var account = requireNonNull(accounts.get(targetId));
         final var builder = account.copyBuilder();
         mutation.accept(builder);

@@ -17,9 +17,6 @@
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static java.util.Objects.requireNonNull;
@@ -55,6 +52,10 @@ import org.apache.logging.log4j.Logger;
  */
 public class ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(ReadableFreezeUpgradeActions.class);
+
+    private static final com.hedera.hapi.node.base.FileID UPGRADE_FILE_ID =
+            com.hedera.hapi.node.base.FileID.newBuilder().fileNum(150L).build();
+
     private final NetworkAdminConfig adminServiceConfig;
     private final ReadableFreezeStore freezeStore;
     private final ReadableUpgradeFileStore upgradeFileStore;
@@ -282,7 +283,7 @@ public class ReadableFreezeUpgradeActions {
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled(platformState) && isUpgradePrepared) {
-            final var freezeTime = platformState.getFreezeTime();
+            final var freezeTime = requireNonNull(platformState.getFreezeTime());
             writeMarker(
                     FREEZE_SCHEDULED_MARKER,
                     Timestamp.newBuilder()
@@ -301,22 +302,23 @@ public class ReadableFreezeUpgradeActions {
             return;
         }
 
-        final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
         try {
-            final var curSpecialFileContents = upgradeFileStore.getFull(toPbj(upgradeFileId));
+            final var curSpecialFileContents = upgradeFileStore.getFull(UPGRADE_FILE_ID);
             if (!isPreparedFileHashValidGiven(
                     noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
                     freezeStore.updateFileHash().toByteArray())) {
                 log.error(
-                        "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
-                        () -> readableId(upgradeFileId));
+                        "Cannot redo NMT upgrade prep, file 0.0.{} changed since FREEZE_UPGRADE",
+                        UPGRADE_FILE_ID.fileNum());
                 log.error(MANUAL_REMEDIATION_ALERT);
                 return;
             }
             extractSoftwareUpgrade(curSpecialFileContents).join();
         } catch (final IOException e) {
             log.error(
-                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
+                    "Cannot redo NMT upgrade prep, file 0.0.{} changed since FREEZE_UPGRADE",
+                    UPGRADE_FILE_ID.fileNum(),
+                    e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }
