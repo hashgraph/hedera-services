@@ -130,7 +130,6 @@ The `HandleWorkflow` class is responsible for handling the platform transaction 
 The overall high level steps are as follows:
 
 1. Calls `BlockRecordManager` to update the new consensus time for the user transaction, puts the lastBlockInfo in state if needed.
-when blocks
 2. `UserTxnWorkflow` is called to handle the transaction and provide record stream
 3. Externalizes the record stream items
 4. Update metrics for the handled user transaction
@@ -140,8 +139,8 @@ when blocks
 
 ![User Transaction Workflow](images/user_txn_workflow.png)
 
-1. **SkipHandleWorkflow**: If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
-This writes a record with `BUSY` status and adds to record cache
+1. **SkipHandleWorkflow**: If the transaction is from older software, the transaction not be handled. 
+A record with `BUSY` status is added to record cache by calling `SkipHandleWorkflow`.
 2. **DefaultHandleWorkflow**: If the transaction is from a valid software version, we call `DefaultHandleWorkflow`. This workflow 
 handles valid user transaction. It has the following steps:
    - Exports synthetic records of system accounts creation that need to be externalized on genesis start 
@@ -189,7 +188,7 @@ methods in `DispatchHandleContext`, a new child dispatch is created and `Dispatc
    - If any HandleException is thrown, rolls back the complete stack and 
      charges the payer. The payer is charged again because when stack is rolled back the previous
      charges to the payer are rolled back as well. 
-   - If there is a `ThorttleException` thrown, stack is rolled back and payer is charged without serviceFee. 
+   - If there is a `ThrottleException` thrown, stack is rolled back and payer is charged without serviceFee. 
    - If there is any unhandled exception, stack is rolled back and payer is charged. The record is set to 
     `FAIL_INVALID` status. 
 6. **Track Utilization:** Tracks network utilization for the transaction handled
