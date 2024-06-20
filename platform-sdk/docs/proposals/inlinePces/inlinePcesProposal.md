@@ -154,11 +154,12 @@ Only Linux is used today in production deployments. Should MacOS or Windows be u
 into equivalent solutions for those platforms, or use something other than memory mapped files on those platforms, with
 a corresponding impact on time to finality for those hosts.
 
-In the short term, an implementation that does not use memory mapped files will be developed for use on MacOS and
-Windows. The goal of this solution is to allow developers to run the software locally. Since this will not be code
-we intend to deploy (in the short term), we just need to make it "fast enough" such that local tests work as intended.
-It will not be necessary to fine tune the performance of this implementation until we derive a use case that requires
-it.
+It's plausible that we may be able to get the main implementation functional on other OSes (perhaps with reduced
+consistency guarantees). If this is not plausible, an implementation that does not use memory mapped files will be
+developed for use on MacOS and Windows. The goal of this solution will be to allow developers to run the software
+locally. Since this will not be code we intend to deploy (in the short term), we will just need to make it
+"fast enough" such that local tests work as intended. It will not be necessary to fine tune the performance of this
+implementation until we derive a use case that requires it.
 
 The [Man Page for mmap(2)](https://man7.org/linux/man-pages/man2/mmap.2.html) on Linux describes the MAP_SYNC flag:
 
