@@ -152,9 +152,10 @@ handles valid user transaction. It has the following steps:
 
 
 #### DispatchProcessor overview:
-The `DispatchProcessor.processDispatch` will be called for user and child dispatches.
-For the child transactions, when a service calls `dispatchXXXTransaction` method in `DispatchHandleContext`, a
-new child dispatch is created and `DispatchProcessor.processDispatch` is called.
+The `DispatchProcessor.processDispatch` will be called for user and child dispatches. This avoids duplicating
+any logic between user and child transactions, since both are treated as dispatches.
+For the child transactions, when a service calls one of the [dispatchXXXTransaction](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/DispatchHandleContext.java#L459) 
+methods in `DispatchHandleContext`, a new child dispatch is created and `DispatchProcessor.processDispatch` is called.
 
 1. **Error Validation:** Checks if there is any error by node or user. It validates the following:
     - Checks the preHandleStatus is `NODE_DUE_DILIGENCE_FAILURE`.
