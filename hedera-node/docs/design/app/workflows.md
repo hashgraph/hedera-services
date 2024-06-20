@@ -99,11 +99,11 @@ All the transactions are handled by creating a Dispatch and executing business l
 - child transactions scope called `ChildDispatch`
 
 #### Dagger Scopes
-All the objects created while handling the transaction belong to one of the following Dagger scopes. 
+All the objects used while handling the transaction belong to one of the following Dagger scopes. 
 - **Singleton** - Objects that are created once and used for the entire lifecycle of the application.
-Examples include the `NodeInfo` and `RecordListBuilder`.
+Examples include the `NodeInfo` and `WorkingStateAccessor`.
 - **UserTxnScope** - Objects that are created once for platform transaction. 
-Examples include the `Configuration`, `HederaState` and `TokenContext`.
+Examples include the `Configuration`, `RecordListBuilder` and `TokenContext`.
 Dagger provides all the objects that can be constructed in this scope [here](https://github.com/hashgraph/hedera-services/tree/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/modules) 
 and [UserTxnComponent](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/UserTransactionComponent.java)
 takes all the inputs that are needed to execute the user transaction.
