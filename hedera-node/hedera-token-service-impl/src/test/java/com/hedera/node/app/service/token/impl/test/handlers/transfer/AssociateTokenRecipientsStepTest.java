@@ -31,10 +31,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -57,7 +57,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private FeeAccumulator feeAccumulator;
+    private TokenServiceApi tokenServiceApi;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -98,12 +98,12 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
+        given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
         subject.doIn(transferContext);
 
         verify(handleContext, times(2)).dispatchComputeFees(any(), any(), any());
-        verify(handleContext.feeAccumulator(), times(2)).chargeNetworkFee(any(), anyLong());
+        verify(tokenServiceApi, times(2)).chargeNetworkFee(any(), anyLong(), any());
     }
 
     void givenValidTxn() {

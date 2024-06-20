@@ -68,6 +68,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -571,10 +572,12 @@ class TokenAssociateToAccountHandlerTest {
             final var op = mock(TokenAssociateTransactionBody.class);
             final var account = mock(Account.class);
             final var readableAccountStore = mock(ReadableAccountStore.class);
+            final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
 
             given(config.getConfigData(EntitiesConfig.class)).willReturn(entitiesConfig);
             given(entitiesConfig.unlimitedAutoAssociationsEnabled()).willReturn(false);
-            given(feeContext.feeCalculatorFactory().feeCalculator(any())).willReturn(feeCalculator);
+            given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+            given(feeCalculatorFactory.feeCalculator(any())).willReturn(feeCalculator);
             given(feeContext.configuration()).willReturn(config);
             given(feeContext.body()).willReturn(body);
             given(body.tokenAssociateOrThrow()).willReturn(op);
@@ -697,10 +700,12 @@ class TokenAssociateToAccountHandlerTest {
             final var config = mock(Configuration.class);
             final var feeCalculator = mock(FeeCalculator.class);
             final var body = mock(TransactionBody.class);
+            final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
 
             given(config.getConfigData(EntitiesConfig.class)).willReturn(entitiesConfig);
             given(entitiesConfig.unlimitedAutoAssociationsEnabled()).willReturn(true);
-            given(feeContext.feeCalculatorFactory().feeCalculator(any())).willReturn(feeCalculator);
+            given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+            given(feeCalculatorFactory.feeCalculator(any())).willReturn(feeCalculator);
             given(feeContext.configuration()).willReturn(config);
             given(feeContext.body()).willReturn(body);
             given(body.tokenAssociateOrThrow()).willReturn(tokenAssociateTransactionBody);
