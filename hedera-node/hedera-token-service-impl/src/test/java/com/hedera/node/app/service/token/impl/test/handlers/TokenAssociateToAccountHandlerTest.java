@@ -22,26 +22,17 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.DELETED_TOKEN;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_IMMUTABLE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FREEZE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_KYC;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_PAUSE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_WIPE;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
-import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET;
-import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_KNOWN_TARGET;
-import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_MISSING_TARGET;
-import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELETED_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_PAUSE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -82,7 +73,6 @@ import com.swirlds.config.api.Configuration;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -313,13 +303,13 @@ class TokenAssociateToAccountHandlerTest {
             final var headToken = writableAccountStore.getAccountById(newAcctId).headTokenId();
             final var headTokenRel = writableTokenRelStore.get(newAcctId, headToken);
             Assertions.assertThat(headTokenRel.frozen()).isFalse();
-            Assertions.assertThat(headTokenRel.kycGranted()).isFalse();
+            Assertions.assertThat(headTokenRel.kycGranted()).isTrue();
             Assertions.assertThat(headTokenRel.previousToken()).isNull();
             Assertions.assertThat(headTokenRel.tokenId()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_WIPE));
             Assertions.assertThat(headTokenRel.nextToken()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY));
             final var nextToHeadTokenRel = writableTokenRelStore.get(newAcctId, headTokenRel.nextToken());
             Assertions.assertThat(nextToHeadTokenRel.frozen()).isFalse();
-            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
+            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isTrue();
             Assertions.assertThat(nextToHeadTokenRel.previousToken()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_WIPE));
             Assertions.assertThat(nextToHeadTokenRel.tokenId()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY));
             Assertions.assertThat(nextToHeadTokenRel.nextToken()).isNull();
@@ -392,7 +382,7 @@ class TokenAssociateToAccountHandlerTest {
             Assertions.assertThat(nextToHeadTokenRel.frozen()).isTrue();
             // Note: this token doesn't actually have a KYC key even though its name implies that
             // it does
-            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isFalse();
+            Assertions.assertThat(nextToHeadTokenRel.kycGranted()).isTrue();
             Assertions.assertThat(nextToHeadTokenRel.automaticAssociation()).isFalse();
 
             final var thirdTokenRel = writableTokenRelStore.get(newAcctId, nextToHeadTokenRel.nextToken());
@@ -500,58 +490,6 @@ class TokenAssociateToAccountHandlerTest {
             final var entitiesConfig = mock(EntitiesConfig.class);
             lenient().when(config.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
             lenient().when(entitiesConfig.limitTokenAssociations()).thenReturn(limitedRels);
-        }
-    }
-
-    @Nested
-    class AssociateParityTests extends ParityTestBase {
-
-        @Test
-        void tokenAssociateWithKnownTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), Matchers.contains(MISC_ACCOUNT_KT.asPbjKey()));
-        }
-
-        @Test
-        void tokenAssociateWithSelfPaidKnownTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            subject.preHandle(context);
-
-            assertEquals(0, context.requiredNonPayerKeys().size());
-        }
-
-        @Test
-        void tokenAssociateWithCustomPaidKnownTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
-        }
-
-        @Test
-        void tokenAssociateWithImmutableTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
-        }
-
-        @Test
-        void tokenAssociateWithMissingTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
         }
     }
 

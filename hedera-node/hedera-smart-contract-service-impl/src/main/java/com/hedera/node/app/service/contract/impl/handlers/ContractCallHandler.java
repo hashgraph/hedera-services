@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -28,11 +27,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractCallResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -54,6 +53,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class ContractCallHandler implements TransactionHandler {
     private final Provider<TransactionComponent.Factory> provider;
     private final GasCalculator gasCalculator;
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
     public ContractCallHandler(
@@ -102,7 +102,7 @@ public class ContractCallHandler implements TransactionHandler {
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new ContractCallResourceUsage(new SmartContractFeeBuilder())
-                        .usageGiven(fromPbj(op), sigValueObj, null));
+                .legacyCalculate(sigValueObj ->
+                        usageEstimator.getContractCallTxFeeMatrices(CommonPbjConverters.fromPbj(op), sigValueObj));
     }
 }
