@@ -148,45 +148,27 @@ Protobuf definition:
  * restart and reconnect.
  */
 message PlatformState {
-    /**
-     * A consensus round.<br/>
-     * The round represented by this state.
-     * <p>
-     * This message SHALL represent the network state after handling of all
-     * transactions reaching consensus in all previous rounds.<br/>
-     * The first state (genesis state) SHALL have a round of 0.<br/>
-     * The first round to handle transactions SHALL be round `1`.
-     */
-    uint64 round = 1;
-
-    /**
-     * A consensus timestamp for this state.
-     * <p>
-     * This SHALL be the consensus timestamp of the first transaction in
-     * the current round.
-     */
-    proto.Timestamp consensus_timestamp = 2;
 
     /**
      * A version describing the current version of application software.
      * <p>
      * This SHALL be the software version that created this state.
      */
-    proto.SemanticVersion creation_software_version = 3;
+    proto.SemanticVersion creation_software_version = 1;
 
     /**
      * A number of non-ancient rounds.
      * <p>
      * This SHALL be the count of rounds considered non-ancient.
      */
-    uint32 rounds_non_ancient = 4;
+    uint32 rounds_non_ancient = 2;
 
     /**
      * A snapshot of the consensus state at the end of the round.
      * <p>
      * This SHALL be used for restart/reconnect.
      */
-    ConsensusSnapshot consensus_snapshot = 5;
+    ConsensusSnapshot consensus_snapshot = 3;
 
     /**
      * A timestamp for the next scheduled time when a freeze will start.
@@ -195,13 +177,13 @@ message PlatformState {
      * If a freeze is currently scheduled, this MUST be set, and MUST
      * match the timestamp requested for that freeze.
      */
-    proto.Timestamp freeze_time = 6;
+    proto.Timestamp freeze_time = 4;
 
     /**
      * A timestamp for the last time a freeze was performed.<br/>
      * If not set, there has never been a freeze.
      */
-    proto.Timestamp last_frozen_time = 7;
+    proto.Timestamp last_frozen_time = 5;
 
     /**
      * A consensus node semantic version.<br/>
@@ -211,7 +193,7 @@ message PlatformState {
      * If birth round migration is complete, this SHALL be the _first_ software
      * version that enabled birth round mode.
      */
-    proto.SemanticVersion first_version_in_birth_round_mode = 8;
+    proto.SemanticVersion first_version_in_birth_round_mode = 6;
 
     // Fields below are to be deprecated in the foreseeable future.
 
@@ -251,7 +233,11 @@ message PlatformState {
  * and reconnect.
  */
 message ConsensusSnapshot {
-
+    /**
+     * A consensus round.<br/>
+     * The round number of this snapshot.
+     */
+    uint64 round = 1;
     /**
      * A list of SHA-384 hash values.<br/>
      * The hashes of all judges for this round.
@@ -259,19 +245,29 @@ message ConsensusSnapshot {
      * This list SHALL be ordered by creator ID.<br/>
      * This list MUST be deterministically ordered.
      */
-    repeated bytes judge_hashes = 1;
+    repeated bytes judge_hashes = 2;
 
     /**
      * A list of minimum judge information entries.<br/>
      * These are "minimum ancient" entries for non-ancient rounds.
      */
-    repeated MinimumJudgeInfo minimum_judge_info_list = 2;
+    repeated MinimumJudgeInfo minimum_judge_info_list = 3;
 
     /**
      * A single consensus number.<br/>
      * The consensus order of the next event to reach consensus.
      */
-    uint64 next_consensus_number = 3;
+    uint64 next_consensus_number = 4;
+
+    /**
+     * A "consensus" timestamp.<br/>
+     * The consensus timestamp of this snapshot.
+     * <p>
+     * This SHALL be a consensus value and MAY NOT correspond to an actual
+     * "wall clock" timestamp.<br/>
+     * Consensus Timestamps SHALL always increase.
+     */
+    proto.Timestamp consensus_timestamp = 5;
 
 }
 
@@ -286,9 +282,9 @@ message MinimumJudgeInfo {
     uint64 round = 1;
 
     /**
-     *  The minimum ancient threshold for all judges for a given round.<br/>
-     *  Will be a generation if the birth round migration has not yet happened,
-     *  will be a birth round otherwise.
+     * This is a minimum ancient threshold for all judges for a given round.
+     * The value should be interpreted as a generation if the birth
+     * round migration is not yet completed, and a birth round thereafter.
      * <p>
      * This SHALL reflect the relevant minimum threshold, whether
      * generation-based or birth-round-based.
