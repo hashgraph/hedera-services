@@ -181,7 +181,8 @@ class EthereumTransactionHandlerTest {
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         setUpTransactionProcessing();
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(EthereumTransactionRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilders.getOrCreate(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
         givenSenderAccount();
         final var expectedResult =
@@ -208,7 +209,8 @@ class EthereumTransactionHandlerTest {
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         setUpTransactionProcessing();
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(EthereumTransactionRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilders.getOrCreate(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult =

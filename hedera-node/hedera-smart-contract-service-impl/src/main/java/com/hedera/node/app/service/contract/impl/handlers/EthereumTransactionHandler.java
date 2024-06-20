@@ -153,7 +153,8 @@ public class EthereumTransactionHandler implements TransactionHandler {
                     context.recordBuilders().getOrCreate(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
         } else {
             outcome.addCreateDetailsTo(
-                    context.recordBuilders().getOrCreate(ContractCreateRecordBuilder.class), ExternalizeAbortResult.YES);
+                    context.recordBuilders().getOrCreate(ContractCreateRecordBuilder.class),
+                    ExternalizeAbortResult.YES);
         }
 
         throwIfUnsuccessful(outcome.status());
