@@ -43,7 +43,7 @@ errors should be caught during this phase.
 
 1. Create a new branch for the proposal.
 2. Create a subdirectory of `platform-sdk/docs/proposals/` with the name of the proposal.
-3. Copy the template `template.md` into the subdirectory and rename it to `README.md`
+3. Copy the template `template.md` into the subdirectory and give it an appropriate name.
 4. Fill out the template with the details of the proposal, removing any irrelevant sections or adding new sections as
    needed. Diagrams and other files may be included in the proposal directory and linked from the proposal.
 5. Create a draft PR with the proposal documents.
