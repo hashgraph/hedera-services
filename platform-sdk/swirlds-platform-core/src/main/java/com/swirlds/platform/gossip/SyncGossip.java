@@ -39,7 +39,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.linking.GossipLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -142,12 +142,12 @@ public class SyncGossip implements ConnectionTracker, Gossip {
 
     private final List<Startable> thingsToStart = new ArrayList<>();
 
-    private Consumer<GossipEvent> receivedEventHandler;
+    private Consumer<PlatformEvent> receivedEventHandler;
 
     /**
      * The old style intake queue (if enabled), null if not enabled.
      */
-    private QueueThread<GossipEvent> oldStyleIntakeQueue;
+    private QueueThread<PlatformEvent> oldStyleIntakeQueue;
 
     private final ThreadManager threadManager;
 
@@ -488,9 +488,9 @@ public class SyncGossip implements ConnectionTracker, Gossip {
     @Override
     public void bind(
             @NonNull final WiringModel model,
-            @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
+            @NonNull final BindableInputWire<PlatformEvent, Void> eventInput,
             @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
-            @NonNull final StandardOutputWire<GossipEvent> eventOutput,
+            @NonNull final StandardOutputWire<PlatformEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
             @NonNull final BindableInputWire<NoInput, Void> clearInput,
@@ -522,7 +522,7 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 .useOldStyleIntakeQueue();
 
         if (useOldStyleIntakeQueue) {
-            oldStyleIntakeQueue = new QueueThreadConfiguration<GossipEvent>(threadManager)
+            oldStyleIntakeQueue = new QueueThreadConfiguration<PlatformEvent>(threadManager)
                     .setCapacity(10_000)
                     .setThreadName("old_style_intake_queue")
                     .setComponent("platform")

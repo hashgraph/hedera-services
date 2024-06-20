@@ -25,6 +25,7 @@ import static com.swirlds.platform.state.BirthRoundStateMigration.modifyStateFor
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.getSavedStateFiles;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -41,15 +42,13 @@ import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
-import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
-import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
@@ -59,8 +58,8 @@ import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
 import com.swirlds.platform.publisher.PlatformPublisher;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
@@ -82,7 +81,6 @@ import com.swirlds.platform.system.events.BirthRoundMigrationShim;
 import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.platform.system.status.actions.StartedReplayingEventsAction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -232,8 +230,6 @@ public class SwirldsPlatform implements Platform {
         final StateSignatureCollector stateSignatureCollector =
                 new DefaultStateSignatureCollector(platformContext, signedStateMetrics);
 
-        final LatestCompleteStateNotifier latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
-
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
 
@@ -285,7 +281,6 @@ public class SwirldsPlatform implements Platform {
                 stateSignatureCollector,
                 eventWindowManager,
                 birthRoundMigrationShim,
-                latestCompleteStateNotifier,
                 latestImmutableStateNexus,
                 latestCompleteStateNexus,
                 savedStateController,
@@ -382,7 +377,7 @@ public class SwirldsPlatform implements Platform {
             return null;
         }
 
-        final State state = initialState.getState();
+        final MerkleRoot state = initialState.getState();
         final PlatformState platformState = state.getPlatformState();
 
         return new DefaultBirthRoundMigrationShim(
@@ -455,7 +450,7 @@ public class SwirldsPlatform implements Platform {
     private void replayPreconsensusEvents() {
         platformWiring.getStatusActionSubmitter().submitStatusAction(new StartedReplayingEventsAction());
 
-        final IOIterator<GossipEvent> iterator =
+        final IOIterator<PlatformEvent> iterator =
                 initialPcesFiles.getEventIterator(initialAncientThreshold, startingRound);
 
         logger.info(
@@ -483,7 +478,7 @@ public class SwirldsPlatform implements Platform {
      */
     @Override
     public boolean createTransaction(@NonNull final byte[] transaction) {
-        return transactionPoolNexus.submitApplicationTransaction(new SwirldTransaction(transaction));
+        return transactionPoolNexus.submitApplicationTransaction(Bytes.wrap(transaction));
     }
 
     /**

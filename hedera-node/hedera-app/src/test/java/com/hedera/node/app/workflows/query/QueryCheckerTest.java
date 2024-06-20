@@ -58,6 +58,8 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,29 +90,34 @@ class QueryCheckerTest extends AppTestBase {
     @Mock
     private FeeManager feeManager;
 
+    @Mock
+    private TransactionDispatcher dispatcher;
+
     private QueryChecker checker;
 
     @BeforeEach
     void setup() {
-        checker = new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager);
+        checker = new QueryChecker(
+                authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, dispatcher);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() ->
-                        new QueryChecker(null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, null, expiryValidation, feeManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager))
+        assertThatThrownBy(() -> new QueryChecker(
+                        null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, dispatcher))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new QueryChecker(authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null))
+                        new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager, dispatcher))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, null, expiryValidation, feeManager, dispatcher))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager, dispatcher))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null, dispatcher))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -259,7 +266,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
             doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, amount))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), false);
+                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), WorkflowCheck.NOT_INGEST);
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))

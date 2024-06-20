@@ -17,7 +17,6 @@
 plugins {
     id("com.hedera.gradle.services")
     id("com.hedera.gradle.services-publish")
-    id("com.hedera.gradle.java-test-fixtures")
 }
 
 description = "Hedera AddressBook Service API"

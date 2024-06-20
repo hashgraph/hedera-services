@@ -12,7 +12,7 @@ pcli diagram \
     -l 'TransactionPrehandler:futures:TransactionHandler' \
     -l 'EventCreationManager:get transactions:TransactionPool' \
     -l 'ConsensusEventStream:future hash:TransactionHandler' \
-    -s 'eventWindowManager:event window:🌀' \
+    -s 'EventWindowManager:event window:🌀' \
     -s 'Heartbeat:heartbeat:❤️' \
     -s 'TransactionPrehandler:futures:🔮' \
     -s 'pcesReplayer:done streaming pces:✅' \
@@ -25,7 +25,7 @@ pcli diagram \
     -s 'StateSigner:signature transactions:🖋️' \
     -s 'IssDetectorSplitter:IssNotification:💥' \
     -s 'getStatusAction:PlatformStatusAction:💀' \
-    -s 'latestCompleteStateNotifier:complete state notification:💢' \
+    -s 'LatestCompleteStateNotifier:complete state notification:💢' \
     -s 'OrphanBufferSplitter:preconsensus signatures:🔰' \
     -s 'RunningEventHashOverride:hash override:💨' \
     -s 'TransactionResubmitterSplitter:submit transaction:♻️' \
@@ -36,22 +36,22 @@ pcli diagram \
     -s 'HealthMonitor:health info:🏥' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Event Intake:EventHasher,InternalEventValidator,EventDeduplicator,EventSignatureValidator,Orphan Buffer,PostHashCollector' \
-    -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,eventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
+    -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,EventWindowManager,getKeystoneEventSequenceNumber,getCesEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
     -g 'State File Management:State Snapshot Manager,📀,💾' \
-    -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,latestCompleteStateNotifier' \
-    -g 'State Signature Collection:State Signature Collector,latestCompleteStateNexus,💢' \
+    -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,LatestCompleteStateNotifier' \
+    -g 'State Signature Collection:State Signature Collector,LatestCompleteStateNexus,💢' \
     -g 'Preconsensus Event Stream:PcesSequencer,PcesWriter' \
     -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
     -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
     -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,Stale Event Detector,Transaction Resubmitter,⚰️,♻️' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
     -g 'PCES Replay:pcesReplayer,✅' \
-    -g 'Transaction Handler:TransactionHandler,postHandler_stateAndRoundReserver,getState,savedStateController' \
+    -g 'Transaction Handler:TransactionHandler,postHandler_stateAndRoundReserver,getState,SavedStateController' \
     -g 'State Hasher:StateHasher,postHasher_stateAndRoundReserver,postHasher_getConsensusRound,postHasher_stateReserver' \
     -g 'Consensus:Consensus Engine,🚽,🌀' \
     -g 'State Verification:StateSigner,HashLogger,ISS Detector,🖋️,💥,💀' \
-    -g 'Transaction Handling:Transaction Handler,latestImmutableStateNexus' \
+    -g 'Transaction Handling:Transaction Handler,LatestImmutableStateNexus' \
     -g 'Round Durability Buffer:RoundDurabilityBuffer,RoundDurabilityBufferSplitter' \
     -g 'Branch Detection:BranchDetector,BranchReporter' \
     -g 'Miscellaneous:Mystery Input,RunningEventHashOverride,HealthMonitor,SignedStateSentinel,StatusStateMachine,Heartbeat,❔,🏥,❤️,💨,🚦' \

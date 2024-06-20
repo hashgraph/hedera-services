@@ -20,6 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -57,6 +60,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,6 +104,7 @@ public class ReadableStoreFactory {
         // Block Records
         newMap.put(
                 ReadableBlockRecordStore.class, new StoreEntry(BlockRecordService.NAME, ReadableBlockRecordStore::new));
+        newMap.put(ReadableNodeStore.class, new StoreEntry(AddressBookService.NAME, ReadableNodeStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -110,6 +115,7 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link HederaState} to use
      */
+    @Inject
     public ReadableStoreFactory(@NonNull final HederaState state) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
     }

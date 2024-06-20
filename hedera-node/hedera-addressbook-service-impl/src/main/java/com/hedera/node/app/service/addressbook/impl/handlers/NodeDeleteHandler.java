@@ -16,10 +16,18 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -42,37 +50,49 @@ public class NodeDeleteHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        // implement
+        final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
+        final long nodeId = transactionBody.nodeId();
+
+        validateFalsePreCheck(nodeId < 0, INVALID_NODE_ID);
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
-        requireNonNull(context);
-
-        final var op = context.body().nodeDelete();
-        throw new UnsupportedOperationException("need implementation");
+        // Empty method
     }
 
     /**
-     * Given the appropriate context, deletes a topic.
+     * Given the appropriate context, deletes a node.
      *
      * @param context the {@link HandleContext} of the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
     public void handle(@NonNull final HandleContext context) {
-        requireNonNull(context, "The argument 'context' must not be null");
+        requireNonNull(context);
 
-        final var op = context.body().nodeDelete();
-        throw new UnsupportedOperationException("need implementation");
+        final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
+        var nodeId = transactionBody.nodeId();
+
+        final var nodeStore = context.writableStore(WritableNodeStore.class);
+
+        Node node = nodeStore.get(nodeId);
+
+        validateFalse(node == null, INVALID_NODE_ID);
+
+        validateFalse(node.deleted(), NODE_DELETED);
+
+        /* Copy all the fields from existing, and mark deleted flag  */
+        final var nodeBuilder = node.copyBuilder().deleted(true);
+
+        /* --- Put the modified node. It will be in underlying state's modifications map.
+        It will not be committed to state until commit is called on the state.--- */
+        nodeStore.put(nodeBuilder.build());
     }
 
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        requireNonNull(feeContext);
-        final var op = feeContext.body();
-
-        throw new UnsupportedOperationException("need implementation");
+        return feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
     }
 }

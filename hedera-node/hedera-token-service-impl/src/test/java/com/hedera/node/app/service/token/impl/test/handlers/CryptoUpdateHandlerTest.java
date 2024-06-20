@@ -70,6 +70,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -149,7 +150,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         stakingValidator = new StakingValidator();
-        subject = new CryptoUpdateHandler(waivers, stakingValidator, networkInfo);
+        subject = new CryptoUpdateHandler(waivers, stakingValidator);
     }
 
     @Test
@@ -252,6 +253,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(networkInfo.nodeInfo(anyLong())).willReturn(mock(NodeInfo.class));
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(0).build();
         givenTxnWith(txn);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
 
         assertNull(writableStore.get(updateAccountId).stakedNodeId());
 
@@ -274,6 +276,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     void validatesStakedNodeIdProvided() {
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(10).build();
         givenTxnWith(txn);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -297,6 +300,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(3).build();
         givenTxnWith(txn);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
         given(networkInfo.nodeInfo(3)).willReturn(mock(NodeInfo.class));
 
         assertNull(writableStore.get(updateAccountId).stakedNodeId());
@@ -337,6 +341,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn1 = new CryptoUpdateBuilder().withStakedNodeId(-1).build();
         givenTxnWith(txn1);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
         subject.handle(handleContext);
         assertEquals(-1, writableStore.get(updateAccountId).stakedNodeId());
 
@@ -746,6 +751,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void testCalculateFeesHappyPath() {
         FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
 
         TransactionBody cryptoUpdateTransaction = new CryptoUpdateBuilder()
@@ -768,7 +774,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         when(feeContext.readableStore(ReadableAccountStore.class)).thenReturn(readableStore);
         when(feeContext.body()).thenReturn(cryptoUpdateTransaction);
         when(feeContext.configuration()).thenReturn(configuration);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(Fees.FREE);

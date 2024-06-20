@@ -143,7 +143,6 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACC
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO_AFTER_CALL;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX_REC;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACTS_MAX_GAS_PER_SEC;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACT_FROM;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEFAULT_MAX_AUTO_RENEW_PERIOD;
@@ -1593,12 +1592,12 @@ public class LeakyContractTestsSuite {
                         "GasLimitOverMaxGasLimitFailsPrecheck",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_MAX_GAS_PER_SEC)
+                .preserving("contracts.maxGasPerSec")
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
+                        overriding("contracts.maxGasPerSec", "100"))
                 .when()
                 .then(
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
