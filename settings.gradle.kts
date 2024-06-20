@@ -51,8 +51,6 @@ include(":app-service-file", "hedera-node/hedera-file-service")
 
 include(":app-service-file-impl", "hedera-node/hedera-file-service-impl")
 
-include(":app-service-mono", "hedera-node/hedera-mono-service")
-
 include(":app-service-network-admin", "hedera-node/hedera-network-admin-service")
 
 include(":app-service-network-admin-impl", "hedera-node/hedera-network-admin-service-impl")

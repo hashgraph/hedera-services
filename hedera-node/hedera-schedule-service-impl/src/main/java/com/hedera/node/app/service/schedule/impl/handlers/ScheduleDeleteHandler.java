@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -27,8 +27,9 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
-import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -42,6 +43,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -53,6 +55,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleDeleteHandler extends AbstractScheduleHandler implements TransactionHandler {
+    private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
+
     @Inject
     public ScheduleDeleteHandler() {
         super();
@@ -178,14 +182,29 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new ScheduleDeleteResourceUsage(new ScheduleOpsUsage(), null)
-                        .usageGiven(
-                                fromPbj(op),
-                                sigValueObj,
-                                schedule,
-                                feeContext
-                                        .configuration()
-                                        .getConfigData(LedgerConfig.class)
-                                        .scheduleTxExpiryTimeSecs()));
+                .legacyCalculate(sigValueObj -> usageGiven(
+                        fromPbj(op),
+                        sigValueObj,
+                        schedule,
+                        feeContext
+                                .configuration()
+                                .getConfigData(LedgerConfig.class)
+                                .scheduleTxExpiryTimeSecs()));
+    }
+
+    private FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final Schedule schedule,
+            final long scheduledTxExpiryTimeSecs) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        if (schedule != null) {
+            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, schedule.calculatedExpirationSecond());
+        } else {
+            final long latestExpiry =
+                    txn.getTransactionID().getTransactionValidStart().getSeconds() + scheduledTxExpiryTimeSecs;
+            return scheduleOpsUsage.scheduleDeleteUsage(txn, sigUsage, latestExpiry);
+        }
     }
 }
