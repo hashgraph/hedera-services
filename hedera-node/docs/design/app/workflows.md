@@ -18,16 +18,22 @@ The ingest-workflow is single-threaded, but multiple calls can run in parallel.
 The ingest workflow consists of the following steps:
 
 0. **Check node.** The node is checked to ensure it is not in a state that prevents it from processing transactions.
-1. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
-2. **Deduplicate.** The transaction is checked to ensure it has not been processed before.
-3. **Check throttles.** Throttling must be observed and checked as early as possible.
-4. **Get payer account.** The account data of the payer is read from the latest immutable state.
-5. Account Balance
+1. **Check timeBox** Checks whether the transaction duration is valid as per the configuration for valid durations 
+for the network, and whether the current node wall-clock time falls between the transaction start and the transaction end (transaction start + duration)
+2. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
+3. **Deduplicate.** The transaction is checked to ensure it has not been processed before.
+4. **Check throttles** Throttling must be observed and checked as early as possible.
+    1. **Pure Checks** Calls `pureChecks` method that does validations based on the respective handler's transaction body 
+         The checks performed here are independent of the state and configuration. 
+         This check will be removed in the future from IngestWorkflow. It is important to note that `pureChecks` 
+         and `Transaction Prechecks` found [here](transaction-prechecks.md) are different.
+5. **Get payer account.** The account data of the payer is read from the latest immutable state.
+6. Account Balance
    1. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
    2. **Estimate fee.** Compute the fee that is required to pay for the transaction.
-6. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
-7. **Submit to platform.** The transaction is submitted to the platform for further processing.
-8. **TransactionResponse.** Return `TransactionResponse`  with result-code.
+7. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
+8. **Submit to platform.** The transaction is submitted to the platform for further processing.
+9. **TransactionResponse.** Return `TransactionResponse`  with result-code.
 
 If all checks have been successful, the transaction has been submitted to the platform and the precheck-code of the returned `TransactionResponse` is `OK`.
 Otherwise the transaction is rejected with an appropriate response code.
@@ -44,7 +50,10 @@ It iterates through each transaction and initiates the pre-handle workflow in a 
 The workflow consists of the following steps:
 
 1. **Parse Transaction.** The transaction arrives as a byte-array. The required parts are parsed and the common information is validated.
-2. **Call PreTransactionHandler.** Depending on the type of transaction, a specific `PreTransactionHandler` is called. It validates the transaction-specific parts and pre-loads data into the cache. It also creates a `TransactionMetadata` and sets the required keys.
+2. **Call PreTransactionHandler.** Depending on the type of transaction, a specific `PreTransactionHandler` is called. 
+   It validates the transaction-specific parts and pre-loads data into the cache. It also creates a `TransactionMetadata` and sets the required keys.
+   It also calls `pureChecks` method that does validations based on the respective handler's transaction body. 
+   The checks performed are that are independent of the state and configuration. 
 3. **Prepare Signature-Data.** The data for all signatures is loaded into memory. A signature consists of three parts:
    1. Some bytes that are signed; in our case, either the `bodyBytes` for an Ed25519 signature or the Keccak256 hash of the `bodyBytes` for an ECDSA(secp256k1) signature.
    2. An Ed25519 or secp256k1 public key that is supposed to have signed these bytes (these public keys come from e.g. the Hedera key of some `0.0.X` account).
@@ -164,7 +173,7 @@ any logic between user and child transactions, since both are treated as dispatc
 For the child transactions, when a service calls one of the [dispatchXXXTransaction](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/DispatchHandleContext.java#L459) 
 methods in `DispatchHandleContext`, a new child dispatch is created and `DispatchProcessor.processDispatch` is called.
 
-1. **Error Validation:** Checks if there is any error by node or user. It validates the following:
+1. **Error Validation:** Checks if there is any error by node or user by re-assessing preHandleResult. It validates the following:
     - Checks the preHandleStatus is `NODE_DUE_DILIGENCE_FAILURE`.
       If so, creates an error report with node error. So, node pays the fees and returns.
     - Verifies payer signature. If it is invalid or missing, creates an error report with node error where

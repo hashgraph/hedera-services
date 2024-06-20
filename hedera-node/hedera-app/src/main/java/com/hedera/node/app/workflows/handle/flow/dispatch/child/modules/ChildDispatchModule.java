@@ -71,18 +71,42 @@ import javax.inject.Provider;
  */
 @Module
 public interface ChildDispatchModule {
+    /**
+     * Binds the {@link HandleContext} to the {@link DispatchHandleContext} in the child dispatch scope.
+     * @param handleContext The {@link DispatchHandleContext} to bind
+     * @return The bound {@link HandleContext}
+     */
     @Binds
     @ChildDispatchScope
     HandleContext bindHandleContext(DispatchHandleContext handleContext);
 
+    /**
+     * Binds the {@link ResourcePriceCalculatorImpl} to the {@link ResourcePriceCalculator} in the child dispatch scope.
+     * @param resourcePriceCalculator The {@link ResourcePriceCalculatorImpl} to bind
+     * @return The bound {@link ResourcePriceCalculator}
+     */
     @Binds
     @ChildDispatchScope
     ResourcePriceCalculator bindResourcePriceCalculator(@NonNull ResourcePriceCalculatorImpl resourcePriceCalculator);
 
+    /**
+     * Binds the {@link DispatchHandleContext} to the {@link FeeContext} in the child dispatch scope.
+     * @param feeContext The {@link DispatchHandleContext} to bind
+     * @return The bound {@link FeeContext}
+     */
     @Binds
     @ChildDispatchScope
     FeeContext bindFeeContext(DispatchHandleContext feeContext);
 
+    /**
+     * Provides the {@link Fees} for the child dispatch.
+     * @param feeContext The {@link FeeContext} for the child dispatch
+     * @param childCategory The {@link HandleContext.TransactionCategory} for the child dispatch
+     * @param dispatcher The {@link TransactionDispatcher} for the child dispatch
+     * @param topLevelFunction The {@link HederaFunctionality} for the top-level transaction
+     * @param childTxnInfo The {@link TransactionInfo} for the child transaction
+     * @return The {@link Fees} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static Fees provideFees(
@@ -105,6 +129,11 @@ public interface ChildDispatchModule {
         };
     }
 
+    /**
+     * Provides the {@link ReadableStoreFactory} for the child dispatch scope.
+     * @param stack The {@link SavepointStackImpl} for the child dispatch
+     * @return The {@link ReadableStoreFactory} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     @ChildQualifier
@@ -112,6 +141,12 @@ public interface ChildDispatchModule {
         return new ReadableStoreFactory(stack);
     }
 
+    /**
+     * Provides the {@link FeeAccumulator} for the child dispatch.
+     * @param recordBuilder The {@link SingleTransactionRecordBuilderImpl} for the child dispatch
+     * @param serviceApiFactory The {@link ServiceApiFactory} for the child dispatch
+     * @return The {@link FeeAccumulator} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static FeeAccumulator provideFeeAccumulator(
@@ -121,6 +156,13 @@ public interface ChildDispatchModule {
         return new FeeAccumulator(tokenApi, recordBuilder);
     }
 
+    /**
+     * Provides the {@link ServiceApiFactory} for the child dispatch.
+     * @param stack The {@link SavepointStackImpl} for the child dispatch
+     * @param configuration The {@link Configuration} for the child dispatch
+     * @param storeMetricsService The {@link StoreMetricsService} for the child dispatch
+     * @return The {@link ServiceApiFactory} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static ServiceApiFactory provideServiceApiFactory(
@@ -130,6 +172,11 @@ public interface ChildDispatchModule {
         return new ServiceApiFactory(stack, configuration, storeMetricsService);
     }
 
+    /**
+     * Provides the  payer {@link Key} for the child dispatch. This is used exclusively for signature-usage fees, which
+     * should all zero out for a child dispatch.
+     * @return The {@link Key} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     @ChildQualifier
@@ -139,6 +186,13 @@ public interface ChildDispatchModule {
         return Key.DEFAULT;
     }
 
+    /**
+     * Provides the {@link WritableEntityIdStore} for the child dispatch.
+     * @param stack The {@link SavepointStackImpl} for the child dispatch
+     * @param configuration The {@link Configuration} for the child dispatch
+     * @param storeMetricsService The {@link StoreMetricsService} for the child dispatch
+     * @return The {@link WritableEntityIdStore} for the child dispatch scope
+     */
     @Provides
     @ChildDispatchScope
     static WritableEntityIdStore provideWritableEntityIdStore(
@@ -150,6 +204,15 @@ public interface ChildDispatchModule {
         return storeFactory.getStore(WritableEntityIdStore.class);
     }
 
+    /**
+     * Provides the {@link WritableStoreFactory} for the child dispatch.
+     * @param stack The {@link SavepointStackImpl} for the child dispatch
+     * @param txnInfo The {@link TransactionInfo} for the child dispatch
+     * @param configuration The {@link Configuration} for the child dispatch
+     * @param serviceScopeLookup The {@link ServiceScopeLookup} for the child dispatch
+     * @param storeMetricsService The {@link StoreMetricsService} for the child dispatch
+     * @return The {@link WritableStoreFactory} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static WritableStoreFactory provideWritableStoreFactory(
@@ -162,6 +225,15 @@ public interface ChildDispatchModule {
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), configuration, storeMetricsService);
     }
 
+    /**
+     * Provides the {@link FinalizeContext} for the child dispatch scope.
+     * @param readableStoreFactory The {@link ReadableStoreFactory} for the child dispatch
+     * @param recordBuilder The {@link SingleTransactionRecordBuilderImpl} for the child dispatch
+     * @param stack The {@link SavepointStackImpl} for the child dispatch
+     * @param configuration The {@link Configuration} for the child dispatch
+     * @param storeMetricsService The {@link StoreMetricsService} for the child dispatch
+     * @return The {@link FinalizeContext} for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static FinalizeContext provideFinalizeContext(
@@ -176,12 +248,24 @@ public interface ChildDispatchModule {
                 readableStoreFactory, writableStoreFactory, recordBuilder, recordBuilder.consensusNow(), configuration);
     }
 
+    /**
+     * Provides the required keys for the child dispatch. This is calculated from the {@link PreHandleResult} for the
+     * child dispatch.
+     * @param preHandleResult The {@link PreHandleResult} for the child dispatch
+     * @return The required keys for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static Set<Key> provideRequiredKeys(@ChildQualifier @NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.requiredKeys();
     }
 
+    /**
+     * Provides the hollow accounts for the child dispatch. This is calculated from the {@link PreHandleResult} for the
+     * child dispatch.
+     * @param preHandleResult The {@link PreHandleResult} for the child dispatch
+     * @return The hollow accounts for the child dispatch
+     */
     @Provides
     @ChildDispatchScope
     static Set<Account> provideHollowAccounts(@ChildQualifier @NonNull final PreHandleResult preHandleResult) {

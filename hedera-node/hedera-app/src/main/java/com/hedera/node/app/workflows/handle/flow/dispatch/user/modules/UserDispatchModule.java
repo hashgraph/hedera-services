@@ -60,44 +60,97 @@ import java.util.Set;
  */
 @Module(subcomponents = {})
 public interface UserDispatchModule {
+    /**
+     * Binds the {@link Dispatch} to the {@link UserDispatchComponent}. Whenever Dispatch is requested, it will
+     * return the Dispatch instance bound to the UserDispatchComponent in this scope.
+     * @param userDispatchComponent userDispatchComponent
+     * @return Dispatch instance bound to the UserDispatchComponent
+     */
     @Binds
     @UserDispatchScope
     Dispatch bindDispatch(@NonNull UserDispatchComponent userDispatchComponent);
 
+    /**
+     * Binds the {@link FinalizeContext} to the {@link TokenContextImpl}. Whenever FinalizeContext is requested, it will
+     * return the FinalizeContext instance bound to the TokenContextImpl in this scope.
+     * @param tokenContext tokenContext
+     * @return FinalizeContext instance bound to the TokenContextImpl
+     */
     @Binds
     @UserDispatchScope
     FinalizeContext bindFinalizeContext(@NonNull TokenContextImpl tokenContext);
 
+    /**
+     * Binds the {@link HandleContext} to the {@link DispatchHandleContext}. Whenever HandleContext is requested, it will
+     * return the HandleContext instance bound to the DispatchHandleContext in this scope.
+     * @param handleContext handleContext
+     * @return HandleContext instance bound to the DispatchHandleContext
+     */
     @Binds
     @UserDispatchScope
     HandleContext bindHandleContext(@NonNull DispatchHandleContext handleContext);
 
+    /**
+     * Binds the {@link ResourcePriceCalculator} to the {@link ResourcePriceCalculatorImpl}.
+     * Whenever ResourcePriceCalculator is requested, it will return the ResourcePriceCalculator instance bound
+     * to the ResourcePriceCalculatorImpl in this scope.
+     * @param resourcePriceCalculator resourcePriceCalculator
+     * @return ResourcePriceCalculator instance bound to the ResourcePriceCalculatorImpl
+     */
     @Binds
     @UserDispatchScope
     ResourcePriceCalculator bindResourcePriceCalculator(@NonNull ResourcePriceCalculatorImpl resourcePriceCalculator);
 
+    /**
+     * Binds the {@link FeeContext} to the {@link DispatchHandleContext}. Whenever FeeContext is requested, it will
+     * return the FeeContext instance bound to the DispatchHandleContext in this scope.
+     * @param handleContext handleContext
+     * @return FeeContext instance bound to the DispatchHandleContext
+     */
     @Binds
     @UserDispatchScope
     FeeContext bindFeeContext(@NonNull DispatchHandleContext handleContext);
 
+    /**
+     * Provides the required keys for the transaction from preHandleResult, when requested.
+     * @param preHandleResult preHandleResult
+     * @return required keys for the transaction
+     */
     @Provides
     @UserDispatchScope
     static Set<Key> provideRequiredKeys(@NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.requiredKeys();
     }
 
+    /**
+     * Provides the hollow accounts from preHandleResult, when requested in UserDispatchScope.
+     * @param preHandleResult preHandleResult
+     * @return hollow accounts
+     */
     @Provides
     @UserDispatchScope
     static Set<Account> provideHollowAccounts(@NonNull final PreHandleResult preHandleResult) {
         return preHandleResult.hollowAccounts();
     }
 
+    /**
+     * Provides the payer account ID from txnInfo, when requested in UserDispatchScope.
+     * @param txnInfo txnInfo
+     * @return payer account ID
+     */
     @Provides
     @UserDispatchScope
     static AccountID provideSyntheticPayer(@NonNull final TransactionInfo txnInfo) {
         return txnInfo.payerID();
     }
 
+    /**
+     * Provides the key verifier when requested in UserDispatchScope.
+     * @param hederaConfig hederaConfig
+     * @param txnInfo txnInfo
+     * @param preHandleResult preHandleResult
+     * @return key verifier
+     */
     @Provides
     @UserDispatchScope
     static KeyVerifier provideKeyVerifier(
@@ -108,12 +161,25 @@ public interface UserDispatchModule {
                 txnInfo.signatureMap().sigPair().size(), hederaConfig, preHandleResult.getVerificationResults());
     }
 
+    /**
+     * Provides the fees for the transaction when requested in UserDispatchScope.
+     * @param feeContext feeContext
+     * @param dispatcher dispatcher
+     * @return fees for the transaction
+     */
     @Provides
     @UserDispatchScope
     static Fees provideFees(@NonNull final FeeContext feeContext, @NonNull final TransactionDispatcher dispatcher) {
         return dispatcher.dispatchComputeFees(feeContext);
     }
 
+    /**
+     * Provides the ServiceApiFactory when requested in UserDispatchScope.
+     * @param stack stack
+     * @param configuration configuration
+     * @param storeMetricsService storeMetricsService
+     * @return ServiceApiFactory
+     */
     @Provides
     @UserDispatchScope
     static ServiceApiFactory provideServiceApiFactory(
@@ -123,6 +189,12 @@ public interface UserDispatchModule {
         return new ServiceApiFactory(stack, configuration, storeMetricsService);
     }
 
+    /**
+     * Provides the FeeAccumulator when requested in UserDispatchScope.
+     * @param recordBuilder recordBuilder
+     * @param serviceApiFactory serviceApiFactory
+     * @return FeeAccumulator
+     */
     @Provides
     @UserDispatchScope
     static FeeAccumulator provideFeeAccumulator(
@@ -132,6 +204,13 @@ public interface UserDispatchModule {
         return new FeeAccumulator(tokenApi, recordBuilder);
     }
 
+    /**
+     * Provides the WritableEntityIdStore when requested in UserDispatchScope.
+     * @param stack stack
+     * @param configuration configuration
+     * @param storeMetricsService storeMetricsService
+     * @return WritableEntityIdStore
+     */
     @Provides
     @UserDispatchScope
     static WritableEntityIdStore provideWritableEntityIdStore(
@@ -143,6 +222,15 @@ public interface UserDispatchModule {
         return entityIdsFactory.getStore(WritableEntityIdStore.class);
     }
 
+    /**
+     * Provides the WritableStoreFactory when requested in UserDispatchScope.
+     * @param stack stack
+     * @param txnInfo txnInfo
+     * @param configuration configuration
+     * @param serviceScopeLookup serviceScopeLookup
+     * @param storeMetricsService storeMetricsService
+     * @return WritableStoreFactory
+     */
     @Provides
     @UserDispatchScope
     static WritableStoreFactory provideWritableStoreFactory(
@@ -155,12 +243,23 @@ public interface UserDispatchModule {
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), configuration, storeMetricsService);
     }
 
+    /**
+     * Provides HandleContext.TransactionCategory as USER when requested in UserDispatchScope.
+     * @return transaction category
+     */
     @Provides
     @UserDispatchScope
     static HandleContext.TransactionCategory provideTransactionCategory() {
         return HandleContext.TransactionCategory.USER;
     }
 
+    /**
+     * Provides the user record when requested in UserDispatchScope.
+     * @param recordListBuilder recordListBuilder
+     * @param userRecordInitializer userRecordInitializer
+     * @param txnInfo txnInfo
+     * @return user record
+     */
     @Provides
     @UserDispatchScope
     static SingleTransactionRecordBuilderImpl provideUserTransactionRecordBuilder(
