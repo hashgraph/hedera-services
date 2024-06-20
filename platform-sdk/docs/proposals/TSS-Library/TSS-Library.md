@@ -313,47 +313,56 @@ To implement the functionality detailed in the previous section, the following c
 ##### Overview
 This library implements the Groth21 TSS-specific primitives.
 
+Two options are presented, while the first focus on usability from the client perspective, the second one proposes operations that are more atomic focusing on providing clients with the ability of concurrently handle the library's operation.
+
 ##### Constraints
 Once built, this library will depend on artifacts constructed in other repositories.
 This library would accept Integer.MAX_VALUE -1 participants.
 
-##### Public API
+##### Option 1 - Overview:
+This option focuses on simplify user-library interactions by centralizing all operations into a TssService class.
+A ParticipantDirectory class is created to hold all library's needed data in order to perform the operations.
+Objects returned by this option are silly (meaning they are used to hold information and they provide no operations), they are created using the library's operation and then handed back to the library for follow up operations.
+In this option, all iterations and "business logic" of groth21 implementation is handled inside the library.
+
+
+##### Option 1 - Public API:
 ###### `TssService`
 **Description**: This class handles all tss specific operations.
 
-**Link**: [TssService.java](tss%2FTssService.java)
+**Link**: [TssMessage.java](tss-option1%2FTssMessage.java)
 
 ###### `TssParticipantDirectory`
 **Description**: This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares. 
 
-**Link**: [TssParticipantDirectory.java](tss%2FTssParticipantDirectory.java)
+**Link**: [TssParticipantDirectory.java](tss-option1%2FTssParticipantDirectory.java)
 
 ###### `TssMessage`
 **Description**: This class is used in the exchange of secret information between participants. Contains an encrypted message, a polynomial commitment, and a cryptographic proof that can be used to validate this message.
 
-**Link**:[TssMessage.java](tss%2FTssMessage.java)
+**Link**:[TssMessage.java](tss-option1%2FTssMessage.java)
 
 ###### `TssShareId`
 **Description**: This class represents the unique identification of a share in the system. It a FieldElement, so it can be used as input in the polynomial.
 
-**Link**:[TssShareId.java](tss%2FTssShareId.java)
+**Link**:[TssShareId.java](tss-option1%2FTssShareId.java)
 
 ###### `TssPrivateShare`
 **Description**: A record that contains a share ID, and the corresponding private key.
 
-**Link**:[TssPrivateShare.java](tss%2FTssPrivateShare.java)
+**Link**:[TssPrivateShare.java](tss-option1%2FTssPrivateShare.java)
 
 ###### `TssPublicShare`
 **Description**: A record that contains a share ID, and the corresponding public key.
 
-**Link**:[TssPublicShare.java](tss%2FTssPublicShare.java)
+**Link**:[TssPublicShare.java](tss-option1%2FTssPublicShare.java)
 
 ###### `TssShareSignature`
 **Description**: Represents a signature created for a TSSPrivateShare.
 
-**Link**:[TssShareSignature.java](tss%2FTssShareSignature.java)
+**Link**:[TssShareSignature.java](tss-option1%2FTssShareSignature.java)
 
-##### Example
+##### Option 1 - Examples:
 ###### 1. Bootstrapping
 ```java
    TssService service = new TssService(signatureScheme, new Random());
@@ -423,6 +432,131 @@ This library would accept Integer.MAX_VALUE -1 participants.
     PairingSignature aggregateSignature = service.aggregate(participantDirectory, validSignatures);
 
 ```
+
+##### Option 2 - Overview:
+This option focuses in providing atomic operations. By doing that, concurrency can be provided outside the scope of this library.
+In this option, objects returned by the library are more intelligent in the sense that once returned, they can be used to continue the flow of the operations needed.
+Clients are also responsible for dealing with part of the business logic of the groth21 implementation, and some of the necessary iterations are shifted to client code.
+##### Option 2 - Public API:
+###### `ShareClaims`
+
+**Link**: [ShareClaims.java](tss-option2%2FShareClaims.java)
+
+###### `Tss`
+
+**Link**:[Tss.java](tss-option2%2FTss.java)
+
+###### `TssMessage`
+
+**Link**: [TssMessage.java](tss-option2%2FTssMessage.java)
+
+###### `TssPrivateShare`
+
+**Link**:[TssPrivateShare.java](tss-option2%2FTssPrivateShare.java)
+
+###### `TssPublicShare`
+
+**Link**:[TssPublicShare.java](tss-option2%2FTssPublicShare.java)
+
+###### `TssShareClaim`
+**Link**: [TssShareClaim.java](tss-option2%2FTssShareClaim.java)
+
+###### `TssShareId`
+**Link**: [TssShareId.java](tss-option2%2FTssShareId.java)
+
+###### `TssShareSignature`
+**Link**: [TssShareSignature.java](tss-option2%2FTssShareSignature.java)
+
+
+##### Option 2 - Examples:
+###### Get a concrete Tss Implementation out of a [SignatureSchema](#Swirlds-Cryptography-Pairings-Signature-Library)
+```java
+  Tss tssImpl = TSS.getFor(signatureSchema);
+```
+
+######  Creating TssShareClaims
+
+```java
+PairingPublicKey p1PbK = Requirements.loadECPublicKey("P1");
+PairingPublicKey p2PbK = Requirements.loadECPublicKey("P2");
+
+int p1Shares = Requirements.numberOfShares("P1");
+int p2Shares = Requirements.numberOfShares("P2");
+List<TssShareClaim> claims = new ArrayList<>(p1Shares + p2Shares);
+
+int i = 0;
+for(; i<= p1Shares ; i++){
+ claimss.add(new TssShareClaim(new TssShareId(signatureSchema.getField().getElementFromLong(i)), p1PbK));    
+}
+
+for(int i= 0; i<= p1Shares + p2Shares ; i++){
+    claimss.add(new TssShareClaim(new TssShareId(signatureSchema.getField().getElementFromLong(i)), p2PbK));
+}
+
+TssShareClaims tssShareClaims = new TssShareClaims(claims);
+```
+###### Generate Node's TssPrivateShare
+```java
+//Load the keys:
+PairingPrivateKey currentNodePrivateKey = Requirements.loadECKey();
+TssShareId shareId = tssImpl.createShareId(currentNodeIndex) ;
+TssPrivateShare privateShare = new TssPrivateShare(shareId, currentNodePrivateKey);
+```
+
+###### Generate TSSMessage
+```java
+int threshold = Requirements.threshold(); //This is an external parameter
+TssMessage message = tssImpl.generateTssMessage(RANDOM, tssShareClaims, privateShare,  threshold);
+```
+
+######  Processing TSSMessages
+```java
+//Once a list TSSMessages has been collected
+List<TssMessage> messageList = Platform.collectTssMessages();
+//Filter valid messages
+List<TssMessages> validMessages = messageList.strem().filter(m-> m.verify(currentNodePublicKey, tssShareClaims)).toList();
+//Getting private shares. Will return null if fail
+List<TssPrivateShare> privateShares = tssImpl.decryptPrivateShares(currentNodeIndex, currentNodePrivateKey, tssShareClaims, threshold, validMessages);
+//Process public shares. Will return null if fail
+List<TssPublicShare> publicShares = tssShareClaims.claims()
+        .stream()
+        .map(claim -> tssImpl.computePublicShare(claim.shareId(), threshold, validMessages))
+        .filter(Objects::nonNull)
+        .toList();
+```
+######  Signing messages
+```java
+//for each private share of the node:
+for (TssPrivateShare share : privateShares){
+    TssSignature signature = share.sign(blockHash);
+    Platform.send(signature);
+}
+
+//collect signatures
+List<TssShareSignature> collectedSignatures = Platform.collectTssSignatures();
+List<TssShareSignature> validSignatures = new ArrayList<>();
+for (TssShareSignature signature : collectedSignatures){
+    if(signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
+blockHash)){
+        validSignatures.add(signature);
+            }
+}
+```
+######  Aggregate Signatures
+```java
+//collect signatures
+List<TssShareSignature> collectedSignatures = Platform.collectTssSignatures();
+List<TssShareSignature> validSignatures = new ArrayList<>();
+for (TssShareSignature signature : collectedSignatures){
+    if(signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
+blockHash)){
+        validSignatures.add(signature);
+            }
+}
+
+PairingSignature value = TssUtils.aggregateSignatures(validSignatures);
+```
+
 
 #### Swirlds Crypto Pairings Signature Library
 ##### Overview
