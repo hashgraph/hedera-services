@@ -179,7 +179,7 @@ class TransactionModuleTest {
         final var recordBuilders = mock(RecordBuilders.class);
         given(hederaOperations.gasPriceInTinybars()).willReturn(123L);
         given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
         final var pendingCreationBuilder = new PendingCreationMetadataRef();
         final var result = provideHederaEvmContext(
                 context, tinybarValues, gasCalculator, hederaOperations, blocks, pendingCreationBuilder);

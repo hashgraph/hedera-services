@@ -126,7 +126,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
-        final var recordBuilder = context.recordBuilders().current(TokenCreateRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(TokenCreateRecordBuilder.class);
 
         /* Validate if the current token can be created */
         validateTrue(

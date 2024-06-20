@@ -430,7 +430,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         final var recordBuilders = mock(RecordBuilders.class);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(any())).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
         given(accountStore.contains(accountId)).willReturn(true);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 

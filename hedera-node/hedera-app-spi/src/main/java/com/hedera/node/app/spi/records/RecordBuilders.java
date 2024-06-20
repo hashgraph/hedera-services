@@ -32,7 +32,7 @@ public interface RecordBuilders {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T current(@NonNull Class<T> recordBuilderClass);
+    <T> T getOrCreate(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent

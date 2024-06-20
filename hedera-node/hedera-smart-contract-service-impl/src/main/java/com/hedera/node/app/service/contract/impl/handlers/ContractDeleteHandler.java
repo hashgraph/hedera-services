@@ -113,7 +113,7 @@ public class ContractDeleteHandler implements TransactionHandler {
             throw new HandleException(obtainer.smartContract() ? INVALID_CONTRACT_ID : OBTAINER_DOES_NOT_EXIST);
         }
         validateFalse(toBeDeleted.accountIdOrThrow().equals(obtainer.accountIdOrThrow()), OBTAINER_SAME_CONTRACT_ID);
-        final var recordBuilder = context.recordBuilders().current(ContractDeleteRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(ContractDeleteRecordBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
         context.serviceApi(TokenServiceApi.class)
                 .deleteAndTransfer(

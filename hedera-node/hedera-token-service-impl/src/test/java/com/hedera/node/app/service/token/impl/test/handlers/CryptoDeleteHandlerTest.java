@@ -289,7 +289,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
-        given(recordBuilders.current(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 

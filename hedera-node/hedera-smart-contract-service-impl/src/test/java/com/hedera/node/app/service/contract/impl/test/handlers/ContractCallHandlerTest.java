@@ -88,7 +88,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CALL)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult,
@@ -111,7 +111,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CALL)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = HALT_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome =
                 new CallOutcome(expectedResult, HALT_RESULT.finalStatus(), null, HALT_RESULT.gasPrice(), null, null);

@@ -97,7 +97,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(any())).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
     }
 
     @Test

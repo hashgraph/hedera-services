@@ -57,8 +57,8 @@ class RecordBuildersImplTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testMethodsWithInvalidParameters() {
-        assertThatThrownBy(() -> subject.current(null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.current(List.class)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> subject.getOrCreate(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.getOrCreate(List.class)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> subject.addChildRecordBuilder(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.addChildRecordBuilder(List.class))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -69,7 +69,7 @@ class RecordBuildersImplTest {
 
     @Test
     void testGetRecordBuilder() {
-        final var actual = subject.current(CryptoCreateRecordBuilder.class);
+        final var actual = subject.getOrCreate(CryptoCreateRecordBuilder.class);
         assertThat(actual).isEqualTo(recordBuilder);
     }
 

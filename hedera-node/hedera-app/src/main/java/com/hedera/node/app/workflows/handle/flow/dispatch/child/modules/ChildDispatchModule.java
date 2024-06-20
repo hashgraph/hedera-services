@@ -222,7 +222,7 @@ public interface ChildDispatchModule {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         return new DispatchHandleContext(
-                recordBuilders.current(SingleTransactionRecordBuilderImpl.class).consensusNow(),
+                recordBuilders.getOrCreate(SingleTransactionRecordBuilderImpl.class).consensusNow(),
                 transactionInfo,
                 configuration,
                 authorizer,

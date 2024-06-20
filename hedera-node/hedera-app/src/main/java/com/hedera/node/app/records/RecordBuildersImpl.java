@@ -49,7 +49,7 @@ public class RecordBuildersImpl implements RecordBuilders {
 
     @NonNull
     @Override
-    public <T> T current(@NonNull Class<T> recordBuilderClass) {
+    public <T> T getOrCreate(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return castRecordBuilder(recordBuilder, recordBuilderClass);
     }

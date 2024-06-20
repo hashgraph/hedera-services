@@ -178,7 +178,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
 
         final var mockRecordBuilders = mock(RecordBuilders.class);
         given(mockContext.recordBuilders()).willReturn(mockRecordBuilders);
-        given(mockRecordBuilders.current(ScheduleRecordBuilder.class))
+        given(mockRecordBuilders.getOrCreate(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
     }
 

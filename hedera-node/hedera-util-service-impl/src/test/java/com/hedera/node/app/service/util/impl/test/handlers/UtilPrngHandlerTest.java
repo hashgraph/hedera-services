@@ -87,7 +87,7 @@ class UtilPrngHandlerTest {
 
         subject = new UtilPrngHandler();
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(PrngRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(PrngRecordBuilder.class)).willReturn(recordBuilder);
         givenTxnWithoutRange();
     }
 

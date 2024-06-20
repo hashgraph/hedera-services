@@ -147,7 +147,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        lenient().when(recordBuilders.current(any())).thenReturn(recordBuilder);
+        lenient().when(recordBuilders.getOrCreate(any())).thenReturn(recordBuilder);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         given(handleContext.attributeValidator()).willReturn(attributeValidator);

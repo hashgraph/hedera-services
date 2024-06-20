@@ -159,7 +159,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             topicStore.put(topic);
 
             /* --- Build the record with newly created topic --- */
-            final var recordBuilder = handleContext.recordBuilders().current(ConsensusCreateTopicRecordBuilder.class);
+            final var recordBuilder = handleContext.recordBuilders().getOrCreate(ConsensusCreateTopicRecordBuilder.class);
 
             recordBuilder.topicID(topic.topicId());
         } catch (final HandleException e) {

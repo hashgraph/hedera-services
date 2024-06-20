@@ -197,7 +197,7 @@ class ContractDeleteHandlerTest {
         given(context.body()).willReturn(txn);
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.current(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
     }
 
     private static final Account TBD_CONTRACT = Account.newBuilder()

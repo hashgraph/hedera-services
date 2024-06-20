@@ -103,7 +103,7 @@ public class TokenDeleteHandler implements TransactionHandler {
                 .build();
         accountStore.put(updatedAccount);
 
-        final var record = context.recordBuilders().current(TokenBaseRecordBuilder.class);
+        final var record = context.recordBuilders().getOrCreate(TokenBaseRecordBuilder.class);
         record.tokenType(updatedToken.tokenType());
     }
 

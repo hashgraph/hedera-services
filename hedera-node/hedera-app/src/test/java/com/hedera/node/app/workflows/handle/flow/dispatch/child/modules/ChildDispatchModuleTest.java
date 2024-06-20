@@ -202,7 +202,7 @@ class ChildDispatchModuleTest {
 
     @Test
     void childHandleContextConstructedWithRecordBuilderConsTime() {
-        given(recordBuilders.current(SingleTransactionRecordBuilderImpl.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(SingleTransactionRecordBuilderImpl.class)).willReturn(recordBuilder);
         given(recordBuilder.consensusNow()).willReturn(CHILD_CONS_NOW);
         final var childContext = ChildDispatchModule.provideDispatchHandleContext(
                 transactionInfo,

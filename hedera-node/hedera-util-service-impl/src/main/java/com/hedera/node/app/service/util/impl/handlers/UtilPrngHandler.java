@@ -113,7 +113,7 @@ public class UtilPrngHandler implements TransactionHandler {
 
         // If `range` is provided then generate a random number in the given range from the pseudoRandomBytes,
         // otherwise just use the full pseudoRandomBytes as the random number.
-        final var recordBuilder = context.recordBuilders().current(PrngRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(PrngRecordBuilder.class);
         if (range > 0) {
             final var pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
             recordBuilder.entropyNumber(pseudoRandomNumber);
