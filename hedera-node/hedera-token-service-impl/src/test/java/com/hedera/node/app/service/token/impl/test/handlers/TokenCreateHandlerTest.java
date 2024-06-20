@@ -1054,5 +1054,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.entityNumGenerator()).willReturn(entityNumGenerator);
-        given(entityNumGenerator.newEntityNum()).willReturn(newTokenId.tokenNum());    }
+        given(entityNumGenerator.newEntityNum()).willReturn(newTokenId.tokenNum());
+    }
 }
