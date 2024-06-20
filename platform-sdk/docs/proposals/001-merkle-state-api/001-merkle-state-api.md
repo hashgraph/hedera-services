@@ -185,16 +185,6 @@ message PlatformState {
      */
     proto.Timestamp last_frozen_time = 5;
 
-    /**
-     * A consensus node semantic version.<br/>
-     * The software version that enabled birth round mode.
-     * <p>
-     * This SHALL be unset if birth round migration has not yet happened.<br/>
-     * If birth round migration is complete, this SHALL be the _first_ software
-     * version that enabled birth round mode.
-     */
-    proto.SemanticVersion first_version_in_birth_round_mode = 6;
-
     // Fields below are to be deprecated in the foreseeable future.
 
     /**
@@ -222,6 +212,17 @@ message PlatformState {
      * This SHALL be `MAX_UNSIGNED` if birth round mode has not yet been enabled.
      */
     uint64 last_round_before_birth_round_mode = 10002 [deprecated = true];
+
+    /**
+     * A consensus node semantic version.<br/>
+     * The software version that enabled birth round mode.
+     * <p>
+     * This SHALL be unset if birth round migration has not yet happened.<br/>
+     * If birth round migration is complete, this SHALL be the _first_ software
+     * version that enabled birth round mode.
+    */
+    proto.SemanticVersion first_version_in_birth_round_mode = 10003 [deprecated = true];
+
 }
 
 
@@ -266,7 +267,7 @@ message ConsensusSnapshot {
      * Depending on the context this timestamp may have different meanings:
      * <li> if there are transactions, the timestamp is equal to the timestamp of the last transaction
      * <li> if there are no transactions, the timestamp is equal to the timestamp of the last event
-     * <li> if there are no events, the timestamp is equal to the timestamp of the previous round plus a small constant    
+     * <li> if there are no events, the timestamp is equal to the timestamp of the previous round plus a small constant
      * <p>
      * This SHALL be a consensus value and MAY NOT correspond to an actual
      * "wall clock" timestamp.<br/>
