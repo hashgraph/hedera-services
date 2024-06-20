@@ -26,11 +26,12 @@ additional latency.
 
 Nodes in the network create new "self-events" on a regular basis. These self-events carry transactions that were
 submitted to the node, and advance the hashgraph. When a node creates a self-event, it must build upon the previous
-self-event and some "other parent" event (see the hashgraph algorithm for more details). If a node builds two
-self-events on the same self-event parent or if it creates an event with no self parent and there is a non-ancient self
-event that could have been a self parent, that is considered to be a branch in the hashgraph. Branching in the
-hashgraph is considered an attack on consensus. It can be detected deterministically and the offending node punished
-accordingly, protecting the integrity of the hashgraph. Therefore, no honest node should ever branch.
+self-event and some "other parent" event (see the hashgraph algorithm for more details). There are two types of
+branching. If a node builds two self-events on the same self-event parent, that is considered to be a branch. If a node
+creates an event with no self parent and there is a non-ancient self event that could have been a self parent, that is
+is also considered to be a branch. Branching in the hashgraph is considered an attack on consensus. It can be detected
+deterministically and the offending node punished accordingly, protecting the integrity of the hashgraph. Therefore,
+no honest node should ever branch.
 
 Today even honest nodes can accidentally branch (in practice the probability low but not unheard of). This happens
 when a node gossips a self-event and is shutdown before the event has been persisted to disk in the
@@ -40,18 +41,17 @@ the node starts up and sends a new self-event and when it receives its old self-
 time, the node will build a new self-event on the same parent as the previous self-event (or with no self parent),
 causing a branch.
 
-This happens today most frequently on update boundaries when **every node** deterministically shutdown and then
-start back up. In theory it can also happen when individual nodes are restarted.
+This happens today most frequently on update boundaries when **every node** deterministically shuts down and then
+starts back up. In theory it can also happen when individual nodes are restarted.
 
 ### Requirements
 
-1. There must not be any noticeable impact in time-to-consensus.
-    a) if there is an observed impact, all product stakeholders must agree that the impact is negligible
+1. There must not be any significant impact in time-to-consensus. If there is an observed impact, all product
+   stakeholders must agree that the impact is negligible
 2. Self-events must be persisted before they are gossiped or handled by Hashgraph
-3. Persistence must be durable even if the JVM crashes
-    a) If the host OS crashes, we accept the possibility of the loss of a few seconds of events. But such loss
-       should be minimized through whatever technical mechanisms are available (as long as they don't compromise
-       performance).
+3. Persistence must be durable even if the JVM crashes. If the host OS crashes, we accept the possibility of the loss
+   of a few seconds of events. But such loss should be minimized through whatever technical mechanisms are available
+   (as long as they don't compromise performance).
 
 ### Design Decisions
 
