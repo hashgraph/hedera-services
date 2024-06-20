@@ -32,8 +32,8 @@ presented in the form of a PR containing the proposal in a subdirectory of `plat
 contain diagrams and supporting materials. Diagrams must be created with DrawIO and exported in SVG format. All content
 must be editable (i.e. no images).
 
-If any APIs were developed in code as part of the design process, it may be included in the subdirectory of the proposal
-but not merged into the source code of the platform.
+If any APIs were developed in code as part of the design process, it may be included in the proposal directly or in the
+subdirectory of the proposal, but not merged into the source code of the platform.
 
 While in the draft phase the proposal may be updated and modified as needed. It is best practice to solicit review from
 stakeholders to surface any potential change requests while the proposal is in the draft phase. All grammar and spelling
@@ -133,7 +133,6 @@ project should be changed to `Delivered`.
 ## Design Proposal State Machine
 
 ![](designProposalStateMachine.drawio.svg)
-
 
 ## Modifying an Accepted Design Proposal
 
