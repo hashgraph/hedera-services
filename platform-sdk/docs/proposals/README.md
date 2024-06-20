@@ -15,7 +15,7 @@ merge:
 
 1. Publicly available inputs/outputs/API including disk
 2. Core behaviors
-3. Is likely to performance
+3. Any change that is expected or is likely to impact performance
 4. Changes to interactions between major systems or teams (platform, services, mirror node, devops, etc)
 5. Module Structure & Repos
 
@@ -35,7 +35,7 @@ must be editable (i.e. no images).
 If any APIs were developed in code as part of the design process, it may be included in the subdirectory of the proposal
 but not merged into the source code of the platform.
 
-While in this draft phase the proposal may be updated and modified as needed. It is best practice to solicit review from
+While in the draft phase the proposal may be updated and modified as needed. It is best practice to solicit review from
 stakeholders to surface any potential change requests while the proposal is in the draft phase. All grammar and spelling
 errors should be caught during this phase.
 
