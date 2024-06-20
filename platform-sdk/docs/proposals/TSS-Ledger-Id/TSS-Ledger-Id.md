@@ -95,24 +95,138 @@ TSS Core Requirements
 | TSS-007        | There MUST be a way to rotate the ledger's public/private signing key.                                                       |
 | TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive cost or time.                           |
 | TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                             |
+| TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                              |
 
 ### Design Decisions
 
-The threshold signature scheme chosen for our implementation is detailed in https://eprint.iacr.org/2021/339. This
-scheme is able to meet the core requirements listed above. '
+#### New Address Book Life-Cycle
 
-Describe the decisions made and the reasons why.
+This design proposal will deliver after Dynamic Address Book  (DAB) Phase 2 and before DAB Phase 3.  In Phase 2 the 
+address book is updated on software upgrades.  In Phase 3 the address book is updated dynamically without restarting 
+the node. Since the TSS effort requires keying a roster with enough `TssMessages` to generate ledger signatures, a 
+modified life-cycle is needed.  Some of the dynamic work in Phase 3 will be needed.  This work is being encapsulated 
+in the TSS-Roster proposal, which will need to be completed before the TSS-Ledger-Id proposal can be fully implemented.
+
+The relevant Address Book life-cycle changes are the following: 
+1. The platform only receives a Roster, a subset of the Address Book.
+2. The application address book has 3 states: `Active` (AAB), `Candidate` (CAB), and `Future` (FAB).
+3. The FAB is updated by every HAPI transaction that is already received in DAB Phase 2.
+4. The CAB is a snapshot of the FAB when the APP is ready to initiate an address book rotation. 
+5. The AAB is replaced by the CAB on a software upgrade if the consensus roster derived from the CAB has enough key 
+   material to generate ledger signatures.  
+6. The CAB is not adopted and the previous AAB remains the existing AAB after a software upgrade if the CAB does not 
+   have enough key material to generate ledger signatures. 
+
+Prior to restart for upgrade,  `candidate` consensus roster will be set in the platform state by the app in such a way 
+as to mark it clearly as the next consensus roster.  This methodology replaces the previous methodology in DAB Phase 
+2, which was to write a new `config.txt` to disk.  After the `TSS-Roster` proposal has been implemented, the only 
+need for a file on disk is the genesis address book at the start of a new network.  
+
+Once the correct address book and consensus roster life-cycle is in place through the `TSS-Roster` proposal, this 
+proposal only introduces the logistics of generating the key material and the logic for deciding to adopt the CAB in 
+replacement of the AAB. 
+
+#### TSS Algorithm
+
+The threshold signature scheme chosen for our implementation is detailed in https://eprint.iacr.org/2021/339. This
+scheme is able to meet the core requirements listed above. The rest of this proposal details the design of how to
+implement this scheme in the consensus nodes.
+
+The Groth21 algorithm uses Shamir Secret Sharing to hide the private key of the ledger and distribute shares of it
+so that a threshold number of node signatures on a message can generate the ledger signature on the same message.  
+The threshold should be high enough to ensure at least 1 honest node is required to participate in the signing since
+a threshold number of nodes can also collude to recover the ledger private key, if they so choose. For example if
+the network is designed to tolerate up to 1/3 of the nodes being dishonest, then the threshold should never be less
+than 1/3 + 1 of the nodes to ensure that no 1/3 will collude to recover the ledger private key.
+
+The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to produce bilinear pairings. Each
+node will need its own long-term EC key pair on the curve for use in the groth21 TSS algorithm. Each node receives
+some number of shares in proportion to the consensus weight assigned to it. Each share is an EC key pair on the
+same curve. All public keys of the shares are known, and aggregating a threshold number of share public keys will
+produce the ledger id. Only the node has access to the private key of its own shares. Each node must keep their
+private keys to themselves since a threshold number of share private keys can aggregate to recover the ledger
+private key. An aggregate number of signatures on the same message from the share private keys will aggregate to
+recover the ledger signature on the message.
+
+Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
+each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
+shares`. Each `Share of a share` is encrypted with the public key of the node in the next consensus roster that it
+belongs to so that only the intended node can use the `share of a share` to recover that node's share's private key.  
+The collection of `TssMessages` generated from nodes in the previous consensus roster forms the `key material` for
+the new consensus roster. To bootstrap a network and generate the ledger private and public keys, each node creates
+a random share for themselves and generates a `TssMessage` containing `shares of shares` for the total number of shares
+needed in the consensus roster. The use of random shares at the outset creates a random ledger private key that nobody
+knows.
+
+This process of re-keying the next consensus roster during an address book change takes an asynchronous amount of
+time through multiple rounds of consensus to complete. This requires saving incremental progress in the state to ensure
+that the process can resume from any point if a node or the network restarts. Switching to the next consensus roster
+cannot happen until that roster has enough nodes able to recover a threshold number of shares so that an aggregation of
+node signatures can generate the ledger signature.
+
+##### Elliptic Curve Decisions
+
+Our first implementation of Groth21 will use the ALT_BN128 elliptic curve which is in use and verifiable by EVMs.  
+If and when the Ethereum ecosystem adopts BLS12_381, we will likely switch over to that more secure curve.
+
+##### New Elliptic Curve Node Keys
+
+Each node will need a new long-term EC key pair in addition to the existing RSA key pair.  The EC key pair will be
+used in the Groth21 algorithm to generate and decrypt `TSS-Messages`.  These new EC Keys will not be used for 
+signing messages, only for generating the shares.   It is the share keys that are used to sign messages.  The public 
+keys of these long-term node specific EC keys must be in the address book.   
+
+##### Groth21 Drawbacks
+
+The Groth21 algorithm is not able to model arbitrary precision proportions of weight assigned to nodes in the
+network. For example if each node in a 4 node network received 1 share, then every share has a weight of 1/4.
+If there are a total of N shares, then the distribution of weight can only be modeled in increments of (1/N) * total
+weight. The cost of re-keying the network in an address book change is quadratic in the number of shares. This forces us
+to pick a number of total shares with a max value in the thousands.  This modeling of weight is a discrete using small 
+integer precision.
 
 #### Alternatives Considered
 
-Describe any alternatives considered and why they were not chosen.
+The list of options considered here were based off of prototypes developed by Rohit Sinha, the Swirlds Labs
+cryptography expert. The Groth21 algorithm was chosen because it was efficient for use in smart contract
+verification, and we could assign a multiplicity of shares to nodes to get close enough in modeling the
+distribution of weight between nodes.
 
-If possible, provide a table illustrating the options, evaluation criteria, and scores that factored into the decision.
+| Requirement | hinTS | Groth21 |
+|-------------|-------|---------|
+| TSS-001     | Yes   | Yes     |
+| TSS-002     | Yes   | Yes     |
+| TSS-003     | Yes   | Yes     |
+| TSS-004     | Yes   | Yes     |
+| TSS-005     | Yes   | Yes     |
+| TSS-006     | Yes   | Yes     |
+| TSS-007     | Yes   | Yes     |
+| TSS-008     | No    | Yes     |
+| TSS-009     | Yes   | Yes     |
+| TSS-010     | Yes   | No      |
 
+##### hinTS
+
+The hinTS algorithm is a threshold signature scheme that is able to measure double precision distributions of weight
+across nodes. The complicating factor with hinTS is that during an address book change over, a recursive proof needs
+to be constructed to prove that the new roster is a descendent of the original genesis roster. Validation of this
+recursive proof proved too expensive for EVM smart contracts.
+
+### Goals
+
+TSS Genesis 
+1. 
+2. That the next consensus roster is set by the app with enough time to key the next roster. 
+2. 
+
+### Non-Goals
 
 ---
 
 ## Changes
+
+Integrating a Threshold Signature Scheme into the consensus node requires significant changes to the startup 
+process for a node and the process of changing the consensus roster. 
 
 ### Architecture and/or Components
 
