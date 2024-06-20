@@ -1385,9 +1385,32 @@ public class UtilVerbs {
         return validateChargedUsdWithin(txn, expectedUsd, allowedPercentDiff);
     }
 
+    public static CustomSpecAssert validateChargedUsdWithChilds(String txn, double expectedUsd) {
+        return validateChargedUsdWithinAndChilds(txn, expectedUsd, 1.0);
+    }
+
+    public static CustomSpecAssert validateChargedUsdWithChilds(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return validateChargedUsdWithinAndChilds(txn, expectedUsd, allowedPercentDiff);
+    }
+
     public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
         return assertionsHold((spec, assertLog) -> {
             final var actualUsdCharged = getChargedUsed(spec, txn);
+            assertEquals(
+                    expectedUsd,
+                    actualUsdCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsd,
+                    String.format(
+                            "%s fee (%s) more than %.2f percent different than expected!",
+                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+        });
+    }
+
+    public static CustomSpecAssert validateChargedUsdWithinAndChilds(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsdWithChilds(spec, txn);
             assertEquals(
                     expectedUsd,
                     actualUsdCharged,
@@ -1828,5 +1851,29 @@ public class UtilVerbs {
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
                 / 100;
+    }
+
+    private static double getChargedUsdWithChilds(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).andAllChildRecords().logged();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        long fee = rcd.getTransactionFee() + getChargedUsdChilds(subOp);
+        return (1.0 * fee)
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
+    private static long getChargedUsdChilds(HapiGetTxnRecord responseRecord) {
+        if (responseRecord == null || responseRecord.getChildRecords() == null) {
+            return 0L;
+        }
+
+        return responseRecord.getChildRecords().stream()
+                .mapToLong(TransactionRecord::getTransactionFee)
+                .sum();
     }
 }

@@ -96,7 +96,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChilds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
@@ -2374,9 +2374,11 @@ public class CryptoTransferSuite {
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
         final var transferTokenAAndBToHollowAccountTxn = "transferTokenAAndBToHollowAccountTxn";
+        final double expectedCreateHollowAccountFee = 0.0509056847999;
         final double transferFee = 0.00189;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = transferFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + transferFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithFtTransferAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2448,7 +2450,7 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(validateChargedUsd(
+                .then(validateChargedUsdWithChilds(
                         transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
@@ -2462,9 +2464,11 @@ public class CryptoTransferSuite {
         final AtomicReference<TokenID> tokenIdB = new AtomicReference<>();
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
+        final double expectedCreateHollowAccountFee = 0.0509056847999;
         final double transferFee = 0.00189;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = transferFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + transferFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2552,7 +2556,7 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(validateChargedUsd(
+                .then(validateChargedUsdWithChilds(
                         transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
@@ -2568,9 +2572,11 @@ public class CryptoTransferSuite {
         final AtomicReference<ByteString> aliceAlias = new AtomicReference<>();
         final AtomicReference<ByteString> bobAlias = new AtomicReference<>();
         final AtomicReference<ByteString> carolHollowAccountAlias = new AtomicReference<>();
+        final double expectedCreateHollowAccountFee = 0.0509056847999;
         final double transferFee = 0.00189;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = 2 * transferFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + 2 * transferFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithMultipleSendersAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2643,7 +2649,8 @@ public class CryptoTransferSuite {
                         getAccountInfo(DAVE).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                         // Verify the hollow account is completed
                         getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
-                .then(validateChargedUsd(transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(validateChargedUsdWithChilds(
+                        transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -2658,9 +2665,11 @@ public class CryptoTransferSuite {
         final AtomicReference<ByteString> aliceAlias = new AtomicReference<>();
         final AtomicReference<ByteString> bobHollowAccountAlias = new AtomicReference<>();
         final AtomicReference<ByteString> carolHollowAccountAlias = new AtomicReference<>();
+        final double expectedCreateHollowAccountFee = 0.0509056847999;
         final double transferFee = 0.00189;
         final double expectedFeeForOneAssociation = 0.05;
-        final double expectedCryptoTransferAndAssociationUsd = 2 * transferFee + 2 * expectedFeeForOneAssociation;
+        final double expectedCryptoTransferAndAssociationUsd =
+                2 * expectedCreateHollowAccountFee + transferFee + 2 * expectedFeeForOneAssociation;
 
         return propertyPreservingHapiSpec("createHollowAccountWithMultipleReceiversAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
@@ -2743,6 +2752,7 @@ public class CryptoTransferSuite {
                         getAccountInfo(DAVE).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)),
                         // Verify the hollow account is completed
                         getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
-                .then(validateChargedUsd(transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(validateChargedUsdWithChilds(
+                        transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd));
     }
 }
