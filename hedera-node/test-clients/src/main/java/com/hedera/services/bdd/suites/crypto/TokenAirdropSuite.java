@@ -20,9 +20,11 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingPendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -45,6 +47,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -115,13 +118,11 @@ public class TokenAirdropSuite {
                         getTxnRecord("fungible airdrop")
                                 .andAllChildRecords()
                                 // assert pending airdrops
-                                // todo create method to check multiple pending elements
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(
-                                                includingPendingAirdrop(moveToReceiverWith0AutoAssociations, true)))
-                                .hasPriority(recordWith()
-                                        .pendingAirdrops(includingPendingAirdrop(
-                                                moveToReceiverWithoutFreeAutoAssociations, true)))
+                                                includingFungiblePendingAirdrop(
+                                                        moveToReceiverWith0AutoAssociations,
+                                                        moveToReceiverWithoutFreeAutoAssociations)))
                                 // assert transfers
                                 .hasChildRecords(recordWith()
                                         .tokenTransfers(includingFungibleMovement(moving(30, FUNGIBLE_TOKEN)
@@ -130,8 +131,11 @@ public class TokenAirdropSuite {
                                                         RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS,
                                                         RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS,
                                                         ASSOCIATED_RECEIVER))))
-                                .logged()
-                        // todo check account balances
+                                .logged(),
+                        getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                        getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, 0)
                         );
     }
 
@@ -140,47 +144,75 @@ public class TokenAirdropSuite {
         return propertyPreservingHapiSpec("nftAirdropToExistingAccountsWorks")
                 .preserving(AIRDROPS_ENABLED)
                 .given(
-                        //overriding(AIRDROPS_ENABLED, "true"),
+                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0),
-                        cryptoCreate(ASSOCIATED_RECEIVER),
+                        tokenCreate(DUMMY_FUNGIBLE_TOKEN)
+                                .treasury(SENDER)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(100L),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .treasury(SENDER)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0L)
                                 .name(NON_FUNGIBLE_TOKEN)
                                 .supplyKey(NFT_SUPPLY_KEY),
-                        tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN),
                         mintToken(
                                 NON_FUNGIBLE_TOKEN,
                                 List.of(
                                         ByteString.copyFromUtf8("a"),
                                         ByteString.copyFromUtf8("b"),
-                                        ByteString.copyFromUtf8("c"))),
+                                        ByteString.copyFromUtf8("c"),
+                                        ByteString.copyFromUtf8("d"),
+                                        ByteString.copyFromUtf8("e"))),
+                        cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
+                        cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0),
+                        cryptoCreate(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(1),
+                        // fill the auto associate slot
+                        cryptoTransfer(moving(10, DUMMY_FUNGIBLE_TOKEN)
+                                .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)),
+                        cryptoCreate(ASSOCIATED_RECEIVER),
+                        tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN)
+                        )
+                .when(
                         tokenAirdrop(
-                                        // add to pending state
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
-                                        // do the transfer
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 3L).between(SENDER, ASSOCIATED_RECEIVER))
+                                // add to pending state
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                        .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 2L)
+                                        .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                                // do the transfer
+                                movingUnique(NON_FUNGIBLE_TOKEN, 3L)
+                                        .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 4L)
+                                        .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 5L).between(SENDER, ASSOCIATED_RECEIVER))
                                 .payingWith(SENDER)
-                                .via("non fungible airdrop"),
-                        getTxnRecord("non fungible airdrop")
-                                .andAllChildRecords()
-                                // check if one of the tokens is in the pending list
-                                .hasPriority(recordWith()
-                                        .pendingAirdrops(includingPendingAirdrop(
-                                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                                        .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
-                                                false)))
-                                .hasChildRecords(recordWith()
-                                        .tokenTransfers(
-                                                includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
-                                                        .between(SENDER, ASSOCIATED_RECEIVER))))
-                                .logged())
-                .when()
-                .then();
+                                .via("non fungible airdrop"))
+                .then(getTxnRecord("non fungible airdrop")
+                        .andAllChildRecords()
+                        // check if one of the tokens is in the pending list
+                        .hasPriority(recordWith()
+                                .pendingAirdrops(includingNftPendingAirdrop(
+                                        movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                        movingUnique(NON_FUNGIBLE_TOKEN, 2L)
+                                                .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
+
+                        .hasChildRecords(recordWith()
+                                .tokenTransfers(
+                                        includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
+                                                .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))))
+                        .hasChildRecords(recordWith()
+                                .tokenTransfers(
+                                        includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 4L)
+                                                .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))))
+                        .hasChildRecords(recordWith()
+                                .tokenTransfers(
+                                        includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 5L)
+                                                .between(SENDER, ASSOCIATED_RECEIVER))))
+                        .logged());
     }
 
     @HapiTest

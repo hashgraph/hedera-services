@@ -131,10 +131,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var pendingStore = context.writableStore(WritableAirdropStore.class);
 
-        // validate sender and his balance
-
-        // check for custom fees
-
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();

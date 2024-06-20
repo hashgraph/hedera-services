@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -37,15 +38,16 @@ import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -112,59 +114,75 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         };
     }
 
-    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingPendingAirdrop(
-            final TokenMovement movement, final boolean fungible) {
-        return spec -> {
-            PendingAirdropRecord expectedRecord;
-            TokenID tokenId;
-            if (fungible) {
-                var tokenXfer = movement.specializedFor(spec);
-                var aaSender = tokenXfer.getTransfers(0);
-                var aaReceiver = tokenXfer.getTransfers(1);
-                tokenId = tokenXfer.getToken();
-                var pendingAirdropId = PendingAirdropId.newBuilder()
-                        .setSenderId(aaSender.getAccountID())
-                        .setReceiverId(aaReceiver.getAccountID())
-                        .setFungibleTokenType(tokenId)
-                        .build();
-                var pendingAirdropValue = PendingAirdropValue.newBuilder()
-                        .setAmount(aaReceiver.getAmount())
-                        .build();
-                expectedRecord = PendingAirdropRecord.newBuilder()
-                        .setPendingAirdropId(pendingAirdropId)
-                        .setPendingAirdropValue(pendingAirdropValue)
-                        .build();
-            } else {
-                var tokenXfer = movement.specializedForNft(spec);
-                var aaSender = tokenXfer.getNftTransfers(0).getSenderAccountID();
-                var aaReceiver = tokenXfer.getNftTransfers(0).getReceiverAccountID();
-                tokenId = tokenXfer.getToken();
-                var pendingAirdropId = PendingAirdropId.newBuilder()
-                        .setSenderId(aaSender)
-                        .setReceiverId(aaReceiver)
-                        .setNonFungibleToken(NftID.newBuilder()
-                                .setTokenID(tokenId)
-                                .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
-                        .build();
-                var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
-                expectedRecord = PendingAirdropRecord.newBuilder()
-                        .setPendingAirdropId(pendingAirdropId)
-                        .setPendingAirdropValue(pendingAirdropValue)
-                        .build();
-            }
+    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingFungiblePendingAirdrop( final TokenMovement... movements ) {
+        var listOfMovements = List.of(movements);
+        return includingPendingAirdrop(listOfMovements, true);
+    }
 
+    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingNftPendingAirdrop( final TokenMovement... movements ) {
+        var listOfMovements = List.of(movements);
+        return includingPendingAirdrop(listOfMovements, false);
+    }
+
+    private static ErroringAssertsProvider<List<PendingAirdropRecord>> includingPendingAirdrop(
+            final List<TokenMovement> movements, final boolean fungible) {
+
+        return spec -> {
+            // build pending airdrop records
+            // iterate over movements without aggregating them
+            List<PendingAirdropRecord> expectedRecords = new ArrayList<>();
+            AccountAmount senderAmount = null;
+            movements.forEach(tokenMovement -> {
+                if(fungible) {
+                    var tokenXfer = tokenMovement.specializedFor(spec);
+                    var aaSender = tokenXfer.getTransfers(0);
+                    var aaReceiver = tokenXfer.getTransfers(1);
+                    var tokenId = tokenXfer.getToken();
+                    var pendingAirdropId = PendingAirdropId.newBuilder()
+                            .setSenderId(aaSender.getAccountID())
+                            .setReceiverId(aaReceiver.getAccountID())
+                            .setFungibleTokenType(tokenId)
+                            .build();
+                    var pendingAirdropValue = PendingAirdropValue.newBuilder()
+                            .setAmount(aaReceiver.getAmount())
+                            .build();
+                    var expectedRecord = PendingAirdropRecord.newBuilder()
+                            .setPendingAirdropId(pendingAirdropId)
+                            .setPendingAirdropValue(pendingAirdropValue)
+                            .build();
+                    expectedRecords.add(expectedRecord);
+                } else {
+                    var tokenXfer = tokenMovement.specializedForNft(spec);
+                    var aaSender = tokenXfer.getNftTransfers(0).getSenderAccountID();
+                    var aaReceiver = tokenXfer.getNftTransfers(0).getReceiverAccountID();
+                    var tokenId = tokenXfer.getToken();
+                    var pendingAirdropId = PendingAirdropId.newBuilder()
+                            .setSenderId(aaSender)
+                            .setReceiverId(aaReceiver)
+                            .setNonFungibleToken(NftID.newBuilder()
+                                    .setTokenID(tokenId)
+                                    .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
+                            .build();
+                    var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
+                    var expectedRecord = PendingAirdropRecord.newBuilder()
+                            .setPendingAirdropId(pendingAirdropId)
+                            .setPendingAirdropValue(pendingAirdropValue)
+                            .build();
+
+                    expectedRecords.add(expectedRecord);
+                }
+            });
             return (ErroringAsserts<List<PendingAirdropRecord>>) allPendingAirdrops -> {
                 List<Throwable> errs = Collections.emptyList();
-                var found = false;
+                AtomicBoolean found = new AtomicBoolean(true);
                 try {
-                    for (final var pendingAirdropRecord : allPendingAirdrops) {
-                        if (pendingAirdropRecord.equals(expectedRecord)) {
-                            found = true;
-                            break;
+                    expectedRecords.stream().takeWhile(n -> found.get()).forEach(record -> {
+                        if(!allPendingAirdrops.contains(record)) {
+                            found.set(false);
                         }
-                    }
-                    if (!found) {
-                        Assertions.fail("Expected pending airdrop " + expectedRecord + " but not present in "
+                    });
+                    if (!found.get()) {
+                        Assertions.fail("Expected pending airdrops " + expectedRecords + " but not present in "
                                 + allPendingAirdrops);
                     }
                 } catch (Throwable t) {
