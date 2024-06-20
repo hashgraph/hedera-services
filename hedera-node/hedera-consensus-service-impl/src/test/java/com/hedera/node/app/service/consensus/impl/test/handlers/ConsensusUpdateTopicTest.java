@@ -33,15 +33,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
@@ -53,9 +50,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicH
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -104,12 +98,6 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
     @Mock
     private PropertySource compositeProps;
 
-    @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
-    private FeeAccumulator feeAccumulator;
-
     private StandardizedAttributeValidator standardizedAttributeValidator;
 
     private ConsensusUpdateTopicHandler subject;
@@ -123,11 +111,6 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         standardizedAttributeValidator =
                 new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         subject = new ConsensusUpdateTopicHandler();
-
-        lenient().when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
-        lenient().when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        lenient().when(feeCalculator.calculate()).thenReturn(Fees.FREE);
-        lenient().when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test

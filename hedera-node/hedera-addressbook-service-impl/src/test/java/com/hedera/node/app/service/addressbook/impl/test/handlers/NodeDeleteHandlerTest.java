@@ -39,6 +39,7 @@ import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -113,8 +114,10 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @DisplayName("check that fees are free for delete node trx")
     public void testCalculateFeesInvocations() {
         final var feeCtx = mock(FeeContext.class);
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCalc.calculate()).willReturn(Fees.FREE);
 
         assertThat(subject.calculateFees(feeCtx)).isEqualTo(Fees.FREE);
