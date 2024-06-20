@@ -20,7 +20,7 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,9 +47,9 @@ public interface Gossip {
      */
     void bind(
             @NonNull WiringModel model,
-            @NonNull BindableInputWire<GossipEvent, Void> eventInput,
+            @NonNull BindableInputWire<PlatformEvent, Void> eventInput,
             @NonNull BindableInputWire<EventWindow, Void> eventWindowInput,
-            @NonNull StandardOutputWire<GossipEvent> eventOutput,
+            @NonNull StandardOutputWire<PlatformEvent> eventOutput,
             @NonNull BindableInputWire<NoInput, Void> startInput,
             @NonNull BindableInputWire<NoInput, Void> stopInput,
             @NonNull BindableInputWire<NoInput, Void> clearInput,

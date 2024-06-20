@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
@@ -43,6 +41,9 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakingPeriodTimeHook {
     private static final Logger logger = LogManager.getLogger(StakingPeriodTimeHook.class);
+
+    private static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
+    private static final long MINUTES_TO_MILLISECONDS = 60_000L;
 
     private final EndOfStakingPeriodUpdater stakingCalculator;
     private final ExchangeRateManager exchangeRateManager;

@@ -33,7 +33,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -52,6 +51,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -336,7 +336,10 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var body = feeContext.body();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         return cryptoUpdateFees(
-                body, feeContext.feeCalculator(SubType.DEFAULT), accountStore, feeContext.configuration());
+                body,
+                feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT),
+                accountStore,
+                feeContext.configuration());
     }
 
     /**
@@ -381,7 +384,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     private static int currentNonBaseBytes(final Account account) {
         return account.memo().getBytes(StandardCharsets.UTF_8).length
-                + getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                + getAccountKeyStorageSize(CommonPbjConverters.fromPbj(account.keyOrElse(Key.DEFAULT)))
                 + (account.maxAutoAssociations() == 0 ? 0 : INT_SIZE);
     }
 
@@ -407,7 +410,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var unlimitedAutoAssoc = entityConfig.unlimitedAutoAssociationsEnabled();
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 
-        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
+        final var keySize = op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrThrow())) : 0L;
         final var baseSize = baseSizeOf(op, keySize, unlimitedAutoAssoc);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
 
@@ -416,7 +419,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 : account.memo().getBytes(StandardCharsets.UTF_8).length;
         final long newVariableBytes = (newMemoSize != 0L ? newMemoSize : accountMemoSize)
                 + (keySize == 0L && account != null
-                        ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                        ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(account.keyOrElse(Key.DEFAULT)))
                         : keySize);
 
         final long tokenRelBytes =

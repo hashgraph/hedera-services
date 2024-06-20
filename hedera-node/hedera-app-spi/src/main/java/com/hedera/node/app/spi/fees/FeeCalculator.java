@@ -28,9 +28,6 @@ import java.util.function.Function;
  * signature map, and the number of signature verifications than have been performed, and the number of bytes in the
  * transaction memo, etc. The handler can use the calculator to determine the {@link Fees} for the transaction. It can
  * then also apply any additional fees that are required by the handler.
- *
- * <p>In other words, the calculator takes USAGE information and transforms it into FEES. Those fees are then charged
- * using the {@link FeeAccumulator}.
  */
 public interface FeeCalculator {
     /**

@@ -16,9 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
@@ -45,10 +49,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class CustomFeeAssessmentStepTest extends StepsBase {
     private TransferContextImpl transferContext;
     private CustomFeeAssessmentStep subject;
@@ -71,6 +72,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
 
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp);
     }
@@ -412,8 +414,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(level2Op.tokenTransfers(), expectedLevel2TokenTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     private void givenDifferentTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
@@ -425,8 +425,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
-        System.out.println("Before " + handleContext.payer());
-
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp);
     }

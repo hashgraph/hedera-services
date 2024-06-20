@@ -140,6 +140,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
@@ -235,7 +236,6 @@ public class LeakyCryptoTestsSuite {
     final Stream<DynamicTest> autoAssociationPropertiesWorkAsExpected() {
         final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
         final var maxAssociationsPropertyName = "ledger.maxAutoAssociations";
-        final var unlimitedAutoAssociationsPropertyName = "entities.unlimitedAutoAssociationsEnabled";
         final var shortLivedAutoAssocUser = "shortLivedAutoAssocUser";
         final var longLivedAutoAssocUser = "longLivedAutoAssocUser";
         final var payerBalance = 100 * ONE_HUNDRED_HBARS;
@@ -247,12 +247,12 @@ public class LeakyCryptoTestsSuite {
                 .preserving(
                         maxAssociationsPropertyName,
                         minAutoRenewPeriodPropertyName,
-                        unlimitedAutoAssociationsPropertyName)
+                        UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
                         overridingThree(
                                 maxAssociationsPropertyName, "100",
                                 minAutoRenewPeriodPropertyName, "1",
-                                unlimitedAutoAssociationsPropertyName, "true"),
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"),
                         cryptoCreate(longLivedAutoAssocUser)
                                 .balance(payerBalance)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS),

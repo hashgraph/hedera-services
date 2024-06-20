@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -522,10 +523,10 @@ public class ContractUpdateSuite {
                 .preserving(
                         "contracts.allowAutoAssociations",
                         "ledger.maxAutoAssociations",
-                        "entities.unlimitedAutoAssociationsEnabled")
+                        UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
                         overridingThree(
-                                "entities.unlimitedAutoAssociationsEnabled",
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
                                 TRUE_VALUE,
                                 "contracts.allowAutoAssociations",
                                 TRUE_VALUE,

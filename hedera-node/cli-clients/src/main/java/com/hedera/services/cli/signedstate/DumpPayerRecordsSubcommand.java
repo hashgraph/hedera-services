@@ -18,23 +18,17 @@ package com.hedera.services.cli.signedstate;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.submerkle.TxnId;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.services.cli.utils.FieldBuilder;
-import com.hedera.services.cli.utils.ThingsToStrings;
+import com.hedera.services.cli.utils.RichInstant;
 import com.hedera.services.cli.utils.Writer;
-import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /** Dump payer records from a signed state file to a text file in a deterministic order  */
 public class DumpPayerRecordsSubcommand {
@@ -58,10 +52,9 @@ public class DumpPayerRecordsSubcommand {
     }
 
     void doit() {
-        final var payerRecordsQueue = state.getPayerRecords();
         System.out.printf("=== payer records ===%n");
 
-        final var records = gatherTxnRecordsFromMono(payerRecordsQueue);
+        final var records = gatherTxnRecordsFromMono();
 
         int reportSize;
         try (@NonNull final var writer = new Writer(payerRecordsPath)) {
@@ -72,26 +65,14 @@ public class DumpPayerRecordsSubcommand {
         System.out.printf("=== payer records report is %d bytes%n", reportSize);
     }
 
-    private static List<PayerRecord> gatherTxnRecordsFromMono(RecordsStorageAdapter recordsStorageAdapter) {
-        final var listTxnRecords = new ArrayList<PayerRecord>();
-        recordsStorageAdapter.doForEach((payer, fcq) -> {
-            fcq.stream().forEach(p -> listTxnRecords.add(PayerRecord.fromExpirableTxnRecord(p)));
-        });
-        return listTxnRecords;
+    private static List<PayerRecord> gatherTxnRecordsFromMono() {
+        return List.of();
     }
 
     @SuppressWarnings(
             "java:S6218") // "Equals/hashcode method should be overridden in records containing array fields" - this
     public record PayerRecord(
-            @NonNull TxnId transactionId, @NonNull RichInstant consensusTime, @NonNull EntityId payer) {
-
-        public static PayerRecord fromExpirableTxnRecord(@NonNull ExpirableTxnRecord record) {
-            return new PayerRecord(
-                    record.getTxnId(),
-                    record.getConsensusTime(),
-                    record.getTxnId().getPayerAccount());
-        }
-    }
+            @NonNull TransactionID transactionId, @NonNull RichInstant consensusTime, @NonNull AccountID payer) {}
 
     static void reportOnTxnRecords(@NonNull Writer writer, @NonNull List<PayerRecord> records) {
         writer.writeln(formatHeader());
@@ -103,25 +84,17 @@ public class DumpPayerRecordsSubcommand {
 
     static void formatRecords(@NonNull final Writer writer, @NonNull final PayerRecord record) {
         final var fb = new FieldBuilder(FIELD_SEPARATOR);
-        fieldFormatters.stream().map(Pair::right).forEach(ff -> ff.accept(fb, record));
         writer.writeln(fb);
     }
 
     @NonNull
     static String formatHeader() {
-        return fieldFormatters.stream().map(Pair::left).collect(Collectors.joining(FIELD_SEPARATOR));
+        return "";
     }
 
     static final String FIELD_SEPARATOR = ";";
 
     @NonNull
-    static List<Pair<String, BiConsumer<FieldBuilder, PayerRecord>>> fieldFormatters = List.of(
-            Pair.of("txnId", getFieldFormatter(PayerRecord::transactionId, Object::toString)),
-            Pair.of(
-                    "consensusTime",
-                    getFieldFormatter(PayerRecord::consensusTime, ThingsToStrings::toStringOfRichInstant)),
-            Pair.of("payer", getFieldFormatter(PayerRecord::payer, ThingsToStrings::toStringOfEntityId)));
-
     static <T> BiConsumer<FieldBuilder, PayerRecord> getFieldFormatter(
             @NonNull final Function<PayerRecord, T> fun, @NonNull final Function<T, String> formatter) {
         return (fb, t) -> formatField(fb, t, fun, formatter);

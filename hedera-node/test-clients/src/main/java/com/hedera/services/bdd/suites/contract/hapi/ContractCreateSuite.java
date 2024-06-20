@@ -85,6 +85,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -668,8 +669,8 @@ public class ContractCreateSuite {
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
         return propertyPreservingHapiSpec("tryContractCreateWithMaxAutoAssoc")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE), uploadInitCode(contract))
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+                .given(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
