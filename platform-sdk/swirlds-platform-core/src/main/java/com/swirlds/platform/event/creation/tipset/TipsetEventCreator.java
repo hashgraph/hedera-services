@@ -116,6 +116,9 @@ public class TipsetEventCreator implements EventCreator {
     private final RateLimitedLogger zeroAdvancementWeightLogger;
     private final RateLimitedLogger noParentFoundLogger;
 
+    /**
+     * Event hasher for unsigned events.
+     */
     private final StatefulEventHasher statefulEventHasher = new StatefulEventHasher();
 
     /**

@@ -54,20 +54,20 @@ public class RandomEventUtils {
             final EventImpl otherParent,
             final boolean fakeHash) {
 
-        final UnsignedEvent hashedData = randomEventHashedDataWithTimestamp(
+        final UnsignedEvent unsignedEvent = randomUnsignedEventWithTimestamp(
                 random, creatorId, timestamp, birthRound, transactions, selfParent, otherParent, fakeHash);
 
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        return new IndexedEvent(new PlatformEvent(hashedData, sig), selfParent, otherParent);
+        return new IndexedEvent(new PlatformEvent(unsignedEvent, sig), selfParent, otherParent);
     }
 
     /**
      * Similar to randomEventHashedData but where the timestamp provided to this
      * method is the timestamp used as the creation timestamp for the event.
      */
-    public static UnsignedEvent randomEventHashedDataWithTimestamp(
+    public static UnsignedEvent randomUnsignedEventWithTimestamp(
             @NonNull final Random random,
             @NonNull final NodeId creatorId,
             @NonNull final Instant timestamp,
@@ -99,7 +99,7 @@ public class RandomEventUtils {
                     .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
                     .forEach(convertedTransactions::add);
         }
-        final UnsignedEvent hashedData = new UnsignedEvent(
+        final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 new BasicSoftwareVersion(1),
                 creatorId,
                 selfDescriptor,
@@ -109,10 +109,10 @@ public class RandomEventUtils {
                 convertedTransactions);
 
         if (fakeHash) {
-            hashedData.setHash(RandomUtils.randomHash(random));
+            unsignedEvent.setHash(RandomUtils.randomHash(random));
         } else {
-            new StatefulEventHasher().hashEvent(hashedData);
+            new StatefulEventHasher().hashEvent(unsignedEvent);
         }
-        return hashedData;
+        return unsignedEvent;
     }
 }

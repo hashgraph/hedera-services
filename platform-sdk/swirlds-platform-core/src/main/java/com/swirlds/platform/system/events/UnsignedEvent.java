@@ -89,11 +89,6 @@ public class UnsignedEvent extends AbstractHashable {
     private NodeId creatorId;
 
     /**
-     * the round number in which this event was created, used to look up the effective roster at that time.
-     */
-    private long birthRound;
-
-    /**
      * the self parent event descriptor
      */
     private EventDescriptor selfParent;
@@ -127,7 +122,14 @@ public class UnsignedEvent extends AbstractHashable {
     private static final Set<Long> TRANSACTION_TYPES =
             Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
+    /**
+     * The core event data.
+     */
     private final EventCore eventCore;
+
+    /**
+     * The payloads of the event.
+     */
     private final List<EventPayload> payloads;
 
     /**
@@ -157,7 +159,6 @@ public class UnsignedEvent extends AbstractHashable {
         otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
         this.allParents = createAllParentsList();
-        this.birthRound = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
 
         this.payloads = transactions.stream().map(EventPayload::new).toList();
@@ -180,15 +181,25 @@ public class UnsignedEvent extends AbstractHashable {
                 .toArray(new ConsensusTransactionImpl[0]);
     }
 
-    public int getMinimumSupportedVersion() {
-        return ClassVersion.BIRTH_ROUND;
-    }
-
+    /**
+     * Serialize the event for the purpose of creating a hash.
+     *
+     * @param out the stream to which this object is to be written
+     *
+     * @throws IOException if unsupported payload types are encountered
+     */
     public void serializeForHash(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(CLASS_ID);
         serialize(out);
     }
 
+    /**
+     * Serialize the event
+     *
+     * @param out the stream to which this object is to be written
+     *
+     * @throws IOException if unsupported payload types are encountered
+     */
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(ClassVersion.BIRTH_ROUND);
         out.writeSerializable(softwareVersion, true);
@@ -234,12 +245,19 @@ public class UnsignedEvent extends AbstractHashable {
                     out.writeInt(Integer.MIN_VALUE); // epochHash is always null
                     break;
                 default:
-                    throw new IllegalArgumentException(
+                    throw new IOException(
                             "Unknown payload type: " + payload.payload().kind());
             }
         }
     }
 
+    /**
+     * Deserialize the event.
+     *
+     * @param in the stream from which this object is to be read
+     * @return the deserialized event
+     * @throws IOException if unsupported payload types are encountered
+     */
     public static UnsignedEvent deserialize(final SerializableDataInputStream in, final int version)
             throws IOException {
         in.readInt(); // read and ignore version
@@ -286,7 +304,7 @@ public class UnsignedEvent extends AbstractHashable {
         return (Objects.equals(creatorId, that.creatorId))
                 && Objects.equals(selfParent, that.selfParent)
                 && Objects.equals(otherParents, that.otherParents)
-                && birthRound == that.birthRound
+                && eventCore.birthRound() == that.eventCore.birthRound()
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
                 && (softwareVersion.compareTo(that.softwareVersion) == 0);
@@ -294,7 +312,8 @@ public class UnsignedEvent extends AbstractHashable {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated);
+        int result =
+                Objects.hash(softwareVersion, creatorId, selfParent, otherParents, eventCore.birthRound(), timeCreated);
         result = 31 * result + Arrays.hashCode(transactions);
         return result;
     }
@@ -306,7 +325,7 @@ public class UnsignedEvent extends AbstractHashable {
                 .append("creatorId", creatorId)
                 .append("selfParent", selfParent)
                 .append("otherParents", otherParents)
-                .append("birthRound", birthRound)
+                .append("birthRound", eventCore.birthRound())
                 .append("timeCreated", timeCreated)
                 .append("transactions size", transactions == null ? "null" : transactions.length)
                 .append("hash", getHash() == null ? "null" : getHash().toHex(TO_STRING_BYTE_ARRAY_LENGTH))
@@ -339,7 +358,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return birthRound;
+        return eventCore.birthRound();
     }
 
     /**
@@ -499,7 +518,7 @@ public class UnsignedEvent extends AbstractHashable {
                 throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
             }
 
-            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
+            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), eventCore.birthRound());
         }
 
         return descriptor;
