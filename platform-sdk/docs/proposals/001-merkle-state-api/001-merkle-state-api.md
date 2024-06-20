@@ -263,6 +263,11 @@ message ConsensusSnapshot {
      * A "consensus" timestamp.<br/>
      * The consensus timestamp of this snapshot.
      * <p>
+     * Depending on the context this timestamp may have different meanings:
+     * <li> if there are transactions, the timestamp is equal to the timestamp of the last transaction
+     * <li> if there are no transactions, the timestamp is equal to the timestamp of the last event
+     * <li> if there are no events, the timestamp is equal to the timestamp of the previous round plus a small constant    
+     * <p>
      * This SHALL be a consensus value and MAY NOT correspond to an actual
      * "wall clock" timestamp.<br/>
      * Consensus Timestamps SHALL always increase.
