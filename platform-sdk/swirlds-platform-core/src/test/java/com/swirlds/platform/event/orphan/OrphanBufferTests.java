@@ -31,7 +31,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -61,7 +61,7 @@ class OrphanBufferTests {
     /**
      * Events that will be "received" from intake
      */
-    private List<GossipEvent> intakeEvents;
+    private List<PlatformEvent> intakeEvents;
 
     /**
      * The maximum generation of any event that has been created
@@ -110,10 +110,10 @@ class OrphanBufferTests {
      * @param parentCandidates the list of events to choose from when selecting an other parent
      * @return the bootstrap event descriptor
      */
-    private GossipEvent createBootstrapEvent(
-            @NonNull final NodeId nodeId, @NonNull final List<GossipEvent> parentCandidates) {
+    private PlatformEvent createBootstrapEvent(
+            @NonNull final NodeId nodeId, @NonNull final List<PlatformEvent> parentCandidates) {
 
-        final GossipEvent bootstrapEvent =
+        final PlatformEvent bootstrapEvent =
                 new TestingEventBuilder(random).setCreatorId(nodeId).build();
         parentCandidates.add(bootstrapEvent);
         return bootstrapEvent;
@@ -126,15 +126,15 @@ class OrphanBufferTests {
      * @param tips             the most recent events from each node
      * @return the random event
      */
-    private GossipEvent createRandomEvent(
-            @NonNull final List<GossipEvent> parentCandidates, @NonNull final Map<NodeId, GossipEvent> tips) {
+    private PlatformEvent createRandomEvent(
+            @NonNull final List<PlatformEvent> parentCandidates, @NonNull final Map<NodeId, PlatformEvent> tips) {
 
         final NodeId eventCreator = new NodeId(random.nextInt(NODE_ID_COUNT));
 
-        final GossipEvent selfParent =
+        final PlatformEvent selfParent =
                 tips.computeIfAbsent(eventCreator, creator -> createBootstrapEvent(creator, parentCandidates));
 
-        final GossipEvent otherParent = chooseOtherParent(parentCandidates);
+        final PlatformEvent otherParent = chooseOtherParent(parentCandidates);
 
         final long maxParentGeneration = Math.max(selfParent.getGeneration(), otherParent.getGeneration());
         final long eventGeneration = maxParentGeneration + 1;
@@ -171,7 +171,7 @@ class OrphanBufferTests {
      * @param emittedEvents the events that have been emitted so far
      */
     private static void assertValidParents(
-            @NonNull final GossipEvent event,
+            @NonNull final PlatformEvent event,
             @NonNull final EventWindow eventWindow,
             @NonNull final Collection<Hash> emittedEvents) {
         for (final EventDescriptor parent : event.getAllParents()) {
@@ -186,7 +186,7 @@ class OrphanBufferTests {
      * @param parentCandidates the list of candidates
      * @return the chosen other parent
      */
-    private GossipEvent chooseOtherParent(@NonNull final List<GossipEvent> parentCandidates) {
+    private PlatformEvent chooseOtherParent(@NonNull final List<PlatformEvent> parentCandidates) {
         final int startIndex = Math.max(0, parentCandidates.size() - PARENT_SELECTION_WINDOW);
         return parentCandidates.get(
                 startIndex + random.nextInt(Math.min(PARENT_SELECTION_WINDOW, parentCandidates.size())));
@@ -196,13 +196,13 @@ class OrphanBufferTests {
     void setup() {
         random = getRandomPrintSeed();
 
-        final List<GossipEvent> parentCandidates = new ArrayList<>();
-        final Map<NodeId, GossipEvent> tips = new HashMap<>();
+        final List<PlatformEvent> parentCandidates = new ArrayList<>();
+        final Map<NodeId, PlatformEvent> tips = new HashMap<>();
 
         intakeEvents = new ArrayList<>();
 
         for (long i = 0; i < TEST_EVENT_COUNT; i++) {
-            final GossipEvent newEvent = createRandomEvent(parentCandidates, tips);
+            final PlatformEvent newEvent = createRandomEvent(parentCandidates, tips);
 
             parentCandidates.add(newEvent);
             intakeEvents.add(newEvent);
@@ -243,8 +243,8 @@ class OrphanBufferTests {
         // events that have been emitted from the orphan buffer
         final Collection<Hash> emittedEvents = new HashSet<>();
 
-        for (final GossipEvent intakeEvent : intakeEvents) {
-            final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+        for (final PlatformEvent intakeEvent : intakeEvents) {
+            final List<PlatformEvent> unorphanedEvents = new ArrayList<>();
 
             unorphanedEvents.addAll(orphanBuffer.handleEvent(intakeEvent));
 
@@ -265,7 +265,7 @@ class OrphanBufferTests {
                     ancientMode);
             unorphanedEvents.addAll(orphanBuffer.setEventWindow(eventWindow));
 
-            for (final GossipEvent unorphanedEvent : unorphanedEvents) {
+            for (final PlatformEvent unorphanedEvent : unorphanedEvents) {
                 assertValidParents(unorphanedEvent, eventWindow, emittedEvents);
                 emittedEvents.add(unorphanedEvent.getHash());
             }
@@ -282,16 +282,16 @@ class OrphanBufferTests {
     void testParentIterator() {
         final Random random = Randotron.create();
 
-        final GossipEvent selfParent =
+        final PlatformEvent selfParent =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(0)).build();
-        final GossipEvent otherParent1 =
+        final PlatformEvent otherParent1 =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
-        final GossipEvent otherParent2 =
+        final PlatformEvent otherParent2 =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
-        final GossipEvent otherParent3 =
+        final PlatformEvent otherParent3 =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(3)).build();
 
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setSelfParent(selfParent)
                 .setOtherParents(List.of(otherParent1, otherParent2, otherParent3))
                 .build();

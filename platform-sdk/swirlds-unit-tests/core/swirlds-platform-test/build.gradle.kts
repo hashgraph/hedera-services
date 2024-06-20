@@ -26,6 +26,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 testModuleInfo {
+    requires("com.hedera.node.hapi")
     requires("com.hedera.pbj.runtime")
     requires("com.swirlds.merkle")
     requires("com.swirlds.base.test.fixtures")

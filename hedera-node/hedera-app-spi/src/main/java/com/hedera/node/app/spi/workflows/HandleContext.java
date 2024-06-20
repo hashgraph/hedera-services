@@ -22,14 +22,11 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -44,7 +41,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -79,8 +76,21 @@ public interface HandleContext {
         SCHEDULED
     }
 
+    /**
+     * Enumerates the possible kinds of limits on preceding transaction records.
+     */
     enum PrecedingTransactionCategory {
+        /**
+         * No limit on preceding transactions, true at genesis since there are no previous consensus
+         * times to collide with.
+         */
         UNLIMITED_CHILD_RECORDS,
+        /**
+         * The number of preceding transactions is limited by the number of nanoseconds between the
+         * last-assigned consensus time and the current platform-assigned consensus time. (Or,
+         * before block streams, even further artificially limited to three records for
+         * backward compatibility.)
+         */
         LIMITED_CHILD_RECORDS
     }
 
@@ -125,36 +135,12 @@ public interface HandleContext {
     BlockRecordInfo blockRecordInfo();
 
     /**
-     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
-     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
-     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
-     * contract operation type).
+     * Returns a {@link ResourcePriceCalculator} that provides functionality to calculate fees for transactions.
      *
-     * @param functionality the {@link HederaFunctionality} of interest
-     * @param subType the {@link SubType} of interest
-     * @return the corresponding Hedera resource prices
+     * @return the {@link ResourcePriceCalculator}
      */
     @NonNull
-    FunctionalityResourcePrices resourcePricesFor(
-            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
-
-    /**
-     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
-     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
-     *
-     * @param subType The {@link SubType} of the transaction.
-     * @return The {@link FeeCalculator} to use.
-     */
-    @NonNull
-    FeeCalculator feeCalculator(@NonNull final SubType subType);
-
-    /**
-     * Gets a {@link FeeAccumulator} used for collecting fees for the current transaction.
-     *
-     * @return The {@link FeeAccumulator} to use.
-     */
-    @NonNull
-    FeeAccumulator feeAccumulator();
+    ResourcePriceCalculator resourcePriceCalculator();
 
     /**
      * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
@@ -263,13 +249,6 @@ public interface HandleContext {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
-
-    /**
-     * Checks whether the payer of the current transaction refers to a superuser.
-     *
-     * @return {@code true} if the payer is a superuser, otherwise {@code false}
-     */
-    boolean isSuperUser();
 
     /**
      * Checks whether the current transaction is a privileged transaction and the payer has sufficient rights.
@@ -399,6 +378,7 @@ public interface HandleContext {
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
      */
+    // Only used in tests
     default <T> T dispatchPrecedingTransaction(
             @NonNull final TransactionBody txBody,
             @NonNull final Class<T> recordBuilderClass,
@@ -627,19 +607,6 @@ public interface HandleContext {
     RecordListCheckPoint createRecordListCheckPoint();
 
     /**
-     * Returns a list of snapshots of the current usage of all active throttles.
-     * @return the active snapshots
-     */
-    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
-
-    /**
-     * Resets the current usage of all active throttles to the given snapshots.
-     *
-     * @param snapshots the snapshots to reset to
-     */
-    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
-
-    /**
      * A stack of savepoints.
      *
      * <p>A new savepoint can be created manually. In addition, a new entry is added to the savepoint stack every time
@@ -683,4 +650,13 @@ public interface HandleContext {
             throw new IllegalArgumentException("Transaction id must be set if dispatching without an explicit payer");
         }
     }
+
+    /**
+     * Gets the pre-paid rewards for the current transaction. This can be non-empty for scheduled transactions.
+     * Since we use the parent record finalizer to finalize schedule transactions, we need to deduct any paid staking rewards
+     * already happened in the parent transaction.
+     * @return the paid rewards
+     */
+    @NonNull
+    Map<AccountID, Long> dispatchPaidRewards();
 }

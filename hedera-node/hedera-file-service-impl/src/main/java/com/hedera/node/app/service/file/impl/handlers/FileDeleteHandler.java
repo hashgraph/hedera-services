@@ -48,8 +48,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_DELETE}.
  */
 @Singleton
 public class FileDeleteHandler implements TransactionHandler {
@@ -57,6 +56,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
     /**
      * Constructs a {@link FileDeleteHandler} with the given {@link FileFeeBuilder}.
+     *
      * @param usageEstimator the file fee builder to be used for fee calculation
      */
     @Inject
@@ -66,6 +66,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
     /**
      * Performs checks independent of state or context
+     *
      * @param txn the transaction to check
      */
     @Override
@@ -82,8 +83,8 @@ public class FileDeleteHandler implements TransactionHandler {
      *
      * <p>Determines signatures needed for deleting a file
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
+     * @param context the {@link PreHandleContext} which collects all information that will be passed to
+     * {@code handle()}
      * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
@@ -135,8 +136,10 @@ public class FileDeleteHandler implements TransactionHandler {
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new FileDeleteResourceUsage(
-                        usageEstimator)
-                .usageGiven(fromPbj(op), sigValueObj));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        new FileDeleteResourceUsage(usageEstimator).usageGiven(fromPbj(op), sigValueObj));
     }
 }

@@ -64,8 +64,7 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#ETHEREUM_TRANSACTION}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#ETHEREUM_TRANSACTION}.
  */
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
@@ -125,6 +124,9 @@ public class EthereumTransactionHandler implements TransactionHandler {
             @NonNull final EthereumTransactionBody op,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final Configuration config) {
+        requireNonNull(op);
+        requireNonNull(config);
+        requireNonNull(fileStore);
         try {
             return computeEthTxSigsFor(op, fileStore, config);
         } catch (PreCheckException ignore) {
@@ -162,6 +164,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
         requireNonNull(feeContext);
         final var body = feeContext.body();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .legacyCalculate(sigValueObj -> new EthereumTransactionResourceUsage(new SmartContractFeeBuilder())
                         .usageGiven(fromPbj(body), sigValueObj, null));

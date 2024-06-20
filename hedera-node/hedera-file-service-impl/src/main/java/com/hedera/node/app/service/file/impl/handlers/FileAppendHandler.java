@@ -55,8 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_APPEND}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_APPEND}.
  */
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
@@ -65,6 +64,7 @@ public class FileAppendHandler implements TransactionHandler {
 
     /**
      * Default constructor for injection.
+     *
      * @param fileSignatureWaivers the file signature waivers
      */
     @Inject
@@ -74,6 +74,7 @@ public class FileAppendHandler implements TransactionHandler {
 
     /**
      * Performs checks independent of state or context
+     *
      * @param txn the transaction to check
      */
     @Override
@@ -190,6 +191,7 @@ public class FileAppendHandler implements TransactionHandler {
 
         if (file == null) {
             return feeContext
+                    .feeCalculatorFactory()
                     .feeCalculator(SubType.DEFAULT)
                     .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE)
                     .calculate();
@@ -216,6 +218,7 @@ public class FileAppendHandler implements TransactionHandler {
         }
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + dataLength)
                 .addStorageBytesSeconds(dataLength * effectiveLifeTime)
