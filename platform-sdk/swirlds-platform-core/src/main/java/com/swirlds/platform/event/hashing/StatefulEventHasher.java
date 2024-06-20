@@ -47,7 +47,7 @@ public class StatefulEventHasher implements EventHasher {
     @NonNull
     public UnsignedEvent hashEvent(@NonNull final UnsignedEvent event) {
         try {
-            event.serialize(outputStream);
+            event.serializeForHash(outputStream);
             event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
             return event;
         } catch (final IOException e) {
