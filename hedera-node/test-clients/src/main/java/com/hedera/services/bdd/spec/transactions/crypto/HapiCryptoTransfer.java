@@ -487,28 +487,6 @@ public class HapiCryptoTransfer extends HapiBaseTransfer<HapiCryptoTransfer> {
                         numPayerKeys);
     }
 
-    public static FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo, final int multiplier) {
-        final var op = txn.getCryptoTransfer();
-
-        final var baseMeta = new BaseTransactionMeta(
-                txn.getMemoBytes().size(), op.getTransfers().getAccountAmountsCount());
-
-        int numTokensInvolved = 0, numTokenTransfers = 0, numNftOwnershipChanges = 0;
-        for (final var tokenTransfers : op.getTokenTransfersList()) {
-            numTokensInvolved++;
-            numTokenTransfers += tokenTransfers.getTransfersCount();
-            numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
-        }
-        final var xferUsageMeta =
-                new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
-
-        final var accumulator = new UsageAccumulator();
-        cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferUsageMeta, baseMeta, accumulator);
-
-        final var feeData = AdapterUtils.feeDataFrom(accumulator);
-        return feeData.toBuilder().setSubType(xferUsageMeta.getSubType()).build();
-    }
-
     @Override
     protected HapiCryptoTransfer self() {
         return this;

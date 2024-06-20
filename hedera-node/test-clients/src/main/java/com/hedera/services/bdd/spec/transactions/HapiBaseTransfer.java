@@ -16,16 +16,23 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UInt32Value;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoTransferMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -41,6 +48,8 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 
 public abstract class HapiBaseTransfer<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
@@ -203,5 +212,27 @@ public abstract class HapiBaseTransfer<T extends HapiTxnOp<T>> extends HapiTxnOp
                         .build())
                 .sorted(TOKEN_TRANSFER_LIST_COMPARATOR)
                 .toList();
+    }
+
+    public static FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo, final int multiplier) {
+        final var op = txn.getCryptoTransfer();
+
+        final var baseMeta = new BaseTransactionMeta(
+                txn.getMemoBytes().size(), op.getTransfers().getAccountAmountsCount());
+
+        int numTokensInvolved = 0, numTokenTransfers = 0, numNftOwnershipChanges = 0;
+        for (final var tokenTransfers : op.getTokenTransfersList()) {
+            numTokensInvolved++;
+            numTokenTransfers += tokenTransfers.getTransfersCount();
+            numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
+        }
+        final var xferUsageMeta =
+                new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
+
+        final var accumulator = new UsageAccumulator();
+        cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferUsageMeta, baseMeta, accumulator);
+
+        final var feeData = AdapterUtils.feeDataFrom(accumulator);
+        return feeData.toBuilder().setSubType(xferUsageMeta.getSubType()).build();
     }
 }
