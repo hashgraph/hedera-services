@@ -512,7 +512,7 @@ TssMessage message = tssImpl.generateTssMessage(RANDOM, tssShareClaims, privateS
 ######  Processing TSSMessages
 ```java
 //Once a list TSSMessages has been collected
-List<TssMessage> messageList = Platform.collectTssMessages();
+List<TssMessage> messageList = Requirements.collectTssMessages();
 //Filter valid messages
 List<TssMessages> validMessages = messageList.strem().filter(m-> m.verify(currentNodePublicKey, tssShareClaims)).toList();
 //Getting private shares. Will return null if fail
@@ -533,7 +533,7 @@ for (TssPrivateShare share : privateShares){
 }
 
 //collect signatures
-List<TssShareSignature> collectedSignatures = Platform.collectTssSignatures();
+List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
 List<TssShareSignature> validSignatures = new ArrayList<>();
 for (TssShareSignature signature : collectedSignatures){
     if(signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
@@ -545,7 +545,7 @@ blockHash)){
 ######  Aggregate Signatures
 ```java
 //collect signatures
-List<TssShareSignature> collectedSignatures = Platform.collectTssSignatures();
+List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
 List<TssShareSignature> validSignatures = new ArrayList<>();
 for (TssShareSignature signature : collectedSignatures){
     if(signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
@@ -554,7 +554,7 @@ blockHash)){
             }
 }
 
-PairingSignature value = TssUtils.aggregateSignatures(validSignatures);
+PairingSignature value = Tss.aggregateSignatures(validSignatures);
 ```
 
 
