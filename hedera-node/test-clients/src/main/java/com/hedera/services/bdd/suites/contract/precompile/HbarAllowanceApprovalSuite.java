@@ -401,20 +401,18 @@ public class HbarAllowanceApprovalSuite {
                             spec,
                             // try delegate call to system contract.  should fail
                             contractCall(
-                                    HRC632_CONTRACT,
-                                    HBAR_APPROVE_DELEGATE_CALL,
-                                    contractAddress,
-                                    spenderAddress,
-                                    BigInteger.valueOf(1_000_000L))
+                                            HRC632_CONTRACT,
+                                            HBAR_APPROVE_DELEGATE_CALL,
+                                            contractAddress,
+                                            spenderAddress,
+                                            BigInteger.valueOf(1_000_000L))
                                     .payingWith(ACCOUNT)
                                     .gas(1_000_000)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                     .via(HBAR_APPROVE_TXN));
                 }))
-                .then(
-                        getTxnRecord(HBAR_APPROVE_TXN)
-                                .logged()
-                                .hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
+                .then(getTxnRecord(HBAR_APPROVE_TXN)
+                        .logged()
+                        .hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
     }
-
 }

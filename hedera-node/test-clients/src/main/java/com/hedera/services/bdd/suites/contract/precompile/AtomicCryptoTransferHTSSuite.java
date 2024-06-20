@@ -1414,10 +1414,10 @@ public class AtomicCryptoTransferHTSSuite {
         final long allowance = 20L;
 
         return propertyPreservingHapiSpec(
-                "delegateCallShouldFail",
-                NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
-                NONDETERMINISTIC_TRANSACTION_FEES)
+                        "delegateCallShouldFail",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
                         overridingTwo(
@@ -1439,23 +1439,21 @@ public class AtomicCryptoTransferHTSSuite {
                                             .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, CONTRACT))),
                                     cryptoUpdate(SENDER).key(DELEGATE_KEY),
                                     contractCall(
-                                            CONTRACT,
-                                            TRANSFER_MULTIPLE_TOKENS_DELEGATE_CALL,
-                                            transferList()
-                                                    .withAccountAmounts(
-                                                            accountAmount(sender, -amountToBeSent, false),
-                                                            accountAmount(receiver, amountToBeSent, false))
-                                                    .build(),
-                                            EMPTY_TUPLE_ARRAY)
+                                                    CONTRACT,
+                                                    TRANSFER_MULTIPLE_TOKENS_DELEGATE_CALL,
+                                                    transferList()
+                                                            .withAccountAmounts(
+                                                                    accountAmount(sender, -amountToBeSent, false),
+                                                                    accountAmount(receiver, amountToBeSent, false))
+                                                            .build(),
+                                                    EMPTY_TUPLE_ARRAY)
                                             .payingWith(GENESIS)
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                             .via(failedTransferFromTxn)
                                             .gas(GAS_TO_OFFER));
                         }),
                         getTxnRecord(failedTransferFromTxn).andAllChildRecords().logged())
-                .then(childRecordsCheck(
-                        failedTransferFromTxn,
-                        CONTRACT_REVERT_EXECUTED));
+                .then(childRecordsCheck(failedTransferFromTxn, CONTRACT_REVERT_EXECUTED));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
