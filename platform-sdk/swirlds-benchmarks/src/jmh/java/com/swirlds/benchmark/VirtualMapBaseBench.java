@@ -331,7 +331,7 @@ public abstract class VirtualMapBaseBench extends BaseBench {
     protected VirtualMap<BenchmarkKey, BenchmarkValue> restoreMap(final String label) {
         Path savedDir = null;
         for (int i = 0; ; i++) {
-            final Path nextSavedDir = getBenchDir().resolve(SAVED + i).resolve(label);
+            final Path nextSavedDir = getBenchDir().resolve(SAVED + i);
             if (!Files.exists(nextSavedDir.resolve(label + SERDE_SUFFIX))) {
                 break;
             }
