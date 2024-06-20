@@ -343,7 +343,8 @@ abstract class AbstractScheduleHandler {
             // set the schedule ref for the child transaction to the schedule that we're executing
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // also set the child transaction ID as scheduled transaction ID in the parent record.
-            final ScheduleRecordBuilder parentRecordBuilder = context.recordBuilder(ScheduleRecordBuilder.class);
+            final ScheduleRecordBuilder parentRecordBuilder =
+                    context.recordBuilders().current(ScheduleRecordBuilder.class);
             parentRecordBuilder.scheduledTransactionID(childTransaction.transactionID());
             return true;
         } else {

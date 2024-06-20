@@ -63,6 +63,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -175,8 +176,10 @@ class TransactionModuleTest {
         final var recordBuilder = mock(ContractOperationRecordBuilder.class);
         final var gasCalculator = mock(SystemContractGasCalculator.class);
         final var blocks = mock(HederaEvmBlocks.class);
+        final var recordBuilders = mock(RecordBuilders.class);
         given(hederaOperations.gasPriceInTinybars()).willReturn(123L);
-        given(context.recordBuilder(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(ContractOperationRecordBuilder.class)).willReturn(recordBuilder);
         final var pendingCreationBuilder = new PendingCreationMetadataRef();
         final var result = provideHederaEvmContext(
                 context, tinybarValues, gasCalculator, hederaOperations, blocks, pendingCreationBuilder);

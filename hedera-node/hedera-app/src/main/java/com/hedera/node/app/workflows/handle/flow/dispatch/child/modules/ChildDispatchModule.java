@@ -30,6 +30,7 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
@@ -40,6 +41,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -82,6 +84,10 @@ public interface ChildDispatchModule {
     @Binds
     @ChildDispatchScope
     FeeContext bindFeeContext(DispatchHandleContext feeContext);
+
+    @Binds
+    @ChildDispatchScope
+    RecordBuilders bindRecordBuilders(@NonNull final RecordBuildersImpl recordBuilders);
 
     @Provides
     @ChildDispatchScope
@@ -209,14 +215,14 @@ public interface ChildDispatchModule {
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final ServiceApiFactory serviceApiFactory,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final RecordBuilders recordBuilders,
             @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final ChildDispatchComponent dispatch,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         return new DispatchHandleContext(
-                recordBuilder.consensusNow(),
+                recordBuilders.current(SingleTransactionRecordBuilderImpl.class).consensusNow(),
                 transactionInfo,
                 configuration,
                 authorizer,
@@ -235,7 +241,7 @@ public interface ChildDispatchModule {
                 writableStoreFactory,
                 serviceApiFactory,
                 networkInfo,
-                recordBuilder,
+                recordBuilders,
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,

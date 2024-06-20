@@ -55,6 +55,7 @@ import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -95,6 +96,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock
     private TransactionDispatcher transactionDispatcher;
 
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
+
     @BeforeEach
     void setup() {
         super.setUp();
@@ -109,7 +113,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(context.recordBuilder(any())).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(any())).willReturn(recordBuilder);
     }
 
     @Test

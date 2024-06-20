@@ -60,6 +60,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBui
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -121,6 +122,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Mock
     private ContractUpdateRecordBuilder recordBuilder;
+
+    @Mock
+    private RecordBuilders recordBuilders;
 
     private ContractUpdateHandler subject;
 
@@ -433,7 +437,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
-        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(context.recordBuilders()).thenReturn(recordBuilders);
+        when(recordBuilders.current(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 
@@ -644,7 +649,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
-        when(context.recordBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(context.recordBuilders()).thenReturn(recordBuilders);
+        when(recordBuilders.current(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 

@@ -134,7 +134,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(requireNonNull(toBeUpdated), context, op);
         context.serviceApi(TokenServiceApi.class).updateContract(changed);
-        context.recordBuilder(ContractUpdateRecordBuilder.class)
+        context.recordBuilders()
+                .current(ContractUpdateRecordBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
                         .build());

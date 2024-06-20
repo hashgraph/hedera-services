@@ -192,7 +192,7 @@ public interface TransactionModule {
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
-                context.recordBuilder(ContractOperationRecordBuilder.class),
+                context.recordBuilders().current(ContractOperationRecordBuilder.class),
                 pendingCreationMetadataRef);
     }
 

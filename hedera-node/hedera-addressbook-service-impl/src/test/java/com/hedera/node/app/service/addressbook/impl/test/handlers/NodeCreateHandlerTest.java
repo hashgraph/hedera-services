@@ -43,6 +43,7 @@ import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -427,7 +428,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+        final var recordBuilders = mock(RecordBuilders.class);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(any())).willReturn(recordBuilder);
         given(accountStore.contains(accountId)).willReturn(true);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 

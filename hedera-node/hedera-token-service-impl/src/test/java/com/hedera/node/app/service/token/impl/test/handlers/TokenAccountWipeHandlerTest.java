@@ -79,6 +79,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -952,6 +953,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
+            final var recordBuilders = mock(RecordBuilders.class);
 
             given(context.body()).willReturn(txn);
 
@@ -962,8 +964,10 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(context.configuration()).willReturn(configuration);
 
             given(context.expiryValidator()).willReturn(validator);
+
+            lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
             lenient()
-                    .when(context.recordBuilder(TokenAccountWipeRecordBuilder.class))
+                    .when(recordBuilders.current(TokenAccountWipeRecordBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;

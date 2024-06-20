@@ -128,7 +128,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
 
-            final var recordBuilder = handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class);
+            final var recordBuilder = handleContext.recordBuilders().current(ConsensusSubmitMessageRecordBuilder.class);
             recordBuilder
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())

@@ -60,6 +60,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -89,6 +90,9 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
+
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
@@ -110,8 +114,8 @@ class ConsensusSubmitMessageTest extends ConsensusTestBase {
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class))
-                .willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(ConsensusSubmitMessageRecordBuilder.class)).willReturn(recordBuilder);
     }
 
     @Test

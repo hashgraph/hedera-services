@@ -37,6 +37,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -67,6 +68,9 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     private ContractCallRecordBuilder recordBuilder;
 
     @Mock
+    private RecordBuilders recordBuilders;
+
+    @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
     @Mock
@@ -83,7 +87,8 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     void delegatesToCreatedComponentAndExposesSuccess() {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CALL)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
-        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult,
@@ -105,7 +110,8 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     void delegatesToCreatedComponentAndThrowsOnFailure() {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CALL)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
-        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = HALT_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome =
                 new CallOutcome(expectedResult, HALT_RESULT.finalStatus(), null, HALT_RESULT.gasPrice(), null, null);

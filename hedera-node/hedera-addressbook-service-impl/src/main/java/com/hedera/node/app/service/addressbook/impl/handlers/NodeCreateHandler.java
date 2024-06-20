@@ -113,7 +113,7 @@ public class NodeCreateHandler implements TransactionHandler {
 
         nodeStore.put(node);
 
-        final var recordBuilder = handleContext.recordBuilder(NodeCreateRecordBuilder.class);
+        final var recordBuilder = handleContext.recordBuilders().current(NodeCreateRecordBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
     }

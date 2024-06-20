@@ -48,6 +48,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -82,6 +83,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock
     private ConsensusCreateTopicRecordBuilder recordBuilder;
+
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -119,8 +123,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
-        given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
-                .willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.current(ConsensusCreateTopicRecordBuilder.class)).willReturn(recordBuilder);
     }
 
     @Test

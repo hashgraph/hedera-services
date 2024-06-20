@@ -53,6 +53,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -97,6 +98,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected RecordBuilders recordBuilders;
+
     private AttributeValidator attributeValidator;
 
     protected ExpiryValidator expiryValidator;
@@ -121,6 +125,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         refreshWritableStores();
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
     }
 
     protected final AccountID unknownAliasedId =
@@ -242,7 +247,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.recordBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(recordBuilders.current(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
+        given(recordBuilders.current(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
     }
 }

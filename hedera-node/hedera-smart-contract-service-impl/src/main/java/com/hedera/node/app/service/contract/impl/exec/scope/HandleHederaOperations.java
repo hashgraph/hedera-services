@@ -136,7 +136,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void revertRecordsFrom(RecordListCheckPoint checkpoint) {
-        context.revertRecordsFrom(checkpoint);
+        context.recordBuilders().revertRecordsFrom(checkpoint);
     }
 
     /**
@@ -337,8 +337,8 @@ public class HandleHederaOperations implements HederaOperations {
 
     @Override
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var recordBuilder = context.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
+        final var recordBuilder = context.recordBuilders()
+                .addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class)
                 .contractID(contractId)
                 .status(SUCCESS)
                 .transaction(transactionWith(TransactionBody.newBuilder()
@@ -359,7 +359,7 @@ public class HandleHederaOperations implements HederaOperations {
 
     @Override
     public RecordListCheckPoint createRecordListCheckPoint() {
-        return context.createRecordListCheckPoint();
+        return context.recordBuilders().createRecordListCheckPoint();
     }
 
     private enum ExternalizeInitcodeOnSuccess {
@@ -396,7 +396,9 @@ public class HandleHederaOperations implements HederaOperations {
         // we are doing this on behalf of a HAPI ContractCreate call; we only include the
         // initcode in the bytecode sidecar if it's not already externalized via a body
         final var pendingCreationMetadata = new PendingCreationMetadata(
-                isTopLevelCreation ? context.recordBuilder(ContractOperationRecordBuilder.class) : recordBuilder,
+                isTopLevelCreation
+                        ? context.recordBuilders().current(ContractOperationRecordBuilder.class)
+                        : recordBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder().contractNum(number).build();
         pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);

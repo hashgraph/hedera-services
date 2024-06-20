@@ -125,7 +125,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenUpdateOrThrow();
         final var tokenId = op.tokenOrThrow();
-        final var recordBuilder = context.recordBuilder(TokenUpdateRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().current(TokenUpdateRecordBuilder.class);
 
         // validate fields that involve config or state
         final var validationResult = tokenUpdateValidator.validateSemantics(context, op);
