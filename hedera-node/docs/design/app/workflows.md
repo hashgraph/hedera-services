@@ -119,7 +119,7 @@ and [ChildDispatchComponent](https://github.com/hashgraph/hedera-services/blob/d
 takes all the inputs that are needed to create the child dispatch.
 
 
-![dagger_scopes.png](dagger_scopes.png)
+![dagger_scopes.png](images/dagger_scopes.pngpes.png)
 
 #### HandleWorkflow overview:
 The `HandleWorkflow` class is responsible for handling the platform transaction and providing the record stream.
@@ -130,7 +130,7 @@ when blocks
 2. `UserTxnWorkflow` is called to handle the transaction and provide record stream
 3. Externalizes the record stream items
 4. Update metrics for the handled user transaction
-![handle_basic_overview.png](handle_basic_overview.png)
+![handle_basic_overview.png](images/handle_basic_overview.pngiew.png)
 
 #### UserTxnWorkflow overview:
 1. **SkipHandleWorkflow**: If the transaction is from older software, the transaction will be skipped handling by calling `SkipHandleWorkflow`. 
@@ -148,7 +148,7 @@ handles valid user transaction. It has the following steps:
      is executed for all user and child transactions, since the user dispatch child dispatches are 
      treated the same way to avoid duplicating any logic.
    
-![user_txn_workflow.png](user_txn_workflow.png)
+![user_txn_workflow.png](images/user_txn_workflow.pnglow.png)
 
 
 #### DispatchProcessor overview:
@@ -186,4 +186,4 @@ The `DispatchProcessor.processDispatch` will be called for user and child dispat
 9. **Metrics Update:** Updates any metrics that need to be updated
 10. **Record Stream:** Adds all the records to the record cache
 
-![dispatch_processor.png](dispatch_processor.png)
+![dispatch_processor.png](images/dispatch_processor.pngsor.png)
