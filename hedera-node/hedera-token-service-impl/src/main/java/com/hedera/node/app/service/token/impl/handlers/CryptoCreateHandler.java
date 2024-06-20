@@ -42,7 +42,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BOOL_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAlias;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAliasPreCheck;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
@@ -70,6 +69,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
@@ -449,10 +449,11 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
         final var op = feeContext.body().cryptoCreateAccountOrThrow();
-        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
+        final var keySize =
+                op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
         final var baseSize = op.memo().length() + keySize + (op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L);
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         final var fee = feeCalculator
                 .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
                 .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)

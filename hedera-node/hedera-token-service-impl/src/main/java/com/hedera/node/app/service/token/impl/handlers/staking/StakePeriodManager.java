@@ -173,7 +173,7 @@ public class StakePeriodManager {
      * this transaction, returns the new {@code stakePeriodStart} for this account:
      *
      * <ol>
-     *   <li>{@link com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils#NA} if the {@code stakePeriodStart} doesn't need to change; or,
+     *   <li>{@code -1} if the {@code stakePeriodStart} doesn't need to change; or,
      *   <li>The value to which the {@code stakePeriodStart} should be changed.
      * </ol>
      *

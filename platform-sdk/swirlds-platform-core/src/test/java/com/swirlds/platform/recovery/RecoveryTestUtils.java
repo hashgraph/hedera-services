@@ -33,7 +33,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.stream.DefaultConsensusEventStream;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
@@ -75,7 +75,7 @@ public final class RecoveryTestUtils {
     public static DetailedConsensusEvent generateRandomEvent(
             final Random random, final long round, final boolean lastInRound, final Instant now) {
 
-        final GossipEvent gossipEvent = new TestingEventBuilder(random)
+        final PlatformEvent platformEvent = new TestingEventBuilder(random)
                 .setAppTransactionCount(random.nextInt(10))
                 .setTransactionSize(random.nextInt(10) + 1)
                 .setSystemTransactionCount(0)
@@ -89,7 +89,7 @@ public final class RecoveryTestUtils {
                 .setConsensusTimestamp(now)
                 .build();
 
-        return new DetailedConsensusEvent(gossipEvent, round, lastInRound);
+        return new DetailedConsensusEvent(platformEvent, round, lastInRound);
     }
 
     /**

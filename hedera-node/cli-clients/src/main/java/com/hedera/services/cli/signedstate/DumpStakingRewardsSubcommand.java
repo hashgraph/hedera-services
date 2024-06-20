@@ -18,7 +18,6 @@ package com.hedera.services.cli.signedstate;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.services.cli.utils.FieldBuilder;
 import com.hedera.services.cli.utils.Writer;
 import com.swirlds.base.utility.Pair;
@@ -51,10 +50,9 @@ public class DumpStakingRewardsSubcommand {
     }
 
     void doit() {
-        final var networkContext = state.getNetworkContext();
         System.out.printf("=== staking rewards ===%n");
 
-        final var stakingRewards = StakingRewards.fromMerkleNetworkContext(networkContext);
+        final var stakingRewards = new StakingRewards(false, 0l, 0l, 0l);
 
         int reportSize;
         try (@NonNull final var writer = new Writer(stakingRewardsPath)) {
@@ -68,18 +66,7 @@ public class DumpStakingRewardsSubcommand {
     @SuppressWarnings(
             "java:S6218") // "Equals/hashcode method should be overridden in records containing array fields" - this
     public record StakingRewards(
-            boolean stakingRewardsActivated, long totalStakedRewardStart, long totalStakedStart, long pendingRewards) {
-
-        public static StakingRewards fromMerkleNetworkContext(
-                @NonNull final MerkleNetworkContext merkleNetworkContext) {
-
-            return new StakingRewards(
-                    merkleNetworkContext.areRewardsActivated(),
-                    merkleNetworkContext.getTotalStakedRewardStart(),
-                    merkleNetworkContext.getTotalStakedStart(),
-                    merkleNetworkContext.pendingRewards());
-        }
-    }
+            boolean stakingRewardsActivated, long totalStakedRewardStart, long totalStakedStart, long pendingRewards) {}
 
     void reportOnStakingRewards(@NonNull Writer writer, @NonNull StakingRewards stakingRewards) {
         writer.writeln(formatHeader());

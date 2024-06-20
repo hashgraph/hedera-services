@@ -19,7 +19,7 @@ package com.swirlds.platform.components.transaction.system;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,7 +66,7 @@ public class SystemTransactionExtractionUtils {
      */
     @SuppressWarnings("unchecked")
     public static @Nullable <T> List<ScopedSystemTransaction<T>> extractFromEvent(
-            @NonNull final GossipEvent event, @NonNull final Class<T> systemTransactionTypeClass) {
+            @NonNull final PlatformEvent event, @NonNull final Class<T> systemTransactionTypeClass) {
         final List<ScopedSystemTransaction<T>> scopedTransactions = new ArrayList<>();
 
         final Iterator<Transaction> transactionIterator = event.transactionIterator();

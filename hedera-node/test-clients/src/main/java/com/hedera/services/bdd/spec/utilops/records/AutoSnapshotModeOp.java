@@ -17,7 +17,8 @@
 package com.hedera.services.bdd.spec.utilops.records;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.snapshotMode;
-import static com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource.MONO_SERVICE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMode.TAKE_FROM_HAPI_TEST_STREAMS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -65,15 +66,9 @@ public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
         final var maybeSnapshot = SnapshotModeOp.maybeLoadSnapshotFor(spec);
         if (maybeSnapshot.isPresent() && !spec.setup().overrideExistingSnapshot()) {
-            final var snapshotMode = (autoMatchSource == MONO_SERVICE)
-                    ? SnapshotMode.FUZZY_MATCH_AGAINST_MONO_STREAMS
-                    : SnapshotMode.FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS;
-            delegate = snapshotMode(snapshotMode, snapshotMatchModes);
+            delegate = snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS, snapshotMatchModes);
         } else {
-            final var snapshotMode = (autoTakeSource == MONO_SERVICE)
-                    ? SnapshotMode.TAKE_FROM_MONO_STREAMS
-                    : SnapshotMode.TAKE_FROM_HAPI_TEST_STREAMS;
-            delegate = snapshotMode(snapshotMode, snapshotMatchModes);
+            delegate = snapshotMode(TAKE_FROM_HAPI_TEST_STREAMS, snapshotMatchModes);
         }
         return delegate.submitOp(spec);
     }

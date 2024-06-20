@@ -33,7 +33,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -85,7 +85,7 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event with null signature is invalid")
     void nullSignatureData() {
-        final GossipEvent event = Mockito.spy(new TestingEventBuilder(random).build());
+        final PlatformEvent event = Mockito.spy(new TestingEventBuilder(random).build());
         when(event.getSignature()).thenReturn(null);
 
         assertNull(multinodeValidator.validateEvent(event));
@@ -98,7 +98,7 @@ class InternalEventValidatorTests {
     @DisplayName("An event with too many transaction bytes is invalid")
     void tooManyTransactionBytes() {
         // default max is 245_760 bytes
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setTransactionSize(100)
                 .setAppTransactionCount(5000)
                 .setSystemTransactionCount(0)
@@ -114,13 +114,13 @@ class InternalEventValidatorTests {
     @DisplayName("An event with parent inconsistency is invalid")
     void inconsistentParents() {
         // self parent has invalid generation.
-        final GossipEvent invalidSelfParentGeneration = new TestingEventBuilder(random)
+        final PlatformEvent invalidSelfParentGeneration = new TestingEventBuilder(random)
                 .setSelfParent(new TestingEventBuilder(random).build())
                 .overrideSelfParentGeneration(GENERATION_UNDEFINED)
                 .build();
 
         // other parent has invalid generation.
-        final GossipEvent invalidOtherParentGeneration = new TestingEventBuilder(random)
+        final PlatformEvent invalidOtherParentGeneration = new TestingEventBuilder(random)
                 .setOtherParent(new TestingEventBuilder(random).build())
                 .overrideOtherParentGeneration(GENERATION_UNDEFINED)
                 .build();
@@ -137,8 +137,8 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event with identical parents is only valid in a single node network")
     void identicalParents() {
-        final GossipEvent parent = new TestingEventBuilder(random).build();
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent parent = new TestingEventBuilder(random).build();
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setSelfParent(parent)
                 .setOtherParent(parent)
                 .build();
@@ -152,19 +152,19 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("An event must have a birth round greater than or equal to the max of all parent birth rounds.")
     void invalidBirthRound() {
-        final GossipEvent selfParent1 = new TestingEventBuilder(random)
+        final PlatformEvent selfParent1 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(0))
                 .setBirthRound(5)
                 .build();
-        final GossipEvent otherParent1 = new TestingEventBuilder(random)
+        final PlatformEvent otherParent1 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(1))
                 .setBirthRound(7)
                 .build();
-        final GossipEvent selfParent2 = new TestingEventBuilder(random)
+        final PlatformEvent selfParent2 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(0))
                 .setBirthRound(7)
                 .build();
-        final GossipEvent otherParent2 = new TestingEventBuilder(random)
+        final PlatformEvent otherParent2 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(1))
                 .setBirthRound(5)
                 .build();
@@ -214,16 +214,16 @@ class InternalEventValidatorTests {
     @Test
     @DisplayName("Test that an event with no issues passes validation")
     void successfulValidation() {
-        final GossipEvent normalEvent = new TestingEventBuilder(random)
+        final PlatformEvent normalEvent = new TestingEventBuilder(random)
                 .setSelfParent(new TestingEventBuilder(random).build())
                 .setOtherParent(new TestingEventBuilder(random).build())
                 .build();
-        final GossipEvent missingSelfParent = new TestingEventBuilder(random)
+        final PlatformEvent missingSelfParent = new TestingEventBuilder(random)
                 .setSelfParent(null)
                 .setOtherParent(new TestingEventBuilder(random).build())
                 .build();
 
-        final GossipEvent missingOtherParent = new TestingEventBuilder(random)
+        final PlatformEvent missingOtherParent = new TestingEventBuilder(random)
                 .setSelfParent(new TestingEventBuilder(random).build())
                 .setOtherParent(null)
                 .build();
