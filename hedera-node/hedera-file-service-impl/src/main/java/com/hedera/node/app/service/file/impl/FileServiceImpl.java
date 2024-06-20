@@ -25,6 +25,8 @@ import javax.inject.Inject;
 
 /** Standard implementation of the {@link FileService} {@link RpcService}. */
 public final class FileServiceImpl implements FileService {
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    public static final String DEFAULT_MEMO = "";
 
     /**
      * Constructs a {@link FileServiceImpl}.

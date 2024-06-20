@@ -19,14 +19,11 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -37,7 +34,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
@@ -52,9 +48,6 @@ import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -117,12 +110,6 @@ class FileUpdateTest extends FileTestBase {
     protected FileOpsUsage fileOpsUsage;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    protected FeeCalculator feeCalculator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private FeeAccumulator feeAccumulator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
     private FileSignatureWaiversImpl waivers;
 
     protected Configuration testConfig;
@@ -135,12 +122,6 @@ class FileUpdateTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
-        when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
-        when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(-1_234_567L));
     }
 

@@ -136,7 +136,7 @@ public class PlatformWiring {
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, PlatformEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final ComponentWiring<StateSigner, ConsensusTransactionImpl> stateSignerWiring;
+    private final ComponentWiring<StateSigner, StateSignaturePayload> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -522,7 +522,7 @@ public class PlatformWiring {
 
         staleEventsFromStaleEventDetector.solderTo(
                 transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
-        final OutputWire<ConsensusTransactionImpl> splitTransactionResubmitterOutput =
+        final OutputWire<StateSignaturePayload> splitTransactionResubmitterOutput =
                 transactionResubmitterWiring.getSplitOutput();
         splitTransactionResubmitterOutput.solderTo(
                 transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
