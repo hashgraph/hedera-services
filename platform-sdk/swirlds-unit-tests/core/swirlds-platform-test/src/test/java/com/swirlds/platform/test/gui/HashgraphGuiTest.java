@@ -30,7 +30,7 @@ class HashgraphGuiTest {
     void runGuiWithControls() {
         final Randotron randotron = Randotron.create(1);
         final int numNodes = 4;
-        final int initialEvents = 0;
+        final int initialEvents = 50;
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();

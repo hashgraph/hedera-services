@@ -33,11 +33,17 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.event.ItemEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.Serial;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
 import javax.swing.JPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,11 +64,62 @@ public class HashgraphPicture extends JPanel {
 
     private AddressBookMetadata nonExpandedMetadata;
     private AddressBookMetadata expandedMetadata;
+    private final List<Co> eventCoordinates = new ArrayList<>();
+    private int d = 0;
+    private EventImpl selectedEvent = null;
+    private final List<EventImpl> stronglySeen = new ArrayList<>();
 
     public HashgraphPicture(final HashgraphGuiSource hashgraphSource, final HashgraphPictureOptions options) {
         this.hashgraphSource = hashgraphSource;
         this.options = options;
         createMetadata();
+        this.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(final MouseEvent e) {
+                final int xClicked = e.getX();
+                final int yClicked = e.getY();
+                for (final Co ec : eventCoordinates) {
+                    final int xEvent = ec.x();
+                    final int yEvent = ec.y();
+                    if(xClicked > xEvent
+                            && xClicked < xEvent + d
+                            && yClicked > yEvent
+                            && yClicked < yEvent + d){
+                        stronglySeen.clear();
+                        if(selectedEvent == ec.event()){
+                            selectedEvent = null;
+                        }else {
+                            selectedEvent = ec.event();
+                            if(selectedEvent.getStronglySeeP() != null){
+                                Arrays.stream(selectedEvent.getStronglySeeP())
+                                        .filter(Objects::nonNull)
+                                        .forEach(stronglySeen::add);
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void mousePressed(final MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(final MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(final MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(final MouseEvent e) {
+
+            }
+        });
     }
 
     private void createMetadata() {
@@ -127,13 +184,14 @@ public class HashgraphPicture extends JPanel {
                         name, (int) (x - rect.getWidth() / 2), (int) (pictureMetadata.getYmax() + rect.getHeight()));
             }
 
-            final int d = (int) (2 * pictureMetadata.getR());
+            d = (int) (2 * pictureMetadata.getR());
 
             // for each event, draw 2 downward lines to its parents
             for (final EventImpl event : events) {
                 drawLinksToParents(g, event);
             }
 
+            eventCoordinates.clear();
             // for each event, draw its circle
             for (final EventImpl event : events) {
                 drawEventCircle(g, event, options, d);
@@ -171,6 +229,9 @@ public class HashgraphPicture extends JPanel {
         }
     }
 
+    private record Co(EventImpl event, int x, int y) {
+    }
+
     private void drawEventCircle(
             final Graphics g, final EventImpl event, final HashgraphPictureOptions options, final int d) {
         final FontMetrics fm = g.getFontMetrics();
@@ -182,9 +243,21 @@ public class HashgraphPicture extends JPanel {
                                 .contains(event.getOtherParent().getCreatorId())
                 ? event.getOtherParent()
                 : null;
-        final Color color = HashgraphGuiUtils.eventColor(event, options);
+        final Color color;
+        if(event == selectedEvent) {
+            color = Color.MAGENTA;
+        }else if(stronglySeen.stream().anyMatch(e->e==event)){
+            color = Color.CYAN;
+        }else {
+            color = HashgraphGuiUtils.eventColor(event, options);
+        }
         g.setColor(color);
-        g.fillOval(pictureMetadata.xpos(e2, event) - d / 2, pictureMetadata.ypos(event) - d / 2, d, d);
+
+        final int xPos = pictureMetadata.xpos(e2, event) - d / 2;
+        final int yPos = pictureMetadata.ypos(event) - d / 2;
+        eventCoordinates.add(new Co(event, xPos, yPos));
+
+        g.fillOval(xPos, yPos, d, d);
         g.setFont(g.getFont().deriveFont(Font.BOLD));
 
         String s = "";
