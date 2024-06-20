@@ -24,9 +24,17 @@ import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.ZoneId;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    public static final long MAX_SERIAL_NO_ALLOWED = 0xFFFFFFFFL;
+    public static final long HBARS_TO_TINYBARS = 100_000_000L;
+    public static final String AUTO_MEMO = "auto-created account";
+    public static final String LAZY_MEMO = "lazy-created account";
+    public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
+
     public TokenServiceImpl() {
         // No-op
     }

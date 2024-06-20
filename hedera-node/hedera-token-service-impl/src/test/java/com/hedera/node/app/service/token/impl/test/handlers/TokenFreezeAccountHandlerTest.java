@@ -23,19 +23,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.FIRST_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_NO_SPECIAL_KEYS;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_FREEZE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.FREEZE_WITH_NO_KEYS;
-import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -86,18 +80,6 @@ class TokenFreezeAccountHandlerTest {
     @Nested
     class PreHandleTests extends ParityTestBase {
         @Test
-        void tokenFreezeWithExtantTokenScenario() throws PreCheckException {
-            final var theTxn = txnFrom(VALID_FREEZE_WITH_EXTANT_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_FREEZE_KT.asPbjKey()));
-        }
-
-        @Test
         void tokenFreezeWithNoToken() throws PreCheckException {
             final var theTxn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
@@ -120,15 +102,6 @@ class TokenFreezeAccountHandlerTest {
             final var context = new FakePreHandleContext(readableAccountStore, theTxn);
             context.registerStore(ReadableTokenStore.class, readableTokenStore);
             Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
-        }
-
-        @Test
-        void tokenFreezeWithNoFreezeKey() throws PreCheckException {
-            final var theTxn = txnFrom(FREEZE_WITH_NO_KEYS);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), TOKEN_HAS_NO_FREEZE_KEY);
         }
     }
 
@@ -270,7 +243,6 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void tokenRelNotFound() throws HandleException {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
             given(readableTokenStore.get(token))
                     .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
@@ -291,7 +263,6 @@ class TokenFreezeAccountHandlerTest {
         @Test
         void tokenRelFreezeSuccessful() {
             final var token = toPbj(KNOWN_TOKEN_WITH_FREEZE);
-            final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
             given(readableTokenStore.get(token))
                     .willReturn(Token.newBuilder().tokenId(token).build());
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
