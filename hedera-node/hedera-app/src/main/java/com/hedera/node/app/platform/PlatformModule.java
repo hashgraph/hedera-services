@@ -17,17 +17,12 @@
 package com.hedera.node.app.platform;
 
 import com.hedera.node.app.annotations.CommonExecutor;
-import com.hedera.node.app.service.mono.utils.JvmSystemExits;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.platform.system.Platform;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
@@ -48,19 +43,9 @@ public interface PlatformModule {
         return ForkJoinPool.commonPool();
     }
 
-    @Binds
-    @Singleton
-    SystemExits bindSystemExits(JvmSystemExits systemExits);
-
     @Provides
     @Singleton
     static Supplier<Charset> provideNativeCharset() {
         return Charset::defaultCharset;
-    }
-
-    @Provides
-    @Singleton
-    static NamedDigestFactory provideDigestFactory() {
-        return MessageDigest::getInstance;
     }
 }

@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.schemas;
 
-import static com.hedera.node.app.service.token.api.StakingRewardsApi.clampedStakePeriodStart;
-import static com.hedera.node.app.service.token.api.StakingRewardsApi.computeRewardFromDetails;
-import static com.hedera.node.app.service.token.api.StakingRewardsApi.stakePeriodAt;
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator.asAccountId;
 import static java.util.Objects.requireNonNull;
 
@@ -36,48 +33,19 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
-import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
-import com.hedera.node.app.service.mono.state.migration.NftStateTranslator;
-import com.hedera.node.app.service.mono.state.migration.StakingNodeInfoStateTranslator;
-import com.hedera.node.app.service.mono.state.migration.TokenRelationStateTranslator;
-import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.AliasUtils;
-import com.hedera.node.app.service.token.impl.codec.NetworkingStakingTranslator;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
@@ -114,17 +82,6 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     private final SyntheticAccountCreator syntheticAccountCreator;
 
     /**
-     * These fields hold data from a mono-service state.
-     */
-    private static VirtualMap<EntityNumVirtualKey, OnDiskAccount> acctsFs;
-
-    private static MerkleMap<EntityNum, MerkleToken> tFs;
-    private static MerkleMap<EntityNum, MerkleStakingInfo> stakingFs;
-    private static VirtualMap<UniqueTokenKey, UniqueTokenValue> nftsFs;
-    private static VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> trFs;
-    private static MerkleNetworkContext mnc;
-
-    /**
      * Constructor for this schema. Each of the supplier params should produce a {@link SortedSet} of
      * {@link Account} objects, where each account object represents a _synthetic record_ (see {@link
      * SyntheticAccountCreator} for more details). Even though these sorted sets contain account
@@ -134,7 +91,6 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
      */
     public V0490TokenSchema(@NonNull final SyntheticAccountCreator syntheticAccountCreator) {
         super(VERSION);
-
         this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
     }
 
@@ -158,215 +114,6 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
         if (isGenesis) {
             createGenesisSchema(ctx);
         }
-
-        if (acctsFs != null) {
-            log.info("BBM: migrating token service");
-
-            // ---------- NFTs
-            log.info("BBM: doing nfts...");
-            final var nftsToState = new AtomicReference<>(ctx.newStates().<NftID, Nft>get(NFTS_KEY));
-            final var numNftInsertions = new AtomicLong();
-            try {
-                VirtualMapLike.from(nftsFs)
-                        .extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(),
-                                entry -> {
-                                    var nftId = entry.left();
-                                    var toNftId = NftID.newBuilder()
-                                            .tokenId(TokenID.newBuilder()
-                                                    .tokenNum(nftId.getNum())
-                                                    .build())
-                                            .serialNumber(nftId.getTokenSerial())
-                                            .build();
-                                    var fromNft = entry.right();
-                                    var fromNft2 = new MerkleUniqueToken(
-                                            fromNft.getOwner(), fromNft.getMetadata(), fromNft.getCreationTime());
-                                    fromNft2.setKey(nftId.toEntityNumPair());
-                                    fromNft2.setPrev(fromNft.getPrev());
-                                    fromNft2.setNext(fromNft.getNext());
-                                    fromNft2.setSpender(fromNft.getSpender());
-
-                                    var translated = NftStateTranslator.nftFromMerkleUniqueToken(fromNft2);
-                                    nftsToState.get().put(toNftId, translated);
-                                    if (numNftInsertions.incrementAndGet() % 10_000 == 0) {
-                                        // Make sure we are flushing data to disk as we go
-                                        ((WritableKVStateBase) nftsToState.get()).commit();
-                                        ctx.copyAndReleaseOnDiskState(NFTS_KEY);
-                                        // And ensure we have the latest writable state
-                                        nftsToState.set(ctx.newStates().get(NFTS_KEY));
-                                    }
-                                },
-                                1);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            if (nftsToState.get().isModified()) ((WritableKVStateBase) nftsToState.get()).commit();
-            log.info("BBM: finished nfts");
-
-            // ---------- Token Rels/Associations
-            log.info("BBM: doing token rels...");
-            final var numTokenRelInsertions = new AtomicLong();
-            final var tokenRelsToState =
-                    new AtomicReference<>(ctx.newStates().<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY));
-            try {
-                VirtualMapLike.from(trFs)
-                        .extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(),
-                                entry -> {
-                                    var fromTokenRel = entry.right();
-                                    var key = fromTokenRel.getKey();
-                                    var translated = TokenRelationStateTranslator.tokenRelationFromOnDiskTokenRelStatus(
-                                            fromTokenRel);
-                                    var newPair = EntityIDPair.newBuilder()
-                                            .accountId(AccountID.newBuilder()
-                                                    .accountNum(key.getHiOrderAsLong())
-                                                    .build())
-                                            .tokenId(TokenID.newBuilder()
-                                                    .tokenNum(key.getLowOrderAsLong())
-                                                    .build())
-                                            .build();
-                                    tokenRelsToState.get().put(newPair, translated);
-                                    if (numTokenRelInsertions.incrementAndGet() % 10_000 == 0) {
-                                        // Make sure we are flushing data to disk as we go
-                                        ((WritableKVStateBase) tokenRelsToState.get()).commit();
-                                        ctx.copyAndReleaseOnDiskState(TOKEN_RELS_KEY);
-                                        // And ensure we have the latest writable state
-                                        tokenRelsToState.set(ctx.newStates().get(TOKEN_RELS_KEY));
-                                    }
-                                },
-                                1);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            if (tokenRelsToState.get().isModified()) ((WritableKVStateBase) tokenRelsToState.get()).commit();
-            log.info("BBM: finished token rels");
-
-            // ---------- Staking Info
-            log.info("BBM: starting staking info");
-            var stakingToState = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
-            MerkleMapLike.from(stakingFs).forEachNode((entityNum, merkleStakingInfo) -> {
-                var toStakingInfo = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(merkleStakingInfo);
-                stakingToState.put(
-                        EntityNumber.newBuilder()
-                                .number(merkleStakingInfo.getKey().longValue())
-                                .build(),
-                        toStakingInfo);
-            });
-
-            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
-            final var stakingConfig = ctx.configuration().getConfigData(StakingConfig.class);
-            final var currentStakingPeriod =
-                    stakePeriodAt(mnc.consensusTimeOfLastHandledTxn(), stakingConfig.periodMins());
-            final var numStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
-            log.info("BBM: finished staking info");
-
-            // ---------- Accounts
-            log.info("BBM: doing accounts");
-            final var numAccountInsertions = new AtomicLong();
-            final var numAliasesInsertions = new AtomicLong();
-            final var acctsToState = new AtomicReference<>(ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY));
-            final var aliasesState = new AtomicReference<>(ctx.newStates().<ProtoBytes, AccountID>get(ALIASES_KEY));
-            final Map<Long, Long> pendingRewards = new ConcurrentHashMap<>();
-            try {
-                VirtualMapLike.from(acctsFs)
-                        .extractVirtualMapData(
-                                AdHocThreadManager.getStaticThreadManager(),
-                                entry -> {
-                                    var acctNum = entry.left().asEntityNum().longValue();
-                                    var fromAcct = entry.right();
-                                    var toAcct = AccountStateTranslator.accountFromOnDiskAccount(fromAcct);
-                                    acctsToState
-                                            .get()
-                                            .put(
-                                                    AccountID.newBuilder()
-                                                            .accountNum(acctNum)
-                                                            .build(),
-                                                    toAcct);
-                                    if (!toAcct.deleted() && !toAcct.declineReward() && toAcct.hasStakedNodeId()) {
-                                        final var stakedNodeId = toAcct.stakedNodeIdOrThrow();
-                                        final var stakingInfo = stakingToState.get(new EntityNumber(stakedNodeId));
-                                        final var reward = computeRewardFromDetails(
-                                                toAcct,
-                                                stakingInfo,
-                                                currentStakingPeriod,
-                                                clampedStakePeriodStart(
-                                                        toAcct.stakePeriodStart(),
-                                                        currentStakingPeriod,
-                                                        numStoredPeriods));
-                                        pendingRewards.merge(stakedNodeId, reward, Long::sum);
-                                    }
-                                    if (numAccountInsertions.incrementAndGet() % 10_000 == 0) {
-                                        // Make sure we are flushing data to disk as we go
-                                        ((WritableKVStateBase) acctsToState.get()).commit();
-                                        ctx.copyAndReleaseOnDiskState(ACCOUNTS_KEY);
-                                        // And ensure we have the latest writable state
-                                        acctsToState.set(ctx.newStates().get(ACCOUNTS_KEY));
-                                    }
-                                    if (toAcct.alias().length() > 0) {
-                                        aliasesState
-                                                .get()
-                                                .put(new ProtoBytes(toAcct.alias()), toAcct.accountIdOrThrow());
-                                        if (toAcct.alias().toByteArray().length > 20) {
-                                            final var result = AliasUtils.extractEvmAddress(toAcct.alias());
-                                            if (result != null) {
-                                                aliasesState.get().put(new ProtoBytes(result), toAcct.accountId());
-                                            }
-                                        }
-                                        if (numAliasesInsertions.incrementAndGet() % 10_000 == 0) {
-                                            // Make sure we are flushing data to disk as we go
-                                            ((WritableKVStateBase) aliasesState.get()).commit();
-                                            ctx.copyAndReleaseOnDiskState(ALIASES_KEY);
-                                            // And ensure we have the latest writable state
-                                            aliasesState.set(ctx.newStates().get(ALIASES_KEY));
-                                        }
-                                    }
-                                },
-                                1);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            if (acctsToState.get().isModified()) ((WritableKVStateBase) acctsToState.get()).commit();
-            // Also persist the per-node pending reward information
-            MerkleMapLike.from(stakingFs).forEachNode((entityNum, ignore) -> {
-                final var toKey = new EntityNumber(entityNum.longValue());
-                final var info = requireNonNull(stakingToState.get(toKey));
-                stakingToState.put(
-                        toKey,
-                        info.copyBuilder()
-                                .pendingRewards(pendingRewards.getOrDefault(toKey.number(), 0L))
-                                .build());
-            });
-            if (stakingToState.isModified()) ((WritableKVStateBase) stakingToState).commit();
-            log.info("BBM: finished accts");
-
-            // ---------- Tokens
-            log.info("BBM: starting tokens (both fungible and non-fungible)");
-            var tokensToState = ctx.newStates().<TokenID, Token>get(TOKENS_KEY);
-            MerkleMapLike.from(tFs).forEachNode((entityNum, merkleToken) -> {
-                var toToken = TokenStateTranslator.tokenFromMerkle(merkleToken);
-                tokensToState.put(
-                        TokenID.newBuilder().tokenNum(entityNum.longValue()).build(), toToken);
-            });
-            if (tokensToState.isModified()) ((WritableKVStateBase) tokensToState).commit();
-            log.info("BBM: finished tokens (fung and non-fung)");
-
-            // ---------- Staking Rewards
-            log.info("BBM: starting staking rewards");
-            final var srToState = ctx.newStates().<NetworkStakingRewards>getSingleton(STAKING_NETWORK_REWARDS_KEY);
-            final var toSr = NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(mnc);
-            srToState.put(toSr);
-            if (srToState.isModified()) ((WritableSingletonStateBase) srToState).commit();
-            log.info("BBM: finished staking rewards");
-        } else {
-            log.warn("BBM: no token 'from' state found");
-        }
-
-        nftsFs = null;
-        trFs = null;
-        acctsFs = null;
-        tFs = null;
-        stakingFs = null;
-        mnc = null;
     }
 
     private void createGenesisSchema(@NonNull final MigrationContext ctx) {
@@ -526,54 +273,5 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
                 .stakingRewardsActivated(true)
                 .build();
         networkRewardsState.put(networkRewards);
-    }
-
-    /**
-     * Sets the in-state NFTs to be migrated from.
-     *
-     * @param fs the in-state NFTs
-     */
-    public static void setNftsFromState(@Nullable final VirtualMap<UniqueTokenKey, UniqueTokenValue> fs) {
-        V0490TokenSchema.nftsFs = fs;
-    }
-
-    /**
-     * Sets the in-state token rels to be migrated from.
-     *
-     * @param fs the in-state token rels
-     */
-    public static void setTokenRelsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> fs) {
-        V0490TokenSchema.trFs = fs;
-    }
-
-    /**
-     * Sets the in-state accounts to be migrated from.
-     *
-     * @param fs the in-state accounts
-     */
-    public static void setAcctsFromState(@Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> fs) {
-        V0490TokenSchema.acctsFs = fs;
-    }
-
-    /**
-     * Sets the in-state tokens to be migrated from.
-     *
-     * @param fs the in-state tokens
-     */
-    public static void setTokensFromState(@Nullable final MerkleMap<EntityNum, MerkleToken> fs) {
-        V0490TokenSchema.tFs = fs;
-    }
-
-    /**
-     * Sets the in-state staking info to be migrated from.
-     *
-     * @param stakingFs the in-state staking info
-     * @param mnc the in-state network context
-     */
-    public static void setStakingFs(
-            @Nullable final MerkleMap<EntityNum, MerkleStakingInfo> stakingFs,
-            @Nullable final MerkleNetworkContext mnc) {
-        V0490TokenSchema.stakingFs = stakingFs;
-        V0490TokenSchema.mnc = mnc;
     }
 }

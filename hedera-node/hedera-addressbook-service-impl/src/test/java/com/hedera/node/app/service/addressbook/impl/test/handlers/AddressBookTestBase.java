@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
