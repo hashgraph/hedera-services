@@ -1,7 +1,9 @@
 # Metric labels
 
-+author: @hendrikEbbers
-+status: draft
+| Metadata           | Entities                                   | 
+ |--------------------|--------------------------------------------|
+ | Designers          | [@hendrikebbers](https://github.com/hendrikebbers), [@mxtartaglia-sl](https://github.com/mxtartaglia-sl) |
+
 
 ## Summary
 
