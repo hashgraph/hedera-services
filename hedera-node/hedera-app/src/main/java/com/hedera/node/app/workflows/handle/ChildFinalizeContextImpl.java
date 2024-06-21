@@ -20,8 +20,8 @@ import static com.hedera.node.app.workflows.handle.TokenContextImpl.castRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
