@@ -21,6 +21,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
@@ -59,7 +60,7 @@ public class EventSerialization {
         final Random random = new Random(seed);
 
         event = new TestingEventBuilder(random).setSystemTransactionCount(1).build();
-        StaticSoftwareVersion.setSoftwareVersion(event.getSoftwareVersion());
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(event.getSoftwareVersion().major()));
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
         final PipedInputStream inputStream = new PipedInputStream();
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);

@@ -29,11 +29,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeServiceMigrator;
@@ -72,7 +72,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -132,7 +131,7 @@ public class EmbeddedHedera {
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     @NonNull
-    private HederaSoftwareVersion version;
+    private final SemanticVersion version;
 
     public EmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -150,7 +149,7 @@ public class EmbeddedHedera {
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 IsEmbeddedTest.YES);
-        this.version = (HederaSoftwareVersion) hedera.getSoftwareVersion();
+        this.version = hedera.getSoftwareVersion().getPbjSemanticVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
@@ -436,7 +435,7 @@ public class EmbeddedHedera {
 
         @Nullable
         @Override
-        public SoftwareVersion getSoftwareVersion() {
+        public SemanticVersion getSoftwareVersion() {
             return requireNonNull(version);
         }
     }

@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.internal;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -272,7 +272,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
      */
     @Override
     @Nullable
-    public SoftwareVersion getSoftwareVersion() {
+    public SemanticVersion getSoftwareVersion() {
         return baseEvent.getSoftwareVersion();
     }
 

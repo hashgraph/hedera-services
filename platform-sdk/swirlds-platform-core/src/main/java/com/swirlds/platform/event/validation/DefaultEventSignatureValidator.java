@@ -19,6 +19,7 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
@@ -28,8 +29,8 @@ import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.PublicKey;
@@ -67,7 +68,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     /**
      * The current software version.
      */
-    private final SoftwareVersion currentSoftwareVersion;
+    private final SemanticVersion currentSoftwareVersion;
 
     /**
      * The current event window.
@@ -103,7 +104,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     public DefaultEventSignatureValidator(
             @NonNull final PlatformContext platformContext,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final SemanticVersion currentSoftwareVersion,
             @Nullable final AddressBook previousAddressBook,
             @NonNull final AddressBook currentAddressBook,
             @NonNull final IntakeEventCounter intakeEventCounter) {
@@ -135,9 +136,9 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      */
     @Nullable
     private AddressBook determineApplicableAddressBook(@NonNull final PlatformEvent event) {
-        final SoftwareVersion eventVersion = event.getSoftwareVersion();
+        final SemanticVersion eventVersion = event.getSoftwareVersion();
 
-        final int softwareComparison = currentSoftwareVersion.compareTo(eventVersion);
+        final int softwareComparison = HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, eventVersion);
         if (softwareComparison < 0) {
             // current software version is less than event software version
             rateLimitedLogger.error(
