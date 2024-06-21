@@ -44,6 +44,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
@@ -310,7 +311,8 @@ public class ThrottleAccumulator {
     /**
      * Resets the usage for all snapshots.
      */
-    public void resetUsageThrottlesTo(final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+    public void resetUsageThrottlesTo(@NonNull final List<ThrottleUsageSnapshot> snapshots) {
+        requireNonNull(snapshots);
         for (int i = 0, n = activeThrottles.size(); i < n; i++) {
             activeThrottles.get(i).resetUsageTo(snapshots.get(i));
         }
