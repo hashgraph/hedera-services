@@ -20,17 +20,23 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROP
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateUpgradeArtifactsProperty;
 
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -65,6 +71,15 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
                     "hedera.recordStream.logDir",
                     getExternalPath(STREAMS_DIR).getParent().toString());
         }
+        return this;
+    }
+
+    @Override
+    public EmbeddedNode initWorkingDir(@NonNull String configTxt) {
+        super.initWorkingDir(configTxt);
+        updateUpgradeArtifactsProperty(
+                getExternalPath(APPLICATION_PROPERTIES),
+                getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;
     }
 

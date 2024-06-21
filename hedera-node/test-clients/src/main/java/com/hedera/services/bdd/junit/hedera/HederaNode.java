@@ -104,6 +104,14 @@ public interface HederaNode {
             @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver);
 
     /**
+     * Returns a future that resolves when the node has written the specified <i>.mf</i> file.
+     *
+     * @param markerFile the marker file to wait for
+     * @return a future that resolves when the node has written the specified <i>.mf</i> file
+     */
+    CompletableFuture<Void> mfFuture(@NonNull MarkerFile markerFile);
+
+    /**
      * Returns a future that resolves when the node has stopped.
      *
      * @return a future that resolves when the node has stopped

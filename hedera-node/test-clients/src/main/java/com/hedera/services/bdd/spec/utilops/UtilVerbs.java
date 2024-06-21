@@ -84,8 +84,8 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -117,7 +117,6 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
-import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -132,6 +131,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModificationsOp;
@@ -438,6 +438,10 @@ public class UtilVerbs {
         return new BuildUpgradeZipOp(CURRENT_JAR_PATH, newVersion, DEFAULT_UPGRADE_ZIP_LOC);
     }
 
+    public static WaitForMarkerFileOp waitForMf(@NonNull final MarkerFile markerFile, @NonNull final Duration timeout) {
+        return new WaitForMarkerFileOp(NodeSelector.allNodes(), markerFile, timeout);
+    }
+
     /**
      * Returns an operation that, if the current time is "too close" to
      * the next staking period start (as measured by a given window),
@@ -600,11 +604,6 @@ public class UtilVerbs {
 
     public static BalanceSnapshot balanceSnapshot(String name, String forAccount) {
         return new BalanceSnapshot(forAccount, name);
-    }
-
-    public static MutateAccountOp mutateAccount(
-            @NonNull final String name, @NonNull final Consumer<Account.Builder> mutation) {
-        return new MutateAccountOp(name, mutation);
     }
 
     public static BalanceSnapshot balanceSnapshot(Function<HapiSpec, String> nameFn, String forAccount) {

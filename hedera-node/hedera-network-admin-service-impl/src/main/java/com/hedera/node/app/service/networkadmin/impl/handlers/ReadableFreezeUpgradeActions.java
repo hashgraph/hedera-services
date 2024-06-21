@@ -174,7 +174,9 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(marker);
 
         final long size = archiveData.length();
+        System.out.println("path from config - " + adminServiceConfig.upgradeArtifactsPath());
         final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
+        System.out.println("\"Absolute\" path - " + artifactsLoc.normalize().toAbsolutePath().toString());
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
@@ -199,14 +201,18 @@ public class ReadableFreezeUpgradeActions {
             // if second marker is present, that means the zip file was successfully extracted
             log.error("Failed to unzip archive for NMT consumption", e);
             log.error(MANUAL_REMEDIATION_ALERT);
+        } catch (Throwable t) {
+            log.error("hmmmmm", t);
         }
     }
 
     private void generateConfigPem(@NonNull final Path artifactsLoc) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         final var configTxt = artifactsLoc.resolve("config.txt");
+        log.info("Generating configTxt at {}", configTxt);
 
         final var nodeIds = nodeStore.keys();
+        log.info("Got iterator of allegedly size {}", nodeStore.sizeOfState());
         if (nodeIds == null) {
             log.info("Node state is empty, cannot generate config.txt"); // change to log error later
             return;
@@ -215,8 +221,10 @@ public class ReadableFreezeUpgradeActions {
         try (FileWriter fw = new FileWriter(configTxt.toFile());
                 BufferedWriter bw = new BufferedWriter(fw)) {
             Streams.stream(nodeIds)
+                    .peek(nodeId -> log.info("Node id is {}", nodeId))
                     .map(nodeId -> nodeStore.get(nodeId.number()))
                     .filter(node -> node != null && !node.deleted())
+                    .peek(node -> log.info("Node {} is {}", node.nodeId(), node))
                     .sorted(Comparator.comparing(Node::nodeId))
                     .forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
         } catch (final IOException e) {
@@ -237,6 +245,7 @@ public class ReadableFreezeUpgradeActions {
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
         final int INT = 0;
         final int EXT = 1;
+        log.info("Trying to write PEM to {}", pathToWrite);
 
         final var stakingNodeInfo = stakingInfoStore.get(node.nodeId());
         if (stakingNodeInfo != null) {

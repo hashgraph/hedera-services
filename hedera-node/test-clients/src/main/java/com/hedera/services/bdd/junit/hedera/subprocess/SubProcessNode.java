@@ -186,4 +186,5 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
             return newLogAttempt(null, e.getMessage());
         }
     }
+
 }

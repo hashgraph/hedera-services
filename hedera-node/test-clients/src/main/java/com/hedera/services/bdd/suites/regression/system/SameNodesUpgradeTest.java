@@ -17,36 +17,55 @@
 package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
+import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipWith;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.DEFAULT_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
-import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHashAt;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+
+import java.time.Duration;
 import java.util.stream.Stream;
+
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.freeze.CommonUpgradeResources;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(UPGRADE)
 public class SameNodesUpgradeTest {
-    private static final SemanticVersion TEST_UPGRADE_VERSION =
+    private static final Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
+    private static final SemanticVersion UPGRADE_VERSION =
             SemanticVersion.newBuilder().minor(99).build();
 
     @HapiTest
     final Stream<DynamicTest> upgradeSoftwareVersionWithSameAddressBook() {
         return hapiTest(
-                buildUpgradeZipWith(TEST_UPGRADE_VERSION),
+                // Build an upgrade.zip with the new version
+                buildUpgradeZipWith(UPGRADE_VERSION),
+                // Upload it to file 0.0.150; need sourcing() here because the operation reads contents eagerly
                 sourcing(() -> updateSpecialFile(
                         GENESIS,
-                        upgradeFileId(),
+                        DEFAULT_UPGRADE_FILE_ID,
                         DEFAULT_UPGRADE_ZIP_LOC,
                         TxnUtils.BYTES_4K,
-                        upgradeFileAppendsPerBurst())));
+                        upgradeFileAppendsPerBurst())),
+                // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
+                sourcing(() ->
+                        prepareUpgrade()
+                                .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
+                                .havingHash(upgradeFileHashAt(DEFAULT_UPGRADE_ZIP_LOC))),
+                // Wait for the immediate execution marker file (written only after 0.0.150 is unzipped)
+                waitForMf(EXEC_IMMEDIATE_MF, EXEC_IMMEDIATE_MF_TIMEOUT));
     }
 }

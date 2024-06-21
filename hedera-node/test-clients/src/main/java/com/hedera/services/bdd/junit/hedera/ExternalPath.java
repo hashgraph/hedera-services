@@ -26,4 +26,5 @@ public enum ExternalPath {
     APPLICATION_PROPERTIES,
     LOG4J2_XML,
     STREAMS_DIR,
+    UPGRADE_ARTIFACTS_DIR,
 }

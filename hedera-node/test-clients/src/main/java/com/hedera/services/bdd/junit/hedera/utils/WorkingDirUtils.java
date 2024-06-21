@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
@@ -37,7 +38,6 @@ public class WorkingDirUtils {
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";
     private static final String CONFIG_FOLDER = "config";
-    private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER);
     private static final String LOG4J2_XML = "log4j2.xml";
     private static final String PROJECT_BOOTSTRAP_ASSETS_LOC = "hedera-node/configuration/dev";
     private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
@@ -45,9 +45,13 @@ public class WorkingDirUtils {
     public static final String DATA_DIR = "data";
     public static final String CONFIG_DIR = "config";
     public static final String OUTPUT_DIR = "output";
+    public static final String UPGRADE_DIR = "upgrade";
+    public static final String CURRENT_DIR = "current";
     public static final String CONFIG_TXT = "config.txt";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String APPLICATION_PROPERTIES = "application.properties";
+
+    private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
 
     private WorkingDirUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -81,6 +85,8 @@ public class WorkingDirUtils {
         // Initialize the data folders
         WORKING_DIR_DATA_FOLDERS.forEach(folder ->
                 createDirectoriesUnchecked(workingDir.resolve(DATA_DIR).resolve(folder)));
+        // Initialize the current upgrade folder
+        createDirectoriesUnchecked(workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
         // Write the address book (config.txt)
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
         // Copy the bootstrap assets into the working directory
@@ -88,6 +94,28 @@ public class WorkingDirUtils {
         // Update the log4j2.xml file with the correct output directory
         updateLog4j2XmlOutputDir(workingDir);
     }
+
+    /**
+     * Updates the <i>upgrade.artifacts.path</i> property in the <i>application.properties</i> file
+     *
+     * @param propertiesPath the path to the <i>application.properties</i> file
+     * @param upgradeArtifactsPath the path to the upgrade artifacts directory
+     */
+    public static void updateUpgradeArtifactsProperty(@NonNull final Path propertiesPath, @NonNull final Path upgradeArtifactsPath) {
+        final var properties = new Properties();
+        try {
+            try (final var in = Files.newInputStream(propertiesPath)) {
+                properties.load(in);
+            }
+            properties.setProperty("networkAdmin.upgradeArtifactsPath", upgradeArtifactsPath.toString());
+            try (final var out = Files.newOutputStream(propertiesPath)) {
+                properties.store(out, null);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
 
     private static Path bootstrapAssetsLoc() {
         return Paths.get(System.getProperty("user.dir")).endsWith("hedera-services")

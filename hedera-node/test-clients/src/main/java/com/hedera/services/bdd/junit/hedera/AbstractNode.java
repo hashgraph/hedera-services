@@ -20,9 +20,11 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.STREA
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CURRENT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.UPGRADE_DIR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -84,6 +86,9 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(DATA_DIR)
                     .resolve(STREAMS_DIR)
                     .resolve("record0.0." + getAccountId().accountNumOrThrow());
+            case UPGRADE_ARTIFACTS_DIR -> workingDir.resolve(DATA_DIR)
+                    .resolve(UPGRADE_DIR)
+                    .resolve(CURRENT_DIR);
         };
     }
 }
