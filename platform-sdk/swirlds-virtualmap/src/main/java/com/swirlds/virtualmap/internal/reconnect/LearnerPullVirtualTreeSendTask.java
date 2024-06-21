@@ -29,8 +29,6 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -149,7 +147,7 @@ public class LearnerPullVirtualTreeSendTask {
         } catch (final Exception ex) {
             workGroup.handleError(ex);
         } finally {
-//            sendersRunning.remove(viewId);
+            //            sendersRunning.remove(viewId);
         }
     }
 }
