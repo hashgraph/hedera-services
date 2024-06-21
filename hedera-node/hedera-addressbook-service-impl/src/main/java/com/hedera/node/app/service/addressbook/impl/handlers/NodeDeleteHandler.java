@@ -74,7 +74,7 @@ public class NodeDeleteHandler implements TransactionHandler {
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
 
-        final var nodeStore = context.writableStore(WritableNodeStore.class);
+        final var nodeStore = context.storeFactory().writableStore(WritableNodeStore.class);
 
         Node node = nodeStore.get(nodeId);
 

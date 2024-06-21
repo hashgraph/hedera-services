@@ -44,6 +44,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBui
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -60,6 +61,9 @@ class ContractDeleteHandlerTest {
 
     @Mock
     private PreHandleContext preHandleContext;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private TokenServiceApi tokenServiceApi;
@@ -100,7 +104,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void delegatesUsingObtainerAccountIfSet() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         given(readableAccountStore.getAccountById(CALLED_EOA_ID)).willReturn(OBTAINER_ACCOUNT);
         givenSuccessContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID));
@@ -112,7 +117,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void delegatesUsingObtainerContractIfSet() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         given(readableAccountStore.getContractById(CALLED_CONTRACT_ID)).willReturn(OBTAINER_CONTRACT);
         givenSuccessContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_CONTRACT_ID));
@@ -133,7 +139,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithoutObtainerExtant() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
         givenFailContextWith(deletion(VALID_CONTRACT_ADDRESS, CALLED_EOA_ID));
 
@@ -142,7 +149,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithInvalidContractId() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         final var deletedObtainer =
                 OBTAINER_ACCOUNT.copyBuilder().smartContract(true).deleted(true).build();
         given(readableAccountStore.getContractById(VALID_CONTRACT_ADDRESS)).willReturn(TBD_CONTRACT);
@@ -154,7 +162,8 @@ class ContractDeleteHandlerTest {
 
     @Test
     void failsWithObtainerDeleted() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         final var deletedObtainer = OBTAINER_ACCOUNT
                 .copyBuilder()
                 .smartContract(false)
@@ -195,7 +204,8 @@ class ContractDeleteHandlerTest {
         final var txn =
                 TransactionBody.newBuilder().contractDeleteInstance(body).build();
         given(context.body()).willReturn(txn);
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.recordBuilders()).willReturn(recordBuilders);
         given(recordBuilders.getOrCreate(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
     }

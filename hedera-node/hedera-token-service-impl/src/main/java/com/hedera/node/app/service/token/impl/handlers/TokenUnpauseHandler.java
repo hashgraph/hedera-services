@@ -78,7 +78,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().tokenUnpause();
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
         var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         validateTrue(token != null, INVALID_TOKEN_ID);
         validateTrue(token.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);

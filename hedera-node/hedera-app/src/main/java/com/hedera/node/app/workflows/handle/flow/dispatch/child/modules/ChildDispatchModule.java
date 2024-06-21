@@ -43,13 +43,15 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
@@ -138,6 +140,15 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
+    static StoreFactory storeFactory(
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final ServiceApiFactory serviceApiFactory) {
+        return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+    }
+
+    @Provides
+    @ChildDispatchScope
     @ChildQualifier
     static Key providePayerKey() {
         // This is used exclusively for signature-usage fees, which should all zero out for a child dispatch.
@@ -203,7 +214,7 @@ public interface ChildDispatchModule {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
-            @NonNull @ChildQualifier final ReadableStoreFactory storeFactory,
+            @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
             @NonNull @ChildQualifier final Key payerkey,
@@ -240,8 +251,6 @@ public interface ChildDispatchModule {
                 entityIdStore,
                 dispatcher,
                 recordCache,
-                writableStoreFactory,
-                serviceApiFactory,
                 networkInfo,
                 recordBuilders,
                 childDispatchFactory,

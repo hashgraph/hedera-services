@@ -112,12 +112,13 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var token = validateSemantics(op, tokenStore, config);
 
         // create readable stores from the context
-        final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
-        final var readableTokenRelsStore = context.readableStore(ReadableTokenRelationStore.class);
+        final var readableAccountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var readableTokenRelsStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
 
         // validate custom fees before committing
         customFeesValidator.validateForFeeScheduleUpdate(

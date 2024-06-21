@@ -216,7 +216,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(recordBuilders.getOrCreate(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
         given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
     }
