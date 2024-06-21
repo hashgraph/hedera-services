@@ -114,12 +114,14 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         };
     }
 
-    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingFungiblePendingAirdrop( final TokenMovement... movements ) {
+    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingFungiblePendingAirdrop(
+            final TokenMovement... movements) {
         var listOfMovements = List.of(movements);
         return includingPendingAirdrop(listOfMovements, true);
     }
 
-    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingNftPendingAirdrop( final TokenMovement... movements ) {
+    public static ErroringAssertsProvider<List<PendingAirdropRecord>> includingNftPendingAirdrop(
+            final TokenMovement... movements) {
         var listOfMovements = List.of(movements);
         return includingPendingAirdrop(listOfMovements, false);
     }
@@ -133,7 +135,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
             List<PendingAirdropRecord> expectedRecords = new ArrayList<>();
             AccountAmount senderAmount = null;
             movements.forEach(tokenMovement -> {
-                if(fungible) {
+                if (fungible) {
                     var tokenXfer = tokenMovement.specializedFor(spec);
                     var aaSender = tokenXfer.getTransfers(0);
                     var aaReceiver = tokenXfer.getTransfers(1);
@@ -161,7 +163,8 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                             .setReceiverId(aaReceiver)
                             .setNonFungibleToken(NftID.newBuilder()
                                     .setTokenID(tokenId)
-                                    .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
+                                    .setSerialNumber(
+                                            tokenXfer.getNftTransfers(0).getSerialNumber()))
                             .build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
                     var expectedRecord = PendingAirdropRecord.newBuilder()
@@ -177,7 +180,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                 AtomicBoolean found = new AtomicBoolean(true);
                 try {
                     expectedRecords.stream().takeWhile(n -> found.get()).forEach(record -> {
-                        if(!allPendingAirdrops.contains(record)) {
+                        if (!allPendingAirdrops.contains(record)) {
                             found.set(false);
                         }
                     });

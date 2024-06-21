@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -36,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
@@ -47,7 +49,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -65,6 +66,7 @@ public class TokenAirdropSuite {
     private static final String DUMMY_FUNGIBLE_TOKEN = "dummyFungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String NFT_SUPPLY_KEY = "nftSupplyKey";
+    private static final String ED25519_KEY = "ed25519key";
     private static final String SECP_256K1_KEY = "secp256K1";
     private static final String ANOTHER_SECP_256K1_KEY = "anotherSecp256K1";
 
@@ -114,15 +116,13 @@ public class TokenAirdropSuite {
                                 .payingWith(SENDER)
                                 .via("fungible airdrop"))
                 .then(
-                        // get transaction record
                         getTxnRecord("fungible airdrop")
                                 .andAllChildRecords()
                                 // assert pending airdrops
                                 .hasPriority(recordWith()
-                                        .pendingAirdrops(
-                                                includingFungiblePendingAirdrop(
-                                                        moveToReceiverWith0AutoAssociations,
-                                                        moveToReceiverWithoutFreeAutoAssociations)))
+                                        .pendingAirdrops(includingFungiblePendingAirdrop(
+                                                moveToReceiverWith0AutoAssociations,
+                                                moveToReceiverWithoutFreeAutoAssociations)))
                                 // assert transfers
                                 .hasChildRecords(recordWith()
                                         .tokenTransfers(includingFungibleMovement(moving(30, FUNGIBLE_TOKEN)
@@ -132,11 +132,15 @@ public class TokenAirdropSuite {
                                                         RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS,
                                                         ASSOCIATED_RECEIVER))))
                                 .logged(),
+
+                        // assert account balances
+                        getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                         getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
-                                .hasTokenBalance(FUNGIBLE_TOKEN, 0)
-                        );
+                        getAccountBalance(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 10),
+                        getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 0),
+                        getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                .hasTokenBalance(FUNGIBLE_TOKEN, 0));
     }
 
     @HapiTest
@@ -173,13 +177,10 @@ public class TokenAirdropSuite {
                         cryptoTransfer(moving(10, DUMMY_FUNGIBLE_TOKEN)
                                 .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)),
                         cryptoCreate(ASSOCIATED_RECEIVER),
-                        tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN)
-                        )
-                .when(
-                        tokenAirdrop(
+                        tokenAssociate(ASSOCIATED_RECEIVER, NON_FUNGIBLE_TOKEN))
+                .when(tokenAirdrop(
                                 // add to pending state
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L)
-                                        .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                 movingUnique(NON_FUNGIBLE_TOKEN, 2L)
                                         .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
                                 // do the transfer
@@ -188,31 +189,40 @@ public class TokenAirdropSuite {
                                 movingUnique(NON_FUNGIBLE_TOKEN, 4L)
                                         .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS),
                                 movingUnique(NON_FUNGIBLE_TOKEN, 5L).between(SENDER, ASSOCIATED_RECEIVER))
-                                .payingWith(SENDER)
-                                .via("non fungible airdrop"))
-                .then(getTxnRecord("non fungible airdrop")
-                        .andAllChildRecords()
-                        // check if one of the tokens is in the pending list
-                        .hasPriority(recordWith()
-                                .pendingAirdrops(includingNftPendingAirdrop(
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 1L)
-                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 2L)
-                                                .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
+                        .payingWith(SENDER)
+                        .via("non fungible airdrop"))
+                .then(
+                        getTxnRecord("non fungible airdrop")
+                                .andAllChildRecords()
+                                // check if tokens are in the pending list
+                                .hasPriority(recordWith()
+                                        .pendingAirdrops(includingNftPendingAirdrop(
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                                        .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 2L)
+                                                        .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
+                                .hasChildRecords(recordWith()
+                                        .tokenTransfers(
+                                                includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
+                                                        .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))))
+                                .hasChildRecords(recordWith()
+                                        .tokenTransfers(
+                                                includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 4L)
+                                                        .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))))
+                                .hasChildRecords(recordWith()
+                                        .tokenTransfers(
+                                                includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 5L)
+                                                        .between(SENDER, ASSOCIATED_RECEIVER))))
+                                .logged(),
 
-                        .hasChildRecords(recordWith()
-                                .tokenTransfers(
-                                        includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
-                                                .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))))
-                        .hasChildRecords(recordWith()
-                                .tokenTransfers(
-                                        includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 4L)
-                                                .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))))
-                        .hasChildRecords(recordWith()
-                                .tokenTransfers(
-                                        includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 5L)
-                                                .between(SENDER, ASSOCIATED_RECEIVER))))
-                        .logged());
+                        // assert account balances
+                        getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                        getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
+                                .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                        getAccountBalance(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                        getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+                        getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
+                                .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
     }
 
     @HapiTest
@@ -222,14 +232,15 @@ public class TokenAirdropSuite {
                 .preserving(AIRDROPS_ENABLED)
                 .given(
                         overriding(AIRDROPS_ENABLED, "true"),
-                        newKeyNamed("aliasReceiver"),
+                        newKeyNamed(ED25519_KEY),
                         newKeyNamed(SECP_256K1_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ANOTHER_SECP_256K1_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .treasury(SENDER)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(20L),
+                                .initialSupply(30L))
+                .when(
                         withOpContext((spec, opLog) -> {
                             final var ecdsaKey = spec.registry()
                                     .getKey(ANOTHER_SECP_256K1_KEY)
@@ -237,20 +248,16 @@ public class TokenAirdropSuite {
                                     .toByteArray();
                             final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                             evmAddress.set(evmAddressBytes);
-                            tokenAirdrop(
-                                            moving(10, FUNGIBLE_TOKEN).between(SENDER, "aliasReceiver"),
-                                            moving(5, FUNGIBLE_TOKEN).between(SENDER, SECP_256K1_KEY),
-                                            moving(5, FUNGIBLE_TOKEN)
-                                                    .between(
-                                                            SENDER,
-                                                            evmAddress.get())) // these tokens should transfer directly
-                                    .payingWith(SENDER)
-                                    .via("non existing account");
-                            getTxnRecord("non existing account")
-                                    .andAllChildRecords()
-                                    .logged();
-                        }))
-                .when()
-                .then();
+                        }),
+                        sourcing(() -> tokenAirdrop(
+                                        moving(10, FUNGIBLE_TOKEN).between(SENDER, ED25519_KEY),
+                                        moving(10, FUNGIBLE_TOKEN).between(SENDER, SECP_256K1_KEY),
+                                        moving(10, FUNGIBLE_TOKEN).between(SENDER, evmAddress.get()))
+                                .payingWith(SENDER)))
+                .then(withOpContext((spec, log) -> {
+                    getAutoCreatedAccountBalance(ED25519_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
+                    getAutoCreatedAccountBalance(SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
+                    getAutoCreatedAccountBalance(ANOTHER_SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
+                }));
     }
 }

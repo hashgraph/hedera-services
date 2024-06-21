@@ -36,12 +36,12 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return 300000000;
         // todo estimate the fee
-//        return spec.fees()
-//                .forActivityBasedOp(
-//                        HederaFunctionality.TokenAirdrop,
-//                        (_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
-//                        txn,
-//                        numPayerKeys);
+        //        return spec.fees()
+        //                .forActivityBasedOp(
+        //                        HederaFunctionality.TokenAirdrop,
+        //                        (_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+        //                        txn,
+        //                        numPayerKeys);
     }
 
     @Override
