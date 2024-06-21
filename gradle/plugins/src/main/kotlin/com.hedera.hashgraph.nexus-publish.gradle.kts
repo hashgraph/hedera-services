@@ -20,7 +20,7 @@ plugins {
 }
 
 nexusPublishing {
-    packageGroup = "com.swirlds"
+    packageGroup = "com.hedera.hashgraph"
     repositories {
         sonatype {
             username = System.getenv("OSSRH_USERNAME")
