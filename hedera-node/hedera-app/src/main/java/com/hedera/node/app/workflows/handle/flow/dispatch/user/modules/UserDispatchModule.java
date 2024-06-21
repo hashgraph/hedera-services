@@ -24,6 +24,7 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -34,6 +35,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -84,6 +86,10 @@ public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
     FeeContext bindFeeContext(@NonNull DispatchHandleContext handleContext);
+
+    @Binds
+    @UserDispatchScope
+    RecordBuilders bindRecordBuilders(@NonNull final RecordBuildersImpl recordBuilders);
 
     @Provides
     @UserDispatchScope

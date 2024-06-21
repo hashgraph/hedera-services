@@ -53,7 +53,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
@@ -71,6 +70,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -133,6 +133,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
+
+    @Mock
+    private RecordBuilders recordBuilders;
 
     private HandleHederaOperations subject;
 
@@ -238,15 +241,17 @@ class HandleHederaOperationsTest {
     @Test
     void createRecordListCheckPointUsesContext() {
         var recordListCheckPoint = new RecordListCheckPoint(null, null);
-        given(context.createRecordListCheckPoint()).willReturn(recordListCheckPoint);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.createRecordListCheckPoint()).willReturn(recordListCheckPoint);
         assertEquals(recordListCheckPoint, subject.createRecordListCheckPoint());
     }
 
     @Test
     void revertRecordsFromUsesContext() {
         var recordListCheckPoint = new RecordListCheckPoint(null, null);
+        given(context.recordBuilders()).willReturn(recordBuilders);
         subject.revertRecordsFrom(recordListCheckPoint);
-        verify(context).revertRecordsFrom(recordListCheckPoint);
+        verify(recordBuilders).revertRecordsFrom(recordListCheckPoint);
     }
 
     @Test
@@ -328,7 +333,6 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
@@ -375,7 +379,6 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void translatesCreateContractHandleException() throws IOException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
@@ -408,14 +411,13 @@ class HandleHederaOperationsTest {
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
 
+        final long accountNum = NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow();
         final var e = Assertions.assertThrows(
-                ResourceExhaustedException.class,
-                () -> subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS));
+                ResourceExhaustedException.class, () -> subject.createContract(666L, accountNum, CANONICAL_ALIAS));
         assertEquals(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED, e.getStatus());
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
@@ -529,6 +531,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
+        given(context.recordBuilders()).willReturn(recordBuilders);
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
@@ -628,9 +631,6 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteAliasedContractUsesApi() {
-        var txnBody = TransactionBody.newBuilder()
-                .ethereumTransaction(EthereumTransactionBody.DEFAULT)
-                .build();
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteAliasedContract(CANONICAL_ALIAS);
@@ -656,9 +656,10 @@ class HandleHederaOperationsTest {
     void externalizeHollowAccountMerge() {
         // given
         var contractId = ContractID.newBuilder().contractNum(1001).build();
-        given(context.addRemovableChildRecordBuilder(eq(ContractCreateRecordBuilder.class)))
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class))
                 .willReturn(contractCreateRecordBuilder);
-        given(contractCreateRecordBuilder.contractID(eq(contractId))).willReturn(contractCreateRecordBuilder);
+        given(contractCreateRecordBuilder.contractID(contractId)).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status(any())).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.transaction(any(Transaction.class))).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractCreateResult(any(ContractFunctionResult.class)))

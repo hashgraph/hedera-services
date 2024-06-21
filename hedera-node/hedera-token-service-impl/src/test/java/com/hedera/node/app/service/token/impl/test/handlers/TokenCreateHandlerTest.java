@@ -75,6 +75,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidato
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -103,6 +104,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private EntityNumGenerator entityNumGenerator;
+
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
 
     private TokenCreateRecordBuilder recordBuilder;
     private TokenCreateHandler subject;
@@ -1046,7 +1050,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private void setUpTxnContext() {
         txn = new TokenCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(handleContext.configuration()).willReturn(configuration);

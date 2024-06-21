@@ -271,7 +271,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(accountCreated);
 
         final var createdAccountID = accountCreated.accountIdOrThrow();
-        final var recordBuilder = context.recordBuilder(CryptoCreateRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoCreateRecordBuilder.class);
         recordBuilder.accountID(createdAccountID);
 
         // Put if any new alias is associated with the account into account store
