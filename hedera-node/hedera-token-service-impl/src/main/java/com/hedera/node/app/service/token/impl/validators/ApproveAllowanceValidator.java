@@ -76,9 +76,10 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
     public void validate(
             @NonNull final HandleContext context, final Account payerAccount, final ReadableAccountStore accountStore) {
         // create stores and config from context
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = context.readableStore(ReadableTokenRelationStore.class);
-        final var nftStore = context.readableStore(ReadableNftStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
+        final var nftStore = storeFactory.readableStore(ReadableNftStore.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
 
         final var txn = context.body();
