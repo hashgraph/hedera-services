@@ -147,7 +147,13 @@ Refer to this [official blog post](https://hedera.com/blog/hedera-smart-contract
 **Sidecars**: In Services, a sidecar refers to additional records that are created alongside the main transaction records. These sidecar records provide more detailed information about the transactions, making it easier to debug and understand the state changes that occur as a result of the transactions. Note that these are related to the current record stream implementation and will be replaced by block streams in the future.
 
 ## Synthetic Transaction
-**Synthetic Transaction**: Any transaction that is neither submitted through HAPI nor created by the platform. An example of which is the the deletion of an expired entity that did not pay rent. It is any transaction that shows up in the record stream that was not directly submitted by a user. Furthermore, it will have a non-zero nonce OR scheduled=true in its TransactionID. Note: the fact that we have a scheduled flag instead of just a non-zero nonce for scheduled transactions is for legacy reasons.
+**Synthetic Transaction**: Any transaction that is neither submitted through HAPI nor
+  created by the platform. An example of which is the the deletion of an expired
+  entity that did not pay rent. Synthetic transactions are presented in the block
+  stream (and record files) as a non-system transaction with a non-zero nonce
+  **or** `scheduled = true` in the `TransactionID` value.
+  Note that the use of a scheduled flag instead of a non-zero nonce for scheduled
+  transactions is for legacy reasons.
 
 
 ## System Contracts
