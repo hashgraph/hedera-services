@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -139,23 +140,21 @@ public class CryptoUpdateSuite {
                                 .has(AccountInfoAsserts.accountWith()
                                         .stakedAccountId("0.0.20")
                                         .noStakingNodeId()
-                                        .isDeclinedReward(true))
-                                .logged())
+                                        .isDeclinedReward(true)))
                 .when(
                         cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                         getAccountInfo("user")
                                 .has(AccountInfoAsserts.accountWith()
                                         .noStakedAccountId()
                                         .stakedNodeId(0L)
-                                        .isDeclinedReward(false))
-                                .logged(),
+                                        .isDeclinedReward(false)),
                         cryptoUpdate("user").newStakedNodeId(-1L),
+                        cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
                         getAccountInfo("user")
                                 .has(AccountInfoAsserts.accountWith()
                                         .noStakedAccountId()
                                         .noStakingNodeId()
-                                        .isDeclinedReward(false))
-                                .logged())
+                                        .isDeclinedReward(false)))
                 .then(
                         cryptoUpdate("user")
                                 .key(ADMIN_KEY)
@@ -173,7 +172,13 @@ public class CryptoUpdateSuite {
                                         .noStakedAccountId()
                                         .noStakingNodeId()
                                         .isDeclinedReward(true))
-                                .logged());
+                                .logged(),
+                        // For completeness stake back to a node
+                        cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
+                        getAccountInfo("user")
+                                .has(AccountInfoAsserts.accountWith()
+                                        .stakedNodeId(1L)
+                                        .isDeclinedReward(true)));
     }
 
     @HapiTest

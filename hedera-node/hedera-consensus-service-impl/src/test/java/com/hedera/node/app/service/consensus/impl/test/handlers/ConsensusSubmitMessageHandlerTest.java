@@ -32,7 +32,6 @@ import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -57,7 +56,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -79,9 +77,6 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 
-    @Mock(strictness = LENIENT)
-    private HandleContext handleContext;
-
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
@@ -101,9 +96,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
-        given(handleContext.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
+        given(storeFactory.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
         writableStore = new WritableTopicStore(writableStates, config, mock(StoreMetricsService.class));
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class))

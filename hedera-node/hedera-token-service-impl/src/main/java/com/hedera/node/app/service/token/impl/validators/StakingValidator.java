@@ -132,7 +132,9 @@ public class StakingValidator {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             validateTrue(accountStore.getAccountById(requireNonNull(stakedAccountIdInOp)) != null, INVALID_STAKING_ID);
         } else if (stakedIdKind.equals("STAKED_NODE_ID")) {
-            validateTrue(networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)) != null, INVALID_STAKING_ID);
+            requireNonNull(stakedNodeIdInOp);
+            validateTrue(stakedNodeIdInOp >= -1L, INVALID_STAKING_ID);
+            validateTrue(networkInfo.nodeInfo(stakedNodeIdInOp) != null, INVALID_STAKING_ID);
         }
     }
 

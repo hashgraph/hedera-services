@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -79,6 +80,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private TokenBaseRecordBuilder recordBuilder;
 
     @BeforeEach
@@ -91,7 +95,8 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         givenValidTxn();
         refreshStoresWithCurrentTokenInWritable();
         preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
     }
 
