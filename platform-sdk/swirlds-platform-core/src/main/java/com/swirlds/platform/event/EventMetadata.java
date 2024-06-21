@@ -286,6 +286,10 @@ public class EventMetadata implements Clearable {
         return stronglySeeP[m];
     }
 
+    /**
+     * @return strongly-seen witness in parent round (memoizes stronglySeeP function from
+     *     Swirlds-TR-2020-01)
+     */
     public EventImpl[] getStronglySeeP() {
         return stronglySeeP;
     }
