@@ -18,6 +18,7 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -28,7 +29,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -227,8 +227,12 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
 
     @Nullable
     @Override
-    public SoftwareVersion getSoftwareVersion() {
-        return hashedData.getSoftwareVersion();
+    public SemanticVersion getSoftwareVersion() {
+        if (hashedData.getSoftwareVersion() != null) {
+            return hashedData.getSoftwareVersion().getPbjSemanticVersion();
+        }
+
+        return null;
     }
 
     @NonNull

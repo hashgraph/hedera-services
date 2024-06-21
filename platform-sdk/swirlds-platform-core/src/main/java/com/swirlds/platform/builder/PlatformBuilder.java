@@ -88,10 +88,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -289,23 +287,6 @@ public final class PlatformBuilder {
     @NonNull
     public PlatformBuilder withExecutorFactory(@NonNull final ExecutorFactory executorFactory) {
         this.executorFactory = Objects.requireNonNull(executorFactory);
-        return this;
-    }
-
-    /**
-     * Provide the platform with the class ID of the previous software version. Needed at migration boundaries if the
-     * class ID of the software version has changed.
-     *
-     * @param previousSoftwareVersionClassId the class ID of the previous software version
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
-        throwIfAlreadyUsed();
-        final Set<Long> softwareVersions = new HashSet<>();
-        softwareVersions.add(softwareVersion.getClassId());
-        softwareVersions.add(previousSoftwareVersionClassId);
-        StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
         return this;
     }
 

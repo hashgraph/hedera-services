@@ -22,6 +22,7 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
@@ -29,7 +30,7 @@ import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -40,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 public class UserTxnWorkflow {
     private static final Logger logger = LogManager.getLogger(UserTxnWorkflow.class);
 
-    private final SoftwareVersion version;
+    private final SemanticVersion version;
     private final InitTrigger initTrigger;
     private final SkipHandleWorkflow skipHandleWorkflow;
     private final DefaultHandleWorkflow defaultHandleWorkflow;
@@ -52,7 +53,7 @@ public class UserTxnWorkflow {
 
     @Inject
     public UserTxnWorkflow(
-            @NonNull final SoftwareVersion version,
+            @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final SkipHandleWorkflow skipHandleWorkflow,
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
@@ -161,6 +162,6 @@ public class UserTxnWorkflow {
      */
     private boolean isOlderSoftwareEvent() {
         return this.initTrigger != EVENT_STREAM_RECOVERY
-                && version.compareTo(userTxn.platformEvent().getSoftwareVersion()) > 0;
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(version, userTxn.platformEvent().getSoftwareVersion()) > 0;
     }
 }

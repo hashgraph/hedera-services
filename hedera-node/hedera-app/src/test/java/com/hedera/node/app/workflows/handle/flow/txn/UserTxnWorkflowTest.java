@@ -39,7 +39,6 @@ import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
@@ -49,7 +48,6 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -76,10 +74,8 @@ class UserTxnWorkflowTest {
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
-    private static final SoftwareVersion PREVIOUS_VERSION = new HederaSoftwareVersion(
-            SemanticVersion.DEFAULT, SemanticVersion.newBuilder().major(99).build(), 0);
-    private static final SoftwareVersion CURRENT_VERSION = new HederaSoftwareVersion(
-            SemanticVersion.DEFAULT, SemanticVersion.newBuilder().major(100).build(), 0);
+    private static final SemanticVersion PREVIOUS_VERSION = SemanticVersion.newBuilder().major(99).build();
+    private static final SemanticVersion CURRENT_VERSION = SemanticVersion.newBuilder().major(100).build();
     private static final SingleTransactionRecord FAKE_RECORD = new SingleTransactionRecord(
             Transaction.DEFAULT,
             TransactionRecord.DEFAULT,
@@ -201,7 +197,7 @@ class UserTxnWorkflowTest {
                 .isEqualTo(FAIL_INVALID);
     }
 
-    private void givenSubjectWith(@NonNull final InitTrigger trigger, @NonNull final SoftwareVersion eventVersion) {
+    private void givenSubjectWith(@NonNull final InitTrigger trigger, @NonNull final SemanticVersion eventVersion) {
         subject = new UserTxnWorkflow(
                 CURRENT_VERSION,
                 trigger,

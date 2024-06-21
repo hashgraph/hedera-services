@@ -92,7 +92,7 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
-                .softwareVersion(mock(HederaSoftwareVersion.class))
+                .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
                 .build();
 

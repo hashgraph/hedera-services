@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -52,7 +53,6 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.BindsInstance;
@@ -156,7 +156,7 @@ public interface HederaInjectionComponent {
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
-        Builder softwareVersion(SoftwareVersion softwareVersion);
+        Builder softwareVersion(SemanticVersion softwareVersion);
 
         @BindsInstance
         Builder metrics(Metrics metrics);
