@@ -484,6 +484,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return stack;
     }
 
+    @NonNull
     @Override
     public ThrottleAdviser throttleAdviser() {
         return throttleAdviser;
