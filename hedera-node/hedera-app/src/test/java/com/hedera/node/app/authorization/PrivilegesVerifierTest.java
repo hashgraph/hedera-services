@@ -45,6 +45,8 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -360,6 +362,22 @@ class PrivilegesVerifierTest {
     }
 
     @Test
+    void nodeAdminCanCreate() throws InvalidProtocolBufferException {
+        // given:
+        var txn = nodeAdminTxn().setNodeCreate(NodeCreateTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
+    void nodeAdminCanDelete() throws InvalidProtocolBufferException {
+        // given:
+        var txn = nodeAdminTxn().setNodeDelete(NodeDeleteTransactionBody.getDefaultInstance());
+        // expect:
+        assertEquals(SystemOpAuthorization.AUTHORIZED, subject.authForTestCase(accessor(txn)));
+    }
+
+    @Test
     void randomAdminCannotFreeze() throws InvalidProtocolBufferException {
         // given:
         var txn = exchangeRatesAdminTxn().setFreeze(FreezeTransactionBody.getDefaultInstance());
@@ -653,6 +671,10 @@ class PrivilegesVerifierTest {
 
     private TransactionBody.Builder exchangeRatesAdminTxn() {
         return txnWithPayer(57);
+    }
+
+    private TransactionBody.Builder nodeAdminTxn() {
+        return txnWithPayer(53);
     }
 
     private TransactionBody.Builder txnWithPayer(long num) {
