@@ -31,7 +31,6 @@ class AddressBookHandlersTest {
 
     private NodeDeleteHandler nodeDeleteHandler;
 
-
     private NodeUpdateHandler nodeUpdateHandler;
 
     private AddressBookHandlers addressBookHandlers;
@@ -42,8 +41,7 @@ class AddressBookHandlersTest {
         nodeDeleteHandler = mock(NodeDeleteHandler.class);
         nodeUpdateHandler = mock(NodeUpdateHandler.class);
 
-        addressBookHandlers =
-                new AddressBookHandlers(nodeCreateHandler, nodeDeleteHandler, nodeUpdateHandler);
+        addressBookHandlers = new AddressBookHandlers(nodeCreateHandler, nodeDeleteHandler, nodeUpdateHandler);
     }
 
     @Test

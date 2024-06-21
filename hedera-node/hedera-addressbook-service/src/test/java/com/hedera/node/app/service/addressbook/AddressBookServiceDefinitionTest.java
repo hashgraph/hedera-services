@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.addressbook;
 
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import org.assertj.core.api.Assertions;
