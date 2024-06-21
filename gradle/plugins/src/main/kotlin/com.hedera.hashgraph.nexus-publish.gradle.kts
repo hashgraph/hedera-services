@@ -19,20 +19,32 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
 }
 
+val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
+
 nexusPublishing {
-    packageGroup = "com.hedera.hashgraph"
+    packageGroup = publishingPackageGroup
     repositories {
         sonatype {
-            username = System.getenv("OSSRH_USERNAME")
-            password = System.getenv("OSSRH_PASSWORD")
+            username = System.getenv("NEXUS_USERNAME")
+            password = System.getenv("NEXUS_PASSWORD")
         }
     }
 }
 
+// 'platform' and 'services' need to be published separately as they use different credentials
+val platformPublishTasks =
+    subprojects.filter { it.name.startsWith("swirlds") }.map { ":${it.name}:releaseMavenCentral" }
+val servicesPublishTasks =
+    subprojects.filter { !it.name.startsWith("swirlds") }.map { ":${it.name}:releaseMavenCentral" }
+
 tasks.named("closeSonatypeStagingRepository") {
-    // The publishing of all components to Maven Central is automatically done before close (which
-    // is done before release).
-    dependsOn(subprojects.map { ":${it.name}:releaseMavenCentral" })
+    // The publishing of all components to Maven Central is automatically done before close
+    // (which is done before release).
+    if (publishingPackageGroup == "com.swirlds") {
+        dependsOn(platformPublishTasks)
+    } else {
+        dependsOn(servicesPublishTasks)
+    }
 }
 
 tasks.named("releaseMavenCentral") {
@@ -42,5 +54,9 @@ tasks.named("releaseMavenCentral") {
 
 tasks.register("releaseMavenCentralSnapshot") {
     group = "release"
-    dependsOn(subprojects.map { ":${it.name}:releaseMavenCentral" })
+    if (publishingPackageGroup == "com.swirlds") {
+        dependsOn(platformPublishTasks)
+    } else {
+        dependsOn(servicesPublishTasks)
+    }
 }
