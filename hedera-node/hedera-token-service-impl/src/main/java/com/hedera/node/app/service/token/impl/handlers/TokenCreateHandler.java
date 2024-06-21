@@ -122,9 +122,10 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var op = txn.tokenCreationOrThrow();
         // Create or get needed config and stores
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelationStore = storeFactory.writableStore(WritableTokenRelationStore.class);
 
         final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
 

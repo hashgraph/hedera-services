@@ -93,13 +93,14 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        final var tokenStore = requireNonNull(context.readableStore(ReadableTokenStore.class));
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = requireNonNull(storeFactory.readableStore(ReadableTokenStore.class));
         final var op = context.body().tokenAssociateOrThrow();
         final var tokenIds = op.tokens().stream().sorted(TOKEN_ID_COMPARATOR).toList();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var validated = validateSemantics(
                 tokenIds, op.accountOrThrow(), tokensConfig, entitiesConfig, accountStore, tokenStore, tokenRelStore);
 

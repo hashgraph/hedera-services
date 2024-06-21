@@ -101,7 +101,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
+        final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
 
         final var builder = new Topic.Builder();
 

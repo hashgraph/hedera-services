@@ -32,6 +32,7 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -248,43 +249,12 @@ public interface HandleContext {
     RecordCache recordCache();
 
     /**
-     * Get a readable store given the store's interface. This gives read-only access to the store.
+     * Returns a {@link StoreFactory} that can create readable and writable stores as well as service APIs.
      *
-     * @param storeInterface The store interface to find and create a store for
-     * @param <T> Interface class for a Store
-     * @return An implementation of the provided store interface
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     * @return the {@link StoreFactory}
      */
     @NonNull
-    <T> T readableStore(@NonNull Class<T> storeInterface);
-
-    /**
-     * Return a writable store given the store's interface. This gives write access to the store.
-     *
-     * <p>This method is limited to stores that are part of the transaction's service.
-     *
-     * @param storeInterface The store interface to find and create a store for
-     * @param <T> Interface class for a Store
-     * @return An implementation of the provided store interface
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
-     */
-    @NonNull
-    <T> T writableStore(@NonNull Class<T> storeInterface);
-
-    /**
-     * Return a service API given the API's interface. This permits use of another service
-     * that doesn't have a corresponding HAPI {@link TransactionBody}.
-     *
-     * @param apiInterface The API interface to find and create an implementation of
-     * @param <T> Interface class for an API
-     * @return An implementation of the provided API interface
-     * @throws IllegalArgumentException if the apiInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code apiInterface} is {@code null}
-     */
-    @NonNull
-    <T> T serviceApi(@NonNull Class<T> apiInterface);
+    StoreFactory storeFactory();
 
     /**
      * Returns the information about the network this transaction is being handled in.

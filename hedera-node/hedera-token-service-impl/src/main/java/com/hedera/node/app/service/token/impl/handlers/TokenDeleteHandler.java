@@ -85,8 +85,9 @@ public class TokenDeleteHandler implements TransactionHandler {
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         final var txn = context.body();
         final var op = txn.tokenDeletionOrThrow();
         final var tokenId = op.tokenOrThrow();

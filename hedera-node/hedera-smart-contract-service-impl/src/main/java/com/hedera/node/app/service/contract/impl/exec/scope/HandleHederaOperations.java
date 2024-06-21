@@ -143,7 +143,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public ContractStateStore getStore() {
-        return context.writableStore(WritableContractStateStore.class);
+        return context.storeFactory().writableStore(WritableContractStateStore.class);
     }
 
     /**
@@ -212,7 +212,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
         requireNonNull(payerId);
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         final var coinbaseId =
                 AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
         tokenServiceApi.transferFromTo(payerId, coinbaseId, amount);
@@ -224,7 +224,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
         requireNonNull(payerId);
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         final var coinbaseId =
                 AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
         tokenServiceApi.transferFromTo(coinbaseId, payerId, amount);
@@ -246,7 +246,7 @@ public class HandleHederaOperations implements HederaOperations {
     public void updateStorageMetadata(
             final ContractID contractID, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.updateStorageMetadata(contractID, firstKey, netChangeInSlotsUsed);
     }
 
@@ -255,7 +255,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void createContract(final long number, final long parentNumber, @Nullable final Bytes evmAddress) {
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var parent = accountStore.getAccountById(
                 AccountID.newBuilder().accountNum(parentNumber).build());
         final var impliedContractCreation = synthContractCreationFromParent(
@@ -299,7 +299,7 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.deleteContract(
                 ContractID.newBuilder().evmAddress(evmAddress).build());
     }
@@ -309,7 +309,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void deleteUnaliasedContract(final long number) {
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.deleteContract(
                 ContractID.newBuilder().contractNum(number).build());
     }
@@ -324,13 +324,13 @@ public class HandleHederaOperations implements HederaOperations {
 
     @Override
     public ContractChangeSummary summarizeContractChanges() {
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.summarizeContractChanges();
     }
 
     @Override
     public long getOriginalSlotsUsed(final ContractID contractID) {
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.originalKvUsageFor(contractID);
     }
 
@@ -405,7 +405,7 @@ public class HandleHederaOperations implements HederaOperations {
                         .evmAddress(evmAddress)
                         .build());
         // Mark the created account as a contract with the given auto-renew account id
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder().accountNum(number).build();
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
