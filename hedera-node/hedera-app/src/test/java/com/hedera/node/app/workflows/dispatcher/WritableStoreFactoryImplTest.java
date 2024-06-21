@@ -23,6 +23,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
@@ -35,6 +37,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.state.spi.WritableKVState;
@@ -68,6 +71,7 @@ class WritableStoreFactoryImplTest {
                 arguments(TokenService.NAME, WritableTokenStore.class),
                 arguments(TokenService.NAME, WritableTokenRelationStore.class),
                 arguments(FreezeService.NAME, WritableFreezeStore.class),
+                arguments(AddressBookService.NAME, WritableNodeStore.class),
                 arguments(FileService.NAME, WritableFileStore.class));
     }
 

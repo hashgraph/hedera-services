@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -63,12 +64,10 @@ import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchFactory;
@@ -105,7 +104,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final BlockRecordManager blockRecordManager;
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
-    private final ReadableStoreFactory readableStoreFactory;
+    private final StoreFactoryImpl storeFactory;
     private final AccountID syntheticPayer;
     private final KeyVerifier verifier;
     private final Key payerKey;
@@ -116,8 +115,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ExpiryValidator expiryValidator;
     private final TransactionDispatcher dispatcher;
     private final RecordCache recordCache;
-    private final WritableStoreFactory writableStoreFactory;
-    private final ServiceApiFactory serviceApiFactory;
     private final NetworkInfo networkInfo;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final Provider<ChildDispatchComponent.Factory> childDispatchProvider;
@@ -136,7 +133,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
-            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
             @NonNull final Key payerKey,
@@ -145,8 +142,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final WritableEntityIdStore entityIdStore,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
-            @NonNull final WritableStoreFactory writableStoreFactory,
-            @NonNull final ServiceApiFactory serviceApiFactory,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchProvider,
@@ -161,7 +156,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
-        this.readableStoreFactory = requireNonNull(storeFactory);
+        this.storeFactory = requireNonNull(storeFactory);
         this.syntheticPayer = requireNonNull(syntheticPayer);
         this.verifier = requireNonNull(verifier);
         this.payerKey = requireNonNull(payerKey);
@@ -177,8 +172,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
         this.recordCache = requireNonNull(recordCache);
-        this.writableStoreFactory = requireNonNull(writableStoreFactory);
-        this.serviceApiFactory = requireNonNull(serviceApiFactory);
         this.networkInfo = requireNonNull(networkInfo);
         this.recordBuilder = requireNonNull(recordBuilder);
     }
@@ -249,7 +242,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 consensusNow,
                 subType,
                 false,
-                readableStoreFactory);
+                storeFactory.asReadOnly());
     }
 
     @NonNull
@@ -292,8 +285,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
         dispatcher.dispatchPureChecks(nestedTxn);
-        final var nestedContext =
-                new PreHandleContextImpl(readableStoreFactory, nestedTxn, payerForNested, configuration(), dispatcher);
+        final var nestedContext = new PreHandleContextImpl(
+                storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher);
         try {
             dispatcher.dispatchPreHandle(nestedContext);
         } catch (final PreCheckException ignored) {
@@ -342,21 +335,13 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public <T> T readableStore(@NonNull final Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return readableStoreFactory.getStore(storeInterface);
+        return storeFactory.readableStore(storeInterface);
     }
 
     @NonNull
     @Override
-    public <T> T writableStore(@NonNull final Class<T> storeInterface) {
-        requireNonNull(storeInterface, "storeInterface must not be null");
-        return writableStoreFactory.getStore(storeInterface);
-    }
-
-    @NonNull
-    @Override
-    public <T> T serviceApi(@NonNull final Class<T> apiInterface) {
-        requireNonNull(apiInterface, "apiInterface must not be null");
-        return serviceApiFactory.getApi(apiInterface);
+    public StoreFactory storeFactory() {
+        return storeFactory;
     }
 
     @NonNull
@@ -394,7 +379,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 syntheticPayerId,
                 computeDispatchFeesAsTopLevel == ComputeDispatchFeesAsTopLevel.NO,
                 authorizer,
-                readableStoreFactory,
+                storeFactory.asReadOnly(),
                 consensusNow));
     }
 

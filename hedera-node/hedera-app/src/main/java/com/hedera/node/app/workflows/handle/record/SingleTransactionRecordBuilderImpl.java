@@ -48,6 +48,7 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -133,7 +134,8 @@ public class SingleTransactionRecordBuilderImpl
                 GenesisAccountRecordBuilder,
                 ContractOperationRecordBuilder,
                 TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder {
+                CryptoUpdateRecordBuilder,
+                NodeCreateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -953,6 +955,19 @@ public class SingleTransactionRecordBuilderImpl
 
     public TokenID tokenID() {
         return tokenID;
+    }
+
+    /**
+     * Sets the receipt nodeID.
+     *
+     * @param nodeId the nodeId for the receipt
+     * @return the builder
+     */
+    @Override
+    @NonNull
+    public SingleTransactionRecordBuilderImpl nodeID(long nodeId) {
+        transactionReceiptBuilder.nodeId(nodeId);
+        return this;
     }
 
     /**
