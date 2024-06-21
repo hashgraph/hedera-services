@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.state.HederaState;

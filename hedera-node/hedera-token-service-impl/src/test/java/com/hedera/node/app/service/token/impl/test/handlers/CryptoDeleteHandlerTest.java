@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -77,6 +78,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private HandleContext handleContext;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private ExpiryValidator expiryValidator;
@@ -107,7 +111,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 
         lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        lenient().when(handleContext.storeFactory()).thenReturn(storeFactory);
+        lenient().when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
     }
 
     @Test
@@ -414,6 +419,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impl = new TokenServiceApiImpl(
                 configuration, storeMetricsService, stakingValidator, writableStates, op -> false);
-        given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(impl);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

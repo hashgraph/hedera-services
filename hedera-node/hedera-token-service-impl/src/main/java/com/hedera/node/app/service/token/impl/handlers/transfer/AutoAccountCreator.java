@@ -55,7 +55,7 @@ public class AutoAccountCreator {
      */
     public AutoAccountCreator(@NonNull final HandleContext handleContext) {
         this.handleContext = requireNonNull(handleContext);
-        this.accountStore = handleContext.writableStore(WritableAccountStore.class);
+        this.accountStore = handleContext.storeFactory().writableStore(WritableAccountStore.class);
     }
 
     /**

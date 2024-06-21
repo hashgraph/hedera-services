@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.txn.logic;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import edu.umd.cs.findbugs.annotations.NonNull;

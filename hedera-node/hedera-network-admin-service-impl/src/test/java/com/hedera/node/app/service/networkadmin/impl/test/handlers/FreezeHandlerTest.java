@@ -50,6 +50,7 @@ import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -80,6 +81,9 @@ class FreezeHandlerTest {
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
     private Account account;
@@ -118,10 +122,11 @@ class FreezeHandlerTest {
         given(preHandleContext.createStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
-        given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
-        given(handleContext.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
+        given(storeFactory.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+        given(storeFactory.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
     }
 
     @Test

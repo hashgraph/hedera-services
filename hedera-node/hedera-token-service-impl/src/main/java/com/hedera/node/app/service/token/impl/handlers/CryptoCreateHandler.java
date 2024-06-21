@@ -243,7 +243,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(context);
         final var txnBody = context.body();
         final var op = txnBody.cryptoCreateAccountOrThrow();
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
 
         // FUTURE: Use the config and check if accounts can be created. Currently, this check is being done in
         // `finishCryptoCreate` before `commit`

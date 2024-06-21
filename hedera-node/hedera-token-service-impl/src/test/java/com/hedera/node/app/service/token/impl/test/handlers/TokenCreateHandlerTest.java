@@ -1043,7 +1043,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
