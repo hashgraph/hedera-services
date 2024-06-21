@@ -27,8 +27,8 @@ public class DummyLearnerPushMerkleTreeView extends LearnerPushMerkleTreeView {
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public DummyLearnerPushMerkleTreeView(final MerkleNode root) {
-        super(root);
+    public DummyLearnerPushMerkleTreeView(final int viewId, final MerkleNode root) {
+        super(viewId, root);
     }
 
     /**

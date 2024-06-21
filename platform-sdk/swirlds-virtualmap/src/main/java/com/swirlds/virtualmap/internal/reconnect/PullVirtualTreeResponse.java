@@ -138,6 +138,14 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         if (isLeaf && !isClean) {
             leafData = in.readSerializable(false, VirtualLeafRecord::new);
         }
+        if (path != Path.INVALID_PATH) {
+            learnerView.responseReceived(this);
+        }
+    }
+
+    public int getViewId() {
+        assert learnerView != null;
+        return learnerView.getViewId();
     }
 
     public long getPath() {

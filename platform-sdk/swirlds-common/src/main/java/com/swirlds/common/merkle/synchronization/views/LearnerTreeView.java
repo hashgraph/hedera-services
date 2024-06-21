@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -55,12 +56,12 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
     void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
-            final Consumer<Boolean> completeListener);
+            final Consumer<Integer> completeListener);
 
     /**
      * Check if this view represents the root of the state.

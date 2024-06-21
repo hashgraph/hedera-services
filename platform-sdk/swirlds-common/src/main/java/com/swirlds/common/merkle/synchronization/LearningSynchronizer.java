@@ -34,6 +34,7 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerPushMerkleTreeView;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
+import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -52,6 +53,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,6 +125,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     private final AtomicInteger viewsInProgress = new AtomicInteger(0);
 
+    private final Map<String, Object> viewMetadata = new ConcurrentHashMap<>();
+
     /**
      * Create a new learning synchronizer.
      *
@@ -148,7 +152,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         views = new ConcurrentHashMap<>();
         final int viewId = viewIdGen.getAndIncrement();
-        views.put(viewId, nodeTreeView(root));
+        views.put(viewId, nodeTreeView(viewId, root));
         viewsToInitialize = new ConcurrentLinkedDeque<>();
         rootsToReceive = new ConcurrentLinkedQueue<>();
         if (root == null) {
@@ -269,18 +273,18 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         logger.info(RECONNECT.getMarker(), "synchronization complete");
     }
 
-    private LearnerTreeView<?> nodeTreeView(final MerkleNode root) {
+    private LearnerTreeView<?> nodeTreeView(final int viewId, final MerkleNode root) {
         if (root == null || !root.hasCustomReconnectView()) {
-            return new LearnerPushMerkleTreeView(root);
+            return new LearnerPushMerkleTreeView(viewId, root);
         } else {
             assert root instanceof CustomReconnectRoot;
-            return ((CustomReconnectRoot<?, ?>) root).buildLearnerView(reconnectConfig);
+            return ((CustomReconnectRoot<?, ?>) root).buildLearnerView(viewId, reconnectConfig);
         }
     }
 
     private void newSubtreeEncountered(final CustomReconnectRoot<?, ?> root) {
         final int viewId = viewIdGen.getAndIncrement();
-        final LearnerTreeView<?> view = nodeTreeView(root);
+        final LearnerTreeView<?> view = nodeTreeView(viewId, root);
         views.put(viewId, view);
         rootsToReceive.add(root);
         if (view.usesSharedInputQueue()) {
@@ -322,32 +326,23 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         final AtomicReference<MerkleNode> reconstructedRoot = new AtomicReference<>();
         reconstructedRoots.add(reconstructedRoot);
         viewsToInitialize.addFirst(view);
+        final Consumer<Integer> completeListener = id -> {
+            views.get(id).close();
+            final int wasInProgress = viewsInProgress.decrementAndGet();
+            boolean newScheduled = false;
+            boolean nextViewScheduled = receiveNextSubtree();
+            while (nextViewScheduled) {
+                newScheduled = true;
+                nextViewScheduled = receiveNextSubtree();
+            }
+            // Check if it was the last subtree to sync
+            if ((wasInProgress == 0) && !newScheduled) {
+                in.close();
+                out.close();
+            }
+        };
         view.startLearnerTasks(
-                this, workGroup, viewId, in, out, this::newSubtreeEncountered, reconstructedRoot, success -> {
-                    if (success) {
-                        logger.info(RECONNECT.getMarker(), "Finished receiving tree with route {}", route);
-                    } else {
-                        viewsToInitialize.remove(view);
-                        logger.error(RECONNECT.getMarker(), "Failed to receive tree with route {}", route);
-                    }
-
-                    final int wasInProgress = viewsInProgress.decrementAndGet();
-                    boolean newScheduled = false;
-                    if (success) {
-                        boolean nextViewScheduled = receiveNextSubtree();
-                        while (nextViewScheduled) {
-                            newScheduled = true;
-                            nextViewScheduled = receiveNextSubtree();
-                        }
-                    }
-
-                    // Check if it was the last subtree to sync
-                    if ((wasInProgress == 0) && !newScheduled) {
-                        in.close();
-                        out.close();
-                    }
-                });
-
+                this, workGroup, in, out, views, this::newSubtreeEncountered, reconstructedRoot, completeListener);
         return true;
     }
 
@@ -415,6 +410,11 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     public MerkleNode getRoot() {
         return newRoot.get();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <V> V computeViewMetadata(final String key, final V defaultValue) {
+        return (V) viewMetadata.compute(key, (k, v) -> (v != null) ? v : defaultValue);
     }
 
     protected StandardWorkGroup createStandardWorkGroup(

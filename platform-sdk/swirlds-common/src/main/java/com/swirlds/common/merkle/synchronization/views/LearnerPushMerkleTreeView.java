@@ -34,6 +34,7 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -42,6 +43,8 @@ import java.util.function.Consumer;
  * Implementation for a view of a standard in memory merkle tree.
  */
 public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
+
+    private final int viewId;
 
     private final MerkleNode originalRoot;
 
@@ -54,7 +57,8 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public LearnerPushMerkleTreeView(final MerkleNode root) {
+    public LearnerPushMerkleTreeView(final int viewId, final MerkleNode root) {
+        this.viewId = viewId;
         this.originalRoot = root;
         expectedLessons = new LinkedList<>();
         nodesToInitialize = new LinkedList<>();
@@ -64,12 +68,12 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
     public void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
-            final Consumer<Boolean> completeListener) {
+            final Consumer<Integer> completeListener) {
         final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
                 workGroup,
                 viewId,

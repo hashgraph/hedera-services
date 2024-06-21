@@ -1137,6 +1137,7 @@ public final class MerkleTestUtils {
             final MerkleNode startingTree, final MerkleNode desiredTree, final MerkleNode generatedTree) {
 
         if (!areTreesEqual(generatedTree, desiredTree)) {
+            System.err.println("Starting: " + startingTree);
             System.err.println("Desired: " + desiredTree);
             System.err.println("Generated: " + generatedTree);
         }

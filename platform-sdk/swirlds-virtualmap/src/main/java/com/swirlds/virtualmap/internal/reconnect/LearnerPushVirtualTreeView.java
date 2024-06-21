@@ -42,6 +42,7 @@ import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -76,6 +77,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * (specifically, leaf 2 for a tree with only a single leaf).
      */
     private static final Hash NULL_HASH = CryptographyHolder.get().getNullHash();
+
+    private final int viewId;
 
     /**
      * Handles removal of old nodes.
@@ -126,12 +129,14 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		Cannot be null.
      */
     public LearnerPushVirtualTreeView(
+            final int viewId,
             final VirtualRootNode<K, V> root,
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState,
             final ReconnectNodeRemover<K, V> nodeRemover) {
         super(root, originalState, reconnectState);
+        this.viewId = viewId;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
     }
@@ -140,12 +145,12 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
     public void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
-            final Consumer<Boolean> completeListener) {
+            final Consumer<Integer> completeListener) {
         final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
                 workGroup,
                 viewId,

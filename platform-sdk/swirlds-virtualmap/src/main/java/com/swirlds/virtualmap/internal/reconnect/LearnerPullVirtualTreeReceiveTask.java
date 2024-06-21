@@ -19,9 +19,15 @@ package com.swirlds.virtualmap.internal.reconnect;
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
+import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.virtualmap.internal.Path;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -43,21 +49,20 @@ public class LearnerPullVirtualTreeReceiveTask {
     private static final String NAME = "reconnect-learner-receiver";
 
     private final StandardWorkGroup workGroup;
-    private final int viewId;
     private final AsyncInputStream in;
-    private final LearnerPullVirtualTreeView<?, ?> view;
+    private final Map<Integer, LearnerTreeView<?>> views;
 
-    // Indicates if the learner sender task is done sending all requests to the teacher
-    private final AtomicBoolean senderIsFinished;
+    // Indicates the number learner sender tasks still sending requests to the teacher
+    private final Set<Integer> sendersRunning;
 
     // Number of requests sent to teacher / responses expected from the teacher. Increased in
     // the sending task, decreased in this task
-    private final AtomicLong expectedResponses;
+    private final Map<Integer, AtomicLong> expectedResponses;
 
     // Indicates if a response for path 0 (virtual root node) has been received
-    private final CountDownLatch rootResponseReceived;
+    private final Map<Integer, CountDownLatch> rootResponsesReceived;
 
-    private final Consumer<Boolean> completeListener;
+    private final Consumer<Integer> completeListener;
 
     /**
      * Create a thread for receiving responses to queries from the teacher.
@@ -66,27 +71,23 @@ public class LearnerPullVirtualTreeReceiveTask {
      * 		the work group that will manage this thread
      * @param in
      * 		the input stream, this object is responsible for closing this when finished
-     * @param view
-     * 		the view to be used when touching the merkle tree
-     * @param senderIsFinished
-     * 		becomes true once the sending thread has finished
+     * @param sendersRunning
+     * 		the number of sender tasks still running
      */
     public LearnerPullVirtualTreeReceiveTask(
             final StandardWorkGroup workGroup,
-            final int viewId,
             final AsyncInputStream in,
-            final LearnerPullVirtualTreeView<?, ?> view,
-            final AtomicBoolean senderIsFinished,
-            final AtomicLong expectedResponses,
-            final CountDownLatch rootResponseReceived,
-            final Consumer<Boolean> completeListener) {
+            final Map<Integer, LearnerTreeView<?>> views,
+            final Set<Integer> sendersRunning,
+            final Map<Integer, AtomicLong> expectedResponses,
+            final Map<Integer, CountDownLatch> rootResponsesReceived,
+            final Consumer<Integer> completeListener) {
         this.workGroup = workGroup;
-        this.viewId = viewId;
         this.in = in;
-        this.view = view;
-        this.senderIsFinished = senderIsFinished;
+        this.views = views;
+        this.sendersRunning = sendersRunning;
         this.expectedResponses = expectedResponses;
-        this.rootResponseReceived = rootResponseReceived;
+        this.rootResponsesReceived = rootResponsesReceived;
         this.completeListener = completeListener;
     }
 
@@ -94,36 +95,43 @@ public class LearnerPullVirtualTreeReceiveTask {
         workGroup.execute(NAME, this::run);
     }
 
+    private LearnerPullVirtualTreeView<?, ?> findView(final int viewId) {
+        final LearnerPullVirtualTreeView<?, ?> view = (LearnerPullVirtualTreeView<?, ?>) views.get(viewId);
+        if (view == null) {
+            throw new MerkleSynchronizationException("Unknown view: " + viewId);
+        }
+        return view;
+    }
+
     private void run() {
-        boolean success = false;
-        try (view) {
-            boolean finished = senderIsFinished.get();
-            boolean responseExpected = expectedResponses.get() > 0;
-
-            while ((!finished || responseExpected) && !Thread.currentThread().isInterrupted()) {
-                if (responseExpected) {
-                    final PullVirtualTreeResponse response =
-                            in.readAnticipatedMessage(viewId, () -> new PullVirtualTreeResponse(view));
-                    view.responseReceived(response);
-                    if (response.getPath() == 0) {
-                        rootResponseReceived.countDown();
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+                final PullVirtualTreeResponse response =
+                        in.readAnticipatedMessage(viewId -> new PullVirtualTreeResponse(findView(viewId)));
+                if (response == null) {
+                    if (expectedResponses.isEmpty() || !in.isAlive()) {
+                        break;
                     }
-                    expectedResponses.decrementAndGet();
-                } else {
-                    Thread.onSpinWait();
+                    Thread.sleep(0, 1);
+                    continue;
                 }
-
-                finished = senderIsFinished.get();
-                responseExpected = expectedResponses.get() > 0;
+                final int viewId = response.getViewId();
+                final AtomicLong viewExpectedResponses = expectedResponses.get(viewId);
+                viewExpectedResponses.decrementAndGet();
+                if (response.getPath() == Path.INVALID_PATH) {
+                    // There may be other messages for this view being handled by other threads
+                    while (viewExpectedResponses.get() != 0) {
+                        Thread.onSpinWait();
+                    }
+                    completeListener.accept(viewId);
+                    expectedResponses.remove(viewId);
+                } else if (response.getPath() == 0) {
+                    final CountDownLatch rootResponseReceived = rootResponsesReceived.get(viewId);
+                    rootResponseReceived.countDown();
+                }
             }
-            success = true;
-        } catch (final InterruptedException ex) {
-            logger.warn(RECONNECT.getMarker(), "Learner receiving task is interrupted");
-            Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             workGroup.handleError(ex);
-        } finally {
-            completeListener.accept(success);
         }
     }
 }

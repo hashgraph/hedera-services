@@ -116,18 +116,20 @@ public class TeacherPullVirtualTreeReceiveTask {
                     Thread.sleep(0, 1);
                     continue;
                 }
+                requestCounter++;
                 final int viewId = request.getViewId();
+                final TeacherPullVirtualTreeView<?, ?> view = (TeacherPullVirtualTreeView<?, ?>) views.get(viewId);
                 if (request.getPath() == Path.INVALID_PATH) {
                     logger.info(
                             RECONNECT.getMarker(),
                             "Teaching is complete for view={} as requested by the learner",
                             viewId);
+                    // Acknowledge the final request
+                    out.sendAsync(viewId, new PullVirtualTreeResponse(view, Path.INVALID_PATH, true, -1, -1, null));
                     completeListener.accept(viewId);
                     viewsInProgress.remove(viewId);
                     continue;
                 }
-                requestCounter++;
-                final TeacherPullVirtualTreeView<?, ?> view = (TeacherPullVirtualTreeView<?, ?>) views.get(viewId);
                 if (!viewsCheckedReady.contains(viewId)) {
                     view.waitUntilReady();
                     viewsCheckedReady.add(viewId);

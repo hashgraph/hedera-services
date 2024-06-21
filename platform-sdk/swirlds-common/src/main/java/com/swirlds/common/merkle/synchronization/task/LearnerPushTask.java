@@ -60,7 +60,7 @@ public class LearnerPushTask<T> {
 
     private final ThresholdLimitingHandler<Throwable> exceptionRateLimiter = new ThresholdLimitingHandler<>(1);
 
-    private final Consumer<Boolean> completeListener;
+    private final Consumer<Integer> completeListener;
 
     /**
      * Create a new thread for the learner.
@@ -89,7 +89,7 @@ public class LearnerPushTask<T> {
             final AtomicReference<MerkleNode> root,
             final LearnerTreeView<T> view,
             final ReconnectNodeCount nodeCount,
-            final Consumer<Boolean> completeListener) {
+            final Consumer<Integer> completeListener) {
         this.workGroup = workGroup;
         this.viewId = viewId;
         this.in = in;
@@ -234,7 +234,6 @@ public class LearnerPushTask<T> {
      * Get the tree/subtree from the teacher.
      */
     private void run() {
-        boolean success = false;
         boolean firstLesson = true;
 
         final Supplier<Lesson<T>> messageFactory = () -> new Lesson<>(view);
@@ -267,14 +266,13 @@ public class LearnerPushTask<T> {
             }
 
             logger.info(RECONNECT.getMarker(), "learner thread finished the learning loop for the current subtree");
-            success = true;
         } catch (final InterruptedException ex) {
             logger.warn(RECONNECT.getMarker(), "Learner thread interrupted");
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             workGroup.handleError(ex);
         } finally {
-            completeListener.accept(success);
+            completeListener.accept(viewId);
         }
 
         logger.info(RECONNECT.getMarker(), "learner thread closed input, output, and view for the current subtree");

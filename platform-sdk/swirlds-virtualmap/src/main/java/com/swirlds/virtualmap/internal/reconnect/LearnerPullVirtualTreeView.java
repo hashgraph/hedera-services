@@ -39,13 +39,18 @@ import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -77,6 +82,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * Reconnect configuration.
      */
     private final ReconnectConfig reconnectConfig;
+
+    private final int viewId;
 
     /**
      * Handles removal of old nodes.
@@ -114,7 +121,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * is important for hashing, so it's restored using this queue. Once hashing is improved to work
      * with unsorted dirty leaves stream, this code may be cleaned up.
      */
-    private final Queue<Long> anticipatedPaths = new ConcurrentLinkedQueue<>();
+    private final Queue<Long> anticipatedPaths = new ArrayDeque<>();
 
     /**
      * Related to the queue above. If a response is received out of order, it's temporarily stored
@@ -140,6 +147,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     public LearnerPullVirtualTreeView(
             final ReconnectConfig reconnectConfig,
+            final int viewId,
             final VirtualRootNode<K, V> root,
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
@@ -148,6 +156,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final NodeTraversalOrder traversalOrder) {
         super(root, originalState, reconnectState);
         this.reconnectConfig = reconnectConfig;
+        this.viewId = viewId;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
         this.traversalOrder = traversalOrder;
@@ -157,28 +166,44 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     public void startLearnerTasks(
             final LearningSynchronizer learningSynchronizer,
             final StandardWorkGroup workGroup,
-            final int viewId,
             final AsyncInputStream in,
             final AsyncOutputStream out,
+            final Map<Integer, LearnerTreeView<?>> views,
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
-            final Consumer<Boolean> completeListener) {
+            final Consumer<Integer> completeListener) {
         this.nodeCount = learningSynchronizer;
 
-        final AtomicBoolean senderIsFinished = new AtomicBoolean();
-        final CountDownLatch rootResponseReceived = new CountDownLatch(1);
-        final AtomicLong expectedResponses = new AtomicLong(0);
+        final Set<Integer> sendersRunning =
+                learningSynchronizer.computeViewMetadata("SENDERSRUNNING", ConcurrentHashMap.newKeySet());
+        sendersRunning.add(viewId);
 
-        final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
-                workGroup,
-                viewId,
-                in,
-                this,
-                senderIsFinished,
-                expectedResponses,
-                rootResponseReceived,
-                completeListener);
-        learnerReceiveTask.exec();
+        final Map<Integer, CountDownLatch> allRootResponseReceived =
+                learningSynchronizer.computeViewMetadata("ROOTRESPONSES", new ConcurrentHashMap<>());
+        final CountDownLatch viewRootResponseReceived = new CountDownLatch(1);
+        allRootResponseReceived.put(viewId, viewRootResponseReceived);
+
+        final Map<Integer, AtomicLong> allExpectedResponses =
+                learningSynchronizer.computeViewMetadata("EXPECTEDRESPONSES", new ConcurrentHashMap<>());
+        final AtomicLong viewExpectedResponses = new AtomicLong(0);
+        allExpectedResponses.put(viewId, viewExpectedResponses);
+
+        final AtomicBoolean pullLearnerReceiveTasksStarted =
+                learningSynchronizer.computeViewMetadata("POOL", new AtomicBoolean(false));
+        if (pullLearnerReceiveTasksStarted.compareAndSet(false, true)) {
+            for (int i = 0; i < 32; i++) {
+                final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
+                        workGroup,
+                        in,
+                        views,
+                        sendersRunning,
+                        allExpectedResponses,
+                        allRootResponseReceived,
+                        completeListener);
+                learnerReceiveTask.exec();
+            }
+        }
+
         reconstructedRoot.set(root);
         assert traversalOrder != null;
         final LearnerPullVirtualTreeSendTask learnerSendTask = new LearnerPullVirtualTreeSendTask(
@@ -189,10 +214,19 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 out,
                 this,
                 traversalOrder,
-                senderIsFinished,
-                rootResponseReceived,
-                expectedResponses);
+                sendersRunning,
+                viewRootResponseReceived,
+                viewExpectedResponses);
         learnerSendTask.exec();
+    }
+
+    public int getViewId() {
+        return viewId;
+    }
+
+    @Override
+    public boolean usesSharedInputQueue() {
+        return true;
     }
 
     public boolean isLeaf(long path) {
@@ -210,7 +244,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         firstNodeResponse = false;
     }
 
-    void responseReceived(final PullVirtualTreeResponse response) {
+    synchronized void responseReceived(final PullVirtualTreeResponse response) {
         responses.put(response.getPath(), response);
         while (!anticipatedPaths.isEmpty()) {
             final long nextExpectedPath = anticipatedPaths.peek();
@@ -286,7 +320,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return hash;
     }
 
-    void anticipatePath(final long path) {
+    synchronized void anticipatePath(final long path) {
         anticipatedPaths.add(path);
     }
 

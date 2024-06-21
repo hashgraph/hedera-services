@@ -1456,7 +1456,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public LearnerTreeView<Long> buildLearnerView(final ReconnectConfig reconnectConfig) {
+    public LearnerTreeView<Long> buildLearnerView(final int viewId, final ReconnectConfig reconnectConfig) {
         assert originalMap != null;
         // During reconnect we want to look up state from the original records
         final VirtualStateAccessor originalState = originalMap.getState();
@@ -1464,11 +1464,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         return switch (config.reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
-                    this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    viewId, this, originalMap.records, originalState, reconnectState, nodeRemover);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
                 final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
+                        viewId,
                         this,
                         originalMap.records,
                         originalState,
@@ -1480,6 +1481,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
+                        viewId,
                         this,
                         originalMap.records,
                         originalState,
@@ -1541,6 +1543,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(
                         reconnectRecords::findHash, reconnectIterator, firstLeafPath, lastLeafPath, hashListener)))
                 .setExceptionHandler((thread, exception) -> {
+                    exception.printStackTrace(System.err);
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();
                     final var message = "VirtualMap@" + getRoute() + " failed to hash during reconnect";

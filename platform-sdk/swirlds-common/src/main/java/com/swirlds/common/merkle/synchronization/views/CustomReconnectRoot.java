@@ -51,7 +51,7 @@ public interface CustomReconnectRoot<T, L> extends MerkleNode {
      *
      * @return a view representing this subtree
      */
-    LearnerTreeView<L> buildLearnerView(final ReconnectConfig reconnectConfig);
+    LearnerTreeView<L> buildLearnerView(final int viewId, final ReconnectConfig reconnectConfig);
 
     /**
      * If the original node in this position is of the correct type then the learner's node is initialized via
