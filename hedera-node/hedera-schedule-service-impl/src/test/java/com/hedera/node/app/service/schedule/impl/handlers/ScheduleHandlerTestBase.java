@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -38,6 +39,7 @@ import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -183,7 +185,10 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(AccountID.class),
                         any(TransactionCategory.class)))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
-        given(mockContext.recordBuilder(ScheduleRecordBuilder.class))
+
+        final var mockRecordBuilders = mock(RecordBuilders.class);
+        given(mockContext.recordBuilders()).willReturn(mockRecordBuilders);
+        given(mockRecordBuilders.getOrCreate(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
     }
 

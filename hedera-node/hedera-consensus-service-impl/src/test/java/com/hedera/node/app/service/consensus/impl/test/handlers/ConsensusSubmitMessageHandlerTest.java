@@ -32,6 +32,7 @@ import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -56,6 +57,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -80,6 +82,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
+
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
@@ -101,7 +106,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class))
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ConsensusSubmitMessageRecordBuilder.class))
                 .willReturn(recordBuilder);
     }
 

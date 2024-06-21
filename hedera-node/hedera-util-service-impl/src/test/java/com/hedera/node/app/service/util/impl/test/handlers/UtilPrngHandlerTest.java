@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -64,6 +65,9 @@ class UtilPrngHandlerTest {
 
     private FakePrngRecordBuilder recordBuilder;
 
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
+
     @Mock
     private BlockRecordInfo blockRecordInfo;
 
@@ -82,7 +86,8 @@ class UtilPrngHandlerTest {
         given(handleContext.configuration()).willReturn(config);
 
         subject = new UtilPrngHandler();
-        given(handleContext.recordBuilder(PrngRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(PrngRecordBuilder.class)).willReturn(recordBuilder);
         givenTxnWithoutRange();
     }
 

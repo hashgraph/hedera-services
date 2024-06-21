@@ -29,12 +29,12 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -236,16 +236,12 @@ public interface HandleContext {
     NetworkInfo networkInfo();
 
     /**
-     * Returns a record builder for the given record builder subtype.
+     * Returns the current {@link RecordBuilders} to manage record builders.
      *
-     * @param recordBuilderClass the record type
-     * @param <T> the record type
-     * @return a builder for the given record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     * @return the {@link RecordBuilders}
      */
     @NonNull
-    <T> T recordBuilder(@NonNull Class<T> recordBuilderClass);
+    RecordBuilders recordBuilders();
 
     /**
      * Dispatches the fee calculation for a child transaction (that might then be dispatched).
@@ -465,44 +461,12 @@ public interface HandleContext {
     }
 
     /**
-     * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
-     * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
-     * rolled back.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
      * Returns the current {@link SavepointStack}.
      *
      * @return the current {@code TransactionStack}
      */
     @NonNull
     SavepointStack savepointStack();
-
-    /**
-     * Revert the childRecords from the checkpoint.
-     */
-    void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
 
     /**
      * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
@@ -523,15 +487,6 @@ public interface HandleContext {
      * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
      */
     boolean hasThrottleCapacityForChildTransactions();
-
-    /**
-     * Create a checkpoint for the current childRecords.
-     *
-     * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
-     * record.
-     */
-    @NonNull
-    RecordListCheckPoint createRecordListCheckPoint();
 
     /**
      * A stack of savepoints.

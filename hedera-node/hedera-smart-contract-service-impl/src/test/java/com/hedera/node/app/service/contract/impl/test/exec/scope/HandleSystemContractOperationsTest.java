@@ -44,11 +44,11 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,7 +81,7 @@ class HandleSystemContractOperationsTest {
     private KeyVerifier keyVerifier;
 
     @Mock
-    private MessageFrame messageFrame;
+    private RecordBuilders recordBuilders;
 
     private HandleSystemContractOperations subject;
 
@@ -131,7 +131,9 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(any())).willReturn(recordBuilder);
@@ -161,7 +163,9 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
 
@@ -183,7 +187,9 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
         given(recordBuilder.contractID(any())).willReturn(recordBuilder);
