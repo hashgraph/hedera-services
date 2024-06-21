@@ -17,12 +17,13 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.user;
 
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.modules.UserDispatchModule;
 import dagger.Subcomponent;
 
 /**
  * The Dagger subcomponent to provide the bindings for the user transaction dispatch scope.
  */
-@Subcomponent
+@Subcomponent(modules = {UserDispatchModule.class})
 @UserDispatchScope
 public interface UserDispatchComponent extends Dispatch {
     @Subcomponent.Factory

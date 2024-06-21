@@ -90,6 +90,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private Consumer<byte[]> aliasObserver = null;
 
     @Nullable
+    private Consumer<Key> keyObserver = null;
+
+    @Nullable
     private Consumer<ByteString> ledgerIdObserver = null;
 
     private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
@@ -156,6 +159,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingAliasTo(Consumer<byte[]> obs) {
         this.aliasObserver = obs;
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingKeyTo(Consumer<Key> obs) {
+        this.keyObserver = obs;
         return this;
     }
 
@@ -326,6 +334,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             Optional.ofNullable(aliasObserver)
                     .ifPresent(cb ->
                             cb.accept(infoResponse.getAccountInfo().getAlias().toByteArray()));
+            Optional.ofNullable(keyObserver)
+                    .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getKey()));
             Optional.ofNullable(ledgerIdObserver)
                     .ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getLedgerId()));
             contractAccountIdObserver.ifPresent(

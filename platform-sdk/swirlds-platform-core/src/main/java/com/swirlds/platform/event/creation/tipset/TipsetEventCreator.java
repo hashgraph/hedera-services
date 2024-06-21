@@ -31,7 +31,7 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -169,7 +169,7 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final GossipEvent event) {
+    public void registerEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             return;
         }

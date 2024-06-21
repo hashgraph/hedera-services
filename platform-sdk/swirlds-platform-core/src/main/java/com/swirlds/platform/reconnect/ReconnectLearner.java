@@ -152,20 +152,21 @@ public class ReconnectLearner {
     @NonNull
     public ReservedSignedState execute(@NonNull final SignedStateValidator validator) throws ReconnectException {
         increaseSocketTimeout();
+        ReservedSignedState reservedSignedState = null;
         try {
             receiveSignatures();
-            final ReservedSignedState reservedSignedState = reconnect();
-            try {
-                validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
-                ReconnectUtils.endReconnectHandshake(connection);
-                return reservedSignedState;
-            } catch (final Exception e) {
-                reservedSignedState.close();
-                throw e;
-            }
+            reservedSignedState = reconnect();
+            validator.validate(reservedSignedState.get(), addressBook, stateValidationData);
+            ReconnectUtils.endReconnectHandshake(connection);
+            return reservedSignedState;
         } catch (final IOException | SignedStateInvalidException e) {
+            if (reservedSignedState != null) {
+                // if the state was received, we need to release it or it will be leaked
+                reservedSignedState.close();
+            }
             throw new ReconnectException(e);
         } catch (final InterruptedException e) {
+            // an interrupt can only occur in the reconnect() method, so we don't need to close the reservedSignedState
             Thread.currentThread().interrupt();
             throw new ReconnectException("interrupted while attempting to reconnect", e);
         } finally {

@@ -111,8 +111,8 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         commaSeparatedNumber(lastEvent.getRoundReceived()))
                 .addRow(
                         "timestamp",
-                        firstEvent.getGossipEvent().getConsensusTimestamp(),
-                        lastEvent.getGossipEvent().getConsensusTimestamp())
+                        firstEvent.getPlatformEvent().getConsensusTimestamp(),
+                        lastEvent.getPlatformEvent().getConsensusTimestamp())
                 .addRow(
                         "hash",
                         firstEvent.getHash().toHex(HASH_STRING_LENGTH),
@@ -123,24 +123,24 @@ public record EventStreamReport(List<EventStreamInfo> granularInfo, EventStreamI
                         lastEvent.getRunningHash().getHash().toHex(HASH_STRING_LENGTH))
                 .addRow(
                         "consensus order",
-                        commaSeparatedNumber(firstEvent.getGossipEvent().getConsensusOrder()),
-                        commaSeparatedNumber(lastEvent.getGossipEvent().getConsensusOrder()))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getConsensusOrder()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getConsensusOrder()))
                 .addRow(
                         "generation",
-                        commaSeparatedNumber(firstEvent.getGossipEvent().getGeneration()),
-                        commaSeparatedNumber(lastEvent.getGossipEvent().getGeneration()))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getGeneration()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getGeneration()))
                 .addRow(
                         "creator ID",
-                        firstEvent.getGossipEvent().getCreatorId(),
-                        lastEvent.getGossipEvent().getCreatorId())
+                        firstEvent.getPlatformEvent().getCreatorId(),
+                        lastEvent.getPlatformEvent().getCreatorId())
                 .addRow(
                         "last in round",
                         firstEvent.isLastInRoundReceived() ? "yes" : "no",
                         lastEvent.isLastInRoundReceived() ? "yes" : "no")
                 .addRow(
                         "transaction count",
-                        commaSeparatedNumber(firstEvent.getGossipEvent().getPayloadCount()),
-                        commaSeparatedNumber(lastEvent.getGossipEvent().getPayloadCount()))
+                        commaSeparatedNumber(firstEvent.getPlatformEvent().getPayloadCount()),
+                        commaSeparatedNumber(lastEvent.getPlatformEvent().getPayloadCount()))
                 .render(sb);
 
         sb.append("\n\n");

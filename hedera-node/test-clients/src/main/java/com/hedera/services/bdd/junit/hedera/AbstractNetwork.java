@@ -21,6 +21,10 @@ import static java.util.Objects.requireNonNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * Implementation support for named network with a list of nodes. (Note these may all
+ * actually be the same object in the case of an embedded "network".)
+ */
 public abstract class AbstractNetwork implements HederaNetwork {
     protected final String networkName;
     protected final List<HederaNode> nodes;
@@ -35,16 +39,6 @@ public abstract class AbstractNetwork implements HederaNetwork {
      */
     public List<HederaNode> nodes() {
         return nodes;
-    }
-
-    /**
-     * Returns the node of the network that matches the given selector.
-     *
-     * @param selector the selector
-     * @return the nodes that match the selector
-     */
-    public HederaNode getRequiredNode(@NonNull final NodeSelector selector) {
-        return nodes.stream().filter(selector).findAny().orElseThrow();
     }
 
     /**

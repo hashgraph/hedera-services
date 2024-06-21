@@ -24,7 +24,7 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
+import com.hedera.services.bdd.suites.staking.StakingSuite;
 import com.hedera.services.yahcli.config.ConfigManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
