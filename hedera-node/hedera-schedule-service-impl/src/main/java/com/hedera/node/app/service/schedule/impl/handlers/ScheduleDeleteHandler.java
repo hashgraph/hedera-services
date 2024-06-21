@@ -111,7 +111,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
-        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final TransactionBody currentTransaction = context.body();
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         try {
