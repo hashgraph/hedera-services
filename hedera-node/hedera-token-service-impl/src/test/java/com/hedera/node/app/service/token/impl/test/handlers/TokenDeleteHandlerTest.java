@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import org.assertj.core.api.Assertions;
@@ -160,8 +161,10 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         private HandleContext mockContext() {
             final var context = mock(HandleContext.class);
 
-            given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            final var storeFactory = mock(StoreFactory.class);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
             given(context.recordBuilder(any())).willReturn(mock(TokenBaseRecordBuilder.class));
 
             return context;

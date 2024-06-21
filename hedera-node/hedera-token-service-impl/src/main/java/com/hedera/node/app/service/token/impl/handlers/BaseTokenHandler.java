@@ -342,8 +342,11 @@ public class BaseTokenHandler {
 
         final var maxAutoAssociations = account.maxAutoAssociations();
         final var usedAutoAssociations = account.usedAutoAssociations();
-        validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
+        // only validate remaining associations if unlimitedAutoAssociations is disabled for the account
+        if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
+            validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        }
         // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
                 .tokenId(tokenId)

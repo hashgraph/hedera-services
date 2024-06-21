@@ -27,8 +27,8 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,7 +64,6 @@ public class FeeContextImpl implements FeeContext {
      * @param storeFactory          the {@link ReadableStoreFactory} to create readable stores
      * @param numSignatures         the number of signatures in the transaction
      * @param transactionDispatcher the {@link TransactionDispatcher} to dispatch child transactions
-     *
      */
     public FeeContextImpl(
             @NonNull final Instant consensusTime,

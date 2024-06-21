@@ -52,6 +52,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -114,6 +115,9 @@ class TokenFreezeAccountHandlerTest {
         @Mock(strictness = Strictness.LENIENT)
         private HandleContext context;
 
+        @Mock(strictness = Strictness.LENIENT)
+        private StoreFactory storeFactory;
+
         @Mock
         private ReadableTokenStore readableTokenStore;
 
@@ -128,9 +132,10 @@ class TokenFreezeAccountHandlerTest {
 
         @BeforeEach
         void setup() {
-            given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-            given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
             given(context.expiryValidator()).willReturn(expiryValidator);
         }
 
@@ -289,8 +294,10 @@ class TokenFreezeAccountHandlerTest {
 
         private HandleContext mockContext() {
             final var context = mock(HandleContext.class);
-            given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-            given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            final var storeFactory = mock(StoreFactory.class);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
             return context;
         }
