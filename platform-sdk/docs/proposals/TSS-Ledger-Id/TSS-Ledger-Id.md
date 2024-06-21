@@ -216,7 +216,17 @@ recursive proof proved too expensive for EVM smart contracts.
 #### TSS Genesis Process
 
 The TSS Genesis process is the process of generating the ledger public/private key pair for a new network or an existing
-network. The process is as follows:
+network. There are several options to consider in the TSS genesis process:
+
+1. Do we allow block number and round number to be out of sync?
+2. Do we need the initial block produced to be signed by the ledger id?
+3. For new networks, Do we need to produce a signed block 0?
+4. For existing networks, does the TSS genesis roster sign blocks prior to its existence?
+
+For existing networks, without significant effort to translate the hashgraph history into a block history and sign
+the blocks using the genesis ledger, there will be transactions and state in the history which cannot have Block
+Proofs constructed for it. The most straight forward solution is to simply start signing blocks as soon as the
+TSS genesis roster is in place and accept that the block proof capability starts with a non-zero block number.
 
 ##### TSS Genesis Process - Alternatives Considered
 
@@ -230,7 +240,6 @@ network. The process is as follows:
 | 6 | Retrospectively sign the initial blocks with TSS once it becomes available.                                   | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | TSS Genesis Roster signs older blocks.  This is compatible with all other options. |
 | 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
 | 8 | Instead of separate app, detect genesis, key the state, network restart from round 0 with keyed state.        | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            | 
-
 
 ### Goals
 
@@ -321,11 +330,98 @@ Lifecycle Invariants
 
 #### New Wiring Components
 
-### Module Organization and Repositories
+The following are new components in the system:
 
-Describe any new or modified modules or repositories.
+1. TSS State Manager (Not Wired)
+2. TSS Message Creator (Wired)
+3. TSS Message Validator (Wired)
+4. TSS Key Manager (Wired)
 
-Remove this section if not applicable.
+##### TSS State Manager
+
+The TSS state manager is executed on the transaction handling thread and is capable of reading and writing the state
+during round handling. The logic will be encapsulated in a class with a well-defined API, but this will not be a fully
+fledged wiring component outside the consensus round handler.
+
+Responsibilities:
+
+1. Handle `TssMessage` system transactions
+    - handled in consensus order
+    - insert into the TSS data map if it is legal to do so
+        - don’t insert multiple messages for the same node
+        - don’t insert any messages if voting window has closed
+    - if inserted into the TSS data map, ensure that the message is forwarded to the TSS Message Validator
+2. Handle `TssVote` system transactions
+    - handled in consensus order
+    - insert into TSS data map if it is legal to do so
+        - don’t insert multiple votes for the same node
+        - don’t insert once voting is closed
+    - after insertion, re-tally votes and decide if voting is now closed
+    - if voting is closed as the result of a new vote,
+        - if the “no” votes win, then the candidate roster will never be adopted
+        - if the “yes” votes win, the candidate roster is now officially confirmed, and will be adopted at the next
+          upgrade boundary
+3. Detect when a new candidate roster is set.
+    - update the pending roster hash in the platform state
+    - inform the TSS message creator that there is a new candidate roster
+    - inform the TSS message validator that there is a new roster
+4. Update Metrics
+    - indicate whether there is a candidate roster
+    - the current number of TSS messages collected for the candidate roster
+    - the current number of votes collected for the candidate roster
+        - keep different metrics both for “no” votes and “yes” votes
+5. On First Round After Restart (After PCES Replay and Reconnect)
+    - if there is no candidate roster, take no action
+    - if voting is closed, take no action
+    - if this node’s TSSMessage is not recorded in the TSSData map, send a message to the TSS message creator (so it can
+      resubmit the node’s TSS message)
+    - if this node’s vote is not recorded in the TSS data map, inform the TSS message validator that we still need to do
+      validation.
+
+##### TSS Message Creator
+
+The TSS message creator is responsible for generating a node’s TSSMessage. This runs as its own asynchronous thread
+since this may be a computationally expensive operation.
+
+The TSS message creator gets input from the TSS state manager in the form of a candidate roster that we need to generate
+a TSS message for. The TSS manager should generate the TSS manager on its own thread, and then submit a system
+transaction containing that message when finished.
+
+##### TSS Message Validator
+
+The TSS message validator is responsible for validating TSS messages and for submitting votes as to the validity of the
+candidate roster.
+
+The TSS message validator gets its input from the TSS state manager in the form of a candidate roster that we want to
+adopt, and as a sequence of TSS messages that have reached consensus.
+
+For each TSS message, the TSS validator will do validation on its own thread.
+
+- For each valid TSS message, it will add to the sum of the weight of all valid TSS messages (using the weighting in the
+  active roster). If it ever accumulates enough valid shares to meet the appropriate threshold, it submits a “yes” vote
+  via system transaction.
+- For each invalid TSS message, it will maintain a running sum (same as with valid messages). If there are enough
+  invalid TSS messages received such that it is impossible to reach the needed valid threshold, it submits a “no” vote
+  via a system transaction.
+
+In order to compute our private key and the public keys, we must know which TSS messages are valid or invalid. Since
+this takes a lot of time to do, it is to our advantage to make TSS message validity survive node restarts. As we
+validate TSS messages, we should record that information on disk. When we start up, we should read this data back out.
+
+##### TSS Key Manager
+
+The TSS key manager is special logic that only runs when the system starts up.  (When DAB phase 3 is implemented,
+this will happen whenever the active consensus roster is updated.)
+
+- if we are not upgrading, then the TSS key manager is responsible for computing this node’s private key and the
+  network’s public key, and for distributing that data to components that need it.
+    - if we don’t have TSS message validity completed when we start up, we have no choice but to block until it has been
+      completed
+- if we are upgrading and the candidate roster has sufficient “yes” votes, the TSS key manager is responsible for
+  computing the same information but for the candidate address book (which becomes the active address book in the first
+  round following the upgrade)
+    - similar to the restart case, we must block if we have not yet validated TSS messages
+
 
 ### Core Behaviors
 
