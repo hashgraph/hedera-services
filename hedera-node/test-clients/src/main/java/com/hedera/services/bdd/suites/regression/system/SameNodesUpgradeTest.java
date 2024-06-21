@@ -33,12 +33,8 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-
 import java.time.Duration;
 import java.util.stream.Stream;
-
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.freeze.CommonUpgradeResources;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -61,10 +57,9 @@ public class SameNodesUpgradeTest {
                         TxnUtils.BYTES_4K,
                         upgradeFileAppendsPerBurst())),
                 // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
-                sourcing(() ->
-                        prepareUpgrade()
-                                .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
-                                .havingHash(upgradeFileHashAt(DEFAULT_UPGRADE_ZIP_LOC))),
+                sourcing(() -> prepareUpgrade()
+                        .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
+                        .havingHash(upgradeFileHashAt(DEFAULT_UPGRADE_ZIP_LOC))),
                 // Wait for the immediate execution marker file (written only after 0.0.150 is unzipped)
                 waitForMf(EXEC_IMMEDIATE_MF, EXEC_IMMEDIATE_MF_TIMEOUT));
     }

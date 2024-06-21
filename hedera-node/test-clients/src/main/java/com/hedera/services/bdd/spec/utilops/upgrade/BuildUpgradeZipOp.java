@@ -144,7 +144,9 @@ public class BuildUpgradeZipOp extends UtilOp {
                 new JarFile(initialJarPath.normalize().toAbsolutePath().toFile())) {
             extractTo(jarFile, extractionPath);
             overwriteProperties(
-                    extractionPath.resolve(SEM_VER_FILE), SERVICES_VERSION_PROP, HapiUtils.toString(overrideVersion).substring(1));
+                    extractionPath.resolve(SEM_VER_FILE),
+                    SERVICES_VERSION_PROP,
+                    HapiUtils.toString(overrideVersion).substring(1));
             Files.createDirectories(UPGRADE_ZIP_PATH);
             try (final var jos = new JarOutputStream(new FileOutputStream(NEW_JAR_PATH.toFile()))) {
                 try (final var files = Files.walk(extractionPath)) {

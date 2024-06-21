@@ -176,7 +176,8 @@ public class ReadableFreezeUpgradeActions {
         final long size = archiveData.length();
         System.out.println("path from config - " + adminServiceConfig.upgradeArtifactsPath());
         final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
-        System.out.println("\"Absolute\" path - " + artifactsLoc.normalize().toAbsolutePath().toString());
+        System.out.println("\"Absolute\" path - "
+                + artifactsLoc.normalize().toAbsolutePath().toString());
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction

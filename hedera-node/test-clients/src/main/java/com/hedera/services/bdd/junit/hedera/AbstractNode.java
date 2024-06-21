@@ -86,7 +86,8 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(DATA_DIR)
                     .resolve(STREAMS_DIR)
                     .resolve("record0.0." + getAccountId().accountNumOrThrow());
-            case UPGRADE_ARTIFACTS_DIR -> workingDir.resolve(DATA_DIR)
+            case UPGRADE_ARTIFACTS_DIR -> workingDir
+                    .resolve(DATA_DIR)
                     .resolve(UPGRADE_DIR)
                     .resolve(CURRENT_DIR);
         };

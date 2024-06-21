@@ -86,7 +86,8 @@ public class WorkingDirUtils {
         WORKING_DIR_DATA_FOLDERS.forEach(folder ->
                 createDirectoriesUnchecked(workingDir.resolve(DATA_DIR).resolve(folder)));
         // Initialize the current upgrade folder
-        createDirectoriesUnchecked(workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
+        createDirectoriesUnchecked(
+                workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
         // Write the address book (config.txt)
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
         // Copy the bootstrap assets into the working directory
@@ -101,7 +102,8 @@ public class WorkingDirUtils {
      * @param propertiesPath the path to the <i>application.properties</i> file
      * @param upgradeArtifactsPath the path to the upgrade artifacts directory
      */
-    public static void updateUpgradeArtifactsProperty(@NonNull final Path propertiesPath, @NonNull final Path upgradeArtifactsPath) {
+    public static void updateUpgradeArtifactsProperty(
+            @NonNull final Path propertiesPath, @NonNull final Path upgradeArtifactsPath) {
         final var properties = new Properties();
         try {
             try (final var in = Files.newInputStream(propertiesPath)) {
@@ -115,7 +117,6 @@ public class WorkingDirUtils {
             throw new UncheckedIOException(e);
         }
     }
-
 
     private static Path bootstrapAssetsLoc() {
         return Paths.get(System.getProperty("user.dir")).endsWith("hedera-services")

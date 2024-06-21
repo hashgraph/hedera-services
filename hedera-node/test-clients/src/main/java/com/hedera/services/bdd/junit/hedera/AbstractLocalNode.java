@@ -21,9 +21,7 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.condi
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.recreateWorkingDir;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 
@@ -60,9 +58,7 @@ public abstract class AbstractLocalNode<T extends AbstractLocalNode<T>> extends 
     @Override
     public CompletableFuture<Void> mfFuture(@NonNull final MarkerFile markerFile) {
         requireNonNull(markerFile);
-        return conditionFuture(
-                () -> mfExists(markerFile),
-                () -> MF_BACKOFF_MS);
+        return conditionFuture(() -> mfExists(markerFile), () -> MF_BACKOFF_MS);
     }
 
     protected abstract T self();

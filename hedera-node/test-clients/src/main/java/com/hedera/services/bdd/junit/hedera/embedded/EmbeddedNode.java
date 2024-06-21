@@ -27,16 +27,12 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateU
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
-import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -77,9 +73,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     @Override
     public EmbeddedNode initWorkingDir(@NonNull String configTxt) {
         super.initWorkingDir(configTxt);
-        updateUpgradeArtifactsProperty(
-                getExternalPath(APPLICATION_PROPERTIES),
-                getExternalPath(UPGRADE_ARTIFACTS_DIR));
+        updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;
     }
 
