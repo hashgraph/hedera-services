@@ -38,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -95,10 +96,19 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public SubProcessNode start() {
+        return startWithJar(null);
+    }
+
+    public SubProcessNode startWithJar(@Nullable final Path jarPath) {
         assertStopped();
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
-        processHandle = startSubProcessNodeFrom(metadata);
+        if (jarPath == null) {
+            processHandle = startSubProcessNodeFrom(metadata);
+        } else {
+            final var jarLoc = jarPath.normalize().toAbsolutePath().toString();
+            processHandle = startSubProcessNodeFrom(metadata, "-jar", jarLoc);
+        }
         return this;
     }
 

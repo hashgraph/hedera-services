@@ -47,6 +47,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.CURRENT_JAR_PATH;
+import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.DEFAULT_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -81,6 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -151,6 +154,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
+import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -177,7 +181,9 @@ import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Duration;
@@ -426,6 +432,10 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    public static BuildUpgradeZipOp buildUpgradeZipWith(@NonNull final SemanticVersion newVersion) {
+        return new BuildUpgradeZipOp(CURRENT_JAR_PATH, newVersion, DEFAULT_UPGRADE_ZIP_LOC);
     }
 
     /**
@@ -1095,6 +1105,21 @@ public class UtilVerbs {
             OptionalLong tinyBarsToOffer) {
         return updateLargeFile(
                 payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {}, (op, i) -> {});
+    }
+
+    public static HapiSpecOperation updateSpecialFile(
+            final String payer,
+            final String fileName,
+            final Path path,
+            final int bytesPerOp,
+            final int appendsPerBurst) {
+        final ByteString contents;
+        try {
+            contents = ByteString.copyFrom(Files.readAllBytes(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return updateSpecialFile(payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
     }
 
     public static HapiSpecOperation updateSpecialFile(

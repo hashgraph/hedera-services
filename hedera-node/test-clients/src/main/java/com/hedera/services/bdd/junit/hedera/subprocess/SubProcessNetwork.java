@@ -90,6 +90,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      *
      * @return the network type
      */
+    @Override
     public TargetNetworkType type() {
         return SHARED_HAPI_TEST_NETWORK;
     }
@@ -97,6 +98,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     /**
      * Starts all nodes in the network.
      */
+    @Override
     public void start() {
         nodes.forEach(node -> node.initWorkingDir(configTxt).start());
     }
@@ -104,6 +106,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     /**
      * Forcibly stops all nodes in the network.
      */
+    @Override
     public void terminate() {
         nodes.forEach(HederaNode::terminate);
     }
@@ -111,6 +114,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     /**
      * Waits for all nodes in the network to be ready within the given timeout.
      */
+    @Override
     public void awaitReady(@NonNull final Duration timeout) {
         if (ready.get() == null) {
             final var future = runAsync(() -> {
@@ -124,6 +128,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             }
         }
         ready.get().join();
+    }
+
+    /**
+     * Restarts all nodes in the network from the JAR files they have unzipped to their respective
+     * {@code upgrade.artifacts.path} directories.
+     */
+    public void restartFromUnzippedJars() {
+        throw new AssertionError("Not implemented");
     }
 
     /**

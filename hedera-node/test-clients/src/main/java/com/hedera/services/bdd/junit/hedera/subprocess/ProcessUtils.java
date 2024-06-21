@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -103,30 +105,31 @@ public class ProcessUtils {
      * @return the {@link ProcessHandle} of the started node
      */
     public static ProcessHandle startSubProcessNodeFrom(@NonNull final NodeMetadata metadata) {
+        // By default tell java to start the ServicesMain class
+        return startSubProcessNodeFrom(metadata, "com.hedera.node.app.ServicesMain");
+    }
+
+    /**
+     * Starts a sub-process node from the given metadata and main class reference, and returns its {@link ProcessHandle}.
+     *
+     * @param metadata the metadata of the node to start
+     * @param mainClassRef the main class reference to start
+     * @return the {@link ProcessHandle} of the started node
+     */
+    public static ProcessHandle startSubProcessNodeFrom(
+            @NonNull final NodeMetadata metadata, @NonNull String... mainClassRef) {
         final var builder = new ProcessBuilder();
         final var environment = builder.environment();
         environment.put("LC_ALL", "en.UTF-8");
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
         try {
-            return builder.command(
-                            // Use the same java command that started this process
-                            ProcessHandle.current().info().command().orElseThrow(),
-                            "-agentlib:jdwp=transport=dt_socket,server=y,suspend="
-                                    + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
-                                    + (FIRST_AGENT_PORT + metadata.nodeId()),
-                            "-classpath",
-                            // Use the same classpath that started this process, excluding test-clients
-                            currentNonTestClientClasspath(),
-                            // JVM system
-                            "-Dfile.encoding=UTF-8",
-                            "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
-                            "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + STREAMS_DIR,
-                            "-Dhedera.profiles.active=DEV",
-                            "-Dhedera.workflows.enabled=true",
-                            "com.hedera.node.app.ServicesMain",
-                            "-local",
-                            Long.toString(metadata.nodeId()))
+            return builder.command(Stream.of(
+                                    baseJavaCmdLine(metadata),
+                                    List.of(mainClassRef),
+                                    List.of("-local", Long.toString(metadata.nodeId())))
+                            .flatMap(List::stream)
+                            .toList())
                     .directory(metadata.workingDir().toFile())
                     .inheritIO()
                     .start()
@@ -134,6 +137,24 @@ public class ProcessUtils {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static List<String> baseJavaCmdLine(@NonNull final NodeMetadata metadata) {
+        return List.of(
+                // Use the same java command that started this process
+                ProcessHandle.current().info().command().orElseThrow(),
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend="
+                        + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
+                        + (FIRST_AGENT_PORT + metadata.nodeId()),
+                "-classpath",
+                // Use the same classpath that started this process, excluding test-clients
+                currentNonTestClientClasspath(),
+                // JVM system
+                "-Dfile.encoding=UTF-8",
+                "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
+                "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + STREAMS_DIR,
+                "-Dhedera.profiles.active=DEV",
+                "-Dhedera.workflows.enabled=true");
     }
 
     /**
