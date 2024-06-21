@@ -1,9 +1,11 @@
-# Merkle State API
+# Ledger State API
 
 ## Summary
 
-Refactor the Merkle tree so that it can be fully represented by the State API.
-Create a module that will provide a simple and easy-to-use API for the Merkle tree.
+This proposal aims to define a public API for the ledger state. The API should be used to interact with the
+underlying Merkle tree, which will be an implementation detail in the future. Since there already exists a State
+API in the services layer, another goal of this proposal is to move that API to the platform layer and use it as
+the central API to access the ledger state in all code & products.
 
 ## Purpose and Context
 
@@ -42,8 +44,8 @@ List of `swirlds-state-api` dependencies:
 
 A singleton is a node with 2 children:
 
-- label of type `String` for the state name
-- protobuf message for child data
+- key of type `String`, which is the name of the singleton
+- the singleton value, which is a protobuf message
 
 In Java code it's represented by the following classes:
 ```java
