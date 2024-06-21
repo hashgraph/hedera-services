@@ -19,7 +19,7 @@ package com.swirlds.platform.wiring;
 import com.swirlds.common.wiring.component.ComponentWiring;
 import com.swirlds.common.wiring.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.branching.BranchDetector;
 import com.swirlds.platform.event.branching.BranchReporter;
 import com.swirlds.platform.event.creation.EventCreationManager;
@@ -56,10 +56,10 @@ public class PlatformCoordinator {
      */
     private final Runnable flushTheEventHasher;
 
-    private final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring;
-    private final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring;
-    private final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring;
-    private final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring;
+    private final ComponentWiring<InternalEventValidator, PlatformEvent> internalEventValidatorWiring;
+    private final ComponentWiring<EventDeduplicator, PlatformEvent> eventDeduplicatorWiring;
+    private final ComponentWiring<EventSignatureValidator, PlatformEvent> eventSignatureValidatorWiring;
+    private final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring;
     private final GossipWiring gossipWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
@@ -72,7 +72,7 @@ public class PlatformCoordinator {
             staleEventDetectorWiring;
     private final ComponentWiring<TransactionPool, Void> transactionPoolWiring;
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
-    private final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring;
+    private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;
     private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
 
     /**
@@ -99,10 +99,10 @@ public class PlatformCoordinator {
      */
     public PlatformCoordinator(
             @NonNull final Runnable flushTheEventHasher,
-            @NonNull final ComponentWiring<InternalEventValidator, GossipEvent> internalEventValidatorWiring,
-            @NonNull final ComponentWiring<EventDeduplicator, GossipEvent> eventDeduplicatorWiring,
-            @NonNull final ComponentWiring<EventSignatureValidator, GossipEvent> eventSignatureValidatorWiring,
-            @NonNull final ComponentWiring<OrphanBuffer, List<GossipEvent>> orphanBufferWiring,
+            @NonNull final ComponentWiring<InternalEventValidator, PlatformEvent> internalEventValidatorWiring,
+            @NonNull final ComponentWiring<EventDeduplicator, PlatformEvent> eventDeduplicatorWiring,
+            @NonNull final ComponentWiring<EventSignatureValidator, PlatformEvent> eventSignatureValidatorWiring,
+            @NonNull final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring,
             @NonNull final GossipWiring gossipWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
             @NonNull final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring,
@@ -118,7 +118,7 @@ public class PlatformCoordinator {
                             staleEventDetectorWiring,
             @NonNull final ComponentWiring<TransactionPool, Void> transactionPoolWiring,
             @NonNull final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring,
-            @NonNull final ComponentWiring<BranchDetector, GossipEvent> branchDetectorWiring,
+            @NonNull final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring,
             @NonNull final ComponentWiring<BranchReporter, Void> branchReporterWiring) {
 
         this.flushTheEventHasher = Objects.requireNonNull(flushTheEventHasher);

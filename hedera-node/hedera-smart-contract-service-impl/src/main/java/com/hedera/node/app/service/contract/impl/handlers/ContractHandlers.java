@@ -49,9 +49,6 @@ public class ContractHandlers {
 
     private final EthereumTransactionHandler ethereumTransactionHandler;
 
-    // Approximate gas limit for contract transactions.  Used for pure checks.
-    public static final long MAX_GAS_LIMIT = 15_000_000L;
-
     @Inject
     public ContractHandlers(
             @NonNull final ContractCallHandler contractCallHandler,

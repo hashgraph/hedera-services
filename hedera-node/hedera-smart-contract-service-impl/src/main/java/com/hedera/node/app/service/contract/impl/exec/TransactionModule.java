@@ -52,7 +52,6 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -61,6 +60,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -118,14 +118,14 @@ public interface TransactionModule {
     @TopLevelResourcePrices
     static FunctionalityResourcePrices provideTopLevelResourcePrices(
             @NonNull final HederaFunctionality functionality, @NonNull final HandleContext context) {
-        return context.resourcePricesFor(functionality, SubType.DEFAULT);
+        return context.resourcePriceCalculator().resourcePricesFor(functionality, SubType.DEFAULT);
     }
 
     @Provides
     @TransactionScope
     @ChildTransactionResourcePrices
     static FunctionalityResourcePrices provideChildTransactionResourcePrices(@NonNull final HandleContext context) {
-        return context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT);
+        return context.resourcePriceCalculator().resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT);
     }
 
     @Provides

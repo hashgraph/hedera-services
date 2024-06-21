@@ -16,49 +16,25 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.sigs.Expansion;
-import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
-import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+
+import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.system.Platform;
 import com.swirlds.state.HederaState;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Function;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Module(includes = {HandlersInjectionModule.class})
 public interface HandleWorkflowInjectionModule {
     @Provides
-    static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
-        return PlatformSigOps::createCryptoSigsFrom;
-    }
-
-    @Provides
-    static Function<TxnAccessor, TxnScopedPlatformSigFactory> provideScopedFactoryProvider() {
-        return ReusableBodySigningFactory::new;
-    }
-
-    @Binds
     @Singleton
-    ExpiryValidator bindEntityExpiryValidator(MonoExpiryValidator monoEntityExpiryValidator);
-
-    @Binds
-    @Singleton
-    AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
+    static EthereumTransactionHandler provideEthereumTransactionHandler() {
+        return CONTRACT_SERVICE.handlers().ethereumTransactionHandler();
+    }
 
     Runnable NO_OP = () -> {};
 
@@ -66,18 +42,5 @@ public interface HandleWorkflowInjectionModule {
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
         return () -> new AutoCloseableWrapper<>(workingStateAccessor.getHederaState(), NO_OP);
-    }
-
-    @Provides
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    static NonAtomicReference<HederaState> provideMutableStateSupplier(@NonNull final Platform platform) {
-        // Always return the latest mutable state until we support state proofs
-        return new NonAtomicReference<>();
-    }
-
-    @Provides
-    @Singleton
-    static LongSupplier provideConsensusSecond(@NonNull final TransactionContext txnCtx) {
-        return () -> txnCtx.consensusTime().getEpochSecond();
     }
 }

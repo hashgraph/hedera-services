@@ -31,6 +31,10 @@ include(":app-hapi-fees", "hedera-node/hapi-fees")
 
 include(":app-hapi-utils", "hedera-node/hapi-utils")
 
+include(":app-service-addressbook", "hedera-node/hedera-addressbook-service")
+
+include(":app-service-addressbook-impl", "hedera-node/hedera-addressbook-service-impl")
+
 include(":app-service-consensus", "hedera-node/hedera-consensus-service")
 
 include(":app-service-consensus-impl", "hedera-node/hedera-consensus-service-impl")
@@ -46,8 +50,6 @@ include(":hedera-evm-impl", "hedera-node/hedera-evm-impl")
 include(":app-service-file", "hedera-node/hedera-file-service")
 
 include(":app-service-file-impl", "hedera-node/hedera-file-service-impl")
-
-include(":app-service-mono", "hedera-node/hedera-mono-service")
 
 include(":app-service-network-admin", "hedera-node/hedera-network-admin-service")
 

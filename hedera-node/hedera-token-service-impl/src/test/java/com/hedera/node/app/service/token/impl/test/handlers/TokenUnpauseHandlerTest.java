@@ -48,8 +48,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -77,6 +79,9 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private TokenBaseRecordBuilder recordBuilder;
 
     @BeforeEach
@@ -87,7 +92,8 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         givenValidTxn();
         refreshStoresWithCurrentTokenInWritable();
         preHandleContext = new FakePreHandleContext(accountStore, tokenUnpauseTxn);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
     }
 
@@ -116,14 +122,16 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     @Test
     public void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
+        FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
-        when(feeContext.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
 
         subject.calculateFees(feeContext);
 
-        InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext).feeCalculator(SubType.DEFAULT);
+        InOrder inOrder = inOrder(feeCalculatorFactory, feeCalculator);
+        inOrder.verify(feeCalculatorFactory).feeCalculator(SubType.DEFAULT);
         inOrder.verify(feeCalculator).addBytesPerTransaction(anyLong());
         inOrder.verify(feeCalculator).calculate();
     }
