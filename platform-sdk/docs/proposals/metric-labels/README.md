@@ -323,11 +323,6 @@ Next to that it will make it harder to create labels with a dynamic value.
 Once the api and usage of labels is clear we can think about adding the second approach.
 Here the api can be extended by a new method that allows to add labels at measurement time. 
 
-## Open Questions
-
-- Should we use this proposal to rename the `Metrics` interface to `MetricRegistry`?
-In most other libs it is called registry.
-
 ## Future Work
 
 As a next step we can think about labels next to `nodeId` that makes sense to have in our metrics.
