@@ -20,6 +20,7 @@ plugins {
 }
 
 val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
+val isPlatformPublish = publishingPackageGroup == "com.swirlds"
 
 nexusPublishing {
     packageGroup = publishingPackageGroup
@@ -27,6 +28,11 @@ nexusPublishing {
         sonatype {
             username = System.getenv("NEXUS_USERNAME")
             password = System.getenv("NEXUS_PASSWORD")
+            if (isPlatformPublish) {
+                nexusUrl = uri("https://s01.oss.sonatype.org/service/local/")
+                snapshotRepositoryUrl =
+                    uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            }
         }
     }
 }
@@ -40,7 +46,7 @@ val servicesPublishTasks =
 tasks.named("closeSonatypeStagingRepository") {
     // The publishing of all components to Maven Central is automatically done before close
     // (which is done before release).
-    if (publishingPackageGroup == "com.swirlds") {
+    if (isPlatformPublish) {
         dependsOn(platformPublishTasks)
     } else {
         dependsOn(servicesPublishTasks)
@@ -54,7 +60,7 @@ tasks.named("releaseMavenCentral") {
 
 tasks.register("releaseMavenCentralSnapshot") {
     group = "release"
-    if (publishingPackageGroup == "com.swirlds") {
+    if (isPlatformPublish) {
         dependsOn(platformPublishTasks)
     } else {
         dependsOn(servicesPublishTasks)
