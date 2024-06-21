@@ -83,9 +83,10 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().tokenFreezeOrThrow();
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = context.expiryValidator();
         final var tokenRel = validateSemantics(op, accountStore, tokenStore, tokenRelStore, expiryValidator);
 

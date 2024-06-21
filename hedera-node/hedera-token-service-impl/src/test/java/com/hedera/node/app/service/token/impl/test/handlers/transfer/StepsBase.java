@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -75,6 +76,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected RecordBuilders recordBuilders;
+
     @Mock
     protected ExpiryValidator expiryValidator;
 
@@ -96,6 +100,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void baseInternalSetUp(final boolean prepopulateReceiverIds) {
         super.handlerTestBaseInternalSetUp(prepopulateReceiverIds);
         refreshWritableStores();
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
     }
 
     protected final AccountID unknownAliasedId =
@@ -211,8 +216,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.recordBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(recordBuilders.getOrCreate(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
+        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
     }
 }

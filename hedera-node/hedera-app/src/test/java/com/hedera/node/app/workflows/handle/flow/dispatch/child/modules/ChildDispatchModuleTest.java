@@ -48,14 +48,16 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
@@ -196,8 +198,16 @@ class ChildDispatchModuleTest {
     @Mock
     private ServiceScopeLookup serviceScopeLookup;
 
+    @Mock
+    private StoreFactoryImpl storeFactory;
+
+    @Mock
+    private RecordBuilders recordBuilders;
+
     @Test
     void childHandleContextConstructedWithRecordBuilderConsTime() {
+        given(recordBuilders.getOrCreate(SingleTransactionRecordBuilderImpl.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.consensusNow()).willReturn(CHILD_CONS_NOW);
         final var childContext = ChildDispatchModule.provideDispatchHandleContext(
                 transactionInfo,
@@ -206,7 +216,7 @@ class ChildDispatchModuleTest {
                 blockRecordManager,
                 resourcePriceCalculator,
                 feeManager,
-                readableStoreFactory,
+                storeFactory,
                 syntheticPayer,
                 verifier,
                 payerkey,
@@ -218,7 +228,7 @@ class ChildDispatchModuleTest {
                 writableStoreFactory,
                 serviceApiFactory,
                 networkInfo,
-                recordBuilder,
+                recordBuilders,
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,

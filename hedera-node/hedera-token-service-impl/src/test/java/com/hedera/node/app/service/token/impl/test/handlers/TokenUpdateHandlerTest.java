@@ -82,6 +82,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -114,6 +115,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private TokenUpdateRecordBuilder recordBuilder;
 
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
+
     private TransactionBody txn;
 
     @Mock
@@ -130,7 +134,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         final TokenUpdateValidator validator = new TokenUpdateValidator(new TokenAttributesValidator());
         subject = new TokenUpdateHandler(validator);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();
     }
@@ -343,7 +348,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         writableTokenStore.put(copyToken);
 
-        given(handleContext.writableStore((WritableTokenStore.class))).willReturn(writableTokenStore);
+        given(storeFactory.writableStore((WritableTokenStore.class))).willReturn(writableTokenStore);
 
         final Key invalidAllZeros = Key.newBuilder()
                 .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
@@ -394,7 +399,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .metadataKey(Key.DEFAULT)
                 .build();
         writableTokenStore.put(copyToken);
-        given(handleContext.writableStore((WritableTokenStore.class))).willReturn(writableTokenStore);
+        given(storeFactory.writableStore((WritableTokenStore.class))).willReturn(writableTokenStore);
 
         txn = new TokenUpdateBuilder()
                 .withFreezeKey(A_KEY_LIST)
@@ -432,7 +437,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(new ExpiryMeta(1234600L, autoRenewSecs, ownerId));
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         writableTokenRelStore.put(copyTokenRel);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -451,7 +456,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .frozen(true)
                 .build();
         writableTokenRelStore.put(copyTokenRel);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -578,8 +583,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(fungibleTokenId)
                 .accountId(payerId)
                 .build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
 
         final var token = readableTokenStore.get(fungibleTokenId);
@@ -647,8 +652,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(nonFungibleTokenId)
                 .accountId(payerId)
                 .build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         assertThat(writableTokenRelStore.get(payerId, nonFungibleTokenId)).isNull();
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(1234600L, autoRenewSecs, ownerId));
@@ -738,10 +743,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .maxAutoAssociations(0)
                 .usedAutoAssociations(0)
                 .build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -778,10 +783,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(fungibleTokenId)
                 .accountId(payerId)
                 .build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
                 .getOrCreateConfig();
@@ -807,8 +812,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .expirationSecond(consensusInstant.getEpochSecond() - 10000)
                 .build());
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
                 .getOrCreateConfig();
@@ -837,10 +842,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(fungibleTokenId)
                 .accountId(payerId)
                 .build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
                 .getOrCreateConfig();
@@ -863,8 +868,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .expirationSecond(consensusInstant.getEpochSecond() - 10000)
                 .build());
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
                 .getOrCreateConfig();
@@ -884,8 +889,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         writableAccountStore.put(spenderAccount.copyBuilder().deleted(true).build());
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
                 .willThrow(new HandleException(ACCOUNT_DELETED));
 
@@ -899,8 +904,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withAutoRenewAccount(payerId).build();
         writableAccountStore.put(account.copyBuilder().deleted(true).build());
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
                 .willThrow(new HandleException(ACCOUNT_DELETED));
 
@@ -961,7 +966,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .deleted(true)
                 .build();
         writableTokenStore.put(copyToken);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -977,7 +982,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .paused(true)
                 .build();
         writableTokenStore.put(copyToken);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -1026,10 +1031,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .accountId(payerId)
                 .build());
         writableAccountStore.put(account.copyBuilder().numberPositiveBalances(0).build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
                 .willReturn(new ExpiryMeta(1234600L, autoRenewSecs, ownerId));
@@ -1078,8 +1083,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenId(fungibleTokenId)
                 .accountId(payerId)
                 .build());
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
 
         writableTokenStore.put(fungibleToken
@@ -1087,8 +1092,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .kycKey((Key) null)
                 .freezeKey((Key) null)
                 .build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -1163,7 +1168,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
         writableTokenRelStore.put(copyTokenRel);
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         txn = new TokenUpdateBuilder().withToken(nonFungibleTokenId).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -1363,7 +1368,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     private void setUpTxnContext() {
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
