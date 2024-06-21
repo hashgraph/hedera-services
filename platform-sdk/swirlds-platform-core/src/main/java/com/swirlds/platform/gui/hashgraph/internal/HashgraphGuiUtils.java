@@ -71,21 +71,25 @@ public final class HashgraphGuiUtils {
      * @return its color
      */
     public static Color eventColor(final EventImpl event, final HashgraphPictureOptions options) {
-        if(event.isJudge()){
-            return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
-        }
         if (options.simpleColors()) { // if checkbox checked
             return event.isConsensus() ? HashgraphGuiConstants.LIGHT_BLUE : HashgraphGuiConstants.LIGHT_GREEN;
         }
         if (!event.isWitness()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GRAY : HashgraphGuiConstants.LIGHT_GRAY;
         }
+        // after this point, we know the event is a witness
         if (!event.isFameDecided()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_RED : HashgraphGuiConstants.LIGHT_RED;
+        }
+        // after this point, we know the event is a witness and fame is decided
+        if(event.isJudge()){
+            return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
         }
         if (event.isFamous()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GREEN : HashgraphGuiConstants.LIGHT_GREEN;
         }
+
+        // if we reached here, it means the event is a witness, fame is decided, but it is not famous
         return event.isConsensus() ? HashgraphGuiConstants.DARK_YELLOW : HashgraphGuiConstants.LIGHT_YELLOW;
     }
 }
