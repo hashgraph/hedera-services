@@ -98,7 +98,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
-        given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
         subject.doIn(transferContext);
 
