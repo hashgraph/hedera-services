@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -71,13 +72,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-<<<<<<< HEAD
-import com.hedera.services.bdd.junit.TestTags;
-=======
 import com.hedera.services.bdd.junit.LeakyHapiTest;
->>>>>>> origin/develop
+import com.hedera.services.bdd.junit.TestTags;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.EmbeddedVerbs;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
@@ -115,6 +112,7 @@ public class CryptoCreateSuite {
     }
 
     @HapiTest
+    @Tag(EMBEDDED)
     final Stream<DynamicTest> verifyCreatedAccountAsExpected() {
         return hapiTest(
                 cryptoCreate("civilianWORewardStakingNode")
