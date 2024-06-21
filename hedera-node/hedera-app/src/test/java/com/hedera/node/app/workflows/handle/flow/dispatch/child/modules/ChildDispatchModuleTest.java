@@ -49,12 +49,12 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
@@ -192,7 +192,7 @@ class ChildDispatchModuleTest {
     private DispatchProcessor dispatchProcessor;
 
     @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
+    private ThrottleAdviser throttleAdviser;
 
     @Mock
     private ServiceScopeLookup serviceScopeLookup;
@@ -219,15 +219,13 @@ class ChildDispatchModuleTest {
                 entityIdStore,
                 dispatcher,
                 recordCache,
-                writableStoreFactory,
-                serviceApiFactory,
                 networkInfo,
                 recordBuilder,
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,
                 dispatchProcessor,
-                networkUtilizationManager);
+                throttleAdviser);
         assertThat(childContext).isInstanceOf(DispatchHandleContext.class);
         assertThat(childContext.consensusNow()).isSameAs(CHILD_CONS_NOW);
     }
