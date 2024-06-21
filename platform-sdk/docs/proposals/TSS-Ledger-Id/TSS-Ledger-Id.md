@@ -186,7 +186,7 @@ weight. The cost of re-keying the network in an address book change is quadratic
 to pick a number of total shares with a max value in the thousands. This modeling of weight is a discrete using small
 integer precision.
 
-#### Alternatives Considered
+##### TSS Algorithm - Alternatives Considered
 
 The list of options considered here were based off of prototypes developed by Rohit Sinha, the Swirlds Labs
 cryptography expert. The Groth21 algorithm was chosen because it was efficient for use in smart contract
@@ -206,12 +206,31 @@ distribution of weight between nodes.
 | TSS-009     | Yes   | Yes     |
 | TSS-010     | Yes   | No      |
 
-##### hinTS
+###### hinTS
 
 The hinTS algorithm is a threshold signature scheme that is able to measure double precision distributions of weight
 across nodes. The complicating factor with hinTS is that during an address book change over, a recursive proof needs
 to be constructed to prove that the new roster is a descendent of the original genesis roster. Validation of this
 recursive proof proved too expensive for EVM smart contracts.
+
+#### TSS Genesis Process
+
+The TSS Genesis process is the process of generating the ledger public/private key pair for a new network or an existing
+network. The process is as follows:
+
+##### TSS Genesis Process - Alternatives Considered
+
+| N | Option                                                                                                        | 1-1 round to block                   | round # == block #                                   | Ledger signs initial block           | Ledger signs block 0                 | TSS keying in hashgraph history      | TSS keying in block history          | Minimal DevOps Impact                | Implementation Complexity                 | Notes                                                                              |
+|---|---------------------------------------------------------------------------------------------------------------|--------------------------------------|------------------------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|-------------------------------------------|------------------------------------------------------------------------------------|
+| 1 | TSS Setup in block history, initial block > 0 and not signed                                                  | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships before Block Proofs                                 |
+| 2 | TSS Setup not in block history, initial block > 0 and is signed                                               | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships with Block Proofs                                   |
+| 3 | TSS Setup not in block history, initial block == 0 and is signed                                              | <span style="color:green">YES</span> | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:orange">LOW-MED</span> | Cognitive burden to reason about block # and round # discrepancy.                  |
+| 4 | TSS Setup in block history, initial block > 0, covers all prior rounds, and is signed                         | <span style="color:red">NO</span>    | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     |                                                                                    |
+| 5 | TSS Setup in block history, initial block == 0, covers all prior rounds, and is signed                        | <span style="color:red">NO</span>    | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     | Cognitive burden to reason about block # and round # discrepancy.                  |
+| 6 | Retrospectively sign the initial blocks with TSS once it becomes available.                                   | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | TSS Genesis Roster signs older blocks.  This is compatible with all other options. |
+| 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
+| 8 | Instead of separate app, detect genesis, key the state, network restart from round 0 with keyed state.        | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            | 
+
 
 ### Goals
 
@@ -241,12 +260,64 @@ process for a node and the process of changing the consensus roster.
 
 ### Architecture and/or Components
 
-Describe any new or modified components or architectural changes. This includes thread management changes, state
-changes, disk I/O changes, platform wiring changes, etc. Include diagrams of architecture changes.
-
-Remove this section if not applicable.
+The architecture is presented first through the data structures that are stored in the state and then through the
+components that interact with the data structures.
 
 #### State Datastructures
+
+The state needs to store the relevant ledger id, consensus rosters, and key material.
+
+##### Ledger Id
+
+The `ledgerId` is the public ledger key able to verify ledger signatures. It is used by both the application and the
+platform. This value should not change during address book changes and its value does not change unless the network
+goes through a another TSS Genesis process. Since its value is not expected to change, storing it in a singleton
+Merkle Leaf by itself is appropriate.
+
+##### Consensus Rosters
+
+It is expected that the TSS-Roster proposal has introduced a 3rd roster in the state called the `Candidate Roster`
+in addition to the `Active Roster` and the `Previous Roster`. These rosters are stored in the state as their own
+singleton.
+
+This proposal extends the roster data format in two ways:
+
+1. Each `RosterEntry` has a field for the number of shares allocated to the node. This value will not get big and
+   can fit in a byte or short.
+2. Each `RosterEntry` has a new long term public EC key called a `tssEcKey` that is needed in the Groth21 algorithm to
+   key rosters.
+
+##### Key Material (TSS Data Map)
+
+The TSS Data Map is a singleton Merkle Leaf that is a combined map of all the key material for all rosters that are
+tracked and the votes by nodes that have validated the key material.
+
+Keys in the TSS Data Map have the following structure: (KeyType, RosterHash, SequenceNumber).
+
+1. KeyType - An enum that is one of TSS_MESSAGE or TSS_VOTE.
+2. RosterHash - The hash of the consensus roster that the message or vote is related to.
+3. SequenceNumber - The order in which the message or vote came to consensus.
+
+The value associated with a TSS_MESSAGE key is the pair (ShareId, TssMessage)
+
+1. ShareId - The id of the share that the message is related to.
+2. TssMessage - the raw bytes of the TssMessage
+
+The value associated with a TSS_VOTE key is a bit vector with the following interpretation
+
+* The order of bits from least significant bit to most significant bit corresponds to the numeric order of share ids
+  from least to greatest.
+* If a bit is set to 1, then the TssMessage for the corresponding ShareId was valid and contributed to a successful
+  reconstruction of the ledger id.
+* If a bit is set to 0, then the TssMessage for the corresponding ShareId was either invalid, was not received, or
+  was not used in the reconstruction of the ledger id.
+
+Lifecycle Invariants
+
+1. Inserts should only be made for candidate rosters that are going through the keying process.
+2. When a roster is no longer stored in the state, the corresponding key material should be removed.
+3. Every roster that has become active after the TSS Genesis process must have sufficient key material to be
+   able to recover the ledger id.
 
 #### New Wiring Components
 
