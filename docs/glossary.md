@@ -161,7 +161,8 @@ Refer to this [official blog post](https://hedera.com/blog/hedera-smart-contract
 
 ## System Transaction
 **System Transaction**: A transaction created by the platform (not services) software. An example of which is a node's signature on a state. Inside an event, every transaction has a flag saying whether it is a system transaction or not.
-admin transaction-a HAPI transaction signed by the council. Such as freeze.
+## Admin Transaction
+**Admin Transaction**: a HAPI transaction signed by the council. Such as freeze.
 ---
 
 ## Token Allowance
