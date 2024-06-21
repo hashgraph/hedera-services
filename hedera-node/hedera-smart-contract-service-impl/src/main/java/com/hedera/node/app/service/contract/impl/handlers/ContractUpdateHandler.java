@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -75,6 +76,11 @@ import javax.inject.Singleton;
 @Singleton
 public class ContractUpdateHandler implements TransactionHandler {
     private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
+
+    /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
 
     @Inject
     public ContractUpdateHandler() {
@@ -132,11 +138,11 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var op = txn.contractUpdateInstanceOrThrow();
         final var target = op.contractIDOrThrow();
 
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var toBeUpdated = accountStore.getContractById(target);
         validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(requireNonNull(toBeUpdated), context, op);
-        context.serviceApi(TokenServiceApi.class).updateContract(changed);
+        context.storeFactory().serviceApi(TokenServiceApi.class).updateContract(changed);
         context.recordBuilder(ContractUpdateRecordBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
@@ -170,17 +176,23 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
-            final long newMax = op.maxAutomaticTokenAssociationsOrThrow();
+            final long newMaxAssociations = op.maxAutomaticTokenAssociationsOrThrow();
 
-            validateFalse(
-                    newMax > ledgerConfig.maxAutoAssociations(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-            validateFalse(newMax < contract.maxAutoAssociations(), EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
-            validateFalse(
-                    entitiesConfig.limitTokenAssociations() && newMax > tokensConfig.maxPerAccount(),
-                    REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            if (entitiesConfig.unlimitedAutoAssociationsEnabled() && newMaxAssociations < 0) {
+                validateTrue(newMaxAssociations == UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
+            } else {
+                validateFalse(
+                        newMaxAssociations > ledgerConfig.maxAutoAssociations(),
+                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+                validateFalse(
+                        newMaxAssociations < contract.maxAutoAssociations(),
+                        EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT);
+                validateFalse(
+                        entitiesConfig.limitTokenAssociations() && newMaxAssociations > tokensConfig.maxPerAccount(),
+                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
 
-            validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
+                validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
+            }
         }
 
         // validate expiry metadata
@@ -192,7 +204,8 @@ public class ContractUpdateHandler implements TransactionHandler {
                 null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta, false);
 
-        context.serviceApi(TokenServiceApi.class)
+        context.storeFactory()
+                .serviceApi(TokenServiceApi.class)
                 .assertValidStakingElectionForUpdate(
                         context.configuration()
                                 .getConfigData(StakingConfig.class)

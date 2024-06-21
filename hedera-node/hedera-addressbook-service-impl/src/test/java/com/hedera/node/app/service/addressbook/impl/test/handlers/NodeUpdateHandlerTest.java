@@ -39,6 +39,7 @@ import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -58,6 +59,9 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -130,8 +134,9 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_NODE_ID, msg.getStatus());
@@ -147,8 +152,9 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID, msg.getStatus());
@@ -334,9 +340,10 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.maxServiceEndpoint", 3)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         given(accountStore.contains(accountId)).willReturn(true);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
         final var updatedNode = writableStore.get(1L);
@@ -362,7 +369,8 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.maxGossipEndpoint", 2)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
         final var updatedNode = writableStore.get(1L);
@@ -381,9 +389,10 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.maxGossipEndpoint", 2)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         given(accountStore.contains(accountId)).willReturn(true);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
     }
 
     private class NodeUpdateBuilder {

@@ -17,8 +17,8 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.user.logic;
 
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
