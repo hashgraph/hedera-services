@@ -22,11 +22,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -164,6 +164,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(feeContext.body()).willReturn(transactionBody);
         given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
         given(feeCalculatorFactory.feeCalculator(DEFAULT)).willReturn(feeCalculator);
+        given(feeContext.configuration()).willReturn(configuration);
         final var result = subject.calculateFees(feeContext);
         assertThat(result).isEqualTo(Fees.FREE);
     }
@@ -207,7 +208,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void failsWhenInvalidMaxAutoAssociations() {
         txn = new CryptoCreateBuilder().withMaxAutoAssociations(-5).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_TRANSACTION_BODY);
+        assertThat(msg.responseCode()).isEqualTo(INVALID_MAX_AUTO_ASSOCIATIONS);
     }
 
     @Test
