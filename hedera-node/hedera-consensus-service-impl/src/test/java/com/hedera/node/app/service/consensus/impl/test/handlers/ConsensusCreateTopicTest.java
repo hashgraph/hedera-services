@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -77,6 +79,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock
     private ConsensusCreateTopicRecordBuilder recordBuilder;
+
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -114,7 +119,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
-        given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);
     }
 

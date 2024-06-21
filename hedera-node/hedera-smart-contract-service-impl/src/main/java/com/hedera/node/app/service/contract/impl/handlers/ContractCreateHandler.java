@@ -74,7 +74,8 @@ public class ContractCreateHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        outcome.addCreateDetailsTo(context.recordBuilder(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
+        outcome.addCreateDetailsTo(
+                context.recordBuilders().getOrCreate(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }

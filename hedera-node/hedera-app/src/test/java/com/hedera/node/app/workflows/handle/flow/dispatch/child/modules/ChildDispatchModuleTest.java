@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -200,8 +201,13 @@ class ChildDispatchModuleTest {
     @Mock
     private StoreFactoryImpl storeFactory;
 
+    @Mock
+    private RecordBuilders recordBuilders;
+
     @Test
     void childHandleContextConstructedWithRecordBuilderConsTime() {
+        given(recordBuilders.getOrCreate(SingleTransactionRecordBuilderImpl.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.consensusNow()).willReturn(CHILD_CONS_NOW);
         final var childContext = ChildDispatchModule.provideDispatchHandleContext(
                 transactionInfo,
@@ -220,7 +226,7 @@ class ChildDispatchModuleTest {
                 dispatcher,
                 recordCache,
                 networkInfo,
-                recordBuilder,
+                recordBuilders,
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,
