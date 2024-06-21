@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_D
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -53,11 +52,10 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -84,9 +82,6 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Mock
     private FileSystemUndeleteHandler subject;
-
-    @Mock(strictness = LENIENT)
-    private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
@@ -184,7 +179,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_FILE_ID);
@@ -198,7 +193,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         final var existingFile = writableStore.get(fileId);
         assertThat(existingFile.isPresent()).isTrue();
         assertThat(existingFile.get().deleted()).isFalse();
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(ENTITY_NOT_ALLOWED_TO_DELETE);
@@ -213,7 +208,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(UNAUTHORIZED);
@@ -227,7 +222,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         final var existingFile = writableStore.get(fileId);
         assertThat(existingFile.isPresent()).isTrue();
         assertThat(existingFile.get().deleted()).isFalse();
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSecond() + 100);
@@ -246,7 +241,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         final var existingFile = writableStore.get(fileSystemFileId);
         assertThat(existingFile.isPresent()).isTrue();
         assertThat(existingFile.get().deleted()).isFalse();
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSecond() - 100);

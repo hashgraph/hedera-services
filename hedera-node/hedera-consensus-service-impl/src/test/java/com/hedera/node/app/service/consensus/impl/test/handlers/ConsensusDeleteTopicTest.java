@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TO
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +47,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicH
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -71,9 +69,6 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
     @Mock
     private ReadableTopicStore mockStore;
-
-    @Mock
-    private HandleContext handleContext;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -211,7 +206,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
@@ -225,15 +220,15 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
 
         final var existingTopic = writableStore.getTopic(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
         assertNotNull(existingTopic);
         assertFalse(existingTopic.deleted());
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
         final var changedTopic = writableStore.getTopic(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
 
         assertNotNull(changedTopic);
         assertTrue(changedTopic.deleted());

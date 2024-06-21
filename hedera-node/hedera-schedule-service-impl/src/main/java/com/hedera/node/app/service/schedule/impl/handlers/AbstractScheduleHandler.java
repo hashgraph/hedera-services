@@ -171,7 +171,7 @@ abstract class AbstractScheduleHandler {
      */
     @Nullable
     protected Key getKeyForAccount(@NonNull final HandleContext context, @NonNull final AccountID accountToQuery) {
-        final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
+        final ReadableAccountStore accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final Account accountData = accountStore.getAccountById(accountToQuery);
         return (accountData != null && accountData.key() != null) ? accountData.key() : null;
     }

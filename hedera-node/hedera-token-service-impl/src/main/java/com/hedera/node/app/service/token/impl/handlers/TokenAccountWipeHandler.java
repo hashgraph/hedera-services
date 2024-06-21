@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.removeFromList;
 import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -43,6 +42,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -115,10 +115,11 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         // Set up the stores and helper objects needed
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var nftStore = context.writableStore(WritableNftStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
         final var expiryValidator = context.expiryValidator();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
@@ -227,7 +228,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                         readableTokenStore.get(op.tokenWipeOrThrow().tokenOrElse(TokenID.DEFAULT)))
                 .map(Token::tokenType)
                 .orElse(TokenType.FUNGIBLE_COMMON);
-        final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(fromPbj(op));
+        final var meta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(CommonPbjConverters.fromPbj(op));
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(

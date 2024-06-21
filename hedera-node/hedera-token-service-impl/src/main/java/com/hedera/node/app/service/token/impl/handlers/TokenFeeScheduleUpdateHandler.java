@@ -34,7 +34,7 @@ import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -112,12 +112,13 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         final var op = txn.tokenFeeScheduleUpdateOrThrow();
 
         // validate checks in handle
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var token = validateSemantics(op, tokenStore, config);
 
         // create readable stores from the context
-        final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
-        final var readableTokenRelsStore = context.readableStore(ReadableTokenRelationStore.class);
+        final var readableAccountStore = storeFactory.readableStore(ReadableAccountStore.class);
+        final var readableTokenRelsStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
 
         // validate custom fees before committing
         customFeesValidator.validateForFeeScheduleUpdate(
@@ -182,7 +183,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
                 .toList();
 
         final var newReprBytes = tokenOpsUsage.bytesNeededToRepr(
-                newFees.stream().map(PbjConverter::fromPbj).toList());
+                newFees.stream().map(CommonPbjConverters::fromPbj).toList());
         final var effConsTime =
                 body.transactionIDOrThrow().transactionValidStartOrThrow().seconds();
         final var lifetime = Math.max(0, token == null ? 0 : token.expirationSecond() - effConsTime);

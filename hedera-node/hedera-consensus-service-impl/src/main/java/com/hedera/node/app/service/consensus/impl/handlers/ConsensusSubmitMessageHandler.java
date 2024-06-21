@@ -27,8 +27,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.node.app.service.mono.state.merkle.MerkleTopic.RUNNING_HASH_VERSION;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -42,6 +40,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
@@ -71,6 +70,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusSubmitMessageHandler implements TransactionHandler {
+    public static final long RUNNING_HASH_VERSION = 3L;
+
     @Inject
     public ConsensusSubmitMessageHandler() {
         // Exists for injection
@@ -113,7 +114,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
 
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
+        final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
         final var topic = topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
         // preHandle already checks for topic existence, so topic should never be null.
 
@@ -221,7 +222,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var submitMessage = txn.consensusSubmitMessageOrThrow();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var topicId = submitMessage.topicIDOrElse(TopicID.DEFAULT);
-        final var message = asBytes(submitMessage.message());
+        final var message = CommonPbjConverters.asBytes(submitMessage.message());
 
         // This line will be uncommented once there is PBJ fix to make copyBuilder() public
         final var topicBuilder = topic.copyBuilder();
@@ -235,7 +236,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         final var boas = new ByteArrayOutputStream();
         try (final var out = new ObjectOutputStream(boas)) {
-            out.writeObject(asBytes(runningHash));
+            out.writeObject(CommonPbjConverters.asBytes(runningHash));
             out.writeLong(RUNNING_HASH_VERSION);
             out.writeLong(payer.shardNum());
             out.writeLong(payer.realmNum());

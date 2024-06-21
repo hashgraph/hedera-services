@@ -72,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -79,10 +80,12 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -90,6 +93,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -661,6 +665,98 @@ public class ContractCreateSuite {
                                         results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
     }
 
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
+        final var contract = "CreateTrivial";
+        return propertyPreservingHapiSpec("tryContractCreateWithMaxAutoAssoc")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+                .given(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE), uploadInitCode(contract))
+                .when(
+                        contractCreate(contract)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(-2)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractCreate(contract)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(-200000)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractCreate(contract)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(-1)
+                                .hasKnownStatus(SUCCESS))
+                .then(getContractInfo(contract)
+                        .has(contractWith().maxAutoAssociations(-1))
+                        .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tryContractCreateWithZeroAutoAssoc() {
+        final var contract = "CreateTrivial";
+        return defaultHapiSpec("tryContractCreateWithZeroMaxAutoAssoc")
+                .given(uploadInitCode(contract))
+                .when(contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(0)
+                        .hasKnownStatus(SUCCESS))
+                .then(getContractInfo(contract)
+                        .has(contractWith().maxAutoAssociations(0))
+                        .logged());
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tryContractCreateWithBalance() {
+        final var contract = "Donor";
+        return defaultHapiSpec("tryContractCreateWithBalance")
+                .given(uploadInitCode(contract))
+                .when(contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .balance(ONE_HUNDRED_HBARS)
+                        .hasKnownStatus(SUCCESS))
+                .then(getContractInfo(contract)
+                        .has(contractWith().maxAutoAssociations(0).balance(ONE_HUNDRED_HBARS))
+                        .logged());
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> contractCreateShouldChargeTheSame() {
+        final var createFeeWithMaxAutoAssoc = 10L;
+        final var contract1 = "EmptyOne";
+        final var contract2 = "EmptyTwo";
+        return propertyPreservingHapiSpec("contractCreateShouldChargeTheSame")
+                .preserving("contracts.allowAutoAssociations")
+                .given(
+                        uploadInitCode(contract1),
+                        uploadInitCode(contract2),
+                        overriding("contracts.allowAutoAssociations", TRUE_VALUE))
+                .when(
+                        contractCreate(contract1)
+                                .via(contract1)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(1)
+                                .hasKnownStatus(SUCCESS),
+                        contractCreate(contract2)
+                                .via(contract2)
+                                .adminKey(THRESHOLD)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(1000)
+                                .hasKnownStatus(SUCCESS))
+                .then(
+                        getContractInfo(contract1)
+                                .has(contractWith().maxAutoAssociations(1))
+                                .logged(),
+                        getTxnRecord(contract1).fee(createFeeWithMaxAutoAssoc).logged(),
+                        getContractInfo(contract2)
+                                .has(contractWith().maxAutoAssociations(1000))
+                                .logged(),
+                        getTxnRecord(contract2).fee(createFeeWithMaxAutoAssoc).logged());
+    }
+
     @HapiTest
     final Stream<DynamicTest> vanillaSuccess() {
         final var contract = "CreateTrivial";
@@ -758,16 +854,19 @@ public class ContractCreateSuite {
                                 .refusingEthConversion()
                                 .logged(),
                         getContractInfo(contract)
-                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(0))
                                 .logged())
                 .when()
                 .then();
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
-        return defaultHapiSpec("cannotSetMaxAutomaticAssociations")
-                .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+        return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
+                .preserving("contracts.allowAutoAssociations")
+                .given(
+                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                        overriding("contracts.allowAutoAssociations", FALSE_VALUE))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .maxAutomaticTokenAssociations(10)
