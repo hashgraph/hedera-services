@@ -28,9 +28,8 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
@@ -44,7 +43,6 @@ import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
-import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
@@ -590,7 +588,8 @@ public final class ConsensusTestDefinitions {
                 //orchestrator2.getAddressBook(),
                 newAb,
                 new ListEventProvider(
-                        orchestrator1.getNodes().get(0).getOutput().getAddedEvents().stream().map(GossipEvent::copyGossipedData).toList()
+                        orchestrator1.getNodes().get(0).getOutput().getAddedEvents().stream().map(
+                                PlatformEvent::copyGossipedData).toList()
                 ));
 //        guiSource.loadSnapshot(orchestrator1
 //                .getNodes()

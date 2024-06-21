@@ -143,16 +143,6 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     /**
-     * Create a copy of this event while populating only the data received via gossip. Consensus data will not be
-     * copied.
-     *
-     * @return a copy of this event
-     */
-    public GossipEvent copyGossipedData() {
-        return new GossipEvent(hashedData, signature);
-    }
-
-    /**
      * Set the sequence number in the preconsensus event stream for this event.
      *
      * @param streamSequenceNumber the sequence number

@@ -20,13 +20,12 @@ import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gui.GuiEventStorage;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.EventSource;
@@ -89,8 +88,8 @@ public class TestGuiSource {
     }
 
     public void generateEvents(final int numEvents) {
-        final List<GossipEvent> events = eventProvider.generateEvents(numEvents);
-        for (final GossipEvent event : events) {
+        final List<PlatformEvent> events = eventProvider.generateEvents(numEvents);
+        for (final PlatformEvent event : events) {
             eventStorage.handlePreconsensusEvent(event);
         }
     }
@@ -112,9 +111,9 @@ public class TestGuiSource {
                 Integer.valueOf(Integer.MAX_VALUE),
                 Integer.valueOf(numEventsStep)));
         nextEvent.addActionListener(e -> {
-            final List<GossipEvent> events = eventProvider.generateEvents(
+            final List<PlatformEvent> events = eventProvider.generateEvents(
                     numEvents.getValue() instanceof Integer value ? value : defaultNumEvents);
-            for (final GossipEvent event : events) {
+            for (final PlatformEvent event : events) {
                 eventStorage.handlePreconsensusEvent(event);
             }
 
