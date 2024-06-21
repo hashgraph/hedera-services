@@ -37,7 +37,6 @@ class AddressBookServiceDefinitionTest {
                 .containsExactlyInAnyOrder(
                         new RpcMethodDefinition<>("createNode", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("updateNode", Transaction.class, TransactionResponse.class),
-                        new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class),
-                        new RpcMethodDefinition<>("getNodeInfo", Query.class, Response.class));
+                        new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class));
     }
 }

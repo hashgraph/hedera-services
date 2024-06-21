@@ -52,13 +52,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
             // Such a deleted node can never be reused.
             // Request is [NodeDeleteTransactionBody](#proto.NodeDeleteTransactionBody)
             //
-            new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class),
-
-            // Retrieves the node information by node Id.
-            // Request is [NodeGetInfoQuery](#proto.NodeGetInfoQuery)
-            // Response is [NodeGetInfoResponse](#proto.NodeGetInfoResponse)
-            //
-            new RpcMethodDefinition<>("getNodeInfo", Query.class, Response.class));
+            new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class));
 
     private AddressBookServiceDefinition() {
         // Forbid instantiation

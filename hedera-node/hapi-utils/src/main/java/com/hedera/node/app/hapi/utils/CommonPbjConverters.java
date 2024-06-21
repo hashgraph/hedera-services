@@ -280,7 +280,6 @@ public class CommonPbjConverters {
             case NodeCreate -> HederaFunctionality.NODE_CREATE;
             case NodeUpdate -> HederaFunctionality.NODE_UPDATE;
             case NodeDelete -> HederaFunctionality.NODE_DELETE;
-            case NodeGetInfo -> HederaFunctionality.NODE_GET_INFO;
             case ScheduleCreate -> HederaFunctionality.SCHEDULE_CREATE;
             case ScheduleDelete -> HederaFunctionality.SCHEDULE_DELETE;
             case ScheduleGetInfo -> HederaFunctionality.SCHEDULE_GET_INFO;
