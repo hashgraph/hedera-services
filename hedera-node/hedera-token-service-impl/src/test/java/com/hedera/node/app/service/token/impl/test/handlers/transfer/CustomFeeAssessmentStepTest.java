@@ -64,7 +64,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
@@ -131,8 +131,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 .customFees(List.of(withRoyaltyFee(
                         royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())))
                 .build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         givenTxn();
 
@@ -173,8 +173,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 .customFees(List.of(withRoyaltyFee(
                         royaltyFee.copyBuilder().fallbackFee((FixedFee) null).build())))
                 .build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         final var hbarsReceiver = asAccount(hbarReceiver);
         final var tokensReceiver = asAccount(tokenReceiver);
@@ -218,8 +218,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 .customFees(List.of(withRoyaltyFee(
                         royaltyFee.copyBuilder().fallbackFee((FixedFee) null).build())))
                 .build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         givenTxn();
 
@@ -256,8 +256,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         fractionalFee.copyBuilder().netOfTransfers(true).build()));
         writableTokenStore.put(
                 fungibleToken.copyBuilder().customFees(customfees).build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         final var hbarsReceiver = asAccount(hbarReceiver);
         final var tokensReceiver = asAccount(tokenReceiver);
@@ -318,8 +318,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 .customFees(List.of(withRoyaltyFee(
                         royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())))
                 .build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         givenTxn();
 
@@ -377,8 +377,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 .customFees(withFractionalFee(
                         fractionalFee.copyBuilder().netOfTransfers(true).build()))
                 .build());
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 
         final var listOfOps = subject.assessCustomFees(transferContext);
         assertThat(listOfOps).hasSize(3);
@@ -503,7 +503,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         .balance(1000)
                         .build());
 
-        when(handleContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+        when(storeFactory.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
     }

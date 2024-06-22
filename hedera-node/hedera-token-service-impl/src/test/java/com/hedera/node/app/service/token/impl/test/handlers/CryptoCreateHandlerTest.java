@@ -22,11 +22,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -51,6 +51,7 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,6 +78,8 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -104,10 +107,16 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private FeeContext feeContext;
 
     @Mock
     private CryptoCreateRecordBuilder recordBuilder;
+
+    @Mock
+    private RecordBuilders recordBuilders;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -141,8 +150,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         refreshStoresWithCurrentTokenInWritable();
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        lenient().when(recordBuilders.getOrCreate(any())).thenReturn(recordBuilder);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
@@ -164,6 +175,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(feeContext.body()).willReturn(transactionBody);
         given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
         given(feeCalculatorFactory.feeCalculator(DEFAULT)).willReturn(feeCalculator);
+        given(feeContext.configuration()).willReturn(configuration);
         final var result = subject.calculateFees(feeContext);
         assertThat(result).isEqualTo(Fees.FREE);
     }
@@ -207,7 +219,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void failsWhenInvalidMaxAutoAssociations() {
         txn = new CryptoCreateBuilder().withMaxAutoAssociations(-5).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_TRANSACTION_BODY);
+        assertThat(msg.responseCode()).isEqualTo(INVALID_MAX_AUTO_ASSOCIATIONS);
     }
 
     @Test
@@ -687,7 +699,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
-        when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ALIAS_ALREADY_ASSIGNED, msg.getStatus());

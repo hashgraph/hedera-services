@@ -122,4 +122,7 @@ public record TransactionHandlers(
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
-        @NonNull UtilPrngHandler utilPrngHandler) {}
+        @NonNull UtilPrngHandler utilPrngHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler) {}

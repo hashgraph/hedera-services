@@ -49,7 +49,6 @@ class AdjustHbarChangesStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
@@ -59,6 +58,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         writableAccountStore.put(
                 tokenReceiverAccount.copyBuilder().tinybarBalance(10000L).build());
         givenStoresAndConfig(handleContext);
+        givenTxn();
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);

@@ -67,7 +67,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
     @Override
     @NonNull
     public String basePath() {
-        return "proto.AddressbookService";
+        return "proto.AddressBookService";
     }
 
     @Override

@@ -61,7 +61,8 @@ public interface HandlersInjectionModule {
             @NonNull final Supplier<ContractHandlers> contractHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
-            @NonNull final UtilHandlers utilHandlers) {
+            @NonNull final UtilHandlers utilHandlers,
+            @NonNull final AddressBookHandlers addressBookHandlers) {
         return new TransactionHandlers(
                 consensusHandlers.consensusCreateTopicHandler(),
                 consensusHandlers.consensusUpdateTopicHandler(),
@@ -112,6 +113,9 @@ public interface HandlersInjectionModule {
                 tokenHandlers.tokenPauseHandler(),
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
-                utilHandlers.prngHandler());
+                utilHandlers.prngHandler(),
+                addressBookHandlers.nodeCreateHandler(),
+                addressBookHandlers.nodeDeleteHandler(),
+                addressBookHandlers.nodeUpdateHandler());
     }
 }

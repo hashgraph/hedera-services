@@ -20,6 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
@@ -85,9 +89,6 @@ class HandleDaggerWorkflowModuleTest {
     private NetworkAdminHandlers networkAdminHandlers;
 
     @Mock
-    private AddressBookHandlers addressBookHandlers;
-
-    @Mock
     private ConsensusHandlers consensusHandlers;
 
     @Mock
@@ -104,6 +105,9 @@ class HandleDaggerWorkflowModuleTest {
 
     @Mock
     private UtilHandlers utilHandlers;
+
+    @Mock
+    AddressBookHandlers addressBookHandlers;
 
     @Mock
     private ConsensusCreateTopicHandler consensusCreateTopicHandler;
@@ -243,6 +247,15 @@ class HandleDaggerWorkflowModuleTest {
     @Mock
     private UtilPrngHandler utilPrngHandler;
 
+    @Mock
+    private NodeCreateHandler nodeCreateHandler;
+
+    @Mock
+    private NodeDeleteHandler nodeDeleteHandler;
+
+    @Mock
+    private NodeUpdateHandler nodeUpdateHandler;
+
     @Test
     void usesComponentsToGetHandlers() {
         given(consensusHandlers.consensusCreateTopicHandler()).willReturn(consensusCreateTopicHandler);
@@ -291,16 +304,19 @@ class HandleDaggerWorkflowModuleTest {
         given(tokenHandlers.tokenPauseHandler()).willReturn(tokenPauseHandler);
         given(tokenHandlers.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilHandlers.prngHandler()).willReturn(utilPrngHandler);
+        given(addressBookHandlers.nodeCreateHandler()).willReturn(nodeCreateHandler);
+        given(addressBookHandlers.nodeDeleteHandler()).willReturn(nodeDeleteHandler);
+        given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
 
         final var handlers = HandlersInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
-                addressBookHandlers,
                 consensusHandlers,
                 fileHandlers,
                 () -> contractHandlers,
                 scheduleHandlers,
                 tokenHandlers,
-                utilHandlers);
+                utilHandlers,
+                addressBookHandlers);
         assertInstanceOf(TransactionHandlers.class, handlers);
     }
 }

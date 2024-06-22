@@ -130,7 +130,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
-        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final TransactionBody currentTransaction = context.body();
@@ -162,7 +162,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
                         final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilder(ScheduleRecordBuilder.class);
+                                context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
                         scheduleRecords.scheduledTransactionID(
                                 HandlerUtility.transactionIdForScheduled(scheduleToSign));
                         // Based on fuzzy-record matching this field may not be set in mono-service records
