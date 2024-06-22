@@ -227,8 +227,6 @@ public class ReadableFreezeUpgradeActions {
             // if second marker is present, that means the zip file was successfully extracted
             log.error("Failed to unzip archive for NMT consumption", e);
             log.error(MANUAL_REMEDIATION_ALERT);
-        } catch (Throwable t) {
-            log.error("hmmmmm", t);
         }
     }
 
