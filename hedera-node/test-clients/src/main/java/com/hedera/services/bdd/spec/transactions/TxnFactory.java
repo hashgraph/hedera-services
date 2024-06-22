@@ -329,8 +329,10 @@ public class TxnFactory {
 
     public Consumer<NodeCreateTransactionBody.Builder> defaultDefNodeCreateTransactionBody() {
         return builder -> builder.setAccountId(setup.defaultPayer())
-                .addGossipEndpoint(setup.defaultGossipEndpoint())
-                .addServiceEndpoint(setup.defaultServiceEndpoint());
+                .addGossipEndpoint(setup.defaultGossipEndpointInternal())
+                .addGossipEndpoint(setup.defaultGossipEndpointExternal())
+                .addServiceEndpoint(setup.defaultServiceEndpoint())
+                .setGossipCaCertificate(ByteString.copyFrom(setup.defaultGossipCaCertificate()));
     }
 
     public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {

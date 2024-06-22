@@ -55,7 +55,6 @@ public interface HandlersInjectionModule {
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
             @NonNull final NetworkAdminHandlers networkAdminHandlers,
-            @NonNull final AddressBookHandlers addressBookHandlers,
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
             @NonNull final Supplier<ContractHandlers> contractHandlers,
@@ -113,9 +112,6 @@ public interface HandlersInjectionModule {
                 tokenHandlers.tokenPauseHandler(),
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
-                utilHandlers.prngHandler(),
-                addressBookHandlers.nodeCreateHandler(),
-                addressBookHandlers.nodeDeleteHandler(),
-                addressBookHandlers.nodeUpdateHandler());
+                utilHandlers.prngHandler());
     }
 }

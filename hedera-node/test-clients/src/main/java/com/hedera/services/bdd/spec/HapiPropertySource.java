@@ -122,8 +122,6 @@ public interface HapiPropertySource {
     default ServiceEndpoint getServiceEndpoint(String property) {
         try {
             return asServiceEndpoint(get(property));
-            //            return ServiceEndpoint.newBuilder().setIpAddressV4(getBytes(property)).build();
-            //            return asServiceEndpoint(get(property));
         } catch (Exception ignore) {
             System.out.println("Unable to parse service endpoint from property: " + property);
         }
@@ -259,8 +257,10 @@ public interface HapiPropertySource {
     }
 
     static ServiceEndpoint asServiceEndpoint(String v) {
+        String[] parts = v.split(":");
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFromUtf8(v))
+                .setIpAddressV4(ByteString.copyFromUtf8(parts[0]))
+                .setPort(Integer.parseInt(parts[1]))
                 .build();
     }
 
