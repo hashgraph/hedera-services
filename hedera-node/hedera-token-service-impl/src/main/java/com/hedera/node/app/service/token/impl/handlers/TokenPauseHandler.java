@@ -80,7 +80,7 @@ public class TokenPauseHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var op = context.body().tokenPause();
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
         var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         validateTrue(token != null, INVALID_TOKEN_ID);
         validateTrue(token.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
@@ -89,7 +89,7 @@ public class TokenPauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(true);
         tokenStore.put(copyBuilder.build());
-        final var recordBuilder = context.recordBuilder(TokenBaseRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(TokenBaseRecordBuilder.class);
         recordBuilder.tokenType(token.tokenType());
     }
 

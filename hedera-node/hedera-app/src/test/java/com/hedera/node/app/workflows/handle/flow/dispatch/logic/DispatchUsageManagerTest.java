@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.logic;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
@@ -44,10 +45,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.txn.WorkDone;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
@@ -225,6 +226,7 @@ class DispatchUsageManagerTest {
         given(dispatch.txnInfo()).willReturn(SUBMIT_TXN_INFO);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
+        given(dispatch.recordBuilder()).willReturn(recordBuilder);
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
@@ -317,7 +319,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1);
+        verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, CRYPTO_CREATE);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
@@ -335,7 +337,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt());
+        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 
@@ -355,7 +357,7 @@ class DispatchUsageManagerTest {
 
         subject.trackUsage(dispatch, WorkDone.USER_TRANSACTION);
 
-        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt());
+        verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
     }
 }

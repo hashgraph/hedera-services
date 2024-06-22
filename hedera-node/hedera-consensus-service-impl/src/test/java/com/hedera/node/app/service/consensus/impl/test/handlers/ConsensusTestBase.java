@@ -31,6 +31,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -115,6 +116,9 @@ public class ConsensusTestBase {
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
 
+    @Mock(strictness = LENIENT)
+    protected StoreFactory storeFactory;
+
     @Mock
     private StoreMetricsService storeMetricsService;
 
@@ -138,7 +142,8 @@ public class ConsensusTestBase {
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
@@ -149,7 +154,7 @@ public class ConsensusTestBase {
         readableStore = new ReadableTopicStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     @NonNull

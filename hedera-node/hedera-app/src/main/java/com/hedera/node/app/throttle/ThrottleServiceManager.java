@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
@@ -25,6 +24,7 @@ import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
@@ -34,6 +34,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
@@ -140,6 +141,11 @@ public class ThrottleServiceManager {
         return backendThrottle.getImplicitCreationsCount(body, accountStore);
     }
 
+    public int numAutoAssociations(
+            @NonNull final TransactionBody body, @NonNull final ReadableTokenRelationStore relationStore) {
+        return backendThrottle.getAutoAssociationsCount(body, relationStore);
+    }
+
     /**
      * Updates all metrics for the throttles.
      */
@@ -221,14 +227,14 @@ public class ThrottleServiceManager {
     }
 
     /**
-     * Reclaims the capacity used for throttling the given number of implicit creations
+     * Reclaims the capacity used for throttling the given number of implicit creations or auto associations
      * on the frontend.
      *
-     * @param numImplicitCreations the number of implicit creations
+     * @param numCapacity the number of implicit creations or auto associations
      */
-    public void reclaimFrontendThrottleCapacity(final int numImplicitCreations) {
+    public void reclaimFrontendThrottleCapacity(final int numCapacity, final HederaFunctionality hederaFunctionality) {
         try {
-            ingestThrottle.leakCapacityForNOfUnscaled(numImplicitCreations, CRYPTO_CREATE);
+            ingestThrottle.leakCapacityForNOfUnscaled(numCapacity, hederaFunctionality);
         } catch (Exception ignore) {
             // Ignore if the frontend bucket has already leaked all the capacity
             // used for throttling the transaction on the frontend

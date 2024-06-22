@@ -80,8 +80,9 @@ public class NodeUpdateHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
-        final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
 
         final var existingNode = nodeStore.get(op.nodeId());
         validateFalse(existingNode == null, INVALID_NODE_ID);

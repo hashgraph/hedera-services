@@ -52,7 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectExplicitCo
 import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectFailedContractBytecodeSidecarFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -140,6 +140,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -4873,13 +4874,13 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
-                        overridingThree(
+                        overridingAllOf(Map.of(
                                 CHAIN_ID_PROPERTY,
                                 "298",
                                 LAZY_CREATE_PROPERTY,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.34"),
+                                "v0.34")),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
