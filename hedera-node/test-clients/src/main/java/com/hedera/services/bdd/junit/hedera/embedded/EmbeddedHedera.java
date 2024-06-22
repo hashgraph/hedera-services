@@ -146,12 +146,12 @@ public class EmbeddedHedera {
         defaultNodeId = addressBook.getNodeId(0);
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
         platform = new ToyPlatform();
-
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
-                IsEmbeddedTest.YES);
+                IsEmbeddedTest.YES,
+                time::now);
         this.version = (HederaSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }

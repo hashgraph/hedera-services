@@ -167,7 +167,15 @@ public final class Hedera implements SwirldMain {
      */
     private final HederaSoftwareVersion version;
 
+    /**
+     * Whether this node is running in an embedded test environment.
+     */
     private final IsEmbeddedTest isEmbeddedTest;
+
+    /**
+     * The source of time the node should use for screening transactions at ingest.
+     */
+    private final InstantSource instantSource;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -210,11 +218,13 @@ public final class Hedera implements SwirldMain {
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final IsEmbeddedTest isEmbeddedTest) {
+            @NonNull final IsEmbeddedTest isEmbeddedTest,
+            @NonNull final InstantSource instantSource) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
         this.serviceMigrator = requireNonNull(migrator);
+        this.instantSource = requireNonNull(instantSource);
         logger.info(
                 """
 
@@ -677,7 +687,7 @@ public final class Hedera implements SwirldMain {
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .instantSource(InstantSource.system())
+                .instantSource(instantSource)
                 .build();
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);

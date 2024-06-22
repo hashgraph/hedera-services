@@ -54,6 +54,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -288,6 +289,7 @@ public class ServicesMain implements SwirldMain {
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
-                IsEmbeddedTest.NO);
+                IsEmbeddedTest.NO,
+                InstantSource.system());
     }
 }
