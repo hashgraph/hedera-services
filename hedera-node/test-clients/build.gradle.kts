@@ -97,7 +97,7 @@ tasks.test {
     useJUnitPlatform {
         includeTags(
             if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
-            else "${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
         )
     }
 
