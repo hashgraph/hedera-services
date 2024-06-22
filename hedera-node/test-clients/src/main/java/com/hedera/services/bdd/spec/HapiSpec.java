@@ -33,6 +33,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.HapiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -44,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToE
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
-import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
@@ -86,11 +86,11 @@ import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
-import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.TargetNetworkType;
@@ -221,9 +221,6 @@ public class HapiSpec implements Runnable, Executable {
 
     private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
-    // Make the STANDALONE_MONO_NETWORK the default target type since we have much fewer touch-points
-    // needed to re-target specs against a @HapiTest or CI Docker network than vice-versa
-    TargetNetworkType targetNetworkType = TargetNetworkType.STANDALONE_MONO_NETWORK;
     List<Payment> costs = new ArrayList<>();
     List<Payment> costSnapshot = emptyList();
     String name;
@@ -299,12 +296,7 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     public TargetNetworkType targetNetworkType() {
-        return targetNetworkType;
-    }
-
-    public HapiSpec setTargetNetworkType(TargetNetworkType targetNetworkType) {
-        this.targetNetworkType = targetNetworkType;
-        return this;
+        return targetNetworkOrThrow().type();
     }
 
     public void setSpecStateObserver(@NonNull final SpecStateObserver specStateObserver) {
@@ -878,7 +870,7 @@ public class HapiSpec implements Runnable, Executable {
         final var backgroundTraffic = THREAD_POOL.submit(() -> {
             while (true) {
                 try {
-                    RecordAssertions.triggerAndCloseAtLeastOneFile(this);
+                    TxnUtils.triggerAndCloseAtLeastOneFile(this);
                 } catch (final InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                     return;
@@ -1182,7 +1174,6 @@ public class HapiSpec implements Runnable, Executable {
 
     public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {
         spec.setTargetNetwork(targetNetwork);
-        spec.setTargetNetworkType(targetNetwork.type());
         final var specNodes =
                 targetNetwork.nodes().stream().map(HederaNode::hapiSpecInfo).collect(joining(","));
         spec.addOverrideProperties(Map.of("nodes", specNodes));

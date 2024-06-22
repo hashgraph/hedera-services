@@ -31,11 +31,11 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForConstructor;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
@@ -60,6 +60,8 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.streams.InterruptibleRunnable;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -115,7 +117,6 @@ public class TxnUtils {
     private static final Logger log = LogManager.getLogger(TxnUtils.class);
 
     public static final ResponseCodeEnum[] NOISY_RETRY_PRECHECKS = {BUSY, PLATFORM_TRANSACTION_NOT_CREATED};
-    public static final ResponseCodeEnum[] NOISY_ALLOWED_STATUSES = {OK, SUCCESS, DUPLICATE_TRANSACTION};
 
     public static final int BYTES_4K = 4 * (1 << 10);
 
@@ -123,6 +124,10 @@ public class TxnUtils {
     private static final Pattern PORT_LITERAL_PATTERN = Pattern.compile("\\d+");
     private static final int BANNER_WIDTH = 80;
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
+    // Wait just a bit longer than the 2-second block period to be certain we've ended the period
+    private static final java.time.Duration END_OF_BLOCK_PERIOD_SLEEP_PERIOD = java.time.Duration.ofMillis(2_200L);
+    // Wait just over a second to give the record stream file a chance to close
+    private static final java.time.Duration BLOCK_CREATION_SLEEP_PERIOD = java.time.Duration.ofMillis(1_100L);
 
     public static Key EMPTY_THRESHOLD_KEY =
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
@@ -704,15 +709,17 @@ public class TxnUtils {
         int printableWidth = BANNER_WIDTH - 2 * (partial.length() + 1);
         addFullBoundary(sb);
         List<String> allMsgs = Stream.concat(Stream.of(""), Stream.concat(Arrays.stream(msgs), Stream.of("")))
-                .collect(toList());
+                .toList();
         for (String msg : allMsgs) {
             int rightPaddingLen = printableWidth - msg.length();
             var rightPadding =
                     IntStream.range(0, rightPaddingLen).mapToObj(ignore -> " ").collect(joining());
-            sb.append(partial + " ")
+            sb.append(partial)
+                    .append(" ")
                     .append(msg)
                     .append(rightPadding)
-                    .append(" " + partial)
+                    .append(" ")
+                    .append(partial)
                     .append("\n");
         }
         addFullBoundary(sb);
@@ -723,6 +730,34 @@ public class TxnUtils {
         var full = IntStream.range(0, BANNER_WIDTH).mapToObj(ignore -> "*").collect(joining());
         for (int i = 0; i < BANNER_BOUNDARY_THICKNESS; i++) {
             sb.append(full).append("\n");
+        }
+    }
+
+    public static void triggerAndCloseAtLeastOneFile(@NonNull final HapiSpec spec) throws InterruptedException {
+        Thread.sleep(END_OF_BLOCK_PERIOD_SLEEP_PERIOD.toMillis());
+        // Should trigger a new record to be written if we have crossed a 2-second boundary
+        final var triggerOp = TxnVerbs.cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
+                .deferStatusResolution()
+                .hasAnyStatusAtAll()
+                .noLogging();
+        allRunFor(spec, triggerOp);
+    }
+
+    public static void triggerAndCloseAtLeastOneFileIfNotInterrupted(@NonNull final HapiSpec spec) {
+        doIfNotInterrupted(() -> {
+            triggerAndCloseAtLeastOneFile(spec);
+            log.info("Sleeping a bit to give the record stream a chance to close");
+            Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
+        });
+    }
+
+    public static void doIfNotInterrupted(@NonNull final InterruptibleRunnable runnable) {
+        requireNonNull(runnable);
+        try {
+            runnable.run();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
         }
     }
 }

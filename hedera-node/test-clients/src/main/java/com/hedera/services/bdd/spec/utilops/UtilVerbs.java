@@ -54,7 +54,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
+import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -84,7 +84,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -140,8 +139,6 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
-import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
-import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
@@ -211,7 +208,7 @@ import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
     private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
-            EnumSet.of(SHARED_HAPI_TEST_NETWORK, EMBEDDED_NETWORK);
+            EnumSet.of(SUBPROCESS_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -748,15 +745,6 @@ public class UtilVerbs {
     }
 
     /* Stream validation. */
-    public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
-        return new RecordStreamVerification(baseDir);
-    }
-
-    public static HapiSpecOperation assertEventuallyPasses(
-            final RecordStreamValidator validator, final Duration timeout) {
-        return new RecordAssertions(timeout, validator);
-    }
-
     public static EventualAssertion streamMustInclude(final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return new EventualRecordStreamAssertion(assertion);
     }
@@ -766,12 +754,16 @@ public class UtilVerbs {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
     }
 
-    public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(final String name) {
-        return recordedCryptoCreate(name, assertion -> {});
-    }
-
+    /**
+     * "Hello world" example of a custom record stream assertion that validates a named
+     * account has a creation record in the record stream.
+     *
+     * @param name the name of the account
+     * @param config the configuration of the custom record stream assertion
+     * @return the custom record stream assertion
+     */
     public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(
-            final String name, final Consumer<CryptoCreateAssertion> config) {
+            @NonNull final String name, @NonNull final Consumer<CryptoCreateAssertion> config) {
         return spec -> {
             final var assertion = new CryptoCreateAssertion(spec, name);
             config.accept(assertion);
@@ -784,7 +776,11 @@ public class UtilVerbs {
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
-            final String specTxnId, final int nonce, final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
+            @NonNull final String specTxnId,
+            final int nonce,
+            @NonNull final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
+        requireNonNull(specTxnId);
+        requireNonNull(assertion);
         return spec -> new TransactionBodyAssertion(specTxnId, spec, txnId -> txnId.getNonce() == nonce, assertion);
     }
 

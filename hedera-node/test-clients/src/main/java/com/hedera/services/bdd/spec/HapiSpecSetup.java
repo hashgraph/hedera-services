@@ -30,7 +30,6 @@ import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
@@ -121,10 +120,6 @@ public class HapiSpecSetup {
      */
     public void addOverrides(final Map<String, Object> props) {
         this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
-    }
-
-    public String defaultRecordLoc() {
-        return props.get("recordStream.path");
     }
 
     public FileID addressBookId() {
@@ -322,26 +317,6 @@ public class HapiSpecSetup {
         return props.getBoolean("recordStream.overrideExistingSnapshot");
     }
 
-    /**
-     * Returns the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
-     * with {@code recordStream.autoSnapshotManagement=true}.
-     *
-     * @return the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
-     */
-    public AutoSnapshotRecordSource autoSnapshotTarget() {
-        return props.getAutoSnapshotRecordSource("recordStream.autoSnapshotTarget");
-    }
-
-    /**
-     * Returns the record stream source for the {@link HapiSpec} to use when automatically matching snapshots
-     * with {@code recordStream.autoMatchTarget=true}.
-     *
-     * @return the record stream source for the {@link HapiSpec} to use when automatically matching snapshots
-     */
-    public AutoSnapshotRecordSource autoMatchTarget() {
-        return props.getAutoSnapshotRecordSource("recordStream.autoMatchTarget");
-    }
-
     public boolean defaultReceiverSigRequired() {
         return props.getBoolean("default.receiverSigRequired");
     }
@@ -356,14 +331,6 @@ public class HapiSpecSetup {
 
     public int defaultThresholdN() {
         return props.getInteger("default.thresholdKey.N");
-    }
-
-    public long defaultThroughputObsExpiryMs() {
-        return props.getLong("default.throughputObs.expiry.ms");
-    }
-
-    public long defaultThroughputObsSleepMs() {
-        return props.getLong("default.throughputObs.sleep.ms");
     }
 
     public String defaultTokenSymbol() {

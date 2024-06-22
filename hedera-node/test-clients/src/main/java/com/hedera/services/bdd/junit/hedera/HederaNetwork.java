@@ -69,7 +69,7 @@ public interface HederaNetwork {
 
     /**
      * Returns the network type; for now this is always
-     * {@link TargetNetworkType#SHARED_HAPI_TEST_NETWORK}.
+     * {@link TargetNetworkType#SUBPROCESS_NETWORK}.
      *
      * @return the network type
      */
