@@ -126,8 +126,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
         return EMBEDDED_NETWORK;
     }
 
-    @Nullable
-    public EmbeddedHedera embeddedHedera() {
-        return embeddedHedera;
+    public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
+        return requireNonNull(embeddedHedera);
     }
 }

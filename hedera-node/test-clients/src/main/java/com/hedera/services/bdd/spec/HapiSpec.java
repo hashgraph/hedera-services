@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
-import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -98,6 +97,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -131,6 +131,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -246,8 +247,7 @@ public class HapiSpec implements Runnable, Executable {
     EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 
     /**
-     * If non-null, the network created for this JUnit5 LauncherSession; supports direct manipulation
-     * of the node lifecycle (stop, restart, wait for status, etc).
+     * If non-null, the non-remote network to target with this spec.
      */
     @Nullable
     private HederaNetwork targetNetwork;
@@ -267,6 +267,11 @@ public class HapiSpec implements Runnable, Executable {
      */
     @Nullable
     private SidecarWatcher sidecarWatcher;
+    /**
+     * If non-null, a supplier to use within this spec's {@link TxnFactory}.
+     */
+    @Nullable
+    private Supplier<Timestamp> nextValidStart;
 
     boolean quietMode;
 
@@ -278,6 +283,16 @@ public class HapiSpec implements Runnable, Executable {
      */
     @Nullable
     private Failure failure = null;
+
+    /**
+     * Add new properties that would merge with existing ones, if a property already exist then
+     * override it with new value
+     *
+     * @param props A map of new properties
+     */
+    public void addOverrideProperties(final Map<String, Object> props) {
+        hapiSetup.addOverrides(props);
+    }
 
     public static ThreadPoolExecutor getCommonThreadPool() {
         return THREAD_POOL;
@@ -305,6 +320,15 @@ public class HapiSpec implements Runnable, Executable {
 
     public void setSidecarWatcher(@NonNull final SidecarWatcher watcher) {
         this.sidecarWatcher = requireNonNull(watcher);
+    }
+
+    /**
+     * Overrides the spec's default strategy for determining the next valid start time for transactions.
+     *
+     * @param nextValidStart the new strategy
+     */
+    public void setNextValidStart(@NonNull final Supplier<Timestamp> nextValidStart) {
+        this.nextValidStart = requireNonNull(nextValidStart);
     }
 
     public void updatePrecheckCounts(ResponseCodeEnum finalStatus) {
@@ -396,7 +420,7 @@ public class HapiSpec implements Runnable, Executable {
         if (!(targetNetworkOrThrow() instanceof EmbeddedNetwork network)) {
             throw new IllegalStateException("Cannot access embedded state for non-embedded network");
         }
-        return requireNonNull(network.embeddedHedera()).state();
+        return network.embeddedHederaOrThrow().state();
     }
 
     /**
@@ -521,6 +545,7 @@ public class HapiSpec implements Runnable, Executable {
                 secsWait--;
                 if (secsWait < 0) {
                     log.error("Fees failed to initialize! Please check if server is down...", t);
+                    failure = new Failure(t, "Fees initialization");
                     return false;
                 } else {
                     log.warn(
@@ -534,11 +559,12 @@ public class HapiSpec implements Runnable, Executable {
                     }
                 }
             } catch (IllegalStateException | ReflectiveOperationException | GeneralSecurityException e) {
-                status = ERROR; // These are unrecoverable; save a lot of time and just fail the test.
-                log.error("Irrecoverable error in test nodes or client JVM. Unable to continue.", e);
+                // These are unrecoverable; save a lot of time and just fail the test.
+                failure = new Failure(e, "Irrecoverable error in test nodes or client JVM. Unable to continue.");
                 return false;
             }
         }
+        failure = new Failure(new IllegalStateException("Timed out fetching fee schedules"), "Fees initialization");
         return false;
     }
 
@@ -552,7 +578,8 @@ public class HapiSpec implements Runnable, Executable {
                 sharedStates.forEach(sharedState -> hapiRegistry.include(sharedState.registry()));
             }
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
-            txnFactory = new TxnFactory(hapiSetup);
+            txnFactory =
+                    (nextValidStart == null) ? new TxnFactory(hapiSetup) : new TxnFactory(hapiSetup, nextValidStart);
             FeesAndRatesProvider scheduleProvider =
                     new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiRegistry, targetNetwork);
             feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
@@ -560,6 +587,8 @@ public class HapiSpec implements Runnable, Executable {
         } catch (Throwable t) {
             log.error("Initialization failed for spec '{}'!", name, t);
             status = ERROR;
+            failure = new Failure(t, "Initialization");
+            return false;
         }
         if (!tryReinitializingFees()) {
             status = ERROR;
@@ -1172,13 +1201,25 @@ public class HapiSpec implements Runnable, Executable {
         return spec;
     }
 
+    /**
+     * Customizes the {@link HapiSpec} to target the given network.
+     *
+     * @param spec the {@link HapiSpec} to customize
+     * @param targetNetwork the target network
+     */
     public static void doTargetSpec(@NonNull final HapiSpec spec, @NonNull final HederaNetwork targetNetwork) {
         spec.setTargetNetwork(targetNetwork);
+
+        // (FUTURE) Remove this override by initializing the HapiClients for a remote network
+        // directly from the network's HederaNode instances instead of this "nodes" property
         final var specNodes =
                 targetNetwork.nodes().stream().map(HederaNode::hapiSpecInfo).collect(joining(","));
         spec.addOverrideProperties(Map.of("nodes", specNodes));
-        if (targetNetwork.type() == EMBEDDED_NETWORK) {
+
+        if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
             spec.addOverrideProperties(Map.of("status.wait.sleep.ms", "" + EMBEDDED_STATUS_WAIT_SLEEP_MS));
+            final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
+            spec.setNextValidStart(embeddedHedera::nextValidStart);
         }
     }
 
@@ -1343,16 +1384,6 @@ public class HapiSpec implements Runnable, Executable {
         dir += ("/" + hapiSetup.costSnapshotDir());
         WorkingDirUtils.ensureDir(dir);
         return String.format("cost-snapshots/%s/%s", hapiSetup.costSnapshotDir(), costSnapshotFile());
-    }
-
-    /**
-     * Add new properties that would merge with existing ones, if a property already exist then
-     * override it with new value
-     *
-     * @param props A map of new properties
-     */
-    public void addOverrideProperties(final Map<String, Object> props) {
-        hapiSetup.addOverrides(props);
     }
 
     private void nullOutInfrastructure() {

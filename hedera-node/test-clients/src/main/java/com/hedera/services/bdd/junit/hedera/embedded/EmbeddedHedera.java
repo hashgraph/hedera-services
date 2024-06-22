@@ -40,7 +40,9 @@ import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeServiceMigrator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
@@ -101,6 +103,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -112,8 +115,10 @@ import org.apache.logging.log4j.Logger;
 public class EmbeddedHedera {
     private static final Logger LOGGER = LogManager.getLogger(EmbeddedHedera.class);
 
+    private static final int NANOS_IN_A_SECOND = 1_000_000_000;
     private static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     private static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
+    private static final long VALID_START_TIME_OFFSET_SECS = 42;
     private static final Signature TOY_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
     private static final TransactionResponse OK_RESPONSE = TransactionResponse.getDefaultInstance();
     private static final PlatformStatusChangeNotification ACTIVE_NOTIFICATION =
@@ -127,6 +132,7 @@ public class EmbeddedHedera {
     private final AccountID defaultNodeAccountId;
     private final AddressBook addressBook;
     private final ToyPlatform platform;
+    private final AtomicInteger nextNano = new AtomicInteger(0);
     private final PlatformState platformState = new PlatformState();
     private final Map<AccountID, NodeId> nodeIds;
     private final Map<NodeId, com.hedera.hapi.node.base.AccountID> accountIds;
@@ -175,6 +181,27 @@ public class EmbeddedHedera {
     }
 
     /**
+     * Returns the next in a repeatable sequence of valid start times that the embedded Hedera's
+     * ingest workflow will accept within a {@link TransactionID}.
+     *
+     * <p>Ensures unique timestamps by incrementing the nanosecond field of the timestamp each time
+     * this method is called---which will definitely be fewer than a billion times in a second.
+     *
+     * @return the next valid start time from a repeatable sequence
+     */
+    public Timestamp nextValidStart() {
+        int candidateNano = nextNano.getAndIncrement();
+        if (candidateNano >= NANOS_IN_A_SECOND) {
+            candidateNano = 0;
+            nextNano.set(1);
+        }
+        return Timestamp.newBuilder()
+                .setSeconds(time.now().getEpochSecond() - VALID_START_TIME_OFFSET_SECS)
+                .setNanos(candidateNano)
+                .build();
+    }
+
+    /**
      * Submits a transaction to the network.
      *
      * @param transaction the transaction to submit
@@ -195,7 +222,8 @@ public class EmbeddedHedera {
                     "Bypassing ingest checks for transaction to node{} (0.0.{})",
                     nodeId,
                     nodeAccountId.getAccountNum());
-            platform.queue.add(new ToyEvent(nodeId, Instant.now(), new SwirldTransaction(transaction.toByteArray())));
+            platform.queue.add(
+                    new ToyEvent(nodeId, time.now(), new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
             return OK_RESPONSE;
         }
     }
@@ -222,26 +250,27 @@ public class EmbeddedHedera {
     private class ToyPlatform implements Platform {
         private static final int MIN_CAPACITY = 5_000;
         private static final long NANOS_BETWEEN_CONS_EVENTS = 1_000;
-        private static final Duration ROUND_DURATION = Duration.ofMillis(1);
+        private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
+        private static final Duration WALL_CLOCK_ROUND_DURATION = Duration.ofMillis(1);
 
         private final AtomicLong roundNo = new AtomicLong(1);
         private final AtomicLong consensusOrder = new AtomicLong(1);
-        private final List<ToyEvent> events = new ArrayList<>();
+        private final List<ToyEvent> prehandledEvents = new ArrayList<>();
         private final PlatformContext platformContext = new ToyPlatformContext();
         private final ToyNotificationEngine notificationEngine = new ToyNotificationEngine();
         private final BlockingQueue<ToyEvent> queue = new ArrayBlockingQueue<>(MIN_CAPACITY);
 
-        private Instant then = Instant.now();
+        private Instant lastRoundTime = time.now();
 
         @Override
         public void start() {
             executorService.scheduleWithFixedDelay(
-                    this::handleTransactions, 0, ROUND_DURATION.toMillis(), MILLISECONDS);
+                    this::handleTransactions, 0, WALL_CLOCK_ROUND_DURATION.toMillis(), MILLISECONDS);
         }
 
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
-            return queue.add(new ToyEvent(defaultNodeId, Instant.now(), new SwirldTransaction(transaction)));
+            return queue.add(new ToyEvent(defaultNodeId, time.now(), new SwirldTransaction(Bytes.wrap(transaction))));
         }
 
         @NonNull
@@ -280,24 +309,36 @@ public class EmbeddedHedera {
             throw new UnsupportedOperationException("Not used by Hedera");
         }
 
+        /**
+         * Simulates a round of events coming to consensus and being handled by the Hedera node.
+         *
+         * <p>We advance consensus time by 1 second in fake time for each round, unless some other
+         * event like a synthetic "sleep" has already advanced the time.
+         */
         private void handleTransactions() {
             try {
-                final var now = Instant.now();
-                final var consensusEvents = IntStream.range(0, events.size())
-                        .<ConsensusEvent>mapToObj(i -> new ToyConsensusEvent(
-                                events.get(i),
-                                consensusOrder.getAndIncrement(),
-                                then.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS)))
-                        .toList();
-                final var round = new ToyRound(roundNo.getAndIncrement(), now, consensusEvents);
-                hedera.handleWorkflow().handleRound(state, platformState, round);
-                events.clear();
-
-                then = now;
+                // Put all pre-handled events that were last drained from the queue into a round
+                if (!prehandledEvents.isEmpty()) {
+                    if (time.now().equals(lastRoundTime)) {
+                        time.tick(SIMULATED_ROUND_DURATION);
+                    }
+                    lastRoundTime = time.now();
+                    // Note we are only putting one transaction in each event
+                    final var consensusEvents = IntStream.range(0, prehandledEvents.size())
+                            .<ConsensusEvent>mapToObj(i -> new ToyConsensusEvent(
+                                    prehandledEvents.get(i),
+                                    consensusOrder.getAndIncrement(),
+                                    lastRoundTime.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS)))
+                            .toList();
+                    final var round = new ToyRound(roundNo.getAndIncrement(), consensusEvents);
+                    hedera.handleWorkflow().handleRound(state, platformState, round);
+                    prehandledEvents.clear();
+                }
+                // Now drain all events that will go in the next round and pre-handle them
                 final List<ToyEvent> newEvents = new ArrayList<>();
                 queue.drainTo(newEvents);
                 newEvents.forEach(event -> hedera.onPreHandle(event, state));
-                events.addAll(newEvents);
+                prehandledEvents.addAll(newEvents);
             } catch (Exception e) {
                 LOGGER.warn("Error handling transactions", e);
             }
@@ -456,7 +497,7 @@ public class EmbeddedHedera {
         }
 
         @Override
-        public Iterator<ConsensusTransaction> consensusTransactionIterator() {
+        public @NonNull Iterator<ConsensusTransaction> consensusTransactionIterator() {
             return Collections.singleton((ConsensusTransaction) transaction).iterator();
         }
 
@@ -473,13 +514,10 @@ public class EmbeddedHedera {
 
     private class ToyRound implements Round {
         private final long roundNum;
-        private final Instant now;
         private final List<ConsensusEvent> consensusEvents;
 
-        public ToyRound(
-                final long roundNum, @NonNull final Instant now, @NonNull final List<ConsensusEvent> consensusEvents) {
+        public ToyRound(final long roundNum, @NonNull final List<ConsensusEvent> consensusEvents) {
             this.roundNum = roundNum;
-            this.now = requireNonNull(now);
             this.consensusEvents = requireNonNull(consensusEvents);
         }
 
@@ -513,7 +551,7 @@ public class EmbeddedHedera {
         @NonNull
         @Override
         public Instant getConsensusTimestamp() {
-            return now;
+            return consensusEvents.getLast().getConsensusTimestamp();
         }
     }
 
