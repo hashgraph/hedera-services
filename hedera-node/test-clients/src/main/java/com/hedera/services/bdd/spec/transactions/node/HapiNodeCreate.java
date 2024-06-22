@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -150,7 +152,10 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
             return;
         }
         final var newId = lastReceipt.getNodeId();
-        spec.registry().saveNodeId(nodeName, newId);
+        spec.registry()
+                .saveNodeId(
+                        nodeName,
+                        fromPbj(EntityNumber.newBuilder().number(newId).build()));
 
         if (verboseLoggingOn) {
             log.info("Created node {} with ID {}.", nodeName, lastReceipt.getNodeId());

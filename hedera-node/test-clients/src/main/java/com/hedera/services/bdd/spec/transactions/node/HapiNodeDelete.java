@@ -57,7 +57,7 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         node = nodeSupplier.isPresent() ? nodeSupplier.get().get() : node;
-        var nodeId = TxnUtils.asNodeId(node, spec);
+        var nodeId = TxnUtils.asNodeIdLong(node, spec);
         NodeDeleteTransactionBody opBody = spec.txns()
                 .<NodeDeleteTransactionBody, NodeDeleteTransactionBody.Builder>body(
                         NodeDeleteTransactionBody.class, builder -> builder.setNodeId(nodeId));

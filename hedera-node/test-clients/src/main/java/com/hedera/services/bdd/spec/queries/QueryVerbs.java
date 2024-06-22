@@ -38,7 +38,6 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetExecTime;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
-import com.hedera.services.bdd.spec.queries.node.HapiGetNodeInfo;
 import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetAccountNftInfos;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
@@ -72,10 +71,6 @@ public class QueryVerbs {
 
     public static HapiGetAccountInfo getAccountInfo(final String account) {
         return new HapiGetAccountInfo(account);
-    }
-
-    public static HapiGetNodeInfo getNodeInfo(final String node) {
-        return new HapiGetNodeInfo(node);
     }
 
     public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {

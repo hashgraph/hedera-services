@@ -23,7 +23,6 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -32,6 +31,7 @@ import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -317,7 +317,7 @@ public interface HapiPropertySource {
     }
 
     static EntityNumber asEntityNumber(String v) {
-        return EntityNumber.newBuilder().number(Long.parseLong(v)).build();
+        return EntityNumber.newBuilder().setNumber(Long.parseLong(v)).build();
     }
 
     static String asFileString(FileID file) {

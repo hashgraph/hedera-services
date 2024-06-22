@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
@@ -536,7 +537,7 @@ public class HapiSpecRegistry {
         put(asAccountString(id), name);
     }
 
-    public void saveNodeId(String name, long nodeId) {
+    public void saveNodeId(String name, EntityNumber nodeId) {
         put(name, nodeId);
         put(String.valueOf(nodeId), name);
     }
@@ -693,8 +694,8 @@ public class HapiSpecRegistry {
         return get(name, FileID.class);
     }
 
-    public long getNodeId(String name) {
-        return get(name, Long.class);
+    public EntityNumber getNodeId(String name) {
+        return get(name, EntityNumber.class);
     }
 
     public void removeFileId(String name) {

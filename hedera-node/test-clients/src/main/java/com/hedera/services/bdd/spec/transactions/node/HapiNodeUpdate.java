@@ -108,7 +108,7 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        var nid = TxnUtils.asNodeId(node, spec);
+        var nid = TxnUtils.asNodeIdLong(node, spec);
         NodeUpdateTransactionBody opBody = spec.txns()
                 .<NodeUpdateTransactionBody, NodeUpdateTransactionBody.Builder>body(
                         NodeUpdateTransactionBody.class, builder -> {

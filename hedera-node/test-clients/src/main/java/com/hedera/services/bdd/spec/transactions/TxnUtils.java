@@ -66,6 +66,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -241,10 +242,14 @@ public class TxnUtils {
         return isIdLiteral(s) ? asFile(s) : lookupSpec.registry().getFileId(s);
     }
 
-    public static long asNodeId(final String s, final HapiSpec lookupSpec) {
+    public static EntityNumber asNodeId(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s) ? asEntityNumber(s) : lookupSpec.registry().getNodeId(s);
+    }
+
+    public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s)
-                ? asEntityNumber(s).number()
-                : lookupSpec.registry().getNodeId(s);
+                ? asEntityNumber(s).getNumber()
+                : lookupSpec.registry().getNodeId(s).getNumber();
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
