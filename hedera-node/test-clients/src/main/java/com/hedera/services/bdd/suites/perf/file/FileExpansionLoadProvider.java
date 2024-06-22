@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.perf.file;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.getDefaultNodeProps;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -55,6 +56,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Load provider that continually appends 5kb chunks to a random choice of one of a set of target
@@ -69,6 +71,7 @@ import org.junit.jupiter.api.DynamicTest;
  *       out of rotation" and a new target file created).
  * </ul>
  */
+@Tag(NOT_REPEATABLE)
 public class FileExpansionLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileExpansionLoadProvider.class);
 

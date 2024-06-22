@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.perf.contract;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralArrayResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -70,10 +71,12 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * (FUTURE) Integrate this test to CI in some form.
  */
+@Tag(NOT_REPEATABLE)
 public class FibonacciPlusLoadProvider extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(FibonacciPlusLoadProvider.class);

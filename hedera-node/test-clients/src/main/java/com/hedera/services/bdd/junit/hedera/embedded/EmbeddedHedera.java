@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -122,6 +123,7 @@ public class EmbeddedHedera {
 
     private final Hedera hedera;
     private final NodeId defaultNodeId;
+    private final FakeTime time = new FakeTime();
     private final AccountID defaultNodeAccountId;
     private final AddressBook addressBook;
     private final ToyPlatform platform;

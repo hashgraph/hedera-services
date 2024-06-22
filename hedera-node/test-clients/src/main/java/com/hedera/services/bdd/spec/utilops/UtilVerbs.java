@@ -136,7 +136,6 @@ import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
 import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
-import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
@@ -281,10 +280,6 @@ public class UtilVerbs {
     /* Some fairly simple utility ops */
     public static InBlockingOrder blockingOrder(SpecOperation... ops) {
         return new InBlockingOrder(ops);
-    }
-
-    public static NodeLivenessTimeout withLiveNode(String node) {
-        return new NodeLivenessTimeout(node);
     }
 
     public static <T> RecordSystemProperty<T> recordSystemProperty(
@@ -641,17 +636,6 @@ public class UtilVerbs {
         return new NoOp();
     }
 
-    /**
-     * A different name for {@link NoOp} that express the intent of a spec author to end by letting
-     * {@link HapiSpec} automatically waits for the streamMustInclude() assertions to pass, fail, or
-     * time out while ensuring enough background traffic to keep closing record stream files
-     *
-     * @return a {@link NoOp} instance
-     */
-    public static NoOp awaitStreamAssertions() {
-        return new NoOp();
-    }
-
     public static LogMessage logIt(String msg) {
         return new LogMessage(msg);
     }
@@ -666,10 +650,6 @@ public class UtilVerbs {
 
     public static HapiSpecOperation overriding(String property, String value) {
         return overridingAllOf(Map.of(property, value));
-    }
-
-    public static HapiSpecOperation overridingAllOfDeferred(Supplier<Map<String, String>> explicit) {
-        return sourcing(() -> overridingAllOf(explicit.get()));
     }
 
     public static HapiSpecOperation resetToDefault(String... properties) {

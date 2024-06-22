@@ -22,6 +22,8 @@ import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.hapi.util.HapiUtils.minus;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
@@ -45,9 +47,10 @@ public final class DeduplicationCacheImpl implements DeduplicationCache {
      * In fact, an ID with scheduled set will always match the ID of the ScheduleCreate transaction that created
      * the schedule, except scheduled is set.
      */
-    private final Set<TransactionID> submittedTxns = new ConcurrentSkipListSet<>(
-            Comparator.comparing(TransactionID::transactionValidStartOrThrow, TIMESTAMP_COMPARATOR)
-                    .thenComparing(TransactionID::accountID, ACCOUNT_ID_COMPARATOR)
+    private final Set<TransactionID> submittedTxns =
+            new ConcurrentSkipListSet<>(Comparator.<TransactionID, Timestamp>comparing(
+                            txnId -> txnId.transactionValidStartOrElse(Timestamp.DEFAULT), TIMESTAMP_COMPARATOR)
+                    .thenComparing(txnId -> txnId.accountIDOrElse(AccountID.DEFAULT), ACCOUNT_ID_COMPARATOR)
                     .thenComparing(TransactionID::scheduled)
                     .thenComparing(TransactionID::nonce));
 

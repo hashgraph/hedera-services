@@ -106,6 +106,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -120,6 +121,8 @@ public class TxnUtils {
 
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
     private static final Pattern PORT_LITERAL_PATTERN = Pattern.compile("\\d+");
+    private static final int BANNER_WIDTH = 80;
+    private static final int BANNER_BOUNDARY_THICKNESS = 2;
 
     public static Key EMPTY_THRESHOLD_KEY =
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
@@ -684,5 +687,42 @@ public class TxnUtils {
 
     public static Instant instantOf(@NonNull final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
+
+    /**
+     * Generates a banner with the given messages to speed up identifying key information in logs.
+     *
+     * @param msgs the messages to be displayed in the banner
+     * @return the banner with the given messages
+     */
+    public static String bannerWith(@NonNull final String... msgs) {
+        requireNonNull(msgs);
+        var sb = new StringBuilder();
+        var partial = IntStream.range(0, BANNER_BOUNDARY_THICKNESS)
+                .mapToObj(ignore -> "*")
+                .collect(joining());
+        int printableWidth = BANNER_WIDTH - 2 * (partial.length() + 1);
+        addFullBoundary(sb);
+        List<String> allMsgs = Stream.concat(Stream.of(""), Stream.concat(Arrays.stream(msgs), Stream.of("")))
+                .collect(toList());
+        for (String msg : allMsgs) {
+            int rightPaddingLen = printableWidth - msg.length();
+            var rightPadding =
+                    IntStream.range(0, rightPaddingLen).mapToObj(ignore -> " ").collect(joining());
+            sb.append(partial + " ")
+                    .append(msg)
+                    .append(rightPadding)
+                    .append(" " + partial)
+                    .append("\n");
+        }
+        addFullBoundary(sb);
+        return sb.toString();
+    }
+
+    private static void addFullBoundary(StringBuilder sb) {
+        var full = IntStream.range(0, BANNER_WIDTH).mapToObj(ignore -> "*").collect(joining());
+        for (int i = 0; i < BANNER_BOUNDARY_THICKNESS; i++) {
+            sb.append(full).append("\n");
+        }
     }
 }

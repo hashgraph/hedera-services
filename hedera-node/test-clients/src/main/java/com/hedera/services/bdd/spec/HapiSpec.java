@@ -560,7 +560,7 @@ public class HapiSpec implements Runnable, Executable {
                 sharedStates.forEach(sharedState -> hapiRegistry.include(sharedState.registry()));
             }
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
-            txnFactory = new TxnFactory(hapiSetup, keyFactory);
+            txnFactory = new TxnFactory(hapiSetup);
             FeesAndRatesProvider scheduleProvider =
                     new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiRegistry, targetNetwork);
             feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);

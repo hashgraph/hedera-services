@@ -64,6 +64,7 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;
     requires com.hedera.node.config;
+    requires com.swirlds.base.test.fixtures;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
