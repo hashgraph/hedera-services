@@ -104,10 +104,10 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
         if (jarPath == null) {
-            processHandle = startSubProcessNodeFrom(metadata);
+            processHandle = startSubProcessNodeFrom(metadata, null);
         } else {
             final var jarLoc = jarPath.normalize().toAbsolutePath().toString();
-            processHandle = startSubProcessNodeFrom(metadata, "-jar", jarLoc);
+            processHandle = startSubProcessNodeFrom(metadata, jarLoc);
         }
         return this;
     }

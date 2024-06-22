@@ -64,9 +64,9 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
 
-    private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
-        super(networkName, nodes);
-        this.configTxt = configTxtForLocal(name(), nodes, nextGossipPort, nextGossipTlsPort);
+    private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<SubProcessNode> nodes) {
+        super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
+        this.configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
     }
 
     /**
@@ -131,14 +131,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
-     * Restarts all nodes in the network from the JAR files they have unzipped to their respective
-     * {@code upgrade.artifacts.path} directories.
-     */
-    public void restartFromUnzippedJars() {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
      * Creates a network of live (sub-process) nodes with the given name and size. This method is
      * synchronized because we don't want to re-use any ports across different networks.
      *
@@ -153,7 +145,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         final var network = new SubProcessNetwork(
                 name,
                 IntStream.range(0, size)
-                        .<HederaNode>mapToObj(nodeId -> new SubProcessNode(
+                        .mapToObj(nodeId -> new SubProcessNode(
                                 classicMetadataFor(
                                         nodeId,
                                         name,

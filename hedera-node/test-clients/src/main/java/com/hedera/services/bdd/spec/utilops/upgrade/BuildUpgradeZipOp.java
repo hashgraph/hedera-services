@@ -16,11 +16,13 @@
 
 package com.hedera.services.bdd.spec.utilops.upgrade;
 
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.common.platform.NodeId;
@@ -32,7 +34,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -58,16 +59,15 @@ import java.util.zip.ZipOutputStream;
  * </ol>
  */
 public class BuildUpgradeZipOp extends UtilOp {
-    private static final String JAR_FILE = "HederaNode.jar";
     private static final String SEM_VER_FILE = "semantic-version.properties";
     private static final String SERVICES_VERSION_PROP = "hedera.services.version";
     private static final Path WORKING_PATH = Path.of("build");
     private static final Path UPGRADE_ZIP_PATH = WORKING_PATH.resolve("upgrade");
     private static final Path EXPLODED_ZIP_PATH = WORKING_PATH.resolve("exploded");
-    private static final Path NEW_JAR_PATH = UPGRADE_ZIP_PATH.resolve(JAR_FILE);
+    private static final Path NEW_JAR_PATH = UPGRADE_ZIP_PATH.resolve(WorkingDirUtils.JAR_FILE);
 
     public static final Path CURRENT_JAR_PATH =
-            Path.of("../").resolve("data").resolve("apps").resolve(JAR_FILE);
+            Path.of("../").resolve("data").resolve("apps").resolve(WorkingDirUtils.JAR_FILE);
     public static final Path DEFAULT_UPGRADE_ZIP_LOC = WORKING_PATH.resolve("upgrade.zip");
 
     /**
@@ -139,12 +139,11 @@ public class BuildUpgradeZipOp extends UtilOp {
 
     private static void repackageJarWithNewServicesVersion(
             @NonNull final Path initialJarPath, @NonNull final SemanticVersion overrideVersion) throws IOException {
-        final var extractionPath = Files.createDirectories(EXPLODED_ZIP_PATH);
-        System.out.println(
-                "Created directories to " + extractionPath.toAbsolutePath().toString());
-        if (!initialJarPath.toFile().exists()) {
-            throw new IllegalArgumentException("No jar found at " + initialJarPath);
+        // Avoid FileAlreadyExistsExceptions
+        if (EXPLODED_ZIP_PATH.toFile().exists()) {
+            rm(EXPLODED_ZIP_PATH);
         }
+        final var extractionPath = Files.createDirectories(EXPLODED_ZIP_PATH);
         try (final var jarFile =
                 new JarFile(initialJarPath.normalize().toAbsolutePath().toFile())) {
             extractTo(jarFile, extractionPath);
@@ -169,9 +168,7 @@ public class BuildUpgradeZipOp extends UtilOp {
                 }
             }
         } finally {
-            try (final var files = Files.walk(extractionPath)) {
-                files.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-            }
+            rm(EXPLODED_ZIP_PATH);
         }
     }
 

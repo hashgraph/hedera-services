@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
+    public static final String JAR_FILE = "HederaNode.jar";
     private static final Path BASE_WORKING_LOC = Path.of("./build");
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";

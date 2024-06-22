@@ -410,6 +410,10 @@ public class UtilVerbs {
         return new TryToStartNodesOp(NodeSelector.allNodes());
     }
 
+    public static TryToStartNodesOp restartNetworkFromUpgradeJar() {
+        return new TryToStartNodesOp(NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.YES);
+    }
+
     public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
         return new ShutdownWithinOp(NodeSelector.byName(name), timeout);
     }

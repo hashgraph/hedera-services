@@ -19,10 +19,14 @@ package com.hedera.services.bdd.suites.regression.system;
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipWith;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNetworkFromUpgradeJar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.DEFAULT_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -39,7 +43,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(UPGRADE)
-public class SameNodesUpgradeTest {
+public class SameNodesUpgradeTest implements LifecycleTest {
     private static final Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
     private static final SemanticVersion UPGRADE_VERSION =
             SemanticVersion.newBuilder().minor(99).build();
@@ -61,6 +65,18 @@ public class SameNodesUpgradeTest {
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
                         .havingHash(upgradeFileHashAt(DEFAULT_UPGRADE_ZIP_LOC))),
                 // Wait for the immediate execution marker file (written only after 0.0.150 is unzipped)
-                waitForMf(EXEC_IMMEDIATE_MF, EXEC_IMMEDIATE_MF_TIMEOUT));
+                waitForMf(EXEC_IMMEDIATE_MF, EXEC_IMMEDIATE_MF_TIMEOUT),
+                // Issue FREEZE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
+                sourcing(() -> freezeUpgrade()
+                        .startingIn(2)
+                        .seconds()
+                        .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
+                        .havingHash(upgradeFileHashAt(DEFAULT_UPGRADE_ZIP_LOC))),
+                confirmFreezeAndShutdown(),
+                restartNetworkFromUpgradeJar(),
+                // Wait for all nodes to be ACTIVE
+                waitForActiveNetwork(RESTART_TIMEOUT),
+                // Confirm the version changed
+                getVersionInfo().hasServicesVersion(UPGRADE_VERSION));
     }
 }

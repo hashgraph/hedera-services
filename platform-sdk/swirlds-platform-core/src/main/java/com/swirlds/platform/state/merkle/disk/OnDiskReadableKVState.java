@@ -25,11 +25,9 @@ import com.hedera.pbj.runtime.Codec;
 import com.swirlds.platform.state.spi.ReadableKVStateBase;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
@@ -82,38 +80,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
         logMapIterate(getStateKey(), virtualMap);
-
-        final var itr = virtualMap.treeIterator();
-        return new Iterator<>() {
-            private K next = null;
-
-            @Override
-            public boolean hasNext() {
-                if (next != null) return true;
-                while (itr.hasNext()) {
-                    final var merkleNode = itr.next();
-                    if (merkleNode instanceof VirtualLeafNode<?, ?> leaf) {
-                        final var k = leaf.getKey();
-                        if (k instanceof OnDiskKey<?> onDiskKey) {
-                            this.next = (K) onDiskKey.getKey();
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public K next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-
-                final var k = next;
-                next = null;
-                return k;
-            }
-        };
+        return new OnDiskIterator<>(virtualMap);
     }
 
     /** {@inheritDoc} */

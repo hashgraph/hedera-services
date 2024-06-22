@@ -26,6 +26,7 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
@@ -183,19 +184,22 @@ public class ReadableFreezeUpgradeActions {
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodesFrom(nodeStore) : null;
+        final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodes() : null;
         return runAsync(
                 () -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now, activeNodes),
                 executor);
     }
 
-    private List<Node> allActiveNodesFrom(@NonNull final ReadableNodeStore nodeStore) {
+    private record ActiveNode(@NonNull Node node, @Nullable StakingNodeInfo stakingInfo) {}
+
+    private List<ActiveNode> allActiveNodes() {
         return StreamSupport.stream(
                         Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
                 .sorted(Comparator.comparing(Node::nodeId))
+                .map(node -> new ActiveNode(node, stakingInfoStore.get(node.nodeId())))
                 .toList();
     }
 
@@ -206,7 +210,7 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final String desc,
             @NonNull final String marker,
             @Nullable final Timestamp now,
-            @Nullable List<Node> nodes) {
+            @Nullable List<ActiveNode> nodes) {
         try {
             FileUtils.cleanDirectory(artifactsLoc.toFile());
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
@@ -228,13 +232,11 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
-    private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<Node> activeNodes) {
+    private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
         final var configTxt = artifactsLoc.resolve("config.txt");
-        log.info("Generating configTxt at {}", configTxt);
 
-        log.info("Got nodes of size {}", activeNodes.size());
         if (activeNodes.isEmpty()) {
             log.info("Node state is empty, cannot generate config.txt"); // change to log error later
             return;
@@ -249,21 +251,21 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void writeConfigLineAndPem(
-            @NonNull final Node node, @NonNull final BufferedWriter bw, @NonNull final Path pathToWrite) {
-        requireNonNull(node);
+            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path pathToWrite) {
+        requireNonNull(activeNode);
         requireNonNull(bw);
         requireNonNull(pathToWrite);
 
         var line = new StringBuilder();
         int weight = 0;
+        final var node = activeNode.node();
         final var name = "node" + node.nodeId();
         final var alias = nameToAlias(name);
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
         final int INT = 0;
         final int EXT = 1;
-        log.info("Trying to write PEM to {}", pathToWrite);
 
-        final var stakingNodeInfo = stakingInfoStore.get(node.nodeId());
+        final var stakingNodeInfo = activeNode.stakingInfo();
         if (stakingNodeInfo != null) {
             weight = stakingNodeInfo.weight();
         }

@@ -29,6 +29,18 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:-exports,-lossy-conversions,-cast")
 }
 
+val writeSemanticVersionProperties =
+    tasks.register<WriteProperties>("writeSemanticVersionProperties") {
+        property("hapi.proto.version", libs.versions.hapi.proto.get())
+        property("hedera.services.version", project.version)
+
+        destinationFile.set(
+            layout.buildDirectory.file("generated/version/semantic-version.properties")
+        )
+    }
+
+tasks.processResources { from(writeSemanticVersionProperties) }
+
 mainModuleInfo {
     annotationProcessor("dagger.compiler")
     annotationProcessor("com.google.auto.service.processor")
