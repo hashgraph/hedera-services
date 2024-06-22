@@ -137,24 +137,18 @@ public class TxnFactory {
      *     <li>{@link com.hedera.hapi.node.transaction.TransactionBody#memo()}</li>
      * </ol>
      *
-     * @param spec the {@link Consumer} that mutates the {@link TransactionBody.Builder}
+     * @param bodySpec the {@link Consumer} that mutates the {@link TransactionBody.Builder}
+     * @param modification if non-null, the {@link BodyMutation} that is used to mutate the {@link TransactionBody.Builder}
+     * @param spec if non-null, the {@link HapiSpec} that is used to mutate the {@link TransactionBody.Builder}
      * @return a {@link Transaction.Builder} that is ready to be signed
      */
-    public Transaction.Builder getReadyToSign(@NonNull final Consumer<TransactionBody.Builder> spec) {
-        requireNonNull(spec);
-        final var composedBodySpec = defaultBodySpec().andThen(spec);
-        final var bodyBuilder = TransactionBody.newBuilder();
-        composedBodySpec.accept(bodyBuilder);
-        return Transaction.newBuilder()
-                .setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
-    }
-
     public Transaction.Builder getReadyToSign(
-            Consumer<TransactionBody.Builder> bodySpec,
-            @Nullable final HapiSpec spec,
-            @Nullable final BodyMutation modification) {
-        Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(bodySpec);
-        TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
+            @NonNull final Consumer<TransactionBody.Builder> bodySpec,
+            @Nullable final BodyMutation modification,
+            @Nullable final HapiSpec spec) {
+        requireNonNull(bodySpec);
+        final var composedBodySpec = defaultBodySpec().andThen(bodySpec);
+        var bodyBuilder = TransactionBody.newBuilder();
         composedBodySpec.accept(bodyBuilder);
         if (modification != null) {
             requireNonNull(spec);

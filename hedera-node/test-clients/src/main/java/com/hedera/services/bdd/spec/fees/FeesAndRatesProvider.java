@@ -206,11 +206,15 @@ public class FeesAndRatesProvider {
         CryptoTransferTransactionBody opBody =
                 txns.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(
                         CryptoTransferTransactionBody.class, b -> b.setTransfers(transfers));
-        Transaction.Builder txnBuilder = txns.getReadyToSign(b -> {
-            b.setTransactionID(
-                    TransactionID.newBuilder().mergeFrom(b.getTransactionID()).setAccountID(setup.defaultPayer()));
-            b.setCryptoTransfer(opBody);
-        });
+        Transaction.Builder txnBuilder = txns.getReadyToSign(
+                b -> {
+                    b.setTransactionID(TransactionID.newBuilder()
+                            .mergeFrom(b.getTransactionID())
+                            .setAccountID(setup.defaultPayer()));
+                    b.setCryptoTransfer(opBody);
+                },
+                null,
+                null);
 
         return keys.signWithFullPrefixEd25519Keys(
                 txnBuilder,
