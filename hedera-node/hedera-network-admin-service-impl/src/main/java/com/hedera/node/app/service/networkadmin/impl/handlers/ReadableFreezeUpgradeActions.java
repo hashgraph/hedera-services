@@ -20,11 +20,12 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.DISTINCT;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
-import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
@@ -41,8 +42,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.StreamSupport;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -173,26 +177,43 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(desc);
         requireNonNull(marker);
 
-        final long size = archiveData.length();
-        System.out.println("path from config - " + adminServiceConfig.upgradeArtifactsPath());
         final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
-        System.out.println("\"Absolute\" path - "
-                + artifactsLoc.normalize().toAbsolutePath().toString());
         requireNonNull(artifactsLoc);
+        final long size = archiveData.length();
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
+        final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodesFrom(nodeStore) : null;
+        return runAsync(
+                () -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now, activeNodes),
+                executor);
+    }
+
+    private List<Node> allActiveNodesFrom(@NonNull final ReadableNodeStore nodeStore) {
+        return StreamSupport.stream(
+                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+                .mapToLong(EntityNumber::number)
+                .mapToObj(nodeStore::get)
+                .filter(node -> node != null && !node.deleted())
+                .sorted(Comparator.comparing(Node::nodeId))
+                .toList();
     }
 
     private void extractAndReplaceArtifacts(
-            Path artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
+            @NonNull final Path artifactsLoc,
+            @NonNull final Bytes archiveData,
+            final long size,
+            @NonNull final String desc,
+            @NonNull final String marker,
+            @Nullable final Timestamp now,
+            @Nullable List<Node> nodes) {
         try {
             FileUtils.cleanDirectory(artifactsLoc.toFile());
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (desc.equals(PREPARE_UPGRADE_DESC)) {
-                generateConfigPem(artifactsLoc);
+                requireNonNull(nodes, "Cannot generate config.txt without a valid list of active nodes");
+                generateConfigPem(artifactsLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -207,27 +228,21 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
-    private void generateConfigPem(@NonNull final Path artifactsLoc) {
+    private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<Node> activeNodes) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
+        requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
         final var configTxt = artifactsLoc.resolve("config.txt");
         log.info("Generating configTxt at {}", configTxt);
 
-        final var nodeIds = nodeStore.keys();
-        log.info("Got iterator of allegedly size {}", nodeStore.sizeOfState());
-        if (nodeIds == null) {
+        log.info("Got nodes of size {}", activeNodes.size());
+        if (activeNodes.isEmpty()) {
             log.info("Node state is empty, cannot generate config.txt"); // change to log error later
             return;
         }
 
-        try (FileWriter fw = new FileWriter(configTxt.toFile());
-                BufferedWriter bw = new BufferedWriter(fw)) {
-            Streams.stream(nodeIds)
-                    .peek(nodeId -> log.info("Node id is {}", nodeId))
-                    .map(nodeId -> nodeStore.get(nodeId.number()))
-                    .filter(node -> node != null && !node.deleted())
-                    .peek(node -> log.info("Node {} is {}", node.nodeId(), node))
-                    .sorted(Comparator.comparing(Node::nodeId))
-                    .forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
+        try (final var fw = new FileWriter(configTxt.toFile());
+                final var bw = new BufferedWriter(fw)) {
+            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
         }

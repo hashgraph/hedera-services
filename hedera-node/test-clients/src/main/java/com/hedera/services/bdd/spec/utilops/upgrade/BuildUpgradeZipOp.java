@@ -140,6 +140,11 @@ public class BuildUpgradeZipOp extends UtilOp {
     private static void repackageJarWithNewServicesVersion(
             @NonNull final Path initialJarPath, @NonNull final SemanticVersion overrideVersion) throws IOException {
         final var extractionPath = Files.createDirectories(EXPLODED_ZIP_PATH);
+        System.out.println(
+                "Created directories to " + extractionPath.toAbsolutePath().toString());
+        if (!initialJarPath.toFile().exists()) {
+            throw new IllegalArgumentException("No jar found at " + initialJarPath);
+        }
         try (final var jarFile =
                 new JarFile(initialJarPath.normalize().toAbsolutePath().toFile())) {
             extractTo(jarFile, extractionPath);
