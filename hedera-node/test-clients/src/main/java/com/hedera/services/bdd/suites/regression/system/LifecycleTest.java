@@ -25,8 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import java.time.Duration;
 
 public interface LifecycleTest {
-    //    long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
-    long PORT_UNBINDING_TIMEOUT_MS = 1L;
+    long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
     Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
