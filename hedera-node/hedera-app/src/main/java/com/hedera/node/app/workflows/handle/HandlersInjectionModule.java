@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
@@ -54,6 +55,7 @@ public interface HandlersInjectionModule {
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
             @NonNull final NetworkAdminHandlers networkAdminHandlers,
+            @NonNull final AddressBookHandlers addressBookHandlers,
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
             @NonNull final Supplier<ContractHandlers> contractHandlers,
@@ -88,6 +90,9 @@ public interface HandlersInjectionModule {
                 fileHandlers.fileSystemUndeleteHandler(),
                 networkAdminHandlers.freezeHandler(),
                 networkAdminHandlers.networkUncheckedSubmitHandler(),
+                addressBookHandlers.nodeCreateHandler(),
+                addressBookHandlers.nodeDeleteHandler(),
+                addressBookHandlers.nodeUpdateHandler(),
                 scheduleHandlers.scheduleCreateHandler(),
                 scheduleHandlers.scheduleSignHandler(),
                 scheduleHandlers.scheduleDeleteHandler(),

@@ -178,6 +178,10 @@ public class TransactionDispatcher {
 
             case FREEZE -> handlers.freezeHandler();
 
+            case NODE_CREATE -> handlers.nodeCreateHandler();
+            case NODE_DELETE -> handlers.nodeDeleteHandler();
+            case NODE_UPDATE -> handlers.nodeUpdateHandler();
+
             case UNCHECKED_SUBMIT -> handlers.networkUncheckedSubmitHandler();
 
             case SCHEDULE_CREATE -> handlers.scheduleCreateHandler();

@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -31,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -42,17 +46,18 @@ import org.apache.logging.log4j.Logger;
 public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     static final Logger log = LogManager.getLogger(HapiNodeCreate.class);
 
-    private String node;
+    private boolean advertiseCreation = false;
+    private String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
-    private String description;
-    private List<ServiceEndpoint> gossipEndpoint;
-    private List<ServiceEndpoint> serviceEndpoint;
-    private byte[] gossipCaCertificate;
-    private byte[] grpcCertificateHash;
+    private Optional<String> description = Optional.empty();
+    private List<ServiceEndpoint> gossipEndpoint = Collections.emptyList();
+    private List<ServiceEndpoint> serviceEndpoint = Collections.emptyList();
+    private byte[] gossipCaCertificate = new byte[0];
+    private byte[] grpcCertificateHash = new byte[0];
     Optional<LongConsumer> newNumObserver = Optional.empty();
 
-    public HapiNodeCreate(String node) {
-        this.node = node;
+    public HapiNodeCreate(String nodeName) {
+        this.nodeName = nodeName;
     }
 
     @Override
@@ -65,13 +70,18 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         return this;
     }
 
+    public HapiNodeCreate advertisingCreation() {
+        advertiseCreation = true;
+        return this;
+    }
+
     public HapiNodeCreate addAccount(final AccountID accountID) {
         this.accountId = Optional.of(accountID);
         return this;
     }
 
     public HapiNodeCreate addDesc(final String description) {
-        this.description = description;
+        this.description = Optional.of(description);
         return this;
     }
 
@@ -120,7 +130,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
                         NodeCreateTransactionBody.class, b -> {
                             if (accountId.isPresent()) b.setAccountId(accountId.get());
-                            b.setDescription(description);
+                            if (description.isPresent()) b.setDescription(description.get());
                             b.addAllGossipEndpoint(gossipEndpoint);
                             b.addAllServiceEndpoint(serviceEndpoint);
                             b.setGossipCaCertificate(ByteString.copyFrom(gossipCaCertificate));
@@ -136,9 +146,21 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected void updateStateOf(final HapiSpec spec) {
+        if (actualStatus != SUCCESS) {
+            return;
+        }
         final var newId = lastReceipt.getNodeId();
-        //        newNumObserver.ifPresent(obs -> obs.accept(newId.getFileNum());
-        spec.registry().saveNodeId(description, newId);
+        spec.registry().saveNodeId(nodeName, newId);
+
+        if (verboseLoggingOn) {
+            log.info("Created node {} with ID {}.", nodeName, lastReceipt.getNodeId());
+        }
+
+        if (advertiseCreation) {
+            String banner = "\n\n"
+                    + bannerWith(String.format("Created node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
+            log.info(banner);
+        }
     }
 
     @Override

@@ -23,6 +23,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
@@ -62,6 +64,7 @@ class WritableStoreFactoryImplTest {
 
     private static Stream<Arguments> storeParameters() {
         return Stream.of(
+                arguments(AddressBookService.NAME, WritableNodeStore.class),
                 arguments(ConsensusService.NAME, WritableTopicStore.class),
                 arguments(TokenService.NAME, WritableAccountStore.class),
                 arguments(TokenService.NAME, WritableNftStore.class),

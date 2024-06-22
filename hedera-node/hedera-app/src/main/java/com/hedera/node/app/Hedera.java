@@ -46,6 +46,7 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -246,7 +247,8 @@ public final class Hedera implements SwirldMain {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new NetworkServiceImpl())
+                        new NetworkServiceImpl(),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         try {
             // And the factory for the MerkleHederaState class id must be our newState() method

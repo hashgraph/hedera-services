@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
@@ -82,6 +83,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleDaggerWorkflowModuleTest {
     @Mock
     private NetworkAdminHandlers networkAdminHandlers;
+
+    @Mock
+    private AddressBookHandlers addressBookHandlers;
 
     @Mock
     private ConsensusHandlers consensusHandlers;
@@ -290,6 +294,7 @@ class HandleDaggerWorkflowModuleTest {
 
         final var handlers = HandlersInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
+                addressBookHandlers,
                 consensusHandlers,
                 fileHandlers,
                 () -> contractHandlers,

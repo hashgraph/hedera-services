@@ -23,8 +23,8 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asNode;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
@@ -242,7 +242,9 @@ public class TxnUtils {
     }
 
     public static long asNodeId(final String s, final HapiSpec lookupSpec) {
-        return isIdLiteral(s) ? asNode(s).number() : lookupSpec.registry().getNodeId(s);
+        return isIdLiteral(s)
+                ? asEntityNumber(s).number()
+                : lookupSpec.registry().getNodeId(s);
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {

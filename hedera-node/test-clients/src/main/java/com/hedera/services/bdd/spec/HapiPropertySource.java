@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -116,6 +117,17 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
         }
         return AccountID.getDefaultInstance();
+    }
+
+    default ServiceEndpoint getServiceEndpoint(String property) {
+        try {
+            return asServiceEndpoint(get(property));
+            //            return ServiceEndpoint.newBuilder().setIpAddressV4(getBytes(property)).build();
+            //            return asServiceEndpoint(get(property));
+        } catch (Exception ignore) {
+            System.out.println("Unable to parse service endpoint from property: " + property);
+        }
+        return ServiceEndpoint.getDefaultInstance();
     }
 
     default ContractID getContract(String property) {
@@ -246,6 +258,12 @@ public interface HapiPropertySource {
         return String.format(ENTITY_STRING, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
     }
 
+    static ServiceEndpoint asServiceEndpoint(String v) {
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFromUtf8(v))
+                .build();
+    }
+
     static ContractID asContract(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ContractID.newBuilder()
@@ -298,7 +316,7 @@ public interface HapiPropertySource {
                 .build();
     }
 
-    static EntityNumber asNode(String v) {
+    static EntityNumber asEntityNumber(String v) {
         return EntityNumber.newBuilder().number(Long.parseLong(v)).build();
     }
 
