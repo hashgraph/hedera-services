@@ -523,11 +523,9 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        workflow.handleQuery(requestBuffer, responseBuffer);
-        final var response = parseResponse(responseBuffer);
-        final var precheckCode =
-                response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
-        assertThat(precheckCode).isEqualTo(NOT_SUPPORTED);
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
     }
 
     @Test

@@ -290,7 +290,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
         } else {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
-            //            response = DEFAULT_UNSUPPORTED_RESPONSE;
         }
 
         try {
