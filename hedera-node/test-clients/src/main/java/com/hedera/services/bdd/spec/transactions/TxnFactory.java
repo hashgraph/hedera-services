@@ -50,6 +50,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -348,6 +349,10 @@ public class TxnFactory {
                     .addServiceEndpoint(setup.defaultServiceEndpoint())
                     .setGossipCaCertificate(gossipCaCertificateValue);
         };
+    }
+
+    public Consumer<NodeDeleteTransactionBody.Builder> defaultDefNodeDeleteTransactionBody() {
+        return builder -> {};
     }
 
     public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {

@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -34,18 +35,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
-    static final Logger LOG = LogManager.getLogger(HapiNodeDelete.class);
+    private static final Logger LOG = LogManager.getLogger(HapiNodeDelete.class);
 
     private static final String DEFAULT_NODE_ID = "0";
 
     private String nodeName = DEFAULT_NODE_ID;
     private Optional<Supplier<String>> nodeSupplier = Optional.empty();
 
-    public HapiNodeDelete(String nodeName) {
+    public HapiNodeDelete(@NonNull final String nodeName) {
         this.nodeName = nodeName;
     }
 
-    public HapiNodeDelete(Supplier<String> supplier) {
+    public HapiNodeDelete(@NonNull final Supplier<String> supplier) {
         this.nodeSupplier = Optional.of(supplier);
     }
 
@@ -55,17 +56,17 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
         nodeName = nodeSupplier.isPresent() ? nodeSupplier.get().get() : nodeName;
-        var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
-        NodeDeleteTransactionBody opBody = spec.txns()
+        final var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
+        final NodeDeleteTransactionBody opBody = spec.txns()
                 .<NodeDeleteTransactionBody, NodeDeleteTransactionBody.Builder>body(
                         NodeDeleteTransactionBody.class, builder -> builder.setNodeId(nodeId));
         return builder -> builder.setNodeDelete(opBody);
     }
 
     @Override
-    protected void updateStateOf(HapiSpec spec) throws Throwable {
+    protected void updateStateOf(final HapiSpec spec) throws Throwable {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
@@ -76,7 +77,7 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
     }
 
     @Override
-    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         // temp till we decide about the logic
         return FeeData.newBuilder()
                 .setNodedata(FeeComponents.newBuilder().setBpr(0))

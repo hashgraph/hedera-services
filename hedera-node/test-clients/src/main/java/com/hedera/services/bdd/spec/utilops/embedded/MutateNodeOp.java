@@ -30,7 +30,7 @@ public class MutateNodeOp extends UtilOp {
     private final String node;
     private final Consumer<Node.Builder> mutation;
 
-    public MutateNodeOp(String node, Consumer<Node.Builder> mutation) {
+    public MutateNodeOp(@NonNull final String node, @NonNull final Consumer<Node.Builder> mutation) {
         this.node = node;
         this.mutation = mutation;
     }

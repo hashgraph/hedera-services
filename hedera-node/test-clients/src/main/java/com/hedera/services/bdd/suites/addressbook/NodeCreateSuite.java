@@ -33,10 +33,11 @@ public class NodeCreateSuite {
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> createNodeWorks() {
-        String description = "His vorpal blade went snicker-snack!";
+        final String description = "His vorpal blade went snicker-snack!";
 
         return hapiTest(
                 nodeCreate("ntb").description(description),
-                viewNode("ntb", node -> assertEquals(description, node.description())));
+                viewNode(
+                        "ntb", node -> assertEquals(description, node.description(), "Node was created successfully")));
     }
 }

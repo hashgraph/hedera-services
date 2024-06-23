@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,19 +47,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
-    static final Logger LOG = LogManager.getLogger(HapiNodeCreate.class);
+    private static final Logger LOG = LogManager.getLogger(HapiNodeCreate.class);
 
     private boolean advertiseCreation = false;
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
-    private List<ServiceEndpoint> gossipEndpoint = Collections.emptyList();
-    private List<ServiceEndpoint> serviceEndpoint = Collections.emptyList();
+    private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
+    private List<ServiceEndpoint> serviceEndpoints = Collections.emptyList();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
-    Optional<LongConsumer> newNumObserver = Optional.empty();
+    private Optional<LongConsumer> newNumObserver = Optional.empty();
 
-    public HapiNodeCreate(String nodeName) {
+    public HapiNodeCreate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
     }
 
@@ -67,7 +68,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         return HederaFunctionality.NodeCreate;
     }
 
-    public HapiNodeCreate exposingNumTo(LongConsumer obs) {
+    public HapiNodeCreate exposingNumTo(@NonNull final LongConsumer obs) {
         newNumObserver = Optional.of(obs);
         return this;
     }
@@ -88,12 +89,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     public HapiNodeCreate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
-        this.gossipEndpoint = gossipEndpoint;
+        this.gossipEndpoints = gossipEndpoint;
         return this;
     }
 
     public HapiNodeCreate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
-        this.serviceEndpoint = serviceEndpoint;
+        this.serviceEndpoints = serviceEndpoint;
         return this;
     }
 
@@ -113,7 +114,8 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+    protected long feeFor(@NonNull final HapiSpec spec, @NonNull final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
     }
 
@@ -127,14 +129,14 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
         final NodeCreateTransactionBody opBody = spec.txns()
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            builder.addAllGossipEndpoint(gossipEndpoint);
-                            builder.addAllServiceEndpoint(serviceEndpoint);
+                            builder.addAllGossipEndpoint(gossipEndpoints);
+                            builder.addAllServiceEndpoint(serviceEndpoints);
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
                             grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });
@@ -147,7 +149,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     @Override
-    protected void updateStateOf(final HapiSpec spec) {
+    protected void updateStateOf(@NonNull final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -162,7 +164,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         }
 
         if (advertiseCreation) {
-            String banner = "\n\n"
+            final String banner = "\n\n"
                     + bannerWith(String.format("Created node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
             LOG.info(banner);
         }
@@ -170,7 +172,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper();
+        final MoreObjects.ToStringHelper helper = super.toStringHelper();
         Optional.ofNullable(lastReceipt).ifPresent(receipt -> helper.add("created", receipt.getNodeId()));
         return helper;
     }

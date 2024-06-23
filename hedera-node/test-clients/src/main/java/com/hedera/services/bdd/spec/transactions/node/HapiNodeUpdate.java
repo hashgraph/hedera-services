@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -43,20 +44,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
-    static final Logger LOG = LogManager.getLogger(HapiNodeUpdate.class);
+    private static final Logger LOG = LogManager.getLogger(HapiNodeUpdate.class);
 
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
-    private List<ServiceEndpoint> gossipEndpoint = Collections.emptyList();
-    private List<ServiceEndpoint> serviceEndpoint = Collections.emptyList();
+    private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
+    private List<ServiceEndpoint> serviceEndpoints = Collections.emptyList();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
 
-    Optional<Consumer<Long>> preUpdateCb = Optional.empty();
-    Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
+    private Optional<Consumer<Long>> preUpdateCb = Optional.empty();
+    private Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
 
-    public HapiNodeUpdate(String nodeName) {
+    public HapiNodeUpdate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
     }
 
@@ -65,32 +66,32 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         return HederaFunctionality.NodeUpdate;
     }
 
-    public HapiNodeUpdate accountId(final AccountID accountId) {
+    public HapiNodeUpdate accountId(@NonNull final AccountID accountId) {
         this.accountId = Optional.of(accountId);
         return this;
     }
 
-    public HapiNodeUpdate description(final String description) {
+    public HapiNodeUpdate description(@NonNull final String description) {
         this.description = Optional.of(description);
         return this;
     }
 
     public HapiNodeUpdate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
-        this.gossipEndpoint = gossipEndpoint;
+        this.gossipEndpoints = gossipEndpoint;
         return this;
     }
 
     public HapiNodeUpdate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
-        this.serviceEndpoint = serviceEndpoint;
+        this.serviceEndpoints = serviceEndpoint;
         return this;
     }
 
-    public HapiNodeUpdate gossipCaCertificate(final byte[] gossipCaCertificate) {
+    public HapiNodeUpdate gossipCaCertificate(@NonNull final byte[] gossipCaCertificate) {
         this.gossipCaCertificate = Optional.of(gossipCaCertificate);
         return this;
     }
 
-    public HapiNodeUpdate grpcCertificateHash(final byte[] grpcCertificateHash) {
+    public HapiNodeUpdate grpcCertificateHash(@NonNull final byte[] grpcCertificateHash) {
         this.grpcCertificateHash = Optional.of(grpcCertificateHash);
         return this;
     }
@@ -99,18 +100,18 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         return Setting.newBuilder().setName(name).setValue(value).build();
     }
 
-    public HapiNodeUpdate alertingPre(Consumer<Long> preCb) {
+    public HapiNodeUpdate alertingPre(@NonNull final Consumer<Long> preCb) {
         preUpdateCb = Optional.of(preCb);
         return this;
     }
 
-    public HapiNodeUpdate alertingPost(Consumer<ResponseCodeEnum> postCb) {
+    public HapiNodeUpdate alertingPost(@NonNull final Consumer<ResponseCodeEnum> postCb) {
         postUpdateCb = Optional.of(postCb);
         return this;
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
         var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
         NodeUpdateTransactionBody opBody = spec.txns()
                 .<NodeUpdateTransactionBody, NodeUpdateTransactionBody.Builder>body(
@@ -118,8 +119,8 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
                             builder.setNodeId(nodeId);
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(s -> builder.setDescription(StringValue.of(s)));
-                            builder.addAllGossipEndpoint(gossipEndpoint);
-                            builder.addAllServiceEndpoint(serviceEndpoint);
+                            builder.addAllGossipEndpoint(gossipEndpoints);
+                            builder.addAllServiceEndpoint(serviceEndpoints);
 
                             gossipCaCertificate.ifPresent(s -> {
                                 try {
@@ -169,7 +170,7 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("nodeId", nodeName);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("nodeId", nodeName);
         accountId.ifPresent(a -> helper.add("accountId", a));
         description.ifPresent(d -> helper.add("description", d));
         return helper;

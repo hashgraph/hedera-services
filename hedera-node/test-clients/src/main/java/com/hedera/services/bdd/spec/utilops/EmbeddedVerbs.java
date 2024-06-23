@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 /**
  * Contains operations that are usable only with an {@link EmbeddedNetwork}.
  */
-public class EmbeddedVerbs {
+public final class EmbeddedVerbs {
     private EmbeddedVerbs() {
         throw new UnsupportedOperationException();
     }

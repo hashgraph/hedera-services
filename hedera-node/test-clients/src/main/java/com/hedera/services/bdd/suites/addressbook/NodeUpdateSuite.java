@@ -34,12 +34,14 @@ public class NodeUpdateSuite {
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> updateNodeWorks() {
-        String description1 = "One, two! One, two! And through and through";
-        String description2 = "His vorpal blade went snicker-snack!";
+        final String description1 = "One, two! One, two! And through and through";
+        final String description2 = "His vorpal blade went snicker-snack!";
 
         return hapiTest(
                 nodeCreate("ntb").description(description1),
                 nodeUpdate("ntb").description(description2),
-                viewNode("ntb", node -> assertEquals(description2, node.description())));
+                viewNode(
+                        "ntb",
+                        node -> assertEquals(description2, node.description(), "Node description should be updated")));
     }
 }

@@ -22,10 +22,11 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -34,11 +35,12 @@ public class NodeDeleteSuite {
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> updateNodeWorks() {
+        final String nodeName = "mytestnode";
 
         return hapiTest(
-                nodeCreate("ntb"),
-                viewNode("ntb", Assertions::assertNotNull),
-                nodeDelete("ntb"),
-                viewNode("ntb", Assertions::assertNull));
+                nodeCreate(nodeName),
+                viewNode(nodeName, node -> assertFalse(node.deleted(), "Node should not be deleted")),
+                nodeDelete(nodeName),
+                viewNode(nodeName, node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 }
