@@ -21,14 +21,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.hedera.AbstractEmbeddedHedera;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeConsensusEvent;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeEvent;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.test.fixtures.time.FakeTime;
@@ -42,9 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,23 +47,15 @@ import org.apache.logging.log4j.Logger;
 /**
  * An embedded Hedera node that can be used in concurrent tests.
  */
-public class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
+class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(ConcurrentEmbeddedHedera.class);
 
     private final FakeTime time = new FakeTime();
     private final ConcurrentFakePlatform platform;
-    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     public ConcurrentEmbeddedHedera(@NonNull final EmbeddedNode node) {
         super(node);
         platform = new ConcurrentFakePlatform(executorService);
-        Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
-    }
-
-    @Override
-    public void stop() {
-        super.stop();
-        executorService.shutdownNow();
     }
 
     @Override
@@ -91,29 +78,12 @@ public class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements 
             return parseTransactionResponse(responseBuffer);
         } else {
             final var nodeId = requireNonNull(nodeIds.get(nodeAccountId), "Missing node account id");
-            // Bypass ingest for any other node, but make a little noise to remind test author this happens
-            log.warn(
-                    "Bypassing ingest checks for transaction to node{} (0.0.{})",
-                    nodeId,
-                    nodeAccountId.getAccountNum());
+            warnOfSkippedIngestChecks(nodeAccountId, nodeId);
             platform.ingestQueue()
                     .add(new FakeEvent(
                             nodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
             return OK_RESPONSE;
         }
-    }
-
-    @Override
-    public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
-        requireNonNull(query);
-        requireNonNull(nodeAccountId);
-        if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
-            // It's possible this was intentional, but make a little noise to remind test author this happens
-            log.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
-        }
-        final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
-        hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
-        return parseQueryResponse(responseBuffer);
     }
 
     @Override
@@ -123,16 +93,11 @@ public class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements 
 
     private class ConcurrentFakePlatform extends AbstractFakePlatform implements Platform {
         private static final int MIN_CAPACITY = 5_000;
-        private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
         private static final Duration WALL_CLOCK_ROUND_DURATION = Duration.ofMillis(1);
 
-        private final AtomicLong roundNo = new AtomicLong(1);
-        private final AtomicLong consensusOrder = new AtomicLong(1);
         private final List<FakeEvent> prehandledEvents = new ArrayList<>();
         private final BlockingQueue<FakeEvent> queue = new ArrayBlockingQueue<>(MIN_CAPACITY);
         private final ScheduledExecutorService executorService;
-
-        private Instant lastRoundTime = time.now();
 
         public ConcurrentFakePlatform(@NonNull final ScheduledExecutorService executorService) {
             super(defaultNodeId, addressBook, requireNonNull(executorService));
@@ -167,13 +132,13 @@ public class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements 
                 if (!prehandledEvents.isEmpty()) {
                     // Advance time only if something reached consensus
                     time.tick(SIMULATED_ROUND_DURATION);
-                    lastRoundTime = time.now();
+                    final var firstRoundTime = time.now();
                     // Note we are only putting one transaction in each event
                     final var consensusEvents = IntStream.range(0, prehandledEvents.size())
                             .<ConsensusEvent>mapToObj(i -> new FakeConsensusEvent(
                                     prehandledEvents.get(i),
                                     consensusOrder.getAndIncrement(),
-                                    lastRoundTime.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS),
+                                    firstRoundTime.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS),
                                     version))
                             .toList();
                     final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);

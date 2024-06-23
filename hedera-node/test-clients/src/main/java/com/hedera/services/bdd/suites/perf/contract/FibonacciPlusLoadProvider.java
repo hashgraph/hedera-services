@@ -43,6 +43,7 @@ import static java.lang.Math.ceil;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -269,8 +270,8 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
-                final List<HapiSpecOperation> inits = new ArrayList<>();
+            public List<SpecOperation> suggestedInitializers() {
+                final List<SpecOperation> inits = new ArrayList<>();
                 inits.add(uploadInitCode(CONTRACT));
                 inits.add(
                         cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS));

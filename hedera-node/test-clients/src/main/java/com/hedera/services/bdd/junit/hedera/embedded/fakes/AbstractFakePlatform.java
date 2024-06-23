@@ -29,12 +29,18 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class AbstractFakePlatform implements Platform {
+    protected static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
     private static final Signature TOY_SIGNATURE = new Signature(SignatureType.RSA, new byte[384]);
     protected static final long NANOS_BETWEEN_CONS_EVENTS = 1_000;
+
+    protected final AtomicLong roundNo = new AtomicLong(1);
+    protected final AtomicLong consensusOrder = new AtomicLong(1);
 
     private final NodeId selfId;
     private final AddressBook addressBook;

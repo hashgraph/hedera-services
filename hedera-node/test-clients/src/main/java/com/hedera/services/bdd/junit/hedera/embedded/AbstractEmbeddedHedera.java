@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.junit.hedera;
+package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
@@ -34,8 +34,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedHedera;
-import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNode;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeServiceMigrator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,12 +55,18 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implementation support for {@link EmbeddedHedera}.
  */
 public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
+    private static final Logger log = LogManager.getLogger(AbstractEmbeddedHedera.class);
+
     private static final int NANOS_IN_A_SECOND = 1_000_000_000;
     private static final long VALID_START_TIME_OFFSET_SECS = 42;
 
@@ -83,6 +88,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final AtomicInteger nextNano = new AtomicInteger(0);
     protected final Hedera hedera;
     protected final HederaSoftwareVersion version;
+    protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -100,6 +106,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 IsEmbeddedTest.YES,
                 this::now);
         version = (HederaSoftwareVersion) hedera.getSoftwareVersion();
+        Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
     }
 
     @Override
@@ -113,6 +120,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public void stop() {
         fakePlatform().notifyListeners(FREEZE_COMPLETE_NOTIFICATION);
+        executorService.shutdownNow();
     }
 
     @Override
@@ -133,16 +141,25 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .build();
     }
 
+    @Override
+    public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
+        requireNonNull(query);
+        requireNonNull(nodeAccountId);
+        if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
+            // It's possible this was intentional, but make a little noise to remind test author this happens
+            log.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
+        }
+        final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
+        hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        return parseQueryResponse(responseBuffer);
+    }
+
     /**
      * Returns the fake platform to start and stop.
      *
      * @return the fake platform
      */
     protected abstract AbstractFakePlatform fakePlatform();
-
-    protected static boolean isFree(@NonNull final Query query) {
-        return query.hasCryptogetAccountBalance() || query.hasTransactionGetReceipt();
-    }
 
     protected static TransactionResponse parseTransactionResponse(@NonNull final BufferedData responseBuffer) {
         try {
@@ -158,6 +175,18 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    protected static void warnOfSkippedIngestChecks(
+            @NonNull final AccountID nodeAccountId, @NonNull final NodeId nodeId) {
+        requireNonNull(nodeAccountId);
+        requireNonNull(nodeId);
+        // Bypass ingest for any other node, but make a little noise to remind test author this happens
+        log.warn("Bypassing ingest checks for transaction to node{} (0.0.{})", nodeId, nodeAccountId.getAccountNum());
+    }
+
+    private static boolean isFree(@NonNull final Query query) {
+        return query.hasCryptogetAccountBalance() || query.hasTransactionGetReceipt();
     }
 
     private static byte[] usedBytesFrom(@NonNull final BufferedData responseBuffer) {

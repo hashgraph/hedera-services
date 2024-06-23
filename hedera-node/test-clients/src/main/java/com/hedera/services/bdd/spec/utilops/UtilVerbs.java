@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.utilops;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -114,6 +115,7 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
+import com.hedera.services.bdd.spec.utilops.grouping.GroupedOps;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -288,7 +290,7 @@ public class UtilVerbs {
         return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
     }
 
-    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
+    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final SpecOperation... ops) {
         return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
     }
 
@@ -526,8 +528,18 @@ public class UtilVerbs {
         return new NewSpecKeyList(key, childKeys);
     }
 
-    public static ParallelSpecOps inParallel(HapiSpecOperation... subs) {
-        return new ParallelSpecOps(subs);
+    /**
+     * Unless the {@link HapiSpec} is in a repeatable mode, returns an operation that will
+     * run the given sub-operations in parallel.
+     *
+     * <p>If in repeatable mode, instead returns an operation that will run the sub-operations
+     * in blocking order, since parallelism can lead to non-deterministic outcomes.
+     *
+     * @param subs the sub-operations to run in parallel
+     * @return the operation that runs the sub-operations in parallel
+     */
+    public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
+        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {

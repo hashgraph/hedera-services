@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -121,8 +122,8 @@ public class FileExpansionLoadProvider extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
-                final List<HapiSpecOperation> ops = new ArrayList<>();
+            public List<SpecOperation> suggestedInitializers() {
+                final List<SpecOperation> ops = new ArrayList<>();
                 ops.add(newKeyNamed(key).shape(waclShape));
                 for (int i = 0, n = numActiveTargets.get(); i < n; i++) {
                     ops.add(fileCreate(targetNameFn.apply(i))

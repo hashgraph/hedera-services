@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -93,7 +94,7 @@ public class CryptoQueriesStressTests {
     private Function<HapiSpec, OpProvider> getAccountRecordsFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         cryptoCreate("somebody").sendThreshold(1L),
                         cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)).via("first"),
@@ -116,7 +117,7 @@ public class CryptoQueriesStressTests {
     private Function<HapiSpec, OpProvider> getAccountBalanceFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("somebody"));
             }
 
@@ -130,7 +131,7 @@ public class CryptoQueriesStressTests {
     private Function<HapiSpec, OpProvider> getAccountInfoFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("somebody"));
             }
 

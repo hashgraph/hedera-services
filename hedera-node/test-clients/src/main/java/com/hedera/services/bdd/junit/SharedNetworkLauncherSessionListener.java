@@ -45,9 +45,9 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
 
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            isEmbedded = embeddedModeRequested();
+            isEmbedded = embeddedModeRequested() || repeatableModeRequested();
             final HederaNetwork targetNetwork;
-            if (embeddedModeRequested()) {
+            if (isEmbedded) {
                 targetNetwork = EmbeddedNetwork.newEmbeddedNetwork();
             } else {
                 targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
@@ -67,5 +67,9 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
 
     private static boolean embeddedModeRequested() {
         return "true".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"));
+    }
+
+    public static boolean repeatableModeRequested() {
+        return "true".equalsIgnoreCase(System.getProperty("hapi.spec.repeatable.mode"));
     }
 }

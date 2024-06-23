@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
@@ -48,7 +49,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private final EmbeddedNode embeddedNode;
 
     @Nullable
-    private ConcurrentEmbeddedHedera embeddedHedera;
+    private EmbeddedHedera embeddedHedera;
 
     /**
      * Creates an embedded "network" of with the given size.
@@ -85,7 +86,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
         embeddedNode.initWorkingDir(configTxt);
         embeddedNode.start();
         // Start the embedded Hedera "network"
-        embeddedHedera = new ConcurrentEmbeddedHedera(embeddedNode);
+        embeddedHedera = repeatableModeRequested()
+                ? new RepeatableEmbeddedHedera(embeddedNode)
+                : new ConcurrentEmbeddedHedera(embeddedNode);
         embeddedHedera.start();
     }
 
@@ -126,7 +129,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
         return EMBEDDED_NETWORK;
     }
 
-    public @NonNull ConcurrentEmbeddedHedera embeddedHederaOrThrow() {
+    public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
         return requireNonNull(embeddedHedera);
     }
 }
