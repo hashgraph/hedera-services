@@ -76,8 +76,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.parallel.Isolated;
 
 @Tag(LONG_RUNNING)
+@Isolated
 @HapiTestLifecycle
 public class StakingSuite {
     private static final Duration MIN_TIME_TO_NEXT_PERIOD = Duration.ofSeconds(10);

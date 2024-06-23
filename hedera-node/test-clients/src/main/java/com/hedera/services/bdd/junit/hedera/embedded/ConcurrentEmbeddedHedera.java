@@ -1,0 +1,193 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.services.bdd.junit.hedera.embedded;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.hedera.AbstractEmbeddedHedera;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeConsensusEvent;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeEvent;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * An embedded Hedera node that can be used in concurrent tests.
+ */
+public class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
+    private static final Logger log = LogManager.getLogger(ConcurrentEmbeddedHedera.class);
+
+    private final FakeTime time = new FakeTime();
+    private final ConcurrentFakePlatform platform;
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+    public ConcurrentEmbeddedHedera(@NonNull final EmbeddedNode node) {
+        super(node);
+        platform = new ConcurrentFakePlatform(executorService);
+        Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        executorService.shutdownNow();
+    }
+
+    @Override
+    public Instant now() {
+        return time.now();
+    }
+
+    @Override
+    public void tick(@NonNull final Duration duration) {
+        time.tick(duration);
+    }
+
+    @Override
+    public TransactionResponse submit(@NonNull final Transaction transaction, @NonNull final AccountID nodeAccountId) {
+        requireNonNull(transaction);
+        requireNonNull(nodeAccountId);
+        if (defaultNodeAccountId.equals(nodeAccountId)) {
+            final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
+            hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
+            return parseTransactionResponse(responseBuffer);
+        } else {
+            final var nodeId = requireNonNull(nodeIds.get(nodeAccountId), "Missing node account id");
+            // Bypass ingest for any other node, but make a little noise to remind test author this happens
+            log.warn(
+                    "Bypassing ingest checks for transaction to node{} (0.0.{})",
+                    nodeId,
+                    nodeAccountId.getAccountNum());
+            platform.ingestQueue()
+                    .add(new FakeEvent(
+                            nodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
+            return OK_RESPONSE;
+        }
+    }
+
+    @Override
+    public Response send(@NonNull final Query query, @NonNull final AccountID nodeAccountId) {
+        requireNonNull(query);
+        requireNonNull(nodeAccountId);
+        if (!defaultNodeAccountId.equals(nodeAccountId) && !isFree(query)) {
+            // It's possible this was intentional, but make a little noise to remind test author this happens
+            log.warn("All paid queries get INVALID_NODE_ACCOUNT for non-default nodes in embedded mode");
+        }
+        final var responseBuffer = BufferedData.allocate(MAX_QUERY_RESPONSE_SIZE);
+        hedera.queryWorkflow().handleQuery(Bytes.wrap(query.toByteArray()), responseBuffer);
+        return parseQueryResponse(responseBuffer);
+    }
+
+    @Override
+    protected AbstractFakePlatform fakePlatform() {
+        return platform;
+    }
+
+    private class ConcurrentFakePlatform extends AbstractFakePlatform implements Platform {
+        private static final int MIN_CAPACITY = 5_000;
+        private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
+        private static final Duration WALL_CLOCK_ROUND_DURATION = Duration.ofMillis(1);
+
+        private final AtomicLong roundNo = new AtomicLong(1);
+        private final AtomicLong consensusOrder = new AtomicLong(1);
+        private final List<FakeEvent> prehandledEvents = new ArrayList<>();
+        private final BlockingQueue<FakeEvent> queue = new ArrayBlockingQueue<>(MIN_CAPACITY);
+        private final ScheduledExecutorService executorService;
+
+        private Instant lastRoundTime = time.now();
+
+        public ConcurrentFakePlatform(@NonNull final ScheduledExecutorService executorService) {
+            super(defaultNodeId, addressBook, requireNonNull(executorService));
+            this.executorService = executorService;
+        }
+
+        public BlockingQueue<FakeEvent> ingestQueue() {
+            return queue;
+        }
+
+        @Override
+        public void start() {
+            executorService.scheduleWithFixedDelay(
+                    this::handleTransactions, 0, WALL_CLOCK_ROUND_DURATION.toMillis(), MILLISECONDS);
+        }
+
+        @Override
+        public boolean createTransaction(@NonNull byte[] transaction) {
+            return queue.add(
+                    new FakeEvent(defaultNodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction))));
+        }
+
+        /**
+         * Simulates a round of events coming to consensus and being handled by the Hedera node.
+         *
+         * <p>We advance consensus time by 1 second in fake time for each round, unless some other
+         * event like a synthetic "sleep" has already advanced the time.
+         */
+        private void handleTransactions() {
+            try {
+                // Put all pre-handled events that were last drained from the queue into a round
+                if (!prehandledEvents.isEmpty()) {
+                    // Advance time only if something reached consensus
+                    time.tick(SIMULATED_ROUND_DURATION);
+                    lastRoundTime = time.now();
+                    // Note we are only putting one transaction in each event
+                    final var consensusEvents = IntStream.range(0, prehandledEvents.size())
+                            .<ConsensusEvent>mapToObj(i -> new FakeConsensusEvent(
+                                    prehandledEvents.get(i),
+                                    consensusOrder.getAndIncrement(),
+                                    lastRoundTime.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS),
+                                    version))
+                            .toList();
+                    final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
+                    hedera.handleWorkflow().handleRound(state, platformState, round);
+                    prehandledEvents.clear();
+                }
+                // Now drain all events that will go in the next round and pre-handle them
+                final List<FakeEvent> newEvents = new ArrayList<>();
+                queue.drainTo(newEvents);
+                newEvents.forEach(event -> hedera.onPreHandle(event, state));
+                prehandledEvents.addAll(newEvents);
+            } catch (Exception e) {
+                log.warn("Error handling transactions", e);
+            }
+        }
+    }
+}

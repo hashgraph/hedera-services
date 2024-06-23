@@ -48,7 +48,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private final EmbeddedNode embeddedNode;
 
     @Nullable
-    private EmbeddedHedera embeddedHedera;
+    private ConcurrentEmbeddedHedera embeddedHedera;
 
     /**
      * Creates an embedded "network" of with the given size.
@@ -85,7 +85,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
         embeddedNode.initWorkingDir(configTxt);
         embeddedNode.start();
         // Start the embedded Hedera "network"
-        embeddedHedera = new EmbeddedHedera(embeddedNode);
+        embeddedHedera = new ConcurrentEmbeddedHedera(embeddedNode);
         embeddedHedera.start();
     }
 
@@ -126,7 +126,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
         return EMBEDDED_NETWORK;
     }
 
-    public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
+    public @NonNull ConcurrentEmbeddedHedera embeddedHederaOrThrow() {
         return requireNonNull(embeddedHedera);
     }
 }
