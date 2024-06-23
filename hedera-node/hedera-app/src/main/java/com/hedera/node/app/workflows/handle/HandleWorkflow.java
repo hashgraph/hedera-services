@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.Round;
@@ -50,7 +50,7 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final Provider<UserTransactionComponent.Factory> userTxnProvider;
+    private final Provider<UserTxnComponent.Factory> userTxnProvider;
 
     @Inject
     public HandleWorkflow(
@@ -59,7 +59,7 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final Provider<UserTransactionComponent.Factory> userTxnProvider) {
+            @NonNull final Provider<UserTxnComponent.Factory> userTxnProvider) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
@@ -134,7 +134,7 @@ public class HandleWorkflow {
     }
 
     /**
-     * Handles a platform transaction. This method is responsible for creating a {@link UserTransactionComponent} and
+     * Handles a platform transaction. This method is responsible for creating a {@link UserTxnComponent} and
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      * @param state the writable {@link HederaState} that this transaction will work on

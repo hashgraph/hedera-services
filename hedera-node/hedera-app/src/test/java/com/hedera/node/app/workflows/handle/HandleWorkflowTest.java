@@ -37,7 +37,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
@@ -129,7 +129,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflowMetrics handleWorkflowMetrics;
 
     @Mock
-    private Provider<UserTransactionComponent.Factory> userTxnProvider;
+    private Provider<UserTxnComponent.Factory> userTxnProvider;
 
     @Mock
     private HederaState state;
@@ -141,10 +141,10 @@ class HandleWorkflowTest extends AppTestBase {
     private ConsensusTransactionImpl txn;
 
     @Mock
-    private UserTransactionComponent.Factory userTxnFactory;
+    private UserTxnComponent.Factory userTxnFactory;
 
     @Mock
-    private UserTransactionComponent userTxn;
+    private UserTxnComponent userTxn;
 
     @Mock
     private UserTxnWorkflow userTxnWorkflow;

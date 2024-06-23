@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -45,8 +45,8 @@ import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.validation.ExpiryValidation;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.OfferedFeeCheck;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.WorkflowCheck;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -160,7 +160,7 @@ public class SolvencyPreCheck {
             // This is to match mono and pass HapiTest. Should reconsider later.
             // FUTURE ('#9550')
             @NonNull final WorkflowCheck workflowCheck,
-            @NonNull OfferedFeeCheck offeredFeeCheck)
+            @NonNull TransactionValidator.OfferedFeeCheck offeredFeeCheck)
             throws PreCheckException {
         final var isIngest = workflowCheck.equals(WorkflowCheck.INGEST);
         final var checkOfferedFee = offeredFeeCheck.equals(CHECK_OFFERED_FEE);

@@ -59,7 +59,7 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.WorkflowCheck;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

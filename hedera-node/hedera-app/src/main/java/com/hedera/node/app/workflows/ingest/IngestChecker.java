@@ -59,7 +59,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.WorkflowCheck;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
