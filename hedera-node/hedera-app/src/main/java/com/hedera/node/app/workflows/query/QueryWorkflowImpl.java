@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static java.util.Objects.requireNonNull;
@@ -157,19 +156,21 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
     }
 
-    private Response getQueryReponse(@NonNull final Bytes requestBuffer) {
+    @Override
+    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
+        requireNonNull(requestBuffer);
+        requireNonNull(responseBuffer);
+
         // We use wall-clock time when calculating fees
         final var consensusTime = Instant.now();
 
         // 1. Parse and check header
-        try {
-            final Query query = parseQuery(requestBuffer);
-            logger.debug("Received query: {}", query);
-            final var function = functionOf(query);
+        final Query query = parseQuery(requestBuffer);
+        logger.debug("Received query: {}", query);
+        final var function = functionOf(query);
 
-            if (HederaFunctionality.NONE.equals(function)) {
-                return DEFAULT_UNSUPPORTED_RESPONSE;
-            }
+        Response response;
+        if (!HederaFunctionality.NONE.equals(function)) {
             final var handler = dispatcher.getHandler(query);
             var queryHeader = handler.extractHeader(query);
             if (queryHeader == null) {
@@ -269,40 +270,29 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     final var queryFees = handler.computeFees(context).totalFee();
 
                     final var header = createResponseHeader(responseType, OK, queryFees);
-                    return handler.createEmptyResponse(header);
+                    response = handler.createEmptyResponse(header);
                 } else {
                     // 6.ii Find response
                     final var header = createResponseHeader(responseType, OK, 0L);
-                    return handler.findResponse(context, header);
+                    response = handler.findResponse(context, header);
                 }
             } catch (InsufficientBalanceException e) {
-                return createErrorResponse(handler, responseType, e.responseCode(), e.getEstimatedFee());
+                response = createErrorResponse(handler, responseType, e.responseCode(), e.getEstimatedFee());
             } catch (PreCheckException e) {
-                return createErrorResponse(handler, responseType, e.responseCode(), 0L);
+                response = createErrorResponse(handler, responseType, e.responseCode(), 0L);
             } catch (HandleException e) {
                 // Conceptually, this should never happen, because we should use PreCheckException only for queries
                 // But we catch it here to play it safe
-                return createErrorResponse(handler, responseType, e.getStatus(), 0L);
+                response = createErrorResponse(handler, responseType, e.getStatus(), 0L);
             } catch (Exception e) {
                 logger.error("Unexpected exception while handling a query", e);
-                return createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
+                response = createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
             }
-        } catch (PreCheckException e) {
-            return Response.newBuilder()
-                    .transactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
-                            .header(ResponseHeader.newBuilder()
-                                    .nodeTransactionPrecheckCode(TRANSACTION_HAS_UNKNOWN_FIELDS)
-                                    .build()))
-                    .build();
+        } else {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            //            response = DEFAULT_UNSUPPORTED_RESPONSE;
         }
-    }
 
-    @Override
-    public void handleQuery(@NonNull final Bytes requestBuffer, @NonNull final BufferedData responseBuffer) {
-        requireNonNull(requestBuffer);
-        requireNonNull(responseBuffer);
-
-        Response response = getQueryReponse(requestBuffer);
         try {
             Response.PROTOBUF.write(response, responseBuffer);
             logger.debug("Finished handling a query request in Query workflow");
@@ -312,7 +302,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
     }
 
-    private Query parseQuery(Bytes requestBuffer) throws PreCheckException {
+    private Query parseQuery(Bytes requestBuffer) {
         try {
             return queryParser.parseStrict(requestBuffer.toReadableSequentialData());
         } catch (ParseException e) {
@@ -320,7 +310,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 case MalformedProtobufException ex:
                     break;
                 case UnknownFieldException ex:
-                    throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
+                    break;
                 default:
                     logger.warn("Unexpected ParseException while parsing protobuf", e);
             }
