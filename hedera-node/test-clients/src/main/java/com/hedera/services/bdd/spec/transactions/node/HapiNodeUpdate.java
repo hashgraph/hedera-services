@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
@@ -46,7 +45,6 @@ import org.apache.logging.log4j.Logger;
 public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
     static final Logger LOG = LogManager.getLogger(HapiNodeUpdate.class);
 
-    private boolean advertiseCreation = false;
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
@@ -65,11 +63,6 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.NodeUpdate;
-    }
-
-    public HapiNodeUpdate advertisingCreation() {
-        advertiseCreation = true;
-        return this;
     }
 
     public HapiNodeUpdate accountId(final AccountID accountId) {
@@ -171,12 +164,6 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
 
         if (verboseLoggingOn) {
             LOG.info("Updated node {} with ID {}.", nodeName, lastReceipt.getNodeId());
-        }
-
-        if (advertiseCreation) {
-            String banner = "\n\n"
-                    + bannerWith(String.format("Updated node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
-            LOG.info(banner);
         }
     }
 

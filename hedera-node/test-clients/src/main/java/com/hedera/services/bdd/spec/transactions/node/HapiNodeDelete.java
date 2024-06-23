@@ -34,15 +34,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
-    static final Logger log = LogManager.getLogger(HapiNodeDelete.class);
+    static final Logger LOG = LogManager.getLogger(HapiNodeDelete.class);
 
     private static final String DEFAULT_NODE_ID = "0";
 
-    private String node = DEFAULT_NODE_ID;
+    private String nodeName = DEFAULT_NODE_ID;
     private Optional<Supplier<String>> nodeSupplier = Optional.empty();
 
-    public HapiNodeDelete(String node) {
-        this.node = node;
+    public HapiNodeDelete(String nodeName) {
+        this.nodeName = nodeName;
     }
 
     public HapiNodeDelete(Supplier<String> supplier) {
@@ -51,13 +51,13 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     public HederaFunctionality type() {
-        return HederaFunctionality.FileDelete;
+        return HederaFunctionality.NodeDelete;
     }
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        node = nodeSupplier.isPresent() ? nodeSupplier.get().get() : node;
-        var nodeId = TxnUtils.asNodeIdLong(node, spec);
+        nodeName = nodeSupplier.isPresent() ? nodeSupplier.get().get() : nodeName;
+        var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
         NodeDeleteTransactionBody opBody = spec.txns()
                 .<NodeDeleteTransactionBody, NodeDeleteTransactionBody.Builder>body(
                         NodeDeleteTransactionBody.class, builder -> builder.setNodeId(nodeId));
@@ -66,12 +66,12 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     protected void updateStateOf(HapiSpec spec) throws Throwable {
-        if (verboseLoggingOn) {
-            log.info("Actual status was {}", actualStatus);
-            log.info("Deleted node {} with ID {} ", node, spec.registry().getNodeId(node));
-        }
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
+        }
+        if (verboseLoggingOn) {
+            LOG.info("Actual status was {}", actualStatus);
+            LOG.info("Deleted node {} with ID {} ", nodeName, spec.registry().getNodeId(nodeName));
         }
     }
 
@@ -93,6 +93,6 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper().add("NodeID", node);
+        return super.toStringHelper().add("NodeID", nodeName);
     }
 }
