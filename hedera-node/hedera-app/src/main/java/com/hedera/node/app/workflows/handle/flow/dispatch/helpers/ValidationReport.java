@@ -17,6 +17,10 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static java.util.Objects.requireNonNull;
@@ -43,8 +47,8 @@ public record ValidationReport(
         @Nullable ResponseCodeEnum creatorError,
         @Nullable Account payer,
         @Nullable ResponseCodeEnum payerError,
-        @NonNull TransactionValidator.ServiceFeeStatus serviceFeeStatus,
-        @NonNull TransactionValidator.DuplicateStatus duplicateStatus) {
+        @NonNull ServiceFeeStatus serviceFeeStatus,
+        @NonNull DuplicateStatus duplicateStatus) {
     /**
      * Creates an error report with a creator error.
      * @param creatorId the creator account ID
@@ -54,13 +58,7 @@ public record ValidationReport(
     @NonNull
     public static ValidationReport creatorValidationReport(
             @NonNull AccountID creatorId, @NonNull ResponseCodeEnum creatorError) {
-        return new ValidationReport(
-                creatorId,
-                creatorError,
-                null,
-                null,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+        return new ValidationReport(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 
     /**
@@ -75,13 +73,7 @@ public record ValidationReport(
             @NonNull final AccountID creatorId, @NonNull final Account payer) {
         requireNonNull(payer);
         requireNonNull(creatorId);
-        return new ValidationReport(
-                creatorId,
-                null,
-                payer,
-                DUPLICATE_TRANSACTION,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.DUPLICATE);
+        return new ValidationReport(creatorId, null, payer, DUPLICATE_TRANSACTION, CAN_PAY_SERVICE_FEE, DUPLICATE);
     }
 
     /**
@@ -100,13 +92,7 @@ public record ValidationReport(
         requireNonNull(payer);
         requireNonNull(creatorId);
         requireNonNull(payerError);
-        return new ValidationReport(
-                creatorId,
-                null,
-                payer,
-                payerError,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+        return new ValidationReport(creatorId, null, payer, payerError, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 
     /**
@@ -123,8 +109,8 @@ public record ValidationReport(
             @NonNull AccountID creatorId,
             @NonNull Account payer,
             @NonNull ResponseCodeEnum payerError,
-            @NonNull TransactionValidator.ServiceFeeStatus serviceFeeStatus,
-            @NonNull final TransactionValidator.DuplicateStatus duplicateStatus) {
+            @NonNull ServiceFeeStatus serviceFeeStatus,
+            @NonNull final DuplicateStatus duplicateStatus) {
         return new ValidationReport(creatorId, null, payer, payerError, serviceFeeStatus, duplicateStatus);
     }
 
@@ -136,8 +122,7 @@ public record ValidationReport(
      */
     @NonNull
     public static ValidationReport successReport(@NonNull AccountID creatorId, @NonNull Account payer) {
-        return new ValidationReport(
-                creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+        return new ValidationReport(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 
     /**

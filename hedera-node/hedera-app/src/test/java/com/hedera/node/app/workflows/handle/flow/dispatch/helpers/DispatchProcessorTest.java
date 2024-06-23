@@ -35,6 +35,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerValidationReport;
@@ -525,8 +528,8 @@ class DispatchProcessorTest {
                         CREATOR_ACCOUNT_ID,
                         PAYER,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE,
-                        TransactionValidator.DuplicateStatus.NO_DUPLICATE));
+                        UNABLE_TO_PAY_SERVICE_FEE,
+                        NO_DUPLICATE));
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(USER);
@@ -582,10 +585,10 @@ class DispatchProcessorTest {
     }
 
     private void verifyTrackedFeePayments() {
-        verify(dispatchUsageManager).trackUsage(dispatch, DispatchProcessor.WorkDone.FEES_ONLY);
+        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.FEES_ONLY);
     }
 
     private void verifyUtilization() {
-        verify(dispatchUsageManager).trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        verify(dispatchUsageManager).trackUsage(dispatch, WorkDone.USER_TRANSACTION);
     }
 }

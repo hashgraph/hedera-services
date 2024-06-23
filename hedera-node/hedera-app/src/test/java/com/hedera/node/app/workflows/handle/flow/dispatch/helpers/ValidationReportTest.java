@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +49,7 @@ public class ValidationReportTest {
         assertNull(report.payer());
         assertNull(report.payerError());
         assertEquals(CAN_PAY_SERVICE_FEE, report.serviceFeeStatus());
-        assertEquals(TransactionValidator.DuplicateStatus.NO_DUPLICATE, report.duplicateStatus());
+        assertEquals(NO_DUPLICATE, report.duplicateStatus());
         assertTrue(report.isCreatorError());
         assertFalse(report.isPayerError());
     }
@@ -61,7 +63,7 @@ public class ValidationReportTest {
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertEquals(DUPLICATE_TRANSACTION, report.payerError());
         assertEquals(CAN_PAY_SERVICE_FEE, report.serviceFeeStatus());
-        assertEquals(TransactionValidator.DuplicateStatus.DUPLICATE, report.duplicateStatus());
+        assertEquals(DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertTrue(report.isPayerError());
     }
@@ -76,7 +78,7 @@ public class ValidationReportTest {
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerError());
         assertEquals(CAN_PAY_SERVICE_FEE, report.serviceFeeStatus());
-        assertEquals(TransactionValidator.DuplicateStatus.NO_DUPLICATE, report.duplicateStatus());
+        assertEquals(NO_DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertTrue(report.isPayerError());
     }
@@ -84,18 +86,14 @@ public class ValidationReportTest {
     @Test
     public void testPayerErrorReport() {
         ValidationReport report = ValidationReport.payerValidationReport(
-                CREATOR_ACCOUNT_ID,
-                PAYER_ACCOUNT_ID,
-                INVALID_PAYER_SIGNATURE,
-                UNABLE_TO_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.DUPLICATE);
+                CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, UNABLE_TO_PAY_SERVICE_FEE, DUPLICATE);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerError());
         assertEquals(UNABLE_TO_PAY_SERVICE_FEE, report.serviceFeeStatus());
-        assertEquals(TransactionValidator.DuplicateStatus.DUPLICATE, report.duplicateStatus());
+        assertEquals(DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertTrue(report.isPayerError());
     }
@@ -109,7 +107,7 @@ public class ValidationReportTest {
         assertEquals(PAYER_ACCOUNT_ID, report.payer());
         assertNull(report.payerError());
         assertEquals(CAN_PAY_SERVICE_FEE, report.serviceFeeStatus());
-        assertEquals(TransactionValidator.DuplicateStatus.NO_DUPLICATE, report.duplicateStatus());
+        assertEquals(NO_DUPLICATE, report.duplicateStatus());
         assertFalse(report.isCreatorError());
         assertFalse(report.isPayerError());
     }
@@ -117,12 +115,7 @@ public class ValidationReportTest {
     @Test
     public void testIsCreatorError() {
         ValidationReport report = new ValidationReport(
-                CREATOR_ACCOUNT_ID,
-                INVALID_TRANSACTION_DURATION,
-                null,
-                null,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+                CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertTrue(report.isCreatorError());
     }
@@ -130,12 +123,7 @@ public class ValidationReportTest {
     @Test
     public void testIsPayerError() {
         ValidationReport report = new ValidationReport(
-                CREATOR_ACCOUNT_ID,
-                null,
-                PAYER_ACCOUNT_ID,
-                INVALID_PAYER_SIGNATURE,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertTrue(report.isPayerError());
     }
@@ -143,12 +131,7 @@ public class ValidationReportTest {
     @Test
     public void testPayerErrorOrThrow() {
         ValidationReport report = new ValidationReport(
-                CREATOR_ACCOUNT_ID,
-                null,
-                PAYER_ACCOUNT_ID,
-                INVALID_PAYER_SIGNATURE,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerErrorOrThrow());
     }
@@ -156,12 +139,7 @@ public class ValidationReportTest {
     @Test
     public void testCreatorErrorOrThrow() {
         ValidationReport report = new ValidationReport(
-                CREATOR_ACCOUNT_ID,
-                INVALID_TRANSACTION_DURATION,
-                null,
-                null,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+                CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertEquals(INVALID_TRANSACTION_DURATION, report.creatorErrorOrThrow());
     }
@@ -169,12 +147,7 @@ public class ValidationReportTest {
     @Test
     public void testPayerOrThrow() {
         ValidationReport report = new ValidationReport(
-                CREATOR_ACCOUNT_ID,
-                null,
-                PAYER_ACCOUNT_ID,
-                null,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertEquals(PAYER_ACCOUNT_ID, report.payerOrThrow());
     }
@@ -182,12 +155,7 @@ public class ValidationReportTest {
     @Test
     public void testWithoutServiceFee() {
         ValidationReport report = new ValidationReport(
-                CREATOR_ACCOUNT_ID,
-                null,
-                PAYER_ACCOUNT_ID,
-                null,
-                CAN_PAY_SERVICE_FEE,
-                TransactionValidator.DuplicateStatus.NO_DUPLICATE);
+                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
         ValidationReport reportWithoutServiceFee = report.withoutServiceFee();
 
         assertEquals(UNABLE_TO_PAY_SERVICE_FEE, reportWithoutServiceFee.serviceFeeStatus());

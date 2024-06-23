@@ -24,8 +24,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.successReport;
@@ -229,8 +233,8 @@ class ValidationReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         DUPLICATE_TRANSACTION,
-                        TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
-                        TransactionValidator.DuplicateStatus.DUPLICATE),
+                        CAN_PAY_SERVICE_FEE,
+                        DUPLICATE),
                 report);
     }
 
@@ -275,8 +279,8 @@ class ValidationReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         UNSUCCESSFUL_PREHANDLE.responseCode(),
-                        TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
-                        TransactionValidator.DuplicateStatus.NO_DUPLICATE),
+                        CAN_PAY_SERVICE_FEE,
+                        NO_DUPLICATE),
                 report);
     }
 
@@ -305,8 +309,8 @@ class ValidationReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE,
-                        TransactionValidator.DuplicateStatus.NO_DUPLICATE),
+                        UNABLE_TO_PAY_SERVICE_FEE,
+                        NO_DUPLICATE),
                 report);
     }
 
@@ -336,8 +340,8 @@ class ValidationReporterTest {
                         dispatch.creatorInfo().accountId(),
                         payerAccount,
                         INSUFFICIENT_ACCOUNT_BALANCE,
-                        TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE,
-                        TransactionValidator.DuplicateStatus.NO_DUPLICATE),
+                        CAN_PAY_SERVICE_FEE,
+                        NO_DUPLICATE),
                 report);
     }
 

@@ -24,6 +24,8 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.USER_TRANSACTION;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -188,7 +190,7 @@ class DispatchUsageManagerTest {
     void tracksNoUsageIfNotUserDispatch() {
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.FEES_ONLY);
+        subject.trackUsage(dispatch, FEES_ONLY);
 
         verifyNoInteractions(networkUtilizationManager);
     }
@@ -199,7 +201,7 @@ class DispatchUsageManagerTest {
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.FEES_ONLY);
+        subject.trackUsage(dispatch, FEES_ONLY);
 
         verify(networkUtilizationManager).trackFeePayments(CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -214,7 +216,7 @@ class DispatchUsageManagerTest {
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(networkUtilizationManager).trackTxn(CRYPTO_TRANSFER_TXN_INFO, CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -228,7 +230,7 @@ class DispatchUsageManagerTest {
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(networkUtilizationManager).trackTxn(SUBMIT_TXN_INFO, CONSENSUS_NOW, stack);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -244,7 +246,7 @@ class DispatchUsageManagerTest {
         given(dispatch.config()).willReturn(DEFAULT_CONFIG);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager).leakUnusedGasPreviouslyReserved(CONTRACT_CALL_TXN_INFO, GAS_LIMIT - GAS_USED);
@@ -261,7 +263,7 @@ class DispatchUsageManagerTest {
         given(dispatch.config()).willReturn(DEFAULT_CONFIG);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
@@ -281,7 +283,7 @@ class DispatchUsageManagerTest {
         given(dispatch.readableStoreFactory()).willReturn(readableStoreFactory);
         given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(handleWorkflowMetrics).addGasUsed(GAS_USED);
         verify(networkUtilizationManager)
@@ -296,7 +298,7 @@ class DispatchUsageManagerTest {
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
         given(dispatch.stack()).willReturn(stack);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(handleWorkflowMetrics, never()).addGasUsed(GAS_USED);
         verify(networkUtilizationManager, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
@@ -317,7 +319,7 @@ class DispatchUsageManagerTest {
         given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
         given(selfNodeInfo.accountId()).willReturn(CREATOR_ACCOUNT_ID);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(throttleServiceManager).reclaimFrontendThrottleCapacity(1, CRYPTO_CREATE);
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -335,7 +337,7 @@ class DispatchUsageManagerTest {
         given(throttleServiceManager.numImplicitCreations(NONDESCRIPT_TXN_BODY, readableAccountStore))
                 .willReturn(0);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
@@ -355,7 +357,7 @@ class DispatchUsageManagerTest {
         given(networkInfo.selfNodeInfo()).willReturn(selfNodeInfo);
         given(selfNodeInfo.accountId()).willReturn(OTHER_NODE_ID);
 
-        subject.trackUsage(dispatch, DispatchProcessor.WorkDone.USER_TRANSACTION);
+        subject.trackUsage(dispatch, USER_TRANSACTION);
 
         verify(throttleServiceManager, never()).reclaimFrontendThrottleCapacity(anyInt(), any());
         verify(throttleServiceManager).saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);

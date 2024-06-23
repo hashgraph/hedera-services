@@ -26,6 +26,7 @@ import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxDat
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -91,7 +92,7 @@ public class DispatchUsageManager {
      *
      * @param workDone the work done
      */
-    public void trackUsage(@NonNull final Dispatch dispatch, @NonNull final DispatchProcessor.WorkDone workDone) {
+    public void trackUsage(@NonNull final Dispatch dispatch, @NonNull final WorkDone workDone) {
         // In the current system we only trackUsage utilization for user transactions
         if (dispatch.txnCategory() != USER) {
             return;

@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchUsageManager.ThrottleException;
@@ -62,7 +63,7 @@ public class DispatchProcessor {
     private static final Logger logger = LogManager.getLogger(DispatchProcessor.class);
 
     private final Authorizer authorizer;
-    private final TransactionValidator transactionValidator;
+    private final TransactionValidator validator;
     private final RecordFinalizer recordFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final PlatformStateUpdateFacility platformStateUpdateFacility;
@@ -73,7 +74,7 @@ public class DispatchProcessor {
     @Inject
     public DispatchProcessor(
             @NonNull final Authorizer authorizer,
-            @NonNull final TransactionValidator transactionValidator,
+            @NonNull final TransactionValidator validator,
             @NonNull final RecordFinalizer recordFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
             @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
@@ -81,7 +82,7 @@ public class DispatchProcessor {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
-        this.transactionValidator = requireNonNull(transactionValidator);
+        this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
         this.systemFileUpdateFacility = requireNonNull(systemFileUpdateFacility);
         this.platformStateUpdateFacility = requireNonNull(platformStateUpdateFacility);
@@ -101,7 +102,7 @@ public class DispatchProcessor {
      */
     public void processDispatch(@NonNull final Dispatch dispatch) {
         requireNonNull(dispatch);
-        final var errorReport = transactionValidator.validationReportFor(dispatch);
+        final var errorReport = validator.validationReportFor(dispatch);
         var workDone = FEES_ONLY;
         if (errorReport.isCreatorError()) {
             chargeCreator(dispatch, errorReport);
