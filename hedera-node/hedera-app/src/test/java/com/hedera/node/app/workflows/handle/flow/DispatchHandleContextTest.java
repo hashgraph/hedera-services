@@ -53,7 +53,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.FeeData;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -76,22 +75,21 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -99,16 +97,16 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildDispatchFactory;
@@ -187,9 +185,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
 
     @Mock
-    private FeeAccumulator accumulator;
-
-    @Mock
     private KeyVerifier verifier;
 
     @Mock
@@ -208,10 +203,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private HederaRecordCache recordCache;
 
     @Mock
-    private FeeManager feeManager;
+    private ResourcePriceCalculator resourcePriceCalculator;
 
     @Mock
-    private FeeCalculator feeCalculator;
+    private FeeManager feeManager;
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
@@ -282,8 +277,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private VerificationAssistant assistant;
 
+    @Mock
+    private RecordBuilders recordBuilders;
+
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
+    private StoreFactoryImpl storeFactory;
     private DispatchHandleContext subject;
 
     private static final AccountID payerId = ALICE.accountID();
@@ -314,6 +313,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
         readableStoreFactory = new ReadableStoreFactory(baseState);
         apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
+        storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
         subject = createContext(txBody);
 
         mockNeeded();
@@ -354,14 +354,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Test
     void getsResourcePrices() {
-        given(feeManager.getFeeData(CRYPTO_TRANSFER, CONSENSUS_NOW, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
-                .willReturn(FeeData.DEFAULT);
-        assertThat(subject.resourcePricesFor(CRYPTO_TRANSFER, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
-                .isNotNull();
+        assertThat(subject.resourcePriceCalculator()).isNotNull();
     }
 
     @Test
-    void getsFeeCalculator() {
+    void getsFeeCalculator(@Mock FeeCalculator feeCalculator) {
         given(verifier.numSignaturesVerified()).willReturn(2);
         given(feeManager.createFeeCalculator(
                         any(),
@@ -374,13 +371,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         eq(false),
                         eq(readableStoreFactory)))
                 .willReturn(feeCalculator);
-        assertThat(subject.feeCalculator(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
+        final var factory = subject.feeCalculatorFactory();
+        assertThat(factory.feeCalculator(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
                 .isSameAs(feeCalculator);
-    }
-
-    @Test
-    void getsFeeAccumulator() {
-        assertThat(subject.feeAccumulator()).isSameAs(accumulator);
     }
 
     @Test
@@ -402,21 +395,19 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             configuration,
             authorizer,
             blockRecordManager,
+            resourcePriceCalculator,
             feeManager,
-            readableStoreFactory,
+            storeFactory,
             payerId,
             verifier,
             Key.newBuilder().build(),
-            accumulator,
             exchangeRateManager,
             stack,
             entityIdStore,
             dispatcher,
             recordCache,
-            writableStoreFactory,
-            apiFactory,
             networkInfo,
-            parentRecordBuilder,
+            recordBuilders,
             childDispatchProvider,
             childDispatchFactory,
             parentDispatch,
@@ -438,47 +429,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     })
                     .isInstanceOf(InvocationTargetException.class)
                     .hasCauseInstanceOf(NullPointerException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling of record list checkpoint creation")
-    final class RevertRecordFromCheckPointTest {
-        @Test
-        void successCreateRecordListCheckPoint() {
-            var precedingRecord = createRecordBuilder();
-            var childRecord = createRecordBuilder();
-            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord));
-            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord));
-
-            final var actual = subject.createRecordListCheckPoint();
-
-            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord, childRecord));
-        }
-
-        @Test
-        void successCreateRecordListCheckPoint_MultipleRecords() {
-            var precedingRecord = createRecordBuilder();
-            var precedingRecord1 = createRecordBuilder();
-            var childRecord = createRecordBuilder();
-            var childRecord1 = createRecordBuilder();
-
-            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord, precedingRecord1));
-            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord, childRecord1));
-
-            final var actual = subject.createRecordListCheckPoint();
-
-            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord1, childRecord1));
-        }
-
-        @Test
-        void success_createRecordListCheckPoint_null_values() {
-            final var actual = subject.createRecordListCheckPoint();
-            assertThat(actual).isEqualTo(new RecordListCheckPoint(null, null));
-        }
-
-        private static SingleTransactionRecordBuilderImpl createRecordBuilder() {
-            return new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
         }
     }
 
@@ -537,6 +487,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.savepointStack()).isEqualTo(stack);
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
+        assertThat(subject.storeFactory()).isEqualTo(storeFactory);
+        assertThat(subject.recordBuilders()).isEqualTo(recordBuilders);
     }
 
     @Nested
@@ -547,31 +499,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var context = createContext(txBody);
             final var actual = context.savepointStack();
             assertThat(actual).isEqualTo(stack);
-        }
-
-        @Test
-        void testCreateReadableStore() {
-            final var context = createContext(txBody);
-
-            final var store = context.readableStore(ReadableAccountStore.class);
-            assertThat(store).isNotNull();
-        }
-
-        @Test
-        void testCreateWritableStore() {
-            final var context = createContext(txBody);
-            given(writableStoreFactory.getStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            assertThat(context.writableStore(WritableAccountStore.class)).isSameAs(writableAccountStore);
-        }
-
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testCreateStoreWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.readableStore(null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.readableStore(List.class)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.writableStore(null)).isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -695,52 +622,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @SuppressWarnings("ConstantConditions")
     @Test
     void failsAsExpectedWithoutAvailableApi() {
-        assertThrows(IllegalArgumentException.class, () -> subject.serviceApi(Object.class));
-    }
-
-    @Nested
-    @DisplayName("Handling of record builder")
-    final class RecordBuilderTest {
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testMethodsWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.recordBuilder(null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.recordBuilder(List.class)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.addChildRecordBuilder(null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.addChildRecordBuilder(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.addRemovableChildRecordBuilder(null))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.addRemovableChildRecordBuilder(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void testGetRecordBuilder() {
-            final var context = createContext(txBody);
-            final var actual = context.recordBuilder(CryptoCreateRecordBuilder.class);
-            assertThat(actual).isEqualTo(parentRecordBuilder);
-        }
-
-        @Test
-        void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
-            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
-            final var context = createContext(txBody);
-            final var actual = context.addChildRecordBuilder(CryptoCreateRecordBuilder.class);
-            assertThat(actual).isEqualTo(childRecordBuilder);
-        }
-
-        @Test
-        void testAddRemovableChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
-            when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
-            final var context = createContext(txBody);
-
-            final var actual = context.addRemovableChildRecordBuilder(CryptoCreateRecordBuilder.class);
-
-            assertThat(actual).isEqualTo(childRecordBuilder);
-        }
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.storeFactory().serviceApi(Object.class));
     }
 
     @Nested
@@ -953,14 +836,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     }
 
     @Test
-    void revertsAsExpected() {
-        final var checkpoint = new RecordListCheckPoint(null, null);
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
-        subject.revertRecordsFrom(checkpoint);
-        verify(recordListBuilder).revertChildrenFrom(checkpoint);
-    }
-
-    @Test
     void dispatchesThrottlingN() {
         subject.shouldThrottleNOfUnscaled(2, CRYPTO_TRANSFER);
         verify(networkUtilizationManager).shouldThrottleNOfUnscaled(2, CRYPTO_TRANSFER, CONSENSUS_NOW);
@@ -1019,21 +894,19 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 configuration,
                 authorizer,
                 blockRecordManager,
+                resourcePriceCalculator,
                 feeManager,
-                readableStoreFactory,
+                storeFactory,
                 payerId,
                 verifier,
                 Key.DEFAULT,
-                accumulator,
                 exchangeRateManager,
                 stack,
                 entityIdStore,
                 dispatcher,
                 recordCache,
-                writableStoreFactory,
-                apiFactory,
                 networkInfo,
-                parentRecordBuilder,
+                recordBuilders,
                 childDispatchProvider,
                 childDispatchFactory,
                 parentDispatch,

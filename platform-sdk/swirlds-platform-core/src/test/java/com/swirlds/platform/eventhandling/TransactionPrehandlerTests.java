@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -71,16 +71,16 @@ class TransactionPrehandlerTests {
         final TransactionPrehandler transactionPrehandler =
                 new DefaultTransactionPrehandler(platformContext, () -> latestImmutableStateNexus.getState("test"));
 
-        final GossipEvent gossipEvent = new TestingEventBuilder(random).build();
+        final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
 
         final AtomicBoolean prehandleCompleted = new AtomicBoolean(false);
         new Thread(() -> {
-                    gossipEvent.awaitPrehandleCompletion();
+                    platformEvent.awaitPrehandleCompletion();
                     prehandleCompleted.set(true);
                 })
                 .start();
 
-        new Thread(() -> transactionPrehandler.prehandleApplicationTransactions(gossipEvent)).start();
+        new Thread(() -> transactionPrehandler.prehandleApplicationTransactions(platformEvent)).start();
 
         assertEventuallyTrue(stateRetrievalAttempted::get, Duration.ofSeconds(1), "state retrieval wasn't attempted");
         assertFalse(prehandleCompleted::get, "prehandle completed before state was available");

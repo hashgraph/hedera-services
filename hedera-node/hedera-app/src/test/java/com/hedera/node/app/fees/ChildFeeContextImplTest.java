@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
@@ -111,16 +111,17 @@ class ChildFeeContextImplTest {
                         eq(true),
                         any(ReadableStoreFactory.class)))
                 .willReturn(feeCalculator);
-        assertSame(feeCalculator, subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertSame(
+                feeCalculator,
+                subject.feeCalculatorFactory().feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }
 
     @Test
     void propagatesInvalidBodyAsIllegalStateException() {
         subject = new ChildFeeContextImpl(
                 feeManager, context, TransactionBody.DEFAULT, PAYER_ID, true, authorizer, storeFactory, NOW);
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertThrows(IllegalStateException.class, () -> subject.feeCalculatorFactory()
+                .feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
     }
 
     @Test

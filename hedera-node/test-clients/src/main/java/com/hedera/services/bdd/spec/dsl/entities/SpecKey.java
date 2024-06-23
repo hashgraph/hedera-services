@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;

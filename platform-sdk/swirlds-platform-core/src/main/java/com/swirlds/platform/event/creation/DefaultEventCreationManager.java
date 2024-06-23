@@ -25,7 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.rules.AggregateEventCreationRules;
 import com.swirlds.platform.event.creation.rules.BackpressureRule;
 import com.swirlds.platform.event.creation.rules.EventCreationRule;
@@ -142,7 +142,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final GossipEvent event) {
+    public void registerEvent(@NonNull final PlatformEvent event) {
         creator.registerEvent(event);
     }
 
