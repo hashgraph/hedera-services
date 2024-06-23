@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import java.time.InstantSource;
 import java.util.function.Function;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,11 +111,13 @@ class ContractCallLocalHandlerTest {
     @Mock
     private GasCalculator gasCalculator;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     private ContractCallLocalHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractCallLocalHandler(() -> factory, gasCalculator);
+        subject = new ContractCallLocalHandler(() -> factory, gasCalculator, instantSource);
     }
 
     @Test

@@ -202,6 +202,22 @@ public class EmbeddedHedera {
     }
 
     /**
+     * Returns the current synthetic time in the embedded Hedera node.
+     *
+     * @return the current synthetic time
+     */
+    public Instant now() {
+        return time.now();
+    }
+
+    /**
+     * Advances the synthetic time in the embedded Hedera node by a given duration.
+     */
+    public void tick(@NonNull final Duration duration) {
+        time.tick(duration);
+    }
+
+    /**
      * Submits a transaction to the network.
      *
      * @param transaction the transaction to submit
@@ -252,6 +268,8 @@ public class EmbeddedHedera {
         private static final long NANOS_BETWEEN_CONS_EVENTS = 1_000;
         private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
         private static final Duration WALL_CLOCK_ROUND_DURATION = Duration.ofMillis(1);
+        private static final long APPROX_SPEED_UP_FACTOR =
+                SIMULATED_ROUND_DURATION.toMillis() / WALL_CLOCK_ROUND_DURATION.toMillis();
 
         private final AtomicLong roundNo = new AtomicLong(1);
         private final AtomicLong consensusOrder = new AtomicLong(1);
@@ -319,9 +337,8 @@ public class EmbeddedHedera {
             try {
                 // Put all pre-handled events that were last drained from the queue into a round
                 if (!prehandledEvents.isEmpty()) {
-                    if (time.now().equals(lastRoundTime)) {
-                        time.tick(SIMULATED_ROUND_DURATION);
-                    }
+                    // Advance time only if something reached consensus
+                    time.tick(SIMULATED_ROUND_DURATION);
                     lastRoundTime = time.now();
                     // Note we are only putting one transaction in each event
                     final var consensusEvents = IntStream.range(0, prehandledEvents.size())

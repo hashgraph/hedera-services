@@ -33,9 +33,9 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.HapiClients.clientsFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.turnLoggingOff;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.createEthereumAccountForSpec;
@@ -110,6 +110,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -406,8 +407,41 @@ public class HapiSpec implements Runnable, Executable {
         return targetNetworkOrThrow().getRequiredNode(selector).getExternalPath(STREAMS_DIR);
     }
 
+    /**
+     * Returns the network targeted by this spec.
+     *
+     * @return the target network
+     */
     public @NonNull HederaNetwork targetNetworkOrThrow() {
         return requireNonNull(targetNetwork);
+    }
+
+    /**
+     * Returns the approximate consensus time of the network targeted by this spec.
+     *
+     * @return the approximate consensus time
+     */
+    public @NonNull Instant consensusTime() {
+        if (targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
+            return embeddedNetwork.embeddedHederaOrThrow().now();
+        } else {
+            return Instant.now();
+        }
+    }
+
+    /**
+     * Sleeps for the approximate wall clock time it will take for the spec's target
+     * network to advance consensus time by the given duration.
+     *
+     * @param duration the duration to sleep for
+     */
+    public void sleepConsensusTime(@NonNull final Duration duration) {
+        requireNonNull(duration);
+        if (targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
+            embeddedNetwork.embeddedHederaOrThrow().tick(duration);
+        } else {
+            doIfNotInterrupted(() -> Thread.sleep(duration.toMillis()));
+        }
     }
 
     /**
@@ -659,10 +693,10 @@ public class HapiSpec implements Runnable, Executable {
         @Nullable List<EventualRecordStreamAssertion> assertions = null;
         // No matter what, just distribute some hbar to the default node accounts
         // (FUTURE) Why is this here? Can we delete it?
-        cryptoTransfer((ignore, builder) -> builder.setTransfers(DEFAULT_NODE_BALANCE_FUNDING))
-                .deferStatusResolution()
-                .hasAnyStatusAtAll()
-                .execFor(this);
+        //        cryptoTransfer((ignore, builder) -> builder.setTransfers(DEFAULT_NODE_BALANCE_FUNDING))
+        //                .deferStatusResolution()
+        //                .hasAnyStatusAtAll()
+        //                .execFor(this);
         var snapshotOp = AutoSnapshotModeOp.from(this);
         if (snapshotOp != null) {
             // Ensure a mutable list

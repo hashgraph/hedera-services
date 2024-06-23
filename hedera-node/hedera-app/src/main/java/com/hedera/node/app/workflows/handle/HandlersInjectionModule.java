@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
@@ -40,8 +39,8 @@ import javax.inject.Singleton;
 public interface HandlersInjectionModule {
     @Provides
     @Singleton
-    static Supplier<ContractHandlers> provideContractHandlers() {
-        return CONTRACT_SERVICE::handlers;
+    static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {
+        return contractService::handlers;
     }
 
     @Provides

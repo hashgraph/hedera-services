@@ -448,8 +448,13 @@ public class UtilVerbs {
      */
     public static HapiSpecOperation ifNextStakePeriodStartsWithin(
             @NonNull final Duration window, final long stakePeriodMins, @NonNull final HapiSpecOperation then) {
-        return sourcing(
-                () -> (timeUntilNextPeriod(Instant.now(), stakePeriodMins).compareTo(window) < 0) ? then : noOp());
+        return withOpContext((spec, opLog) -> {
+            final var buffer = timeUntilNextPeriod(spec.consensusTime(), stakePeriodMins);
+            if (buffer.compareTo(window) < 0) {
+                opLog.info("Waiting for next staking period, buffer {} less than window {}", buffer, window);
+                allRunFor(spec, then);
+            }
+        });
     }
 
     /**

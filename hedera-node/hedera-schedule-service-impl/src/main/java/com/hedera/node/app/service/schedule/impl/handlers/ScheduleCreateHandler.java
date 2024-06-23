@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -63,10 +64,12 @@ import javax.inject.Singleton;
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
+    private final InstantSource instantSource;
 
     @Inject
-    public ScheduleCreateHandler() {
+    public ScheduleCreateHandler(@NonNull final InstantSource instantSource) {
         super();
+        this.instantSource = instantSource;
     }
 
     @Override
@@ -118,8 +121,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         checkSchedulableWhitelist(scheduleBody, schedulingConfig);
         final TransactionID transactionId = currentTransaction.transactionID();
         if (transactionId != null) {
-            final Schedule provisionalSchedule =
-                    HandlerUtility.createProvisionalSchedule(currentTransaction, Instant.now(), maxExpireConfig);
+            final Schedule provisionalSchedule = HandlerUtility.createProvisionalSchedule(
+                    currentTransaction, instantSource.instant(), maxExpireConfig);
             final Set<Key> allRequiredKeys = allKeysForTransaction(provisionalSchedule, context);
             context.optionalKeys(allRequiredKeys);
         } else {
