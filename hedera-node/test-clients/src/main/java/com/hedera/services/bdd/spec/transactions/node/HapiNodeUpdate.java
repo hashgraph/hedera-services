@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.spec.transactions.node;
 
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -33,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -42,19 +46,20 @@ import org.apache.logging.log4j.Logger;
 public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
     static final Logger LOG = LogManager.getLogger(HapiNodeUpdate.class);
 
-    private final String node;
+    private boolean advertiseCreation = false;
+    private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
-    private Optional<List<ServiceEndpoint>> gossipEndpoint = Optional.empty();
-    private Optional<List<ServiceEndpoint>> serviceEndpoint = Optional.empty();
+    private List<ServiceEndpoint> gossipEndpoint = Collections.emptyList();
+    private List<ServiceEndpoint> serviceEndpoint = Collections.emptyList();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
 
     Optional<Consumer<Long>> preUpdateCb = Optional.empty();
     Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
 
-    public HapiNodeUpdate(String node) {
-        this.node = node;
+    public HapiNodeUpdate(String nodeName) {
+        this.nodeName = nodeName;
     }
 
     @Override
@@ -62,37 +67,42 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         return HederaFunctionality.NodeUpdate;
     }
 
-    public HapiNodeUpdate accountId(AccountID accountId) {
+    public HapiNodeUpdate advertisingCreation() {
+        advertiseCreation = true;
+        return this;
+    }
+
+    public HapiNodeUpdate accountId(final AccountID accountId) {
         this.accountId = Optional.of(accountId);
         return this;
     }
 
-    public HapiNodeUpdate description(String description) {
+    public HapiNodeUpdate description(final String description) {
         this.description = Optional.of(description);
         return this;
     }
 
-    public HapiNodeUpdate gossipEndpoint(List<ServiceEndpoint> gossipEndpoint) {
-        this.gossipEndpoint = Optional.of(gossipEndpoint);
+    public HapiNodeUpdate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
+        this.gossipEndpoint = gossipEndpoint;
         return this;
     }
 
-    public HapiNodeUpdate serviceEndpoint(List<ServiceEndpoint> serviceEndpoint) {
-        this.serviceEndpoint = Optional.of(serviceEndpoint);
+    public HapiNodeUpdate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
+        this.serviceEndpoint = serviceEndpoint;
         return this;
     }
 
-    public HapiNodeUpdate gossipCaCertificate(byte[] gossipCaCertificate) {
+    public HapiNodeUpdate gossipCaCertificate(final byte[] gossipCaCertificate) {
         this.gossipCaCertificate = Optional.of(gossipCaCertificate);
         return this;
     }
 
-    public HapiNodeUpdate grpcCertificateHash(byte[] grpcCertificateHash) {
+    public HapiNodeUpdate grpcCertificateHash(final byte[] grpcCertificateHash) {
         this.grpcCertificateHash = Optional.of(grpcCertificateHash);
         return this;
     }
 
-    private static Setting asSetting(String name, String value) {
+    private static Setting asSetting(final String name, final String value) {
         return Setting.newBuilder().setName(name).setValue(value).build();
     }
 
@@ -108,36 +118,32 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        var nid = TxnUtils.asNodeIdLong(node, spec);
+        var nodeId = TxnUtils.asNodeIdLong(nodeName, spec);
         NodeUpdateTransactionBody opBody = spec.txns()
                 .<NodeUpdateTransactionBody, NodeUpdateTransactionBody.Builder>body(
                         NodeUpdateTransactionBody.class, builder -> {
-                            builder.setNodeId(nid);
+                            builder.setNodeId(nodeId);
                             accountId.ifPresent(builder::setAccountId);
-                            description.ifPresent(s -> builder.setDescription(
-                                    StringValue.newBuilder().setValue(s).build()));
-                            if (gossipEndpoint.isPresent()) {
-                                builder.addAllGossipEndpoint(gossipEndpoint.get());
-                            }
-                            if (serviceEndpoint.isPresent()) {
-                                builder.addAllServiceEndpoint(serviceEndpoint.get());
-                            }
-                            if (gossipCaCertificate.isPresent()) {
+                            description.ifPresent(s -> builder.setDescription(StringValue.of(s)));
+                            builder.addAllGossipEndpoint(gossipEndpoint);
+                            builder.addAllServiceEndpoint(serviceEndpoint);
+
+                            gossipCaCertificate.ifPresent(s -> {
                                 try {
-                                    builder.setGossipCaCertificate(BytesValue.parseFrom(gossipCaCertificate.get()));
+                                    builder.setGossipCaCertificate(BytesValue.parseFrom(s));
                                 } catch (InvalidProtocolBufferException e) {
                                     throw new RuntimeException(e);
                                 }
-                            }
-                            if (grpcCertificateHash.isPresent()) {
+                            });
+                            grpcCertificateHash.ifPresent(s -> {
                                 try {
-                                    builder.setGrpcCertificateHash(BytesValue.parseFrom(grpcCertificateHash.get()));
+                                    builder.setGrpcCertificateHash(BytesValue.parseFrom(s));
                                 } catch (InvalidProtocolBufferException e) {
                                     throw new RuntimeException(e);
                                 }
-                            }
+                            });
                         });
-        preUpdateCb.ifPresent(cb -> cb.accept(nid));
+        preUpdateCb.ifPresent(cb -> cb.accept(nodeId));
         return builder -> builder.setNodeUpdate(opBody);
     }
 
@@ -158,8 +164,25 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
     }
 
     @Override
+    protected void updateStateOf(final HapiSpec spec) {
+        if (actualStatus != SUCCESS) {
+            return;
+        }
+
+        if (verboseLoggingOn) {
+            LOG.info("Updated node {} with ID {}.", nodeName, lastReceipt.getNodeId());
+        }
+
+        if (advertiseCreation) {
+            String banner = "\n\n"
+                    + bannerWith(String.format("Updated node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
+            LOG.info(banner);
+        }
+    }
+
+    @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("nodeId", node);
+        MoreObjects.ToStringHelper helper = super.toStringHelper().add("nodeId", nodeName);
         accountId.ifPresent(a -> helper.add("accountId", a));
         description.ifPresent(d -> helper.add("description", d));
         return helper;

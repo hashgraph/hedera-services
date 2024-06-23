@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.addressbook;
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,14 +28,16 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-public class NodeCreateSuite {
+public class NodeUpdateSuite {
     @HapiTest
     @Tag(EMBEDDED)
-    final Stream<DynamicTest> createNodeWorks() {
-        String description = "His vorpal blade went snicker-snack!";
+    final Stream<DynamicTest> updateNodeWorks() {
+        String description1 = "One, two! One, two! And through and through";
+        String description2 = "His vorpal blade went snicker-snack!";
 
         return hapiTest(
-                nodeCreate("ntb").description(description),
-                viewNode("ntb", node -> assertEquals(description, node.description())));
+                nodeCreate("ntb").description(description1),
+                nodeUpdate("ntb").description(description2),
+                viewNode("ntb", node -> assertEquals(description2, node.description())));
     }
 }

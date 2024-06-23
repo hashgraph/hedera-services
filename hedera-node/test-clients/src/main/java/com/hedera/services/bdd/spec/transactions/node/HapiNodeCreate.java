@@ -46,16 +46,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
-    static final Logger log = LogManager.getLogger(HapiNodeCreate.class);
+    static final Logger LOG = LogManager.getLogger(HapiNodeCreate.class);
 
     private boolean advertiseCreation = false;
-    private String nodeName;
+    private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
     private List<ServiceEndpoint> gossipEndpoint = Collections.emptyList();
     private List<ServiceEndpoint> serviceEndpoint = Collections.emptyList();
-    private byte[] gossipCaCertificate = new byte[0];
-    private byte[] grpcCertificateHash = new byte[0];
+    private Optional<byte[]> gossipCaCertificate = Optional.empty();
+    private Optional<byte[]> grpcCertificateHash = Optional.empty();
     Optional<LongConsumer> newNumObserver = Optional.empty();
 
     public HapiNodeCreate(String nodeName) {
@@ -77,33 +77,33 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         return this;
     }
 
-    public HapiNodeCreate addAccount(final AccountID accountID) {
+    public HapiNodeCreate accountId(final AccountID accountID) {
         this.accountId = Optional.of(accountID);
         return this;
     }
 
-    public HapiNodeCreate addDesc(final String description) {
+    public HapiNodeCreate description(final String description) {
         this.description = Optional.of(description);
         return this;
     }
 
-    public HapiNodeCreate addGossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
+    public HapiNodeCreate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
         this.gossipEndpoint = gossipEndpoint;
         return this;
     }
 
-    public HapiNodeCreate addServiceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
+    public HapiNodeCreate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
         this.serviceEndpoint = serviceEndpoint;
         return this;
     }
 
-    public HapiNodeCreate addGossipCaCertificate(final byte[] gossipCaCertificate) {
-        this.gossipCaCertificate = gossipCaCertificate;
+    public HapiNodeCreate gossipCaCertificate(final byte[] gossipCaCertificate) {
+        this.gossipCaCertificate = Optional.of(gossipCaCertificate);
         return this;
     }
 
-    public HapiNodeCreate addGrpcCertificateHash(final byte[] grpcCertificateHash) {
-        this.grpcCertificateHash = grpcCertificateHash;
+    public HapiNodeCreate grpcCertificateHash(final byte[] grpcCertificateHash) {
+        this.grpcCertificateHash = Optional.of(grpcCertificateHash);
         return this;
     }
 
@@ -130,13 +130,13 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final NodeCreateTransactionBody opBody = spec.txns()
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
-                        NodeCreateTransactionBody.class, b -> {
-                            if (accountId.isPresent()) b.setAccountId(accountId.get());
-                            if (description.isPresent()) b.setDescription(description.get());
-                            b.addAllGossipEndpoint(gossipEndpoint);
-                            b.addAllServiceEndpoint(serviceEndpoint);
-                            b.setGossipCaCertificate(ByteString.copyFrom(gossipCaCertificate));
-                            b.setGrpcCertificateHash(ByteString.copyFrom(grpcCertificateHash));
+                        NodeCreateTransactionBody.class, builder -> {
+                            accountId.ifPresent(builder::setAccountId);
+                            description.ifPresent(builder::setDescription);
+                            builder.addAllGossipEndpoint(gossipEndpoint);
+                            builder.addAllServiceEndpoint(serviceEndpoint);
+                            gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
+                            grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });
         return b -> b.setNodeCreate(opBody);
     }
@@ -158,13 +158,13 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                         fromPbj(EntityNumber.newBuilder().number(newId).build()));
 
         if (verboseLoggingOn) {
-            log.info("Created node {} with ID {}.", nodeName, lastReceipt.getNodeId());
+            LOG.info("Created node {} with ID {}.", nodeName, lastReceipt.getNodeId());
         }
 
         if (advertiseCreation) {
             String banner = "\n\n"
                     + bannerWith(String.format("Created node '%s' with id '%d'.", nodeName, lastReceipt.getNodeId()));
-            log.info(banner);
+            LOG.info(banner);
         }
     }
 
