@@ -520,15 +520,13 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccount",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -641,10 +639,8 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount", FULLY_NONDETERMINISTIC)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+        return defaultHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount", FULLY_NONDETERMINISTIC)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
