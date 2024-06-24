@@ -128,7 +128,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         // add token to the modifications map
         tokenStore.put(copy.build());
 
-        final var record = context.recordBuilder(TokenBaseRecordBuilder.class);
+        final var record = context.recordBuilders().getOrCreate(TokenBaseRecordBuilder.class);
         record.tokenType(token.tokenType());
     }
 
