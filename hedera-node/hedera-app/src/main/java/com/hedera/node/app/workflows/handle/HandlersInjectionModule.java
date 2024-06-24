@@ -89,6 +89,9 @@ public interface HandlersInjectionModule {
                 fileHandlers.fileSystemUndeleteHandler(),
                 networkAdminHandlers.freezeHandler(),
                 networkAdminHandlers.networkUncheckedSubmitHandler(),
+                addressBookHandlers.nodeCreateHandler(),
+                addressBookHandlers.nodeDeleteHandler(),
+                addressBookHandlers.nodeUpdateHandler(),
                 scheduleHandlers.scheduleCreateHandler(),
                 scheduleHandlers.scheduleSignHandler(),
                 scheduleHandlers.scheduleDeleteHandler(),
@@ -108,9 +111,6 @@ public interface HandlersInjectionModule {
                 tokenHandlers.tokenPauseHandler(),
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
-                utilHandlers.prngHandler(),
-                addressBookHandlers.nodeCreateHandler(),
-                addressBookHandlers.nodeDeleteHandler(),
-                addressBookHandlers.nodeUpdateHandler());
+                utilHandlers.prngHandler());
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
@@ -67,6 +68,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.services.bdd.SpecOperation;
@@ -482,6 +485,18 @@ public class HapiSpec implements Runnable, Executable {
         final var state = embeddedStateOrThrow();
         return state.getWritableStates(com.hedera.node.app.service.token.TokenService.NAME)
                 .get(ACCOUNTS_KEY);
+    }
+
+    /**
+     * Get the {@link WritableKVState} for the embedded network's nodes, if this spec is targeting an embedded network.
+     *
+     * @return the embedded nodes state
+     * @throws IllegalStateException if this spec is not targeting an embedded network
+     */
+    public @NonNull WritableKVState<EntityNumber, Node> embeddedNodesOrThrow() {
+        final var state = embeddedStateOrThrow();
+        return state.getWritableStates(com.hedera.node.app.service.addressbook.AddressBookService.NAME)
+                .get(NODES_KEY);
     }
 
     /**

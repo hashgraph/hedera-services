@@ -65,6 +65,7 @@ class WritableStoreFactoryImplTest {
 
     private static Stream<Arguments> storeParameters() {
         return Stream.of(
+                arguments(AddressBookService.NAME, WritableNodeStore.class),
                 arguments(ConsensusService.NAME, WritableTopicStore.class),
                 arguments(TokenService.NAME, WritableAccountStore.class),
                 arguments(TokenService.NAME, WritableNftStore.class),

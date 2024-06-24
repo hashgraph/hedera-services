@@ -299,6 +299,22 @@ public class HapiSpecSetup {
         return props.getAccount("default.payer");
     }
 
+    public ServiceEndpoint defaultGossipEndpointInternal() {
+        return props.getServiceEndpoint("default.gossipEndpoint.internal");
+    }
+
+    public ServiceEndpoint defaultGossipEndpointExternal() {
+        return props.getServiceEndpoint("default.gossipEndpoint.external");
+    }
+
+    public ServiceEndpoint defaultServiceEndpoint() {
+        return props.getServiceEndpoint("default.serviceEndpoint");
+    }
+
+    public byte[] defaultGossipCaCertificate() {
+        return props.getBytes("default.gossipCaCertificate");
+    }
+
     public String defaultPayerKey() {
         return props.get("default.payer.key");
     }
