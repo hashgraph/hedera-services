@@ -48,6 +48,7 @@ import org.jetbrains.annotations.NotNull;
  */
 class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Instant FIXED_POINT = Instant.parse("2024-06-24T12:05:41.487328Z");
+    private static final Duration SIMULATED_ROUND_DURATION = Duration.ofSeconds(1);
     private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
 

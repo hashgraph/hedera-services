@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBodyUnchecked;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.TxnFactory.defaultExpiryNowFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -357,8 +358,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                         Duration.newBuilder().setSeconds(secs).build());
                             }
                             if (autoRenewPeriod.isEmpty()) {
-                                expiry.ifPresent(t -> b.setExpiry(
-                                        Timestamp.newBuilder().setSeconds(t).build()));
+                                expiry.ifPresentOrElse(
+                                        t -> b.setExpiry(Timestamp.newBuilder()
+                                                .setSeconds(t)
+                                                .build()),
+                                        () -> b.setExpiry(defaultExpiryNowFor(spec)));
                             }
                             if (treasury.isEmpty()) {
                                 treasury = Optional.of(spec.setup().defaultPayerName());

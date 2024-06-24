@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
  */
 class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(ConcurrentEmbeddedHedera.class);
+    private static final Duration SIMULATED_ROUND_DURATION = Duration.ofMillis(1);
 
     private final ConcurrentFakePlatform platform;
 
