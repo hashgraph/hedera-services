@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.NodeGetInfoResponse;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -760,10 +759,6 @@ public class HapiSpecRegistry {
     }
 
     public void saveFileInfo(String name, FileGetInfoResponse.FileInfo info) {
-        put(name, info);
-    }
-
-    public void saveNodeInfo(String name, NodeGetInfoResponse info) {
         put(name, info);
     }
 
