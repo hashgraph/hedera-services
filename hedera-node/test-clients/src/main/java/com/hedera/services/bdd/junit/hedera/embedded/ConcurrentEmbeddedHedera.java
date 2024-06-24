@@ -28,7 +28,6 @@ import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeRound;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
@@ -50,7 +49,6 @@ import org.apache.logging.log4j.Logger;
 class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
     private static final Logger log = LogManager.getLogger(ConcurrentEmbeddedHedera.class);
 
-    private final FakeTime time = new FakeTime();
     private final ConcurrentFakePlatform platform;
 
     public ConcurrentEmbeddedHedera(@NonNull final EmbeddedNode node) {
@@ -60,12 +58,17 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
     @Override
     public Instant now() {
-        return time.now();
+        return Instant.now();
     }
 
     @Override
     public void tick(@NonNull final Duration duration) {
-        time.tick(duration);
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
@@ -81,7 +84,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
             warnOfSkippedIngestChecks(nodeAccountId, nodeId);
             platform.ingestQueue()
                     .add(new FakeEvent(
-                            nodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
+                            nodeId, now(), version, new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
             return OK_RESPONSE;
         }
     }
@@ -117,7 +120,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
             return queue.add(
-                    new FakeEvent(defaultNodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction))));
+                    new FakeEvent(defaultNodeId, now(), version, new SwirldTransaction(Bytes.wrap(transaction))));
         }
 
         /**
@@ -131,8 +134,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                 // Put all pre-handled events that were last drained from the queue into a round
                 if (!prehandledEvents.isEmpty()) {
                     // Advance time only if something reached consensus
-                    time.tick(SIMULATED_ROUND_DURATION);
-                    final var firstRoundTime = time.now();
+                    tick(SIMULATED_ROUND_DURATION);
+                    final var firstRoundTime = now();
                     // Note we are only putting one transaction in each event
                     final var consensusEvents = IntStream.range(0, prehandledEvents.size())
                             .<ConsensusEvent>mapToObj(i -> new FakeConsensusEvent(
