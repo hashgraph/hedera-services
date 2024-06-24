@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
@@ -61,12 +62,14 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
 
     protected TokenAirdropsHandler subject;
     protected TokenAirdropValidator validator;
+    protected AssetsLoader assetsLoader;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
+        assetsLoader = new AssetsLoader();
         validator = new TokenAirdropValidator();
-        subject = new TokenAirdropsHandler(validator);
+        subject = new TokenAirdropsHandler(validator, assetsLoader);
     }
 
     protected TransactionBody newTokenAirdrop(final TokenTransferList... tokenTransferLists) {
