@@ -44,7 +44,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -171,10 +170,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final Consumer<Integer> completeListener) {
         this.nodeCount = learningSynchronizer;
 
-        final Set<Integer> sendersRunning =
-                learningSynchronizer.computeViewMetadata("SENDERSRUNNING", ConcurrentHashMap.newKeySet());
-        sendersRunning.add(viewId);
-
         final Map<Integer, CountDownLatch> allRootResponseReceived =
                 learningSynchronizer.computeViewMetadata("ROOTRESPONSES", new ConcurrentHashMap<>());
         final CountDownLatch viewRootResponseReceived = new CountDownLatch(1);
@@ -190,10 +185,10 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         if (pullLearnerReceiveTasksStarted.compareAndSet(false, true)) {
             for (int i = 0; i < 32; i++) {
                 final LearnerPullVirtualTreeReceiveTask learnerReceiveTask = new LearnerPullVirtualTreeReceiveTask(
+                        reconnectConfig,
                         workGroup,
                         in,
                         views,
-                        sendersRunning,
                         allExpectedResponses,
                         allRootResponseReceived,
                         completeListener);
@@ -207,11 +202,9 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 reconnectConfig,
                 workGroup,
                 viewId,
-                in,
                 out,
                 this,
                 traversalOrder,
-                sendersRunning,
                 viewRootResponseReceived,
                 viewExpectedResponses);
         learnerSendTask.exec();

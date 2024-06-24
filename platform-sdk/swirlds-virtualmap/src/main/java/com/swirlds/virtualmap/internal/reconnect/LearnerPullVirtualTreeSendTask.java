@@ -20,13 +20,11 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.internal.Path;
 import java.time.Duration;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,13 +51,9 @@ public class LearnerPullVirtualTreeSendTask {
 
     private final StandardWorkGroup workGroup;
     private final int viewId;
-    private final AsyncInputStream in;
     private final AsyncOutputStream out;
     private final LearnerPullVirtualTreeView view;
     private final NodeTraversalOrder traversalOrder;
-
-    // Indicates learner sender tasks currently sending requests to the teacher
-    private final Set<Integer> sendersRunning;
 
     // Max time to wait for path 0 (virtual root) response from the teacher
     private final Duration rootResponseTimeout;
@@ -82,8 +76,6 @@ public class LearnerPullVirtualTreeSendTask {
      * 		the output stream, this object is responsible for closing this when finished
      * @param view
      * 		the view to be used when touching the merkle tree
-     * @param sendersRunning
-     * 		the number of running senders tasks
      * @param responsesExpected
      *      number of responses expected from the teacher, increased by one every time a request
      *      is sent
@@ -92,20 +84,16 @@ public class LearnerPullVirtualTreeSendTask {
             final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
             final int viewId,
-            final AsyncInputStream in,
             final AsyncOutputStream out,
             final LearnerPullVirtualTreeView view,
             final NodeTraversalOrder traversalOrder,
-            final Set<Integer> sendersRunning,
             final CountDownLatch rootResponseReceived,
             final AtomicLong responsesExpected) {
         this.workGroup = workGroup;
         this.viewId = viewId;
-        this.in = in;
         this.out = out;
         this.view = view;
         this.traversalOrder = traversalOrder;
-        this.sendersRunning = sendersRunning;
         this.rootResponseReceived = rootResponseReceived;
         this.responsesExpected = responsesExpected;
 
@@ -146,8 +134,6 @@ public class LearnerPullVirtualTreeSendTask {
             Thread.currentThread().interrupt();
         } catch (final Exception ex) {
             workGroup.handleError(ex);
-        } finally {
-            //            sendersRunning.remove(viewId);
         }
     }
 }

@@ -16,13 +16,14 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.internal.Path;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -48,9 +49,6 @@ public class LearnerPullVirtualTreeReceiveTask {
     private final AsyncInputStream in;
     private final Map<Integer, LearnerTreeView<?>> views;
 
-    // Indicates the number learner sender tasks still sending requests to the teacher
-    private final Set<Integer> sendersRunning;
-
     // Number of requests sent to teacher / responses expected from the teacher. Increased in
     // the sending task, decreased in this task
     private final Map<Integer, AtomicLong> expectedResponses;
@@ -60,6 +58,8 @@ public class LearnerPullVirtualTreeReceiveTask {
 
     private final Consumer<Integer> completeListener;
 
+    private final Duration allMessagesReceivedTimeout;
+
     /**
      * Create a thread for receiving responses to queries from the teacher.
      *
@@ -67,24 +67,23 @@ public class LearnerPullVirtualTreeReceiveTask {
      * 		the work group that will manage this thread
      * @param in
      * 		the input stream, this object is responsible for closing this when finished
-     * @param sendersRunning
-     * 		the number of sender tasks still running
      */
     public LearnerPullVirtualTreeReceiveTask(
+            final ReconnectConfig reconnectConfig,
             final StandardWorkGroup workGroup,
             final AsyncInputStream in,
             final Map<Integer, LearnerTreeView<?>> views,
-            final Set<Integer> sendersRunning,
             final Map<Integer, AtomicLong> expectedResponses,
             final Map<Integer, CountDownLatch> rootResponsesReceived,
             final Consumer<Integer> completeListener) {
         this.workGroup = workGroup;
         this.in = in;
         this.views = views;
-        this.sendersRunning = sendersRunning;
         this.expectedResponses = expectedResponses;
         this.rootResponsesReceived = rootResponsesReceived;
         this.completeListener = completeListener;
+
+        this.allMessagesReceivedTimeout = reconnectConfig.allMessagesReceiveTimeout();
     }
 
     public void exec() {
@@ -105,7 +104,7 @@ public class LearnerPullVirtualTreeReceiveTask {
                 final PullVirtualTreeResponse response =
                         in.readAnticipatedMessage(viewId -> new PullVirtualTreeResponse(findView(viewId)));
                 if (response == null) {
-                    if (expectedResponses.isEmpty() || !in.isAlive()) {
+                    if (!in.isAlive()) {
                         break;
                     }
                     Thread.sleep(0, 1);
@@ -116,11 +115,15 @@ public class LearnerPullVirtualTreeReceiveTask {
                 viewExpectedResponses.decrementAndGet();
                 if (response.getPath() == Path.INVALID_PATH) {
                     // There may be other messages for this view being handled by other threads
+                    final long waitStart = System.currentTimeMillis();
                     while (viewExpectedResponses.get() != 0) {
-                        Thread.onSpinWait();
+                        Thread.sleep(0, 1);
+                        if (System.currentTimeMillis() - waitStart > allMessagesReceivedTimeout.toMillis()) {
+                            throw new MerkleSynchronizationException(
+                                    "Timed out waiting for view all remaining view messages to be processed");
+                        }
                     }
                     completeListener.accept(viewId);
-                    expectedResponses.remove(viewId);
                 } else if (response.getPath() == 0) {
                     final CountDownLatch rootResponseReceived = rootResponsesReceived.get(viewId);
                     rootResponseReceived.countDown();
