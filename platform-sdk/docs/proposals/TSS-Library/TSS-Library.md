@@ -358,7 +358,7 @@ In this option, all iterations and "business logic" of groth21 implementation is
 **Link**:[TssPublicShare.java](tss-option1%2FTssPublicShare.java)
 
 ###### `TssShareSignature`
-**Description**: Represents a signature created for a TSSPrivateShare.
+**Description**: Represents a signature created from a TSSPrivateShare.
 
 **Link**:[TssShareSignature.java](tss-option1%2FTssShareSignature.java)
 
