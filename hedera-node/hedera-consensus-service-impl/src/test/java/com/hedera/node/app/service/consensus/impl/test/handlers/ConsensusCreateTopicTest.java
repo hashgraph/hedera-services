@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -86,6 +88,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
+
     private WritableTopicStore topicStore;
     private Configuration config;
     private ConsensusCreateTopicHandler subject;
@@ -122,6 +127,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
         given(recordBuilders.getOrCreate(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);
+        lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }
 
     @Test
@@ -255,7 +261,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -291,7 +297,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 

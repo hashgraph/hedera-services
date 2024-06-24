@@ -68,6 +68,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableContractStateStor
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -129,6 +130,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private PendingCreationMetadataRef pendingCreationMetadataRef;
+
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
 
     @Mock
     private RecordBuilders recordBuilders;
@@ -222,13 +226,15 @@ class HandleHederaOperationsTest {
 
     @Test
     void peekNumberUsesContext() {
-        given(context.peekAtNewEntityNum()).willReturn(123L);
+        given(context.entityNumGenerator()).willReturn(entityNumGenerator);
+        given(entityNumGenerator.peekAtNewEntityNum()).willReturn(123L);
         assertEquals(123L, subject.peekNextEntityNumber());
     }
 
     @Test
     void useNumberUsesContext() {
-        given(context.newEntityNum()).willReturn(123L);
+        given(context.entityNumGenerator()).willReturn(entityNumGenerator);
+        given(entityNumGenerator.newEntityNum()).willReturn(123L);
         assertEquals(123L, subject.useNextEntityNumber());
     }
 
