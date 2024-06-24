@@ -124,7 +124,7 @@ and [Civilian Accounts](#civilian-accounts)
 ---
 
 ## Hollow Accounts
-**Hollow Accounts**: An account that has been created with an account number and alias but lacks an account key. This term is specifically used to describe accounts generated through the Auto Account Creation feature, which allows applications to create user accounts instantly, even without an internet connection, by assigning an account alias. See also [Account Aliases](#account-aliases), https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583. 
+**Hollow Accounts**: An account that has been created with an account number and alias but lacks an account key. This term is specifically used to describe accounts are auto-created by doing a CryptoTransfer to an alias that is of EVM address size, which allows applications to create user accounts instantly, even without an internet connection, by assigning an account alias. See also [Account Aliases](#account-aliases), https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583. 
 
 ---
 
@@ -168,7 +168,7 @@ Refer to this [official blog post](https://hedera.com/blog/hedera-smart-contract
 
 ## Token Allowance
 **Token Allowance**: A feature that allows an account (the owner) to authorize another account (the spender) to transfer tokens on its behalf up to a specified limit. This mechanism is similar to the ERC-20 allowance mechanism used in Ethereum.
-The amount of tokens that a user has authorized a smart contract to spend on their behalf. This allowance is set by the user and can be modified or revoked at any time. It allows smart contracts to spend tokens on behalf of the user without requiring explicit approval for each transaction.
+The amount of tokens that a user has authorized another user or smart contract to spend on their behalf. This allowance is set by the user and can be modified or revoked at any time. It allows the spender to spend tokens on behalf of the owner without requiring explicit approval for each transaction.
 
 ---
 
