@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.asTxn;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,14 +31,15 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -62,7 +64,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -76,18 +77,33 @@ class UserTxnWorkflowTest {
     private static final Instant PREV_SECOND_LAST_TIME = CONSENSUS_NOW.minusNanos(891);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
-    private static final TransactionBody TXN_BODY = TransactionBody.newBuilder()
-            .transactionID(
-                    TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
+    private static final CryptoTransferTransactionBody TRANSFER_BODY = CryptoTransferTransactionBody.newBuilder()
+            .transfers(TransferList.newBuilder()
+                    .accountAmounts(
+                            AccountAmount.newBuilder()
+                                    .accountID(
+                                            AccountID.newBuilder().accountNum(1).build())
+                                    .amount(0)
+                                    .build(),
+                            AccountAmount.newBuilder()
+                                    .accountID(
+                                            AccountID.newBuilder().accountNum(2).build())
+                                    .amount(10)
+                                    .build()))
             .build();
-    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
-            new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
+    private static final TransactionBody TXN_BODY = asTxn(TRANSFER_BODY, PAYER_ACCOUNT_ID, CONSENSUS_NOW);
+    private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
+            Transaction.newBuilder().body(TXN_BODY).build(),
+            TXN_BODY,
+            SignatureMap.DEFAULT,
+            Bytes.EMPTY,
+            CRYPTO_TRANSFER);
     private static final SoftwareVersion PREVIOUS_VERSION = new HederaSoftwareVersion(
             SemanticVersion.DEFAULT, SemanticVersion.newBuilder().major(99).build(), 0);
     private static final SoftwareVersion CURRENT_VERSION = new HederaSoftwareVersion(
             SemanticVersion.DEFAULT, SemanticVersion.newBuilder().major(100).build(), 0);
     private static final SingleTransactionRecord FAKE_RECORD = new SingleTransactionRecord(
-            Transaction.DEFAULT,
+            Transaction.newBuilder().body(TXN_BODY).build(),
             TransactionRecord.DEFAULT,
             Collections.emptyList(),
             new SingleTransactionRecord.TransactionOutputs(null));
@@ -128,16 +144,27 @@ class UserTxnWorkflowTest {
     @Mock
     private ConsensusEvent consensusEvent;
 
+    @Mock
+    private ExchangeRateSet exchangeRateSet;
+
     private UserTxnWorkflow subject;
 
     @Test
     void skipsOlderVersionIfNotEventStreamRecovery() {
         givenSubjectWith(InitTrigger.RESTART, PREVIOUS_VERSION);
         givenNoFailInvalid();
+        given(userTxn.recordListBuilder()).willReturn(new RecordListBuilder(CONSENSUS_NOW));
+        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(exchangeRateManager.exchangeRates()).willReturn(exchangeRateSet);
 
-        final var records = subject.execute();
+        final var recordStream = subject.execute();
 
-        assertExpected(records);
+        final var records = recordStream.toList();
+        assertEquals(1, records.size());
+        assertEquals(
+                Transaction.newBuilder().body(TXN_BODY).build(),
+                records.getFirst().transaction());
+        assertEquals(BUSY, records.getFirst().transactionRecord().receipt().status());
     }
 
     @Test
@@ -206,32 +233,6 @@ class UserTxnWorkflowTest {
                 .isEqualTo(FAIL_INVALID);
     }
 
-    @Test
-    public void testSkipHandleWorkflow() {
-        final var recordListBuilder = new RecordListBuilder(CONSENSUS_NOW);
-        final var txnInfo = new TransactionInfo(
-                Transaction.newBuilder().body(TXN_BODY).build(),
-                TXN_BODY,
-                SignatureMap.DEFAULT,
-                Bytes.EMPTY,
-                HederaFunctionality.CRYPTO_TRANSFER);
-
-        // Setup mocks
-        when(userTxn.txnInfo()).thenReturn(txnInfo);
-        when(userTxn.recordListBuilder()).thenReturn(recordListBuilder);
-
-        subject.execute();
-
-        Assertions.assertThat(recordListBuilder.userTransactionRecordBuilder().status())
-                .isEqualTo(BUSY);
-        Assertions.assertThat(recordListBuilder.userTransactionRecordBuilder().transaction())
-                .isEqualTo(txnInfo.transaction());
-        Assertions.assertThat(recordListBuilder.userTransactionRecordBuilder().transactionID())
-                .isEqualTo(txnInfo.transactionID());
-        Assertions.assertThat(recordListBuilder.userTransactionRecordBuilder().exchangeRate())
-                .isNotNull();
-    }
-
     private void givenSubjectWith(@NonNull final InitTrigger trigger, @NonNull final SoftwareVersion eventVersion) {
         subject = new UserTxnWorkflow(
                 CURRENT_VERSION,
@@ -256,7 +257,9 @@ class UserTxnWorkflowTest {
         given(userTxn.creator()).willReturn(nodeInfo);
         given(nodeInfo.nodeId()).willReturn(CREATOR_NODE_ID);
         given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
-        given(recordListBuilder.build()).willReturn(new RecordListBuilder.Result(FAKE_RECORD, List.of(FAKE_RECORD)));
+        lenient()
+                .when(recordListBuilder.build())
+                .thenReturn(new RecordListBuilder.Result(FAKE_RECORD, List.of(FAKE_RECORD)));
     }
 
     private void givenFailInvalid() {
