@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.query;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.hapi.node.addressbook.NodeGetInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.contract.ContractGetBytecodeQuery;
@@ -45,7 +44,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionGetFastRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
-import com.hedera.node.app.service.addressbook.impl.handlers.NodeGetInfoHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityIDHandler;
@@ -161,9 +159,6 @@ class QueryDispatcherTest {
     @Mock
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
 
-    @Mock
-    private NodeGetInfoHandler nodeGetInfoHandler;
-
     private QueryHandlers handlers;
 
     private QueryDispatcher dispatcher;
@@ -195,8 +190,7 @@ class QueryDispatcherTest {
                 tokenGetInfoHandler,
                 tokenGetAccountNftInfosHandler,
                 tokenGetNftInfoHandler,
-                tokenGetNftInfosHandler,
-                nodeGetInfoHandler);
+                tokenGetNftInfosHandler);
 
         dispatcher = new QueryDispatcher(handlers);
     }
@@ -379,11 +373,6 @@ class QueryDispatcherTest {
                                 .transactionGetFastRecord(TransactionGetFastRecordQuery.newBuilder()
                                         .build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetFastRecordHandler),
-                Arguments.of(
-                        Query.newBuilder()
-                                .nodeGetInfo(NodeGetInfoQuery.newBuilder().build())
-                                .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::nodeGetInfoHandler));
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetFastRecordHandler));
     }
 }
