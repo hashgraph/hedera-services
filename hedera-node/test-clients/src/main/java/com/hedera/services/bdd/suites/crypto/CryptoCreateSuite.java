@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -57,8 +56,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -76,7 +75,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;

@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
-import static com.hedera.node.app.service.token.impl.util.TokenUtil.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
