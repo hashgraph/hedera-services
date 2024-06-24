@@ -69,11 +69,10 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -83,6 +82,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -171,7 +171,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
 
     @Mock
-    private KeyVerifier verifier;
+    private AppKeyVerifier verifier;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -210,7 +210,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private WritableEntityIdStore entityIdStore;
+    private EntityNumGenerator entityNumGenerator;
 
     @Mock
     private Provider<ChildDispatchComponent.Factory> childDispatchProvider;
@@ -377,7 +377,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Key.newBuilder().build(),
             exchangeRateManager,
             stack,
-            entityIdStore,
+            entityNumGenerator,
             dispatcher,
             recordCache,
             networkInfo,
@@ -406,51 +406,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
     }
 
-    @Nested
-    @DisplayName("Handling new EntityNumber")
-    final class EntityIdNumTest {
-        @Test
-        void testNewEntityNumWithInitialState() {
-            when(entityIdStore.incrementAndGet()).thenReturn(1L);
-            final var actual = subject.newEntityNum();
-
-            assertThat(actual).isEqualTo(1L);
-            verify(entityIdStore).incrementAndGet();
-        }
-
-        @Test
-        void testPeekingAtNewEntityNumWithInitialState() {
-            when(entityIdStore.peekAtNextNumber()).thenReturn(1L);
-            final var actual = subject.peekAtNewEntityNum();
-
-            assertThat(actual).isEqualTo(1L);
-
-            verify(entityIdStore).peekAtNextNumber();
-        }
-
-        @Test
-        void testNewEntityNum() {
-            when(entityIdStore.incrementAndGet()).thenReturn(43L);
-
-            final var actual = subject.newEntityNum();
-
-            assertThat(actual).isEqualTo(43L);
-            verify(entityIdStore).incrementAndGet();
-            verify(entityIdStore, never()).peekAtNextNumber();
-        }
-
-        @Test
-        void testPeekingAtNewEntityNum() {
-            when(entityIdStore.peekAtNextNumber()).thenReturn(43L);
-
-            final var actual = subject.peekAtNewEntityNum();
-
-            assertThat(actual).isEqualTo(43L);
-            verify(entityIdStore).peekAtNextNumber();
-            verify(entityIdStore, never()).incrementAndGet();
-        }
-    }
-
     @Test
     void getsExpectedValues() {
         assertThat(subject.body()).isSameAs(txBody);
@@ -462,7 +417,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
         assertThat(subject.storeFactory()).isEqualTo(storeFactory);
+        assertThat(subject.entityNumGenerator()).isEqualTo(entityNumGenerator);
         assertThat(subject.recordBuilders()).isEqualTo(recordBuilders);
+        assertThat(subject.keyVerifier()).isEqualTo(verifier);
     }
 
     @Nested
@@ -473,38 +430,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var context = createContext(txBody);
             final var actual = context.savepointStack();
             assertThat(actual).isEqualTo(stack);
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling of verification data")
-    final class VerificationDataTest {
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testVerificationForWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void testVerificationForKey() {
-            when(verifier.verificationFor(Key.DEFAULT)).thenReturn(verification);
-            final var context = createContext(txBody);
-
-            final var actual = context.verificationFor(Key.DEFAULT);
-
-            assertThat(actual).isEqualTo(verification);
-        }
-
-        @Test
-        void testVerificationForAlias() {
-            when(verifier.verificationFor(ERIN.account().alias())).thenReturn(verification);
-            final var context = createContext(txBody);
-            final var actual = context.verificationFor(ERIN.account().alias());
-
-            assertThat(actual).isEqualTo(verification);
         }
     }
 
@@ -799,7 +724,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Test
     void usesAssistantInVerification() {
         given(verifier.verificationFor(Key.DEFAULT, assistant)).willReturn(FAILED_VERIFICATION);
-        assertThat(subject.verificationFor(Key.DEFAULT, assistant)).isSameAs(FAILED_VERIFICATION);
+        assertThat(subject.keyVerifier().verificationFor(Key.DEFAULT, assistant))
+                .isSameAs(FAILED_VERIFICATION);
     }
 
     @Test
@@ -839,7 +765,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 Key.DEFAULT,
                 exchangeRateManager,
                 stack,
-                entityIdStore,
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 networkInfo,

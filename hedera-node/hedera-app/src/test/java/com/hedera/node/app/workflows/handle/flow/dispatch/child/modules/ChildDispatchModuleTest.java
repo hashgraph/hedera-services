@@ -37,16 +37,16 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -148,7 +148,7 @@ class ChildDispatchModuleTest {
     private AccountID syntheticPayer;
 
     @Mock
-    private KeyVerifier verifier;
+    private AppKeyVerifier verifier;
 
     @Mock
     private Key payerkey;
@@ -163,7 +163,7 @@ class ChildDispatchModuleTest {
     private SavepointStackImpl stack;
 
     @Mock
-    private WritableEntityIdStore entityIdStore;
+    private EntityNumGenerator entityNumGenerator;
 
     @Mock
     private TransactionDispatcher dispatcher;
@@ -222,7 +222,7 @@ class ChildDispatchModuleTest {
                 payerkey,
                 exchangeRateManager,
                 stack,
-                entityIdStore,
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 networkInfo,

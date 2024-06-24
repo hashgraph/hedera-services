@@ -24,8 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle.UsageSnapshot;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -69,7 +69,7 @@ public class AppThrottleAdviser implements ThrottleAdviser {
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
         final var childRecords = recordListBuilder.childRecordBuilders();
-        @Nullable List<UsageSnapshot> snapshotsIfNeeded = null;
+        @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
             final var childRecord = childRecords.get(i);

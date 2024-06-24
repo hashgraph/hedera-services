@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -44,7 +44,7 @@ public interface ChildDispatchComponent extends Dispatch {
                 @BindsInstance HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,
                 @BindsInstance @ChildQualifier PreHandleResult preHandleResult,
-                @BindsInstance KeyVerifier keyVerifier);
+                @BindsInstance AppKeyVerifier keyVerifier);
     }
     /**
      * The savepoint stack for the transaction scope

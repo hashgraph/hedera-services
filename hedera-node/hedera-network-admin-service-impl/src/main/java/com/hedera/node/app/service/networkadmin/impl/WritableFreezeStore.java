@@ -82,7 +82,10 @@ public class WritableFreezeStore extends ReadableFreezeStoreImpl {
     @Override
     @Nullable
     public Bytes updateFileHash() {
-        ProtoBytes fileHash = updateFileHash.get();
+        return effectiveUpdateFileHash(updateFileHash.get());
+    }
+
+    static @Nullable Bytes effectiveUpdateFileHash(@Nullable final ProtoBytes fileHash) {
         if (fileHash == null) {
             return null;
         }
