@@ -22,10 +22,10 @@ import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerUniqueValidationReport;
@@ -57,7 +57,7 @@ import javax.inject.Singleton;
  * It also records whether the transaction is a duplicate.
  */
 @Singleton
-public class TransactionValidator {
+public class DispatchValidator {
     private final SolvencyPreCheck solvencyPreCheck;
     private final HederaRecordCache recordCache;
     private final TransactionChecker transactionChecker;
@@ -70,7 +70,7 @@ public class TransactionValidator {
      * @param transactionChecker the transaction checker
      */
     @Inject
-    public TransactionValidator(
+    public DispatchValidator(
             final SolvencyPreCheck solvencyPreCheck,
             final HederaRecordCache recordCache,
             final TransactionChecker transactionChecker) {

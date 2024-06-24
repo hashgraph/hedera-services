@@ -66,7 +66,8 @@ public interface UserTxnComponent {
                 @BindsInstance NodeInfo creator,
                 @BindsInstance ConsensusTransaction platformTxn,
                 @BindsInstance Instant consensusTime,
-                @BindsInstance @LastHandledTime Instant lastHandledConsensusTime);
+                @BindsInstance @LastHandledTime Instant lastHandledConsensusTime,
+                @BindsInstance PreHandleResult preHandleResult);
     }
 
     /**

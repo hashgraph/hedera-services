@@ -33,9 +33,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationFutureImpl;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -44,7 +42,6 @@ import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.state.HederaState;
-import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
@@ -107,23 +104,6 @@ public class UserTxnModuleTest {
             VERIFICATION_RESULTS,
             null,
             0);
-
-    @Mock
-    private NodeInfo creator;
-
-    @Mock
-    private PreHandleResultManager preHandleResultManager;
-
-    @Mock
-    private ReadableStoreFactory storeFactory;
-
-    @Test
-    void computesResultWithManager() {
-        given(preHandleResultManager.getCurrentPreHandleResult(creator, PLATFORM_TXN, storeFactory))
-                .willReturn(PRE_HANDLE_RESULT);
-        assertThat(UserTxnModule.providePreHandleResult(creator, PLATFORM_TXN, preHandleResultManager, storeFactory))
-                .isSameAs(PRE_HANDLE_RESULT);
-    }
 
     @Test
     void providesTxnInfoFromPreHandleResult() {

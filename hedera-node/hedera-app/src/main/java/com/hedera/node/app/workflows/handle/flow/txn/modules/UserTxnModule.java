@@ -24,16 +24,13 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
-import com.swirlds.state.spi.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -69,16 +66,6 @@ public interface UserTxnModule {
     @UserTxnScope
     static boolean provideIsGenesis(@LastHandledTime final Instant lastHandledConsensusTime) {
         return lastHandledConsensusTime.equals(Instant.EPOCH);
-    }
-
-    @Provides
-    @UserTxnScope
-    static PreHandleResult providePreHandleResult(
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final PreHandleResultManager preHandleResultManager,
-            @NonNull final ReadableStoreFactory storeFactory) {
-        return preHandleResultManager.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
     }
 
     @Provides

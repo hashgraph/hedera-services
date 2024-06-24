@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -87,34 +88,34 @@ class ChildDispatchFactoryTest {
                     .keys(KeyList.newBuilder().keys(AN_ED25519_KEY, A_CONTRACT_ID_KEY)))
             .build();
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private TransactionDispatcher dispatcher;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private VerificationAssistant assistant;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private Dispatch parentDispatch;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private Predicate<Key> verifierCallback;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private Provider<ChildDispatchComponent.Factory> childDispatchFactoryProvider;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private ChildDispatchComponent.Factory childDispatchFactory;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private ReadableStoreFactory readableStoreFactory;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SavepointStackImpl savepointStack;
 
     private ChildDispatchFactory subject;
@@ -304,6 +305,7 @@ class ChildDispatchFactoryTest {
 
     @Test
     void testFunctionOfTxnThrowsException() {
+        mainSetup();
         var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().build())
                 .memo("Test Memo")

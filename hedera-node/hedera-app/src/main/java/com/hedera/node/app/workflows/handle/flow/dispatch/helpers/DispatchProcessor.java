@@ -25,12 +25,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchUsageManager.ThrottleException;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.DuplicateStatus.DUPLICATE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.TransactionValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow.ALERT_MESSAGE;
 import static java.util.Objects.requireNonNull;
 
@@ -63,7 +62,7 @@ public class DispatchProcessor {
     private static final Logger logger = LogManager.getLogger(DispatchProcessor.class);
 
     private final Authorizer authorizer;
-    private final TransactionValidator validator;
+    private final DispatchValidator validator;
     private final RecordFinalizer recordFinalizer;
     private final SystemFileUpdateFacility systemFileUpdateFacility;
     private final PlatformStateUpdateFacility platformStateUpdateFacility;
@@ -74,7 +73,7 @@ public class DispatchProcessor {
     @Inject
     public DispatchProcessor(
             @NonNull final Authorizer authorizer,
-            @NonNull final TransactionValidator validator,
+            @NonNull final DispatchValidator validator,
             @NonNull final RecordFinalizer recordFinalizer,
             @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
             @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,

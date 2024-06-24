@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -246,6 +247,8 @@ class UserTxnWorkflowTest {
             given(consensusEvent.getSoftwareVersion()).willReturn(eventVersion);
             given(userTxn.platformEvent()).willReturn(consensusEvent);
         }
+        lenient().when(userTxn.consensusNow()).thenReturn(CONSENSUS_NOW);
+        lenient().when(userTxn.stack()).thenReturn(stack);
     }
 
     private void givenNoFailInvalid() {

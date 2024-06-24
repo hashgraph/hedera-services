@@ -21,7 +21,9 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.swirlds.platform.state.PlatformState;
@@ -51,6 +53,7 @@ public class HandleWorkflow {
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
     private final Provider<UserTxnComponent.Factory> userTxnProvider;
+    private final PreHandleResultManager preHandleResultManager;
 
     @Inject
     public HandleWorkflow(
@@ -59,13 +62,15 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final Provider<UserTxnComponent.Factory> userTxnProvider) {
+            @NonNull final Provider<UserTxnComponent.Factory> userTxnProvider,
+            @NonNull final PreHandleResultManager preHandleResultManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
         this.userTxnProvider = requireNonNull(userTxnProvider, "userTxnProvider must not be null");
+        this.preHandleResultManager = preHandleResultManager;
     }
 
     /**
@@ -155,8 +160,11 @@ public class HandleWorkflow {
         final var consTime = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
         // FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
         blockRecordManager.startUserTransaction(consTime, state, platformState);
-        final var userTxn =
-                userTxnProvider.get().create(platformState, event, creator, txn, consTime, lastHandledConsTime);
+        final var preHandleResult =
+                preHandleResultManager.getCurrentPreHandleResult(creator, txn, new ReadableStoreFactory(state));
+        final var userTxn = userTxnProvider
+                .get()
+                .create(platformState, event, creator, txn, consTime, lastHandledConsTime, preHandleResult);
         final var recordStream = userTxn.workflow().execute();
         blockRecordManager.endUserTransaction(recordStream, state);
 
