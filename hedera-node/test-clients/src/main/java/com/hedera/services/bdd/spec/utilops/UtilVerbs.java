@@ -84,6 +84,8 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -117,6 +119,8 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -608,6 +612,15 @@ public class UtilVerbs {
 
     public static BalanceSnapshot balanceSnapshot(String name, String forAccount) {
         return new BalanceSnapshot(forAccount, name);
+    }
+
+    public static MutateAccountOp mutateAccount(
+            @NonNull final String name, @NonNull final Consumer<Account.Builder> mutation) {
+        return new MutateAccountOp(name, mutation);
+    }
+
+    public static MutateNodeOp mutateNode(@NonNull final String name, @NonNull final Consumer<Node.Builder> mutation) {
+        return new MutateNodeOp(name, mutation);
     }
 
     public static BalanceSnapshot balanceSnapshot(Function<HapiSpec, String> nameFn, String forAccount) {

@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.transactions;
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -61,6 +62,9 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EntityNumber;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -232,6 +236,16 @@ public class TxnUtils {
 
     public static FileID asFileId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asFile(s) : lookupSpec.registry().getFileId(s);
+    }
+
+    public static EntityNumber asNodeId(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s) ? asEntityNumber(s) : lookupSpec.registry().getNodeId(s);
+    }
+
+    public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s)
+                ? asEntityNumber(s).getNumber()
+                : lookupSpec.registry().getNodeId(s).getNumber();
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {

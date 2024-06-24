@@ -59,9 +59,9 @@ module com.hedera.node.hapi {
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
     requires transitive com.hedera.pbj.runtime;
-    requires transitive grpc.stub;
+    requires transitive io.grpc.stub;
     requires transitive io.grpc;
-    requires grpc.protobuf;
+    requires io.grpc.protobuf;
     requires org.antlr.antlr4.runtime;
     requires static com.github.spotbugs.annotations;
     requires static java.annotation;

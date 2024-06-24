@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_OUTCOMES;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -37,22 +39,28 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
@@ -67,13 +75,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.RealmID;
@@ -869,5 +881,214 @@ public class CryptoCreateSuite {
                     allRunFor(spec, op1, op2, op3);
                 }))
                 .then(getAccountInfo(ACCOUNT).has(accountWith().balance(ONE_HBAR)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createAnAccountWithNoMaxAutoAssocAndBalance() {
+        double v13PriceUsd = 0.05;
+
+        final var noAutoAssocSlots = "noAutoAssocSlots";
+
+        return defaultHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
+                .given(
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519),
+                        cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
+                        getAccountBalance(ED_KEY).hasTinyBars(ONE_HUNDRED_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate("noAutoAssoc")
+                            .key(ED_KEY)
+                            .via(noAutoAssocSlots)
+                            .blankMemo()
+                            .payingWith(ED_KEY);
+
+                    final var op2 =
+                            cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).alias(evmAddressBytes);
+                    allRunFor(spec, op, op2);
+                }))
+                .then(
+                        validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
+                        getAccountInfo("noAutoAssoc")
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .hasMaxAutomaticAssociations(0),
+                        getAccountInfo(ACCOUNT)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .hasMaxAutomaticAssociations(0));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> createAnAccountWithNegativeMaxAutoAssocAndBalance() {
+        double v13PriceUsd = 0.05;
+        final var negativeAutoAssocSlots = "negativeAutoAssocSlots";
+        return propertyPreservingHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+                .given(
+                        overridingThree(
+                                LAZY_CREATION_ENABLED,
+                                TRUE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                TRUE_VALUE,
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
+                                TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519),
+                        cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
+                        getAccountBalance(ED_KEY).hasTinyBars(ONE_HUNDRED_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate("negativeAutoAssoc")
+                            .key(ED_KEY)
+                            .maxAutomaticTokenAssociations(-1)
+                            .via(negativeAutoAssocSlots)
+                            .blankMemo()
+                            .payingWith(ED_KEY);
+
+                    final var op2 = cryptoCreate(ACCOUNT)
+                            .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-1)
+                            .alias(evmAddressBytes);
+                    allRunFor(spec, op, op2);
+                }))
+                .then(
+                        validateChargedUsd(negativeAutoAssocSlots, v13PriceUsd),
+                        getAccountInfo("negativeAutoAssoc")
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .hasMaxAutomaticAssociations(-1),
+                        getAccountInfo(ACCOUNT)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .hasMaxAutomaticAssociations(-1));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createAnAccountWithInvalidNegativeMaxAutoAssoc() {
+        return defaultHapiSpec("createAnAccountWithInvalidNegativeMaxAutoAssoc")
+                .given(
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519),
+                        cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
+                        getAccountBalance(ED_KEY).hasTinyBars(ONE_HUNDRED_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate("negativeAutoAssoc")
+                            .key(ED_KEY)
+                            .maxAutomaticTokenAssociations(-2)
+                            .blankMemo()
+                            .payingWith(ED_KEY)
+                            .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS)
+                            .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS);
+
+                    final var op2 = cryptoCreate(ACCOUNT)
+                            .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(-2)
+                            .alias(evmAddressBytes)
+                            .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS)
+                            .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS);
+                    allRunFor(spec, op, op2);
+                }))
+                .then();
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createAnAccountWithZeroMaxAssoc() {
+        double v13PriceUsd = 0.05;
+
+        final var noAutoAssocSlots = "noAutoAssocSlots";
+
+        return defaultHapiSpec("createAnAccountWithZeroMaxAssoc")
+                .given(
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_KEY).shape(ED25519),
+                        cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
+                        getAccountBalance(ED_KEY).hasTinyBars(ONE_HUNDRED_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate("noAutoAssoc")
+                            .key(ED_KEY)
+                            .maxAutomaticTokenAssociations(0)
+                            .via(noAutoAssocSlots)
+                            .blankMemo()
+                            .payingWith(ED_KEY);
+
+                    final var op2 = cryptoCreate(ACCOUNT)
+                            .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(0)
+                            .alias(evmAddressBytes);
+                    allRunFor(spec, op, op2);
+                }))
+                .then(
+                        validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
+                        getAccountInfo("noAutoAssoc")
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .hasMaxAutomaticAssociations(0),
+                        getAccountInfo(ACCOUNT)
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .hasMaxAutomaticAssociations(0));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createAnAccountWith1001MaxAssoc() {
+        int operationCount = 11;
+        // int operationCount = 1001;
+        HapiSpecOperation[] operations1001 = new HapiSpecOperation[operationCount + 1];
+        for (int i = 0; i < operationCount; i++) {
+            final int index = i;
+            operations1001[i] = withOpContext((spec, assertLog) -> {
+                String tokenName = "token" + index;
+                HapiTokenCreate op = tokenCreate(tokenName)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(1000)
+                        .treasury(TOKEN_TREASURY)
+                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                        .hasKnownStatusFrom(STANDARD_PERMISSIBLE_OUTCOMES);
+
+                HapiCryptoTransfer op2 = cryptoTransfer(moving(10, tokenName).between(TOKEN_TREASURY, ACCOUNT));
+
+                allRunFor(spec, op, op2);
+            });
+        }
+        // assertion here
+        operations1001[operationCount] = getAccountInfo(ACCOUNT)
+                .hasAlreadyUsedAutomaticAssociations(operationCount)
+                .hasMaxAutomaticAssociations(operationCount);
+
+        return defaultHapiSpec("createAnAccountWith1001MaxAssoc")
+                .given(
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+
+                    final var op = cryptoCreate(ACCOUNT)
+                            .key(SECP_256K1_SOURCE_KEY)
+                            .maxAutomaticTokenAssociations(operationCount)
+                            .alias(evmAddressBytes);
+                    allRunFor(spec, op);
+                }))
+                .then(operations1001);
     }
 }

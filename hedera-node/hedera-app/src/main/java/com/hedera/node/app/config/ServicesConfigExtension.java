@@ -59,6 +59,7 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.SigsConfig;
@@ -93,6 +94,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
 
         return Set.of(
                 AccountsConfig.class,
+                NodesConfig.class,
                 ApiPermissionConfig.class,
                 AutoCreationConfig.class,
                 AutoRenew2Config.class,
