@@ -18,12 +18,11 @@ package com.swirlds.platform.event.resubmitter;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -60,12 +59,12 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
      */
     @Override
     @NonNull
-    public List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
+    public List<OneOf<PayloadOneOfType>> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
         if (eventWindow == null) {
             throw new IllegalStateException("Event window is not set");
         }
 
-        final List<ConsensusTransactionImpl> transactionsToResubmit = new ArrayList<>();
+        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = new ArrayList<>();
         final Iterator<Transaction> iterator = event.transactionIterator();
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
@@ -74,13 +73,14 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
                 final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
                 if (transactionAge <= maxSignatureResubmitAge) {
-                    transactionsToResubmit.add(new StateSignatureTransaction(payload));
+                    transactionsToResubmit.add(transaction.getPayload());
                     metrics.reportResubmittedSystemTransaction();
                 } else {
                     metrics.reportAbandonedSystemTransaction();
                 }
             }
         }
+
         return transactionsToResubmit;
     }
 

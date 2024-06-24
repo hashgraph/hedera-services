@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TopicsConfig;
@@ -65,7 +64,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
      * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction
      * receipt.
      *
-     * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
+     * @param topic - the topic to be persisted.
      */
     public void put(@NonNull final Topic topic) {
         requireNonNull(topic);

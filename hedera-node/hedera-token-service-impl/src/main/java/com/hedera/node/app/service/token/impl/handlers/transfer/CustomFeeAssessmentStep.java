@@ -124,9 +124,10 @@ public class CustomFeeAssessmentStep {
         requireNonNull(transferContext);
 
         final var handleContext = transferContext.getHandleContext();
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.readableStore(ReadableTokenRelationStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var config = handleContext.configuration();
         final Predicate<AccountID> autoCreationTest;
         if (transferContext.isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments()) {

@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,10 +70,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
     public void doIn(@NonNull final TransferContext transferContext) {
         requireNonNull(transferContext);
         final var handleContext = transferContext.getHandleContext();
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var nftStore = handleContext.writableStore(WritableNftStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
         final List<TokenAssociation> newAssociations = new ArrayList<>();
 
         for (final var xfers : op.tokenTransfers()) {
@@ -167,11 +169,12 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 getIfUsableForAliasedId(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
         final var config = handleContext.configuration();
+        final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
-        if (tokenRel == null && account.maxAutoAssociations() > 0) {
-            validateFalse(
-                    account.usedAutoAssociations() >= account.maxAutoAssociations(),
-                    NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        if (tokenRel == null && account.maxAutoAssociations() != 0) {
+            boolean validAssociations = hasUnlimitedAutoAssociations(account, entitiesConfig)
+                    || account.usedAutoAssociations() < account.maxAutoAssociations();
+            validateTrue(validAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);

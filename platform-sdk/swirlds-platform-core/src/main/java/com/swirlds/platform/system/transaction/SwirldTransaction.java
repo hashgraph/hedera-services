@@ -58,12 +58,26 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      * 		the binary content/payload of the Swirld transaction
      * @throws IllegalArgumentException
      * 		if the {@code contents} parameter is null or a zero-length array
+     * @deprecated Use {@link #SwirldTransaction(Bytes)} instead
      */
+    @Deprecated
     public SwirldTransaction(final byte[] contents) {
-        if (contents == null || contents.length == 0) {
+        this(Bytes.wrap(contents.clone()));
+    }
+
+    /**
+     * Constructs a new transaction with no associated signatures.
+     *
+     * @param contents
+     * 		the binary content/payload of the Swirld transaction
+     * @throws IllegalArgumentException
+     * 		if the {@code contents} parameter is null or a zero-length array
+     */
+    public SwirldTransaction(final Bytes contents) {
+        if (contents == null || contents.length() == 0) {
             throw new IllegalArgumentException(CONTENT_ERROR);
         }
-        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(contents.clone()));
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, contents);
     }
 
     /**
