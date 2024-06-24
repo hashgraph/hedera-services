@@ -145,7 +145,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
         } catch (final Exception e) {
             // Track the number of times we failed to handle a call
             if (!(e instanceof StatusRuntimeException)) {
-                logger.error("Possibly CATASTROPHIC failure while handling a GRPC message", e);
+                logger.error("Unexpected exception while handling a GRPC message", e);
             }
             callsFailedCounter.increment();
             responseObserver.onError(e);
