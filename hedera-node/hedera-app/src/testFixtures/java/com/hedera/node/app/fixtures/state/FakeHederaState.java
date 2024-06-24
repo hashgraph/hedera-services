@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
@@ -33,10 +31,13 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures.
@@ -53,6 +54,10 @@ public class FakeHederaState implements HederaState {
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         serviceStates.putAll(dataSources);
+        // Purge any readable or writable states whose state definitions are now stale,
+        // since they don't include the new data sources we just added
+        readableStates.remove(serviceName);
+        writableStates.remove(serviceName);
         return this;
     }
 
