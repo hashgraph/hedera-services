@@ -174,7 +174,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                 final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                final long nextId = context.newEntityNum();
+                final long nextId = context.entityNumGenerator().newEntityNum();
                 Schedule finalSchedule =
                         HandlerUtility.completeProvisionalSchedule(provisionalSchedule, nextId, updatedSignatories);
                 if (tryToExecuteSchedule(

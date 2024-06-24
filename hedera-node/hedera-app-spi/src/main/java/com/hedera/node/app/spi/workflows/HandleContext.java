@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
@@ -150,26 +151,11 @@ public interface HandleContext {
     ExchangeRateInfo exchangeRateInfo();
 
     /**
-     * Consumes and returns the next entity number, for use by handlers that create entities.
+     * Returns an {@link EntityNumGenerator} that can be used to generate entity numbers.
      *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
+     * @return the entity number generator
      */
-    long newEntityNum();
-
-    /**
-     * Peeks at the next entity number, for use by handlers that create entities.
-     *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
-     */
-    long peekAtNewEntityNum();
+    EntityNumGenerator entityNumGenerator();
 
     /**
      * Returns the validator for attributes of entities created or updated by handlers.
