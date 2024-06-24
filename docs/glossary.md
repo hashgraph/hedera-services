@@ -3,11 +3,11 @@
 
 ## A
 - [Account Aliases](#account-aliases)
+- [Address Book](#address-book)
 - [Admin Transaction](#admin-transaction)
+- [Application Accounts](#application-accounts)
 - [Auto Associations](#asynchronous)
 - [Auto-Renew Accounts](#auto-renew-accounts)
-- [Address Book](#address-book)
-- [Application Accounts](#application-accounts)
 
 ## B
 - [BLS](#bls)
@@ -35,6 +35,7 @@
 
 ## P
 - [Precompiles](#precompiles)
+- [Privileged System Accounts](#privileged-system-accounts)
 
 ## S
 - [Security Model V2](#security-model-v2)
@@ -51,19 +52,26 @@
 
 ---
 
-## Address Book
-**Address Book**: The _**network**_ address book is data structure that contains information (such as node ID, alias, IP address, and weight) for all nodes in the network, 
-not just consensus, but also block nodes, future validator nodes and more.
-The address book is stored as a file on disk at the moment but will be stored purely in state as part of Dynamic Address Book phase 3.	Disambiguation: There is also an "address book" in files 0.0.101 and 0.0.102 which is different to the "network address book" which are manually managed by devops.
-
 
 ## Account Aliases
 **Account Aliases**: These are identifiers which can be protobuf serialized keys of ED25519 or ECDSA Keys or 33 byte EVM address values. The "triplet" form (e.g. 0.0.18273892) is the simpler and easier to "type".
 An alias is not intended to be user-friendly, but instead to offer a smart-contract friendly identifier. See https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583 for more information.
 
 
+## Address Book
+**Address Book**: The _**network**_ address book is data structure that contains information (such as node ID, alias, IP address, and weight) for all nodes in the network,
+not just consensus, but also block nodes, future validator nodes and more.
+The address book is stored as a file on disk at the moment but will be stored purely in state as part of Dynamic Address Book phase 3.	Disambiguation: There is also an "address book" in files 0.0.101 and 0.0.102 which is different to the "network address book" which are manually managed by devops.
+
+
 ## Admin Transaction 
-**Admin Transaction**: A HAPI transaction which has been signed by the council, for example a Freeze Transaction
+**Admin Transaction**: A HAPI transaction which requires the transaction fee payer to be a [Privileged System Account](#privileged-system-accounts). Some examples of Admin Transactions include the following:
+- Freeze Transactions
+- System Delete
+- System Undelete
+- Address Book File 0.0.101/102 updates
+- Exchange Rate File 0.0.111 updates
+- Dynamic Properties File 0.0.121 updates
 
 
 ## Application Accounts
@@ -137,6 +145,11 @@ and [Civilian Accounts](#civilian-accounts)
 **Precompiles**: Behave as if they were contracts deployed at specific addresses (with one exception: The EIP-4788 "beacon roots contract" which is a real contract deployed at a specific address) In Ethereum, they are very low addresses, 0x00 .. 0x0F). 
 They are not implemented as contracts because that would be far too slow, instead they are built-in to the code of the Ethereum EVM, which checks to see if the address you're calling is one of the precompiles and then just runs the related code.
 We call our equivalent [System Contracts](#system-contracts) but there may still some legacy references to "precompiles" in the codebase and older documentation.
+
+
+## Privileged System Accounts
+**Privileged System Accounts**: An account with an entity ID of 0.0.1000 or lower. These are accounts that are authorized to handle [Admin Transactions](#admin-transaction).
+Some privileged accounts, like account 0.0.2 or 0.0.58, are owned by the Hedera Council. This means their keys are on the account and their signatures would be required if the account is being modified or used to pay for - [Admin Transactions](#admin-transaction)
 
 ---
 
