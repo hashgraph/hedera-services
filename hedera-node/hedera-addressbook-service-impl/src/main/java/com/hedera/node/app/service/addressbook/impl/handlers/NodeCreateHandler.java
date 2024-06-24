@@ -74,7 +74,7 @@ public class NodeCreateHandler implements TransactionHandler {
         validateFalsePreCheck(
                 op.gossipCaCertificate().length() == 0
                         || op.gossipCaCertificate().equals(Bytes.EMPTY),
-            INVALID_GOSSIP_CA_CERTIFICATE);
+                INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Override

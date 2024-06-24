@@ -17,12 +17,16 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
@@ -45,6 +49,8 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
@@ -53,6 +59,8 @@ import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
@@ -110,14 +118,12 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
 
-        //        final var topLevelPayer = context.payer();
-        //        checkSender(topLevelPayer);
-
         for (final var transfers : op.tokenTransfers()) {
+            final var tokenID = transfers.tokenOrThrow();
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
-            if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore);
-            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, accountStore);
+            validateTruePreCheck(tokenMeta != null, INVALID_TOKEN_ID);
+            checkFungibleTokenTransfers(tokenID, transfers.transfers(), context, accountStore);
+            checkNftTransfers(tokenID, transfers.nftTransfers(), context, tokenMeta, accountStore);
         }
     }
 
@@ -397,16 +403,18 @@ public class TokenAirdropsHandler implements TransactionHandler {
     /**
      * As part of pre-handle, token transfers in the transfer list are plausible.
      *
-     * @param transfers The transfers to check
-     * @param ctx The context we gather signing keys into
+     * @param transfers    The transfers to check
+     * @param ctx          The context we gather signing keys into
      * @param accountStore The account store to use to look up accounts
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
+            @NonNull final TokenID tokenID,
             @NonNull final List<AccountAmount> transfers,
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore)
             throws PreCheckException {
+        final var tokenRelStore = ctx.createStore(ReadableTokenRelationStore.class);
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
         // "account amount". Each of these represents the transfer of fungible token INTO a single account or OUT of a
         // single account.
@@ -417,32 +425,35 @@ public class TokenAirdropsHandler implements TransactionHandler {
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
             if (account != null) {
-                // This next code is not right, but we have it for compatibility until after we migrate
-                // off the mono-service. Then we can fix this. In this logic, if the receiver account (the
-                // one with the credit) doesn't have a key AND the value being sent is non-hbar fungible tokens,
-                // then we fail with ACCOUNT_IS_IMMUTABLE. And if the account is being debited and has no key,
-                // then we also fail with the same error. It should be that being credited value DOES NOT require
-                // a key, unless `receiverSigRequired` is true.
                 if (isStakingAccount(ctx.configuration(), account.accountId()) && (isDebit || isCredit)) {
-                    // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
                     throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
                 }
 
-                // We only need signing keys for accounts that are being debited OR those being credited
-                // but with receiverSigRequired set to true. If the account is being debited but "isApproval"
-                // is set on the transaction, then we defer to the token transfer logic to determine if all
-                // signing requirements were met ("isApproval" is a way for the client to say "I don't need a key
-                // because I'm approved which you will see when you handle this transaction").
-                if (isDebit && !accountAmount.isApproval()) {
-                    // If the account is a hollow account, then we require a signature for it.
-                    // It is possible that the hollow account has signed this transaction, in which case
-                    // we need to finalize the hollow account by setting its key.
-                    if (isHollow(account)) {
-                        ctx.requireSignatureForHollowAccount(account);
+                if (isDebit) {
+                    final var tokenRel = tokenRelStore.get(accountId, tokenID);
+                    validateTruePreCheck(tokenRel != null, INVALID_TRANSACTION);
+                    if (accountAmount.isApproval()) {
+                        final var topLevelPayer = ctx.payer();
+                        final var tokenAllowances = new ArrayList<>(account.tokenAllowances());
+                        var haveExistingAllowance = false;
+                        for (final var allowance : tokenAllowances) {
+                            if (topLevelPayer.equals(allowance.spenderId()) && tokenID.equals(allowance.tokenId())) {
+                                haveExistingAllowance = true;
+                                final var newAllowanceAmount = allowance.amount() + accountAmount.amount();
+                                validateTruePreCheck(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
+                            }
+                        }
+                        validateTruePreCheck(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
                     } else {
-                        ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
+                        // If the account is a hollow account, then we require a signature for it.
+                        // It is possible that the hollow account has signed this transaction, in which case
+                        // we need to finalize the hollow account by setting its key.
+                        if (isHollow(account)) {
+                            ctx.requireSignatureForHollowAccount(account);
+                        } else {
+                            ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
+                        }
                     }
-
                 } else if (isCredit && account.receiverSigRequired()) {
                     ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
                 }
@@ -454,19 +465,58 @@ public class TokenAirdropsHandler implements TransactionHandler {
     }
 
     private void checkNftTransfers(
+            final TokenID tokenID,
             final List<NftTransfer> nftTransfersList,
             final PreHandleContext context,
             final ReadableTokenStore.TokenMetadata tokenMeta,
             final ReadableAccountStore accountStore)
             throws PreCheckException {
+
+        final var nftStore = context.createStore(ReadableNftStore.class);
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var tokenRelStore = context.createStore(ReadableTokenRelationStore.class);
+        final var token = getIfUsable(tokenID, tokenStore);
+
         for (final var nftTransfer : nftTransfersList) {
+            // Validate accounts
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(senderId, null);
             checkSender(senderId, nftTransfer, context, accountStore);
+            final var senderAccount = accountStore.getAliasedAccountById(senderId);
+            final var tokenRel = tokenRelStore.get(senderId, tokenID);
+            if (tokenRel == null) {
+                throw new PreCheckException(INVALID_TRANSACTION);
+            }
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);
             checkReceiver(receiverId, context, tokenMeta, accountStore);
+            final var receiverAccount = accountStore.getAliasedAccountById(receiverId);
+
+            if (senderAccount == null || receiverAccount == null) {
+                throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            }
+
+            final var nft = nftStore.get(tokenID, nftTransfer.serialNumber());
+            validateTrue(nft != null, INVALID_NFT_ID);
+
+            if (nftTransfer.isApproval()) {
+                // If isApproval flag is set then the spender account must have paid for the transaction.
+                // The transfer list specifies the owner who granted allowance as sender
+                // check if the allowances from the sender account has the payer account as spender
+                validateSpenderHasAllowance(senderAccount, context.payer(), tokenID, nft);
+            }
+
+            // owner of nft should match the sender in transfer list
+            if (nft.hasOwnerId()) {
+                validateTrue(nft.ownerId() != null, INVALID_NFT_ID);
+                validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                //                validateTrue(senderAccount.ass);
+            } else {
+                final var treasuryId = token.treasuryAccountId();
+                validateTrue(treasuryId != null, INVALID_ACCOUNT_ID);
+                validateTrue(treasuryId.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            }
         }
     }
 
@@ -477,6 +527,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
             final ReadableAccountStore accountStore)
             throws PreCheckException {
 
+        checkPayer(senderId, meta);
         // Lookup the sender account and verify it.
         final var senderAccount = accountStore.getAliasedAccountById(senderId);
         if (senderAccount == null) {
@@ -534,5 +585,24 @@ public class TokenAirdropsHandler implements TransactionHandler {
         return tokenRelation == null
                 && receiver.maxAutoAssociations() <= receiver.usedAutoAssociations()
                 && receiver.maxAutoAssociations() != -1;
+    }
+
+    private void checkPayer(AccountID sender, PreHandleContext context) throws PreCheckException {
+        if (context.payer() != sender) {
+            context.requireKeyOrThrow(context.payerKey(), INVALID_ACCOUNT_ID);
+        }
+    }
+
+    private void validateSpenderHasAllowance(
+            final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
+        final var approveForAllAllowances = owner.approveForAllNftAllowances();
+        final var allowance = AccountApprovalForAllAllowance.newBuilder()
+                .spenderId(spender)
+                .tokenId(tokenId)
+                .build();
+        if (!approveForAllAllowances.contains(allowance)) {
+            final var approvedSpender = nft.spenderId();
+            validateTrue(approvedSpender != null && approvedSpender.equals(spender), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+        }
     }
 }

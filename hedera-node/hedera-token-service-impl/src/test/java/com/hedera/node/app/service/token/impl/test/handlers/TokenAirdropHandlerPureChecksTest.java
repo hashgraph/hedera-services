@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 
@@ -26,12 +27,15 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBase {
+
+    private static final int MAX_TOKEN_TRANSFERS = 10;
 
     @SuppressWarnings("DataFlowIssue")
     @Test
@@ -218,6 +222,15 @@ public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBa
     }
 
     @Test
+    void pureChecksTokenTransfersAboveMax() {
+        final var txn = newTokenAirdrop(transactionBodyAboveMaxTransferLimit());
+
+        Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TRANSACTION));
+    }
+
+    @Test
     void pureChecksForEmptyHbarTransferAndEmptyTokenTransfers() {
         // It's actually valid to have no hbar transfers and no token transfers
         final var txn = newTokenAirdrop(Collections.emptyList());
@@ -247,5 +260,19 @@ public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBa
                         .build()));
 
         Assertions.assertThatCode(() -> subject.pureChecks(txn)).doesNotThrowAnyException();
+    }
+
+    private List<TokenTransferList> transactionBodyAboveMaxTransferLimit() {
+        List<TokenTransferList> result = new ArrayList<>();
+
+        for (int i = 0; i <= MAX_TOKEN_TRANSFERS; i++) {
+            result.add(TokenTransferList.newBuilder()
+                    .token(TOKEN_2468)
+                    .transfers(ACCT_4444_PLUS_10)
+                    .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_1_FROM_3333_TO_4444)
+                    .build());
+        }
+
+        return result;
     }
 }

@@ -27,11 +27,13 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
 
 public class TokenAirdropHandlerTestBase extends StepsBase {
 
@@ -62,11 +64,14 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
     protected TokenAirdropsHandler subject;
     protected TokenAirdropValidator validator;
 
+    @Mock
+    private AssetsLoader assetsLoader;
+
     @BeforeEach
     public void setUp() {
         super.setUp();
         validator = new TokenAirdropValidator();
-        subject = new TokenAirdropsHandler(validator);
+        subject = new TokenAirdropsHandler(validator, assetsLoader);
     }
 
     protected TransactionBody newTokenAirdrop(final TokenTransferList... tokenTransferLists) {
