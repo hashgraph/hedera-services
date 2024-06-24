@@ -68,6 +68,9 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileDelete;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeCreate;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeDelete;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeUpdate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
@@ -221,6 +224,19 @@ public class TxnVerbs {
 
     public static HapiFileDelete fileDelete(Supplier<String> fileNameSupplier) {
         return new HapiFileDelete(fileNameSupplier);
+    }
+
+    /* NODE */
+    public static HapiNodeCreate nodeCreate(String node) {
+        return new HapiNodeCreate(node);
+    }
+
+    public static HapiNodeUpdate nodeUpdate(String node) {
+        return new HapiNodeUpdate(node);
+    }
+
+    public static HapiNodeDelete nodeDelete(String node) {
+        return new HapiNodeDelete(node);
     }
 
     /* TOKEN */

@@ -43,6 +43,7 @@ public class StoreMetricsServiceImpl implements StoreMetricsService {
         storeMetricsMap.put(StoreType.SLOT_STORAGE, new StoreMetricsImpl(metrics, "storageSlots", "storage slots"));
         storeMetricsMap.put(StoreType.CONTRACT, new StoreMetricsImpl(metrics, "contracts"));
         storeMetricsMap.put(StoreType.SCHEDULE, new StoreMetricsImpl(metrics, "schedules"));
+        storeMetricsMap.put(StoreType.NODE, new StoreMetricsImpl(metrics, "nodes"));
     }
 
     @Override

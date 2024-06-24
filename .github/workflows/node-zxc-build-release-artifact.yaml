@@ -833,15 +833,25 @@ jobs:
             gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
           echo "::endgroup::"
 
-      - name: Gradle Publish to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
+      - name: Gradle Publish Platform to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
         uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
         if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
-          OSSRH_USERNAME: ${{ secrets.sdk-ossrh-username }}
-          OSSRH_PASSWORD: ${{ secrets.sdk-ossrh-password }}
+          NEXUS_USERNAME: ${{ secrets.sdk-ossrh-username }}
+          NEXUS_PASSWORD: ${{ secrets.sdk-ossrh-password }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: "release${{ inputs.release-profile }} --scan -PpublishSigningEnabled=true --no-configuration-cache"
+          arguments: ":release${{ inputs.release-profile }} -PpublishingPackageGroup=com.swirlds --scan -PpublishSigningEnabled=true --no-configuration-cache"
+
+      - name: Gradle Publish Services to ${{ inputs.version-policy == 'specified' && 'Maven Central' || 'Google Artifact Registry' }} (${{ inputs.release-profile }})
+        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        if: ${{ inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
+        env:
+          NEXUS_USERNAME: ${{ secrets.svcs-ossrh-username }}
+          NEXUS_PASSWORD: ${{ secrets.svcs-ossrh-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: ":release${{ inputs.release-profile }} -PpublishingPackageGroup=com.hedera --scan -PpublishSigningEnabled=true --no-configuration-cache"
 
       - name: Upload SDK Release Archives
         if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}

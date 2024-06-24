@@ -39,11 +39,13 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NodeGetInfoResponse;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -535,6 +537,11 @@ public class HapiSpecRegistry {
         put(asAccountString(id), name);
     }
 
+    public void saveNodeId(String name, EntityNumber nodeId) {
+        put(name, nodeId);
+        put(String.valueOf(nodeId), name);
+    }
+
     public void saveScheduleId(String name, ScheduleID id) {
         put(name, id);
         put(asScheduleString(id), name);
@@ -687,6 +694,10 @@ public class HapiSpecRegistry {
         return get(name, FileID.class);
     }
 
+    public EntityNumber getNodeId(String name) {
+        return get(name, EntityNumber.class);
+    }
+
     public void removeFileId(String name) {
         try {
             remove(name, FileID.class);
@@ -749,6 +760,10 @@ public class HapiSpecRegistry {
     }
 
     public void saveFileInfo(String name, FileGetInfoResponse.FileInfo info) {
+        put(name, info);
+    }
+
+    public void saveNodeInfo(String name, NodeGetInfoResponse info) {
         put(name, info);
     }
 
