@@ -122,7 +122,7 @@ State API classes and interfaces will migrate to a designated module. The classe
 
 Usage example:
 ```java
-private PlatformState findPlatformState(HederaState state) {
+private PlatformState findPlatformState(LedgerState state) {
   final ReadableStates states = state.getReadableStates(PlatformState.NAME);   
   final ReadableSingletonState<PlatformState> platformState = states.getSingleton(PlatformState.PLATFORM_STATE_KEY);
   return platformState.get();
