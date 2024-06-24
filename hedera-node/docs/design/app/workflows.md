@@ -17,23 +17,23 @@ The ingest-workflow is single-threaded, but multiple calls can run in parallel.
 
 The ingest workflow consists of the following steps:
 
-0. **Check node.** The node is checked to ensure it is not in a state that prevents it from processing transactions.
-1. **Check timeBox** Checks whether the transaction duration is valid as per the configuration for valid durations 
+1. **Check node.** The node is checked to ensure it is not in a state that prevents it from processing transactions.
+2. **Check timeBox** Checks whether the transaction duration is valid as per the configuration for valid durations 
 for the network, and whether the current node wall-clock time falls between the transaction start and the transaction end (transaction start + duration)
-2. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
-3. **Deduplicate.** The transaction is checked to ensure it has not been processed before.
-4. **Check throttles** Throttling must be observed and checked as early as possible.
-    1. **Pure Checks** Calls `pureChecks` method that does validations based on the respective handler's transaction body 
+3. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
+4. **Deduplicate.** The transaction is checked to ensure it has not been processed before.
+5. **Check throttles** Throttling must be observed and checked as early as possible.
+6. **Pure Checks** Calls `pureChecks` method that does validations based on the respective handler's transaction body 
          The checks performed here are independent of the state and configuration. 
          This check will be removed in the future from IngestWorkflow. It is important to note that `pureChecks` 
          and `Transaction Prechecks` found [here](transaction-prechecks.md) are different.
-5. **Get payer account.** The account data of the payer is read from the latest immutable state.
-6. Account Balance
+7. **Get payer account.** The account data of the payer is read from the latest immutable state.
+8. Account Balance
    1. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
    2. **Estimate fee.** Compute the fee that is required to pay for the transaction.
-7. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
-8. **Submit to platform.** The transaction is submitted to the platform for further processing.
-9. **TransactionResponse.** Return `TransactionResponse`  with result-code.
+9. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
+10. **Submit to platform.** The transaction is submitted to the platform for further processing.
+11. **TransactionResponse.** Return `TransactionResponse`  with result-code.
 
 If all checks have been successful, the transaction has been submitted to the platform and the precheck-code of the returned `TransactionResponse` is `OK`.
 Otherwise the transaction is rejected with an appropriate response code.
