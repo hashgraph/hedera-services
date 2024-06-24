@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.addressbook;
 
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
@@ -52,13 +50,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
             // Such a deleted node can never be reused.
             // Request is [NodeDeleteTransactionBody](#proto.NodeDeleteTransactionBody)
             //
-            new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class),
-
-            // Retrieves the node information by node Id.
-            // Request is [NodeGetInfoQuery](#proto.NodeGetInfoQuery)
-            // Response is [NodeGetInfoResponse](#proto.NodeGetInfoResponse)
-            //
-            new RpcMethodDefinition<>("getNodeInfo", Query.class, Response.class));
+            new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class));
 
     private AddressBookServiceDefinition() {
         // Forbid instantiation
