@@ -55,8 +55,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Mock
     private ExpiryValidator expiryValidator;
+
     @Mock
     private TokenServiceApi tokenServiceApi;
+
     @Mock
     private RecordBuilders recordBuilders;
 
