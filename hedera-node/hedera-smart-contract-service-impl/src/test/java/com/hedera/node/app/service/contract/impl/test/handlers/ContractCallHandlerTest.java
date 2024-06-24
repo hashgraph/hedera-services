@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.handlers.ContractHandlers.MAX_GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HALT_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -38,6 +37,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -68,6 +68,9 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     private ContractCallRecordBuilder recordBuilder;
 
     @Mock
+    private RecordBuilders recordBuilders;
+
+    @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
     @Mock
@@ -84,7 +87,8 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     void delegatesToCreatedComponentAndExposesSuccess() {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CALL)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
-        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome = new CallOutcome(
                 expectedResult,
@@ -106,7 +110,8 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     void delegatesToCreatedComponentAndThrowsOnFailure() {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CALL)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
-        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = HALT_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome =
                 new CallOutcome(expectedResult, HALT_RESULT.finalStatus(), null, HALT_RESULT.gasPrice(), null, null);
@@ -140,10 +145,6 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), false))
                 .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
         assertThrows(PreCheckException.class, () -> subject.pureChecks(txn2));
-
-        // check does not exceed max gas
-        final var txn3 = contractCallTransactionWithAboveMaxGas();
-        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn3));
     }
 
     private TransactionBody contractCallTransaction() {
@@ -171,16 +172,6 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
                 .transactionID(transactionID)
                 .contractCall(ContractCallTransactionBody.newBuilder()
                         .gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1)
-                        .contractID(targetContract))
-                .build();
-    }
-
-    private TransactionBody contractCallTransactionWithAboveMaxGas() {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
-        return TransactionBody.newBuilder()
-                .transactionID(transactionID)
-                .contractCall(ContractCallTransactionBody.newBuilder()
-                        .gas(MAX_GAS_LIMIT + 1)
                         .contractID(targetContract))
                 .build();
     }

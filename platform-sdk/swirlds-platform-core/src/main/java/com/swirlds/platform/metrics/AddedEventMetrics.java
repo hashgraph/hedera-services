@@ -33,8 +33,10 @@ import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.stats.AverageStat;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.transaction.Transaction;
 import java.time.temporal.ChronoUnit;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -157,8 +159,12 @@ public class AddedEventMetrics {
     public void eventAdded(final EventImpl event) {
         if (event.isCreatedBy(selfId)) {
             eventsCreatedPerSecond.cycle();
-            if (event.getHashedData().hasOtherParent()) {
-                averageOtherParentAgeDiff.update(event.getGeneration() - event.getOtherParentGen());
+            if (!event.getBaseEvent().getOtherParents().isEmpty()) {
+                averageOtherParentAgeDiff.update(event.getGeneration()
+                        - event.getBaseEvent().getOtherParents().stream()
+                                .map(EventDescriptor::getGeneration)
+                                .max(Long::compareTo)
+                                .orElse(0L));
             }
         } else {
             avgCreatedReceivedTime.update(
@@ -170,9 +176,6 @@ public class AddedEventMetrics {
         eventsPerSecond.cycle();
 
         // record stats for all transactions in this event
-        final ConsensusTransaction[] trans = event.getTransactions();
-        final int numTransactions = (trans == null ? 0 : trans.length);
-
         // we have already ensured this isn't a duplicate event, so record all the stats on it:
 
         // count the bytes in the transactions, and bytes per second, and transactions per event
@@ -182,15 +185,18 @@ public class AddedEventMetrics {
         int sysSize = 0;
         int numAppTrans = 0;
         int numSysTrans = 0;
-        for (int i = 0; i < numTransactions; i++) {
-            if (trans[i].isSystem()) {
+
+        final Iterator<Transaction> iterator = event.transactionIterator();
+        while (iterator.hasNext()) {
+            final Transaction transaction = iterator.next();
+            if (transaction.isSystem()) {
                 numSysTrans++;
-                sysSize += trans[i].getSerializedLength();
-                avgBytesPerTransactionSys.update(trans[i].getSerializedLength());
+                sysSize += transaction.getSerializedLength();
+                avgBytesPerTransactionSys.update(transaction.getSerializedLength());
             } else {
                 numAppTrans++;
-                appSize += trans[i].getSerializedLength();
-                avgBytesPerTransaction.update(trans[i].getSerializedLength());
+                appSize += transaction.getSerializedLength();
+                avgBytesPerTransaction.update(transaction.getSerializedLength());
             }
         }
         avgTransactionsPerEvent.update(numAppTrans);
@@ -203,7 +209,7 @@ public class AddedEventMetrics {
 
         // count all transactions ever in the hashgraph
         if (!event.isEmpty()) {
-            numTrans.add(event.getTransactions().length);
+            numTrans.add(event.getBaseEvent().getPayloadCount());
         }
     }
 }

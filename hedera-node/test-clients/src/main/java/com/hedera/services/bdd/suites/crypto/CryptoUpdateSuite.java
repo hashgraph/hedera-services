@@ -57,18 +57,19 @@ import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -196,23 +197,21 @@ public class CryptoUpdateSuite {
                                 .has(AccountInfoAsserts.accountWith()
                                         .stakedAccountId("0.0.20")
                                         .noStakingNodeId()
-                                        .isDeclinedReward(true))
-                                .logged())
+                                        .isDeclinedReward(true)))
                 .when(
                         cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                         getAccountInfo("user")
                                 .has(AccountInfoAsserts.accountWith()
                                         .noStakedAccountId()
                                         .stakedNodeId(0L)
-                                        .isDeclinedReward(false))
-                                .logged(),
+                                        .isDeclinedReward(false)),
                         cryptoUpdate("user").newStakedNodeId(-1L),
+                        cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
                         getAccountInfo("user")
                                 .has(AccountInfoAsserts.accountWith()
                                         .noStakedAccountId()
                                         .noStakingNodeId()
-                                        .isDeclinedReward(false))
-                                .logged())
+                                        .isDeclinedReward(false)))
                 .then(
                         cryptoUpdate("user")
                                 .key(ADMIN_KEY)
@@ -230,13 +229,19 @@ public class CryptoUpdateSuite {
                                         .noStakedAccountId()
                                         .noStakingNodeId()
                                         .isDeclinedReward(true))
-                                .logged());
+                                .logged(),
+                        // For completeness stake back to a node
+                        cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
+                        getAccountInfo("user")
+                                .has(AccountInfoAsserts.accountWith()
+                                        .stakedNodeId(1L)
+                                        .isDeclinedReward(true)));
     }
 
     @HapiTest
     final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
-        double baseFee = 0.00021;
+        double baseFee = 0.000214;
         double baseFeeWithExpiry = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
@@ -252,13 +257,10 @@ public class CryptoUpdateSuite {
 
         AtomicLong expiration = new AtomicLong();
         return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled", "ledger.maxAutoAssociations")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "ledger.maxAutoAssociations")
                 .given(
                         overridingTwo(
-                                "entities.unlimitedAutoAssociationsEnabled",
-                                TRUE_VALUE,
-                                "ledger.maxAutoAssociations",
-                                "5000"),
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE, "ledger.maxAutoAssociations", "5000"),
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
                         cryptoCreate("canonicalAccount")
@@ -529,15 +531,12 @@ public class CryptoUpdateSuite {
         final String ADMIN_KEY = "adminKey";
 
         return propertyPreservingHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.allowAutoAssociations", "entities.unlimitedAutoAssociationsEnabled")
+                .preserving("contracts.allowAutoAssociations", UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
                         overridingTwo(
-                                "contracts.allowAutoAssociations",
-                                "true",
-                                "entities.unlimitedAutoAssociationsEnabled",
-                                "true"),
+                                "contracts.allowAutoAssociations", "true", UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)

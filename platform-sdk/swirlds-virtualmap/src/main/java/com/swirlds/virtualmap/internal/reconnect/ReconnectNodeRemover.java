@@ -16,6 +16,8 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
+import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
+
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -23,6 +25,8 @@ import com.swirlds.virtualmap.internal.RecordAccessor;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * During reconnect, information about all existing nodes is sent from the teacher to the learner. However,
@@ -51,6 +55,8 @@ import java.util.stream.Stream;
  * 		the type of the value
  */
 public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> {
+
+    private static final Logger logger = LogManager.getLogger(ReconnectNodeRemover.class);
 
     /**
      * The last leaf path of the new tree being received.
@@ -145,6 +151,9 @@ public class ReconnectNodeRemover<K extends VirtualKey, V extends VirtualValue> 
             return;
         }
         // no-op if newLastLeafPath is greater or equal to oldLastLeafPath
+        logger.info(
+                RECONNECT.getMarker(),
+                "allNodesReceived(): newLastLeafPath = " + newLastLeafPath + ", oldLastLeafPath = " + oldLastLeafPath);
         for (long p = newLastLeafPath + 1; p <= oldLastLeafPath; p++) {
             final VirtualLeafRecord<K, ?> oldExtraLeafRecord = oldRecords.findLeafRecord(p, false);
             assert oldExtraLeafRecord != null || p < oldFirstLeafPath;

@@ -42,30 +42,19 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.service.file.impl.codec.FileServiceStateTranslator;
-import com.hedera.node.app.service.mono.files.DataMapFactory;
-import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.node.app.service.mono.files.MetadataMapFactory;
-import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -74,10 +63,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,35 +92,23 @@ public class V0490FileSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
-    private final ConfigProvider configProvider;
-
-    /**
-     * These fields hold the state of the file service during migration.
-     */
-    private static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState;
-
-    private static Map<com.hederahashgraph.api.proto.java.FileID, byte[]> fileContents;
-    private static Map<com.hederahashgraph.api.proto.java.FileID, HFileMeta> fileAttrs;
-
     /**
      * Constructs a new {@link V0490FileSchema} instance with the given {@link ConfigProvider}.
      *
-     * @param configProvider the configuration provider
      */
-    public V0490FileSchema(@NonNull final ConfigProvider configProvider) {
+    public V0490FileSchema() {
         super(VERSION);
-        this.configProvider = requireNonNull(configProvider);
     }
 
     @NonNull
     @Override
     @SuppressWarnings("rawtypes")
-    public Set<StateDefinition> statesToCreate() {
+    public Set<StateDefinition> statesToCreate(@NonNull final Configuration config) {
         final Set<StateDefinition> definitions = new LinkedHashSet<>();
         definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
 
-        final FilesConfig filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
-        final HederaConfig hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final FilesConfig filesConfig = config.getConfigData(FilesConfig.class);
+        final HederaConfig hederaConfig = config.getConfigData(HederaConfig.class);
         final LongPair fileNums = filesConfig.softwareUpdateRange();
         final long firstUpdateNum = fileNums.left();
         final long lastUpdateNum = fileNums.right();
@@ -151,16 +126,8 @@ public class V0490FileSchema extends Schema {
         return definitions;
     }
 
-    public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
-        this.fileFromState = fss;
-        var blobStore = new FcBlobsBytesStore(fss);
-        this.fileContents = DataMapFactory.dataMapFrom(blobStore);
-        this.fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
-    }
-
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        logger.debug("Migrating genesis state");
         final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
             final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
@@ -176,52 +143,6 @@ public class V0490FileSchema extends Schema {
             createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
         }
-
-        if (fileFromState != null && fileFromState.get() != null) {
-            var toBlobsState = ctx.newStates().<FileID, File>get(BLOBS_KEY);
-
-            logger.info("BBM: Running file service migration...");
-            var allFileIds = extractFileIds(fileFromState.get());
-            var migratedFileIds = new ArrayList<Long>();
-            allFileIds.forEach(fromFileIdRaw -> {
-                var fromFileId = com.hederahashgraph.api.proto.java.FileID.newBuilder()
-                        .setFileNum(fromFileIdRaw)
-                        .build();
-                var fromFileMeta = fileAttrs.get(fromFileId);
-                // Note: if the file meta is null, then this file is more specialized
-                // (e.g. contract bytecode) and will be migrated elsewhere
-                if (fromFileMeta != null) {
-                    File toFile = FileServiceStateTranslator.stateToPbj(
-                            fileContents.get(fromFileId), fromFileMeta, fromFileId);
-                    toBlobsState.put(
-                            FileID.newBuilder().fileNum(fromFileId.getFileNum()).build(), toFile);
-                    migratedFileIds.add(fromFileIdRaw);
-                }
-            });
-
-            if (toBlobsState.isModified()) ((WritableKVStateBase) toBlobsState).commit();
-
-            logger.info("BBM: finished file service migration. Migrated fileIds are : " + migratedFileIds);
-        } else {
-            logger.warn("BBM: no file 'from' state found");
-        }
-
-        fileFromState = null;
-        fileContents = null;
-        fileAttrs = null;
-    }
-
-    private List<Long> extractFileIds(VirtualMapLike<VirtualBlobKey, VirtualBlobValue> fileStorage) {
-        final var fileIds = new ArrayList<Long>();
-        try {
-            fileStorage.extractVirtualMapData(
-                    AdHocThreadManager.getStaticThreadManager(),
-                    entry -> fileIds.add((long) entry.left().getEntityNumCode()),
-                    1);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return fileIds;
     }
 
     // ================================================================================================================
@@ -240,16 +161,17 @@ public class V0490FileSchema extends Schema {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         for (final var nodeInfo : networkInfo.addressBook()) {
             nodeAddresses.add(NodeAddress.newBuilder()
-                    .ipAddress(Bytes.wrap(nodeInfo.externalHostName()))
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     .nodeId(nodeInfo.nodeId())
-                    .stake(nodeInfo.stake())
-                    .memo(Bytes.wrap(nodeInfo.memo()))
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
-                            .port(nodeInfo.externalPort())
-                            .build())
-                    .nodeAccountId(nodeInfo.accountId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
+                    .serviceEndpoint(
+                            // we really don't have grpc proxy name and port for now. Temporary values are set.
+                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
+                            // here.
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                                    .port(1)
+                                    .build())
                     .build());
         }
 
@@ -282,7 +204,26 @@ public class V0490FileSchema extends Schema {
                         .expirationSecond(bootstrapConfig.systemEntityExpiry())
                         .build());
 
-        // Create the node details
+        // Create the node details for file 102,  their fields are different from 101, addressBook
+        final var nodeDetail = new ArrayList<NodeAddress>();
+        for (final var nodeInfo : networkInfo.addressBook()) {
+            nodeDetail.add(NodeAddress.newBuilder()
+                    .stake(nodeInfo.stake())
+                    .nodeAccountId(nodeInfo.accountId())
+                    .nodeId(nodeInfo.nodeId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    // we really don't have grpc proxy name and port for now.Temporary values are set.
+                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
+                    .serviceEndpoint(ServiceEndpoint.newBuilder()
+                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                            .port(1)
+                            .build())
+                    .build());
+        }
+
+        final var nodeDetails =
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
+        final var nodeDetailsProto = NodeAddressBook.PROTOBUF.toBytes(nodeDetails);
         final var nodeInfoFileNum = filesConfig.nodeDetails();
         final var nodeInfoFileId = FileID.newBuilder()
                 .shardNum(hederaConfig.shard())
@@ -294,7 +235,7 @@ public class V0490FileSchema extends Schema {
         files.put(
                 nodeInfoFileId,
                 File.newBuilder()
-                        .contents(nodeAddressBookProto)
+                        .contents(nodeDetailsProto)
                         .fileId(nodeInfoFileId)
                         .keys(masterKey)
                         .expirationSecond(bootstrapConfig.systemEntityExpiry())
@@ -680,12 +621,5 @@ public class V0490FileSchema extends Schema {
                             .expirationSecond(bootstrapConfig.systemEntityExpiry())
                             .build());
         }
-    }
-
-    public static void setFileFromState(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fileFromState) {
-        V0490FileSchema.fileFromState = fileFromState;
-        final var blobStore = new FcBlobsBytesStore(fileFromState);
-        V0490FileSchema.fileContents = DataMapFactory.dataMapFrom(blobStore);
-        V0490FileSchema.fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
     }
 }

@@ -16,15 +16,17 @@
 
 package com.swirlds.platform.event.resubmitter;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -57,29 +59,28 @@ public class DefaultTransactionResubmitter implements TransactionResubmitter {
      */
     @Override
     @NonNull
-    public List<ConsensusTransactionImpl> resubmitStaleTransactions(@NonNull final GossipEvent event) {
+    public List<OneOf<PayloadOneOfType>> resubmitStaleTransactions(@NonNull final PlatformEvent event) {
         if (eventWindow == null) {
             throw new IllegalStateException("Event window is not set");
         }
 
-        final List<ConsensusTransactionImpl> transactionsToResubmit = new ArrayList<>();
-        for (final ConsensusTransactionImpl transaction : event.getHashedData().getTransactions()) {
-            if (transaction.isSystem()) {
-                if (transaction instanceof final StateSignatureTransaction signatureTransaction) {
+        final List<OneOf<PayloadOneOfType>> transactionsToResubmit = new ArrayList<>();
+        final Iterator<Transaction> iterator = event.transactionIterator();
+        while (iterator.hasNext()) {
+            final Transaction transaction = iterator.next();
+            if (Objects.equals(transaction.getPayload().kind(), PayloadOneOfType.STATE_SIGNATURE_PAYLOAD)) {
+                final StateSignaturePayload payload = transaction.getPayload().as();
+                final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
 
-                    final StateSignaturePayload payload =
-                            signatureTransaction.getPayload().as();
-                    final long transactionAge = eventWindow.getLatestConsensusRound() - payload.round();
-
-                    if (transactionAge <= maxSignatureResubmitAge) {
-                        transactionsToResubmit.add(signatureTransaction);
-                        metrics.reportResubmittedSystemTransaction();
-                    } else {
-                        metrics.reportAbandonedSystemTransaction();
-                    }
+                if (transactionAge <= maxSignatureResubmitAge) {
+                    transactionsToResubmit.add(transaction.getPayload());
+                    metrics.reportResubmittedSystemTransaction();
+                } else {
+                    metrics.reportAbandonedSystemTransaction();
                 }
             }
         }
+
         return transactionsToResubmit;
     }
 

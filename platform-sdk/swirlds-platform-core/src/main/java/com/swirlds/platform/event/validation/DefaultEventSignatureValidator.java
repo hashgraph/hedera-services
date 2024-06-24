@@ -25,7 +25,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -134,8 +134,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      * @return the applicable address book, or null if an applicable address book cannot be selected
      */
     @Nullable
-    private AddressBook determineApplicableAddressBook(@NonNull final GossipEvent event) {
-        final SoftwareVersion eventVersion = event.getHashedData().getSoftwareVersion();
+    private AddressBook determineApplicableAddressBook(@NonNull final PlatformEvent event) {
+        final SoftwareVersion eventVersion = event.getSoftwareVersion();
 
         final int softwareComparison = currentSoftwareVersion.compareTo(eventVersion);
         if (softwareComparison < 0) {
@@ -169,14 +169,14 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      * @param event the event to be validated
      * @return true if the event has a valid signature, otherwise false
      */
-    private boolean isSignatureValid(@NonNull final GossipEvent event) {
+    private boolean isSignatureValid(@NonNull final PlatformEvent event) {
         final AddressBook applicableAddressBook = determineApplicableAddressBook(event);
         if (applicableAddressBook == null) {
             // this occurrence was already logged while attempting to determine the applicable address book
             return false;
         }
 
-        final NodeId eventCreatorId = event.getHashedData().getCreatorId();
+        final NodeId eventCreatorId = event.getCreatorId();
 
         if (!applicableAddressBook.contains(eventCreatorId)) {
             rateLimitedLogger.error(
@@ -195,8 +195,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
             return false;
         }
 
-        final boolean isSignatureValid = signatureVerifier.verifySignature(
-                event.getHashedData().getHash().getBytes(), event.getSignature(), publicKey);
+        final boolean isSignatureValid =
+                signatureVerifier.verifySignature(event.getHash().getBytes(), event.getSignature(), publicKey);
 
         if (!isSignatureValid) {
             rateLimitedLogger.error(
@@ -204,7 +204,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
                     "Event failed signature check. Event: {}, Signature: {}, Hash: {}",
                     event,
                     event.getSignature().toHex(),
-                    event.getHashedData().getHash());
+                    event.getHash());
         }
 
         return isSignatureValid;
@@ -215,7 +215,7 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
      */
     @Override
     @Nullable
-    public GossipEvent validateSignature(@NonNull final GossipEvent event) {
+    public PlatformEvent validateSignature(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // ancient events can be safely ignored
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());

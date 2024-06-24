@@ -28,18 +28,16 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.fixtures.fees.FakeFeeAccumulator;
-import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -66,8 +64,9 @@ class UtilPrngHandlerTest {
     private HandleContext handleContext;
 
     private FakePrngRecordBuilder recordBuilder;
-    private FeeCalculator feeCalculator;
-    private FeeAccumulator feeAccumulator;
+
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
 
     @Mock
     private BlockRecordInfo blockRecordInfo;
@@ -81,15 +80,14 @@ class UtilPrngHandlerTest {
     @BeforeEach
     void setUp() {
         recordBuilder = new FakePrngRecordBuilder();
-        feeCalculator = new FakeFeeCalculator();
-        feeAccumulator = new FakeFeeAccumulator();
         final var config = HederaTestConfigBuilder.create()
                 .withValue("utilPrng.isEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
         subject = new UtilPrngHandler();
-        given(handleContext.recordBuilder(PrngRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(PrngRecordBuilder.class)).willReturn(recordBuilder);
         givenTxnWithoutRange();
     }
 
@@ -133,8 +131,6 @@ class UtilPrngHandlerTest {
     void followsHappyPathWithNoRange() {
         givenTxnWithoutRange();
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -151,8 +147,10 @@ class UtilPrngHandlerTest {
         final var feeCtx = mock(FeeContext.class);
         given(feeCtx.body()).willReturn(body);
 
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
         // The fees wouldn't be free in this scenario, but we don't care about the actual return
         // value here since we're using a mock calculator
@@ -188,8 +186,6 @@ class UtilPrngHandlerTest {
     void followsHappyPathWithRange(final int randomNumber) {
         givenTxnWithRange(20);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
 
         // Make sure the random number given to the test ends up as the first 4 bytes of the hash
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(randomNumber));
@@ -236,8 +232,6 @@ class UtilPrngHandlerTest {
     void negativeRandomNumbersReturnPositiveWhenInRange(int rand, int range, int expected) {
         givenTxnWithRange(range);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
 
         // Make sure the random number given to the test ends up as the first 4 bytes of the hash
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(hashWithIntAtStart(rand));
@@ -254,8 +248,6 @@ class UtilPrngHandlerTest {
     void followsHappyPathWithMaxIntegerRange() {
         givenTxnWithRange(Integer.MAX_VALUE);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -278,8 +270,6 @@ class UtilPrngHandlerTest {
     void givenRangeZeroGivesBitString() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
@@ -303,8 +293,6 @@ class UtilPrngHandlerTest {
     void nullHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(null);
 
         subject.handle(handleContext);
@@ -317,8 +305,6 @@ class UtilPrngHandlerTest {
     void emptyHashFromRunningHashReturnsAllZeros() {
         givenTxnWithRange(0);
         given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
-        given(handleContext.feeCalculator(SubType.DEFAULT)).willReturn(feeCalculator);
-        given(handleContext.feeAccumulator()).willReturn(feeAccumulator);
         given(blockRecordInfo.getNMinus3RunningHash()).willReturn(Bytes.EMPTY);
 
         subject.handle(handleContext);

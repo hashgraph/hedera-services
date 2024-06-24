@@ -89,7 +89,7 @@ public class DefaultExecutorFactory implements ExecutorFactory {
         if (parallelism <= 0) {
             throw new IllegalArgumentException("parallelism must be greater than 0");
         }
-        return new ForkJoinPool(parallelism, forkJoinWorkerThreadFactory, handler, false);
+        return new ForkJoinPool(parallelism, forkJoinWorkerThreadFactory, handler, true);
     }
 
     @Override

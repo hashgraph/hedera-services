@@ -270,5 +270,7 @@ public class LearnerPushTask<T> {
             logger.error(EXCEPTION.getMarker(), "exception in the learner's receiving thread", ex);
             throw new MerkleSynchronizationException("exception in the learner's receiving thread", ex);
         }
+
+        logger.info(RECONNECT.getMarker(), "learner thread closed input, output, and view for the current subtree");
     }
 }

@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.mono.utils.Units;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
@@ -85,7 +84,7 @@ class StakePeriodManagerTest {
 
         final var somePeriod = 1_234_567L;
 
-        assertEquals(somePeriod * 2 * Units.MINUTES_TO_SECONDS, subject.epochSecondAtStartOfPeriod(somePeriod));
+        assertEquals(somePeriod * 2 * 60L, subject.epochSecondAtStartOfPeriod(somePeriod));
     }
 
     @Test

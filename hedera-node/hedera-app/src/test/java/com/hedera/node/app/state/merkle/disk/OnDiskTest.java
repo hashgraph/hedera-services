@@ -16,15 +16,13 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.SchemaApplications;
@@ -41,6 +39,8 @@ import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.platform.state.merkle.disk.OnDiskValue;
 import com.swirlds.platform.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -163,8 +163,7 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(
-                registry, SERVICE_NAME, mock(GenesisRecordsBuilder.class), new SchemaApplications());
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME, DEFAULT_CONFIG, new SchemaApplications());
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

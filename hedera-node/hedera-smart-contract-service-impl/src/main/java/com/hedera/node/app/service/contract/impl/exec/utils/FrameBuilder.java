@@ -28,7 +28,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TI
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -119,7 +118,6 @@ public class FrameBuilder {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, Object> contextVariablesFrom(
             @NonNull final Configuration config, @NonNull final HederaEvmContext context) {
         final Map<String, Object> contextEntries = new HashMap<>();
@@ -159,18 +157,37 @@ public class FrameBuilder {
             @NonNull final ContractsConfig config) {
         Code code = CodeV0.EMPTY_CODE;
         final var contractId = transaction.contractIdOrThrow();
+        final var contractMustBePresent = contractMustBePresent(config, featureFlags, contractId);
 
-        if (canLoadCodeFromAccount(transaction, worldUpdater, contractId, config, featureFlags)) {
-            final var account = worldUpdater.getHederaAccount(to);
-            if (account == null && contractMustBePresent(config, featureFlags, contractId)) {
+        // Handle deleted contracts
+        if (contractDeleted(worldUpdater, contractId)) {
+            // if the contract has been deleted, throw an exception
+            // unless the transaction permits missing contract byte code
+            validateTrue(!contractMustBePresent || transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
+            return builder.type(MessageFrame.Type.MESSAGE_CALL)
+                    .address(to)
+                    .contract(to)
+                    .inputData(transaction.evmPayload())
+                    .code(code)
+                    .build();
+        }
+
+        final var account = worldUpdater.getHederaAccount(contractId);
+        if (account != null) {
+            // Hedera account for contract is present, get the byte code
+            code = account.getEvmCode(Bytes.wrap(transaction.payload().toByteArray()));
+
+            // If after getting the code, it is empty, then check if this is allowed
+            if (code.equals(CodeV0.EMPTY_CODE)) {
+                validateTrue(emptyCodePossiblyAllowed(contractMustBePresent, transaction), INVALID_CONTRACT_ID);
+            }
+        } else {
+            // Only do this check if the contract must be present
+            if (contractMustBePresent) {
                 validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
-            } else {
-                code = account.getEvmCode();
-                validateTrue(
-                        emptyCodePossiblyAllowed(config, featureFlags, contractId, transaction, code),
-                        INVALID_CONTRACT_ID);
             }
         }
+
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
                 .contract(to)
@@ -179,27 +196,19 @@ public class FrameBuilder {
                 .build();
     }
 
-    private boolean canLoadCodeFromAccount(
-            @NonNull final HederaEvmTransaction transaction,
-            @NonNull final HederaWorldUpdater worldUpdater,
-            @NonNull final ContractID contractId,
-            @NonNull final ContractsConfig config,
-            @NonNull final FeatureFlags featureFlags) {
-        requireNonNull(transaction);
-        requireNonNull(worldUpdater);
-
-        // If the contract is deleted, never load code from it.
+    private boolean contractDeleted(
+            @NonNull final HederaWorldUpdater worldUpdater, @NonNull final ContractID contractId) {
         final var contract = worldUpdater
                 .enhancement()
                 .nativeOperations()
                 .readableAccountStore()
                 .getContractById(contractId);
-        if (contract != null && contract.deleted()) {
-            return false;
+
+        if (contract != null) {
+            return contract.deleted();
         }
 
-        return worldUpdater.getHederaAccount(contractId) != null
-                || contractMustBePresent(config, featureFlags, contractId);
+        return false;
     }
 
     private boolean contractMustBePresent(
@@ -211,13 +220,9 @@ public class FrameBuilder {
     }
 
     private boolean emptyCodePossiblyAllowed(
-            @NonNull final ContractsConfig config,
-            @NonNull final FeatureFlags featureFlags,
-            @NonNull final ContractID contractId,
-            @NonNull final HederaEvmTransaction transaction,
-            @NonNull final Code code) {
-        return !(contractMustBePresent(config, featureFlags, contractId) && code.equals(CodeV0.EMPTY_CODE))
-                || transaction.isEthereumTransaction()
-                || transaction.hasValue();
+            final boolean contractMustBePresent, @NonNull final HederaEvmTransaction transaction) {
+        // Empty code is allowed if the transaction is an Ethereum transaction or has a value or the contract does not
+        // have to be present via config
+        return transaction.isEthereumTransaction() || transaction.hasValue() || !contractMustBePresent;
     }
 }
