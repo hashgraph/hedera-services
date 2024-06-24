@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -77,6 +78,13 @@ public class CommonPbjConverters {
             builder.setDeleted(file.deleted());
         }
         return builder.build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.EntityNumber fromPbj(@NonNull EntityNumber entityNumber) {
+        requireNonNull(entityNumber);
+        return com.hederahashgraph.api.proto.java.EntityNumber.newBuilder()
+                .setNumber(entityNumber.number())
+                .build();
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.TransactionBody fromPbj(@NonNull TransactionBody tx) {
@@ -210,6 +218,12 @@ public class CommonPbjConverters {
         } else {
             builder.accountNum(accountID.getAccountNum());
         }
+        return builder.build();
+    }
+
+    public static @NonNull EntityNumber toPbj(@NonNull com.hederahashgraph.api.proto.java.EntityNumber entityNumber) {
+        requireNonNull(entityNumber);
+        final var builder = EntityNumber.newBuilder().number(entityNumber.getNumber());
         return builder.build();
     }
 
