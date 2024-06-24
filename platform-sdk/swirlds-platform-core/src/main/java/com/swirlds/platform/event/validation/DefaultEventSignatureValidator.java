@@ -138,7 +138,8 @@ public class DefaultEventSignatureValidator implements EventSignatureValidator {
     private AddressBook determineApplicableAddressBook(@NonNull final PlatformEvent event) {
         final SemanticVersion eventVersion = event.getSoftwareVersion();
 
-        final int softwareComparison = HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, eventVersion);
+        final int softwareComparison =
+                HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, eventVersion);
         if (softwareComparison < 0) {
             // current software version is less than event software version
             rateLimitedLogger.error(

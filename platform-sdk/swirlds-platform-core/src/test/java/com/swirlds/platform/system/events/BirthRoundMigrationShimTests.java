@@ -87,7 +87,9 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final PlatformEvent event = buildEvent(
                     random,
-                    SemanticVersion.newBuilder().major(firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)).build(),
+                    SemanticVersion.newBuilder()
+                            .major(firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100))
+                            .build(),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(1, 100),
                     birthRound);
 
@@ -129,7 +131,9 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final PlatformEvent event = buildEvent(
                     random,
-                    SemanticVersion.newBuilder().major(firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)).build(),
+                    SemanticVersion.newBuilder()
+                            .major(firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100))
+                            .build(),
                     lowestJudgeGenerationBeforeBirthRoundMode + random.nextInt(0, 10),
                     birthRound);
 
@@ -170,7 +174,9 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final PlatformEvent event = buildEvent(
                     random,
-                    SemanticVersion.newBuilder().major(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(1, 10)).build(),
+                    SemanticVersion.newBuilder()
+                            .major(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(1, 10))
+                            .build(),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(-100, 100),
                     birthRound);
 
