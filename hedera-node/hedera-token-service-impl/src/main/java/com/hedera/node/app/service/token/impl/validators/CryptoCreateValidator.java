@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 
@@ -86,19 +87,24 @@ public class CryptoCreateValidator {
         }
     }
 
-    /** Check if the number of auto associations is too many.
+    /** Check if the number of auto associations is too many
+     * or in the case of unlimited auto associations, check if the number is less than -1 or 0 if disabled.
      * @param n number to check
      * @param ledgerConfig LedgerConfig
      * @param entitiesConfig EntitiesConfig
      * @param tokensConfig TokensConfig
      * @return true the given number is greater than the max number of auto associations
+     * or negative and unlimited auto associations are disabled
+     * or less than -1 if unlimited auto associations are enabled
      */
     public boolean tooManyAutoAssociations(
             final int n,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final EntitiesConfig entitiesConfig,
             @NonNull final TokensConfig tokensConfig) {
-        return n > ledgerConfig.maxAutoAssociations()
-                || (entitiesConfig.limitTokenAssociations() && n > tokensConfig.maxPerAccount());
+        return (entitiesConfig.limitTokenAssociations() && n > tokensConfig.maxPerAccount())
+                || n > ledgerConfig.maxAutoAssociations()
+                || (n < UNLIMITED_AUTOMATIC_ASSOCIATIONS && entitiesConfig.unlimitedAutoAssociationsEnabled())
+                || (n < 0 && !entitiesConfig.unlimitedAutoAssociationsEnabled());
     }
 }

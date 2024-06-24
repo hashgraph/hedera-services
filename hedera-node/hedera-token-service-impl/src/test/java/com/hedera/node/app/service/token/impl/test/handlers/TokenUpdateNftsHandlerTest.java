@@ -88,9 +88,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private ConfigProvider configProvider;
 
-    @Mock(strictness = LENIENT)
-    private HandleContext context;
-
     @Mock
     private StoreMetricsService storeMetricsService;
 
@@ -114,24 +111,23 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     private void setUpTxnContext() {
         attributeValidator = new AttributeValidatorImpl(handleContext);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
 
-    private HandleContext mockContext(TransactionBody txn) {
-        given(context.body()).willReturn(txn);
-        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-        given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
-        given(context.configuration()).willReturn(configuration);
-        return context;
+    private void mockContext(TransactionBody txn) {
+        given(handleContext.body()).willReturn(txn);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(handleContext.configuration()).willReturn(configuration);
     }
 
     private HandleContext keyMockContext(TransactionBody txn) {
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
         return handleContext;
     }
 
@@ -276,9 +272,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
                         TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
-        final var context = mockContext(txn);
+        mockContext(txn);
 
-        Assertions.assertThatThrownBy(() -> subject.handle(context))
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_NFT_ID));
     }
@@ -309,9 +305,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
                         TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
-        final var context = mockContext(txn);
+        mockContext(txn);
 
-        Assertions.assertThatThrownBy(() -> subject.handle(context))
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
     }
