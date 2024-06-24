@@ -21,7 +21,9 @@ import org.junit.jupiter.api.Test;
 
 class ScheduleServiceTest {
 
-    private final ScheduleService subject = new ScheduleService() {};
+    private final ScheduleService subject = (registry) -> {
+        // no-op
+    };
 
     @Test
     void verifyServiceName() {

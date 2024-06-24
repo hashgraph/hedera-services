@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.RpcService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Supplies {@link Service}s access to records and receipts.
+ * Supplies {@link RpcService}s access to records and receipts.
  *
  * <p>A receipt is added when this node ingests a new transaction, or when this node pre-handles a transaction ingested
  * on another node. A receipt in this state will have a status of

@@ -57,6 +57,8 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -79,6 +81,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
     private ExpiryValidator expiryValidator;
 
     @Mock
@@ -89,6 +94,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private CryptoDeleteRecordBuilder recordBuilder;
+
+    @Mock
+    private RecordBuilders recordBuilders;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -107,7 +115,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
                 Map.of(accountNum, account, deleteAccountNum, deleteAccount, transferAccountNum, transferAccount));
 
         lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        lenient().when(handleContext.storeFactory()).thenReturn(storeFactory);
+        lenient().when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
+        lenient().when(handleContext.recordBuilders()).thenReturn(recordBuilders);
     }
 
     @Test
@@ -284,7 +294,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
-        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
@@ -414,6 +424,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impl = new TokenServiceApiImpl(
                 configuration, storeMetricsService, stakingValidator, writableStates, op -> false);
-        given(handleContext.serviceApi(TokenServiceApi.class)).willReturn(impl);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

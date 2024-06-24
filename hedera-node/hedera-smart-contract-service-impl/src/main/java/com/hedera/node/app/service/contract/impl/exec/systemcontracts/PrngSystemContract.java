@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.systemContractGasCalculatorOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOfZeroValueTraceable;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -35,10 +35,9 @@ import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.AbstractProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -120,7 +119,7 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(randomNum);
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
-            final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+            final var senderId = ((AbstractProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
 
             var data = successResultOfZeroValueTraceable(
                     gasRequirement, randomNum, frame.getRemainingGas(), frame.getInputData(), senderId);
@@ -142,22 +141,20 @@ public class PrngSystemContract extends AbstractFullContract implements HederaSy
             requireNonNull(contractID);
             var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
 
-            final var senderId = ((ProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
+            final var senderId = ((AbstractProxyEvmAccount) updater.getAccount(frame.getSenderAddress())).hederaId();
 
             final var contractResult = ContractFunctionResult.newBuilder()
                     .gasUsed(gasRequirement)
                     .functionParameters(tuweniToPbjBytes(frame.getInputData()))
                     .errorMessage(null)
-                    // (FUTURE) Replace with PRNG contract address, c.f. issue
-                    // https://github.com/hashgraph/hedera-services/issues/10552
-                    .contractID(HTS_PRECOMPILE_MIRROR_ID)
+                    .contractID(contractID)
                     .senderId(senderId)
                     .gas(frame.getRemainingGas())
                     .build();
 
             updater.enhancement()
                     .systemOperations()
-                    .externalizePreemptedDispatch(synthBody(), PbjConverter.toPbj(responseCode))
+                    .externalizePreemptedDispatch(synthBody(), toPbj(responseCode))
                     .contractCallResult(contractResult);
         }
     }

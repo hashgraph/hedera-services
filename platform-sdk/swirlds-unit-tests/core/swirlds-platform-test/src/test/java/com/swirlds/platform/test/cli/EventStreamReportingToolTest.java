@@ -104,7 +104,7 @@ class EventStreamReportingToolTest {
         Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());
         Assertions.assertEquals(lastEventTime, report.summary().end());
         Assertions.assertEquals(
-                lastEventTime, report.summary().lastEvent().getGossipEvent().getConsensusTimestamp());
+                lastEventTime, report.summary().lastEvent().getPlatformEvent().getConsensusTimestamp());
     }
 
     /**
@@ -157,6 +157,6 @@ class EventStreamReportingToolTest {
         Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());
         Assertions.assertEquals(lastEventTime, report.summary().end());
         Assertions.assertEquals(
-                lastEventTime, report.summary().lastEvent().getGossipEvent().getConsensusTimestamp());
+                lastEventTime, report.summary().lastEvent().getPlatformEvent().getConsensusTimestamp());
     }
 }

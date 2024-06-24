@@ -36,8 +36,8 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -191,7 +191,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         try {
             handlerMetrics.setPhase(SETTING_EVENT_CONSENSUS_DATA);
             for (final EventImpl event : consensusRound.getConsensusEvents()) {
-                event.consensusReached();
+                event.getBaseEvent().setConsensusTimestampsOnPayloads();
             }
 
             handlerMetrics.setPhase(UPDATING_PLATFORM_STATE);
@@ -271,7 +271,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
             // here anyway, for when that changes in the future.
             if (!round.isEmpty()) {
-                previousRoundLegacyRunningEventHash = round.getConsensusEvents()
+                previousRoundLegacyRunningEventHash = round.getStreamedEvents()
                         .getLast()
                         .getRunningHash()
                         .getFutureHash()
@@ -300,7 +300,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         }
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        final State immutableStateCons = swirldStateManager.getStateForSigning();
+        final MerkleRoot immutableStateCons = swirldStateManager.getStateForSigning();
 
         handlerMetrics.setPhase(CREATING_SIGNED_STATE);
         final SignedState signedState = new SignedState(

@@ -93,6 +93,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -759,11 +760,12 @@ public class ContractCreateSuite {
                                         results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
-                .given(uploadInitCode(contract))
+        return propertyPreservingHapiSpec("tryContractCreateWithMaxAutoAssoc")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+                .given(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
@@ -821,11 +823,11 @@ public class ContractCreateSuite {
         final var contract1 = "EmptyOne";
         final var contract2 = "EmptyTwo";
         return propertyPreservingHapiSpec("contractCreateShouldChargeTheSame")
-                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)
+                .preserving("contracts.allowAutoAssociations")
                 .given(
                         uploadInitCode(contract1),
                         uploadInitCode(contract2),
-                        overriding(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE))
+                        overriding("contracts.allowAutoAssociations", TRUE_VALUE))
                 .when(
                         contractCreate(contract1)
                                 .via(contract1)

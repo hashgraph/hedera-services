@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -81,6 +82,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -112,6 +115,7 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -149,6 +153,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
@@ -209,6 +214,8 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
+    private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
+            EnumSet.of(SHARED_HAPI_TEST_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -275,7 +282,7 @@ public class UtilVerbs {
     }
 
     /* Some fairly simple utility ops */
-    public static InBlockingOrder blockingOrder(HapiSpecOperation... ops) {
+    public static InBlockingOrder blockingOrder(SpecOperation... ops) {
         return new InBlockingOrder(ops);
     }
 
@@ -289,11 +296,15 @@ public class UtilVerbs {
     }
 
     public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.of(SHARED_HAPI_TEST_NETWORK), ops);
+        return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
     }
 
     public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(SHARED_HAPI_TEST_NETWORK)), ops);
+        return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
+    }
+
+    public static NetworkTypeFilterOp ifNotEmbeddedTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(EMBEDDED_NETWORK)), ops);
     }
 
     public static EnvFilterOp ifCi(@NonNull final HapiSpecOperation... ops) {
@@ -584,6 +595,11 @@ public class UtilVerbs {
         return new BalanceSnapshot(forAccount, name);
     }
 
+    public static MutateAccountOp mutateAccount(
+            @NonNull final String name, @NonNull final Consumer<Account.Builder> mutation) {
+        return new MutateAccountOp(name, mutation);
+    }
+
     public static BalanceSnapshot balanceSnapshot(Function<HapiSpec, String> nameFn, String forAccount) {
         return new BalanceSnapshot(forAccount, nameFn);
     }
@@ -680,7 +696,7 @@ public class UtilVerbs {
      */
     public static HapiSpecOperation withHeadlongAddressesFor(
             @NonNull final List<String> accountOrTokens,
-            @NonNull final Function<Map<String, Address>, List<HapiSpecOperation>> opFn) {
+            @NonNull final Function<Map<String, Address>, List<SpecOperation>> opFn) {
         return withOpContext((spec, opLog) -> {
             final Map<String, Address> addresses = new HashMap<>();
             // FUTURE - populate this map
@@ -698,8 +714,7 @@ public class UtilVerbs {
      * @return the operation that computes and executes the list of operations
      */
     public static HapiSpecOperation withKeyValuesFor(
-            @NonNull final List<String> keys,
-            @NonNull final Function<Map<String, Tuple>, List<HapiSpecOperation>> opFn) {
+            @NonNull final List<String> keys, @NonNull final Function<Map<String, Tuple>, List<SpecOperation>> opFn) {
         return withOpContext((spec, opLog) -> {
             final Map<String, Tuple> keyValues = new HashMap<>();
             // FUTURE - populate this map
@@ -859,7 +874,7 @@ public class UtilVerbs {
     public static HapiSpecOperation chunkAFile(
             String filePath, int chunkSize, String payer, String topic, AtomicLong count) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> opsList = new ArrayList<>();
+            List<SpecOperation> opsList = new ArrayList<>();
             String overriddenFile = filePath;
             int overriddenChunkSize = chunkSize;
             String overriddenTopic = topic;
@@ -982,8 +997,6 @@ public class UtilVerbs {
                 Thread.sleep(20000);
                 return;
             }
-            opLog.info("Sleeping so not to spoil/fail the fee initializations on other" + " clients...");
-            Thread.sleep(10000);
             opLog.info("Reducing fee for {}...", functions);
             var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
             allRunFor(spec, query);
@@ -1193,7 +1206,7 @@ public class UtilVerbs {
             final var appendsLeft = totalBytesLeft / bytesPerOp + Math.min(1, totalBytesLeft % bytesPerOp);
             final var appendsHere = new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
             boolean isFirstAppend = true;
-            final List<HapiSpecOperation> theBurst = new ArrayList<>();
+            final List<SpecOperation> theBurst = new ArrayList<>();
             final CountDownLatch burstLatch = new CountDownLatch(1);
             final AtomicReference<Instant> burstStart = new AtomicReference<>();
             while (appendsHere.getAndDecrement() > 0) {
@@ -1269,7 +1282,7 @@ public class UtilVerbs {
             Consumer<HapiFileUpdate> updateCustomizer,
             ObjIntConsumer<HapiFileAppend> appendCustomizer) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> opsList = new ArrayList<>();
+            List<SpecOperation> opsList = new ArrayList<>();
 
             int fileSize = byteString.size();
             int position = Math.min(BYTES_4K, fileSize);
@@ -1384,7 +1397,7 @@ public class UtilVerbs {
     public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
             final String contractList, final long expectedSize, final String parent) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> opsList = new ArrayList<>();
+            List<SpecOperation> opsList = new ArrayList<>();
             long contractListSize = spec.registry().getAmount(contractList + "Size");
             Assertions.assertEquals(expectedSize, contractListSize, contractList + " has bad size!");
             if (contractListSize > 1) {
@@ -1764,13 +1777,13 @@ public class UtilVerbs {
                 isApproval);
     }
 
-    public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
-            final List<HapiSpecOperation> ops,
+    public static List<SpecOperation> convertHapiCallsToEthereumCalls(
+            final List<SpecOperation> ops,
             final String privateKeyRef,
             final Key adminKey,
             final long defaultGas,
             final HapiSpec spec) {
-        final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
+        final var convertedOps = new ArrayList<SpecOperation>(ops.size());
         for (final var op : ops) {
             if (op instanceof HapiContractCall callOp
                     && callOp.isConvertableToEthCall()

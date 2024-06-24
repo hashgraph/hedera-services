@@ -49,9 +49,9 @@ class AutoAccountCreatorTest extends StepsBase {
 
     private void accountCreatorInternalSetup(final boolean prepopulateReceiverIds) {
         super.baseInternalSetUp(prepopulateReceiverIds);
-        givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
+        givenTxn();
 
         transferContext = new TransferContextImpl(handleContext);
         subject = new AutoAccountCreator(handleContext);
@@ -83,7 +83,7 @@ class AutoAccountCreatorTest extends StepsBase {
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
@@ -113,7 +113,7 @@ class AutoAccountCreatorTest extends StepsBase {
                     writableAliases.put(edKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
@@ -144,7 +144,7 @@ class AutoAccountCreatorTest extends StepsBase {
                     writableAliases.put(address, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();

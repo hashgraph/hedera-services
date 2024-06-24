@@ -72,6 +72,11 @@ public class BaseTokenHandler {
     protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
 
     /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
+
+    /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
      * @param treasuryRel the treasury relation for the token

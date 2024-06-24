@@ -46,7 +46,6 @@ import com.hedera.hapi.util.HapiUtils;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.prehandle.DueDiligenceException;
 import com.hedera.node.config.ConfigProvider;
@@ -446,7 +445,7 @@ public class TransactionChecker {
 
     /**
      * This method calculates the valid duration given in seconds, which is the provided number of seconds minus a
-     * buffer defined in {@link GlobalDynamicProperties}. The result is limited to a value that, if added to the
+     * buffer defined in system configuration. The result is limited to a value that, if added to the
      * {@code validStart}, will not exceed {@link Instant#MAX}.
      *
      * @param validForSecs the duration in seconds

@@ -20,7 +20,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
@@ -50,7 +50,7 @@ public class EventSerialization {
     @Param({"0"})
     public long seed;
 
-    private GossipEvent event;
+    private PlatformEvent event;
     private MerkleDataOutputStream outStream;
     private MerkleDataInputStream inStream;
 
@@ -59,7 +59,7 @@ public class EventSerialization {
         final Random random = new Random(seed);
 
         event = new TestingEventBuilder(random).setSystemTransactionCount(1).build();
-        StaticSoftwareVersion.setSoftwareVersion(event.getHashedData().getSoftwareVersion());
+        StaticSoftwareVersion.setSoftwareVersion(event.getSoftwareVersion());
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
         final PipedInputStream inputStream = new PipedInputStream();
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);
@@ -76,6 +76,6 @@ public class EventSerialization {
         // Benchmark                                (seed)   Mode  Cnt    Score    Error   Units
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
         outStream.writeSerializable(event, false);
-        bh.consume(inStream.readSerializable(false, GossipEvent::new));
+        bh.consume(inStream.readSerializable(false, PlatformEvent::new));
     }
 }

@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
@@ -34,20 +33,23 @@ import com.hedera.hapi.node.file.FileInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
-import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileInfoResourceUsage;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
@@ -100,8 +102,9 @@ public class FileGetInfoHandler extends FileQueryBase {
         final var fileId = op.fileIDOrElse(FileID.DEFAULT);
         final File file = fileStore.getFileLeaf(fileId);
 
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetFileInfoResourceUsage(fileOpsUsage)
-                .usageGiven(fromPbj(query), file));
+        return queryContext
+                .feeCalculator()
+                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(query), file));
     }
 
     @Override
@@ -194,5 +197,21 @@ public class FileGetInfoHandler extends FileQueryBase {
             info.ledgerId(ledgerConfig.id());
             return Optional.of(info.build());
         }
+    }
+
+    private FeeData usageGiven(
+            @NonNull final com.hederahashgraph.api.proto.java.Query query, @Nullable final File file) {
+        requireNonNull(query);
+        if (file == null) {
+            return FeeData.getDefaultInstance();
+        }
+        final com.hederahashgraph.api.proto.java.File details = CommonPbjConverters.fromPbj(file);
+        final var ctx = ExtantFileContext.newBuilder()
+                .setCurrentSize(details.getContents().toByteArray().length)
+                .setCurrentWacl(details.getKeys())
+                .setCurrentMemo(details.getMemo())
+                .setCurrentExpiry(details.getExpirationSecond())
+                .build();
+        return fileOpsUsage.fileInfoUsage(query, ctx);
     }
 }

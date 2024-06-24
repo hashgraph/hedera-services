@@ -17,9 +17,9 @@
 package com.hedera.node.app.fixtures.state;
 
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -31,12 +31,16 @@ import org.apache.logging.log4j.Logger;
  * A fake implementation of the {@link ServicesRegistry} interface.
  */
 public class FakeServicesRegistry implements ServicesRegistry {
+    public static final ServicesRegistry.Factory FACTORY =
+            (@NonNull final ConstructableRegistry registry, @NonNull final Configuration configuration) ->
+                    new FakeServicesRegistry();
 
     private static final Logger logger = LogManager.getLogger(FakeServicesRegistry.class);
-    /** The set of registered services */
+    /**
+     * The set of registered services
+     */
     private final SortedSet<ServicesRegistry.Registration> entries;
 
-    private final GenesisRecordsBuilder genesisRecordsBuilder = new NoOpGenesisRecordsBuilder();
     /**
      * Creates a new registry.
      */
@@ -51,28 +55,16 @@ public class FakeServicesRegistry implements ServicesRegistry {
      */
     @Override
     public void register(@NonNull final Service service) {
-        final var serviceName = service.getServiceName();
-
-        logger.debug("FakeServicesRegistry registering schemas for service {}", serviceName);
         final var registry = new FakeSchemaRegistry();
         service.registerSchemas(registry);
 
         entries.add(new FakeServicesRegistry.Registration(service, registry));
-        logger.info(
-                "FakeServicesRegistry registered service {} with implementation {}",
-                service.getServiceName(),
-                service.getClass());
+        logger.info("Registered service {}", service.getServiceName());
     }
 
     @NonNull
     @Override
     public SortedSet<FakeServicesRegistry.Registration> registrations() {
         return Collections.unmodifiableSortedSet(entries);
-    }
-
-    @NonNull
-    @Override
-    public GenesisRecordsBuilder getGenesisRecords() {
-        return genesisRecordsBuilder;
     }
 }

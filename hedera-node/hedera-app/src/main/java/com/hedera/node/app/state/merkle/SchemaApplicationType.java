@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.spi.state.Schema;
+import com.swirlds.state.spi.Schema;
 
 /**
  * Enumerates the ways the {@link MerkleSchemaRegistry} may apply a {@link Schema}

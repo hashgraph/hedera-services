@@ -18,19 +18,26 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.Set;
-import javax.inject.Singleton;
 
 /**
  * A registry providing access to all services registered with the application.
  */
-@Singleton
 public interface ServicesRegistry {
+    /**
+     * A factory for creating a {@link ServicesRegistry}.
+     */
+    interface Factory {
+        ServicesRegistry create(
+                @NonNull ConstructableRegistry constructableRegistry, @NonNull Configuration bootstrapConfig);
+    }
+
     /**
      * A record of a service registration.
      *
@@ -48,6 +55,10 @@ public interface ServicesRegistry {
             requireNonNull(registry);
         }
 
+        public String serviceName() {
+            return service.getServiceName();
+        }
+
         @Override
         public int compareTo(@NonNull final Registration that) {
             return COMPARATOR.compare(this, that);
@@ -61,13 +72,6 @@ public interface ServicesRegistry {
      */
     @NonNull
     Set<Registration> registrations();
-
-    /**
-     * Gets the genesis records builder.
-     * @return The genesis records builder
-     */
-    @NonNull
-    GenesisRecordsBuilder getGenesisRecords();
 
     /**
      * Register a service with the registry.

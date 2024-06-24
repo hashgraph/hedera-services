@@ -844,9 +844,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             numConsensus++;
             consensusMetrics.consensusReached(e);
         }
-        if (last != null) {
-            last.setLastInRoundReceived(true);
-        }
     }
 
     private boolean nonConsensusNonAncient(@NonNull final EventImpl e) {
@@ -887,7 +884,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private boolean witness(@NonNull final EventImpl x) {
         return round(x) > ConsensusConstants.ROUND_NEGATIVE_INFINITY
-                && (!x.getHashedData().hasSelfParent() || round(x) != round(selfParent(x)));
+                && (!x.hasSelfParent() || round(x) != round(selfParent(x)));
     }
 
     /**
@@ -1108,7 +1105,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         //
         // if this event has no parents, then it's the first round
         //
-        if (!x.getHashedData().hasSelfParent() && !x.getHashedData().hasOtherParent()) {
+        if (!x.hasSelfParent() && !x.hasOtherParent()) {
             x.setRoundCreated(ConsensusConstants.ROUND_FIRST);
             return x.getRoundCreated();
         }

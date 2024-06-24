@@ -38,16 +38,12 @@ import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import java.math.BigInteger;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class GlobalPropertiesSuite {
-
-    private static final Logger LOG = LogManager.getLogger(GlobalPropertiesSuite.class);
     private static final String CONTRACT = "GlobalProperties";
     private static final String GET_CHAIN_ID = "getChainID";
     private static final String GET_BASE_FEE = "getBaseFee";
