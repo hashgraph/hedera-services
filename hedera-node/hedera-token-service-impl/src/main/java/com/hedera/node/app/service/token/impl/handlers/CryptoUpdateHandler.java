@@ -33,7 +33,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
@@ -52,6 +51,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -59,7 +59,6 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -84,26 +83,20 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoUpdateHandler extends BaseCryptoHandler implements TransactionHandler {
-
     private final CryptoSignatureWaivers waivers;
     private final StakingValidator stakingValidator;
-    private final NetworkInfo networkInfo;
 
     /**
      * Default constructor for injection.
      * @param waivers the {@link CryptoSignatureWaivers} to use for checking signature waivers
      * @param stakingValidator the {@link StakingValidator} to use for staking validation
-     * @param networkInfo the {@link NetworkInfo} to use for network information
      */
     @Inject
     public CryptoUpdateHandler(
-            @NonNull final CryptoSignatureWaivers waivers,
-            @NonNull final StakingValidator stakingValidator,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final CryptoSignatureWaivers waivers, @NonNull final StakingValidator stakingValidator) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'networkInfo' must not be null");
     }
 
     @Override
@@ -157,7 +150,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var target = op.accountIDToUpdateOrThrow();
 
         // validate update account exists
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var targetAccount = accountStore.get(target);
         validateTrue(targetAccount != null, INVALID_ACCOUNT_ID);
         context.attributeValidator().validateMemo(op.memo());
@@ -326,7 +319,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                networkInfo);
+                context.networkInfo());
     }
 
     /**
@@ -343,7 +336,10 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var body = feeContext.body();
         final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
         return cryptoUpdateFees(
-                body, feeContext.feeCalculator(SubType.DEFAULT), accountStore, feeContext.configuration());
+                body,
+                feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT),
+                accountStore,
+                feeContext.configuration());
     }
 
     /**
@@ -355,16 +351,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     private static long baseSizeOf(
             final CryptoUpdateTransactionBody op, final long keySize, final boolean unlimitedAutoAssociationsEnabled) {
-        var baseSize = BASIC_ENTITY_ID_SIZE
+        return BASIC_ENTITY_ID_SIZE
                 + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
                 + (op.hasExpirationTime() ? LONG_SIZE : 0L)
                 + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
                 + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
+                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
                 + keySize;
-        if (!unlimitedAutoAssociationsEnabled) {
-            baseSize += op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L;
-        }
-        return baseSize;
     }
 
     /**
@@ -391,7 +384,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
      */
     private static int currentNonBaseBytes(final Account account) {
         return account.memo().getBytes(StandardCharsets.UTF_8).length
-                + getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                + getAccountKeyStorageSize(CommonPbjConverters.fromPbj(account.keyOrElse(Key.DEFAULT)))
                 + (account.maxAutoAssociations() == 0 ? 0 : INT_SIZE);
     }
 
@@ -417,7 +410,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         final var unlimitedAutoAssoc = entityConfig.unlimitedAutoAssociationsEnabled();
         final var explicitAutoAssocSlotLifetime = autoRenewconfig.expireAccounts() ? 0L : THREE_MONTHS_IN_SECONDS;
 
-        final var keySize = op.hasKey() ? getAccountKeyStorageSize(fromPbj(op.key())) : 0L;
+        final var keySize = op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrThrow())) : 0L;
         final var baseSize = baseSizeOf(op, keySize, unlimitedAutoAssoc);
         final var newMemoSize = op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length;
 
@@ -426,7 +419,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 : account.memo().getBytes(StandardCharsets.UTF_8).length;
         final long newVariableBytes = (newMemoSize != 0L ? newMemoSize : accountMemoSize)
                 + (keySize == 0L && account != null
-                        ? getAccountKeyStorageSize(fromPbj(account.keyOrElse(Key.DEFAULT)))
+                        ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(account.keyOrElse(Key.DEFAULT)))
                         : keySize);
 
         final long tokenRelBytes =

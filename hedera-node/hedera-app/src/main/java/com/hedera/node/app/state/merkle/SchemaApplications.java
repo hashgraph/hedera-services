@@ -24,7 +24,8 @@ import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.state.Schema;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Schema;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
@@ -43,17 +44,20 @@ public class SchemaApplications {
      * @param deserializedVersion the version of the deserialized state
      * @param latestVersion the latest schema version of the relevant service
      * @param schema the schema to analyze
+     * @param config the configuration of the node
      * @return the ways the schema should be applied
      */
     public Set<SchemaApplicationType> computeApplications(
             @Nullable final SemanticVersion deserializedVersion,
             @NonNull final SemanticVersion latestVersion,
-            @NonNull final Schema schema) {
+            @NonNull final Schema schema,
+            @NonNull final Configuration config) {
         requireNonNull(schema);
+        requireNonNull(config);
         requireNonNull(latestVersion);
         final var uses = EnumSet.noneOf(SchemaApplicationType.class);
         // Always add state definitions, even if later schemas will remove them all
-        if (hasStateDefinitions(schema)) {
+        if (hasStateDefinitions(schema, config)) {
             uses.add(STATE_DEFINITIONS);
         }
         // We only skip migration if the deserialized version is at least as new as the schema
@@ -68,7 +72,8 @@ public class SchemaApplications {
         return uses;
     }
 
-    private boolean hasStateDefinitions(@NonNull final Schema schema) {
-        return !schema.statesToCreate().isEmpty() || !schema.statesToRemove().isEmpty();
+    private boolean hasStateDefinitions(@NonNull final Schema schema, @NonNull final Configuration config) {
+        return !schema.statesToCreate(config).isEmpty()
+                || !schema.statesToRemove().isEmpty();
     }
 }

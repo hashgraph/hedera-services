@@ -252,7 +252,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             step.doIn(transferContext);
         }
 
-        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
         if (!transferContext.getAutomaticAssociations().isEmpty()) {
             transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
         }
@@ -510,9 +510,13 @@ public class CryptoTransferHandler implements TransactionHandler {
         // If the sender account is immutable, then we throw an exception.
         final var key = senderAccount.key();
         if (key == null || !isValid(key)) {
-            // If the sender account has no key, then fail with INVALID_ACCOUNT_ID.
-            // NOTE: should change to ACCOUNT_IS_IMMUTABLE
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            if (isHollow(senderAccount)) {
+                meta.requireSignatureForHollowAccount(senderAccount);
+            } else {
+                // If the sender account has no key, then fail with INVALID_ACCOUNT_ID.
+                // NOTE: should change to ACCOUNT_IS_IMMUTABLE
+                throw new PreCheckException(INVALID_ACCOUNT_ID);
+            }
         } else if (!nftTransfer.isApproval()) {
             meta.requireKey(key);
         }
@@ -614,6 +618,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())

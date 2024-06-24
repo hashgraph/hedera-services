@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 public class TokenAssociateUsage extends TokenTxnUsage<TokenAssociateUsage> {
     private long currentExpiry;
 
-    private TokenAssociateUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
+    public TokenAssociateUsage(TransactionBody tokenOp, TxnUsageEstimator usageEstimator) {
         super(tokenOp, usageEstimator);
     }
 

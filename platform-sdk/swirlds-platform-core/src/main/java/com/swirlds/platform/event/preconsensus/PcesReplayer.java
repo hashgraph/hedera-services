@@ -25,7 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,7 +47,7 @@ public class PcesReplayer {
 
     private final Time time;
 
-    private final StandardOutputWire<GossipEvent> eventOutputWire;
+    private final StandardOutputWire<PlatformEvent> eventOutputWire;
 
     private final Runnable flushIntake;
     private final Runnable flushTransactionHandling;
@@ -68,7 +68,7 @@ public class PcesReplayer {
      */
     public PcesReplayer(
             final @NonNull Time time,
-            final @NonNull StandardOutputWire<GossipEvent> eventOutputWire,
+            final @NonNull StandardOutputWire<PlatformEvent> eventOutputWire,
             final @NonNull Runnable flushIntake,
             final @NonNull Runnable flushTransactionHandling,
             final @NonNull Supplier<ReservedSignedState> latestImmutableState,
@@ -146,7 +146,7 @@ public class PcesReplayer {
      * @return a trigger object indicating when the replay is complete
      */
     @NonNull
-    public NoInput replayPces(@NonNull final IOIterator<GossipEvent> eventIterator) {
+    public NoInput replayPces(@NonNull final IOIterator<PlatformEvent> eventIterator) {
         Objects.requireNonNull(eventIterator);
 
         final Instant start = time.now();
@@ -170,10 +170,10 @@ public class PcesReplayer {
                 // until it catches up before we can continue.
                 waitUntilHealthy();
 
-                final GossipEvent event = eventIterator.next();
+                final PlatformEvent event = eventIterator.next();
 
                 eventCount++;
-                transactionCount += event.getHashedData().getTransactions().length;
+                transactionCount += event.getPayloadCount();
 
                 eventOutputWire.forward(event);
             }

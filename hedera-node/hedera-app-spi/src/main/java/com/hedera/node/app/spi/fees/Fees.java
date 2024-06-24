@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.spi.fees;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Represents the combination of node, network, and service fees.
@@ -57,6 +60,15 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
     }
 
     /**
+     * Returns true if there is nothing to charge for these fees.
+     *
+     * @return true if there is nothing to charge for these fees
+     */
+    public boolean nothingToCharge() {
+        return nodeFee == 0 && networkFee == 0 && serviceFee == 0;
+    }
+
+    /**
      * Returns this {@link Fees} with the service fee zeroed out. Used when the payer was willing and able
      * to cover at least the network fee; but not the node
      *
@@ -64,6 +76,14 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
      */
     public Fees withoutServiceComponent() {
         return new Fees(nodeFee, networkFee, 0);
+    }
+
+    /**
+     * Returns this {@link Fees} with the node fee and network fee zeroed out.
+     * @return this {@link Fees} with the node fee and network fee zeroed out
+     */
+    public Fees onlyServiceComponent() {
+        return new Fees(0, 0, serviceFee);
     }
 
     /**
@@ -101,6 +121,16 @@ public record Fees(long nodeFee, long networkFee, long serviceFee) {
      */
     public Builder copyBuilder() {
         return new Builder().nodeFee(nodeFee).networkFee(networkFee).serviceFee(serviceFee);
+    }
+
+    /**
+     * Add the fees from another {@link Fees} object to this one, and return the result.
+     * @param fees The fees to add to this one
+     * @return a new {@link Fees} object with the sum of the fees
+     */
+    public Fees plus(@NonNull final Fees fees) {
+        requireNonNull(fees);
+        return new Fees(nodeFee + fees.nodeFee(), networkFee + fees.networkFee(), serviceFee + fees.serviceFee());
     }
 
     /**

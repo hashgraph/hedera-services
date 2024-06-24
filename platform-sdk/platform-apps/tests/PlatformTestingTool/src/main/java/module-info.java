@@ -23,11 +23,6 @@ module com.swirlds.demo.platform {
     exports com.swirlds.demo.virtualmerkle.config to
             com.fasterxml.jackson.databind;
 
-    requires com.fasterxml.jackson.annotation;
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.databind;
-    requires com.google.protobuf;
-    requires com.hedera.pbj.runtime;
     requires com.swirlds.base;
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common;
@@ -40,6 +35,11 @@ module com.swirlds.demo.platform {
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
     requires com.swirlds.virtualmap;
+    requires com.fasterxml.jackson.annotation;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.databind;
+    requires com.google.protobuf;
+    requires com.hedera.pbj.runtime;
     requires java.logging;
     requires java.management;
     requires org.apache.logging.log4j;

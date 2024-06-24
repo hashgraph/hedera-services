@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -56,10 +57,9 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -76,6 +76,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -103,6 +104,7 @@ public class CryptoCreateSuite {
     public static final String NO_KEYS = "noKeys";
     public static final String SHORT_KEY = "shortKey";
     public static final String EMPTY_KEY_STRING = "emptyKey";
+    public static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
     private static final String ED_KEY = "EDKEY";
 
     @HapiTest
@@ -295,6 +297,30 @@ public class CryptoCreateSuite {
                         getAccountInfo(tenAutoAssocSlots).hasMaxAutomaticAssociations(10),
                         validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd),
                         getAccountInfo(unlimitedAutoAssocSlots).hasMaxAutomaticAssociations(-1));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createFailsIfMaxAutoAssocIsNegativeAndUnlimitedFlagDisabled() {
+        return defaultHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
+                .given()
+                .when()
+                .then(
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-1)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-2)
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(-1000)
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoCreate(CIVILIAN)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(Integer.MIN_VALUE)
+                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS));
     }
 
     @HapiTest

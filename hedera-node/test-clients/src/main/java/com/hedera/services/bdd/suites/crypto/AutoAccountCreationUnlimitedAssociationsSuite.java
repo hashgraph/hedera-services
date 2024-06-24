@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -56,12 +57,14 @@ import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.assertAliasBalanceAndFeeInChildRecord;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hedera.services.bdd.suites.token.TokenAssociationV1SecurityModelSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -104,19 +107,19 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationHappyPath() {
         final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
+        final long transferFee = 188608L;
         return propertyPreservingHapiSpec(
-                "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                        "autoAccountCreationsUnlimitedAssociationHappyPath", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoTransfer(
-                        tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
-                        tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .via(TRANSFER_TXN)
                         .payingWith(PAYER))
                 .then(
@@ -161,22 +164,19 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .logged()));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationsDisabled() {
         final var creationTime = new AtomicLong();
-        final long transferFee = 185030L;
-        return propertyPreservingHapiSpec(
-                "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+        final long transferFee = 188608L;
+        return defaultHapiSpec("autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                         cryptoCreate(SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(cryptoTransfer(
-                        tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
-                        tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
+                                tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, ONE_HUNDRED_HBARS),
+                                tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .via(TRANSFER_TXN)
                         .payingWith(PAYER))
                 .then(
@@ -228,9 +228,9 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferHbarsToEVMAddressAliasUnlimitedAssociations")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext((spec, opLog) -> {
@@ -261,8 +261,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     // create hollow account with the deleted account alias
                     var hollowAccount = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
@@ -345,9 +345,9 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -384,10 +384,10 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     /* hollow account created with fungible token transfer as expected */
                     final var hollowAccount = cryptoTransfer(
-                            (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                    .setToken(ftId.get())
-                                    .addTransfers(aaWith(partyAlias.get(), -500))
-                                    .addTransfers(aaWith(counterAlias.get(), +500))))
+                                    (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                            .setToken(ftId.get())
+                                            .addTransfers(aaWith(partyAlias.get(), -500))
+                                            .addTransfers(aaWith(counterAlias.get(), +500))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(FT_XFER);
 
@@ -416,8 +416,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     // transfer some hbars to the hollow account so that we can pay with it later
                     var hollowAccountTransfer = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
@@ -437,7 +437,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         // verify fees of first transfer
                         // add this assertion after transfer changes are integrated
                         // validateChargedUsd(FT_XFER, v13PriceUsdOneAutoAssociation)
-                );
+                        );
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -453,9 +453,9 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("transferNftToEVMAddressAliasUnlimitedAssociations")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
+                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
                         newKeyNamed(MULTI_KEY),
@@ -501,14 +501,13 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                     allRunFor(spec, accountCreate, getAccountInfo, accountDelete);
 
                     /* hollow account created with NFT transfer as expected */
-                    final var hollowAccount = cryptoTransfer((s, b) -> {
-                        b.addTokenTransfers(TokenTransferList.newBuilder()
-                                .setToken(nftId.get())
-                                .addNftTransfers(NftTransfer.newBuilder()
-                                        .setSerialNumber(1L)
-                                        .setSenderAccountID(treasuryId.get())
-                                        .setReceiverAccountID(asIdWithAlias(counterAlias.get()))));
-                    })
+                    final var hollowAccount = cryptoTransfer(
+                                    (s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                            .setToken(nftId.get())
+                                            .addNftTransfers(NftTransfer.newBuilder()
+                                                    .setSerialNumber(1L)
+                                                    .setSenderAccountID(treasuryId.get())
+                                                    .setReceiverAccountID(asIdWithAlias(counterAlias.get())))))
                             .signedBy(MULTI_KEY, DEFAULT_PAYER, TOKEN_TREASURY)
                             .via(NFT_XFER);
 
@@ -537,8 +536,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
                     // transfer some hbars to the hollow account so that we can pay with it later
                     var hollowAccountTransfer = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
-                            .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
-                            .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
+                                    .addAccountAmounts(aaWith(partyAlias.get(), -2 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(counterAlias.get(), +2 * ONE_HBAR))))
                             .signedBy(DEFAULT_PAYER, PARTY)
                             .via(HBAR_XFER);
 
@@ -558,6 +557,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         // verify fees of first transfer
                         // add this assertion after transfer changes are integrated
                         // validateChargedUsd(NFT_XFER, v13PriceUsdOneAutoAssociation)
-                );
+                        );
     }
 }

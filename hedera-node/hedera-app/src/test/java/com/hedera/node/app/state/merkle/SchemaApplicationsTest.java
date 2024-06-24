@@ -24,8 +24,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,19 +48,23 @@ class SchemaApplicationsTest {
     @Mock
     private Schema schema;
 
+    @Mock
+    private Configuration config;
+
     private final SchemaApplications subject = new SchemaApplications();
 
     @Test
     void genesisUseWithNoCreatedOrRemovedStatesIsMigrateOnlyIfNotCurrent() {
         given(schema.getVersion()).willReturn(PRECEDING_VERSION);
-        assertThat(subject.computeApplications(null, LATEST_VERSION, schema)).containsExactly(MIGRATION);
+        assertThat(subject.computeApplications(null, LATEST_VERSION, schema, config))
+                .containsExactly(MIGRATION);
     }
 
     @Test
     void genesisUseWithCreatedStatesIsStateDefsAndMigrateIfNotCurrent() {
         given(schema.getVersion()).willReturn(PRECEDING_VERSION);
-        given(schema.statesToCreate()).willReturn(Set.of(STATE_DEFINITION));
-        assertThat(subject.computeApplications(null, LATEST_VERSION, schema))
+        given(schema.statesToCreate(config)).willReturn(Set.of(STATE_DEFINITION));
+        assertThat(subject.computeApplications(null, LATEST_VERSION, schema, config))
                 .containsExactly(STATE_DEFINITIONS, MIGRATION);
     }
 
@@ -67,27 +72,28 @@ class SchemaApplicationsTest {
     void genesisUseWithRemovedStatesIsStateDefsAndMigrateIfNotCurrent() {
         given(schema.getVersion()).willReturn(PRECEDING_VERSION);
         given(schema.statesToRemove()).willReturn(Set.of(STATE_DEFINITION.stateKey()));
-        assertThat(subject.computeApplications(null, LATEST_VERSION, schema))
+        assertThat(subject.computeApplications(null, LATEST_VERSION, schema, config))
                 .containsExactly(STATE_DEFINITIONS, MIGRATION);
     }
 
     @Test
     void genesisUseWithNoCreatedOrRemovedStatesIsMigrateAndRestartIfCurrent() {
         given(schema.getVersion()).willReturn(LATEST_VERSION);
-        assertThat(subject.computeApplications(null, LATEST_VERSION, schema)).containsExactly(MIGRATION, RESTART);
+        assertThat(subject.computeApplications(null, LATEST_VERSION, schema, config))
+                .containsExactly(MIGRATION, RESTART);
     }
 
     @Test
     void restartUseWithEarlierStateDoesMigrate() {
         given(schema.getVersion()).willReturn(PRECEDING_VERSION);
-        assertThat(subject.computeApplications(FIRST_VERSION, LATEST_VERSION, schema))
+        assertThat(subject.computeApplications(FIRST_VERSION, LATEST_VERSION, schema, config))
                 .containsExactly(MIGRATION);
     }
 
     @Test
     void restartUseWithSameStateDoesNotMigrate() {
         given(schema.getVersion()).willReturn(PRECEDING_VERSION);
-        assertThat(subject.computeApplications(PRECEDING_VERSION, LATEST_VERSION, schema))
+        assertThat(subject.computeApplications(PRECEDING_VERSION, LATEST_VERSION, schema, config))
                 .isEmpty();
     }
 }

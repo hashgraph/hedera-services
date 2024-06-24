@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectFailedCont
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -94,7 +93,6 @@ import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.formattedAssertionValue;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.hexedSolidityAddressToHeadlongAddress;
 import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.uint256ReturnWithValue;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FALSE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
@@ -189,9 +187,7 @@ public class TraceabilitySuite {
     static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
         specManager.setup(
                 withOpContext((spec, opLog) -> GLOBAL_WATCHER.set(new SidecarWatcher(spec.streamsLoc(byNodeId(0))))),
-                overridingTwo(
-                        "contracts.throttle.throttleByGas", "false",
-                        "contracts.enforceCreationThrottle", "false"));
+                overriding("contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest
@@ -4876,11 +4872,7 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_NONCE,
                         ALLOW_SKIPPED_ENTITY_IDS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving(
-                        CHAIN_ID_PROPERTY,
-                        LAZY_CREATE_PROPERTY,
-                        "contracts.evm.version",
-                        "entities.unlimitedAutoAssociationsEnabled")
+                .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
                         overridingAllOf(Map.of(
                                 CHAIN_ID_PROPERTY,
@@ -4888,9 +4880,7 @@ public class TraceabilitySuite {
                                 LAZY_CREATE_PROPERTY,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.34",
-                                "entities.unlimitedAutoAssociationsEnabled",
-                                FALSE)),
+                                "v0.34")),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
@@ -4990,11 +4980,10 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_NONCE)
-                .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP, "entities.unlimitedAutoAssociationsEnabled")
+                .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),
                         overriding(SIDECARS_PROP, ""),
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(create2Factory),

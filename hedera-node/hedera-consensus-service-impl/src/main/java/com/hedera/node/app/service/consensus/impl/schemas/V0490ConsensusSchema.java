@@ -17,36 +17,23 @@
 package com.hedera.node.app.service.consensus.impl.schemas;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
-import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.stateToPbj;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * General schema for the consensus service
- * (FUTURE) When mod-service release is finalized, rename this class to e.g.
- * {@code Release47ConsensusSchema} as it will no longer be appropriate to assume
- * this schema is always correct for the current version of the software.
+ * Genesis schema for the consensus service.
+ *
+ * <p>See <a href="https://github.com/hashgraph/hedera-services/tree/release/0.49">this branch</a> for the
+ * details of the migration from mono state.
  */
 public class V0490ConsensusSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V0490ConsensusSchema.class);
-
     /**
      * The version of the schema.
      */
@@ -54,8 +41,6 @@ public class V0490ConsensusSchema extends Schema {
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     private static final long MAX_TOPICS = 1_000_000_000L;
-
-    private static MerkleMap<EntityNum, MerkleTopic> fs;
 
     public V0490ConsensusSchema() {
         super(VERSION);
@@ -69,33 +54,6 @@ public class V0490ConsensusSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        if (fs != null) {
-            final var numTopicInsertions = new AtomicLong();
-            final var topicStoreRef = new AtomicReference<>(ctx.newStates().<TopicID, Topic>get(TOPICS_KEY));
-            log.info("BBM: running consensus migration...");
-            MerkleMapLike.from(fs).forEachNode((k, v) -> {
-                final var pbjTopic = stateToPbj(v);
-                topicStoreRef.get().put(pbjTopic.topicId(), pbjTopic);
-                if (numTopicInsertions.incrementAndGet() % 10_000 == 0) {
-                    // Make sure we are flushing data to disk as we go
-                    ((WritableKVStateBase) topicStoreRef.get()).commit();
-                    ctx.copyAndReleaseOnDiskState(TOPICS_KEY);
-                    // And ensure we have the latest writable state
-                    topicStoreRef.set(ctx.newStates().get(TOPICS_KEY));
-                }
-            });
-
-            if (topicStoreRef.get().isModified()) ((WritableKVStateBase) topicStoreRef.get()).commit();
-
-            log.info("BBM: finished consensus service migration");
-        } else {
-            log.warn("BBM: no consensus 'from' state found");
-        }
-
-        fs = null;
-    }
-
-    public static void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
-        V0490ConsensusSchema.fs = fs;
+        // There are no topics at genesis
     }
 }

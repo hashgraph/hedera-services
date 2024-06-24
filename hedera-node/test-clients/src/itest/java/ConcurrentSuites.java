@@ -20,6 +20,7 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallHapiOnlySuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -59,7 +60,6 @@ import com.hedera.services.bdd.suites.contract.precompile.SigningReqsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
@@ -119,6 +119,7 @@ public class ConcurrentSuites {
             SelfDestructSuite::new,
             // contract.hapi
             ContractCallLocalSuite::new,
+            ContractCallHapiOnlySuite::new,
             ContractCallSuite::new,
             ContractCreateSuite::new,
             ContractDeleteSuite::new,
@@ -157,7 +158,6 @@ public class ConcurrentSuites {
             TokenAndTypeCheckSuite::new,
             TokenExpiryInfoSuite::new,
             TokenInfoHTSSuite::new,
-            TokenUpdatePrecompileSuite::new,
             WipeTokenAccountPrecompileSuite::new,
             ContractMintHTSV2SecurityModelSuite::new,
             AssociatePrecompileV2SecurityModelSuite::new,
@@ -204,8 +204,6 @@ public class ConcurrentSuites {
             TokenAndTypeCheckSuite::new,
             TokenExpiryInfoSuite::new,
             TokenInfoHTSSuite::new,
-            TokenUpdatePrecompileSuite::new,
-            WipeTokenAccountPrecompileSuite::new,
             // contract opcodes
             CreateOperationSuite::new,
             GlobalPropertiesSuite::new,
