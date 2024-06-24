@@ -665,7 +665,7 @@ public class ContractCreateSuite {
                                         results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
         return propertyPreservingHapiSpec("tryContractCreateWithMaxAutoAssoc")
