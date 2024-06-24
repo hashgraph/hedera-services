@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -29,6 +28,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations;
@@ -87,7 +87,7 @@ public class TransferContextImpl implements TransferContext {
             final TokenRelValidations tokenRelValidations,
             final TokenValidations tokenValidations) {
         this.context = context;
-        this.accountStore = context.writableStore(WritableAccountStore.class);
+        this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
         this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
@@ -113,7 +113,7 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void createFromAlias(final Bytes alias, final int reqMaxAutoAssociations) {
         // if it is a serialized proto key, auto-create account
-        if (isOfEvmAddressSize(alias)) {
+        if (AliasUtils.isOfEvmAddressSize(alias)) {
             // if it is an evm address create a hollow account
             validateTrue(lazyCreationConfig.enabled(), NOT_SUPPORTED);
             numLazyCreations++;
@@ -155,15 +155,6 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public int numOfLazyCreations() {
         return numLazyCreations;
-    }
-
-    /**
-     * Check if the given alias is of EVM address size.
-     * @param alias The alias to check.
-     * @return {@code true} if the alias is of EVM address size, {@code false} otherwise.
-     */
-    public static boolean isOfEvmAddressSize(final Bytes alias) {
-        return alias.length() == EVM_ADDRESS_SIZE;
     }
 
     /* ------------------- Needed for building records ------------------- */

@@ -21,8 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -36,6 +34,7 @@ import com.hedera.hapi.node.contract.ContractCallLocalQuery;
 import com.hedera.hapi.node.contract.ContractCallLocalResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent;
 import com.hedera.node.app.service.contract.impl.exec.QueryComponent.Factory;
@@ -141,14 +140,16 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
         return context.feeCalculator().legacyCalculate(sigValueObj -> {
             final var contractFnResult = ContractFunctionResult.newBuilder()
-                    .setContractID(fromPbj(op.contractIDOrElse(ContractID.DEFAULT)))
-                    .setContractCallResult(fromPbj(Bytes.wrap(new byte[contractsConfig.localCallEstRetBytes()])))
+                    .setContractID(CommonPbjConverters.fromPbj(op.contractIDOrElse(ContractID.DEFAULT)))
+                    .setContractCallResult(
+                            CommonPbjConverters.fromPbj(Bytes.wrap(new byte[contractsConfig.localCallEstRetBytes()])))
                     .build();
             final var builder = new SmartContractFeeBuilder();
             final var feeData = builder.getContractCallLocalFeeMatrices(
                     (int) op.functionParameters().length(),
                     contractFnResult,
-                    fromPbjResponseType(op.header().responseType()));
+                    CommonPbjConverters.fromPbjResponseType(
+                            op.headerOrElse(QueryHeader.DEFAULT).responseType()));
             return feeData.toBuilder()
                     .setNodedata(feeData.getNodedata().toBuilder().setGas(op.gas()))
                     .build();

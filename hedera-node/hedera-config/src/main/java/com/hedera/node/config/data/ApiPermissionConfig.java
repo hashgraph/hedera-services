@@ -86,7 +86,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECO
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.Random;
@@ -79,7 +79,7 @@ class GenerationsTests {
 
         final long randomParentGeneration = Math.abs(new Random().nextLong());
 
-        final GossipEvent event = new TestingEventBuilder(randotron)
+        final PlatformEvent event = new TestingEventBuilder(randotron)
                 .setSelfParent(new TestingEventBuilder(randotron).build())
                 .setOtherParent(new TestingEventBuilder(randotron).build())
                 .overrideSelfParentGeneration(randomParentGeneration)
@@ -95,13 +95,13 @@ class GenerationsTests {
                 randomParentGeneration + generationDiff);
 
         // non ancient
-        final GossipEvent newer = new TestingEventBuilder(randotron)
+        final PlatformEvent newer = new TestingEventBuilder(randotron)
                 .setSelfParent(new TestingEventBuilder(randotron).build())
                 .setOtherParent(new TestingEventBuilder(randotron).build())
                 .overrideSelfParentGeneration(randomParentGeneration + 1)
                 .build();
         // barely ancient
-        final GossipEvent older = new TestingEventBuilder(randotron)
+        final PlatformEvent older = new TestingEventBuilder(randotron)
                 .setSelfParent(new TestingEventBuilder(randotron).build())
                 .setOtherParent(new TestingEventBuilder(randotron).build())
                 .overrideSelfParentGeneration(randomParentGeneration - 1)

@@ -63,10 +63,11 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
     @Override
     public void doIn(final TransferContext transferContext) {
         final var handleContext = transferContext.getHandleContext();
-        final var nftStore = handleContext.writableStore(WritableNftStore.class);
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = handleContext.expiryValidator();
 
         var tokenPausedValidation = transferContext.tokenValidations();

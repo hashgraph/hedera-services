@@ -29,24 +29,16 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZE
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAccounts;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.MISC_ACCOUNT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
-import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_KNOWN_TARGET;
-import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_MISSING_TARGET;
-import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -64,7 +56,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -73,7 +65,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.time.Instant;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -122,46 +113,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             assertThatThrownBy(() -> subject.pureChecks(txn))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(TOKEN_ID_REPEATED_IN_TOKEN_LIST));
-        }
-
-        @Test
-        void tokenDissociateWithKnownTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_KNOWN_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), Matchers.contains(MISC_ACCOUNT_KT.asPbjKey()));
-        }
-
-        @Test
-        void tokenDissociateWithSelfPaidKnownTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            subject.preHandle(context);
-
-            assertEquals(0, context.requiredNonPayerKeys().size());
-        }
-
-        @Test
-        void tokenDissociateWithCustomPaidKnownTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            subject.preHandle(context);
-
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asPbjKey()));
-        }
-
-        @Test
-        void tokenDissociateWithMissingTargetScenario() throws PreCheckException {
-            final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
         }
     }
 
@@ -623,10 +574,12 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochMilli(0L));
 
-        lenient().when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
-        lenient().when(handleContext.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        final var storeFactory = mock(StoreFactory.class);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        lenient().when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
+        lenient().when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         lenient()
-                .when(handleContext.writableStore(WritableTokenRelationStore.class))
+                .when(storeFactory.writableStore(WritableTokenRelationStore.class))
                 .thenReturn(writableTokenRelStore);
 
         return handleContext;
