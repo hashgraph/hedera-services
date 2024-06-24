@@ -22,7 +22,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 public interface FeeContext {
     /**
@@ -91,20 +90,4 @@ public interface FeeContext {
      * @return the computed fees
      */
     Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
-
-    /**
-     * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
-     *
-     * @return The {@link ExchangeRateInfo} .
-     */
-    @NonNull
-    ExchangeRateInfo exchangeRateInfo();
-
-    /**
-     * Returns the current consensus time.
-     *
-     * @return the current consensus time
-     */
-    @NonNull
-    Instant consensusNow();
 }

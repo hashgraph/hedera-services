@@ -232,8 +232,6 @@ public class QueryChecker {
                 configuration,
                 authorizer,
                 // Signatures aren't applicable to queries
-                exchangeRateManager,
-                state,
                 -1,
                 dispatcher);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();

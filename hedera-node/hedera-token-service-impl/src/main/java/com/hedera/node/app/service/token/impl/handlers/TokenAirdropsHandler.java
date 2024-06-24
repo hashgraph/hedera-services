@@ -36,7 +36,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -54,7 +53,6 @@ import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
@@ -139,10 +137,10 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
         final var txn = context.body();
         final var op = txn.tokenAirdrop();
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var pendingStore = context.writableStore(WritableAirdropStore.class);
+        final var tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
+        final var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
+        final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
 
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
         for (final var xfers : op.tokenTransfers()) {
@@ -200,7 +198,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
             }
 
             // process pending airdrops
-            var recordBuilder = context.recordBuilder(TokenAirdropsRecordBuilder.class);
+            var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropsRecordBuilder.class);
             pendingAmounts.stream().forEach(amount -> {
                 var pendingId = PendingAirdropId.newBuilder()
                         .receiverId(amount.accountID())
@@ -294,7 +292,8 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var body = feeContext.body();
         final var op = body.tokenAirdrop();
 
-        final var defaultAirdropFees = feeContext.feeCalculator(SubType.DEFAULT).calculate();
+        final var defaultAirdropFees =
+                feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
         // TODO: add a comment why do we need that
         final var cryptoTransferFees =
                 CryptoTransferHandler.calculateCryptoTransferFees(feeContext, null, op.tokenTransfers());
@@ -305,55 +304,58 @@ public class TokenAirdropsHandler implements TransactionHandler {
     }
 
     private Fees calculateTokenAssociationFees(FeeContext feeContext, TokenAirdropTransactionBody op) {
-        var tokenAssociationsCount = 0;
-        final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
-        for (var transferList : op.tokenTransfers()) {
-            final var tokenToTransfer = transferList.token();
-            for (var transfer : transferList.transfers()) {
-                if (tokenRelStore.get(transfer.accountID(), tokenToTransfer) == null) {
-                    tokenAssociationsCount++;
-                }
-            }
-            for (var nftTransfer : transferList.nftTransfers()) {
-                if (tokenRelStore.get(nftTransfer.receiverAccountID(), tokenToTransfer) == null) {
-                    tokenAssociationsCount++;
-                }
-            }
-        }
-
-        long cryptoCreateFixedPrice = getTinybarsFromTinyCents(
-                getFixedPriceInTinyCents(
-                        com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount),
-                feeContext.exchangeRateInfo().activeRate(feeContext.consensusNow()));
-
-        final var totalNetworkFeeForTokenAssociation = cryptoCreateFixedPrice * tokenAssociationsCount;
-        return new Fees(0, totalNetworkFeeForTokenAssociation, 0);
+        return Fees.FREE;
+        //        var tokenAssociationsCount = 0;
+        //        final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
+        //        for (var transferList : op.tokenTransfers()) {
+        //            final var tokenToTransfer = transferList.token();
+        //            for (var transfer : transferList.transfers()) {
+        //                if (tokenRelStore.get(transfer.accountID(), tokenToTransfer) == null) {
+        //                    tokenAssociationsCount++;
+        //                }
+        //            }
+        //            for (var nftTransfer : transferList.nftTransfers()) {
+        //                if (tokenRelStore.get(nftTransfer.receiverAccountID(), tokenToTransfer) == null) {
+        //                    tokenAssociationsCount++;
+        //                }
+        //            }
+        //        }
+        //
+        //        long cryptoCreateFixedPrice = getTinybarsFromTinyCents(
+        //                getFixedPriceInTinyCents(
+        //                        com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount),
+        //                feeContext.exchangeRateInfo().activeRate(feeContext.consensusNow()));
+        //
+        //        final var totalNetworkFeeForTokenAssociation = cryptoCreateFixedPrice * tokenAssociationsCount;
+        //        return new Fees(0, totalNetworkFeeForTokenAssociation, 0);
     }
 
     private Fees calculateAccountAutoCreationFees(FeeContext feeContext, TokenAirdropTransactionBody op) {
-        // Getting the count of non-existing account receivers
-        final var receivers = new ArrayList<AccountID>();
-        for (var transfer : op.tokenTransfers()) {
-            transfer.transfers().forEach(t -> receivers.add(t.accountID()));
-            transfer.nftTransfers().forEach(t -> receivers.add(t.receiverAccountID()));
-        }
-
-        var nonExistingAliasReceiversCount = 0;
-        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
-        for (var receiver : receivers) {
-            // if the recipient does not exist and they are referred by their public ECDSA key or evm_address
-            if (AccountOneOfType.ALIAS.equals(receiver.account().kind())
-                    && accountStore.getAccountById(receiver) == null) {
-                nonExistingAliasReceiversCount++;
-            }
-        }
-
-        long cryptoCreateFixedPrice = getTinybarsFromTinyCents(
-                getFixedPriceInTinyCents(com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate),
-                feeContext.exchangeRateInfo().activeRate(feeContext.consensusNow()));
-
-        final var totalNetworkFeeForAutoAccountCreation = cryptoCreateFixedPrice * nonExistingAliasReceiversCount;
-        return new Fees(0, totalNetworkFeeForAutoAccountCreation, 0);
+        return Fees.FREE;
+        //        // Getting the count of non-existing account receivers
+        //        final var receivers = new ArrayList<AccountID>();
+        //        for (var transfer : op.tokenTransfers()) {
+        //            transfer.transfers().forEach(t -> receivers.add(t.accountID()));
+        //            transfer.nftTransfers().forEach(t -> receivers.add(t.receiverAccountID()));
+        //        }
+        //
+        //        var nonExistingAliasReceiversCount = 0;
+        //        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
+        //        for (var receiver : receivers) {
+        //            // if the recipient does not exist and they are referred by their public ECDSA key or evm_address
+        //            if (AccountOneOfType.ALIAS.equals(receiver.account().kind())
+        //                    && accountStore.getAccountById(receiver) == null) {
+        //                nonExistingAliasReceiversCount++;
+        //            }
+        //        }
+        //
+        //        long cryptoCreateFixedPrice = getTinybarsFromTinyCents(
+        //                getFixedPriceInTinyCents(com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate),
+        //                feeContext.exchangeRateInfo().activeRate(feeContext.consensusNow()));
+        //
+        //        final var totalNetworkFeeForAutoAccountCreation = cryptoCreateFixedPrice *
+        // nonExistingAliasReceiversCount;
+        //        return new Fees(0, totalNetworkFeeForAutoAccountCreation, 0);
     }
 
     private long getTinybarsFromTinyCents(final long tinyCents, @NonNull final ExchangeRate rate) {

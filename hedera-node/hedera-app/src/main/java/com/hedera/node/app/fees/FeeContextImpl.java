@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -31,7 +30,6 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -51,10 +49,7 @@ public class FeeContextImpl implements FeeContext {
     private final Configuration configuration;
     private final Authorizer authorizer;
     private final int numSignatures;
-    private final ExchangeRateManager exchangeRateManager;
-    private final HederaState state;
-
-    private ExchangeRateInfo exchangeRateInfo;
+    private final TransactionDispatcher transactionDispatcher;
 
     /**
      * Constructor of {@code FeeContextImpl}
@@ -77,8 +72,6 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Configuration configuration,
             @NonNull final Authorizer authorizer,
-            @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final HederaState state,
             final int numSignatures,
             final TransactionDispatcher transactionDispatcher) {
         this.consensusTime = consensusTime;
@@ -89,10 +82,8 @@ public class FeeContextImpl implements FeeContext {
         this.storeFactory = storeFactory;
         this.configuration = configuration;
         this.authorizer = authorizer;
-        this.exchangeRateManager = exchangeRateManager;
         this.numSignatures = numSignatures;
         this.transactionDispatcher = transactionDispatcher;
-        this.state = state;
     }
 
     @Override
@@ -157,19 +148,5 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final TransactionBody childTxBody, @NonNull final AccountID syntheticPayerId) {
         return transactionDispatcher.dispatchComputeFees(new ChildFeeContextImpl(
                 feeManager, this, childTxBody, syntheticPayerId, true, authorizer, storeFactory, consensusTime));
-    }
-
-    @NonNull
-    @Override
-    public ExchangeRateInfo exchangeRateInfo() {
-        if (exchangeRateInfo == null) {
-            exchangeRateInfo = exchangeRateManager.exchangeRateInfo(state);
-        }
-        return exchangeRateInfo;
-    }
-
-    @Override
-    public Instant consensusNow() {
-        return consensusTime;
     }
 }

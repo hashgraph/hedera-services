@@ -138,7 +138,7 @@ public class SingleTransactionRecordBuilderImpl
                 TokenAccountWipeRecordBuilder,
                 CryptoUpdateRecordBuilder,
                 NodeCreateRecordBuilder,
-                TokenAirdropsRecordBuilder{
+                TokenAirdropsRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());

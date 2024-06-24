@@ -226,8 +226,6 @@ public final class IngestChecker {
                 storeFactory,
                 configuration,
                 authorizer,
-                exchangeRateManager,
-                state,
                 numSigs,
                 dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
