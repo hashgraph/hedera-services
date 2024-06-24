@@ -658,7 +658,7 @@ public class CommonPbjConverters {
             case INVALID_NODE_ACCOUNT_ID -> ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
             case INVALID_NODE_DESCRIPTION -> ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
             case INVALID_SERVICE_ENDPOINT -> ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
-            case INVALID_GOSSIP_CAE_CERTIFICATE -> null;
+            case INVALID_GOSSIP_CA_CERTIFICATE -> null;
             case INVALID_GRPC_CERTIFICATE -> ResponseCodeEnum.INVALID_GRPC_CERTIFICATE;
             case INVALID_MAX_AUTO_ASSOCIATIONS -> ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
             case MAX_NODES_CREATED -> ResponseCodeEnum.MAX_NODES_CREATED;
