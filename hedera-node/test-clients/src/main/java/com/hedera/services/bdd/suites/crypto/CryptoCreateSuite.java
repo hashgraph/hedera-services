@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -901,15 +902,20 @@ public class CryptoCreateSuite {
                                 .hasMaxAutomaticAssociations(0));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> createAnAccountWithNegativeMaxAutoAssocAndBalance() {
         double v13PriceUsd = 0.05;
-
         final var negativeAutoAssocSlots = "negativeAutoAssocSlots";
-
-        return defaultHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
+        return propertyPreservingHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        overridingThree(
+                                LAZY_CREATION_ENABLED,
+                                TRUE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                TRUE_VALUE,
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
+                                TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_KEY).shape(ED25519),
                         cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
