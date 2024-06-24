@@ -171,7 +171,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         // 1. Parse and check header
         final Query query = parseQuery(requestBuffer);
         logger.debug("Received query: {}", query);
-
         final var function = functionOf(query);
 
         Response response;
@@ -294,7 +293,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 response = createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
             }
         } else {
-            response = DEFAULT_UNSUPPORTED_RESPONSE;
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
         try {

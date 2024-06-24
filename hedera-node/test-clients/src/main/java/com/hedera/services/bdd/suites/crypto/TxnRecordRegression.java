@@ -36,7 +36,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -115,14 +114,6 @@ public class TxnRecordRegression {
     @HapiTest
     final Stream<DynamicTest> getReceiptReturnsInvalidForUnspecifiedTxnId() {
         return hapiTest(getReceipt("").useDefaultTxnId().hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> returnsNotSupportedForMissingOp() {
-        return defaultHapiSpec("ReturnsNotSupportedForMissingOp")
-                .given(cryptoCreate("misc").via("success").balance(1_000L))
-                .when()
-                .then(getReceipt("success").forgetOp().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
     // (FUTURE) Re-enable once we have a way to manipulate time in the test network
