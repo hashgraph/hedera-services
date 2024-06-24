@@ -31,8 +31,6 @@ public class AddressBookHandlers {
 
     private final NodeDeleteHandler nodeDeleteHandler;
 
-    private final NodeGetInfoHandler nodeGetInfoHandler;
-
     private final NodeUpdateHandler nodeUpdateHandler;
 
     /**
@@ -42,11 +40,9 @@ public class AddressBookHandlers {
     public AddressBookHandlers(
             @NonNull final NodeCreateHandler nodeCreateHandler,
             @NonNull final NodeDeleteHandler nodeDeleteHandler,
-            @NonNull final NodeGetInfoHandler nodeGetInfoHandler,
             @NonNull final NodeUpdateHandler nodeUpdateHandler) {
         this.nodeCreateHandler = Objects.requireNonNull(nodeCreateHandler, "nodeCreateHandler must not be null");
         this.nodeDeleteHandler = Objects.requireNonNull(nodeDeleteHandler, "nodeDeleteHandler must not be null");
-        this.nodeGetInfoHandler = Objects.requireNonNull(nodeGetInfoHandler, "nodeGetInfoHandler must not be null");
         this.nodeUpdateHandler = Objects.requireNonNull(nodeUpdateHandler, "nodeUpdateHandler must not be null");
     }
 
@@ -66,15 +62,6 @@ public class AddressBookHandlers {
      */
     public NodeDeleteHandler nodeDeleteHandler() {
         return nodeDeleteHandler;
-    }
-
-    /**
-     * Get the nodeGetInfoHandler
-     *
-     * @return the nodeGetInfoHandler
-     */
-    public NodeGetInfoHandler nodeGetInfoHandler() {
-        return nodeGetInfoHandler;
     }
 
     /**
