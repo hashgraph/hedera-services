@@ -36,7 +36,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -222,7 +222,7 @@ public interface ChildDispatchModule {
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
-            @NonNull final KeyVerifier verifier,
+            @NonNull final AppKeyVerifier verifier,
             @NonNull @ChildQualifier final Key payerkey,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull @ChildQualifier final SavepointStackImpl stack,

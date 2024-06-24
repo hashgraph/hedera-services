@@ -60,7 +60,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -126,7 +126,7 @@ class DispatchProcessorTest {
     private DispatchUsageManager dispatchUsageManager;
 
     @Mock
-    private KeyVerifier keyVerifier;
+    private AppKeyVerifier keyVerifier;
 
     @Mock
     private HandleContext context;

@@ -31,15 +31,15 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -49,11 +49,10 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -76,7 +75,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Reusable;
@@ -105,7 +103,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
     private final AccountID syntheticPayer;
-    private final KeyVerifier verifier;
+    private final AppKeyVerifier verifier;
     private final Key payerKey;
     private final ExchangeRateManager exchangeRateManager;
     private final SavepointStackImpl stack;
@@ -134,7 +132,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
-            @NonNull final KeyVerifier verifier,
+            @NonNull final AppKeyVerifier verifier,
             @NonNull final Key payerKey,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SavepointStackImpl stack,
@@ -292,25 +290,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public SignatureVerification verificationFor(@NonNull final Key key) {
-        requireNonNull(key, "key must not be null");
-        return verifier.verificationFor(key);
-    }
-
-    @NonNull
-    @Override
-    public SignatureVerification verificationFor(
-            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
-        requireNonNull(key, "key must not be null");
-        requireNonNull(callback, "callback must not be null");
-        return verifier.verificationFor(key, callback);
-    }
-
-    @NonNull
-    @Override
-    public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
-        requireNonNull(evmAlias, "evmAlias must not be null");
-        return verifier.verificationFor(evmAlias);
+    public KeyVerifier keyVerifier() {
+        return verifier;
     }
 
     @Override
@@ -496,7 +477,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
         final var childRecords = currentDispatch.recordListBuilder().childRecordBuilders();
-        @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
+        @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
             final var childRecord = childRecords.get(i);

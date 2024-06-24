@@ -42,10 +42,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Base implementation of {@link KeyVerifier}
+ * Base implementation of {@link AppKeyVerifier}
  */
 @UserTxnScope
-public class DefaultKeyVerifier implements KeyVerifier {
+public class DefaultKeyVerifier implements AppKeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
 
