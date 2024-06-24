@@ -58,7 +58,7 @@ The address book is stored as a file on disk at the moment but will be stored pu
 
 
 ## Account Aliases
-**Account Aliases**: These are identifiers which are public key values, and are mostly 33 byte EVM address values. The "triplet" form (e.g. 0.0.18273892) is the simpler and easier to "type".
+**Account Aliases**: These are identifiers which can be protobuf serialized keys of ED25519 or ECDSA Keys or 33 byte EVM address values. The "triplet" form (e.g. 0.0.18273892) is the simpler and easier to "type".
 An alias is not intended to be user-friendly, but instead to offer a smart-contract friendly identifier. See https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583 for more information.
 
 
@@ -74,8 +74,8 @@ An alias is not intended to be user-friendly, but instead to offer a smart-contr
 https://hips.hedera.com/hip/hip-904 - currently in progress, will represent a significant change which allows for the number of "automatic association" slots to be set to -1 which represents infinite slots.
 
 
-## Auto-Renew Accounts
-**Auto-Renew Accounts**: A feature designed to automatically renew the lifecycle of certain entities (like accounts, files, smart contracts, topics, or tokens) by funding their renewal fees. This feature is particularly useful for entities that require continuous operation over long periods, as it automates the process of keeping these entities active by periodically charging a linked auto-renew account. 
+## AutoRenewal
+**AutoRenewal**: Is a feature designed to automatically renew the lifecycle of certain entities (like accounts, files, smart contracts, topics, or tokens) by funding their renewal fees. This is particularly useful for entities that require continuous operation over long periods, as it automates the process of keeping these entities active by periodically charging a linked auto-renew account. 
 See https://hips.hedera.com/hip/hip-16 and https://hips.hedera.com/hip/hip-372 for more information. Note that rent and expiration are not currently enabled but will be in the future.
 
 ---
@@ -95,7 +95,7 @@ See https://hips.hedera.com/hip/hip-16 and https://hips.hedera.com/hip/hip-372 f
 ---
 
 ## Child Transaction
-**Child Transaction**: A [Synthetic Transaction](#synthetic-transactions) that the EVM or Services initiates as a result of fulfilling a user-initiated transaction (e.g. [Hollow Accounts](#hollow-accounts) creation, or a scheduled execution).
+**Child Transaction**: A [Synthetic Transaction](#synthetic-transactions) that the EVM or Services initiates as a result of fulfilling a user-initiated transaction (e.g. [Hollow Accounts](#hollow-accounts) creation, auto-account creation, or a scheduled execution).
 
 ## Civilian Accounts
 **Civilian Accounts**:  User accounts that are not associated with any special roles or permissions beyond standard user functionality. These are mostly used for testing purposes. By contrast, System Accounts and Node Accounts are accounts that have specific roles and responsibilities within the infrastructure and governance of the Hedera network.
@@ -107,7 +107,7 @@ See https://hips.hedera.com/hip/hip-16 and https://hips.hedera.com/hip/hip-372 f
 **Congestion Pricing**: A mechanism designed to manage network congestion by dynamically adjusting transaction fees based on network demand. The primary goal of congestion pricing is to discourage excessive network usage during peak times. Refer to [Congestion Pricing](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/docs/fees/automated-congestion-pricing.md) and [Fees](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/docs/design/app/fees.md).
 
 ## Consensus Time
-**Consensus Time**: The timestamp assigned to a transaction once it has reached consensus across the network. This timestamp indicates the moment when the network agrees on the order and validity of the transaction, ensuring that all participants have a consistent view of the transaction sequence. See [Consensus Service](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/docs/design/services/consensus-service/consensus-service.md) for more information.
+**Consensus Time**: The timestamp assigned by the Platform to a transaction once it has reached consensus across the network. This timestamp indicates the moment when the network agrees on the order and validity of the transaction, ensuring that all participants have a consistent view of the transaction sequence.
 
 ---
 
@@ -117,7 +117,9 @@ See https://hips.hedera.com/hip/hip-16 and https://hips.hedera.com/hip/hip-372 f
 ---
 
 ## EOA
-**EOA (Externally Owned Accounts)**: Accounts that are controlled by private keys and are not associated with smart contracts. These accounts are used to send and receive transactions on the network and interact with smart contracts. In contrast to contract accounts or token accounts, EOAs are typically owned by individual users and are used to manage their assets and participate in the network.
+**EOA (Externally Owned Accounts)**: Accounts that are controlled by private keys and are not associated with smart contracts. These accounts are used to send and receive transactions on the network and interact with smart contracts. In contrast to contract accounts or token accounts, EOAs are typically owned by individual users and are used to manage their assets and participate in the network. Some examples of these are [Application Accounts](#application-accounts)
+and [Civilian Accounts](#civilian-accounts)
+
 
 ---
 
@@ -161,8 +163,7 @@ Refer to this [official blog post](https://hedera.com/blog/hedera-smart-contract
 
 ## System Transaction
 **System Transaction**: A transaction created by the platform (not services) software. An example of which is a node's signature on a state. Inside an event, every transaction has a flag saying whether it is a system transaction or not.
-## Admin Transaction
-**Admin Transaction**: a HAPI transaction signed by the council. Such as freeze.
+
 ---
 
 ## Token Allowance
