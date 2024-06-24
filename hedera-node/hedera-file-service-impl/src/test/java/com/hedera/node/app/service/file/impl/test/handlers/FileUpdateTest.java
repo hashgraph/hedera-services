@@ -55,7 +55,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -216,7 +216,7 @@ class FileUpdateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
         given(signatureVerification.failed()).willReturn(false);
 
@@ -240,10 +240,9 @@ class FileUpdateTest extends FileTestBase {
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableFileStore(writableStates, configuration, mock(StoreMetricsService.class));
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
@@ -382,7 +381,7 @@ class FileUpdateTest extends FileTestBase {
                 OP_BUILDER.fileID(wellKnowUpgradeId()).contents(newContent).build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
         subject.handle(handleContext);
 
         final var newFile = writableUpgradeStates.poll();

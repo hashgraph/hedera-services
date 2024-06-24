@@ -118,9 +118,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         validateSemantics(context);
 
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         // validate token exists and is usable
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
@@ -133,7 +134,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(TokenMintRecordBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(op.amount() >= 0, INVALID_TOKEN_MINT_AMOUNT);
             // we need to know if treasury mint while creation to ignore supply key exist or not.
@@ -144,7 +145,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             // get the config needed for validation
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
             final var maxAllowedMints = tokensConfig.nftsMaxAllowedMints();
-            final var nftStore = context.writableStore(WritableNftStore.class);
+            final var nftStore = storeFactory.writableStore(WritableNftStore.class);
             // validate resources exist for minting nft
             final var meta = op.metadata();
             validateTrue(

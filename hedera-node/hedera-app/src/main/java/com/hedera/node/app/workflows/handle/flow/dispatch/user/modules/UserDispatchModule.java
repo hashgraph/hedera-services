@@ -23,6 +23,7 @@ import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -32,11 +33,15 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -110,6 +115,10 @@ public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
     FeeContext bindFeeContext(@NonNull DispatchHandleContext handleContext);
+
+    @Binds
+    @UserDispatchScope
+    RecordBuilders bindRecordBuilders(@NonNull final RecordBuildersImpl recordBuilders);
 
     /**
      * Provides the required keys for the transaction from preHandleResult, when requested.
@@ -187,6 +196,15 @@ public interface UserDispatchModule {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
         return new ServiceApiFactory(stack, configuration, storeMetricsService);
+    }
+
+    @Provides
+    @UserDispatchScope
+    static StoreFactory storeFactoryImpl(
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final ServiceApiFactory serviceApiFactory) {
+        return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
     }
 
     /**
