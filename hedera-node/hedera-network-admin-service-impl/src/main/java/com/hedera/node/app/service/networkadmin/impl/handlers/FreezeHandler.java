@@ -37,6 +37,7 @@ import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -146,10 +147,11 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final NetworkAdminConfig adminServiceConfig = context.configuration().getConfigData(NetworkAdminConfig.class);
-        final ReadableUpgradeFileStore upgradeFileStore = context.readableStore(ReadableUpgradeFileStore.class);
-        final ReadableNodeStore nodeStore = context.readableStore(ReadableNodeStore.class);
-        final ReadableStakingInfoStore stakingInfoStore = context.readableStore(ReadableStakingInfoStore.class);
-        final WritableFreezeStore freezeStore = context.writableStore(WritableFreezeStore.class);
+        final StoreFactory storeFactory = context.storeFactory();
+        final ReadableUpgradeFileStore upgradeFileStore = storeFactory.readableStore(ReadableUpgradeFileStore.class);
+        final ReadableNodeStore nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
+        final ReadableStakingInfoStore stakingInfoStore = storeFactory.readableStore(ReadableStakingInfoStore.class);
+        final WritableFreezeStore freezeStore = storeFactory.writableStore(WritableFreezeStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
 

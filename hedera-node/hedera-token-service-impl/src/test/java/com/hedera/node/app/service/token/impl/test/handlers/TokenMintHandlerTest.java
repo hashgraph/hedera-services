@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -48,6 +49,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -295,7 +297,10 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.recordBuilder(TokenMintRecordBuilder.class)).willReturn(recordBuilder);
+
+        final var recordBuilders = mock(RecordBuilders.class);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        lenient().when(recordBuilders.getOrCreate(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

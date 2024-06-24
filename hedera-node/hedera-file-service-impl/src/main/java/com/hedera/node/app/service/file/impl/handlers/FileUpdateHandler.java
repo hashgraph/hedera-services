@@ -129,7 +129,7 @@ public class FileUpdateHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
 
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         final var fileUpdate = handleContext.body().fileUpdateOrThrow();
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
@@ -204,7 +204,7 @@ public class FileUpdateHandler implements TransactionHandler {
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
-        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableUpgradeFileStore.class);
         // empty old upgrade file
         FileID fileId = fileUpdate.fileIDOrThrow();
 

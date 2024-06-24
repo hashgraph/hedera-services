@@ -130,7 +130,7 @@ public class FileAppendHandler implements TransactionHandler {
             return;
         }
 
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         final var optionalFile = fileStore.get(target);
 
         if (optionalFile.isEmpty()) {
@@ -219,7 +219,7 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
-        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableUpgradeFileStore.class);
         File file = fileStore.peek(fileAppend.fileID());
         if (file == null || fileAppend.fileID() == null) {
             throw new HandleException(INVALID_FILE_ID);

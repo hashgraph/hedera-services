@@ -28,8 +28,10 @@ import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
@@ -39,15 +41,19 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
@@ -82,6 +88,10 @@ public interface ChildDispatchModule {
     @Binds
     @ChildDispatchScope
     FeeContext bindFeeContext(DispatchHandleContext feeContext);
+
+    @Binds
+    @ChildDispatchScope
+    RecordBuilders bindRecordBuilders(@NonNull final RecordBuildersImpl recordBuilders);
 
     @Provides
     @ChildDispatchScope
@@ -132,6 +142,15 @@ public interface ChildDispatchModule {
 
     @Provides
     @ChildDispatchScope
+    static StoreFactory storeFactory(
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final ServiceApiFactory serviceApiFactory) {
+        return new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+    }
+
+    @Provides
+    @ChildDispatchScope
     @ChildQualifier
     static Key providePayerKey() {
         // This is used exclusively for signature-usage fees, which should all zero out for a child dispatch.
@@ -149,6 +168,10 @@ public interface ChildDispatchModule {
                 new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return storeFactory.getStore(WritableEntityIdStore.class);
     }
+
+    @Binds
+    @ChildDispatchScope
+    EntityNumGenerator bindEntityNumGenerator(@NonNull EntityNumGeneratorImpl entityNumGenerator);
 
     @Provides
     @ChildDispatchScope
@@ -197,26 +220,28 @@ public interface ChildDispatchModule {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
-            @NonNull @ChildQualifier final ReadableStoreFactory storeFactory,
+            @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final KeyVerifier verifier,
             @NonNull @ChildQualifier final Key payerkey,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull @ChildQualifier final SavepointStackImpl stack,
-            @NonNull final WritableEntityIdStore entityIdStore,
+            @NonNull final EntityNumGenerator entityNumGenerator,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final ServiceApiFactory serviceApiFactory,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final RecordBuilders recordBuilders,
             @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final ChildDispatchComponent dispatch,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         return new DispatchHandleContext(
-                recordBuilder.consensusNow(),
+                recordBuilders
+                        .getOrCreate(SingleTransactionRecordBuilderImpl.class)
+                        .consensusNow(),
                 transactionInfo,
                 configuration,
                 authorizer,
@@ -229,13 +254,11 @@ public interface ChildDispatchModule {
                 payerkey,
                 exchangeRateManager,
                 stack,
-                entityIdStore,
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
-                writableStoreFactory,
-                serviceApiFactory,
                 networkInfo,
-                recordBuilder,
+                recordBuilders,
                 childDispatchFactory,
                 childDispatchLogic,
                 dispatch,

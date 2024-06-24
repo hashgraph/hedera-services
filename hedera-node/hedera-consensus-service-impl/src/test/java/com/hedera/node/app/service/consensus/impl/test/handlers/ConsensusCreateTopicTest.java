@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -47,11 +48,12 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -71,9 +73,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 
-    @Mock(strictness = LENIENT)
-    private HandleContext handleContext;
-
     @Mock
     private AttributeValidator validator;
 
@@ -83,8 +82,14 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     @Mock
     private ConsensusCreateTopicRecordBuilder recordBuilder;
 
+    @Mock(strictness = LENIENT)
+    private RecordBuilders recordBuilders;
+
     @Mock
     private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
 
     private WritableTopicStore topicStore;
     private Configuration config;
@@ -118,9 +123,11 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .getOrCreateConfig();
         topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
-        given(handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class))
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);
+        lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }
 
     @Test
@@ -246,8 +253,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var op = txnBody.consensusCreateTopic();
         given(handleContext.body()).willReturn(txnBody);
 
-        given(handleContext.readableStore(any())).willReturn(accountStore);
-
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -256,7 +261,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -284,8 +289,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var op = txnBody.consensusCreateTopic();
         given(handleContext.body()).willReturn(txnBody);
 
-        given(handleContext.readableStore(any())).willReturn(accountStore);
-
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -294,7 +297,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(handleContext.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -322,8 +325,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.readableStore(any())).willReturn(accountStore);
-        //        given(accountStore.getAccountById(autoRenewId)).willReturn(mock(Account.class));
 
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -341,7 +342,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.readableStore(any())).willReturn(accountStore);
 
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -360,7 +360,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
         given(handleContext.body()).willReturn(txnBody);
 
-        given(handleContext.readableStore(any())).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
@@ -400,9 +399,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         assertEquals(1, topicStore.sizeOfState());
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
+        given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
 
-        given(handleContext.readableStore(any())).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 1L)
@@ -430,7 +428,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService);
         assertEquals(1, topicStore.sizeOfState());
 
-        given(handleContext.readableStore(any())).willReturn(accountStore);
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any(), any());

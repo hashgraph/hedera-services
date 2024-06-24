@@ -113,7 +113,7 @@ public class FileCreateHandler implements TransactionHandler {
         }
 
         /* Validate if the current file can be created */
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
@@ -139,7 +139,7 @@ public class FileCreateHandler implements TransactionHandler {
             final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
-                    .fileNum(handleContext.newEntityNum())
+                    .fileNum(handleContext.entityNumGenerator().newEntityNum())
                     .shardNum(
                             fileCreateTransactionBody.hasShardID()
                                     ? fileCreateTransactionBody.shardIDOrThrow().shardNum()
@@ -156,7 +156,10 @@ public class FileCreateHandler implements TransactionHandler {
             final var file = builder.build();
             fileStore.put(file);
 
-            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileId);
+            handleContext
+                    .recordBuilders()
+                    .getOrCreate(CreateFileRecordBuilder.class)
+                    .fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,

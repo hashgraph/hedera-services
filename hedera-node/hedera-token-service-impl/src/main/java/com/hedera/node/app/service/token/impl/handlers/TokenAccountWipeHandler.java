@@ -115,10 +115,11 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
         // Set up the stores and helper objects needed
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var nftStore = context.writableStore(WritableNftStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
         final var expiryValidator = context.expiryValidator();
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
@@ -212,7 +213,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 .build());
         // Note: record(s) for this operation will be built in a token finalization method so that we keep track of all
         // changes for records
-        final var record = context.recordBuilder(TokenAccountWipeRecordBuilder.class);
+        final var record = context.recordBuilders().getOrCreate(TokenAccountWipeRecordBuilder.class);
         // Set newTotalSupply in record
         record.newTotalSupply(newTotalSupply);
         record.tokenType(token.tokenType());
