@@ -21,26 +21,29 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+import static com.hedera.services.bdd.spec.keys.deterministic.Bip0032.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.lang3.StringUtils;
 
 public class HapiSpecSetup {
-    private final SecureRandom r = new SecureRandom();
+    private final SplittableRandom r = new SplittableRandom(1_234_567L);
 
     private static final HapiPropertySource defaultNodeProps;
 
@@ -110,6 +113,24 @@ public class HapiSpecSetup {
 
     public HapiSpecSetup(HapiPropertySource props) {
         this.props = props;
+    }
+
+    /**
+     * Returns the Ed25519 private key for the default payer in this spec setup.
+     *
+     * @return the Ed25519 private key for the default payer in this spec setup
+     */
+    public EdDSAPrivateKey payerKey() {
+        if (StringUtils.isNotEmpty(defaultPayerKey())) {
+            return Ed25519Utils.keyFrom(com.swirlds.common.utility.CommonUtils.unhex(defaultPayerKey()));
+        } else if (StringUtils.isNotEmpty(defaultPayerMnemonic())) {
+            return mnemonicToEd25519Key(defaultPayerMnemonic());
+        } else if (StringUtils.isNotEmpty(defaultPayerMnemonicFile())) {
+            final var mnemonic = Bip0032.mnemonicFromFile(defaultPayerMnemonicFile());
+            return mnemonicToEd25519Key(mnemonic);
+        } else {
+            return Ed25519Utils.readKeyFrom(defaultPayerPemKeyLoc(), defaultPayerPemKeyPassphrase());
+        }
     }
 
     /**

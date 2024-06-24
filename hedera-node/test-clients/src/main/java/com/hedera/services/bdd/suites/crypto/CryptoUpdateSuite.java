@@ -23,7 +23,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
-import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
+import static com.hedera.services.bdd.spec.keys.KeyLabels.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
@@ -73,7 +73,7 @@ import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
-import com.hedera.services.bdd.spec.keys.KeyLabel;
+import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -99,7 +99,7 @@ public class CryptoUpdateSuite {
             2,
             SigControl.threshSigs(1, ANY, ANY, ANY, ANY, ANY, ANY, ANY),
             SigControl.threshSigs(3, ANY, ANY, ANY, ANY, ANY, ANY, ANY));
-    private final KeyLabel overlappingKeys =
+    private final KeyLabels overlappingKeys =
             complex(complex("A", "B", "C", "D", "E", "F", "G"), complex("H", "I", "J", "K", "L", "M", "A"));
 
     private final SigControl ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
@@ -351,7 +351,7 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateWithOneEffectiveSig() {
-        KeyLabel oneUniqueKey =
+        KeyLabels oneUniqueKey =
                 complex(complex("X", "X", "X", "X", "X", "X", "X"), complex("X", "X", "X", "X", "X", "X", "X"));
         SigControl singleSig = SigControl.threshSigs(
                 2,

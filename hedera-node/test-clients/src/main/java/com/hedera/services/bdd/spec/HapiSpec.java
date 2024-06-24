@@ -17,6 +17,8 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
@@ -31,6 +33,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.setupFrom;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.HapiClients.clientsFor;
+import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
@@ -48,7 +51,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
@@ -81,6 +83,7 @@ import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -93,12 +96,9 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.TargetNetworkType;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -134,19 +134,25 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.function.Executable;
 
+/**
+ * A specification for a Hedera network test. A spec is a sequence of operations
+ * that are executed in order, although in some cases their statuses will be resolved
+ * asynchronously.
+ *
+ * <p>Most specs can be run against any {@link HederaNetwork} implementation, though
+ * some operations do require an embedded or subprocess network.
+ */
 public class HapiSpec implements Runnable, Executable {
-    private static final int EMBEDDED_STATUS_WAIT_SLEEP_MS = 1;
+    private static final int CONCURRENT_EMBEDDED_STATUS_WAIT_SLEEP_MS = 1;
     private static final String CI_CHECK_NAME_SYSTEM_PROPERTY = "ci.check.name";
     private static final String QUIET_MODE_SYSTEM_PROPERTY = "hapi.spec.quiet.mode";
     private static final Duration NETWORK_ACTIVE_TIMEOUT = Duration.ofSeconds(300);
-
     /**
      * The name of the DynamicTest that executes the HapiSpec as written,
      * without modifications such as replacing ContractCall and ContractCreate
@@ -158,21 +164,6 @@ public class HapiSpec implements Runnable, Executable {
     public static final ThreadLocal<SpecManager> SPEC_MANAGER = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
-    private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
-    private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
-    private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
-            .addAllAccountAmounts(Stream.concat(
-                            Stream.of(AccountAmount.newBuilder()
-                                    .setAmount(-NUM_IN_USE_NODE_ACCOUNTS * ONE_HBAR)
-                                    .setAccountID(AccountID.newBuilder().setAccountNum(2L))
-                                    .build()),
-                            LongStream.range(FIRST_NODE_ACCOUNT_NUM, FIRST_NODE_ACCOUNT_NUM + NUM_IN_USE_NODE_ACCOUNTS)
-                                    .mapToObj(number -> AccountAmount.newBuilder()
-                                            .setAmount(ONE_HBAR)
-                                            .setAccountID(AccountID.newBuilder().setAccountNum(number))
-                                            .build()))
-                    .toList())
-            .build();
     private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
@@ -207,7 +198,7 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     private record Failure(Throwable cause, String opDescription) {
-        private static String LOG_TPL = "%s when executing %s";
+        private static final String LOG_TPL = "%s when executing %s";
 
         @Override
         public String toString() {
@@ -223,29 +214,32 @@ public class HapiSpec implements Runnable, Executable {
 
     private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
-    List<Payment> costs = new ArrayList<>();
-    List<Payment> costSnapshot = emptyList();
-    String name;
-    String suitePrefix = "";
-    SpecStatus status;
-    TxnFactory txnFactory;
-    KeyFactory keyFactory;
-    EntityManager entities;
-    FeeCalculator feeCalculator;
-    FeesAndRatesProvider ratesProvider;
-    HapiSpecSetup hapiSetup;
-    HapiSpecRegistry hapiRegistry;
-    SpecOperation[] given;
-    SpecOperation[] when;
-    SpecOperation[] then;
-    AtomicInteger adhoc = new AtomicInteger(0);
-    AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
-    ThreadPoolExecutor finalizingExecutor;
-    CompletableFuture<Void> finalizingFuture;
-    AtomicReference<Optional<Failure>> finishingError = new AtomicReference<>(Optional.empty());
-    BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
-    EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
-    EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+    private final List<Payment> costs = new ArrayList<>();
+    private final HapiSpecSetup hapiSetup;
+    private final SpecOperation[] given;
+    private final SpecOperation[] when;
+    private final SpecOperation[] then;
+    private final AtomicInteger adhoc = new AtomicInteger(0);
+    private final AtomicBoolean allOpsSubmitted = new AtomicBoolean(false);
+    private final AtomicReference<Optional<Failure>> finishingError = new AtomicReference<>(Optional.empty());
+    private final BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
+    private final EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+    private final EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts =
+            new EnumMap<>(ResponseCodeEnum.class);
+
+    private String name;
+    private String suitePrefix = "";
+    private SpecStatus status;
+    private TxnFactory txnFactory;
+    private KeyFactory keyFactory;
+    private KeyGenerator keyGenerator = DEFAULT_KEY_GEN;
+    private EntityManager entities;
+    private FeeCalculator feeCalculator;
+    private List<Payment> costSnapshot = emptyList();
+    private HapiSpecRegistry hapiRegistry;
+    private FeesAndRatesProvider ratesProvider;
+    private ThreadPoolExecutor finalizingExecutor;
+    private CompletableFuture<Void> finalizingFuture;
 
     /**
      * If non-null, the non-remote network to target with this spec.
@@ -293,6 +287,27 @@ public class HapiSpec implements Runnable, Executable {
      */
     public void addOverrideProperties(final Map<String, Object> props) {
         hapiSetup.addOverrides(props);
+    }
+
+    /**
+     * Returns the {@link KeyGenerator} used by this spec.
+     *
+     * <p><b>IMPORTANT:</b> Any operation that uses a different key generator cannot be run in
+     * repeatable mode, as then this key generator must be
+     *
+     * @return the key generator
+     */
+    public KeyGenerator keyGenerator() {
+        return keyGenerator;
+    }
+
+    /**
+     * Sets the key generator to use for this spec.
+     *
+     * @param keyGenerator the key generator
+     */
+    public void setKeyGenerator(@NonNull final KeyGenerator keyGenerator) {
+        this.keyGenerator = requireNonNull(keyGenerator);
     }
 
     public static ThreadPoolExecutor getCommonThreadPool() {
@@ -691,12 +706,6 @@ public class HapiSpec implements Runnable, Executable {
             log.info("Auto-scheduling {}", autoScheduled);
         }
         @Nullable List<EventualRecordStreamAssertion> assertions = null;
-        // No matter what, just distribute some hbar to the default node accounts
-        // (FUTURE) Why is this here? Can we delete it?
-        //        cryptoTransfer((ignore, builder) -> builder.setTransfers(DEFAULT_NODE_BALANCE_FUNDING))
-        //                .deferStatusResolution()
-        //                .hasAnyStatusAtAll()
-        //                .execFor(this);
         var snapshotOp = AutoSnapshotModeOp.from(this);
         if (snapshotOp != null) {
             // Ensure a mutable list
@@ -1251,9 +1260,20 @@ public class HapiSpec implements Runnable, Executable {
         spec.addOverrideProperties(Map.of("nodes", specNodes));
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
-            spec.addOverrideProperties(Map.of("status.wait.sleep.ms", "" + EMBEDDED_STATUS_WAIT_SLEEP_MS));
+            final Map<String, Object> overrides;
+            if (repeatableModeRequested()) {
+                // Statuses are immediately available in repeatable mode because ingest is synchronous;
+                // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode
+                overrides = Map.of("status.wait.sleep.ms", "0", "default.keyAlgorithm", "ED25519");
+            } else {
+                overrides = Map.of("status.wait.sleep.ms", "" + CONCURRENT_EMBEDDED_STATUS_WAIT_SLEEP_MS);
+            }
+            spec.addOverrideProperties(overrides);
             final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
             spec.setNextValidStart(embeddedHedera::nextValidStart);
+            if (repeatableModeRequested()) {
+                spec.setKeyGenerator(requireNonNull(REPEATABLE_KEY_GENERATOR.get()));
+            }
         }
     }
 

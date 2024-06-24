@@ -152,11 +152,11 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 
     private void genKeysFor(final HapiSpec spec) {
         if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
-            adminKey = netOf(spec, adminKeyName, adminKeyShape, Optional.of(this::effectiveKeyGen));
+            adminKey = netOf(spec, adminKeyName, adminKeyShape);
         }
 
         if (submitKeyName.isPresent() || submitKeyShape.isPresent()) {
-            submitKey = Optional.of(netOf(spec, submitKeyName, submitKeyShape, Optional.of(this::effectiveKeyGen)));
+            submitKey = Optional.of(netOf(spec, submitKeyName, submitKeyShape));
         }
     }
 

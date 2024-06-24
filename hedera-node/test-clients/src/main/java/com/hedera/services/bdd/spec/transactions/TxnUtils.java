@@ -54,7 +54,6 @@ import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
@@ -105,7 +104,6 @@ import java.util.SplittableRandom;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -138,11 +136,26 @@ public class TxnUtils {
             .build();
 
     public static Key netOf(
-            final HapiSpec spec,
-            final Optional<String> keyName,
-            final Optional<? extends SigControl> keyShape,
-            final Optional<Supplier<KeyGenerator>> keyGenSupplier) {
-        return netOf(spec, keyName, keyShape, Optional.empty(), keyGenSupplier);
+            @NonNull final HapiSpec spec,
+            @NonNull final Optional<String> keyName,
+            @NonNull final Optional<? extends SigControl> keyShape) {
+        return netOf(spec, keyName, keyShape, Optional.empty());
+    }
+
+    public static Key netOf(
+            @NonNull final HapiSpec spec,
+            @NonNull final Optional<String> keyName,
+            @NonNull final Optional<? extends SigControl> keyShape,
+            @NonNull final Optional<KeyFactory.KeyType> keyType) {
+        if (keyName.isEmpty()) {
+            if (keyShape.isPresent()) {
+                return spec.keys().generateSubjectTo(spec, keyShape.get());
+            } else {
+                return spec.keys().generate(spec, keyType.orElse(spec.setup().defaultKeyType()));
+            }
+        } else {
+            return spec.registry().getKey(keyName.get());
+        }
     }
 
     public static void turnLoggingOff(@NonNull final SpecOperation op) {
@@ -165,24 +178,6 @@ public class TxnUtils {
             signers.add(spec -> spec.registry().getKey(newKeyName.get()));
         }
         return signers;
-    }
-
-    public static Key netOf(
-            final HapiSpec spec,
-            final Optional<String> keyName,
-            final Optional<? extends SigControl> keyShape,
-            final Optional<KeyFactory.KeyType> keyType,
-            final Optional<Supplier<KeyGenerator>> keyGenSupplier) {
-        if (!keyName.isPresent()) {
-            final KeyGenerator generator = keyGenSupplier.get().get();
-            if (keyShape.isPresent()) {
-                return spec.keys().generateSubjectTo(spec, keyShape.get(), generator);
-            } else {
-                return spec.keys().generate(spec, keyType.orElse(spec.setup().defaultKeyType()), generator);
-            }
-        } else {
-            return spec.registry().getKey(keyName.get());
-        }
     }
 
     public static Duration asDuration(final long secs) {
@@ -403,19 +398,6 @@ public class TxnUtils {
         return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime();
     }
 
-    public static int currentMaxAutoAssociationSlots(final String contract, final HapiSpec spec) throws Throwable {
-        final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
-        final Optional<Throwable> error = subOp.execFor(spec);
-        if (error.isPresent()) {
-            String message = String.format(
-                    "Unable to look up current expiration timestamp of contract 0.0.%d",
-                    spec.registry().getContractId(contract).getContractNum());
-            log.error(message);
-            throw error.get();
-        }
-        return subOp.getResponse().getContractGetInfo().getContractInfo().getMaxAutomaticTokenAssociations();
-    }
-
     public static TopicID asTopicId(final AccountID id) {
         return TopicID.newBuilder()
                 .setShardNum(id.getShardNum())
@@ -451,7 +433,7 @@ public class TxnUtils {
         return sb.toString();
     }
 
-    private static final SplittableRandom r = new SplittableRandom();
+    private static final SplittableRandom r = new SplittableRandom(1_234_567);
     private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
     private static final char[] ALNUM = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
@@ -759,5 +741,9 @@ public class TxnUtils {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
+    }
+
+    public static KeyList getCompositeList(final Key key) {
+        return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
     }
 }

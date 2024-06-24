@@ -47,7 +47,8 @@ import org.jetbrains.annotations.NotNull;
  * cannot be used in concurrent tests.
  */
 class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements EmbeddedHedera {
-    private final FakeTime time = new FakeTime();
+    private static final Instant FIXED_POINT = Instant.parse("2024-06-24T12:05:41.487328Z");
+    private final FakeTime time = new FakeTime(FIXED_POINT, Duration.ZERO);
     private final SynchronousFakePlatform platform;
 
     public RepeatableEmbeddedHedera(@NonNull final EmbeddedNode node) {

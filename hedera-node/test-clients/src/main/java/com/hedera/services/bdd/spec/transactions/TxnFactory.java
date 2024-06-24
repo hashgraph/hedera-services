@@ -76,8 +76,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -258,7 +256,7 @@ public class TxnFactory {
             builder.setDecimals(setup.defaultTokenDecimals());
             builder.setInitialSupply(setup.defaultTokenInitialSupply());
             builder.setSymbol(TxnUtils.randomUppercase(8));
-            builder.setExpiry(defaultExpiry());
+            builder.setAutoRenewPeriod(setup.defaultAutoRenewPeriod());
         };
     }
 
@@ -325,8 +323,7 @@ public class TxnFactory {
     public Consumer<FileCreateTransactionBody.Builder> defaultDefFileCreateTransactionBody() {
         return builder -> builder.setRealmID(setup.defaultRealm())
                 .setShardID(setup.defaultShard())
-                .setContents(ByteString.copyFrom(setup.defaultFileContents()))
-                .setExpirationTime(defaultExpiry());
+                .setContents(ByteString.copyFrom(setup.defaultFileContents()));
     }
 
     public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {
@@ -337,15 +334,30 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    private Timestamp defaultExpiry() {
-        return expiryGiven(setup.defaultExpirationSecs());
+    /**
+     * Returns a {@link Timestamp} that is the default expiry time for an entity being created
+     * in the given spec context.
+     *
+     * @param spec the context in which the expiry time is being calculated
+     * @return the default expiry time
+     */
+    public static Timestamp defaultExpiryNowFor(@NonNull final HapiSpec spec) {
+        return Timestamp.newBuilder()
+                .setSeconds(spec.consensusTime().getEpochSecond() + spec.setup().defaultExpirationSecs())
+                .build();
     }
 
-    public static Timestamp expiryGiven(long lifetimeSecs) {
-        Instant expiry = Instant.now(Clock.systemUTC()).plusSeconds(lifetimeSecs);
+    /**
+     * Returns a {@link Timestamp} that is the expiry time for an entity being created
+     * in the given spec context with the given lifetime.
+     *
+     * @param spec the context in which the expiry time is being calculated
+     * @param lifetime the lifetime of the entity
+     * @return the default expiry time
+     */
+    public static Timestamp expiryNowFor(@NonNull final HapiSpec spec, final long lifetime) {
         return Timestamp.newBuilder()
-                .setSeconds(expiry.getEpochSecond())
-                .setNanos(expiry.getNano())
+                .setSeconds(spec.consensusTime().getEpochSecond() + lifetime)
                 .build();
     }
 

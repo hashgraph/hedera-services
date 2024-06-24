@@ -16,11 +16,14 @@
 
 package com.hedera.services.bdd.junit;
 
-import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
+
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
+import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
@@ -53,7 +56,8 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
                 targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
             }
             targetNetwork.start();
-            NetworkTargetingExtension.SHARED_NETWORK.set(targetNetwork);
+            SHARED_NETWORK.set(targetNetwork);
+            REPEATABLE_KEY_GENERATOR.set(new RepeatableKeyGenerator());
         }
 
         @Override
@@ -61,7 +65,7 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
             if (!isEmbedded) {
                 HapiClients.tearDown();
             }
-            NetworkTargetingExtension.SHARED_NETWORK.get().terminate();
+            SHARED_NETWORK.get().terminate();
         }
     }
 
