@@ -179,7 +179,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         validateTrue(tokensConfig.tokenRejectEnabled(), NOT_SUPPORTED);
         validateTrue(rejections.size() <= ledgerConfig.tokenRejectsMaxLen(), TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED);
 
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var rejectingAccount = getIfUsableForAliasedId(
                 rejectingAccountID, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
 
@@ -195,7 +195,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         // Update the token allowances
         if (hederaConfig.allowancesIsEnabled()) {
-            final var nftStore = context.writableStore(WritableNftStore.class);
+            final var nftStore = context.storeFactory().writableStore(WritableNftStore.class);
             updateFungibleAllowances(rejectingAccount, rejections, accountStore);
             updateNFTAllowances(rejections, nftStore);
         }
@@ -214,9 +214,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             @NonNull final HandleContext context,
             @NonNull final Account rejectingAccount) {
 
-        final WritableTokenStore tokenStore = context.writableStore(WritableTokenStore.class);
-        final WritableNftStore nftStore = context.writableStore(WritableNftStore.class);
-        final WritableTokenRelationStore relStore = context.writableStore(WritableTokenRelationStore.class);
+        final WritableTokenStore tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
+        final WritableNftStore nftStore = context.storeFactory().writableStore(WritableNftStore.class);
+        final WritableTokenRelationStore relStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
 
         final var accountID = rejectingAccount.accountIdOrThrow();
 
@@ -362,6 +362,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final long rbs = USAGE_PROPERTIES.legacyReceiptStorageSecs() * bpt;
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(getSubType(numOfNFTRejections))
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs)
