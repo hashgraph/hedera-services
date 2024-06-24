@@ -25,7 +25,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
-import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
@@ -33,12 +32,10 @@ import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -57,8 +54,6 @@ public class OutboundConnectionCreator {
     private final ConnectionTracker connectionTracker;
     private final SocketFactory socketFactory;
     private final AddressBook addressBook;
-    private final boolean doVersionCheck;
-    private final SoftwareVersion softwareVersion;
     private final PlatformContext platformContext;
 
     public OutboundConnectionCreator(
@@ -66,16 +61,12 @@ public class OutboundConnectionCreator {
             @NonNull final NodeId selfId,
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final SocketFactory socketFactory,
-            @NonNull final AddressBook addressBook,
-            final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion) {
+            @NonNull final AddressBook addressBook) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.selfId = Objects.requireNonNull(selfId);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.socketFactory = Objects.requireNonNull(socketFactory);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.doVersionCheck = doVersionCheck;
-        this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
     }
 
@@ -104,26 +95,6 @@ public class OutboundConnectionCreator {
             dis = SyncInputStream.createSyncInputStream(
                     platformContext, clientSocket.getInputStream(), socketConfig.bufferSize());
 
-            if (doVersionCheck) {
-                dos.writeSerializable(softwareVersion, true);
-                dos.flush();
-
-                final SoftwareVersion otherVersion = dis.readSerializable();
-                if (otherVersion == null
-                        || otherVersion.getClass() != softwareVersion.getClass()
-                        || otherVersion.compareTo(softwareVersion) != 0) {
-                    throw new IOException("This node has software version " + softwareVersion
-                            + " but the other node has software version " + otherVersion + ". Closing connection.");
-                }
-            }
-
-            dos.writeUTF(addressBook.getAddress(selfId).getNickname());
-            dos.flush();
-
-            final int ack = dis.readInt(); // read the ACK for creating the connection
-            if (ack != ByteConstants.COMM_CONNECT) { // this is an ACK for creating the connection
-                throw new ConnectException("ack is not " + ByteConstants.COMM_CONNECT + ", it is " + ack);
-            }
             logger.debug(NETWORK.getMarker(), "`connect` : finished, {} connected to {}", selfId, otherId);
 
             return SocketConnection.create(
@@ -146,7 +117,7 @@ public class OutboundConnectionCreator {
         } catch (final IOException e) {
             NetworkUtils.close(clientSocket, dis, dos);
             // log the SSL connection exception which is caused by socket exceptions as warning.
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "{} failed to connect to {} {}",

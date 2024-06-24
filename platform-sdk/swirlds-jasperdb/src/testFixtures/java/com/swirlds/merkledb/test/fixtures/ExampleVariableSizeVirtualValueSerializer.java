@@ -20,9 +20,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.nio.ByteBuffer;
 
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public final class ExampleVariableSizeVirtualValueSerializer
         implements ValueSerializer<ExampleVariableSizeVirtualValue> {
 
@@ -72,29 +70,11 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public void serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) {
-        buffer.putInt(data.getId());
-        final int dataLength = data.getDataLength();
-        buffer.putInt(dataLength);
-        buffer.put(data.getData());
-    }
-
-    @Override
     public ExampleVariableSizeVirtualValue deserialize(final ReadableSequentialData in) {
         final int id = in.readInt();
         final int dataLength = in.readInt();
         final byte[] bytes = new byte[dataLength];
         in.readBytes(bytes);
-        return new ExampleVariableSizeVirtualValue(id, bytes);
-    }
-
-    @Override
-    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion) {
-        assert dataVersion == getCurrentDataVersion();
-        final int id = buffer.getInt();
-        final int dataLength = buffer.getInt();
-        final byte[] bytes = new byte[dataLength];
-        buffer.get(bytes);
         return new ExampleVariableSizeVirtualValue(id, bytes);
     }
 

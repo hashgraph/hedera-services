@@ -42,14 +42,14 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     private int oridinal = PROGRAMMATIC_VALUES_ORDINAL;
 
     /**
-     * Creates an instance without any config properties
+     * Creates an instance without any config properties.
      */
     public SimpleConfigSource() {
         this.internalProperties = new HashMap<>();
     }
 
     /**
-     * Creates an instance without any config properties
+     * Creates an instance without any config properties.
      */
     public SimpleConfigSource(@NonNull final Map<String, String> properties) {
         // defensive copy
@@ -57,7 +57,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance and directly adds the given config property
+     * Creates an instance and directly adds the given config property.
      *
      * @param propertyName name of the config property
      * @param value        value of the config property
@@ -68,7 +68,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance and directly adds the given config property
+     * Creates an instance and directly adds the given config property.
      *
      * @param propertyName name of the config property
      * @param value        value of the config property
@@ -79,7 +79,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance and directly adds the given config property
+     * Creates an instance and directly adds the given config property.
      *
      * @param propertyName name of the config property
      * @param value        value of the config property
@@ -90,7 +90,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance and directly adds the given config property
+     * Creates an instance and directly adds the given config property.
      *
      * @param propertyName name of the config property
      * @param value        value of the config property
@@ -101,7 +101,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance and directly adds the given config property
+     * Creates an instance and directly adds the given config property.
      *
      * @param propertyName name of the config property
      * @param value        value of the config property
@@ -112,7 +112,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Creates an instance and directly adds the given config property
+     * Creates an instance and directly adds the given config property.
      *
      * @param propertyName name of the config property
      * @param value        value of the config property
@@ -123,7 +123,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a string value to this source
+     * Adds a string value to this source.
      *
      * @param propertyName name of the property
      * @param value        default value
@@ -134,9 +134,9 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds an int value to this source
+     * Adds an int value to this source.
      *
-     * @param propertyName name of the peoprty
+     * @param propertyName name of the property
      * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Integer value) {
@@ -145,9 +145,9 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a double value to this source
+     * Adds a double value to this source.
      *
-     * @param propertyName name of the peoprty
+     * @param propertyName name of the property
      * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Double value) {
@@ -156,9 +156,9 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a float value to this source
+     * Adds a float value to this source.
      *
-     * @param propertyName name of the peoprty
+     * @param propertyName name of the property
      * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Float value) {
@@ -167,9 +167,9 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a long value to this source
+     * Adds a long value to this source.
      *
-     * @param propertyName name of the peoprty
+     * @param propertyName name of the property
      * @param value        default value
      */
     public SimpleConfigSource withValue(final String propertyName, final Long value) {
@@ -178,9 +178,9 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a boolean value to this source
+     * Adds a boolean value to this source.
      *
-     * @param propertyName name of the peoprty
+     * @param propertyName name of the property
      * @param value        default value
      */
     @NonNull
@@ -198,7 +198,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a list value to this source
+     * Adds a list value to this source.
      *
      * @param propertyName name of the property
      * @param values       default values list
@@ -209,7 +209,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a list value to this source
+     * Adds a list value to this source.
      *
      * @param propertyName name of the property
      * @param values       default values list
@@ -220,7 +220,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a list value to this source
+     * Adds a list value to this source.
      *
      * @param propertyName name of the property
      * @param values       default values list
@@ -231,7 +231,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a list value to this source
+     * Adds a list value to this source.
      *
      * @param propertyName name of the property
      * @param values       default values list
@@ -242,7 +242,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Adds a list value to this source
+     * Adds a list value to this source.
      *
      * @param propertyName name of the property
      * @param values       default values list
@@ -280,7 +280,7 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     /**
-     * Removes all default properties
+     * Removes all default properties.
      */
     public void reset() {
         internalProperties.clear();

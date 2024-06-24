@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjResponseType;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -31,13 +30,15 @@ import com.hedera.hapi.node.file.FileGetContentsQuery;
 import com.hedera.hapi.node.file.FileGetContentsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
-import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileContentsResourceUsage;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -50,6 +51,10 @@ import javax.inject.Singleton;
 public class FileGetContentsHandler extends FileQueryBase {
     private final FileFeeBuilder usageEstimator;
 
+    /**
+     * Constructs a {@link FileGetContentsHandler} with the given {@link FileFeeBuilder}.
+     * @param usageEstimator the file fee builder to be used for fee calculation
+     */
     @Inject
     public FileGetContentsHandler(final FileFeeBuilder usageEstimator) {
         this.usageEstimator = usageEstimator;
@@ -82,13 +87,13 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var query = queryContext.query();
         final var fileStore = queryContext.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
-        final var fileId = op.fileIDOrThrow();
+        final var fileId = op.fileIDOrElse(FileID.DEFAULT);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         final FileContents fileContents = contentFile(fileId, fileStore);
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> {
-            return new GetFileContentsResourceUsage(usageEstimator)
-                    .usageGivenType(fileContents, fromPbjResponseType(responseType));
-        });
+        return queryContext
+                .feeCalculator()
+                .legacyCalculate(sigValueObj ->
+                        usageGivenType(fileContents, CommonPbjConverters.fromPbjResponseType(responseType)));
     }
 
     @Override
@@ -134,5 +139,17 @@ public class FileGetContentsHandler extends FileQueryBase {
             info.contents(meta.contents());
             return info.build();
         }
+    }
+
+    private FeeData usageGivenType(final FileContents fileContents, final ResponseType type) {
+        /* Given the test in {@code GetFileContentsAnswer.checkValidity}, this can only be empty
+         * under the extraordinary circumstance that the desired file expired during the query
+         * answer flow (which will now fail downstream with an appropriate status code); so
+         * just return the default {@code FeeData} here. */
+        if (fileContents == null) {
+            return FeeData.getDefaultInstance();
+        }
+        return usageEstimator.getFileContentQueryFeeMatrices(
+                fileContents.contents().toByteArray().length, type);
     }
 }

@@ -16,6 +16,7 @@
 
 package com.swirlds.merkle.test.map;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.utility.CommonUtils.byteCountToDisplaySize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,6 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 @EnabledIfEnvironmentVariable(disabledReason = "Benchmark", named = "benchmark", matches = "true")
+@Tag(TIMING_SENSITIVE)
 class MerkleMapMemoryTests {
 
     private static final Random PRNG_PROVIDER = new Random(System.currentTimeMillis());

@@ -28,17 +28,18 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
@@ -83,7 +84,7 @@ class MerkleDbSnapshotTest {
 
     @BeforeEach
     void setupTest() throws Exception {
-        MerkleDb.setDefaultPath(TemporaryFileBuilder.buildTemporaryDirectory("MerkleDbSnapshotTest"));
+        MerkleDb.setDefaultPath(LegacyTemporaryFileBuilder.buildTemporaryDirectory("MerkleDbSnapshotTest"));
     }
 
     @AfterEach
@@ -133,7 +134,7 @@ class MerkleDbSnapshotTest {
             initialRoot.setChild(i, vm);
         }
 
-        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshotSync");
+        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotSync");
         final Path snapshotFile = snapshotDir.resolve("state.swh");
 
         final AtomicReference<MerkleInternal> lastRoot = new AtomicReference<>();
@@ -225,7 +226,7 @@ class MerkleDbSnapshotTest {
         assertEventuallyTrue(() -> lastRoot.get() != null, Duration.ofSeconds(10), "lastRoot is null");
 
         MerkleCryptoFactory.getInstance().digestTreeSync(rootToSnapshot.get());
-        final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshotAsync");
+        final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshotAsync");
         final Path snapshotFile = snapshotDir.resolve("state.swh");
         final MerkleDataOutputStream out = new MerkleDataOutputStream(
                 Files.newOutputStream(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE));
@@ -270,10 +271,10 @@ class MerkleDbSnapshotTest {
                 dsBuilder.copy(original, true);
 
         try {
-            final Path snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+            final Path snapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("snapshot");
             dsBuilder.snapshot(snapshotDir, copy);
 
-            final Path oldSnapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
+            final Path oldSnapshotDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory("oldSnapshot");
             assertDoesNotThrow(() -> dsBuilder.snapshot(oldSnapshotDir, original));
         } finally {
             original.close();
@@ -286,13 +287,14 @@ class MerkleDbSnapshotTest {
         MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        Metrics metrics = new DefaultMetrics(
+        Metrics metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
-        MerkleDbStatistics statistics = new MerkleDbStatistics("test");
+        MerkleDbStatistics statistics =
+                new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
         statistics.registerMetrics(metrics);
         vm.getDataSource().registerMetrics(metrics);
     }

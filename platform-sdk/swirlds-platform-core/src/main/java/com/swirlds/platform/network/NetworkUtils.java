@@ -19,10 +19,24 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
+import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.gossip.shadowgraph.SyncTimeoutException;
+import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.platform.network.connectivity.TlsFactory;
+import com.swirlds.platform.system.PlatformConstructionException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.List;
+import java.util.Objects;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,14 +83,14 @@ public final class NetworkUtils {
         } else {
             description = null;
         }
-        if (e instanceof InterruptedException ie) {
+        if (e instanceof final InterruptedException ie) {
             // we must make sure that the network thread can be interrupted
             throw ie;
         }
         // we use a different marker depending on what the root cause is
-        Marker marker = NetworkUtils.determineExceptionMarker(e);
+        final Marker marker = NetworkUtils.determineExceptionMarker(e);
         if (SOCKET_EXCEPTIONS.getMarker().equals(marker)) {
-            String formattedException = NetworkUtils.formatException(e);
+            final String formattedException = NetworkUtils.formatException(e);
             logger.warn(marker, "Connection broken: {} {}", description, formattedException);
         } else {
             logger.error(EXCEPTION.getMarker(), "Connection broken: {}", description, e);
@@ -109,7 +123,42 @@ public final class NetworkUtils {
         if (e == null) {
             return "";
         }
-        return "Caused By: {Exception: " + e.getClass().getSimpleName() + " Message: " + e.getMessage() + " "
-                + formatException(e.getCause()) + "}";
+        return "Caused by exception: " + e.getClass().getSimpleName() + " Message: " + e.getMessage() + " "
+                + formatException(e.getCause());
+    }
+
+    /**
+     * Create a TLS-based {@link SocketFactory} using the provided keys and certificates.
+     * NOTE: This method is a stepping stone to decoupling the networking from the platform.
+     *
+     * @param selfId        the ID of the node
+     * @param peers         the list of peers
+     * @param keysAndCerts  the keys and certificates to use for the TLS connections
+     * @param configuration the configuration of the network
+     * @return the created {@link SocketFactory}
+     */
+    public static @NonNull SocketFactory createSocketFactory(
+            @NonNull final NodeId selfId,
+            @NonNull final List<PeerInfo> peers,
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final Configuration configuration) {
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(peers);
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(configuration);
+
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
+
+        try {
+            return new TlsFactory(
+                    keysAndCerts.agrCert(), keysAndCerts.agrKeyPair().getPrivate(), peers, socketConfig, cryptoConfig);
+        } catch (final NoSuchAlgorithmException
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | CertificateException
+                | IOException e) {
+            throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
+        }
     }
 }

@@ -1032,6 +1032,7 @@ metricsDoc.tsv
 platform-sdk/sdk/data/saved
 platform-sdk/sdk/data/apps
 platform-sdk/sdk/data/lib
+platform-sdk/sdk/data/recycle-bin
 platform-sdk/sdk/data/repos
 platform-sdk/sdk/data/stats
 platform-sdk/sdk/*.csv
@@ -1046,7 +1047,6 @@ platform-sdk/sdk/metricsDoc.tsv
 **/swirlds-tmp
 swirlds-platform-core/data/**
 hedera-node/cli-clients/testFile
-hedera-node/hedera-mono-service/src/test/resources/balance*/**
 hedera-node/hedera-mono-service/temp/**
 hedera-node/hedera-mono-service/swirlds-sst-tmp/**
 hedera-node/data/

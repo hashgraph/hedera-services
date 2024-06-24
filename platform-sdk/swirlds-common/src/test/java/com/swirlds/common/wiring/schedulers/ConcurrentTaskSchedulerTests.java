@@ -19,6 +19,8 @@ package com.swirlds.common.wiring.schedulers;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -35,8 +37,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 class ConcurrentTaskSchedulerTests {
 
     /**
@@ -60,10 +64,11 @@ class ConcurrentTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.CONCURRENT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final BindableInputWire<Integer, Void> channel = taskScheduler.buildInputWire("channel");
-        channel.bind(handler);
+        channel.bindConsumer(handler);
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
@@ -109,10 +114,11 @@ class ConcurrentTaskSchedulerTests {
 
         final TaskScheduler<Void> taskScheduler = model.schedulerBuilder("test")
                 .withType(TaskSchedulerType.CONCURRENT)
+                .withUnhandledTaskCapacity(UNLIMITED_CAPACITY)
                 .build()
                 .cast();
         final BindableInputWire<Operation, Void> channel = taskScheduler.buildInputWire("channel");
-        channel.bind(handler);
+        channel.bindConsumer(handler);
 
         assertEquals(-1, taskScheduler.getUnprocessedTaskCount());
 
@@ -168,7 +174,7 @@ class ConcurrentTaskSchedulerTests {
                 .build()
                 .cast();
         final BindableInputWire<Integer, Void> inputWire = taskScheduler.buildInputWire("channel");
-        inputWire.bind(handler);
+        inputWire.bindConsumer(handler);
 
         model.start();
 

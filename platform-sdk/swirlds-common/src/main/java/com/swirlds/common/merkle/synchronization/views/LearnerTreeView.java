@@ -18,13 +18,17 @@ package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A "view" into a merkle tree (or subtree) used to perform a reconnect operation. This view is used to access
@@ -36,14 +40,31 @@ import java.io.IOException;
 public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, LearnerInitializer<T>, TreeView<T> {
 
     /**
-     * Start any required background threads. Threads should be created on the provided work group.
+     * For this tree view, start all required reconnect tasks in the given work group. Learning synchronizer
+     * will then wait for all tasks in the work group to complete before proceeding to the next tree view. If
+     * new custom tree views are encountered, they must be added to {@code rootsToReceive}, although it isn't
+     * currently supported by virtual tree views, as nested virtual maps are not supported.
      *
-     * @param threadManager
-     * 		responsible for creating new threads
-     * @param workGroup
-     * 		a work group responsible for managing threads
+     * @param learningSynchronizer the learning synchronizer
+     * @param workGroup the work group to run teaching task(s) in
+     * @param inputStream the input stream to read data from teacher
+     * @param outputStream the output stream to write data to teacher
+     * @param rootsToReceive if custom tree views are encountered, they must be added to this queue
+     * @param reconstructedRoot the root node of the reconnected tree must be set here
      */
-    default void startThreads(final ThreadManager threadManager, final StandardWorkGroup workGroup) {}
+    void startLearnerTasks(
+            final LearningSynchronizer learningSynchronizer,
+            final StandardWorkGroup workGroup,
+            final MerkleDataInputStream inputStream,
+            final MerkleDataOutputStream outputStream,
+            final Queue<MerkleNode> rootsToReceive,
+            final AtomicReference<T> reconstructedRoot);
+
+    /**
+     * Aborts the reconnect process on the learner side. It may be used to release resources, when
+     * reconnect failed with an exception.
+     */
+    default void abort() {}
 
     /**
      * Check if this view represents the root of the state.

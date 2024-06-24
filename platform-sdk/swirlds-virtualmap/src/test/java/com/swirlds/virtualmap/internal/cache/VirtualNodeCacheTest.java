@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap.internal.cache;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.DELETED_HASH;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.DELETED_LEAF_RECORD;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.createMap;
@@ -65,6 +66,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 class VirtualNodeCacheTest extends VirtualTestBase {
     private static final long BOGUS_KEY_ID = -7000;
 

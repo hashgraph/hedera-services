@@ -41,13 +41,13 @@ jobs:
           java-version: 21.0.1
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
+        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
         with:
           build-root-directory: hedera-node
           gradle-version: wrapper
 
       - name: Compile
-        uses: gradle/gradle-build-action@a8f75513eafdebd8141bd1cd4e30fcd194af8dfa # v2.12.0
+        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
         with:
           gradle-version: wrapper
           arguments: assemble --scan
@@ -56,7 +56,7 @@ jobs:
         run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties
 
       - name: Setup NodeJS
-        uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: 16
 

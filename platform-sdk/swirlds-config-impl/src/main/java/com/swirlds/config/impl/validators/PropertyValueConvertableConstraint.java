@@ -26,8 +26,7 @@ import java.util.Objects;
  * Implementation of {@link ConfigPropertyConstraint} that results in a violation if the value of the property can not be
  * converted.
  *
- * @param <T>
- * 		type of the value
+ * @param <T> type of the value
  */
 public class PropertyValueConvertableConstraint<T> implements ConfigPropertyConstraint<T> {
 

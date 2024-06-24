@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,111 +16,66 @@
 
 package com.swirlds.platform.event.creation;
 
-import static com.swirlds.platform.event.creation.EventCreationStatus.ATTEMPTING_CREATION;
-import static com.swirlds.platform.event.creation.EventCreationStatus.IDLE;
-import static com.swirlds.platform.event.creation.EventCreationStatus.NO_ELIGIBLE_PARENTS;
-import static com.swirlds.platform.event.creation.EventCreationStatus.RATE_LIMITED;
-
-import com.swirlds.base.time.Time;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.metrics.extensions.PhaseTimer;
-import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.creation.rules.EventCreationRule;
+import com.swirlds.common.wiring.component.InputWireLabel;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
+import java.time.Duration;
 
 /**
  * Wraps an {@link EventCreator} and provides additional functionality. Will sometimes decide not to create new events
  * based on external rules. Forwards created events to a consumer, and retries forwarding if the consumer is not
  * immediately able to accept the event.
  */
-public class EventCreationManager {
-
+public interface EventCreationManager {
     /**
-     * Creates events.
-     */
-    private final EventCreator creator;
-
-    /**
-     * Rules that say if event creation is permitted.
-     */
-    private final EventCreationRule eventCreationRules;
-
-    /**
-     * Tracks the current phase of event creation.
-     */
-    private final PhaseTimer<EventCreationStatus> phase;
-
-    /**
-     * Constructor.
-     *
-     * @param platformContext    the platform context
-     * @param time               provides wall clock time
-     * @param creator            creates events
-     * @param eventCreationRules rules for deciding when it is permitted to create events
-     */
-    public EventCreationManager(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Time time,
-            @NonNull final EventCreator creator,
-            @NonNull final EventCreationRule eventCreationRules) {
-
-        this.creator = Objects.requireNonNull(creator);
-        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
-
-        phase = new PhaseTimerBuilder<>(platformContext, time, "platform", EventCreationStatus.class)
-                .enableFractionalMetrics()
-                .setInitialPhase(IDLE)
-                .setMetricsNamePrefix("eventCreation")
-                .build();
-    }
-
-    /**
-     * Attempt to create an event. If successful, attempt to pass that event to the event consumer.
+     * Attempt to create an event.
      *
      * @return the created event, or null if no event was created
      */
+    @InputWireLabel("heartbeat")
     @Nullable
-    public GossipEvent maybeCreateEvent() {
-        if (!eventCreationRules.isEventCreationPermitted()) {
-            phase.activatePhase(eventCreationRules.getEventCreationStatus());
-            return null;
-        }
-
-        phase.activatePhase(ATTEMPTING_CREATION);
-
-        final GossipEvent newEvent = creator.maybeCreateEvent();
-        if (newEvent == null) {
-            // The only reason why the event creator may choose not to create an event
-            // is if there are no eligible parents.
-            phase.activatePhase(NO_ELIGIBLE_PARENTS);
-        } else {
-            eventCreationRules.eventWasCreated();
-            // We created an event, we won't be allowed to create another until some time has elapsed.
-            phase.activatePhase(RATE_LIMITED);
-        }
-
-        return newEvent;
-    }
+    BaseEventHashedData maybeCreateEvent();
 
     /**
      * Register a new event from event intake.
      *
      * @param event the event to add
      */
-    public void registerEvent(@NonNull final GossipEvent event) {
-        creator.registerEvent(event);
-    }
+    @InputWireLabel("PlatformEvent")
+    void registerEvent(@NonNull PlatformEvent event);
 
     /**
-     * Update the non-ancient event window, defining the minimum threshold for an event to be non-ancient.
+     * Update the event window, defining the minimum threshold for an event to be non-ancient.
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        creator.setNonAncientEventWindow(nonAncientEventWindow);
-    }
+    @InputWireLabel("event window")
+    void setEventWindow(@NonNull EventWindow eventWindow);
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    @InputWireLabel("PlatformStatus")
+    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+
+    /**
+     * Report the amount of time that the system has been in an unhealthy state. Will receive a report of
+     * {@link Duration#ZERO} when the system enters a healthy state.
+     *
+     * @param duration the amount of time that the system has been in an unhealthy state
+     */
+    @InputWireLabel("health info")
+    void reportUnhealthyDuration(@NonNull final Duration duration);
+
+    /**
+     * Clear the internal state of the event creation manager.
+     */
+    @InputWireLabel("clear")
+    void clear();
 }

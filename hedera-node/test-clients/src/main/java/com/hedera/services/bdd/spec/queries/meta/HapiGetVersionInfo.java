@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -26,9 +25,10 @@ import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,9 +94,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getVersionInfoQuery(payment, false);
-        response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         var info = response.getNetworkGetVersionInfo();
         if (verboseLoggingOn) {
             LOG.info(
@@ -106,9 +104,10 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
         }
 
         if (yahcliLogger) {
-            COMMON_MESSAGES.info(String.format(
-                    "Versions :: HAPI protobufs @ %s, Hedera Services @ %s",
-                    asReadable(info.getHapiProtoVersion()), asReadable(info.getHederaServicesVersion())));
+            System.out.println(".i. "
+                    + String.format(
+                            "Versions :: HAPI protobufs @ %s, Hedera Services @ %s",
+                            asReadable(info.getHapiProtoVersion()), asReadable(info.getHederaServicesVersion())));
         }
     }
 
@@ -132,12 +131,15 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
         return sb.toString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getVersionInfoQuery(payment, true);
-        Response response =
-                spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getVersionInfoQuery(payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getVersionInfoQuery(Transaction payment, boolean costOnly) {

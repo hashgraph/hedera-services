@@ -22,8 +22,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
-import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 
 public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
@@ -40,11 +40,13 @@ public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
     }
 
     @Override
-    public byte[] toRawFile(String styledFile) {
+    public byte[] toRawFile(String styledFile, @Nullable String interpolatedSrcDir) {
         try {
             var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
             NodeAddressBook.Builder addressBook = NodeAddressBook.newBuilder();
-            pojoBook.getEntries().stream().flatMap(BookEntryPojo::toGrpcStream).forEach(addressBook::addNodeAddress);
+            pojoBook.getEntries().stream()
+                    .flatMap(pojo -> pojo.toGrpcStream(interpolatedSrcDir))
+                    .forEach(addressBook::addNodeAddress);
             return addressBook.build().toByteArray();
         } catch (IOException ex) {
             throw new IllegalArgumentException("Not a Node Details file!", ex);

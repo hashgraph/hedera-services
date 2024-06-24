@@ -67,7 +67,7 @@ public class FeeBuilder {
     public static final int BASIC_RECEIPT_SIZE = INT_SIZE + 2 * EXCHANGE_RATE_SIZE;
     /**
      * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration,
-     * generateRecord
+     * generateRecord.
      */
     public static final int BASIC_TX_BODY_SIZE =
             BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
@@ -75,7 +75,7 @@ public class FeeBuilder {
     public static final int STATE_PROOF_SIZE = 2000;
     public static final int BASE_FILEINFO_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
     public static final int BASIC_ACCOUNT_SIZE = 8 * LONG_SIZE + BOOL_SIZE;
-    /** Fields included: nodeTransactionPrecheckCode, responseType, cost */
+    /** Fields included: nodeTransactionPrecheckCode, responseType, cost. */
     public static final long BASIC_QUERY_RES_HEADER = 2L * INT_SIZE + LONG_SIZE;
 
     public static final long BASIC_QUERY_HEADER = 212L;
@@ -89,8 +89,15 @@ public class FeeBuilder {
             BASIC_RECEIPT_SIZE + TX_HASH_SIZE + LONG_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE;
 
     /**
+     * Empty constructor for inheritance.
+     */
+    public FeeBuilder() {
+        /* No-op */
+    }
+
+    /**
      * This method calculates Fee for specific component (Noe/Network/Service) based upon param
-     * componentCoefficients and componentMetrics
+     * componentCoefficients and componentMetrics.
      *
      * @param componentCoefficients component coefficients
      * @param componentMetrics compnent metrics
@@ -128,7 +135,7 @@ public class FeeBuilder {
     }
 
     /**
-     * This method calculates total fee for transaction or query and returns the value in tinyBars
+     * This method calculates total fee for transaction or query and returns the value in tinyBars.
      *
      * @param feeCoefficients fee coefficients
      * @param componentMetrics component metrics
@@ -156,7 +163,7 @@ public class FeeBuilder {
     }
 
     /**
-     * Get fee object
+     * Get fee object.
      *
      * @param feeData fee data
      * @param feeMatrices fee matrices
@@ -196,7 +203,7 @@ public class FeeBuilder {
     }
 
     /**
-     * This method returns the Key size in bytes
+     * Calculates the Key size in bytes.
      *
      * @param key key
      * @return int representing account key storage size
@@ -217,42 +224,43 @@ public class FeeBuilder {
     }
 
     /**
-     * This method calculates number of keys
+     * This method calculates number of keys.
      *
      * @param key key
      * @param count count array
      * @return int array containing key metadata
      */
-    public static int[] calculateKeysMetadata(final Key key, int[] count) {
+    public static int[] calculateKeysMetadata(final Key key, final int[] count) {
+        int[] workingCount = count;
         if (key.hasKeyList()) {
             final List<Key> keyList = key.getKeyList().getKeysList();
             for (final Key value : keyList) {
-                count = calculateKeysMetadata(value, count);
+                workingCount = calculateKeysMetadata(value, workingCount);
             }
         } else if (key.hasThresholdKey()) {
             final List<Key> keyList = key.getThresholdKey().getKeys().getKeysList();
-            count[1]++;
+            workingCount[1]++;
             for (final Key value : keyList) {
-                count = calculateKeysMetadata(value, count);
+                workingCount = calculateKeysMetadata(value, workingCount);
             }
         } else {
-            count[0]++;
+            workingCount[0]++;
         }
-        return count;
+        return workingCount;
     }
 
     /**
-     * This method returns the fee matrices for querying based upon ID (account / file / smart
-     * contract)
+     * Retrieves the default fee matrices for querying based upon ID (account / file / smart
+     * contract).
      *
      * @return fee data
      */
-    public static FeeData getCostForQueryByIDOnly() {
+    public static FeeData getCostForQueryByIdOnly() {
         return FeeData.getDefaultInstance();
     }
 
     /**
-     * Get signature count
+     * Get signature count.
      *
      * @param transaction transaction
      * @return int representing signature count
@@ -266,7 +274,7 @@ public class FeeBuilder {
     }
 
     /**
-     * Get signature size
+     * Get signature size.
      *
      * @param transaction transaction
      * @return int representing signature size
@@ -280,7 +288,7 @@ public class FeeBuilder {
     }
 
     /**
-     * Convert tinyCents to tinybars
+     * Convert tinyCents to tinybars.
      *
      * @param exchangeRate exchange rate
      * @param tinyCentsFee tiny cents fee
@@ -354,7 +362,7 @@ public class FeeBuilder {
                 .build();
     }
 
-    public static long getDefaultRBHNetworkSize() {
+    public static long getDefaultRbhNetworkSize() {
         return (BASIC_RECEIPT_SIZE) * (RECEIPT_STORAGE_TIME_SEC);
     }
 
@@ -371,7 +379,7 @@ public class FeeBuilder {
         return txRecordSize;
     }
 
-    public static long getTxRecordUsageRBH(final TransactionRecord txRecord, final int timeInSeconds) {
+    public static long getTxRecordUsageRbh(final TransactionRecord txRecord, final int timeInSeconds) {
         if (txRecord == null) {
             return 0;
         }
@@ -435,11 +443,11 @@ public class FeeBuilder {
                 : 0;
     }
 
-    protected static long calculateRBS(final TransactionBody txBody) {
+    protected static long calculateRbs(final TransactionBody txBody) {
         return getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     }
 
-    protected static long calculateBPT() {
+    protected static long calculateBpt() {
         return BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
     }
 }

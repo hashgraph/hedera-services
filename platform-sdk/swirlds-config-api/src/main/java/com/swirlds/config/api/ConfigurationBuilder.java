@@ -45,7 +45,7 @@ public interface ConfigurationBuilder {
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
-    ConfigurationBuilder withSource(@NonNull final ConfigSource configSource) throws IllegalStateException;
+    ConfigurationBuilder withSource(@NonNull ConfigSource configSource) throws IllegalStateException;
 
     /**
      * Adds config sources (see {@link ConfigSource}). If this method is called after the config has been created (see
@@ -56,7 +56,7 @@ public interface ConfigurationBuilder {
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
-    ConfigurationBuilder withSources(@NonNull final ConfigSource... configSources) throws IllegalStateException;
+    ConfigurationBuilder withSources(@NonNull ConfigSource... configSources) throws IllegalStateException;
 
     /**
      * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
@@ -65,12 +65,24 @@ public interface ConfigurationBuilder {
      * @param converter the converter that should be used for the configuration
      * @return the builder instance (useful for fluent API)
      * @throws IllegalStateException if this method is called after the config has been created
-     *
      * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
      */
     @NonNull
     @Deprecated(forRemoval = true)
-    ConfigurationBuilder withConverter(@NonNull final ConfigConverter<?> converter) throws IllegalStateException;
+    ConfigurationBuilder withConverter(@NonNull ConfigConverter<?> converter) throws IllegalStateException;
+
+    /**
+     * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
+     * {@link #build()}) a {@link IllegalStateException} will be thrown.
+     *
+     * @param converterType the type to convert to
+     * @param converter     the converter that should be used for the configuration
+     * @return the builder instance (useful for fluent API)
+     * @throws IllegalStateException if this method is called after the config has been created
+     */
+    @NonNull
+    <T> ConfigurationBuilder withConverter(@NonNull Class<T> converterType, @NonNull ConfigConverter<T> converter)
+            throws IllegalStateException;
 
     /**
      * Adds converters (see {@link ConfigConverter}). If this method is called after the config has been created (see
@@ -79,26 +91,11 @@ public interface ConfigurationBuilder {
      * @param converters the converters that should be used for the configuration
      * @return the builder instance (useful for fluent API)
      * @throws IllegalStateException if this method is called after the config has been created
-     *
      * @deprecated Use {@link ConfigurationBuilder#withConverter(Class, ConfigConverter)}
      */
     @NonNull
     @Deprecated(forRemoval = true)
-    ConfigurationBuilder withConverters(@NonNull final ConfigConverter<?>... converters) throws IllegalStateException;
-
-    /**
-     * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see
-     * {@link #build()}) a {@link IllegalStateException} will be thrown.
-     *
-     * @param converterType the type to convert to
-     * @param converter the converter that should be used for the configuration
-     * @return the builder instance (useful for fluent API)
-     * @throws IllegalStateException if this method is called after the config has been created
-     */
-    @NonNull
-    <T> ConfigurationBuilder withConverter(
-            @NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter)
-            throws IllegalStateException;
+    ConfigurationBuilder withConverters(@NonNull ConfigConverter<?>... converters) throws IllegalStateException;
 
     /**
      * Adds a validator (see {@link ConfigValidator}). If this method is called after the config has been created (see
@@ -109,7 +106,7 @@ public interface ConfigurationBuilder {
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
-    ConfigurationBuilder withValidator(@NonNull final ConfigValidator validator) throws IllegalStateException;
+    ConfigurationBuilder withValidator(@NonNull ConfigValidator validator) throws IllegalStateException;
 
     /**
      * Adds validators (see {@link ConfigValidator}). If this method is called after the config has been created (see
@@ -120,7 +117,7 @@ public interface ConfigurationBuilder {
      * @throws IllegalStateException if this method is called after the config has been created
      */
     @NonNull
-    ConfigurationBuilder withValidators(@NonNull final ConfigValidator... validators) throws IllegalStateException;
+    ConfigurationBuilder withValidators(@NonNull ConfigValidator... validators) throws IllegalStateException;
 
     /**
      * Adds a config data type (see {@link ConfigData}). If this method is called after the config has been created (see
@@ -153,7 +150,7 @@ public interface ConfigurationBuilder {
      * @return the {@link ConfigurationBuilder} instance (for fluent API)
      */
     @NonNull
-    ConfigurationBuilder withValue(@NonNull final String propertyName, @NonNull final String value);
+    ConfigurationBuilder withValue(@NonNull String propertyName, @NonNull String value);
 
     /**
      * Creates a {@link Configuration} instance based on this builder.
@@ -174,4 +171,25 @@ public interface ConfigurationBuilder {
     static ConfigurationBuilder create() {
         return ConfigurationProvider.getInstance().createBuilder();
     }
+
+    /**
+     * This method is used to automatically discover all extensions that are available in the classpath/modulepath. This
+     * is done by using SPI (Service Provider Interface) and the {@link java.util.ServiceLoader} to find all
+     * implementations of {@link ConfigurationExtension} and register all provided extensions.
+     *
+     * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     */
+    @NonNull
+    ConfigurationBuilder autoDiscoverExtensions();
+
+    /**
+     * This method loads a configuration extension.
+     *
+     * @param extension the extension to load
+     * @return the {@link ConfigurationBuilder} instance (for fluent API)
+     * @deprecated Avoid use of this method, this API will not be supported in the long term
+     */
+    @Deprecated
+    @NonNull
+    ConfigurationBuilder loadExtension(@NonNull final ConfigurationExtension extension);
 }

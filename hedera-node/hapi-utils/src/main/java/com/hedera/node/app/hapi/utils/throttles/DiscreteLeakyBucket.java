@@ -64,7 +64,7 @@ public class DiscreteLeakyBucket {
 
     private void assertValidState(long candidateUsed, long candidateCapacity) {
         assertValidUnitsToFree(candidateCapacity);
-        if (candidateUsed < 0 || candidateUsed > candidateCapacity || candidateCapacity == 0) {
+        if (candidateUsed < 0 || candidateUsed > candidateCapacity) {
             throw new IllegalArgumentException(
                     "Cannot use " + candidateUsed + " units in a bucket of capacity " + candidateCapacity + "!");
         }

@@ -164,8 +164,8 @@ public class RecordStreamingUtils {
         return file.endsWith(V6_FILE_EXT) || file.endsWith(V6_GZ_FILE_EXT);
     }
 
-    public static int compareSidecarFiles(final String a, final String b) {
-        return SIDECAR_FILE_COMPARATOR.compare(a, b);
+    public static int compareSidecarFiles(final String lhs, final String rhs) {
+        return SIDECAR_FILE_COMPARATOR.compare(lhs, rhs);
     }
 
     public static final Comparator<String> SIDECAR_FILE_COMPARATOR =

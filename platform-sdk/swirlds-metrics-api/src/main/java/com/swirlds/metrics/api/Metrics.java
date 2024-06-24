@@ -22,6 +22,7 @@ import com.swirlds.base.state.Startable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Entry-point to the metrics-system.
@@ -46,11 +47,11 @@ public interface Metrics extends Startable {
      * @param name
      * 		the name of the wanted category
      * @return the {@code Metric} if one is found, {@code null} otherwise
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if one of the parameters is {@code null}
      */
     @Nullable
-    Metric getMetric(final String category, final String name);
+    Metric getMetric(final @NonNull String category, final @NonNull String name);
 
     /**
      * Get all metrics with the given category.
@@ -66,11 +67,11 @@ public interface Metrics extends Startable {
      * @param category
      * 		the category of the wanted metrics
      * @return all metrics that have the category or a sub-category
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if {@code category} is {@code null}
      */
     @NonNull
-    Collection<Metric> findMetricsByCategory(final String category);
+    Collection<Metric> findMetricsByCategory(final @NonNull String category);
 
     /**
      * Get a list of all metrics that are currently registered.
@@ -94,11 +95,13 @@ public interface Metrics extends Startable {
      * @param name
      * 		the name of the wanted category
      * @return the {@code value} of the {@link Metric}, if one is found, {@code null} otherwise
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if one of the parameters is {@code null}
      */
     @Nullable
-    default Object getValue(final String category, final String name) {
+    default Object getValue(final @NonNull String category, final @NonNull String name) {
+        Objects.requireNonNull(category, "category must not be null");
+        Objects.requireNonNull(name, "name must not be null");
         final Metric metric = getMetric(category, name);
         return metric != null ? metric.get(VALUE) : null;
     }
@@ -121,12 +124,12 @@ public interface Metrics extends Startable {
      * @param <T>
      * 		class of the {@code Metric} that will be returned
      * @return the registered {@code Metric} (either existing or newly generated)
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if {@code config} is {@code null}
      * @throws IllegalStateException
      * 		if a {@code Metric} with the same category and name exists, but has a different type
      */
-    <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config);
+    <T extends Metric> @NonNull T getOrCreate(final @NonNull MetricConfig<T, ?> config);
 
     /**
      * Remove the {@link Metric} with the given category and name
@@ -135,10 +138,10 @@ public interface Metrics extends Startable {
      * 		the category of the {@code Metric}, that should be removed
      * @param name
      * 		the name of the {@code Metric}, that should be removed
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if one of the parameters is {@code null}
      */
-    void remove(final String category, final String name);
+    void remove(final @NonNull String category, final @NonNull String name);
 
     /**
      * Remove the {@link Metric}.
@@ -147,10 +150,10 @@ public interface Metrics extends Startable {
      *
      * @param metric
      * 		the {@code Metric}, that should be removed
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if ({code metric} is {@code null}
      */
-    void remove(final Metric metric);
+    void remove(final @NonNull Metric metric);
 
     /**
      * Remove the {@link Metric} with the given configuration.
@@ -159,28 +162,28 @@ public interface Metrics extends Startable {
      *
      * @param config
      * 		the {@link MetricConfig} of the {@code Metric}, that should be removed
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if {@code config} is {@code null}
      */
-    void remove(final MetricConfig<?, ?> config);
+    void remove(final @NonNull MetricConfig<?, ?> config);
 
     /**
      * Add an updater that will be called once per second. An updater should only be used to update metrics regularly.
      *
      * @param updater
      * 		the updater
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if {@code updater} is {@code null}
      */
-    void addUpdater(final Runnable updater);
+    void addUpdater(final @NonNull Runnable updater);
 
     /**
      * Remove an updater that was previously added.
      *
      * @param updater
      * 		the updater
-     * @throws IllegalArgumentException
+     * @throws NullPointerException
      * 		if {@code updater} is {@code null}
      */
-    void removeUpdater(final Runnable updater);
+    void removeUpdater(final @NonNull Runnable updater);
 }

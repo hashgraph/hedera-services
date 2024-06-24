@@ -39,8 +39,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class PerpetualLocalCalls extends HapiSuite {
 
@@ -57,13 +59,11 @@ public class PerpetualLocalCalls extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            localCallsForever(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(localCallsForever());
     }
 
-    final HapiSpec localCallsForever() {
+    final Stream<DynamicTest> localCallsForever() {
         return defaultHapiSpec("LocalCallsForever")
                 .given()
                 .when()

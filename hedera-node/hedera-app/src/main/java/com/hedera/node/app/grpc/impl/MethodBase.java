@@ -109,17 +109,20 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
     @Override
     public void invoke(
             @NonNull final BufferedData requestBuffer, @NonNull final StreamObserver<BufferedData> responseObserver) {
+        // Track the number of times this method has been called
+        callsReceivedCounter.increment();
+        callsReceivedSpeedometer.cycle();
+
+        // Fail-fast if the request is too large (Note that the request buffer is sized to allow exactly
+        // 1 more byte than MAX_MESSAGE_SIZE, so we can detect this case).
+        if (requestBuffer.length() > MAX_MESSAGE_SIZE) {
+            callsFailedCounter.increment();
+            final var exception = new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
+            responseObserver.onError(exception);
+            return;
+        }
+
         try {
-            // Track the number of times this method has been called
-            callsReceivedCounter.increment();
-            callsReceivedSpeedometer.cycle();
-
-            // Fail-fast if the request is too large (Note that the request buffer is sized to allow exactly
-            // 1 more byte than MAX_MESSAGE_SIZE, so we can detect this case).
-            if (requestBuffer.length() > MAX_MESSAGE_SIZE) {
-                throw new RuntimeException("More than " + MAX_MESSAGE_SIZE + " received");
-            }
-
             // Prepare the response buffer
             final var responseBuffer = BUFFER_THREAD_LOCAL.get();
             responseBuffer.reset();
@@ -140,7 +143,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             callsHandledSpeedometer.cycle();
         } catch (final Exception e) {
             // Track the number of times we failed to handle a call
-            logger.error("Possibly CATASTROPHIC failure while handling a call and running the ingest workflow", e);
+            logger.error("Possibly CATASTROPHIC failure while handling a GRPC message", e);
             callsFailedCounter.increment();
             responseObserver.onError(e);
         }
@@ -167,7 +170,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             @NonNull final Metrics metrics,
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
-        final var baseName = serviceName + ":" + methodName;
+        final String baseName = calculateBaseName();
         final var name = String.format(nameTemplate, baseName);
         final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc));
@@ -185,9 +188,13 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             @NonNull final Metrics metrics,
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
-        final var baseName = serviceName + ":" + methodName;
+        final String baseName = calculateBaseName();
         final var name = String.format(nameTemplate, baseName);
         final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new SpeedometerMetric.Config("app", name).withDescription(desc));
+    }
+
+    private String calculateBaseName() {
+        return serviceName.substring("proto.".length()).replace('.', ':') + ":" + methodName;
     }
 }

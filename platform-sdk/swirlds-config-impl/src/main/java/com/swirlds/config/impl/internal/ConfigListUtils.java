@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Class that contains functionality for the general parsing of list properties
+ * Class that contains functionality for the general parsing of list properties.
  */
 final class ConfigListUtils {
 
     private ConfigListUtils() {}
 
     /**
-     * Returns a list based on the raw value
+     * Returns a list based on the raw value.
      *
      * @param rawValue the raw value
      * @return the list

@@ -88,6 +88,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
      *
      * @return the capacity available at this time
      */
+    @Override
     public double instantaneousPercentUsed() {
         if (lastDecisionTime == null) {
             return 0.0;
@@ -98,7 +99,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     /**
      * Returns the capacity of the throttle.
      *
-     * @return the capacity of the throttle.
+     * @return the capacity of the throttle
      */
     @Override
     public long capacity() {
@@ -120,7 +121,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     /**
      * Returns the used capacity of the throttle.
      *
-     * @return the used capacity of the throttle.
+     * @return the used capacity of the throttle
      */
     @Override
     public long used() {
@@ -141,7 +142,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     /**
      * returns an instance of the {@link GasLimitBucketThrottle} used under the hood.
      *
-     * @return - an instance of the {@link GasLimitBucketThrottle} used under the hood.
+     * @return - an instance of the {@link GasLimitBucketThrottle} used under the hood
      */
     GasLimitBucketThrottle delegate() {
         return delegate;

@@ -16,33 +16,21 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.schemas.InitialModServiceConsensusSchema;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.swirlds.merkle.map.MerkleMap;
+import com.hedera.node.app.service.consensus.impl.schemas.V0490ConsensusSchema;
+import com.hedera.node.app.spi.RpcService;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ConsensusService} {@link RpcService}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
-    public static final long RUNNING_HASH_VERSION = 3L;
     public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
     public static final String TOPICS_KEY = "TOPICS";
 
-    private InitialModServiceConsensusSchema modConsensusSchema;
-
     @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        modConsensusSchema = new InitialModServiceConsensusSchema(version);
-        registry.register(modConsensusSchema);
-    }
-
-    public void setFromState(@Nullable final MerkleMap<EntityNum, MerkleTopic> fs) {
-        modConsensusSchema.setFromState(fs);
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        registry.register(new V0490ConsensusSchema());
     }
 }

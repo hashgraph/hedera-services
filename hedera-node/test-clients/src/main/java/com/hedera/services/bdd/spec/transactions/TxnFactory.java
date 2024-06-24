@@ -18,13 +18,16 @@ package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -64,6 +67,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -71,6 +75,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Clock;
@@ -133,6 +138,21 @@ public class TxnFactory {
         Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(spec);
         TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
         composedBodySpec.accept(bodyBuilder);
+        return Transaction.newBuilder()
+                .setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
+    }
+
+    public Transaction.Builder getReadyToSign(
+            Consumer<TransactionBody.Builder> bodySpec,
+            @Nullable final HapiSpec spec,
+            @Nullable final BodyMutation modification) {
+        Consumer<TransactionBody.Builder> composedBodySpec = defaultBodySpec().andThen(bodySpec);
+        TransactionBody.Builder bodyBuilder = TransactionBody.newBuilder();
+        composedBodySpec.accept(bodyBuilder);
+        if (modification != null) {
+            requireNonNull(spec);
+            bodyBuilder = modification.apply(bodyBuilder, spec);
+        }
         return Transaction.newBuilder()
                 .setBodyBytes(ByteString.copyFrom(bodyBuilder.build().toByteArray()));
     }
@@ -214,6 +234,10 @@ public class TxnFactory {
     }
 
     public Consumer<TokenUpdateTransactionBody.Builder> defaultDefTokenUpdateTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<TokenUpdateNftsTransactionBody.Builder> defaultDefTokenUpdateNftsTransactionBody() {
         return builder -> {};
     }
 

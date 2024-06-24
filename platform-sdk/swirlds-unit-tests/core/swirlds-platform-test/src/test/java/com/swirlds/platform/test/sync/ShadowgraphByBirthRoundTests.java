@@ -32,20 +32,21 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
+import com.swirlds.platform.gossip.shadowgraph.ReservedEventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
-import com.swirlds.platform.gossip.shadowgraph.ShadowgraphReservation;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,7 +54,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -97,9 +97,7 @@ class ShadowgraphByBirthRoundTests {
     }
 
     private void initShadowGraph(final Random random, final int numEvents, final int numNodes) {
-        addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
-        emitter = factory.newStandardEmitter();
+        addressBook = RandomAddressBookBuilder.create(random).withSize(numNodes).build();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)
@@ -109,13 +107,17 @@ class ShadowgraphByBirthRoundTests {
                 .withConfiguration(configuration)
                 .build();
 
-        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class));
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
+        emitter = factory.newStandardEmitter();
+
+        shadowGraph = new Shadowgraph(platformContext, mock(AddressBook.class), new NoOpIntakeEventCounter());
+        shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(BIRTH_ROUND_THRESHOLD));
 
         for (int i = 0; i < numEvents; i++) {
-            IndexedEvent event = emitter.emitEvent();
+            final IndexedEvent event = emitter.emitEvent();
 
-            Hash hash = event.getBaseHash();
-            ancestorsMap.put(hash, ancestorsOf(event.getSelfParentHash(), event.getOtherParentHash()));
+            final Hash hash = event.getBaseHash();
+            ancestorsMap.put(hash, ancestorsOf(event.getBaseEvent().getAllParents()));
             assertDoesNotThrow(() -> shadowGraph.addEvent(event), "Unable to insert event into shadow graph.");
             assertTrue(
                     shadowGraph.isHashInGraph(hash),
@@ -143,34 +145,34 @@ class ShadowgraphByBirthRoundTests {
     @ParameterizedTest
     @MethodSource("graphSizes")
     void testFindAncestorsForMultipleEvents(final int numEvents, final int numNodes) {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
 
         initShadowGraph(random, numEvents, numNodes);
 
-        Set<ShadowEvent> generatedShadows =
+        final Set<ShadowEvent> generatedShadows =
                 generatedEvents.stream().map(shadowGraph::shadow).collect(Collectors.toSet());
 
-        Set<ShadowEvent> generatedShadowsSubset = generatedShadows.stream()
+        final Set<ShadowEvent> generatedShadowsSubset = generatedShadows.stream()
                 .filter((hash) -> random.nextDouble() < 0.5)
                 .collect(Collectors.toSet());
 
-        Set<Hash> actualAncestors = shadowGraph.findAncestors(generatedShadowsSubset, (e) -> true).stream()
+        final Set<Hash> actualAncestors = shadowGraph.findAncestors(generatedShadowsSubset, (e) -> true).stream()
                 .map(ShadowEvent::getEventBaseHash)
                 .collect(Collectors.toSet());
 
-        for (ShadowEvent shadowEvent : generatedShadowsSubset) {
+        for (final ShadowEvent shadowEvent : generatedShadowsSubset) {
             assertSetsContainSameHashes(ancestorsMap.get(shadowEvent.getEventBaseHash()), actualAncestors);
         }
     }
 
     @RepeatedTest(10)
     void testFindAncestorsExcludesExpiredEvents() {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        long expireBelowBirthRound = random.nextInt(10) + 1;
+        final long expireBelowBirthRound = random.nextInt(10) + 1;
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
@@ -178,8 +180,8 @@ class ShadowgraphByBirthRoundTests {
 
         shadowGraph.updateEventWindow(eventWindow);
 
-        Set<ShadowEvent> allEvents = shadowGraph.findAncestors(shadowGraph.getTips(), (e) -> true);
-        for (ShadowEvent event : allEvents) {
+        final Set<ShadowEvent> allEvents = shadowGraph.findAncestors(shadowGraph.getTips(), (e) -> true);
+        for (final ShadowEvent event : allEvents) {
             assertTrue(
                     event.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) >= expireBelowBirthRound,
                     "Ancestors should not include expired events.");
@@ -189,39 +191,20 @@ class ShadowgraphByBirthRoundTests {
     private void assertSetsContainSameHashes(final Set<Hash> expected, final Set<Hash> actual) {
         for (final Hash hash : expected) {
             if (!actual.contains(hash)) {
-                fail(String.format("Expected to find an ancestor with hash %s", CommonUtils.hex(hash.getValue(), 4)));
+                fail(String.format("Expected to find an ancestor with hash %s", hash.toHex(4)));
             }
         }
     }
 
-    private Set<Hash> ancestorsOf(final Hash selfParent, final Hash otherParent) {
-        Set<Hash> ancestorSet = new HashSet<>();
-        if (selfParent != null) {
-            ancestorSet.add(selfParent);
-            if (ancestorsMap.containsKey(selfParent)) {
-                ancestorSet.addAll(ancestorsMap.get(selfParent));
-            }
-        }
-        if (otherParent != null) {
-            ancestorSet.add(otherParent);
-            if (ancestorsMap.containsKey(otherParent)) {
-                ancestorSet.addAll(ancestorsMap.get(otherParent));
+    private Set<Hash> ancestorsOf(final List<EventDescriptor> parents) {
+        final Set<Hash> ancestorSet = new HashSet<>();
+        for (final EventDescriptor parent : parents) {
+            ancestorSet.add(parent.getHash());
+            if (ancestorsMap.containsKey(parent.getHash())) {
+                ancestorSet.addAll(ancestorsMap.get(parent.getHash()));
             }
         }
         return ancestorSet;
-    }
-
-    private void printAncestors() {
-        for (Map.Entry<Hash, Set<Hash>> entry : ancestorsMap.entrySet()) {
-            String hash = CommonUtils.hex(entry.getKey().getValue(), 4);
-            List<String> parents = entry.getValue().stream()
-                    .filter(Objects::nonNull)
-                    .map(h -> CommonUtils.hex(h.getValue(), 4))
-                    .collect(Collectors.toList());
-            String parent1 = parents.size() > 0 ? parents.get(0) : "none";
-            String parent2 = parents.size() > 1 ? parents.get(1) : "none";
-            System.out.printf("\n%s = (%s, %s)", hash, parent1, parent2);
-        }
     }
 
     /**
@@ -229,16 +212,18 @@ class ShadowgraphByBirthRoundTests {
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
-     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
-    void testSingleReservation(final int numEvents, final int numNodes) throws Exception {
-        Random random = RandomUtils.getRandomPrintSeed();
+    void testSingleReservation(final int numEvents, final int numNodes) {
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        ShadowgraphReservation r1 = shadowGraph.reserve();
-        assertEquals(ROUND_FIRST, r1.getReservedIndicator(), "First reservation should reserve birth round 1");
+        final ReservedEventWindow r1 = shadowGraph.reserve();
+        assertEquals(
+                ROUND_FIRST,
+                r1.getEventWindow().getExpiredThreshold(),
+                "First reservation should reserve birth round 1");
         assertEquals(
                 1,
                 r1.getReservationCount(),
@@ -247,7 +232,7 @@ class ShadowgraphByBirthRoundTests {
         r1.close();
         assertEquals(
                 ROUND_FIRST,
-                r1.getReservedIndicator(),
+                r1.getEventWindow().getExpiredThreshold(),
                 "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
@@ -260,29 +245,27 @@ class ShadowgraphByBirthRoundTests {
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
-     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
-    void testMultipleReservationsNoExpiry(final int numEvents, final int numNodes) throws Exception {
-        Random random = RandomUtils.getRandomPrintSeed();
+    void testMultipleReservationsNoExpiry(final int numEvents, final int numNodes) {
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        ShadowgraphReservation r1 = shadowGraph.reserve();
-        ShadowgraphReservation r2 = shadowGraph.reserve();
+        final ReservedEventWindow r1 = shadowGraph.reserve();
+        final ReservedEventWindow r2 = shadowGraph.reserve();
+        assertEquals(r1.getEventWindow(), r2.getEventWindow());
         assertEquals(
-                r1,
-                r2,
-                "The second call to reserve() prior to the first being closed should return the same object as the "
-                        + "first reservation.");
-        assertEquals(ROUND_FIRST, r2.getReservedIndicator(), "Second reservation should reserve birth round 1");
+                ROUND_FIRST,
+                r2.getEventWindow().getExpiredThreshold(),
+                "Second reservation should reserve birth round 1");
         assertEquals(2, r2.getReservationCount(), "The second call to reserve() should result in 2 reservations.");
 
         r2.close();
 
         assertEquals(
                 ROUND_FIRST,
-                r1.getReservedIndicator(),
+                r1.getEventWindow().getExpiredThreshold(),
                 "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 1,
@@ -293,7 +276,7 @@ class ShadowgraphByBirthRoundTests {
 
         assertEquals(
                 ROUND_FIRST,
-                r1.getReservedIndicator(),
+                r1.getEventWindow().getExpiredThreshold(),
                 "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
@@ -306,25 +289,24 @@ class ShadowgraphByBirthRoundTests {
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
-     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
-    void testMultipleReservationsWithExpiry(final int numEvents, final int numNodes) throws Exception {
-        Random random = RandomUtils.getRandomPrintSeed();
+    void testMultipleReservationsWithExpiry(final int numEvents, final int numNodes) {
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
 
-        long expireBelowBirthRound = ROUND_FIRST + 1;
+        final long expireBelowBirthRound = ROUND_FIRST + 1;
 
-        ShadowgraphReservation r1 = shadowGraph.reserve();
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final ReservedEventWindow r1 = shadowGraph.reserve();
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
                 BIRTH_ROUND_THRESHOLD);
         shadowGraph.updateEventWindow(eventWindow);
 
-        ShadowgraphReservation r2 = shadowGraph.reserve();
+        final ReservedEventWindow r2 = shadowGraph.reserve();
         assertNotEquals(
                 r1,
                 r2,
@@ -332,7 +314,7 @@ class ShadowgraphByBirthRoundTests {
                         + "instance.");
         assertEquals(
                 expireBelowBirthRound,
-                r2.getReservedIndicator(),
+                r2.getEventWindow().getExpiredThreshold(),
                 "Reservation after call to expire() should reserve the expired birth round + 1");
         assertEquals(
                 1, r2.getReservationCount(), "The first reservation after expire() should result in 1 reservation.");
@@ -341,7 +323,7 @@ class ShadowgraphByBirthRoundTests {
 
         assertEquals(
                 expireBelowBirthRound,
-                r2.getReservedIndicator(),
+                r2.getEventWindow().getExpiredThreshold(),
                 "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
@@ -350,7 +332,7 @@ class ShadowgraphByBirthRoundTests {
 
         assertEquals(
                 ROUND_FIRST,
-                r1.getReservedIndicator(),
+                r1.getEventWindow().getExpiredThreshold(),
                 "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 1,
@@ -361,7 +343,7 @@ class ShadowgraphByBirthRoundTests {
 
         assertEquals(
                 ROUND_FIRST,
-                r1.getReservedIndicator(),
+                r1.getEventWindow().getExpiredThreshold(),
                 "The birth round should not be affected by a reservation being closed.");
         assertEquals(
                 0,
@@ -374,7 +356,6 @@ class ShadowgraphByBirthRoundTests {
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
-     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
@@ -383,7 +364,7 @@ class ShadowgraphByBirthRoundTests {
         initShadowGraph(random, numEvents, numNodes);
 
         final long expireBelowBirthRound = random.nextInt((int) maxBirthRound) + 2;
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 expireBelowBirthRound,
@@ -418,28 +399,27 @@ class ShadowgraphByBirthRoundTests {
      *
      * @param numEvents the number of events to put in the shadow graph
      * @param numNodes  the number of nodes in the shadow graph
-     * @throws Exception if there was an error closing the reservation
      */
     @ParameterizedTest
     @MethodSource("graphSizes")
-    void testExpireWithReservation(final int numEvents, final int numNodes) throws Exception {
-        Random random = RandomUtils.getRandomPrintSeed();
+    void testExpireWithReservation(final int numEvents, final int numNodes) {
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, numEvents, numNodes);
         SyncTestUtils.printEvents("generated events", generatedEvents);
 
-        ShadowgraphReservation r0 = shadowGraph.reserve();
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        final ReservedEventWindow r0 = shadowGraph.reserve();
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
                 BIRTH_ROUND_THRESHOLD));
-        ShadowgraphReservation r1 = shadowGraph.reserve();
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        final ReservedEventWindow r1 = shadowGraph.reserve();
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
                 BIRTH_ROUND_THRESHOLD));
-        ShadowgraphReservation r2 = shadowGraph.reserve();
+        final ReservedEventWindow r2 = shadowGraph.reserve();
 
         // release the middle reservation to ensure that birth rounds
         // greater than the lowest reserved birth round are not expired.
@@ -450,7 +430,7 @@ class ShadowgraphByBirthRoundTests {
         r2.close();
 
         // Attempt to expire everything up to
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -460,7 +440,7 @@ class ShadowgraphByBirthRoundTests {
         assertEventsBelowBirthRoundAreExpired(0);
 
         r0.close();
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 2,
@@ -474,7 +454,7 @@ class ShadowgraphByBirthRoundTests {
     void testShadow() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertNull(shadowGraph.shadow(null), "Passing null should return null.");
-        IndexedEvent event = emitter.emitEvent();
+        final IndexedEvent event = emitter.emitEvent();
         assertDoesNotThrow(() -> shadowGraph.addEvent(event), "Adding an tip event should succeed.");
         assertEquals(
                 event.getBaseHash(),
@@ -494,17 +474,17 @@ class ShadowgraphByBirthRoundTests {
     @Test
     void testShadows() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
-        List<IndexedEvent> events = emitter.emitEvents(10);
+        final List<IndexedEvent> events = emitter.emitEvents(10);
         events.forEach(e -> assertDoesNotThrow(() -> shadowGraph.addEvent(e), "Adding new tip events should succeed."));
 
-        List<Hash> hashes = events.stream().map(EventImpl::getBaseHash).collect(Collectors.toList());
-        List<ShadowEvent> shadows = shadowGraph.shadows(hashes);
+        final List<Hash> hashes = events.stream().map(EventImpl::getBaseHash).collect(Collectors.toList());
+        final List<ShadowEvent> shadows = shadowGraph.shadows(hashes);
         assertEquals(
                 events.size(),
                 shadows.size(),
                 "The number of shadow events should match the number of events provided.");
 
-        for (ShadowEvent shadow : shadows) {
+        for (final ShadowEvent shadow : shadows) {
             assertTrue(
                     hashes.contains(shadow.getEventBaseHash()),
                     "Each event provided should have a shadow event with the same hash.");
@@ -514,26 +494,27 @@ class ShadowgraphByBirthRoundTests {
     @Test
     void testShadowsWithUnknownEvents() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
-        List<IndexedEvent> events = emitter.emitEvents(10);
+        final List<IndexedEvent> events = emitter.emitEvents(10);
         events.forEach(e -> assertDoesNotThrow(() -> shadowGraph.addEvent(e), "Adding new tip events should succeed."));
 
-        List<Hash> knownHashes = events.stream().map(EventImpl::getBaseHash).collect(Collectors.toList());
-        List<Hash> unknownHashes =
+        final List<Hash> knownHashes =
+                events.stream().map(EventImpl::getBaseHash).collect(Collectors.toList());
+        final List<Hash> unknownHashes =
                 emitter.emitEvents(10).stream().map(EventImpl::getBaseHash).collect(Collectors.toList());
 
-        List<Hash> allHashes = new ArrayList<>(knownHashes.size() + unknownHashes.size());
+        final List<Hash> allHashes = new ArrayList<>(knownHashes.size() + unknownHashes.size());
         allHashes.addAll(knownHashes);
         allHashes.addAll(unknownHashes);
         Collections.shuffle(allHashes);
 
-        List<ShadowEvent> shadows = shadowGraph.shadows(allHashes);
+        final List<ShadowEvent> shadows = shadowGraph.shadows(allHashes);
         assertEquals(
                 allHashes.size(),
                 shadows.size(),
                 "The number of shadow events should match the number of hashes provided.");
 
         for (int i = 0; i < allHashes.size(); i++) {
-            Hash hash = allHashes.get(i);
+            final Hash hash = allHashes.get(i);
             if (knownHashes.contains(hash)) {
                 assertEquals(
                         hash,
@@ -549,16 +530,16 @@ class ShadowgraphByBirthRoundTests {
     void testAddNullEvent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 0, 4);
         assertThrows(
-                ShadowgraphInsertionException.class,
+                NullPointerException.class,
                 () -> shadowGraph.addEvent(null),
                 "A null event should not be added to the shadow graph.");
     }
 
     @RepeatedTest(10)
     void testAddDuplicateEvent() {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 10, 4);
-        IndexedEvent randomDuplicateEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
+        final IndexedEvent randomDuplicateEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertThrows(
                 ShadowgraphInsertionException.class,
                 () -> shadowGraph.addEvent(randomDuplicateEvent),
@@ -572,7 +553,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventWithExpiredBirthRound() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        shadowGraph.updateEventWindow(new NonAncientEventWindow(
+        shadowGraph.updateEventWindow(new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 ROUND_FIRST + 1,
@@ -589,7 +570,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventWithUnknownOtherParent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        IndexedEvent newEvent = emitter.emitEvent();
+        final IndexedEvent newEvent = emitter.emitEvent();
         newEvent.setOtherParent(emitter.emitEvent());
 
         assertDoesNotThrow(
@@ -600,7 +581,7 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventWithUnknownSelfParent() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        IndexedEvent newEvent = emitter.emitEvent();
+        final IndexedEvent newEvent = emitter.emitEvent();
         newEvent.setSelfParent(emitter.emitEvent());
 
         assertDoesNotThrow(() -> shadowGraph.addEvent(newEvent), "Events with an unknown self parent should be added.");
@@ -610,8 +591,8 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventWithExpiredParents() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        IndexedEvent newEvent = emitter.emitEvent();
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final IndexedEvent newEvent = emitter.emitEvent();
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 newEvent.getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD),
@@ -625,15 +606,15 @@ class ShadowgraphByBirthRoundTests {
     void testAddEventUpdatesTips() {
         initShadowGraph(RandomUtils.getRandomPrintSeed(), 100, 4);
 
-        int tipsSize = shadowGraph.getTips().size();
-        int additionalEvents = 100;
+        final int tipsSize = shadowGraph.getTips().size();
+        final int additionalEvents = 100;
 
         for (int i = 0; i < additionalEvents; i++) {
-            IndexedEvent newTip = emitter.emitEvent();
+            final IndexedEvent newTip = emitter.emitEvent();
             assertNull(shadowGraph.shadow(newTip), "The shadow graph should not contain the new event.");
             assertDoesNotThrow(() -> shadowGraph.addEvent(newTip), "The new tip should be added to the shadow graph.");
 
-            ShadowEvent tipShadow = shadowGraph.shadow(newTip);
+            final ShadowEvent tipShadow = shadowGraph.shadow(newTip);
 
             assertEquals(
                     tipsSize,
@@ -655,10 +636,10 @@ class ShadowgraphByBirthRoundTests {
 
     @RepeatedTest(10)
     void testHashgraphEventWithExistingHash() {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        IndexedEvent randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
+        final IndexedEvent randomExistingEvent = generatedEvents.get(random.nextInt(generatedEvents.size()));
         assertEquals(
                 randomExistingEvent,
                 shadowGraph.hashgraphEvent(randomExistingEvent.getBaseHash()),
@@ -667,24 +648,27 @@ class ShadowgraphByBirthRoundTests {
 
     @Test
     void testClear() {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        ShadowgraphReservation r0 = shadowGraph.reserve();
-        ShadowgraphReservation r1 = shadowGraph.reserve();
+        ReservedEventWindow r0 = shadowGraph.reserve();
+        final ReservedEventWindow r1 = shadowGraph.reserve();
         r0.close();
         r1.close();
 
         shadowGraph.clear();
+        shadowGraph.updateEventWindow(EventWindow.getGenesisEventWindow(BIRTH_ROUND_THRESHOLD));
 
         assertEquals(0, shadowGraph.getTips().size(), "Shadow graph should not have any tips after being cleared.");
-        for (IndexedEvent generatedEvent : generatedEvents) {
+        for (final IndexedEvent generatedEvent : generatedEvents) {
             assertNull(
                     shadowGraph.shadow(generatedEvent), "Shadow graph should not have any events after being cleared.");
         }
         r0 = shadowGraph.reserve();
         assertEquals(
-                1, r0.getReservedIndicator(), "The first reservation after clearing should reserve birth round 1.");
+                1,
+                r0.getEventWindow().getExpiredThreshold(),
+                "The first reservation after clearing should reserve birth round 1.");
         assertEquals(
                 1, r0.getReservationCount(), "The first reservation after clearing should have a single reservation.");
     }
@@ -692,12 +676,12 @@ class ShadowgraphByBirthRoundTests {
     @Test
     @DisplayName("Test that clear() disconnect all shadow events in the shadow graph")
     void testClearDisconnects() {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
-        List<ShadowEvent> tips = shadowGraph.getTips();
-        Set<ShadowEvent> shadows = new HashSet<>();
-        for (ShadowEvent tip : tips) {
+        final List<ShadowEvent> tips = shadowGraph.getTips();
+        final Set<ShadowEvent> shadows = new HashSet<>();
+        for (final ShadowEvent tip : tips) {
             ShadowEvent sp = tip.getSelfParent();
             while (sp != null) {
                 shadows.add(sp);
@@ -708,7 +692,7 @@ class ShadowgraphByBirthRoundTests {
 
         shadowGraph.clear();
 
-        for (ShadowEvent s : shadows) {
+        for (final ShadowEvent s : shadows) {
             assertNull(s.getSelfParent(), "after a clear, all parents should be disconnected");
             assertNull(s.getOtherParent(), "after a clear, all parents should be disconnected");
         }
@@ -716,26 +700,26 @@ class ShadowgraphByBirthRoundTests {
 
     @RepeatedTest(10)
     void testTipsExpired() {
-        Random random = RandomUtils.getRandomPrintSeed();
+        final Random random = RandomUtils.getRandomPrintSeed();
         initShadowGraph(random, 100, 4);
 
         long oldestTipBirthRound = Long.MAX_VALUE;
-        List<ShadowEvent> tipsToExpire = new ArrayList<>();
-        for (ShadowEvent tip : shadowGraph.getTips()) {
+        final List<ShadowEvent> tipsToExpire = new ArrayList<>();
+        for (final ShadowEvent tip : shadowGraph.getTips()) {
             oldestTipBirthRound = Math.min(
                     oldestTipBirthRound, tip.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD));
         }
 
-        for (ShadowEvent tip : shadowGraph.getTips()) {
+        for (final ShadowEvent tip : shadowGraph.getTips()) {
             if (tip.getEvent().getBaseEvent().getAncientIndicator(BIRTH_ROUND_THRESHOLD) == oldestTipBirthRound) {
                 tipsToExpire.add(tip);
             }
         }
 
-        int numTipsBeforeExpiry = shadowGraph.getTips().size();
+        final int numTipsBeforeExpiry = shadowGraph.getTips().size();
         assertTrue(numTipsBeforeExpiry > 0, "Shadow graph should have tips after events are added.");
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 1 /* ignored by shadowgraph */,
                 oldestTipBirthRound + 1,

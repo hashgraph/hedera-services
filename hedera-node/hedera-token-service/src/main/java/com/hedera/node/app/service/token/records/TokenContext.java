@@ -16,13 +16,15 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Set;
 
 /**
- * Interface that contains all information needed for token-specific actions.
+ * Interface that contains all information needed for {@link TokenService} responsibilities.
  */
 public interface TokenContext {
     /**
@@ -95,4 +97,16 @@ public interface TokenContext {
      */
     @NonNull
     <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
+     * Signal that any records created during startup migrations have been streamed.
+     */
+    void markMigrationRecordsStreamed();
+
+    /**
+     * Returns the set of all known node ids, including ids that may no longer be active.
+     *
+     * @return the set of all known node ids
+     */
+    Set<Long> knownNodeIds();
 }

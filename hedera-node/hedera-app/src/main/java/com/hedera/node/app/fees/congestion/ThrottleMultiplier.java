@@ -19,7 +19,7 @@ package com.hedera.node.app.fees.congestion;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.throttles.CongestibleThrottle;
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.config.types.CongestionMultipliers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,12 +31,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implementation responsible for determining the congestion multiplier based on a single {@link CongestibleThrottle}.
+ * Implementation responsible for determining the congestion multiplier based on
+ * the sustained utilization of one or more {@link CongestibleThrottle}.
  */
 public class ThrottleMultiplier {
     private static final Logger logger = LogManager.getLogger(ThrottleMultiplier.class);
     private static final long DEFAULT_MULTIPLIER = 1L;
-    private static final CongestionMultipliers NO_CONFIG = null;
     private static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
     private final Supplier<CongestionMultipliers> multiplierSupplier;
     private final String congestionType;
@@ -47,7 +47,7 @@ public class ThrottleMultiplier {
 
     private long multiplier = DEFAULT_MULTIPLIER;
     private long previousMultiplier = DEFAULT_MULTIPLIER;
-    private CongestionMultipliers activeConfig = NO_CONFIG;
+    private CongestionMultipliers activeConfig = null;
     private List<? extends CongestibleThrottle> activeThrottles = Collections.emptyList();
     private long[][] activeTriggerValues = {};
     private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
@@ -136,7 +136,7 @@ public class ThrottleMultiplier {
     @Override
     @NonNull
     public String toString() {
-        if (activeConfig == NO_CONFIG) {
+        if (activeConfig == null) {
             return " <N/A>";
         }
         var sb = new StringBuilder();

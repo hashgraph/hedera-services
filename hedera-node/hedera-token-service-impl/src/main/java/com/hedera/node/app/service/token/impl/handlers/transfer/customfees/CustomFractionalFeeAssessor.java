@@ -50,6 +50,10 @@ import javax.inject.Singleton;
 public class CustomFractionalFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomFractionalFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomFractionalFeeAssessor(CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
@@ -84,8 +88,6 @@ public class CustomFractionalFeeAssessor {
 
         var unitsLeft = -initialAdjustment;
         final var creditsForToken = getFungibleTokenCredits(nonMutableInputTokenTransfers.get(denom));
-        final var effectivePayerAccounts = creditsForToken.keySet();
-
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
@@ -94,14 +96,16 @@ public class CustomFractionalFeeAssessor {
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE) || sender.equals(collector)) {
                 continue;
             }
-            final var fractionalFee = fee.fractionalFeeOrThrow();
             final var filteredCredits = filteredByExemptions(creditsForToken, feeMeta, fee);
             if (filteredCredits.isEmpty()) {
                 continue;
             }
+            final var fractionalFee = fee.fractionalFeeOrThrow();
 
-            // calculate amount that should be paid for fractional custom fee
-            var assessedAmount = amountOwed(unitsLeft, fractionalFee);
+            // calculate amount that should be paid for fractional custom fee;
+            // note the fraction is always calculated from the initial adjustment,
+            // not from the units left after previous fees
+            var assessedAmount = amountOwed(-initialAdjustment, fractionalFee);
 
             // If it is netOfTransfers the sender will pay the fee, otherwise the receiver will pay the fee
             if (fractionalFee.netOfTransfers()) {
@@ -109,17 +113,12 @@ public class CustomFractionalFeeAssessor {
                         asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
                 fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
             } else {
-                boolean cont = false;
-                for (final var acc : effectivePayerAccounts) {
-                    if (isPayerExempt(feeMeta, fee, acc)) cont = true;
-                }
-                if (cont) continue;
-
                 // amount that should be deducted from the credits to token
                 // Inside this reclaim there will be debits to the input transaction
                 final long exemptAmount = reclaim(assessedAmount, filteredCredits);
                 // debits from the input transaction should be adjusted
-                adjustInputTokenTransfersWithReclaimAmounts(mutableInputTokenTransfers, denom, filteredCredits);
+                adjustInputTokenTransfersWithReclaimAmounts(
+                        mutableInputTokenTransfers, denom, filteredCredits, creditsForToken);
 
                 assessedAmount -= exemptAmount;
                 unitsLeft -= assessedAmount;
@@ -128,11 +127,10 @@ public class CustomFractionalFeeAssessor {
                 // make credit to the collector
                 final var map =
                         result.getMutableInputBalanceAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
-                map.merge(collector, assessedAmount, Long::sum);
+                map.merge(collector, assessedAmount, AdjustmentUtils::addExactOrThrow);
                 result.getMutableInputBalanceAdjustments().put(denom, map);
 
-                final var finalEffPayerNums =
-                        (filteredCredits == creditsForToken) ? effectivePayerAccounts : filteredCredits.keySet();
+                final var finalEffPayerNums = filteredCredits.keySet();
                 final var finalEffPayerNumsArray = new AccountID[finalEffPayerNums.size()];
 
                 // Add assessed custom fees to the result. This is needed to build transaction record
@@ -149,20 +147,25 @@ public class CustomFractionalFeeAssessor {
     /**
      * For a given input token transfers from transaction body, if the fractional fee has to be
      * adjusted from credits, adjusts the given transaction body with the adjustments
+     *
      * @param mutableInputTokenAdjustments the input token adjustments from given transaction body
      * @param denom the token id
      * @param filteredCredits the credits that should be adjusted
+     * @param creditsForToken the original credits for the token
      */
     private void adjustInputTokenTransfersWithReclaimAmounts(
             @NonNull final Map<TokenID, Map<AccountID, Long>> mutableInputTokenAdjustments,
             @NonNull final TokenID denom,
-            @NonNull final Map<AccountID, Long> filteredCredits) {
+            @NonNull final Map<AccountID, Long> filteredCredits,
+            @NonNull final Map<AccountID, Long> creditsForToken) {
         // if we reached here it means there are credits for the token
         final var map = mutableInputTokenAdjustments.get(denom);
         for (final var entry : filteredCredits.entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
-            map.put(account, amount);
+            // Further reduce the credit to an effective payer account
+            // by the amount that was redirected to fee collector accounts
+            map.merge(account, amount - creditsForToken.get(account), AdjustmentUtils::addExactOrThrow);
         }
         mutableInputTokenAdjustments.put(denom, map);
     }
@@ -188,7 +191,7 @@ public class CustomFractionalFeeAssessor {
                 filteredCredits.put(account, amount);
             }
         }
-        return !filteredCredits.isEmpty() ? filteredCredits : creditsForToken;
+        return filteredCredits;
     }
 
     /**
@@ -197,9 +200,9 @@ public class CustomFractionalFeeAssessor {
      * @param fractionalFee the fractional fee
      * @return the amount owned to be paid as fractional custom fee
      */
-    private long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
-        final var numerator = fractionalFee.fractionalAmount().numerator();
-        final var denominator = fractionalFee.fractionalAmount().denominator();
+    public long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
+        final var numerator = fractionalFee.fractionalAmountOrThrow().numerator();
+        final var denominator = fractionalFee.fractionalAmountOrThrow().denominator();
         var nominalFee = 0L;
         try {
             nominalFee = safeFractionMultiply(numerator, denominator, givenUnits);

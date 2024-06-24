@@ -22,11 +22,21 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Fake Crypto Create Record Builder
+ */
 public class FakeCryptoCreateRecordBuilder {
+    /**
+     * Constructs a {@link FakeCryptoCreateRecordBuilder} instance.
+     */
     public FakeCryptoCreateRecordBuilder() {}
 
+    /**
+     * Creates a {@link CryptoCreateRecordBuilder} instance.
+     * @return a {@link CryptoCreateRecordBuilder} instance
+     */
     public CryptoCreateRecordBuilder create() {
         return new CryptoCreateRecordBuilder() {
 
@@ -35,7 +45,7 @@ public class FakeCryptoCreateRecordBuilder {
             private long transactionFee;
             private String memo;
 
-            @NotNull
+            @NonNull
             @Override
             public TransactionBody transactionBody() {
                 return TransactionBody.DEFAULT;
@@ -46,41 +56,41 @@ public class FakeCryptoCreateRecordBuilder {
                 return 0;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public ResponseCodeEnum status() {
                 return ResponseCodeEnum.SUCCESS;
             }
 
-            @NotNull
+            @NonNull
             @Override
-            public CryptoCreateRecordBuilder accountID(@NotNull final AccountID accountID) {
+            public CryptoCreateRecordBuilder accountID(@NonNull final AccountID accountID) {
                 this.accountID = accountID;
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
+            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
-            public CryptoCreateRecordBuilder evmAddress(@NotNull final Bytes evmAddress) {
+            public CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress) {
                 this.evmAddress = evmAddress;
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
-            public CryptoCreateRecordBuilder transactionFee(@NotNull final long transactionFee) {
+            public CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee) {
                 this.transactionFee = transactionFee;
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
-            public CryptoCreateRecordBuilder memo(@NotNull final String memo) {
+            public CryptoCreateRecordBuilder memo(@NonNull final String memo) {
                 this.memo = memo;
                 return this;
             }

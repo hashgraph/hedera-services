@@ -18,6 +18,7 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 
 /**
@@ -25,7 +26,7 @@ import java.time.Duration;
  */
 public class NoOpDurationGauge extends AbstractNoOpMetric implements DurationGauge {
 
-    public NoOpDurationGauge(final MetricConfig<?, ?> config) {
+    public NoOpDurationGauge(final @NonNull MetricConfig<?, ?> config) {
         super(config);
     }
 

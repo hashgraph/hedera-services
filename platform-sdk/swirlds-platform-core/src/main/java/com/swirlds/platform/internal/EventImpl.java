@@ -16,42 +16,22 @@
 
 package com.swirlds.platform.internal;
 
-import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.crypto.RunningHashable;
-import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.io.OptionalSelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.stream.StreamAligned;
-import com.swirlds.common.stream.Timestamped;
-import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.EventMetadata;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
-import com.swirlds.platform.system.events.EventSerializationOptions;
-import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
-import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -60,41 +40,12 @@ import java.util.TreeSet;
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.
  */
-@ConstructableIgnored
-public class EventImpl extends EventMetadata
-        implements BaseEvent,
-                Comparable<EventImpl>,
-                PlatformEvent,
-                SerializableHashable,
-                OptionalSelfSerializable<EventSerializationOptions>,
-                RunningHashable,
-                StreamAligned,
-                Timestamped {
-    /**
-     * the consensus timestamp of a transaction is guaranteed to be at least this many nanoseconds later than that of
-     * the transaction immediately before it in consensus order, and to be a multiple of this (must be positive and a
-     * multiple of 10)
-     */
-    public static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
+public class EventImpl extends EventMetadata implements Comparable<EventImpl>, ConsensusEvent {
 
     /** The base event information, including some gossip specific information */
-    private GossipEvent baseEvent;
+    private PlatformEvent baseEvent;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
-    /**
-     * The consensus hash of this event. This hash includes all information for an event that was a result of it
-     * reaching consensus. So the hash includes the consensus timestamp, the consensus order and other consensus info.
-     * This hash should not be confused with the hash of the base event which is calculated before consensus is reached,
-     * right after the event is created.
-     */
-    private Hash hash = null;
-
-    private RunningHash runningHash;
-
-    /**
-     * Tracks if this event was read out of a signed state.
-     */
-    private boolean fromSignedState;
 
     /**
      * An unmodifiable ordered set of system transaction indices in the array of all transactions, from lowest to
@@ -102,104 +53,33 @@ public class EventImpl extends EventMetadata
      */
     private Set<Integer> systemTransactionIndices;
 
-    /** A list of references to the system transactions in the array of all transactions */
-    private List<SystemTransaction> systemTransactions;
-
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
 
     public EventImpl() {}
 
-    public EventImpl(final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), null, null);
+    public EventImpl(final PlatformEvent platformEvent, final EventImpl selfParent, final EventImpl otherParent) {
+        this(platformEvent, new ConsensusData(), selfParent, otherParent);
     }
 
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData) {
-        this(baseEventHashedData, baseEventUnhashedData, consensusData, null, null);
+    public EventImpl(@NonNull final PlatformEvent platformEvent) {
+        this(platformEvent, new ConsensusData(), null, null);
     }
 
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(baseEventHashedData, baseEventUnhashedData, new ConsensusData(), selfParent, otherParent);
-    }
-
-    public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
-        this(gossipEvent, new ConsensusData(), selfParent, otherParent);
-    }
-
-    public EventImpl(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final ConsensusData consensusData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        this(new GossipEvent(baseEventHashedData, baseEventUnhashedData), consensusData, selfParent, otherParent);
-    }
-
-    public EventImpl(
-            final GossipEvent baseEvent,
+    private EventImpl(
+            final PlatformEvent baseEvent,
             final ConsensusData consensusData,
             final EventImpl selfParent,
             final EventImpl otherParent) {
         super(selfParent, otherParent);
         Objects.requireNonNull(baseEvent, "baseEvent");
-        Objects.requireNonNull(baseEvent.getHashedData(), "baseEventDataHashed");
-        Objects.requireNonNull(baseEvent.getUnhashedData(), "baseEventDataNotHashed");
+        Objects.requireNonNull(baseEvent.getSignature(), "signature");
         Objects.requireNonNull(consensusData, "consensusData");
 
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;
 
-        setDefaultValues();
-
         findSystemTransactions();
-    }
-
-    /**
-     * initialize RunningHash instance
-     */
-    private void setDefaultValues() {
-        runningHash = new RunningHash();
-    }
-
-    /**
-     * Returns the timestamp of the last transaction in this event. If this event has no transaction, then the timestamp
-     * of the event will be returned
-     *
-     * @return timestamp of the last transaction
-     */
-    public Instant getLastTransTime() {
-        if (getTransactions() == null) {
-            return null;
-        }
-        // this is a special case. if an event has 0 or 1 transactions, the timestamp of the last transaction can be
-        // considered to be the same, equivalent to the timestamp of the event
-        if (getTransactions().length <= 1) {
-            return getConsensusTimestamp();
-        }
-        return getTransactionTime(getTransactions().length - 1);
-    }
-
-    /**
-     * Returns the timestamp of the transaction with given index in this event
-     *
-     * @param transactionIndex index of the transaction in this event
-     * @return timestamp of the given index transaction
-     */
-    public Instant getTransactionTime(final int transactionIndex) {
-        if (getConsensusTimestamp() == null || getTransactions() == null) {
-            return null;
-        }
-        if (transactionIndex >= getTransactions().length) {
-            throw new IllegalArgumentException("Event does not have a transaction with index:" + transactionIndex);
-        }
-        return getConsensusTimestamp().plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
     }
 
     /**
@@ -240,70 +120,6 @@ public class EventImpl extends EventMetadata
         return Long.compare(getGeneration(), other.getGeneration());
     }
 
-    //////////////////////////////////////////
-    // Serialization methods
-    // Note: this class serializes itself as a com.swirlds.common.event.ConsensusEvent object
-    //////////////////////////////////////////
-
-    /**
-     * This class serializes itself as a {@link DetailedConsensusEvent} object
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, EventSerializationOptions.FULL);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
-            throws IOException {
-        DetailedConsensusEvent.serialize(
-                out, baseEvent.getHashedData(), baseEvent.getUnhashedData(), consensusData, option);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final DetailedConsensusEvent consensusEvent = new DetailedConsensusEvent();
-        consensusEvent.deserialize(in, version);
-        buildFromConsensusEvent(consensusEvent);
-    }
-
-    /**
-     * build current Event from consensusEvent
-     *
-     * @param consensusEvent the consensus event to build from
-     */
-    void buildFromConsensusEvent(final DetailedConsensusEvent consensusEvent) {
-        baseEvent = new GossipEvent(consensusEvent.getBaseEventHashedData(), consensusEvent.getBaseEventUnhashedData());
-        consensusData = consensusEvent.getConsensusData();
-        // clears metadata in case there is any
-        super.clear();
-
-        setDefaultValues();
-        findSystemTransactions();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return DetailedConsensusEvent.CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return DetailedConsensusEvent.CLASS_VERSION;
-    }
-
     /**
      * Iterates through all the transactions and stores the indices of the system transactions.
      */
@@ -311,22 +127,18 @@ public class EventImpl extends EventMetadata
         final ConsensusTransactionImpl[] transactions = getTransactions();
         if (transactions == null || transactions.length == 0) {
             systemTransactionIndices = Collections.emptySet();
-            systemTransactions = Collections.emptyList();
             return;
         }
 
         final Set<Integer> indices = new TreeSet<>();
-        final List<SystemTransaction> sysTrans = new ArrayList<>();
         for (int i = 0; i < transactions.length; i++) {
             if (transactions[i].isSystem()) {
                 indices.add(i);
-                sysTrans.add((SystemTransaction) getTransactions()[i]);
             } else {
                 numAppTransactions++;
             }
         }
         this.systemTransactionIndices = Collections.unmodifiableSet(indices);
-        this.systemTransactions = Collections.unmodifiableList(sysTrans);
     }
 
     /**
@@ -336,33 +148,6 @@ public class EventImpl extends EventMetadata
      */
     public int getNumAppTransactions() {
         return numAppTransactions;
-    }
-
-    /**
-     * An iterator over all system transactions in this event.
-     *
-     * @return system transaction iterator
-     */
-    public Iterator<SystemTransaction> systemTransactionIterator() {
-        // FUTURE WORK: remove this once ConsensusSystemTransactionManager is removed
-        return new TypedIterator<>(systemTransactions.iterator());
-    }
-
-    /**
-     * Propagates consensus data to all transactions. Invoked when this event has reached consensus and all consensus
-     * data is set.
-     */
-    public void consensusReached() {
-        final ConsensusTransactionImpl[] transactions = getTransactions();
-        if (transactions == null) {
-            return;
-        }
-
-        for (int i = 0; i < transactions.length; i++) {
-            final Instant transConsTime = getConsensusTimestamp().plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
-            transactions[i].setConsensusTimestamp(transConsTime);
-            transactions[i].setConsensusOrder(getConsensusOrder());
-        }
     }
 
     /**
@@ -394,39 +179,26 @@ public class EventImpl extends EventMetadata
     /**
      * @return the base event
      */
-    public GossipEvent getBaseEvent() {
+    public PlatformEvent getBaseEvent() {
         return baseEvent;
     }
 
     /**
-     * @return The hashed part of a base event
+     * Check if the event has a self parent.
+     *
+     * @return true if the event has a self parent
      */
-    public BaseEventHashedData getBaseEventHashedData() {
-        return baseEvent.getHashedData();
+    public boolean hasSelfParent() {
+        return baseEvent.getSelfParent() != null;
     }
 
     /**
-     * @return The part of a base event which is not hashed
+     * Check if the event has other parents.
+     *
+     * @return true if the event has other parents
      */
-    public BaseEventUnhashedData getBaseEventUnhashedData() {
-        return baseEvent.getUnhashedData();
-    }
-
-    @Override
-    public BaseEventHashedData getHashedData() {
-        return getBaseEventHashedData();
-    }
-
-    @Override
-    public BaseEventUnhashedData getUnhashedData() {
-        return getBaseEventUnhashedData();
-    }
-
-    /**
-     * @return Consensus data calculated for an event
-     */
-    public ConsensusData getConsensusData() {
-        return consensusData;
+    public boolean hasOtherParent() {
+        return !baseEvent.getOtherParents().isEmpty();
     }
 
     //////////////////////////////////////////
@@ -438,23 +210,11 @@ public class EventImpl extends EventMetadata
     //////////////////////////////////////////
 
     public Instant getTimeCreated() {
-        return baseEvent.getHashedData().getTimeCreated();
-    }
-
-    public long getOtherParentGen() {
-        return baseEvent.getHashedData().getOtherParentGen();
-    }
-
-    public Hash getSelfParentHash() {
-        return baseEvent.getHashedData().getSelfParentHash();
-    }
-
-    public Hash getOtherParentHash() {
-        return baseEvent.getHashedData().getOtherParentHash();
+        return baseEvent.getTimeCreated();
     }
 
     public Hash getBaseHash() {
-        return baseEvent.getHashedData().getHash();
+        return baseEvent.getHash();
     }
 
     /**
@@ -464,85 +224,47 @@ public class EventImpl extends EventMetadata
         return baseEvent.getHashedData().getTransactions();
     }
 
-    public int getNumTransactions() {
-        if (baseEvent.getHashedData().getTransactions() == null) {
-            return 0;
-        } else {
-            return baseEvent.getHashedData().getTransactions().length;
-        }
-    }
-
     public boolean isCreatedBy(final NodeId id) {
         return Objects.equals(getCreatorId(), id);
-    }
-
-    //////////////////////////////////////////
-    // BaseEventUnhashedData
-    //////////////////////////////////////////
-
-    public byte[] getSignature() {
-        return baseEvent.getUnhashedData().getSignature();
     }
 
     //////////////////////////////////////////
     // ConsensusData
     //////////////////////////////////////////
 
-    public void setConsensusTimestamp(final Instant consensusTimestamp) {
-        consensusData.setConsensusTimestamp(consensusTimestamp);
-    }
-
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
-    }
-
-    public void setConsensusOrder(final long consensusOrder) {
-        consensusData.setConsensusOrder(consensusOrder);
-    }
-
-    /**
-     * is this event the last in consensus order of all those with the same received round
-     *
-     * @return is this event the last in consensus order of all those with the same received round
-     * @deprecated consensus events are part of {@link ConsensusRound}s, whether it's the last one
-     *     can be determined by looking at its position within the round
-     */
-    @Deprecated(forRemoval = true)
-    public boolean isLastInRoundReceived() {
-        return consensusData.isLastInRoundReceived();
-    }
-
-    public void setLastInRoundReceived(final boolean lastInRoundReceived) {
-        consensusData.setLastInRoundReceived(lastInRoundReceived);
     }
 
     //////////////////////////////////////////
     //	Event interface methods
     //////////////////////////////////////////
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the consensus timestamp of this event
+     *
+     * @return the consensus timestamp of this event
+     */
     public Instant getConsensusTimestamp() {
-        return consensusData.getConsensusTimestamp();
+        return baseEvent.getConsensusTimestamp();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    @Nullable
-    public NodeId getOtherId() {
-        return baseEvent.getUnhashedData().getOtherId();
-    }
-
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the generation of this event
+     *
+     * @return the generation of this event
+     */
     public long getGeneration() {
-        return baseEvent.getHashedData().getGeneration();
+        return baseEvent.getGeneration();
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Get the birth round of this event
+     *
+     * @return the birth round of this event
+     */
     public long getBirthRound() {
-        return baseEvent.getHashedData().getBirthRound();
+        return baseEvent.getBirthRound();
     }
 
     /**
@@ -551,7 +273,7 @@ public class EventImpl extends EventMetadata
     @Override
     @Nullable
     public SoftwareVersion getSoftwareVersion() {
-        return baseEvent.getHashedData().getSoftwareVersion();
+        return baseEvent.getSoftwareVersion();
     }
 
     /**
@@ -560,13 +282,14 @@ public class EventImpl extends EventMetadata
     @Override
     @NonNull
     public NodeId getCreatorId() {
-        return baseEvent.getHashedData().getCreatorId();
+        return baseEvent.getCreatorId();
     }
 
     /**
-     * {@inheritDoc}
+     * Get the round received of this event
+     *
+     * @return the round received of this event
      */
-    @Override
     public long getRoundReceived() {
         return consensusData.getRoundReceived();
     }
@@ -576,7 +299,7 @@ public class EventImpl extends EventMetadata
      */
     @Override
     public long getConsensusOrder() {
-        return consensusData.getConsensusOrder();
+        return baseEvent.getConsensusOrder();
     }
 
     /**
@@ -585,88 +308,11 @@ public class EventImpl extends EventMetadata
      * @return true iff this event has no transactions
      */
     public boolean isEmpty() {
-        return getTransactions() == null || getTransactions().length == 0;
-    }
-
-    /**
-     * Check if this event was read from a signed state.
-     *
-     * @return true iff this event was loaded from a signed state
-     */
-    public boolean isFromSignedState() {
-        return fromSignedState;
-    }
-
-    /**
-     * Mark this as an event that was read from a signed state.
-     */
-    public void markAsSignedStateEvent() {
-        this.fromSignedState = true;
-    }
-
-    //
-    // String methods
-    //
-
-    /**
-     * @see EventStrings#toShortString(EventImpl)
-     */
-    public String toShortString() {
-        return EventStrings.toShortString(this);
-    }
-
-    /**
-     * @see EventStrings#toMediumString(EventImpl)
-     */
-    public String toMediumString() {
-        return EventStrings.toMediumString(this);
+        return baseEvent.getPayloadCount() == 0;
     }
 
     @Override
     public String toString() {
-        return toMediumString();
-    }
-
-    //
-    // Timestamped
-    //
-
-    @Override
-    public Instant getTimestamp() {
-        return getConsensusTimestamp();
-    }
-
-    //
-    // RunningHashable
-    //
-
-    @Override
-    public RunningHash getRunningHash() {
-        return runningHash;
-    }
-
-    //
-    // Hashable
-    //
-
-    @Override
-    public Hash getHash() {
-        return hash;
-    }
-
-    @Override
-    public void setHash(final Hash hash) {
-        this.hash = hash;
-    }
-
-    /**
-     * Get a mnemonic string representing this event. Event should be hashed prior to this being called. Useful for
-     * debugging.
-     */
-    public String toMnemonic() {
-        if (getHash() == null) {
-            return "unhashed-event";
-        }
-        return getHash().toMnemonic();
+        return baseEvent.toString();
     }
 }

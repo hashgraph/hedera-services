@@ -208,11 +208,13 @@ public class AddressBookUtils {
         } catch (NumberFormatException e) {
             throw new ParseException("Cannot parse value of weight from '" + parts[4] + "'", 4);
         }
-        final InetAddress internalIp;
+        // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
+        final String internalHostname = parts[5];
         try {
-            internalIp = InetAddress.getByName(parts[5]);
+            // validate that an InetAddress can be created from the internal hostname.
+            InetAddress.getByName(internalHostname);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[5] + ",", 5);
+            throw new ParseException("Cannot parse ip address from '" + parts[5] + "'", 5);
         }
         final int internalPort;
         try {
@@ -220,11 +222,13 @@ public class AddressBookUtils {
         } catch (NumberFormatException e) {
             throw new ParseException("Cannot parse ip port from '" + parts[6] + "'", 6);
         }
-        final InetAddress externalIp;
+        // FQDN Support: The original string value is preserved, whether it is an IP Address or a FQDN.
+        final String externalHostname = parts[7];
         try {
-            externalIp = InetAddress.getByName(parts[7]);
+            // validate that an InetAddress can be created from the external hostname.
+            InetAddress.getByName(externalHostname);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[7] + ",", 7);
+            throw new ParseException("Cannot parse ip address from '" + parts[7] + "'", 7);
         }
         final int externalPort;
         try {
@@ -239,10 +243,12 @@ public class AddressBookUtils {
                 nickname,
                 selfname,
                 weight,
-                internalIp.getHostAddress(),
+                internalHostname,
                 internalPort,
-                externalIp.getHostAddress(),
+                externalHostname,
                 externalPort,
+                null,
+                null,
                 memoToUse);
     }
 

@@ -71,13 +71,4 @@ class ConcurrentTask extends AbstractTask {
         }
         return true;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void send() {
-        // Expose this method to the scheduler
-        super.send();
-    }
 }

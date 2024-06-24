@@ -102,14 +102,14 @@ public class FileServiceUtils {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
-            if (fileKeyList != null && fileKeyList.hasKeys()) {
+            if (fileKeyList != null) {
                 for (final Key key : fileKeyList.keys()) {
                     context.requireKey(key);
                 }
             }
         }
 
-        if (transactionKeys != null && transactionKeys.hasKeys()) {
+        if (transactionKeys != null) {
             for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
             }
@@ -128,7 +128,7 @@ public class FileServiceUtils {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
-            if (fileKeyList != null && fileKeyList.hasKeys()) {
+            if (fileKeyList != null) {
                 // this threshold created to solve the issue of the file delete that can be deleted using one of the
                 // keys in the keylist that's why it is wrapped in threshold key with threshold 1
                 ThresholdKey syntheticKey =
@@ -171,7 +171,7 @@ public class FileServiceUtils {
 
         final var file = optionalFile.get();
 
-        if (!file.hasKeys() || !file.keys().hasKeys() || file.keys().keys().isEmpty()) {
+        if (!file.hasKeys() || file.keys().keys().isEmpty()) {
             // @todo('protobuf change needed') change to immutable file response code
             throw new HandleException(UNAUTHORIZED);
         }

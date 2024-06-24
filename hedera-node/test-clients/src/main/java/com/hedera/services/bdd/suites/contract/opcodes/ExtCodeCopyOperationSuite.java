@@ -30,43 +30,25 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.systemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ExtCodeCopyOperationSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ExtCodeCopyOperationSuite.class);
-
-    public static void main(String[] args) {
-        new ExtCodeCopyOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class ExtCodeCopyOperationSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var emptyBytecode = ByteString.EMPTY;
@@ -123,8 +105,37 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
                         }));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
+    @HapiTest
+    final Stream<DynamicTest> testExtCodeCopyWithSystemAccounts() {
+        final var contract = "ExtCodeOperationsChecker";
+        final var emptyBytecode = ByteString.EMPTY;
+        final var codeCopyOf = "codeCopyOf";
+        final var account = "account";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            // add contract call for all accounts in the list
+            opsArray[i] = contractCall(contract, codeCopyOf, mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            // add contract call local for all accounts in the list
+            int finalI = i;
+            opsArray[systemAccounts.size() + i] = withOpContext((spec, opLog) -> {
+                final var accountSolidityAddress = mirrorAddrWith(systemAccounts.get(finalI));
+
+                final var accountCodeCallLocal = contractCallLocal(contract, codeCopyOf, accountSolidityAddress)
+                        .saveResultTo("accountCode");
+                allRunFor(spec, accountCodeCallLocal);
+
+                final var accountCode = spec.registry().getBytes("accountCode");
+
+                Assertions.assertArrayEquals(emptyBytecode.toByteArray(), accountCode);
+            });
+        }
+
+        return defaultHapiSpec("testExtCodeCopyWithSystemAccounts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
+                .when()
+                .then(opsArray);
     }
 }

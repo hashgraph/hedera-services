@@ -20,7 +20,8 @@ open module com.swirlds.virtualmap {
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
+    requires com.hedera.pbj.runtime;
     requires java.management; // Test dependency
     requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
 }

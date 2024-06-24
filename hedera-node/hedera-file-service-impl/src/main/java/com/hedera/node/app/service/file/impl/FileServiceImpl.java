@@ -16,39 +16,31 @@
 
 package com.hedera.node.app.service.file.impl;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.spi.RpcService;
+import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
+/** Standard implementation of the {@link FileService} {@link RpcService}. */
 public final class FileServiceImpl implements FileService {
-    public static final String BLOBS_KEY = "FILES";
-    public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
-    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
-    private final ConfigProvider configProvider;
-    private InitialModFileGenesisSchema initialFileSchema;
+    public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    public static final String DEFAULT_MEMO = "";
 
+    /**
+     * Constructs a {@link FileServiceImpl}.
+     */
     @Inject
-    public FileServiceImpl(@NonNull final ConfigProvider configProvider) {
-        this.configProvider = configProvider;
+    public FileServiceImpl() {
+        // No-op
     }
 
-    public void setFs(@Nullable final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> fss) {
-        initialFileSchema.setFs(fss);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        initialFileSchema = new InitialModFileGenesisSchema(version, configProvider);
-        registry.register(initialFileSchema);
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490FileSchema());
     }
 }

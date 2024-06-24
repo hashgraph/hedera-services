@@ -16,71 +16,84 @@
 
 package com.swirlds.platform.test.state;
 
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
-import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.Objects;
 
-public class IssDetectorTestHelper extends IssDetector {
-    /** the default epoch hash to use */
-    private static final Hash DEFAULT_EPOCH_HASH = null;
+/**
+ * A helper class for testing the {@link com.swirlds.platform.state.iss.IssDetector}.
+ */
+public class IssDetectorTestHelper {
+    private int selfIssCount = 0;
+    private int catastrophicIssCount = 0;
 
-    private final List<IssNotification> issList = new ArrayList<>();
+    private final List<IssNotification> issNotificationList = new ArrayList<>();
 
-    public IssDetectorTestHelper(
-            @NonNull final PlatformContext platformContext, final AddressBook addressBook, final long ignoredRound) {
-        super(platformContext, addressBook, DEFAULT_EPOCH_HASH, new BasicSoftwareVersion(1), false, ignoredRound);
+    private final IssDetector issDetector;
+
+    public IssDetectorTestHelper(@NonNull final IssDetector issDetector) {
+        this.issDetector = Objects.requireNonNull(issDetector);
     }
 
-    @Override
-    public List<IssNotification> roundCompleted(final long round) {
-        return processList(super.roundCompleted(round));
+    public void handleStateAndRound(@NonNull final StateAndRound stateAndRound) {
+        trackIssNotifications(issDetector.handleStateAndRound(stateAndRound));
     }
 
-    @Override
-    public List<IssNotification> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
-        return processList(super.handlePostconsensusSignatures(transactions));
+    public void overridingState(@NonNull final ReservedSignedState state) {
+        trackIssNotifications(issDetector.overridingState(state));
     }
 
-    @Override
-    public List<IssNotification> newStateHashed(@NonNull final ReservedSignedState state) {
-        return processList(super.newStateHashed(state));
+    /**
+     * Keeps track of all ISS notifications passed to this method over the course of a test, for the sake of validation
+     *
+     * @param notifications the list of ISS notifications to track. permitted to be null.
+     */
+    private void trackIssNotifications(@Nullable final List<IssNotification> notifications) {
+        if (notifications == null) {
+            return;
+        }
+
+        notifications.forEach(notification -> {
+            if (notification.getIssType() == IssNotification.IssType.SELF_ISS) {
+                selfIssCount++;
+            } else if (notification.getIssType() == IssNotification.IssType.CATASTROPHIC_ISS) {
+                catastrophicIssCount++;
+            }
+
+            issNotificationList.add(notification);
+        });
     }
 
-    @Override
-    public List<IssNotification> overridingState(@NonNull final ReservedSignedState state) {
-        return processList(super.overridingState(state));
+    /**
+     * Get the number of self ISS notifications that have been observed.
+     *
+     * @return the number of self ISS notifications
+     */
+    public int getSelfIssCount() {
+        return selfIssCount;
     }
 
-    public List<IssNotification> getIssList() {
-        return issList;
+    /**
+     * Get the number of catastrophic ISS notifications that have been observed.
+     *
+     * @return the number of catastrophic ISS notifications
+     */
+    public int getCatastrophicIssCount() {
+        return catastrophicIssCount;
     }
 
-    public int getIssCount() {
-        return issList.size();
-    }
-
-    public long getIssCount(final IssType... types) {
-        return issList.stream()
-                .map(IssNotification::getIssType)
-                .filter(Set.of(types)::contains)
-                .count();
-    }
-
-    private List<IssNotification> processList(final List<IssNotification> list) {
-        Optional.ofNullable(list).ifPresent(issList::addAll);
-        return list;
+    /**
+     * Get the list of all ISS notifications that have been observed.
+     *
+     * @return the list of all ISS notifications
+     */
+    public List<IssNotification> getIssNotificationList() {
+        return issNotificationList;
     }
 }

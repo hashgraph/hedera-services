@@ -16,7 +16,14 @@
 
 package com.swirlds.config.impl.converters;
 
-import static com.swirlds.base.units.UnitConstants.*;
+import static com.swirlds.base.units.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.base.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.base.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.units.UnitConstants.WEEKS_TO_DAYS;
 
 import com.swirlds.config.api.converter.ConfigConverter;
 import java.time.Duration;
@@ -26,7 +33,7 @@ import java.util.regex.Pattern;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link Duration} values in the
- * configuration
+ * configuration.
  */
 public final class DurationConverter implements ConfigConverter<Duration> {
 

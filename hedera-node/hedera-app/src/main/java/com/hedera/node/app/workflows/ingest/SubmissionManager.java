@@ -21,11 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.types.Profile;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -70,6 +70,9 @@ public class SubmissionManager {
 
     private static final String PLATFORM_TXN_REJECTIONS_DESC = "number of platform transactions not created per second";
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";
+    private static final Bytes MAIN_NET_LEDGER_ID = Bytes.fromHex("00");
+    private static final Bytes TEST_NET_LEDGER_ID = Bytes.fromHex("01");
+    private static final Bytes PREVIEW_NET_LEDGER_ID = Bytes.fromHex("02");
 
     // FUTURE Consider adding a metric to keep track of the number of duplicate transactions submitted by users.
 
@@ -130,8 +133,13 @@ public class SubmissionManager {
         if (txBody.hasUncheckedSubmit()) {
             // We do NOT allow this call in production!
             // check profile dynamically, this way we allow profile overriding in Hapi tests
-            final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-            if (hederaConfig.activeProfile() == Profile.PROD) {
+            final var configuration = configProvider.getConfiguration();
+            final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+            final var ledgerConfig = configuration.getConfigData(LedgerConfig.class);
+            if (hederaConfig.activeProfile() == Profile.PROD
+                    || MAIN_NET_LEDGER_ID.equals(ledgerConfig.id())
+                    || TEST_NET_LEDGER_ID.equals(ledgerConfig.id())
+                    || PREVIEW_NET_LEDGER_ID.equals(ledgerConfig.id())) {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
 
@@ -155,7 +163,7 @@ public class SubmissionManager {
             // This call to submit to the platform should almost always work. Maybe under extreme load it will fail,
             // or while the system is being shut down. In any event, the user will receive an error code indicating
             // that the transaction was not submitted and they can retry.
-            final var success = platform.createTransaction(PbjConverter.asBytes(payload));
+            final var success = platform.createTransaction(payload.toByteArray());
             if (success) {
                 submittedTxns.add(txId);
             } else {

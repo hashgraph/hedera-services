@@ -16,7 +16,7 @@
 
 package com.swirlds.common.io.utility;
 
-import static com.swirlds.common.io.utility.TemporaryFileBuilder.buildTemporaryDirectory;
+import static com.swirlds.common.io.utility.LegacyTemporaryFileBuilder.buildTemporaryDirectory;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STATE_TO_DISK;
 import static java.nio.file.Files.exists;

@@ -339,10 +339,10 @@ public class TimestampStreamFileWriter<T extends StreamAligned & RunningHashable
 
             // generate signature for entire Hash
             final Signature entireSignature = new Signature(
-                    SIGNATURE_TYPE, signer.sign(entireHash.getValue()).getSignatureBytes());
+                    SIGNATURE_TYPE, signer.sign(entireHash.copyToByteArray()).getSignatureBytes());
             // generate signature for metaData Hash
             final Signature metaSignature = new Signature(
-                    SIGNATURE_TYPE, signer.sign(metaHash.getValue()).getSignatureBytes());
+                    SIGNATURE_TYPE, signer.sign(metaHash.copyToByteArray()).getSignatureBytes());
             try {
                 writeSignatureFile(
                         entireHash,

@@ -22,15 +22,16 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSource;
 import com.swirlds.merkledb.MerkleDbStatistics;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
@@ -70,6 +71,8 @@ public enum TestType {
 
     public final boolean fixedSize;
 
+    private Metrics metrics = null;
+
     TestType(boolean fixedSize) {
         this.fixedSize = fixedSize;
     }
@@ -78,8 +81,28 @@ public enum TestType {
         return new DataTypeConfig<>(this);
     }
 
+    public Metrics getMetrics() {
+        if (metrics == null) {
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+
+            final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
+            when(registry.register(any(), any(), any())).thenReturn(true);
+            metrics = new DefaultPlatformMetrics(
+                    null,
+                    registry,
+                    mock(ScheduledExecutorService.class),
+                    new PlatformMetricsFactoryImpl(metricsConfig),
+                    metricsConfig);
+            MerkleDbStatistics statistics =
+                    new MerkleDbStatistics(configuration.getConfigData(MerkleDbConfig.class), "test");
+            statistics.registerMetrics(metrics);
+        }
+        return metrics;
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes", "unused"})
-    public static class DataTypeConfig<K extends VirtualKey, V extends VirtualValue> {
+    public class DataTypeConfig<K extends VirtualKey, V extends VirtualValue> {
 
         private final TestType testType;
         private final KeySerializer<? extends VirtualLongKey> keySerializer;
@@ -190,23 +213,6 @@ public enum TestType {
             return (keySerializer.getSerializedSize() != Long.BYTES);
         }
 
-        private static Metrics createMetrics() {
-            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-            MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-
-            final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
-            when(registry.register(any(), any(), any())).thenReturn(true);
-            Metrics metrics = new DefaultMetrics(
-                    null,
-                    registry,
-                    mock(ScheduledExecutorService.class),
-                    new DefaultMetricsFactory(metricsConfig),
-                    metricsConfig);
-            MerkleDbStatistics statistics = new MerkleDbStatistics("test");
-            statistics.registerMetrics(metrics);
-            return metrics;
-        }
-
         public MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> createDataSource(
                 final Path dbPath,
                 final String name,
@@ -226,7 +232,7 @@ public enum TestType {
                             .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
             MerkleDbDataSource dataSource =
                     database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
-            dataSource.registerMetrics(createMetrics());
+            dataSource.registerMetrics(getMetrics());
             return dataSource;
         }
 

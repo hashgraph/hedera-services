@@ -28,7 +28,7 @@ import java.util.Objects;
  */
 public class SerializableLong implements Comparable<SerializableLong>, FastCopyable, SelfSerializable {
 
-    private static final long CLASS_ID = 0x70deca6058a40bc6L;
+    public static final long CLASS_ID = 0x70deca6058a40bc6L;
 
     private static class ClassVersion {
 

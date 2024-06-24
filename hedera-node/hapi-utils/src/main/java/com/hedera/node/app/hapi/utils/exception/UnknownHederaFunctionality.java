@@ -25,7 +25,7 @@ public class UnknownHederaFunctionality extends Exception {
     /**
      * Constructs a new exception with the specified detail message.
      *
-     * @param errMessage, the detail error message.
+     * @param errMessage the detail error message.
      */
     public UnknownHederaFunctionality(String errMessage) {
         super(errMessage);

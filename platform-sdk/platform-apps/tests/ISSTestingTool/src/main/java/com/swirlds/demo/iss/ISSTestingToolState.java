@@ -38,8 +38,8 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.scratchpad.Scratchpad;
 import com.swirlds.common.utility.ByteUtils;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -220,7 +220,11 @@ public class ISSTestingToolState extends PartialMerkleLeaf implements SwirldStat
      * @param transaction the transaction to apply
      */
     private void handleTransaction(final ConsensusTransaction transaction) {
-        final int delta = ByteUtils.byteArrayToInt(transaction.getContents(), 0);
+        if (transaction.isSystem()) {
+            return;
+        }
+        final int delta =
+                ByteUtils.byteArrayToInt(transaction.getApplicationPayload().toByteArray(), 0);
         runningSum += delta;
     }
 

@@ -16,16 +16,25 @@
 
 package com.hedera.node.app.version;
 
+import static com.hedera.node.app.version.HederaSoftwareVersion.RELEASE_027_VERSION;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.config.converter.SemanticVersionConverter;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -46,19 +55,17 @@ final class HederaSoftwareVersionTest {
             0.0.0,       0.0.1,        <
             0.0.10,      1.0.0,        <
             0.0.0,       0.0.0,        =
-            1.2.3,       1.2.3-foo,    <
+            1.2.3,       1.2.3-alpha.1,>
             1.2.4,       1.2.3-foo,    >
             1.2.2,       1.2.3-foo,    <
-            1.2.3,       1.2.3-foo+1,  <
+            1.2.3-alpha.1,       1.2.3-alpha.2+1,  <
             1.2.4,       1.2.3-foo+1,  >
             1.2.2,       1.2.3-foo+1,  <
-            1.2.3-foo+2, 1.2.3-foo+1,  >
-            1.2.3-bar+1, 1.2.3-foo+1,  <
             """)
     @DisplayName("compareTo()")
     void compareTo(@NonNull final String a, @NonNull final String b, final String expected) {
-        final var versionA = new HederaSoftwareVersion(semver(a), semver(a));
-        final var versionB = new HederaSoftwareVersion(semver(b), semver(b));
+        final var versionA = new HederaSoftwareVersion(semver(a), semver(a), 0);
+        final var versionB = new HederaSoftwareVersion(semver(b), semver(b), 0);
 
         switch (expected) {
             case "<" -> assertThat(versionA).isLessThan(versionB);
@@ -66,6 +73,85 @@ final class HederaSoftwareVersionTest {
             case ">" -> assertThat(versionA).isGreaterThan(versionB);
             default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
         }
+        // Ensure that the PBJ versions are also ordered correctly.
+        final SemanticVersion pbjA = versionA.getPbjSemanticVersion();
+        final SemanticVersion pbjB = versionB.getPbjSemanticVersion();
+        switch (expected) {
+            case "<" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isLessThan(0);
+            case "=" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isEqualTo(0);
+            case ">" -> assertThat(SEMANTIC_VERSION_COMPARATOR.compare(pbjA, pbjB))
+                    .isGreaterThan(0);
+            default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
+        }
+    }
+
+    @Test
+    void serializationRoundTripWithConfigVersionTest() throws IOException, ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+
+        final HederaSoftwareVersion v1 = new HederaSoftwareVersion(
+                new SemanticVersion(0, 48, 0, "alpha.5", ""), new SemanticVersion(0, 48, 0, "", ""), 1);
+
+        final HederaSoftwareVersion v2 = new HederaSoftwareVersion(
+                new SemanticVersion(0, 48, 0, "alpha.5", ""), new SemanticVersion(0, 48, 0, "", ""), 1);
+
+        assertEquals(0, v1.compareTo(v2));
+
+        final ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+        final SerializableDataOutputStream out = new SerializableDataOutputStream(byteOut);
+        out.writeSerializable(v1, true);
+
+        final SerializableDataInputStream in =
+                new SerializableDataInputStream(new ByteArrayInputStream(byteOut.toByteArray()));
+        final HederaSoftwareVersion v3 = in.readSerializable();
+
+        assertEquals(0, v1.compareTo(v3));
+    }
+
+    @Test
+    void byteFormatDoesNotChangeAfterMigration() throws IOException, ConstructableRegistryException {
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(HederaSoftwareVersion.class, HederaSoftwareVersion::new));
+
+        /*
+        // The following code was used to generate the serialized software version on disk.
+        // File was generated using the branch release/0.47.
+
+        final HederaSoftwareVersion version = new HederaSoftwareVersion(semver("1.2.3"), semver("4.5.6"));
+        final FileOutputStream fos = new FileOutputStream("hederaSoftwareVersion_27.dat");
+        final SerializableDataOutputStream out = new SerializableDataOutputStream(fos);
+        out.writeSerializable(version, true);
+        out.close();
+         */
+
+        final byte[] legacyBytes;
+        try (final InputStream legacyFile =
+                HederaSoftwareVersion.class.getClassLoader().getResourceAsStream("hederaSoftwareVersion_27.dat")) {
+            assertNotNull(legacyFile);
+            legacyBytes = legacyFile.readAllBytes();
+        }
+
+        final SerializableDataInputStream legacyIn =
+                new SerializableDataInputStream(new ByteArrayInputStream(legacyBytes));
+        final HederaSoftwareVersion deserializedVersion = legacyIn.readSerializable();
+
+        assertEquals(RELEASE_027_VERSION, deserializedVersion.getVersion());
+        assertEquals(semver("1.2.3"), deserializedVersion.getHapiVersion());
+        assertEquals(semver("4.5.6"), deserializedVersion.getServicesVersion());
+
+        // Write the deserialized version back to a byte array. It should exactly match the original byte array.
+        final ByteArrayOutputStream newBytes = new ByteArrayOutputStream();
+        final SerializableDataOutputStream newOut = new SerializableDataOutputStream(newBytes);
+        newOut.writeSerializable(deserializedVersion, true);
+        newOut.close();
+        final byte[] newBytesArray = newBytes.toByteArray();
+
+        assertArrayEquals(legacyBytes, newBytesArray);
     }
 
     @Test
@@ -73,7 +159,7 @@ final class HederaSoftwareVersionTest {
     void sorting() {
         final var list = new ArrayList<HederaSoftwareVersion>();
         for (int i = 0; i < 20; i++) {
-            list.add(new HederaSoftwareVersion(semver("1.2." + i), semver("1.2." + i)));
+            list.add(new HederaSoftwareVersion(semver("1.2." + i), semver("1.2." + i), 0));
         }
 
         final var rand = new Random(3375);
@@ -88,7 +174,7 @@ final class HederaSoftwareVersionTest {
     @Test
     @DisplayName("Serialization")
     void serialization() throws IOException {
-        final var version = new HederaSoftwareVersion(semver("1.2.3"), semver("4.5.6"));
+        final var version = new HederaSoftwareVersion(semver("1.2.3"), semver("4.5.6"), 0);
 
         final var serializedBytes = new ByteArrayOutputStream();
         final var out = new SerializableDataOutputStream(serializedBytes);
@@ -100,6 +186,7 @@ final class HederaSoftwareVersionTest {
 
         assertThat(deserializedVersion.getHapiVersion()).isEqualTo(version.getHapiVersion());
         assertThat(deserializedVersion.getServicesVersion()).isEqualTo(version.getServicesVersion());
+        assertThat(deserializedVersion.getPbjSemanticVersion()).isEqualTo(version.getPbjSemanticVersion());
     }
 
     private SemanticVersion semver(@NonNull final String s) {

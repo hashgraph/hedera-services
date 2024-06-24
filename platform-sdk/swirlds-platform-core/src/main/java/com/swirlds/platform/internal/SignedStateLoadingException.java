@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.internal;
 
-public class SignedStateLoadingException extends Exception {
+public class SignedStateLoadingException extends RuntimeException {
     public SignedStateLoadingException() {
         super();
     }

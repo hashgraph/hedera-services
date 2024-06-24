@@ -28,7 +28,7 @@ import java.io.IOException;
  */
 public class BenchmarkAccount extends PartialMerkleLeaf implements Keyed<BenchmarkKey>, MerkleLeaf {
 
-    private static final long CLASS_ID = 0x6b7ca4c97dbade4cL;
+    private static final long CLASS_ID = 0x6b7ca4c97dbade4dL;
 
     /**
      * The balance of the account.

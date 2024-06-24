@@ -18,10 +18,10 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
 
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.Collections.swap;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -48,7 +48,7 @@ public class RandomFileUpdate implements OpProvider {
             standardPrechecksAnd(FILE_DELETED, INVALID_FILE_ID, INSUFFICIENT_TX_FEE);
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(FILE_DELETED, INVALID_FILE_ID, INSUFFICIENT_TX_FEE, FAIL_INVALID);
+            standardOutcomesAnd(FILE_DELETED, INVALID_FILE_ID, INSUFFICIENT_TX_FEE, INVALID_SIGNATURE);
 
     private final EntityNameProvider<FileID> files;
 

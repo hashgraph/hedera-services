@@ -22,14 +22,14 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,12 +38,13 @@ import org.junit.jupiter.api.Test;
 class SwirldStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private State initialState;
+    private MerkleRoot initialState;
 
     @BeforeEach
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        final AddressBook addressBook =
+                RandomAddressBookBuilder.create(Randotron.create()).build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
         final PlatformContext platformContext =
@@ -53,11 +54,9 @@ class SwirldStateManagerTests {
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                (a, b) -> {},
-                mock(SwirldStateMetrics.class),
                 mock(StatusActionSubmitter.class),
-                initialState,
                 new BasicSoftwareVersion(1));
+        swirldStateManager.setInitialState(initialState);
     }
 
     @Test
@@ -108,7 +107,7 @@ class SwirldStateManagerTests {
                         + "decremented.");
     }
 
-    private static State newState() {
+    private static MerkleRoot newState() {
         final State state = new State();
         state.setSwirldState(new DummySwirldState());
 

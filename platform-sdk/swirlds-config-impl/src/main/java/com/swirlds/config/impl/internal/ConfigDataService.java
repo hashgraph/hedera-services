@@ -32,22 +32,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 class ConfigDataService implements ConfigLifecycle {
 
     /**
-     * The factory that create data object instrances
+     * The factory that create data object instances.
      */
     private final ConfigDataFactory configDataFactory;
 
     /**
-     * A set of all regisstered data object types
+     * A set of all registered data object types.
      */
     private final Queue<Class<? extends Record>> registeredTypes;
 
     /**
-     * A map that contains all created data objects
+     * A map that contains all created data objects.
      */
     private final Map<Class<? extends Record>, Record> configDataCache;
 
     /**
-     * Defines if the service is initialized
+     * Defines if the service is initialized.
      */
     private boolean initialized = false;
 
@@ -58,7 +58,7 @@ class ConfigDataService implements ConfigLifecycle {
     }
 
     /**
-     * Adds the given type as a config data object type. This is only possible if the service is not initialized
+     * Adds the given type as a config data object type. This is only possible if the service is not initialized.
      *
      * @param type the type that should be added as a supported config data object
      * @param <T>  generic type of the config data object
@@ -97,7 +97,7 @@ class ConfigDataService implements ConfigLifecycle {
 
     /**
      * Returns the instance of the given config data type. If the given type is not registered (see {@link
-     * #addConfigDataType(Class)}) the method throws an {@link IllegalArgumentException}
+     * #addConfigDataType(Class)}) the method throws an {@link IllegalArgumentException}.
      *
      * @param type the config data type
      * @param <T>  the config data type
@@ -114,7 +114,7 @@ class ConfigDataService implements ConfigLifecycle {
     }
 
     /**
-     * Returns all config data types that are registered
+     * Returns all config data types that are registered.
      *
      * @return all config data types that are registered
      */

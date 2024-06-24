@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.signature.impl;
 
+import static com.hedera.node.app.hapi.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +30,7 @@ import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TestKeyInfo;
@@ -410,21 +411,33 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
                                             .uncompressedPublicKey()
                                             .ecdsaSecp256k1OrThrow(),
-                                    null,
+                                    Bytes.wrap(
+                                            extractEvmAddressFromDecompressedECDSAKey(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]
+                                                    .uncompressedPublicKey()
+                                                    .ecdsaSecp256k1OrThrow()
+                                                    .toByteArray())),
                                     sigList.get(5)),
                             new ExpandedSignaturePair(
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1].publicKey(),
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1]
                                             .uncompressedPublicKey()
                                             .ecdsaSecp256k1OrThrow(),
-                                    null,
+                                    Bytes.wrap(
+                                            extractEvmAddressFromDecompressedECDSAKey(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[1]
+                                                    .uncompressedPublicKey()
+                                                    .ecdsaSecp256k1OrThrow()
+                                                    .toByteArray())),
                                     sigList.get(6)),
                             new ExpandedSignaturePair(
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2].publicKey(),
                                     FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2]
                                             .uncompressedPublicKey()
                                             .ecdsaSecp256k1OrThrow(),
-                                    null,
+                                    Bytes.wrap(
+                                            extractEvmAddressFromDecompressedECDSAKey(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[2]
+                                                    .uncompressedPublicKey()
+                                                    .ecdsaSecp256k1OrThrow()
+                                                    .toByteArray())),
                                     sigList.get(7)));
         }
     }
@@ -589,7 +602,7 @@ final class SignatureExpanderImplTest extends AppTestBase implements Scenarios {
 
     /** Creates a {@link SignaturePair} for each unique key in the key list */
     private static List<SignaturePair> sufficientSignatures(@NonNull final KeyList key, final boolean fullPrefix) {
-        return key.keysOrThrow().stream()
+        return key.keys().stream()
                 .map(k -> sufficientSignatures(k, fullPrefix))
                 .flatMap(List::stream)
                 .distinct()

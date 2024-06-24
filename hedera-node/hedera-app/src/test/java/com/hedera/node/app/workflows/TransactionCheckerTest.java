@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,9 +50,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -664,7 +663,7 @@ final class TransactionCheckerTest extends AppTestBase {
             }
 
             @Test
-            @DisplayName("A transaction ID with an alias as the payer is plausible")
+            @DisplayName("Aliased Payer accountID should be rejected")
             void testCheckTransactionBodyWithAliasAsPayer() throws PreCheckException {
                 // Given a transaction ID with an alias as the payer
                 final var payerId =
@@ -672,11 +671,9 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
-                // When we check the transaction
-                final var info = checker.check(tx);
-
-                // Then we get no errors
-                assertThat(info.transaction()).isEqualTo(tx);
+                assertThatThrownBy(() -> checker.check(tx))
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
 
             @ParameterizedTest
@@ -741,7 +738,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @Test
             @DisplayName("An internal transaction should fail")
             void testInternalTransactionFails() {
-                final var body = bodyBuilder(txIdBuilder().nonce(USER_TRANSACTION_NONCE + 1));
+                final var body = bodyBuilder(txIdBuilder().nonce(1));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
@@ -815,7 +812,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var consensusNow = Instant.now();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -832,7 +830,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var consensusNow = Instant.now();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -848,7 +847,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var body = bodyBuilder(txId).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_EXPIRED);
             }
@@ -864,7 +864,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var body = bodyBuilder(txId).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.checkTimeBox(body, consensusNow))
+                assertThatThrownBy(() -> checker.checkTimeBox(
+                                body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
             }

@@ -17,13 +17,11 @@
 package com.hedera.node.app.spi.fees;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 public interface FeeContext {
     /**
@@ -44,14 +42,13 @@ public interface FeeContext {
     TransactionBody body();
 
     /**
-     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
-     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
+     * Returns the {@link FeeCalculatorFactory} which can be used to create {@link FeeCalculator} for a specific
+     * {@link com.hedera.hapi.node.base.SubType}
      *
-     * @param subType The {@link SubType} of the transaction.
-     * @return The {@link FeeCalculator} to use.
+     * @return the {@code FeeCalculatorFactory}
      */
     @NonNull
-    FeeCalculator feeCalculator(@NonNull final SubType subType);
+    FeeCalculatorFactory feeCalculatorFactory();
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.
@@ -80,9 +77,17 @@ public interface FeeContext {
     Authorizer authorizer();
 
     /**
-     * Returns the consensus time relative to which client code should calculate entity lifetimes.
-     *
-     * @return the consensus time
+     * Returns the number of signatures provided for the transaction.
+     * <p>NOTE: this property should not be used for queries</p>
+     * @return the number of signatures
      */
-    Instant currentTime();
+    int numTxnSignatures();
+
+    /**
+     * Dispatches the computation of fees for the given transaction body and synthetic payer ID.
+     * @param txBody the transaction body
+     * @param syntheticPayerId the synthetic payer ID
+     * @return the computed fees
+     */
+    Fees dispatchComputeFees(@NonNull TransactionBody txBody, @NonNull AccountID syntheticPayerId);
 }

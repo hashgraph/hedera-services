@@ -20,23 +20,27 @@ import static com.hedera.node.app.workflows.handle.TokenContextImpl.castRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of {@link ChildFinalizeContext}.
  */
 public class ChildFinalizeContextImpl implements ChildFinalizeContext {
+    private final Configuration configuration;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
 
     public ChildFinalizeContextImpl(
+            @NonNull final Configuration configuration,
             @NonNull final ReadableStoreFactory readableStoreFactory,
             @NonNull final WritableStoreFactory writableStoreFactory,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+        this.configuration = requireNonNull(configuration);
         this.readableStoreFactory = requireNonNull(readableStoreFactory);
         this.writableStoreFactory = requireNonNull(writableStoreFactory);
         this.recordBuilder = requireNonNull(recordBuilder);
@@ -61,5 +65,10 @@ public class ChildFinalizeContextImpl implements ChildFinalizeContext {
     public <T> T userTransactionRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return castRecordBuilder(recordBuilder, recordBuilderClass);
+    }
+
+    @Override
+    public @NonNull Configuration configuration() {
+        return configuration;
     }
 }

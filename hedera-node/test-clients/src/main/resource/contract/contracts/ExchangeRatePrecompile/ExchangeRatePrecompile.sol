@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+pragma solidity >=0.5.0 <0.9.0;
 
 import "./SelfFunding.sol";
 
@@ -16,6 +17,10 @@ contract ExchangeRatePrecompile is SelfFunding {
 
     function approxUsdValue() external payable returns (uint256 tinycents) {
         tinycents = tinybarsToTinycents(msg.value);
+    }
+
+    function callWithValue(uint256 _value) external payable {
+        callToPrecompileWithValue(_value);
     }
 
     function invalidCall() external payable {

@@ -17,6 +17,7 @@
 package com.swirlds.common.wiring.schedulers;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -31,20 +32,22 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(TIMING_SENSITIVE)
 class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void basicOperationTest(final boolean stateless) {
+    void basicOperationTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
         final Random random = getRandomPrintSeed();
         final Thread mainThread = Thread.currentThread();
 
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
 
         final StandardObjectCounter counter = new StandardObjectCounter(Duration.ofMillis(1));
 
@@ -84,7 +87,7 @@ class DirectTaskSchedulerTests {
         });
 
         final AtomicInteger countB = new AtomicInteger(0);
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             assertEquals(Thread.currentThread(), mainThread);
             assertEquals(1, counter.getCount());
             countB.set(hash32(countB.get(), x));
@@ -115,10 +118,10 @@ class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void exceptionHandlerTest(final boolean stateless) {
+    void exceptionHandlerTest(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
 
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
         final Thread mainThread = Thread.currentThread();
 
         final AtomicInteger exceptionHandlerCount = new AtomicInteger(0);
@@ -138,7 +141,7 @@ class DirectTaskSchedulerTests {
         final BindableInputWire<Integer, Void> in = scheduler.buildInputWire("in");
 
         final AtomicInteger count = new AtomicInteger(0);
-        in.bind(x -> {
+        in.bindConsumer(x -> {
             assertEquals(Thread.currentThread(), mainThread);
 
             if (x == 50) {
@@ -168,10 +171,10 @@ class DirectTaskSchedulerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void squelching(final boolean stateless) {
+    void squelching(final boolean threadsafe) {
         final WiringModel model = TestWiringModelBuilder.create();
         final Thread mainThread = Thread.currentThread();
-        final TaskSchedulerType type = stateless ? TaskSchedulerType.DIRECT_STATELESS : TaskSchedulerType.DIRECT;
+        final TaskSchedulerType type = threadsafe ? TaskSchedulerType.DIRECT_THREADSAFE : TaskSchedulerType.DIRECT;
 
         final TaskScheduler<Integer> scheduler = model.schedulerBuilder("A")
                 .withType(type)

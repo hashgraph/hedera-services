@@ -24,7 +24,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -47,6 +46,9 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
+import com.swirlds.platform.network.protocol.EmergencyReconnectProtocolFactory;
+import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.reconnect.DummyConnection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
@@ -55,13 +57,13 @@ import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -90,8 +92,8 @@ class EmergencyReconnectTests {
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
     private final Supplier<ReservedSignedState> emergencyState = mock(Supplier.class);
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
-    private EmergencyReconnectProtocol learnerProtocol;
-    private EmergencyReconnectProtocol teacherProtocol;
+    private Protocol learnerProtocol;
+    private Protocol teacherProtocol;
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     private final PlatformContext platformContext =
             TestPlatformContextBuilder.create().withConfiguration(configuration).build();
@@ -227,7 +229,7 @@ class EmergencyReconnectTests {
 
     private ReconnectController createReconnectController(
             final AddressBook addressBook,
-            final Supplier<State> learnerState,
+            final Supplier<MerkleRoot> learnerState,
             final Consumer<SignedState> receivedStateConsumer) {
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
@@ -280,22 +282,21 @@ class EmergencyReconnectTests {
         }
     }
 
-    private EmergencyReconnectProtocol createTeacherProtocol(
+    private Protocol createTeacherProtocol(
             final NotificationEngine notificationEngine, final ReconnectController reconnectController) {
-        return new EmergencyReconnectProtocol(
+        final ProtocolFactory emergencyReconnectProtocolFactory = new EmergencyReconnectProtocolFactory(
                 platformContext,
-                Time.getCurrent(),
                 getStaticThreadManager(),
                 notificationEngine,
-                teacherId,
                 mock(EmergencyRecoveryManager.class),
                 reconnectThrottle,
-                emergencyState::get,
+                emergencyState,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(StatusActionSubmitter.class),
                 configuration);
+        return emergencyReconnectProtocolFactory.build(teacherId);
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -305,20 +306,19 @@ class EmergencyReconnectTests {
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
         when(emergencyRecoveryManager.getEmergencyRecoveryFile()).thenReturn(emergencyRecoveryFile);
-        return new EmergencyReconnectProtocol(
-                platformContext,
-                Time.getCurrent(),
-                getStaticThreadManager(),
-                notificationEngine,
-                learnerId,
-                emergencyRecoveryManager,
-                mock(ReconnectThrottle.class),
-                emergencyState::get,
-                Duration.of(100, ChronoUnit.MILLIS),
-                mock(ReconnectMetrics.class),
-                reconnectController,
-                mock(StatusActionSubmitter.class),
-                configuration);
+        return new EmergencyReconnectProtocolFactory(
+                        platformContext,
+                        getStaticThreadManager(),
+                        notificationEngine,
+                        emergencyRecoveryManager,
+                        mock(ReconnectThrottle.class),
+                        emergencyState,
+                        Duration.of(100, ChronoUnit.MILLIS),
+                        mock(ReconnectMetrics.class),
+                        reconnectController,
+                        mock(StatusActionSubmitter.class),
+                        configuration)
+                .build(learnerId);
     }
 
     private void mockTeacherHasCompatibleState(final SignedState teacherState) {
@@ -326,11 +326,10 @@ class EmergencyReconnectTests {
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
-        return new RandomAddressBookGenerator(random)
-                .setSize(numNodes)
-                .setAverageWeight(100L)
-                .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+        return RandomAddressBookBuilder.create(random)
+                .withSize(numNodes)
+                .withAverageWeight(100L)
+                .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                 .build();
     }
 
@@ -338,7 +337,7 @@ class EmergencyReconnectTests {
         when(emergencyState.get()).thenReturn(null);
     }
 
-    private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {
+    private Callable<Void> doLearner(final Protocol learnerProtocol, final Connection connection) {
         return () -> {
             if (!learnerProtocol.shouldInitiate()) {
                 throw new RuntimeException("Learner should initiate emergency reconnect protocol");
@@ -352,7 +351,7 @@ class EmergencyReconnectTests {
         };
     }
 
-    private Callable<Boolean> doTeacher(final EmergencyReconnectProtocol teacherProtocol, final Connection connection) {
+    private Callable<Boolean> doTeacher(final Protocol teacherProtocol, final Connection connection) {
         return () -> {
             if (!teacherProtocol.shouldAccept()) {
                 throw new RuntimeException("Teacher should accept emergency reconnect protocol initiation");

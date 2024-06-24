@@ -105,18 +105,11 @@ public final class DataFileCommon {
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS").withZone(ZoneId.of("Z"));
     /** Extension to use for Merkle DB data files in protobuf format */
     public static final String FILE_EXTENSION = ".pbj";
-    /** Extension to use for Merkle DB data files in legacy binary format */
-    public static final String FILE_EXTENSION_JDB = ".jdb";
     /**
      * System page size used in calculations, could be read from system but for linux we are pretty
      * safe assuming 4k
      */
     public static final int PAGE_SIZE = 4096;
-    /** Size of metadata footer written at end of file */
-    public static final int FOOTER_SIZE = PAGE_SIZE;
-
-    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
-            Comparator.comparing(o -> o.getMetadata().getCreationDate());
 
     // Data file protobuf fields
     static final FieldDefinition FIELD_DATAFILE_METADATA =
@@ -235,9 +228,7 @@ public final class DataFileCommon {
             return false;
         }
         final String fileName = path.getFileName().toString();
-        return fileName.startsWith(filePrefix)
-                && !fileName.contains("metadata")
-                && (fileName.endsWith(FILE_EXTENSION) || fileName.endsWith(FILE_EXTENSION_JDB));
+        return fileName.startsWith(filePrefix) && !fileName.contains("metadata") && fileName.endsWith(FILE_EXTENSION);
     }
 
     /**

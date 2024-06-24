@@ -28,37 +28,29 @@ import java.time.Duration;
  * specific subsystem. The record is based on the definition of config data objects as described in {@link ConfigData}.
  *
  * <p>
- * Do not add new settings to this record unless you have a very good reason. New settings should go
- * into config records with a prefix defined by a {@link ConfigData} tag. Adding
- * settings to this record pollutes the top level namespace.
+ * Do not add new settings to this record unless you have a very good reason. New settings should go into config records
+ * with a prefix defined by a {@link ConfigData} tag. Adding settings to this record pollutes the top level namespace.
  *
- * @param numConnections
- * 		number of connections maintained by each member (syncs happen on random connections from that set
- * @param statsSkipSeconds
- * 		number of seconds that the "all" history window skips at the start
- * @param loadKeysFromPfxFiles
- * 		When enabled, the platform will try to load node keys from .pfx files located in the {@code PathsConfig.keysDirPath}. If even a
- * 		single key is missing, the platform will warn and exit. If disabled, the platform will generate keys
- * 		deterministically.
- * @param jvmPauseDetectorSleepMs
- * 		period of JVMPauseDetectorThread sleeping in the unit of milliseconds
- * @param jvmPauseReportMs
- * 		log an error when JVMPauseDetectorThread detect a pause greater than this many milliseconds
- * 		all peers
- * @param hangingThreadDuration
- *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
- *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
- * @param emergencyRecoveryFileLoadDir
- *      The path to look for an emergency recovery file on node start. If a file is present in this directory at
- *      startup, emergency recovery will begin.
- * @param genesisFreezeTime
- *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
- *      planned for removal in a future platform version.
+ * @param numConnections               number of connections maintained by each member (syncs happen on random
+ *                                     connections from that set
+ * @param loadKeysFromPfxFiles         When enabled, the platform will try to load node keys from .pfx files located in
+ *                                     the {@code PathsConfig.keysDirPath}. If even a single key is missing, the
+ *                                     platform will warn and exit. If disabled, the platform will generate keys
+ *                                     deterministically.
+ * @param jvmPauseDetectorSleepMs      period of JVMPauseDetectorThread sleeping in the unit of milliseconds
+ * @param jvmPauseReportMs             log an error when JVMPauseDetectorThread detect a pause greater than this many
+ *                                     milliseconds all peers
+ * @param hangingThreadDuration        the length of time a gossip thread is allowed to wait when it is asked to
+ *                                     shutdown. If a gossip thread takes longer than this period to shut down, then an
+ *                                     error message is written to the log.
+ * @param emergencyRecoveryFileLoadDir The path to look for an emergency recovery file on node start. If a file is
+ *                                     present in this directory at startup, emergency recovery will begin.
+ * @param genesisFreezeTime            If this node starts from genesis, this value is used as the freeze time. This
+ *                                     feature is deprecated and planned for removal in a future platform version.
  */
 @ConfigData
 public record BasicConfig(
         @ConfigProperty(defaultValue = "1000") int numConnections,
-        @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
         @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
         @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,

@@ -33,13 +33,13 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
-class IsApprovedForAllCallTest extends HtsCallTestBase {
+class IsApprovedForAllCallTest extends CallTestBase {
     private final Address THE_OWNER = asHeadlongAddress(asEvmAddress(A_NEW_ACCOUNT_ID.accountNumOrThrow()));
     private final Address THE_OPERATOR = asHeadlongAddress(asEvmAddress(B_NEW_ACCOUNT_ID.accountNumOrThrow()));
     private IsApprovedForAllCall subject;

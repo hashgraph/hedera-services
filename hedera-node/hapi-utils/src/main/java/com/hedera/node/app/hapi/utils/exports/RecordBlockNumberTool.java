@@ -38,7 +38,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  * This is a standalone utility tool to read record stream file and check if block number is
- * increasing as expected
+ * increasing as expected.
  */
 public class RecordBlockNumberTool {
     private static final String LOG_CONFIG_PROPERTY = "logConfig";
@@ -47,14 +47,18 @@ public class RecordBlockNumberTool {
 
     private static final Logger LOGGER = LogManager.getLogger(RecordBlockNumberTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("BLOCK_NUMBER");
-    /** default log4j2 file name */
+    /** default log4j2 file name. */
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
-    /** name of RecordStreamType */
+    /** name of RecordStreamType. */
     private static final String RECORD_STREAM_EXTENSION = "rcd";
 
     private static final String COMPRESSED_RECORD_STREAM_EXTENSION = "rcd.gz";
 
     private static long prevBlockNumber = -1;
+
+    private RecordBlockNumberTool() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 
     public static void prepare() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
@@ -188,7 +192,7 @@ public class RecordBlockNumberTool {
     }
 
     /**
-     * read all files in the provided directory
+     * read all files in the provided directory.
      *
      * @param sourceDir the directory where the files to read are located
      */

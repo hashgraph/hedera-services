@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
+<suppressions>
+    <!-- Allow try with resources to use a final keyword -->
+    <suppress-xpath files="." checks="RedundantModifier" query="//LITERAL_TRY//RESOURCE_SPECIFICATION//*" />
+
+    <!-- Treat add* methods as if they are setters for the purposes of hidden field checks -->
+    <suppress-xpath files="." checks="HiddenField" query="//METHOD_DEF[./IDENT[starts-with(@text,'add')]]//*" />
+
+    <!-- Treat write* methods as if they are setters for the purposes of hidden field checks -->
+    <suppress-xpath files="." checks="HiddenField" query="//METHOD_DEF[./IDENT[starts-with(@text,'write')]]//*" />
+
+    <!-- Treat nested Builder class methods as if they are setters for the purposes of hidden field checks -->
+    <suppress-xpath files="." checks="HiddenField" query="//CLASS_DEF//CLASS_DEF[./IDENT[ends-with(@text,'Builder')]]//METHOD_DEF//*" />
+
+    <!-- Allow abstract classes to have protected non-static fields and public/private/package visible static fields -->
+    <suppress-xpath files="." checks="VisibilityModifier" query="//CLASS_DEF[./MODIFIERS/ABSTRACT]//VARIABLE_DEF[./MODIFIERS/LITERAL_PROTECTED]//*" />
+    <suppress-xpath files="." checks="VisibilityModifier" query="//CLASS_DEF[./MODIFIERS/ABSTRACT]//VARIABLE_DEF[./MODIFIERS/LITERAL_STATIC]//*" />
+
+    <!-- Allow OSTime to be used as a class name -->
+    <suppress-xpath files="." checks="AbbreviationAsWordInName" query="//CLASS_DEF/IDENT[@text='OSTime']" />
+
+    <!-- Allow the use of the variable names 'r' and 's' as parameters -->
+    <suppress-xpath files="." checks="ParameterName" query="//METHOD_DEF//PARAMETER_DEF[./IDENT[@text='r']]//*" />
+    <suppress-xpath files="." checks="ParameterName" query="//METHOD_DEF//PARAMETER_DEF[./IDENT[@text='s']]//*" />
+
+    <!-- Allow record definitions to have a hashCode method without an explicit equals and vice versa -->
+    <suppress-xpath files="." checks="EqualsHashCode" query="//RECORD_DEF//*"/>
+</suppressions>

@@ -26,10 +26,8 @@ import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.stats.AverageTimeStat;
 import com.swirlds.platform.system.PlatformStatNames;
 import com.swirlds.platform.system.SwirldState;
-import java.time.temporal.ChronoUnit;
 
 /**
  * Collection of metrics related to SwirldState
@@ -62,11 +60,6 @@ public class SwirldStateMetrics {
                     + "(in microseconds)")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgStateCopyMicros;
-    /**
-     * average time spent in
-     * {@code SwirldStateManager#prehandle} by the {@code intake} thread (in microseconds)
-     */
-    private final AverageTimeStat preHandleTime;
 
     /**
      * Constructor of {@code SwirldStateMetrics}
@@ -81,12 +74,6 @@ public class SwirldStateMetrics {
         avgConsHandleTime = metrics.getOrCreate(AVG_CONS_HANDLE_TIME_CONFIG);
         transHandledPerSecond = metrics.getOrCreate(TRANS_HANDLED_PER_SECOND_CONFIG);
         avgStateCopyMicros = metrics.getOrCreate(AVG_STATE_COPY_MICROS_CONFIG);
-        preHandleTime = new AverageTimeStat(
-                metrics,
-                ChronoUnit.MICROS,
-                INTERNAL_CATEGORY,
-                "preHandleMicros",
-                "average time it takes to perform preHandle (in microseconds)");
     }
 
     /**
@@ -124,13 +111,5 @@ public class SwirldStateMetrics {
      */
     public void stateCopyMicros(final double micros) {
         avgStateCopyMicros.update(micros);
-    }
-
-    /**
-     * The amount of time it takes to apply an event or a transaction, depending on which {@link SwirldState} the
-     * application implements.
-     */
-    public void preHandleTime(final long start, final long end) {
-        preHandleTime.update(start, end);
     }
 }

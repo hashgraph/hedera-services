@@ -35,6 +35,9 @@ import org.apache.logging.log4j.Logger;
 public class StakeInfoHelper {
     private static final Logger log = LogManager.getLogger(StakeInfoHelper.class);
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakeInfoHelper() {
         // Needed for Dagger injection
@@ -45,6 +48,7 @@ public class StakeInfoHelper {
      *
      * @param nodeId the node's numeric ID
      * @param amount the amount to increase the unclaimed stake reward start by
+     * @param stakingInfoStore the store for the staking info
      */
     public void increaseUnclaimedStakeRewards(
             @NonNull final Long nodeId, final long amount, @NonNull final WritableStakingInfoStore stakingInfoStore) {

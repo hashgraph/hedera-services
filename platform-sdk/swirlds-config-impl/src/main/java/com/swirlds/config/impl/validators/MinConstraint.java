@@ -26,18 +26,16 @@ import java.util.Objects;
  * An implementation of {@link ConfigPropertyConstraint} that will result in a violation if the property value is lower
  * than a defined minimum value.
  *
- * @param <T>
- * 		type of the property value
+ * @param <T> type of the property value
  */
 public class MinConstraint<T extends Number> implements ConfigPropertyConstraint<T> {
 
     private final T min;
 
     /**
-     * Creates the constraint
+     * Creates the constraint.
      *
-     * @param min
-     * 		the minimum value that is allowed
+     * @param min the minimum value that is allowed
      */
     public MinConstraint(final T min) {
         this.min = min;

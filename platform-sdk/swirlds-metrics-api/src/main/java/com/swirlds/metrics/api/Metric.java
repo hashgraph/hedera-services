@@ -48,7 +48,7 @@ public interface Metric {
      *
      * @return the unique identifier
      */
-    default String getIdentifier() {
+    default @NonNull String getIdentifier() {
         return getCategory() + "." + getName();
     }
 
@@ -57,6 +57,7 @@ public interface Metric {
      *
      * @return the category
      */
+    @NonNull
     String getCategory();
 
     /**
@@ -64,6 +65,7 @@ public interface Metric {
      *
      * @return the name
      */
+    @NonNull
     String getName();
 
     /**
@@ -71,6 +73,7 @@ public interface Metric {
      *
      * @return the description
      */
+    @NonNull
     String getDescription();
 
     /**
@@ -78,6 +81,7 @@ public interface Metric {
      *
      * @return the metric type
      */
+    @NonNull
     MetricType getMetricType();
 
     /**
@@ -85,6 +89,7 @@ public interface Metric {
      *
      * @return the data-type
      */
+    @NonNull
     DataType getDataType();
 
     /**
@@ -92,6 +97,7 @@ public interface Metric {
      *
      * @return the unit
      */
+    @NonNull
     String getUnit();
 
     /**
@@ -99,11 +105,12 @@ public interface Metric {
      *
      * @return the format
      */
+    @NonNull
     String getFormat();
 
     /**
-     * Returns a list of {@link ValueType}s that are provided by this {@code Metric}.
-     * The list of {@code ValueTypes} will always be in the same order.
+     * Returns a list of {@link ValueType}s that are provided by this {@code Metric}. The list of {@code ValueTypes}
+     * will always be in the same order.
      * <p>
      * All values returned by this method have to be supported by an implementing class.
      *
@@ -115,30 +122,29 @@ public interface Metric {
     /**
      * Returns the current value of the given {@link ValueType}.
      * <p>
-     * The option {@link ValueType#VALUE} has a special meaning in this context. It is always supported and returns
-     * the "main" value of the {@code Metric}. I.e. even if you do not know the type of {@code Metric}, it is
-     * always safe to call this method with the parameter {@code ValueType.VALUE}.
+     * The option {@link ValueType#VALUE} has a special meaning in this context. It is always supported and returns the
+     * "main" value of the {@code Metric}. I.e. even if you do not know the type of {@code Metric}, it is always safe to
+     * call this method with the parameter {@code ValueType.VALUE}.
      *
-     * @param valueType
-     * 		The {@code ValueType} of the requested value
+     * @param valueType The {@code ValueType} of the requested value
      * @return the current value
-     * @throws IllegalArgumentException
-     * 		if the given {@code ValueType} is {@code null} or not supported by this {@code Metric}
+     * @throws NullPointerException     if the given {@code ValueType} is {@code null}
+     * @throws IllegalArgumentException if the given {@code ValueType} is not supported by this {@code Metric}
      */
+    @NonNull
     Object get(@NonNull final ValueType valueType);
 
     /**
-     * This method resets a {@code Metric}. It is for example called after startup to ensure that the
-     * startup time is not taken into consideration.
+     * This method resets a {@code Metric}. It is for example called after startup to ensure that the startup time is
+     * not taken into consideration.
      */
     void reset();
 
     /**
-     * Overwritten {@code equals}-method. Two {@code Metric}-instances are considered equal, if they
-     * have the same {@code Class}, {@link #getCategory() category}, and {@link #getName() name}.
+     * Overwritten {@code equals}-method. Two {@code Metric}-instances are considered equal, if they have the same
+     * {@code Class}, {@link #getCategory() category}, and {@link #getName() name}.
      *
-     * @param other
-     * 		the other {@code Object}
+     * @param other the other {@code Object}
      * @return {@code true}, if both {@code Metric}-instances are considered equal, {@code false} otherwise
      */
     @Override

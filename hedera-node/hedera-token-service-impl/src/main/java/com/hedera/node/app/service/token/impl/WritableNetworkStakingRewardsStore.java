@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

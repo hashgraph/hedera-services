@@ -37,10 +37,25 @@ import org.apache.logging.log4j.Logger;
  * Methods for computing an account's pending staking rewards.
  */
 public interface StakingRewardsApi {
+    /**
+     * Logger for this interface
+     */
     Logger log = LogManager.getLogger(StakingRewardsApi.class);
+    /**
+     * Constant for time conversion from minutes to seconds
+     */
     int MINUTES_TO_SECONDS = 60;
+    /**
+     * Constant for time conversion from minutes to milliseconds
+     */
     long MINUTES_TO_MILLISECONDS = 60_000L;
+    /**
+     * Constant for daily staking period in minutes
+     */
     long DAILY_STAKING_PERIOD_MINS = 1440L;
+    /**
+     * Constant for UTC time zone
+     */
     ZoneId ZONE_UTC = ZoneId.of("UTC");
 
     /**
@@ -126,7 +141,7 @@ public interface StakingRewardsApi {
      *
      * @param then the instant
      * @param stakePeriodMins the length of a stake period in minutes
-     * @return
+     * @return the stake period at the given instant
      */
     static long stakePeriodAt(@NonNull final Instant then, final long stakePeriodMins) {
         if (stakePeriodMins == DAILY_STAKING_PERIOD_MINS) {
@@ -174,7 +189,7 @@ public interface StakingRewardsApi {
             final long currentStakePeriod,
             final long effectiveStart) {
         final var rewardFrom = (int) (currentStakePeriod - 1 - effectiveStart);
-        if (rewardFrom == 0) {
+        if (rewardFrom <= 0) {
             return 0;
         }
 

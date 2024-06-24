@@ -25,20 +25,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static java.lang.Thread.sleep;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -47,25 +50,23 @@ import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
-import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.stats.QueryObs;
-import com.hedera.services.bdd.spec.stats.TxnObs;
+import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -91,7 +92,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             .build();
 
     private long submitTime = 0L;
-    private TxnObs stats;
     private boolean ensureResolvedStatusIsntFromDuplicate = false;
     private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
 
@@ -134,7 +134,14 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected abstract Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable;
 
-    protected abstract Function<Transaction, TransactionResponse> callToUse(HapiSpec spec);
+    /**
+     * The type of entity to target if this transaction is a system functionality.
+     *
+     * @return the target type
+     */
+    protected SystemFunctionalityTarget systemFunctionalityTarget() {
+        return SystemFunctionalityTarget.NA;
+    }
 
     public byte[] serializeSignedTxnFor(HapiSpec spec) throws Throwable {
         return finalizedTxn(spec, opBodyDef(spec)).toByteArray();
@@ -146,7 +153,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        stats = new TxnObs(type());
         fixNodeFor(spec);
         configureTlsFor(spec);
         int retryCount = 1;
@@ -163,7 +169,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 if (fiddler.isPresent()) {
                     txn = fiddler.get().apply(txn);
                 }
-                response = timedCall(spec, txn);
+                response = spec.targetNetworkOrThrow()
+                        .submit(txn, type(), systemFunctionalityTarget(), targetNodeFor(spec));
             } catch (StatusRuntimeException e) {
                 if (respondToSRE(e, "submitting transaction")) {
                     continue;
@@ -208,7 +215,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             }
         }
         spec.updatePrecheckCounts(actualPrecheck);
-        stats.setAccepted(actualPrecheck == OK);
         if (actualPrecheck == INSUFFICIENT_PAYER_BALANCE || actualPrecheck == INSUFFICIENT_TX_FEE) {
             if (payerIsRechargingFor(spec)) {
                 addIpbToPermissiblePrechecks();
@@ -255,30 +261,18 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             }
         }
         if (actualPrecheck != OK) {
-            considerRecording(spec, stats);
             return false;
         }
         spec.adhocIncrement();
 
         if (!deferStatusResolution) {
             resolveStatus(spec);
-            if (!hasStatsToCollectDuringFinalization(spec)) {
-                considerRecording(spec, stats);
-            }
         }
         if (requiresFinalization(spec)) {
             spec.offerFinisher(new DelegatingOpFinisher(this));
         }
 
         return !deferStatusResolution;
-    }
-
-    private TransactionResponse timedCall(HapiSpec spec, Transaction txn) {
-        submitTime = System.currentTimeMillis();
-        TransactionResponse response = callToUse(spec).apply(txn);
-        long after = System.currentTimeMillis();
-        stats.setResponseLatency(after - submitTime);
-        return response;
     }
 
     private void resolveStatus(HapiSpec spec) throws Throwable {
@@ -402,11 +396,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     @Override
     public boolean requiresFinalization(HapiSpec spec) {
-        return (actualPrecheck == OK) && (deferStatusResolution || hasStatsToCollectDuringFinalization(spec));
-    }
-
-    private boolean hasStatsToCollectDuringFinalization(HapiSpec spec) {
-        return (!suppressStats && spec.setup().measureConsensusLatency());
+        return actualPrecheck == OK && deferStatusResolution;
     }
 
     @Override
@@ -420,32 +410,10 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     @Override
     public void finalizeExecFor(HapiSpec spec) throws Throwable {
-        boolean explicitStatSuppression = suppressStats;
-        suppressStats = true;
         if (deferStatusResolution) {
             resolveStatus(spec);
             updateStateOf(spec);
         }
-        if (!explicitStatSuppression) {
-            if (spec.setup().measureConsensusLatency()) {
-                measureConsensusLatency(spec);
-            }
-            spec.registry().record(stats);
-        }
-    }
-
-    private void measureConsensusLatency(HapiSpec spec) throws Throwable {
-        if (acceptAnyStatus) {
-            acceptAnyStatus = false;
-            acceptAnyKnownStatus = true;
-            actualStatus = resolvedStatusOfSubmission(spec);
-        }
-        if (recordOfSubmission == null) {
-            lookupSubmissionRecord(spec);
-        }
-        Timestamp stamp = recordOfSubmission.getConsensusTimestamp();
-        long consensusTime = stamp.getSeconds() * 1_000L + stamp.getNanos() / 1_000_000L;
-        stats.setConsensusLatency(consensusTime - submitTime);
     }
 
     private ResponseCodeEnum resolvedStatusOfSubmission(HapiSpec spec) throws Throwable {
@@ -458,16 +426,28 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
         do {
             Response response = statusResponse(spec, receiptQuery);
-            lastReceipt = response.getTransactionGetReceipt().getReceipt();
-            ResponseCodeEnum statusNow = lastReceipt.getStatus();
+            final var getReceiptResponse = response.getTransactionGetReceipt();
+            lastReceipt = getReceiptResponse.getReceipt();
+            final var lookupStatus = getReceiptResponse.getHeader().getNodeTransactionPrecheckCode();
+            final var statusNow = lookupStatus == OK ? lastReceipt.getStatus() : lookupStatus;
             if (acceptAnyStatus) {
                 expectedStatus = Optional.of(statusNow);
                 return statusNow;
             } else if (statusNow != UNKNOWN) {
                 if (acceptAnyKnownStatus) {
                     expectedStatus = Optional.of(statusNow);
+                    return statusNow;
                 }
-                return statusNow;
+                if (statusNow == RECEIPT_NOT_FOUND
+                        && expectedStatus.orElse(SUCCESS) != RECEIPT_NOT_FOUND
+                        && spec.targetNetworkOrThrow().type() == EMBEDDED_NETWORK) {
+                    // This smooths the case of getting the receipt for a transaction that was submitted
+                    // to the non-default node in embedded mode, bypassing ingest; we retry until the default
+                    // node caches the receipt at consensus
+                    continue;
+                } else {
+                    return statusNow;
+                }
             }
             pause(spec.setup().statusWaitSleepMs());
         } while ((Instant.now().toEpochMilli() - beginWait) < spec.setup().statusWaitTimeoutMs());
@@ -475,17 +455,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     private Response statusResponse(HapiSpec spec, Query receiptQuery) {
-        long before = System.currentTimeMillis();
         Response response = null;
         int allowedUnrecognizedExceptions = 10;
         while (response == null) {
             try {
-                var cryptoSvcStub = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls);
-                if (cryptoSvcStub == null) {
-                    response = UNKNOWN_RESPONSE;
-                } else {
-                    response = cryptoSvcStub.getTransactionReceipts(receiptQuery);
-                }
+                response = spec.targetNetworkOrThrow().send(receiptQuery, TransactionGetReceipt, targetNodeFor(spec));
             } catch (StatusRuntimeException e) {
                 if (!respondToSRE(e, "resolving status")) {
                     log.warn(
@@ -499,8 +473,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 }
             }
         }
-        long after = System.currentTimeMillis();
-        considerRecordingAdHocReceiptQueryStats(spec.registry(), after - before);
         return response;
     }
 
@@ -513,7 +485,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 return true;
             } else if (isInternalError(e)) {
                 log.warn("Internal HTTP/2 error when {}, rebuilding channels", context);
-                HapiApiClients.rebuildChannels();
+                HapiClients.rebuildChannels();
                 Thread.sleep(250L);
                 return true;
             }
@@ -534,15 +506,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 || msg.contains("Received unexpected EOS on DATA frame from server")
                 || msg.contains("REFUSED_STREAM")
                 || msg.contains("UNAVAILABLE: Channel shutdown invoked");
-    }
-
-    private void considerRecordingAdHocReceiptQueryStats(HapiSpecRegistry registry, long responseLatency) {
-        if (!suppressStats && !deferStatusResolution) {
-            QueryObs adhocStats = new QueryObs(ANSWER_ONLY, TransactionGetReceipt);
-            adhocStats.setAccepted(true);
-            adhocStats.setResponseLatency(responseLatency);
-            registry.record(adhocStats);
-        }
     }
 
     private void pause(long forMs) {
@@ -574,6 +537,16 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T memo(String text) {
         memo = Optional.of(text);
+        return self();
+    }
+
+    public T blankMetadata() {
+        metadata = Optional.of("");
+        return self();
+    }
+
+    public T metaData(String text) {
+        metadata = Optional.of(text);
         return self();
     }
 
@@ -630,7 +603,20 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T payingWith(String name) {
+    public T payingWith(@NonNull final String name) {
+        requireNonNull(name);
+        payer = Optional.of(name);
+        if (signers.isPresent()) {
+            final List<Function<HapiSpec, Key>> payerAndSigners = new ArrayList<>();
+            payerAndSigners.add(spec -> spec.registry().getKey(name));
+            payerAndSigners.addAll(signers.get());
+            signers = Optional.of(payerAndSigners);
+        }
+        return self();
+    }
+
+    public T payingWithAliased(String name) {
+        payingWithAlias = true;
         payer = Optional.of(name);
         return self();
     }
@@ -710,16 +696,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T delayBy(long pauseMs) {
-        submitDelay = Optional.of(pauseMs);
-        return self();
-    }
-
-    public T suppressStats(boolean flag) {
-        suppressStats = flag;
-        return self();
-    }
-
     public T noLogging() {
         loggingOff = true;
         return self();
@@ -742,16 +718,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T txnId(String name) {
         customTxnId = Optional.of(name);
-        return self();
-    }
-
-    public T randomNode() {
-        useRandomNode = true;
-        return self();
-    }
-
-    public T unavailableNode() {
-        unavailableNode = true;
         return self();
     }
 
@@ -803,6 +769,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T sansNodeAccount() {
         omitNodeAccount = true;
+        return self();
+    }
+
+    public T withBodyMutation(@Nullable final BodyMutation mutation) {
+        this.bodyMutation = mutation;
         return self();
     }
 

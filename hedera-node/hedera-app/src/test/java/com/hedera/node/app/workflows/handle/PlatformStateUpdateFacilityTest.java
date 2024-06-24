@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,9 +32,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;

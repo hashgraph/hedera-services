@@ -18,113 +18,120 @@ package com.swirlds.platform.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.OptionalSelfSerializable;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
  * <p>
  * A base event is a set of data describing an event at the point when it is created, before it is added to the
- * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event
- * and some data is additional and does not affect the hash. This data is split into 2 classes:
- * {@link BaseEventHashedData} and {@link BaseEventUnhashedData}.
+ * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
+ * data is additional and does not affect the hash.
  */
-public class BaseEventHashedData extends AbstractSerializableHashable
-        implements OptionalSelfSerializable<EventSerializationOptions> {
+public class BaseEventHashedData extends AbstractSerializableHashable implements SelfSerializable {
     public static final int TO_STRING_BYTE_ARRAY_LENGTH = 5;
     private static final long CLASS_ID = 0x21c2620e9b6a2243L;
 
     public static class ClassVersion {
         /**
-         * In this version, the transactions contained by this event are encoded using
-         * LegacyTransaction class. No longer supported.
-         */
-        public static final int ORIGINAL = 1;
-        /**
-         * In this version, the transactions contained by this event are encoded using a newer version Transaction
-         * class with different subclasses to support internal system transactions and application transactions
-         */
-        public static final int TRANSACTION_SUBCLASSES = 2;
-
-        /**
-         * In this version, the software version of the node that created this event is included in the event.
-         */
-        public static final int SOFTWARE_VERSION = 3;
-
-        /**
-         * Event descriptors replace the hashes and generation of the parents in the event.
-         * Multiple otherParents are supported.
-         * birthRound is added for lookup of the effective roster at the time of event creation.
+         * Event descriptors replace the hashes and generation of the parents in the event. Multiple otherParents are
+         * supported. birthRound is added for lookup of the effective roster at the time of event creation.
          *
          * @since 0.46.0
          */
         public static final int BIRTH_ROUND = 4;
     }
 
-    /**
-     * The version of the serialization to use.  May be overridden by the version encountered when deserializing.
-     *
-     * DEPRECATED:  remove after 0.46.0 goes to mainnet.
-     */
-    private int serializedVersion = ClassVersion.BIRTH_ROUND;
-
     ///////////////////////////////////////
     // immutable, sent during normal syncs, affects the hash that is signed:
     ///////////////////////////////////////
 
-    /** the software version of the node that created this event. */
+    /**
+     * the software version of the node that created this event.
+     */
     private SoftwareVersion softwareVersion;
-    /** ID of this event's creator (translate before sending) */
+
+    /**
+     * ID of this event's creator (translate before sending)
+     */
     private NodeId creatorId;
-    /** the round number in which this event was created, used to look up the effective roster at that time. */
+
+    /**
+     * the round number in which this event was created, used to look up the effective roster at that time.
+     */
     private long birthRound;
-    /** the self parent event descriptor */
+
+    /**
+     * the self parent event descriptor
+     */
     private EventDescriptor selfParent;
-    /** the other parents' event descriptors */
+
+    /**
+     * the other parents' event descriptors
+     */
     private List<EventDescriptor> otherParents;
-    /** creation time, as claimed by its creator */
+
+    /** a combined list of all parents, selfParent + otherParents */
+    private List<EventDescriptor> allParents;
+
+    /**
+     * creation time, as claimed by its creator
+     */
     private Instant timeCreated;
-    /** the payload: an array of transactions */
+
+    /**
+     * the payload: an array of transactions
+     */
     private ConsensusTransactionImpl[] transactions;
+
+    /**
+     * The event descriptor for this event. Is not itself hashed.
+     */
+    private EventDescriptor descriptor;
+
+    /**
+     * Class IDs of permitted transaction types.
+     */
+    private static final Set<Long> TRANSACTION_TYPES =
+            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
     public BaseEventHashedData() {}
 
     /**
      * Create a BaseEventHashedData object
      *
-     * @param softwareVersion
-     *      the software version of the node that created this event.
-     * @param creatorId
-     * 		ID of this event's creator
-     * @param selfParent
-     *         self parent event descriptor
-     * @param otherParents
-     *        other parent event descriptors
-     * @param birthRound
-     *         the round in which this event was created.
-     * @param timeCreated
-     * 		creation time, as claimed by its creator
-     * @param transactions
-     * 		the payload: an array of transactions included in this event instance
+     * @param softwareVersion the software version of the node that created this event.
+     * @param creatorId       ID of this event's creator
+     * @param selfParent      self parent event descriptor
+     * @param otherParents    other parent event descriptors
+     * @param birthRound      the round in which this event was created.
+     * @param timeCreated     creation time, as claimed by its creator
+     * @param transactions    the payload: an array of transactions included in this event instance
      */
     public BaseEventHashedData(
             @NonNull SoftwareVersion softwareVersion,
@@ -133,61 +140,47 @@ public class BaseEventHashedData extends AbstractSerializableHashable
             @NonNull final List<EventDescriptor> otherParents,
             final long birthRound,
             @NonNull final Instant timeCreated,
-            @Nullable final ConsensusTransactionImpl[] transactions) {
+            @NonNull final List<OneOf<PayloadOneOfType>> transactions) {
+        Objects.requireNonNull(transactions, "The transactions must not be null");
         this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
         this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParent = selfParent;
         Objects.requireNonNull(otherParents, "The otherParents must not be null");
         otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
+        this.allParents = createAllParentsList();
         this.birthRound = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
-        this.transactions = transactions;
+        this.transactions = transactions.stream()
+                .map(t -> switch (t.kind()) {
+                    case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
+                    case APPLICATION_PAYLOAD -> new SwirldTransaction((Bytes) t.as());
+                    default -> throw new IllegalArgumentException("Unexpected transaction type: " + t.kind());
+                })
+                .toList()
+                .toArray(new ConsensusTransactionImpl[0]);
     }
 
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.TRANSACTION_SUBCLASSES;
-    }
-
-    @Override
-    public void serialize(
-            @NonNull final SerializableDataOutputStream out, @NonNull final EventSerializationOptions option)
-            throws IOException {
-        out.writeSerializable(softwareVersion, true);
-        if (serializedVersion < ClassVersion.BIRTH_ROUND) {
-            out.writeLong(creatorId.id());
-            out.writeLong(selfParent != null ? selfParent.getGeneration() : EventConstants.GENERATION_UNDEFINED);
-            out.writeLong(
-                    !otherParents.isEmpty()
-                            ? otherParents.get(0).getGeneration()
-                            : EventConstants.GENERATION_UNDEFINED);
-            out.writeSerializable(selfParent != null ? selfParent.getHash() : null, false);
-            out.writeSerializable(!otherParents.isEmpty() ? otherParents.get(0).getHash() : null, false);
-        } else {
-            out.writeSerializable(creatorId, false);
-            out.writeSerializable(selfParent, false);
-            out.writeSerializableList(otherParents, false, true);
-            out.writeLong(birthRound);
-        }
-        out.writeInstant(timeCreated);
-
-        // write serialized length of transaction array first, so during the deserialization proces
-        // it is possible to skip transaction array and move on to the next object
-        if (option == EventSerializationOptions.OMIT_TRANSACTIONS) {
-            out.writeInt(getSerializedLength(null, true, false));
-            out.writeSerializableArray(null, true, false);
-        } else {
-            out.writeInt(getSerializedLength(transactions, true, false));
-            // transactions may include both system transactions and application transactions
-            // so writeClassId set to true and allSameClass set to false
-            out.writeSerializableArray(transactions, true, false);
-        }
+        return ClassVersion.BIRTH_ROUND;
     }
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serialize(out, EventSerializationOptions.FULL);
+        out.writeSerializable(softwareVersion, true);
+        out.writeSerializable(creatorId, false);
+        out.writeSerializable(selfParent, false);
+        out.writeSerializableList(otherParents, false, true);
+        out.writeLong(birthRound);
+        out.writeInstant(timeCreated);
+
+        // write serialized length of transaction array first, so during the deserialization proces
+        // it is possible to skip transaction array and move on to the next object
+        out.writeInt(getSerializedLength(transactions, true, false));
+        // transactions may include both system transactions and application transactions
+        // so writeClassId set to true and allSameClass set to false
+        out.writeSerializableArray(transactions, true, false);
     }
 
     @Override
@@ -196,46 +189,25 @@ public class BaseEventHashedData extends AbstractSerializableHashable
         deserialize(in, version, transactionConfig.maxTransactionCountPerEvent());
     }
 
-    public void deserialize(
+    private void deserialize(
             @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
             throws IOException {
         Objects.requireNonNull(in, "The input stream must not be null");
-        serializedVersion = version;
-        if (version >= ClassVersion.SOFTWARE_VERSION) {
-            softwareVersion = in.readSerializable();
-        } else {
-            softwareVersion = SoftwareVersion.NO_VERSION;
+        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
+
+        creatorId = in.readSerializable(false, NodeId::new);
+        if (creatorId == null) {
+            throw new IOException("creatorId is null");
         }
-        if (version < ClassVersion.BIRTH_ROUND) {
-            // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
-            // Changing the event format may require a HIP.  The old format is preserved for now.
-            creatorId = NodeId.deserializeLong(in, false);
-            final long selfParentGen = in.readLong();
-            final long otherParentGen = in.readLong();
-            final Hash selfParentHash = in.readSerializable(false, Hash::new);
-            final Hash otherParentHash = in.readSerializable(false, Hash::new);
-            selfParent = selfParentHash == null
-                    ? null
-                    : new EventDescriptor(
-                            selfParentHash, creatorId, selfParentGen, EventConstants.BIRTH_ROUND_UNDEFINED);
-            // The creator for the other parent descriptor is not here and should be retrieved from the unhashed data.
-            otherParents = otherParentHash == null
-                    ? Collections.emptyList()
-                    : Collections.singletonList(
-                            new EventDescriptor(otherParentHash, otherParentGen, EventConstants.BIRTH_ROUND_UNDEFINED));
-            birthRound = EventConstants.BIRTH_ROUND_UNDEFINED;
-        } else {
-            creatorId = in.readSerializable(false, NodeId::new);
-            if (creatorId == null) {
-                throw new IOException("creatorId is null");
-            }
-            selfParent = in.readSerializable(false, EventDescriptor::new);
-            otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
-            birthRound = in.readLong();
-        }
+        selfParent = in.readSerializable(false, EventDescriptor::new);
+        otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        allParents = createAllParentsList();
+        birthRound = in.readLong();
+
         timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
+        transactions =
+                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
     }
 
     @Override
@@ -276,13 +248,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
                 .append("birthRound", birthRound)
                 .append("timeCreated", timeCreated)
                 .append("transactions size", transactions == null ? "null" : transactions.length)
-                .append("hash", CommonUtils.hex(valueOrNull(getHash()), TO_STRING_BYTE_ARRAY_LENGTH))
+                .append("hash", getHash() == null ? "null" : getHash().toHex(TO_STRING_BYTE_ARRAY_LENGTH))
                 .toString();
-    }
-
-    @Nullable
-    private byte[] valueOrNull(final Hash hash) {
-        return hash == null ? null : hash.getValue();
     }
 
     @Override
@@ -292,7 +259,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int getVersion() {
-        return serializedVersion;
+        return ClassVersion.BIRTH_ROUND;
     }
 
     /**
@@ -342,6 +309,19 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     @NonNull
     public List<EventDescriptor> getOtherParents() {
         return otherParents;
+    }
+
+    /** @return a list of all parents, self parent (if any), + all other parents */
+    @NonNull
+    public List<EventDescriptor> getAllParents() {
+        return allParents;
+    }
+
+    @NonNull
+    private List<EventDescriptor> createAllParentsList() {
+        return !hasSelfParent()
+                ? otherParents
+                : Stream.concat(Stream.of(selfParent), otherParents.stream()).toList();
     }
 
     /**
@@ -409,7 +389,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     *  Check if the event has a self parent.
+     * Check if the event has a self parent.
+     *
      * @return true if the event has a self parent
      */
     public boolean hasSelfParent() {
@@ -418,28 +399,11 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     /**
      * Check if the event has other parents.
+     *
      * @return true if the event has other parents
      */
     public boolean hasOtherParent() {
         return otherParents != null && !otherParents.isEmpty();
-    }
-
-    /**
-     * Get the hash value of the parent event.
-     * @return the hash value of the parent event
-     */
-    @Nullable
-    public byte[] getSelfParentHashValue() {
-        return selfParent == null ? null : getSelfParentHash().getValue();
-    }
-
-    /**
-     * Get the hash value of the other parent with the maximum generation.
-     * @return  the hash value of the other parent with the maximum generation
-     */
-    @Nullable
-    public byte[] getOtherParentHashValue() {
-        return otherParents.isEmpty() ? null : getOtherParentHash().getValue();
     }
 
     @NonNull
@@ -450,7 +414,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * @return array of transactions inside this event instance
      */
-    @Nullable
+    @NonNull
     public ConsensusTransactionImpl[] getTransactions() {
         return transactions;
     }
@@ -462,10 +426,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * Calculates the generation of an event based on its parents generations
      *
-     * @param selfParentGeneration
-     * 		the generation of the self parent
-     * @param otherParentGeneration
-     * 		the generation of the other parent
+     * @param selfParentGeneration  the generation of the self parent
+     * @param otherParentGeneration the generation of the other parent
      * @return the generation of the event
      */
     public static long calculateGeneration(final long selfParentGeneration, final long otherParentGeneration) {
@@ -473,12 +435,22 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     /**
-     * Create an event descriptor for this event.
+     * Get the event descriptor for this event, creating one if it hasn't yet been created. If called more than once
+     * then return the same instance.
      *
      * @return an event descriptor for this event
+     * @throws IllegalStateException if called prior to this event being hashed
      */
     @NonNull
-    public EventDescriptor createEventDescriptor() {
-        return new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
+    public EventDescriptor getDescriptor() {
+        if (descriptor == null) {
+            if (getHash() == null) {
+                throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
+            }
+
+            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
+        }
+
+        return descriptor;
     }
 }

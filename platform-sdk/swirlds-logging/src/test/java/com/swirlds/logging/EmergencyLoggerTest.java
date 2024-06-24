@@ -46,7 +46,7 @@ public class EmergencyLoggerTest {
 
         // then
         Assertions.assertEquals(1, systemErrProvider.getLines().count());
-        Assertions.assertTrue(systemErrProvider.getLines().toList().get(0).endsWith("EMERGENCY-LOGGER - test"));
+        Assertions.assertTrue(systemErrProvider.getLines().toList().getFirst().endsWith("EMERGENCY-LOGGER - test"));
     }
 
     @Test

@@ -18,10 +18,7 @@ package com.swirlds.merkledb.files;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 
 /**
  * Very simple DataItem that is variable size and has a long key and number of long values. Designed
@@ -30,7 +27,7 @@ import java.nio.ByteBuffer;
  * <p>Stores bytes size as a long so all data is longs, makes it easier to manually read file in
  * tests
  */
-public class ExampleVariableSizeDataSerializer implements DataItemSerializer<long[]> {
+public class ExampleVariableSizeDataSerializer implements BaseSerializer<long[]> {
 
     /**
      * Get the number of bytes a data item takes when serialized
@@ -59,30 +56,11 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    public int getHeaderSize() {
-        return Long.BYTES * 2;
-    }
-
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        return new DataItemHeader((int) buffer.getLong(), buffer.getLong());
-    }
-
-    @Override
     public void serialize(final long[] data, final WritableSequentialData out) {
         int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
         out.writeLong(dataSizeBytes);
         for (long d : data) {
             out.writeLong(d);
-        }
-    }
-
-    @Override
-    public void serialize(long[] data, ByteBuffer buffer) throws IOException {
-        int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
-        buffer.putLong(dataSizeBytes);
-        for (long d : data) {
-            buffer.putLong(d);
         }
     }
 
@@ -94,18 +72,6 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
         // read key and data longs
         for (int i = 0; i < dataItem.length; i++) {
             dataItem[i] = in.readLong();
-        }
-        return dataItem;
-    }
-
-    @Override
-    public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        int dataSize = (int) buffer.getLong(); // int stored as long
-        int repeats = (dataSize - Long.BYTES) / Long.BYTES;
-        long[] dataItem = new long[repeats];
-        // read key and data longs
-        for (int i = 0; i < dataItem.length; i++) {
-            dataItem[i] = buffer.getLong();
         }
         return dataItem;
     }

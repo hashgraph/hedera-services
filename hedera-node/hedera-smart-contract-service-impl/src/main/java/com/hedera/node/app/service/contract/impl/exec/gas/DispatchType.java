@@ -55,7 +55,8 @@ public enum DispatchType {
     UNFREEZE(HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT, DEFAULT),
     WIPE_FUNGIBLE(HederaFunctionality.TOKEN_ACCOUNT_WIPE, TOKEN_FUNGIBLE_COMMON),
     WIPE_NFT(HederaFunctionality.TOKEN_ACCOUNT_WIPE, TOKEN_NON_FUNGIBLE_UNIQUE),
-    UPDATE(HederaFunctionality.TOKEN_UPDATE, DEFAULT);
+    UPDATE(HederaFunctionality.TOKEN_UPDATE, DEFAULT),
+    UTIL_PRNG(HederaFunctionality.UTIL_PRNG, DEFAULT);
 
     private final HederaFunctionality functionality;
     private final SubType subtype;

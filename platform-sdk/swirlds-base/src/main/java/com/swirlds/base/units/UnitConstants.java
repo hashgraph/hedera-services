@@ -27,22 +27,22 @@ public final class UnitConstants {
     private UnitConstants() {}
 
     /**
-     * Unit of nanoseconds
+     * Unit of nanoseconds.
      */
     public static final String NANOSECOND_UNIT = "ns";
 
     /**
-     * Unit of microseconds
+     * Unit of microseconds.
      */
     public static final String MICROSECOND_UNIT = "µs";
 
     /**
-     * Unit of milliseconds
+     * Unit of milliseconds.
      */
     public static final String MILLISECOND_UNIT = "ms";
 
     /**
-     * Unit of seconds
+     * Unit of seconds.
      */
     public static final String SECOND_UNIT = "s";
 

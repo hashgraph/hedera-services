@@ -21,8 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class CongestionMultipliersTest {
     private CongestionMultipliers congestionMultipliers;
 
     @Mock
-    private EntityUtilizationMultiplier entityUtilizationMultiplier;
+    private UtilizationScaledThrottleMultiplier utilizationScaledThrottleMultiplier;
 
     @Mock
     private ThrottleMultiplier throttleMultiplier;
@@ -48,12 +48,12 @@ class CongestionMultipliersTest {
 
     @BeforeEach
     void setUp() {
-        entityUtilizationMultiplier = mock(EntityUtilizationMultiplier.class);
+        utilizationScaledThrottleMultiplier = mock(UtilizationScaledThrottleMultiplier.class);
         throttleMultiplier = mock(ThrottleMultiplier.class);
         txnInfo = mock(TransactionInfo.class);
         storeFactory = mock(ReadableStoreFactory.class);
 
-        congestionMultipliers = new CongestionMultipliers(entityUtilizationMultiplier, throttleMultiplier);
+        congestionMultipliers = new CongestionMultipliers(utilizationScaledThrottleMultiplier, throttleMultiplier);
     }
 
     @Test
@@ -62,13 +62,14 @@ class CongestionMultipliersTest {
         congestionMultipliers.updateMultiplier(consensusTime);
 
         verify(throttleMultiplier).updateMultiplier(consensusTime);
-        verify(entityUtilizationMultiplier).updateMultiplier(consensusTime);
+        verify(utilizationScaledThrottleMultiplier).updateMultiplier(consensusTime);
     }
 
     @Test
     void testMaxCurrentMultiplier() {
         when(throttleMultiplier.currentMultiplier()).thenReturn(2L);
-        when(entityUtilizationMultiplier.currentMultiplier(txnInfo.txBody(), txnInfo.functionality(), storeFactory))
+        when(utilizationScaledThrottleMultiplier.currentMultiplier(
+                        txnInfo.txBody(), txnInfo.functionality(), storeFactory))
                 .thenReturn(3L);
 
         long maxMultiplier = congestionMultipliers.maxCurrentMultiplier(txnInfo, storeFactory);
@@ -79,7 +80,7 @@ class CongestionMultipliersTest {
     @Test
     void testGenericCongestionStarts() {
         Instant[] congestionStarts = {Instant.now(), Instant.now().plusSeconds(10)};
-        when(entityUtilizationMultiplier.congestionLevelStarts()).thenReturn(congestionStarts);
+        when(utilizationScaledThrottleMultiplier.congestionLevelStarts()).thenReturn(congestionStarts);
 
         Instant[] starts = congestionMultipliers.entityUtilizationCongestionStarts();
 
@@ -91,7 +92,7 @@ class CongestionMultipliersTest {
         Instant[] congestionStarts = {Instant.now(), Instant.now().plusSeconds(5)};
         when(throttleMultiplier.congestionLevelStarts()).thenReturn(congestionStarts);
 
-        Instant[] starts = congestionMultipliers.throttleMultiplierCongestionStarts();
+        Instant[] starts = congestionMultipliers.gasThrottleMultiplierCongestionStarts();
 
         assertEquals(congestionStarts, starts);
     }
@@ -99,15 +100,15 @@ class CongestionMultipliersTest {
     @Test
     void testResetEntityUtilizationMultiplierStarts() {
         Instant[] congestionStarts = {Instant.now(), Instant.now().plusSeconds(10)};
-        congestionMultipliers.resetEntityUtilizationMultiplierStarts(congestionStarts);
+        congestionMultipliers.resetUtilizationScaledThrottleMultiplierStarts(congestionStarts);
 
-        verify(entityUtilizationMultiplier).resetCongestionLevelStarts(congestionStarts);
+        verify(utilizationScaledThrottleMultiplier).resetCongestionLevelStarts(congestionStarts);
     }
 
     @Test
     void testResetThrottleMultiplierStarts() {
         Instant[] congestionStarts = {Instant.now(), Instant.now().plusSeconds(5)};
-        congestionMultipliers.resetThrottleMultiplierStarts(congestionStarts);
+        congestionMultipliers.resetGasThrottleMultiplierStarts(congestionStarts);
 
         verify(throttleMultiplier).resetCongestionLevelStarts(congestionStarts);
     }
@@ -117,6 +118,6 @@ class CongestionMultipliersTest {
         congestionMultipliers.resetExpectations();
 
         verify(throttleMultiplier).resetExpectations();
-        verify(entityUtilizationMultiplier).resetExpectations();
+        verify(utilizationScaledThrottleMultiplier).resetExpectations();
     }
 }

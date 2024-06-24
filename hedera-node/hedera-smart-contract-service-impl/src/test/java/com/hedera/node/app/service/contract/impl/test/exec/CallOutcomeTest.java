@@ -52,18 +52,26 @@ class CallOutcomeTest {
     private ContractCreateRecordBuilder contractCreateRecordBuilder;
 
     @Test
-    void onlySetsCallResultIfNotAborted() {
+    void doesNotSetAbortCallResultIfNotRequested() {
         final var abortedCall =
                 new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, CALLED_CONTRACT_ID, 123L, null, null);
-        abortedCall.addCallDetailsTo(contractCallRecordBuilder);
+        abortedCall.addCallDetailsTo(contractCallRecordBuilder, CallOutcome.ExternalizeAbortResult.NO);
         verify(contractCallRecordBuilder, never()).contractCallResult(any());
+    }
+
+    @Test
+    void setsAbortCallResultIfRequested() {
+        final var abortedCall =
+                new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, CALLED_CONTRACT_ID, 123L, null, null);
+        abortedCall.addCallDetailsTo(contractCallRecordBuilder, CallOutcome.ExternalizeAbortResult.YES);
+        verify(contractCallRecordBuilder).contractCallResult(any());
     }
 
     @Test
     void onlySetsCreateResultIfNotAborted() {
         final var abortedCreate =
                 new CallOutcome(ContractFunctionResult.DEFAULT, INSUFFICIENT_GAS, null, 123L, null, null);
-        abortedCreate.addCreateDetailsTo(contractCreateRecordBuilder);
+        abortedCreate.addCreateDetailsTo(contractCreateRecordBuilder, CallOutcome.ExternalizeAbortResult.NO);
         verify(contractCreateRecordBuilder, never()).contractCreateResult(any());
     }
 

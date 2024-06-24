@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -24,6 +25,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
@@ -34,9 +36,11 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -83,22 +87,38 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.NODE_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -113,14 +133,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -130,14 +151,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -150,14 +168,15 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoTransferSuite extends HapiSuite {
+public class CryptoTransferSuite {
     private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
     private static final String OTHER_OWNER = "otherOwner";
@@ -211,53 +230,64 @@ public class CryptoTransferSuite extends HapiSuite {
     private static final String OTHER_ACCOUNT = "otheraccount";
     private static final String TOKEN_METADATA = "Please mind the vase.";
 
-    public static void main(String... args) {
-        new CryptoTransferSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                transferWithMissingAccountGetsInvalidAccountId(),
-                complexKeyAcctPaysForOwnTransfer(),
-                twoComplexKeysRequired(),
-                specialAccountsBalanceCheck(),
-                tokenTransferFeesScaleAsExpected(),
-                okToSetInvalidPaymentHeaderForCostAnswer(),
-                baseCryptoTransferFeeChargedAsExpected(),
-                autoAssociationRequiresOpenSlots(),
-                royaltyCollectorsCanUseAutoAssociation(),
-                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-                checksExpectedDecimalsForFungibleTokenTransferList(),
-                allowanceTransfersWorkAsExpected(),
-                allowanceTransfersWithComplexTransfersWork(),
-                canUseMirrorAliasesForNonContractXfers(),
-                canUseEip1014AliasesForXfers(),
-                cannotTransferFromImmutableAccounts(),
-                nftTransfersCannotRepeatSerialNos(),
-                vanillaTransferSucceeds(),
-                aliasKeysAreValidated(),
-                hapiTransferFromForNFTWithCustomFeesWithAllowance(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
-                okToRepeatSerialNumbersInWipeList(),
-                okToRepeatSerialNumbersInBurnList(),
-                canUseAliasAndAccountCombinations(),
-                testTransferToSystemAccounts(),
-                testTransferToSystemAccountsAndCheckSenderBalance(),
-                transferInvalidTokenIdWithDecimals());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
+    @HapiTest
+    final Stream<DynamicTest> insufficientBalanceForCustomFeeFails() {
+        final var operatorKey = "operatorKey";
+        final var accountId1Key = "accountId1Key";
+        final var accountId2Key = "accountId2Key";
+        final var operator = "operator";
+        final var accountId1 = "accountId1";
+        final var accountId2 = "accountId2";
+        final var tokenId = "tokenId";
+        return defaultHapiSpec("insufficientBalanceForFee", FULLY_NONDETERMINISTIC)
+                .given(
+                        newKeyNamed(operatorKey),
+                        newKeyNamed(accountId1Key),
+                        newKeyNamed(accountId2Key),
+                        cryptoCreate(accountId1).balance(2 * ONE_HBAR).key(accountId1Key),
+                        cryptoCreate(accountId2).balance(2 * ONE_HBAR).key(accountId2Key),
+                        cryptoCreate(operator).balance(0L).key(operatorKey),
+                        tokenCreate(tokenId)
+                                .name("ffff")
+                                .treasury(operator)
+                                .adminKey(operatorKey)
+                                .feeScheduleKey(operatorKey)
+                                .symbol("F")
+                                .initialSupply(1)
+                                .withCustom(fixedHbarFee(5000_000_000L, "operator"))
+                                .initialSupply(1)
+                                .decimals(0),
+                        tokenAssociate(accountId1, tokenId),
+                        tokenAssociate(accountId2, tokenId))
+                .when(cryptoTransfer(moving(1L, tokenId).between(operator, accountId1)))
+                .then(cryptoTransfer(moving(1L, tokenId).between(accountId1, accountId2))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @HapiTest
-    final HapiSpec okToRepeatSerialNumbersInWipeList() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate("a").maxAutomaticTokenAssociations(2),
+                        cryptoCreate("b").maxAutomaticTokenAssociations(2),
+                        tokenCreate("fungible").initialSupply(1_234_567),
+                        tokenCreate("nonfungible")
+                                .supplyKey("supplyKey")
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L),
+                        mintToken("nonfungible", List.of(ByteString.copyFromUtf8("memo"))))
+                .when()
+                .then(submitModified(
+                        withSuccessivelyVariedBodyIds(),
+                        () -> cryptoTransfer(
+                                movingHbar(2 * ONE_HBAR).distributing(DEFAULT_PAYER, "a", "b"),
+                                moving(100L, "fungible").between(DEFAULT_PAYER, "a"),
+                                movingUnique("nonfungible", 1L).between(DEFAULT_PAYER, "b"))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> okToRepeatSerialNumbersInWipeList() {
         final var ownerWith4AutoAssoc = "ownerWith4AutoAssoc";
         return defaultHapiSpec("OkToRepeatSerialNumbersInWipeList")
                 .given(
@@ -294,7 +324,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec okToRepeatSerialNumbersInBurnList() {
+    final Stream<DynamicTest> okToRepeatSerialNumbersInBurnList() {
         return defaultHapiSpec("okToRepeatSerialNumbersInBurnList")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -326,7 +356,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest // fees differ expected 46889349 actual 46887567
-    final HapiSpec canUseAliasAndAccountCombinations() {
+    final Stream<DynamicTest> canUseAliasAndAccountCombinations() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -376,7 +406,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec aliasKeysAreValidated() {
+    final Stream<DynamicTest> aliasKeysAreValidated() {
         final var validAlias = "validAlias";
         final var invalidAlias = "invalidAlias";
 
@@ -407,7 +437,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2875
     @HapiTest
-    final HapiSpec canUseMirrorAliasesForNonContractXfers() {
+    final Stream<DynamicTest> canUseMirrorAliasesForNonContractXfers() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -489,7 +519,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5669")
     @HapiTest
-    final HapiSpec canUseEip1014AliasesForXfers() {
+    final Stream<DynamicTest> canUseEip1014AliasesForXfers() {
         final var partyCreation2 = "partyCreation2";
         final var counterCreation2 = "counterCreation2";
         final var contract = "CreateDonor";
@@ -614,7 +644,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotTransferFromImmutableAccounts() {
+    final Stream<DynamicTest> cannotTransferFromImmutableAccounts() {
         final var contract = "PayableConstructor";
         final var multiKey = "swiss";
 
@@ -713,7 +743,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest // fees differ 44071858 vs 44071845
-    final HapiSpec allowanceTransfersWithComplexTransfersWork() {
+    final Stream<DynamicTest> allowanceTransfersWithComplexTransfersWork() {
         return defaultHapiSpec("AllowanceTransfersWithComplexTransfersWork", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -837,7 +867,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec allowanceTransfersWorkAsExpected() {
+    final Stream<DynamicTest> allowanceTransfersWorkAsExpected() {
         return defaultHapiSpec("AllowanceTransfersWorkAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -1075,7 +1105,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec checksExpectedDecimalsForFungibleTokenTransferList() {
+    final Stream<DynamicTest> checksExpectedDecimalsForFungibleTokenTransferList() {
         return defaultHapiSpec("checksExpectedDecimalsForFungibleTokenTransferList", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -1120,7 +1150,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nftTransfersCannotRepeatSerialNos() {
+    final Stream<DynamicTest> nftTransfersCannotRepeatSerialNos() {
         final var aParty = "aParty";
         final var bParty = "bParty";
         final var cParty = "cParty";
@@ -1164,7 +1194,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nftSelfTransfersRejectedBothInPrecheckAndHandle() {
+    final Stream<DynamicTest> nftSelfTransfersRejectedBothInPrecheckAndHandle() {
         final var owningParty = OWNING_PARTY;
         final var multipurpose = MULTI_KEY;
         final var nftType = "nftType";
@@ -1198,7 +1228,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle() {
+    final Stream<DynamicTest> hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle() {
         final var uncheckedHbarTxn = "uncheckedHbarTxn";
         final var uncheckedFtTxn = "uncheckedFtTxn";
 
@@ -1239,7 +1269,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec dissociatedRoyaltyCollectorsCanUseAutoAssociation() {
+    final Stream<DynamicTest> dissociatedRoyaltyCollectorsCanUseAutoAssociation() {
         final var commonWithCustomFees = "commonWithCustomFees";
         final var fractionalCollector = "fractionalCollector";
         final var selfDenominatedCollector = "selfDenominatedCollector";
@@ -1298,7 +1328,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec royaltyCollectorsCanUseAutoAssociation() {
+    final Stream<DynamicTest> royaltyCollectorsCanUseAutoAssociation() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var firstFungible = "firstFungible";
         final var secondFungible = "secondFungible";
@@ -1406,7 +1436,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
+    final Stream<DynamicTest> royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var someFungible = "firstFungible";
         final var royaltyCollectorNoSlots = "royaltyCollectorNoSlots";
@@ -1458,7 +1488,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec autoAssociationRequiresOpenSlots() {
+    final Stream<DynamicTest> autoAssociationRequiresOpenSlots() {
         final String tokenA = "tokenA";
         final String tokenB = "tokenB";
         final String firstUser = "firstUser";
@@ -1523,7 +1553,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec baseCryptoTransferFeeChargedAsExpected() {
+    final Stream<DynamicTest> baseCryptoTransferFeeChargedAsExpected() {
         final var expectedHbarXferPriceUsd = 0.0001;
         final var expectedHtsXferPriceUsd = 0.001;
         final var expectedNftXferPriceUsd = 0.001;
@@ -1613,7 +1643,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec okToSetInvalidPaymentHeaderForCostAnswer() {
+    final Stream<DynamicTest> okToSetInvalidPaymentHeaderForCostAnswer() {
         return defaultHapiSpec("OkToSetInvalidPaymentHeaderForCostAnswer")
                 .given(cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                         .via("misc"))
@@ -1625,7 +1655,7 @@ public class CryptoTransferSuite extends HapiSuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    final HapiSpec tokenTransferFeesScaleAsExpected() {
+    final Stream<DynamicTest> tokenTransferFeesScaleAsExpected() {
         return defaultHapiSpec("TokenTransferFeesScaleAsExpected", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate("a"),
@@ -1765,7 +1795,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferToNonAccountEntitiesReturnsInvalidAccountId() {
+    final Stream<DynamicTest> transferToNonAccountEntitiesReturnsInvalidAccountId() {
         AtomicReference<String> invalidAccountId = new AtomicReference<>();
 
         return defaultHapiSpec("TransferToNonAccountEntitiesReturnsInvalidAccountId", EXPECT_STREAMLINED_INGEST_RECORDS)
@@ -1784,7 +1814,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec complexKeyAcctPaysForOwnTransfer() {
+    final Stream<DynamicTest> complexKeyAcctPaysForOwnTransfer() {
         SigControl enoughUniqueSigs = SigControl.threshSigs(
                 2,
                 SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
@@ -1803,7 +1833,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec twoComplexKeysRequired() {
+    final Stream<DynamicTest> twoComplexKeysRequired() {
         SigControl payerShape = threshOf(2, threshOf(1, 7), threshOf(3, 7));
         SigControl receiverShape = SigControl.threshSigs(3, threshOf(2, 2), threshOf(3, 5), ON);
 
@@ -1832,7 +1862,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec specialAccountsBalanceCheck() {
+    final Stream<DynamicTest> specialAccountsBalanceCheck() {
         return defaultHapiSpec("SpecialAccountsBalanceCheck")
                 .given()
                 .when()
@@ -1842,7 +1872,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferWithMissingAccountGetsInvalidAccountId() {
+    final Stream<DynamicTest> transferWithMissingAccountGetsInvalidAccountId() {
         return defaultHapiSpec("transferWithMissingAccountGetsInvalidAccountId", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true))
                 .when(cryptoTransfer(tinyBarsFromTo("1.2.3", PAYEE_SIG_REQ, 1_000L))
@@ -1852,14 +1882,14 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec vanillaTransferSucceeds() {
+    final Stream<DynamicTest> vanillaTransferSucceeds() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
         return defaultHapiSpec("VanillaTransferSucceeds", FULLY_NONDETERMINISTIC)
                 .given(
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
-                                .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
                         UtilVerbs.inParallel(
                                 cryptoCreate(PAYER),
                                 cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
@@ -1883,7 +1913,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithAllowance() {
+    final Stream<DynamicTest> hapiTransferFromForNFTWithCustomFeesWithAllowance() {
         final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
         final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
         final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK = "nftTokenWithRoyaltyFeeWithHbarFallback";
@@ -2033,7 +2063,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
@@ -2122,10 +2152,10 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testTransferToSystemAccounts() {
+    final Stream<DynamicTest> testTransferToSystemAccounts() {
         final var contract = "CryptoTransfer";
         final var systemAccounts = List.of(359L, 360L, 361L);
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 3];
+        final var opsArray = new HapiSpecOperation[systemAccounts.size() * 3];
 
         for (int i = 0; i < systemAccounts.size(); i++) {
             opsArray[i] = contractCall(contract, "sendViaTransfer", mirrorAddrWith(systemAccounts.get(i)))
@@ -2159,7 +2189,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testTransferToSystemAccountsAndCheckSenderBalance() {
+    final Stream<DynamicTest> testTransferToSystemAccountsAndCheckSenderBalance() {
         final var transferContract = "CryptoTransfer";
         final var balanceContract = "BalanceChecker46Version";
         final var senderAccount = "detachedSenderAccount";
@@ -2181,7 +2211,7 @@ public class CryptoTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferInvalidTokenIdWithDecimals() {
+    final Stream<DynamicTest> transferInvalidTokenIdWithDecimals() {
         return defaultHapiSpec("transferInvalidTokenIdWithDecimals", FULLY_NONDETERMINISTIC)
                 .given(cryptoCreate(TREASURY), withOpContext((spec, opLog) -> {
                     final var acctCreate = cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS);
@@ -2197,8 +2227,144 @@ public class CryptoTransferSuite extends HapiSuite {
                         .hasKnownStatus(INVALID_TOKEN_ID)));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
+    @HapiTest
+    final Stream<DynamicTest> balancesChangeOnTransfer() {
+        return defaultHapiSpec("BalancesChangeOnTransfer")
+                .given(
+                        cryptoCreate("sponsor"),
+                        cryptoCreate("beneficiary"),
+                        balanceSnapshot("sponsorBefore", "sponsor"),
+                        balanceSnapshot("beneficiaryBefore", "beneficiary"))
+                .when(cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+                        .payingWith(GENESIS)
+                        .memo("Hello World!"))
+                .then(
+                        getAccountBalance("sponsor").hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+                        getAccountBalance("beneficiary").hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> netAdjustmentsMustBeZero() {
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<AccountID> counterId = new AtomicReference<>();
+        final AtomicReference<AccountID> otherAccountId = new AtomicReference<>();
+
+        return defaultHapiSpec("netAdjustmentsMustBeZero")
+                .given(
+                        cryptoCreate(PARTY).balance(0L),
+                        cryptoCreate(COUNTERPARTY).balance(0L),
+                        cryptoCreate(OTHER_ACCOUNT).balance(0L),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            partyId.set(registry.getAccountID(PARTY));
+                            counterId.set(registry.getAccountID(COUNTERPARTY));
+                            otherAccountId.set(registry.getAccountID(OTHER_ACCOUNT));
+                        }),
+                        tokenCreate("ft").initialSupply(Long.MAX_VALUE))
+                .when(
+                        // Pure checks detect overflow in hbar adjustments
+                        cryptoTransfer((spec, b) -> b.setTransfers(TransferList.newBuilder()
+                                        .addAccountAmounts(aaWith(partyId.get(), +Long.MAX_VALUE))
+                                        .addAccountAmounts(aaWith(otherAccountId.get(), +Long.MAX_VALUE))
+                                        .addAccountAmounts(aaWith(counterId.get(), +2))))
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_AMOUNTS))
+                .then(
+                        // Pure checks detect overflow in fungible token adjustments
+                        cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                        .setToken(spec.registry().getTokenID("ft"))
+                                        .addAllTransfers(List.of(
+                                                aaWith(partyId.get(), +Long.MAX_VALUE),
+                                                aaWith(otherAccountId.get(), +Long.MAX_VALUE),
+                                                aaWith(counterId.get(), +2)))))
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> customFeesCannotCauseOverflow() {
+        final var secondFeeCollector = "secondFeeCollector";
+        return defaultHapiSpec("fixedFeesCannotCauseOverflow")
+                .given(
+                        cryptoCreate(PARTY).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(COUNTERPARTY)
+                                .maxAutomaticTokenAssociations(1)
+                                .balance(0L),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L),
+                        cryptoCreate(secondFeeCollector).balance(0L),
+                        tokenCreate("ft")
+                                .treasury(TOKEN_TREASURY)
+                                .withCustom(fixedHbarFee(Long.MAX_VALUE, FEE_COLLECTOR))
+                                .withCustom(fixedHbarFee(Long.MAX_VALUE, secondFeeCollector))
+                                .initialSupply(Long.MAX_VALUE),
+                        tokenAssociate(PARTY, "ft"),
+                        cryptoTransfer(moving(2, "ft").between(TOKEN_TREASURY, PARTY)))
+                .when()
+                .then(cryptoTransfer(moving(1L, "ft").between(PARTY, COUNTERPARTY))
+                        .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
+        final var tokenA = "tokenA";
+        final var hollowAccountKey = "hollowAccountKey";
+        final var transferTokenAAndBToHollowAccountTxn = "transferTokenAToHollowAccountTxn";
+        final AtomicReference<TokenID> tokenIdA = new AtomicReference<>();
+        final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
+
+        return defaultHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
+                .given(
+                        newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        tokenCreate(tokenA)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        // Mint NFTs
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata2"))),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var treasuryAccountId = registry.getAccountID(TREASURY);
+                            treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
+
+                            // Save the alias for the hollow account
+                            final var ecdsaKey = spec.registry()
+                                    .getKey(hollowAccountKey)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                            hollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(A_TOKEN));
+                        }))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Create hollow account
+                        cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                        .setToken(tokenIdA.get())
+                                        .addNftTransfers(ocWith(
+                                                accountId(treasuryAlias.get()),
+                                                accountId(hollowAccountAlias.get()),
+                                                1L))))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenAAndBToHollowAccountTxn),
+                        // Verify hollow account creation
+                        getAliasedAccountInfo(hollowAccountKey)
+                                .hasToken(relationshipWith(tokenA))
+                                .has(accountWith().hasEmptyKey())
+                                .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
+                        // Transfer some hbars to the hollow account so that it could pay the next transaction
+                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowAccountKey)),
+                        // Send transfer to complete the hollow account
+                        cryptoTransfer(movingUnique(tokenA, 1L).between(hollowAccountKey, TREASURY))
+                                .payingWith(hollowAccountKey)
+                                .signedBy(hollowAccountKey, TREASURY)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)))))
+                .then(getAliasedAccountInfo(hollowAccountKey).has(accountWith().key(hollowAccountKey)));
     }
 }

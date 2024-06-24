@@ -32,9 +32,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -91,7 +91,7 @@ public class ShadowgraphSynchronizer {
     /**
      * consumes events received by the peer
      */
-    private final Consumer<GossipEvent> eventHandler;
+    private final Consumer<PlatformEvent> eventHandler;
 
     /**
      * manages sync related decisions
@@ -125,6 +125,11 @@ public class ShadowgraphSynchronizer {
     private final Duration nonAncestorFilterThreshold;
 
     /**
+     * The maximum number of events to send in a single sync, or 0 if there is no limit.
+     */
+    private final int maximumEventsPerSync;
+
+    /**
      * The current ancient mode.
      */
     private final AncientMode ancientMode;
@@ -132,21 +137,21 @@ public class ShadowgraphSynchronizer {
     /**
      * Constructs a new ShadowgraphSynchronizer.
      *
-     * @param platformContext        the platform context
-     * @param shadowGraph            stores events to sync
-     * @param numberOfNodes          number of nodes in the network
-     * @param syncMetrics            metrics for sync
-     * @param receivedEventHandler   events that are received are passed here
-     * @param fallenBehindManager    tracks if we have fallen behind
-     * @param intakeEventCounter     used for tracking events in the intake pipeline per peer
-     * @param executor               for executing read/write tasks in parallel
+     * @param platformContext      the platform context
+     * @param shadowGraph          stores events to sync
+     * @param numberOfNodes        number of nodes in the network
+     * @param syncMetrics          metrics for sync
+     * @param receivedEventHandler events that are received are passed here
+     * @param fallenBehindManager  tracks if we have fallen behind
+     * @param intakeEventCounter   used for tracking events in the intake pipeline per peer
+     * @param executor             for executing read/write tasks in parallel
      */
     public ShadowgraphSynchronizer(
             @NonNull final PlatformContext platformContext,
             @NonNull final Shadowgraph shadowGraph,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final Consumer<PlatformEvent> receivedEventHandler,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor) {
@@ -166,6 +171,7 @@ public class ShadowgraphSynchronizer {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
+        this.maximumEventsPerSync = syncConfig.maxSyncEventCount();
 
         this.ancientMode = platformContext
                 .getConfiguration()
@@ -205,14 +211,14 @@ public class ShadowgraphSynchronizer {
         // reporting and performance analysis
         final SyncTiming timing = new SyncTiming();
         final List<EventImpl> sendList;
-        try (final ShadowgraphReservation reservation = shadowGraph.reserve()) {
+        try (final ReservedEventWindow reservation = shadowGraph.reserve()) {
             connection.initForSync();
 
             timing.start();
 
             // Step 1: each peer tells the other about its tips and event windows
 
-            final NonAncientEventWindow myWindow = reservation.getEventWindow();
+            final EventWindow myWindow = reservation.getEventWindow();
 
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE event windows numbers & tip hashes
@@ -222,9 +228,9 @@ public class ShadowgraphSynchronizer {
                     connection);
             timing.setTimePoint(1);
 
-            syncMetrics.eventWindow(myWindow, theirTipsAndEventWindow.getEventWindow());
+            syncMetrics.eventWindow(myWindow, theirTipsAndEventWindow.eventWindow());
 
-            if (fallenBehind(myWindow, theirTipsAndEventWindow.getEventWindow(), connection)) {
+            if (fallenBehind(myWindow, theirTipsAndEventWindow.eventWindow(), connection)) {
                 // aborting the sync since someone has fallen behind
                 return false;
             }
@@ -233,7 +239,7 @@ public class ShadowgraphSynchronizer {
             final Set<ShadowEvent> eventsTheyHave = new HashSet<>();
 
             // process the hashes received
-            final List<ShadowEvent> theirTips = shadowGraph.shadows(theirTipsAndEventWindow.getTips());
+            final List<ShadowEvent> theirTips = shadowGraph.shadows(theirTipsAndEventWindow.tips());
 
             // For each tip they send us, determine if we have that event.
             // For each tip, send true if we have the event and false if we don't.
@@ -257,7 +263,7 @@ public class ShadowgraphSynchronizer {
 
             // create a send list based on the known set
             sendList = createSendList(
-                    connection.getSelfId(), eventsTheyHave, myWindow, theirTipsAndEventWindow.getEventWindow());
+                    connection.getSelfId(), eventsTheyHave, myWindow, theirTipsAndEventWindow.eventWindow());
         }
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -283,9 +289,7 @@ public class ShadowgraphSynchronizer {
      * @return true if we have fallen behind, false otherwise
      */
     private boolean fallenBehind(
-            @NonNull final NonAncientEventWindow self,
-            @NonNull final NonAncientEventWindow other,
-            @NonNull final Connection connection) {
+            @NonNull final EventWindow self, @NonNull final EventWindow other, @NonNull final Connection connection) {
         Objects.requireNonNull(self);
         Objects.requireNonNull(other);
         Objects.requireNonNull(connection);
@@ -316,8 +320,8 @@ public class ShadowgraphSynchronizer {
     private List<EventImpl> createSendList(
             @NonNull final NodeId selfId,
             @NonNull final Set<ShadowEvent> knownSet,
-            @NonNull final NonAncientEventWindow myEventWindow,
-            @NonNull final NonAncientEventWindow theirEventWindow) {
+            @NonNull final EventWindow myEventWindow,
+            @NonNull final EventWindow theirEventWindow) {
 
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(knownSet);
@@ -353,7 +357,7 @@ public class ShadowgraphSynchronizer {
 
         SyncUtils.sort(eventsTheyMayNeed);
 
-        final List<EventImpl> sendList;
+        List<EventImpl> sendList;
         if (filterLikelyDuplicates) {
             final long startFilterTime = time.nanoTime();
             sendList = filterLikelyDuplicates(selfId, nonAncestorFilterThreshold, time.now(), eventsTheyMayNeed);
@@ -361,6 +365,10 @@ public class ShadowgraphSynchronizer {
             syncMetrics.recordSyncFilterTime(endFilterTime - startFilterTime);
         } else {
             sendList = eventsTheyMayNeed;
+        }
+
+        if (maximumEventsPerSync > 0 && sendList.size() > maximumEventsPerSync) {
+            sendList = sendList.subList(0, maximumEventsPerSync);
         }
 
         return sendList;
@@ -397,7 +405,13 @@ public class ShadowgraphSynchronizer {
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
                 readEventsINeed(
-                        connection, eventHandler, syncMetrics, eventReadingDone, intakeEventCounter, maxSyncTime),
+                        connection,
+                        eventHandler,
+                        maximumEventsPerSync,
+                        syncMetrics,
+                        eventReadingDone,
+                        intakeEventCounter,
+                        maxSyncTime),
                 sendEventsTheyNeed(connection, sendList, eventReadingDone, writeAborted, syncKeepAlivePeriod),
                 connection);
         if (eventsRead < 0 || writeAborted.get()) {

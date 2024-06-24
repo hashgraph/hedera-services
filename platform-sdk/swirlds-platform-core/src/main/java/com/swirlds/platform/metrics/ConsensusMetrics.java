@@ -97,4 +97,11 @@ public interface ConsensusMetrics {
      * @return weighted mean
      */
     double getAvgOtherReceivedTimestamp();
+
+    /**
+     * Report the weight of the judges when a round comes to consensus.
+     *
+     * @param weight the weight of the judges
+     */
+    void judgeWeights(long weight);
 }

@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public class DummyFCQueueElement implements FastCopyable, SerializableHashable {
 
-    private static final long CLASS_ID = 0x1fc41d4f294c4114L;
+    private static final long CLASS_ID = 0x1fc41d4f294c4115L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;

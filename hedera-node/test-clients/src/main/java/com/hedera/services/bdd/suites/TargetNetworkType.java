@@ -25,9 +25,9 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
  */
 public enum TargetNetworkType {
     /**
-     * A network launched by the {@link com.hedera.services.bdd.junit.HapiTestEngine}.
+     * A network launched by the {@link com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener}.
      */
-    HAPI_TEST_NETWORK,
+    SHARED_HAPI_TEST_NETWORK,
     /**
      * A mono-service network started via Gradle task (can be removed once mono-service is no longer in use).
      */
@@ -35,5 +35,13 @@ public enum TargetNetworkType {
     /**
      * A Docker network launched in CI via TestContainers.
      */
-    CI_DOCKER_NETWORK
+    CI_DOCKER_NETWORK,
+    /**
+     * A long-lived remote network
+     */
+    REMOTE_NETWORK,
+    /**
+     * An embedded "network" with a single Hedera instance whose workflows invoked directly, without gRPC.
+     */
+    EMBEDDED_NETWORK,
 }

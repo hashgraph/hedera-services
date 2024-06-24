@@ -16,17 +16,15 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
-
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -34,36 +32,19 @@ import java.util.Objects;
  * Every round, the signature of a signed state is put in this transaction
  * and gossiped to other nodes
  */
-public final class StateSignatureTransaction extends SystemTransaction {
+public final class StateSignatureTransaction extends ConsensusTransactionImpl {
 
     /**
      * class identifier for the purposes of serialization
      */
-    private static final long CLASS_ID = 0xaf7024c653caabf4L;
+    public static final long CLASS_ID = 0xaf7024c653caabf4L;
 
     private static class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int ADDED_SELF_HASH = 2;
         public static final int ADDED_EPOCH_HASH = 3;
     }
 
-    /**
-     * signature of signed state
-     */
-    private Signature stateSignature;
-
-    /**
-     * the hash that was signed
-     */
-    private Hash stateHash;
-
-    /** the hash of the epoch to which this signature corresponds to */
-    private Hash epochHash;
-
-    /**
-     * round number of signed state
-     */
-    private long round = 0;
+    /** The protobuf data stored */
+    private OneOf<PayloadOneOfType> payload;
 
     /**
      * No-argument constructor used by ConstructableRegistry
@@ -71,62 +52,13 @@ public final class StateSignatureTransaction extends SystemTransaction {
     public StateSignatureTransaction() {}
 
     /**
-     * Create a state signature transaction
+     * Constructs a new StateSignatureTransaction with the given payload
      *
-     * @param round
-     * 		The round number of the signed state that this transaction belongs to
-     * @param stateSignature
-     * 		The byte array of signature of the signed state
-     * @param stateHash
-     *      The hash that was signed
-     * @param epochHash
-     *      The hash of the epoch to which this signature corresponds to
+     * @param payload
+     * 		the payload to set
      */
-    public StateSignatureTransaction(
-            final long round,
-            @NonNull final Signature stateSignature,
-            @NonNull final Hash stateHash,
-            @Nullable final Hash epochHash) {
-        this.round = round;
-        this.stateSignature = Objects.requireNonNull(stateSignature, "stateSignature must not be null");
-        this.stateHash = Objects.requireNonNull(stateHash, "stateHash must not be null");
-        this.epochHash = epochHash;
-    }
-
-    /**
-     * Same as {@link #StateSignatureTransaction(long, Signature, Hash, Hash)} but with epochHash set to null
-     */
-    public StateSignatureTransaction(
-            final long round, @NonNull final Signature stateSignature, @NonNull final Hash stateHash) {
-        this(round, stateSignature, stateHash, null);
-    }
-
-    /**
-     * @return the round number of the signed state that this transaction belongs to
-     */
-    public long getRound() {
-        return round;
-    }
-
-    /**
-     * @return the signature on the state
-     */
-    public Signature getStateSignature() {
-        return stateSignature;
-    }
-
-    /**
-     * @return the hash that was signed
-     */
-    public Hash getStateHash() {
-        return stateHash;
-    }
-
-    /**
-     * @return the hash of the epoch to which this signature corresponds to
-     */
-    public @Nullable Hash getEpochHash() {
-        return epochHash;
+    public StateSignatureTransaction(@NonNull final StateSignaturePayload payload) {
+        this.payload = new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, payload);
     }
 
     /**
@@ -141,25 +73,17 @@ public final class StateSignatureTransaction extends SystemTransaction {
      * {@inheritDoc}
      */
     @Override
-    public SystemTransactionType getType() {
-        return SYS_TRANS_STATE_SIG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeByteArray(stateSignature.getSignatureBytes());
+        final StateSignaturePayload stateSignaturePayload = getStateSignaturePayload();
 
-        // state hash will only be null for objects originally serialized with version ORIGINAL
-        if (stateHash == null) {
-            out.writeByteArray(new byte[0]);
-        } else {
-            out.writeByteArray(stateHash.getValue());
-        }
-        out.writeLong(round);
-        out.writeSerializable(epochHash, false);
+        out.writeInt((int) stateSignaturePayload.signature().length());
+        stateSignaturePayload.signature().writeTo(out);
+
+        out.writeInt((int) stateSignaturePayload.hash().length());
+        stateSignaturePayload.hash().writeTo(out);
+
+        out.writeLong(stateSignaturePayload.round());
+        out.writeInt(Integer.MIN_VALUE); // epochHash is always null
     }
 
     /**
@@ -167,25 +91,18 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        final byte[] sigBytes = in.readByteArray(SignatureType.RSA.signatureLength());
+        final byte[] hashBytes = in.readByteArray(DigestType.SHA_384.digestLength());
+        final long round = in.readLong();
+        in.readInt(); // epochHash is always null
 
-        if (version == ClassVersion.ORIGINAL) {
-            in.readBoolean();
-        }
-
-        stateSignature = new Signature(SignatureType.RSA, in.readByteArray(SignatureType.RSA.signatureLength()));
-
-        // state hash will only be null for objects originally serialized with version ORIGINAL
-        if (version >= ClassVersion.ADDED_SELF_HASH) {
-            final byte[] hashBytes = in.readByteArray(DigestType.SHA_384.digestLength());
-            if (hashBytes.length != 0) {
-                stateHash = new Hash(hashBytes, DigestType.SHA_384);
-            }
-        }
-
-        round = in.readLong();
-        if (version >= ClassVersion.ADDED_EPOCH_HASH) {
-            epochHash = in.readSerializable(false, Hash::new);
-        }
+        this.payload = new OneOf<>(
+                PayloadOneOfType.STATE_SIGNATURE_PAYLOAD,
+                StateSignaturePayload.newBuilder()
+                        .round(round)
+                        .signature(Bytes.wrap(sigBytes))
+                        .hash(Bytes.wrap(hashBytes))
+                        .build());
     }
 
     /**
@@ -193,7 +110,7 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.ADDED_EPOCH_HASH;
     }
 
     /**
@@ -217,10 +134,12 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     @Override
     public int getSerializedLength() {
-        return getArraySerializedLength(stateSignature.getSignatureBytes())
-                + getArraySerializedLength(stateHash == null ? new byte[0] : stateHash.getValue())
-                + SerializableDataOutputStream.getInstanceSerializedLength(epochHash, true, false)
-                + Long.BYTES;
+        return Long.BYTES // round
+                + Integer.BYTES // signature array length
+                + (int) getStateSignaturePayload().signature().length()
+                + Integer.BYTES // hash array length
+                + (int) getStateSignaturePayload().hash().length()
+                + Integer.BYTES; // epochHash, always null, which is SerializableStreamConstants.NULL_VERSION
     }
 
     /**
@@ -235,10 +154,7 @@ public final class StateSignatureTransaction extends SystemTransaction {
             return false;
         }
         final StateSignatureTransaction that = (StateSignatureTransaction) o;
-        return round == that.round
-                && Objects.equals(stateSignature, that.stateSignature)
-                && Objects.equals(stateHash, that.stateHash)
-                && Objects.equals(epochHash, that.epochHash);
+        return Objects.equals(payload, that.payload);
     }
 
     /**
@@ -246,6 +162,15 @@ public final class StateSignatureTransaction extends SystemTransaction {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(stateSignature, stateHash, round, epochHash);
+        return Objects.hash(payload);
+    }
+
+    @Override
+    public @NonNull OneOf<PayloadOneOfType> getPayload() {
+        return payload;
+    }
+
+    private @NonNull StateSignaturePayload getStateSignaturePayload() {
+        return payload.as();
     }
 }

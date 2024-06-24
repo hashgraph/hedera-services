@@ -22,12 +22,13 @@ import static com.swirlds.platform.gui.GuiUtils.wrap;
 import com.swirlds.common.metrics.PlatformMetric;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
-import com.swirlds.platform.config.BasicConfig;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.gui.GuiConstants;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.Chart;
 import com.swirlds.platform.gui.components.ChartLabelModel;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -86,12 +87,14 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
 
     /**
      * Instantiate and initialize content of this tab.
+     *
+     * @param guiMetrics the metrics to use (from the first local node
      */
-    public WinTab2Stats() {
-        metrics = WinBrowser.memberDisplayed.getPlatform().getContext().getMetrics().getAll().stream()
+    public WinTab2Stats(@NonNull final Metrics guiMetrics) {
+        metrics = guiMetrics.getAll().stream()
                 .sorted(Comparator.comparing(m -> m.getName().toUpperCase()))
                 .toList();
-        int numStats = metrics.size();
+        int numStats = this.metrics.size();
         // numRows is: ceiling of numStats / numCols
         int numRows = numStats / numCols + ((numStats % numCols == 0) ? 0 : 1);
         // lastTall is: (numStats-1) mod numCols
@@ -108,11 +111,10 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
     }
 
     /**
-     * make visible the chart with the given index, and turn its box blue. This is also the index of the
-     * statistic that it shows.
+     * make visible the chart with the given index, and turn its box blue. This is also the index of the statistic that
+     * it shows.
      *
-     * @param index
-     * 		the index of the chart, which is also the index of the statistic
+     * @param index the index of the chart, which is also the index of the statistic
      */
     void showChart(int index) {
         int j = cm2rm[index];
@@ -123,11 +125,10 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
     }
 
     /**
-     * make invisible the chart with the given index, and turn its box white. This is also the index of the
-     * statistic that it shows.
+     * make invisible the chart with the given index, and turn its box white. This is also the index of the statistic
+     * that it shows.
      *
-     * @param index
-     * 		the index of the chart, which is also the index of the statistic
+     * @param index the index of the chart, which is also the index of the statistic
      */
     void hideChart(int index) {
         int j = cm2rm[index];
@@ -209,13 +210,8 @@ class WinTab2Stats extends PrePaintableJPanel implements ChartLabelModel {
                 statBoxes[i].setOpaque(true);
                 charts[j] = new JPanel();
                 charts[j].setBackground(Color.WHITE);
-                final BasicConfig basicConfig = WinBrowser.memberDisplayed
-                        .getPlatform()
-                        .getContext()
-                        .getConfiguration()
-                        .getConfigData(BasicConfig.class);
-                charts[j].add(new Chart(this, CHART_WIDTH, CHART_HEIGHT, basicConfig, false, metric));
-                charts[j].add(new Chart(this, CHART_WIDTH, CHART_HEIGHT, basicConfig, true, metric));
+                charts[j].add(new Chart(this, CHART_WIDTH, CHART_HEIGHT, false, metric));
+                charts[j].add(new Chart(this, CHART_WIDTH, CHART_HEIGHT, true, metric));
                 charts[j].setVisible(false); // use "visible" as a flag to indicate it's in the container
                 final int jj = j; // effectively final so the listener can use it
                 statBoxes[i].addMouseListener(new MouseAdapter() {

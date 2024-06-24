@@ -16,17 +16,20 @@
 
 package com.swirlds.common.wiring.schedulers;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.wiring.schedulers.internal.Squelcher;
 import com.swirlds.common.wiring.schedulers.internal.ThrowingSquelcher;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests for the {@link ThrowingSquelcher} class.
  */
+@Tag(TIMING_SENSITIVE)
 class ThrowingSquelcherTests {
     @Test
     @DisplayName("Standard operation")

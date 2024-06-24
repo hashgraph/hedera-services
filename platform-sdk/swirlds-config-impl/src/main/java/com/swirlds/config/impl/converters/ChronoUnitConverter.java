@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Converter for type {@link ChronoUnit}
+ * Converter for type {@link ChronoUnit}.
  */
 public class ChronoUnitConverter implements ConfigConverter<ChronoUnit> {
 

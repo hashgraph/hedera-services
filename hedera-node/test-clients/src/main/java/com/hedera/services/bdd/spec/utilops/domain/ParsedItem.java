@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.domain;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -36,6 +37,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord) {
     private static final FileID PROPERTIES_FILE_ID =
             FileID.newBuilder().setFileNum(121).build();
+    private static final FileID FEE_SCHEDULE_FILE_ID =
+            FileID.newBuilder().setFileNum(111).build();
 
     public ResponseCodeEnum status() {
         return itemRecord.getReceipt().getStatus();
@@ -54,9 +57,21 @@ public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord)
         return new ParsedItem(body, item.getRecord());
     }
 
-    public boolean isPropertyOverride() {
-        return itemRecord.getReceipt().getStatus() == SUCCESS
-                && itemBody.hasFileUpdate()
-                && PROPERTIES_FILE_ID.equals(itemBody.getFileUpdate().getFileID());
+    public boolean isSpecialFileChange() {
+        var fileID = FileID.newBuilder().build();
+        final boolean isFileUpdate = itemBody.hasFileUpdate();
+        if (isFileUpdate) {
+            fileID = itemBody.getFileUpdate().getFileID();
+        }
+
+        final boolean isFileAppend = itemBody.hasFileAppend();
+        if (isFileAppend) {
+            fileID = itemBody.getFileAppend().getFileID();
+        }
+
+        final var status = itemRecord.getReceipt().getStatus();
+        return (status == SUCCESS || status == FEE_SCHEDULE_FILE_PART_UPLOADED)
+                && (isFileUpdate || isFileAppend)
+                && (PROPERTIES_FILE_ID.equals(fileID) || FEE_SCHEDULE_FILE_ID.equals(fileID));
     }
 }

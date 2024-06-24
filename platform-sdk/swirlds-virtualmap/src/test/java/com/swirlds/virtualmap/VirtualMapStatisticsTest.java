@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.metrics.api.Metric.ValueType.VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,9 +25,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metric;
@@ -34,8 +35,10 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 public class VirtualMapStatisticsTest {
 
     private static final String LABEL = "VMST";
@@ -66,11 +69,11 @@ public class VirtualMapStatisticsTest {
 
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
-        metrics = new DefaultMetrics(
+        metrics = new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
         statistics = new VirtualMapStatistics(LABEL);
         statistics.registerMetrics(metrics);

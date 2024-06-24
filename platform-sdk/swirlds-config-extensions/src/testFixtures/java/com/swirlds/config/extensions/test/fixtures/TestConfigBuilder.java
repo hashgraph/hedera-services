@@ -16,7 +16,6 @@
 
 package com.swirlds.config.extensions.test.fixtures;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
@@ -31,16 +30,12 @@ import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Helper for use the config in test and change the config for specific tests. Instance can be used per class or per
  * test.
  */
 public class TestConfigBuilder {
-
-    private static final String SWIRLDS_PACKAGE = "com.swirlds";
-    private static final String HEDERA_PACKAGE = "com.hedera";
 
     private final AutoClosableLock configLock = Locks.createAutoLock();
 
@@ -50,7 +45,7 @@ public class TestConfigBuilder {
 
     /**
      * Creates a new instance and automatically registers all config data records (see {@link ConfigData}) on classpath
-     * / modulepath that are part of the packages {@code com.swirlds} and {@code com.hedera} (see {@link ConfigUtils}).
+     * / modulepath that are part of the packages {@code com.swirlds} and {@code com.hedera}.
      */
     public TestConfigBuilder() {
         this(true);
@@ -71,15 +66,14 @@ public class TestConfigBuilder {
 
     /**
      * Creates a new instance and automatically registers all config data records (see {@link ConfigData}) on classpath
-     * / modulepath that are part of the packages {@code com.swirlds} and {@code com.hedera} (see {@link ConfigUtils})
+     * / modulepath that are part of the packages {@code com.swirlds} and {@code com.hedera}.
      * if the {@code registerAllTypes} param is true.
      *
      * @param registerAllTypes if true all config data records on classpath will automatically be registered
      */
     public TestConfigBuilder(final boolean registerAllTypes) {
         if (registerAllTypes) {
-            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(
-                    ConfigurationBuilder.create(), Set.of(SWIRLDS_PACKAGE, HEDERA_PACKAGE));
+            this.builder = ConfigurationBuilder.create().autoDiscoverExtensions();
         } else {
             this.builder = ConfigurationBuilder.create();
         }

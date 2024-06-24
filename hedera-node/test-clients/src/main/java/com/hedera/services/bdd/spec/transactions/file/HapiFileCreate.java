@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -124,7 +123,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
     }
 
     public HapiFileCreate key(String keyName) {
-        this.keyName = Optional.of(keyName);
+        this.keyName = Optional.ofNullable(keyName);
         return this;
     }
 
@@ -240,11 +239,6 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
                             fileName, lastReceipt.getFileID().getFileNum()));
             LOG.info(banner);
         }
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::createFile;
     }
 
     @Override

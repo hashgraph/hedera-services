@@ -29,14 +29,14 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import javax.inject.Inject;
 
-public class CreateTranslator extends AbstractHtsCallTranslator {
+public class CreateTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function CREATE_FUNGIBLE_TOKEN_V1 =
             new Function("createFungibleToken(" + HEDERA_TOKEN_V1 + ",uint,uint)", "(int64,address)");

@@ -26,8 +26,8 @@ import com.swirlds.config.impl.validators.DefaultConfigViolation;
 import java.util.stream.Stream;
 
 /**
- * A {@link ConfigValidator} implementation taht checks all config data objects for the constraints annotation
- * {@link Min}
+ * A {@link ConfigValidator} implementation which checks all config data objects for the constraints annotation
+ * {@link Min}.
  */
 public class MinConstraintsValidation implements ConfigValidator {
 

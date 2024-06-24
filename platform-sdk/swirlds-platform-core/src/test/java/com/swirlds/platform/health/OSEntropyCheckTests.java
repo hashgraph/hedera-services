@@ -16,11 +16,13 @@
 
 package com.swirlds.platform.health;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.health.entropy.OSEntropyCheck;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class OSEntropyCheckTests {
@@ -29,6 +31,7 @@ class OSEntropyCheckTests {
      * All systems this test runs on should have an entropy generator, so the test should always pass
      */
     @Test
+    @Tag(TIMING_SENSITIVE)
     void basicTest() {
         final OSEntropyCheck.Report report =
                 assertDoesNotThrow(() -> OSEntropyCheck.execute(), "Check should not throw");

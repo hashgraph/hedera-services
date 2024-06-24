@@ -105,13 +105,17 @@ class BackpressureObjectCounterTests {
         assertEquals(10, counter.getCount());
 
         // Sleep for a little while. Thread should be unable to on ramp another element.
+        // Count can briefly overflow to 11, but should quickly return to 10.
         MILLISECONDS.sleep(50);
-        assertEquals(10, counter.getCount());
+        final long count1 = counter.getCount();
+        assertTrue(count1 == 10 || count1 == 11, "unexpected count " + count1);
 
         // Interrupting the thread should not unblock us.
         thread.interrupt();
         MILLISECONDS.sleep(50);
-        assertEquals(10, counter.getCount());
+        // Count can briefly overflow to 11, but should quickly return to 10.
+        final long count2 = counter.getCount();
+        assertTrue(count2 == 10 || count2 == 11, "unexpected count " + count2);
 
         // Off ramp one element. Thread should become unblocked.
         counter.offRamp();

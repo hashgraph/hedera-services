@@ -18,6 +18,7 @@ package com.swirlds.merkle.test;
 
 import static com.swirlds.common.merkle.hash.MerkleHashChecker.checkHashAndLog;
 import static com.swirlds.common.merkle.hash.MerkleHashChecker.getNodesWithInvalidHashes;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static java.lang.System.identityHashCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,8 +44,6 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.fixtures.merkle.dummy.SelfHashingDummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +58,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for merkle tree hashing
  */
 @DisplayName("Merkle Hash Tests")
+@Tag(TIMING_SENSITIVE)
 class MerkleHashTests {
 
     private static MerkleCryptography cryptography;
@@ -182,16 +182,6 @@ class MerkleHashTests {
             }
         });
     }
-
-    /**
-     * Utility function that writes a tree's hash to a file.
-     */
-    void writeTreeToFile(final MerkleNode tree, final String filePath) throws IOException {
-        final FileOutputStream stream = new FileOutputStream(filePath);
-        stream.write(cryptography.digestTreeSync(tree).getValue());
-        stream.close();
-    }
-
     /**
      * This test verifies that two MerkleInternal nodes with different types
      * but the same children hash to different values.

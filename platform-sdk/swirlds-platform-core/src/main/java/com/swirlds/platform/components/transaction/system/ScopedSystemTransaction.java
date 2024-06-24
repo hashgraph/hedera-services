@@ -18,7 +18,6 @@ package com.swirlds.platform.components.transaction.system;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.transaction.SystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -32,5 +31,5 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param transaction     the transaction
  * @param <T>             the type of transaction
  */
-public record ScopedSystemTransaction<T extends SystemTransaction>(
+public record ScopedSystemTransaction<T>(
         @NonNull NodeId submitterId, @Nullable SoftwareVersion softwareVersion, @NonNull T transaction) {}

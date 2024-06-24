@@ -17,10 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall.transferGasRequirement;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator.ERC_20_TRANSFER_FROM;
@@ -36,7 +37,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -48,7 +49,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * Implements the ERC-20 {@code transfer()} and {@code transferFrom()} calls of the HTS contract.
  */
-public class Erc20TransfersCall extends AbstractHtsCall {
+public class Erc20TransfersCall extends AbstractCall {
     private final long amount;
 
     @Nullable
@@ -63,6 +64,7 @@ public class Erc20TransfersCall extends AbstractHtsCall {
     private final AccountID senderId;
     private final AddressIdConverter addressIdConverter;
     private final boolean requiresApproval;
+    private final SpecialRewardReceivers specialRewardReceivers;
 
     // too many parameters
     @SuppressWarnings("java:S107")
@@ -76,7 +78,8 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             @NonNull final VerificationStrategy verificationStrategy,
             @NonNull final AccountID senderId,
             @NonNull final AddressIdConverter addressIdConverter,
-            final boolean requiresApproval) {
+            final boolean requiresApproval,
+            @NonNull final SpecialRewardReceivers specialRewardReceivers) {
         super(gasCalculator, enhancement, false);
         this.amount = amount;
         this.from = from;
@@ -86,13 +89,14 @@ public class Erc20TransfersCall extends AbstractHtsCall {
         this.senderId = requireNonNull(senderId);
         this.addressIdConverter = requireNonNull(addressIdConverter);
         this.requiresApproval = requiresApproval;
+        this.specialRewardReceivers = requireNonNull(specialRewardReceivers);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PricedResult execute() {
+    public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
         // https://eips.ethereum.org/EIPS/eip-20
         final var syntheticTransfer = syntheticTransferOrTransferFrom(senderId);
         final var selector = (from == null) ? ERC_20_TRANSFER.selector() : ERC_20_TRANSFER_FROM.selector();
@@ -102,15 +106,26 @@ public class Erc20TransfersCall extends AbstractHtsCall {
             return reversionWith(INVALID_TOKEN_ID, gasRequirement);
         }
         final var recordBuilder = systemContractOperations()
-                .dispatch(
-                        syntheticTransferOrTransferFrom(senderId),
-                        verificationStrategy,
-                        senderId,
-                        ContractCallRecordBuilder.class);
+                .dispatch(syntheticTransfer, verificationStrategy, senderId, ContractCallRecordBuilder.class);
         final var status = recordBuilder.status();
         if (status != SUCCESS) {
-            return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
+            if (status == NOT_SUPPORTED) {
+                // matching behaviour of mono-service HTS system contract which directly enforced feature flags, ending
+                // up doing an exceptional halt on NOT_SUPPORTED and consuming all gas
+                return haltWith(gasRequirement, recordBuilder);
+            } else {
+                return gasOnly(revertResult(recordBuilder, gasRequirement), status, false);
+            }
         } else {
+            final var op = syntheticTransfer.cryptoTransferOrThrow();
+            for (final var fungibleTransfers : op.tokenTransfers()) {
+                TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
+                        requireNonNull(tokenId),
+                        fungibleTransfers.transfers(),
+                        enhancement.nativeOperations().readableAccountStore(),
+                        frame);
+            }
+            specialRewardReceivers.addInFrame(frame, op, recordBuilder.getAssessedCustomFees());
             final var encodedOutput = (from == null)
                     ? ERC_20_TRANSFER.getOutputs().encodeElements(true)
                     : ERC_20_TRANSFER_FROM.getOutputs().encodeElements(true);
@@ -119,26 +134,6 @@ public class Erc20TransfersCall extends AbstractHtsCall {
                     .build());
             return gasOnly(successResult(encodedOutput, gasRequirement, recordBuilder), status, false);
         }
-    }
-
-    @NonNull
-    @Override
-    public PricedResult execute(final MessageFrame frame) {
-        final var result = execute();
-
-        if (result.fullResult().result().getState().equals(MessageFrame.State.COMPLETED_SUCCESS)) {
-            final var tokenTransferLists = syntheticTransferOrTransferFrom(senderId)
-                    .cryptoTransferOrThrow()
-                    .tokenTransfersOrThrow();
-            for (final var fungibleTransfers : tokenTransferLists) {
-                TransferEventLoggingUtils.logSuccessfulFungibleTransfer(
-                        requireNonNull(tokenId),
-                        fungibleTransfers.transfersOrThrow(),
-                        enhancement.nativeOperations().readableAccountStore(),
-                        frame);
-            }
-        }
-        return result;
     }
 
     private TransactionBody syntheticTransferOrTransferFrom(@NonNull final AccountID spenderId) {

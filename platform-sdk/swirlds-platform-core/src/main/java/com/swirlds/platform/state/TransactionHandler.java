@@ -23,8 +23,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
-import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.Event;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.logging.log4j.LogManager;
@@ -47,28 +45,6 @@ public class TransactionHandler {
     }
 
     /**
-     * Applies an event to the {@link SwirldState#preHandle(Event)} method and handles any
-     * exceptions gracefully.
-     *
-     * @param event
-     * 		the event to apply
-     * @param swirldState
-     * 		the swirld state to apply {@code event} to
-     */
-    public void preHandle(final EventImpl event, final SwirldState swirldState) {
-        try {
-            swirldState.preHandle(event);
-        } catch (final Throwable t) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "error invoking SwirldState.preHandle() [ nodeId = {} ] with event {}",
-                    selfId,
-                    event.toMediumString(),
-                    t);
-        }
-    }
-
-    /**
      * Applies a consensus round to SwirldState, handles any exceptions gracefully, and updates relevant statistics.
      *
      * @param round
@@ -76,7 +52,7 @@ public class TransactionHandler {
      * @param state
      * 		the state to apply {@code round} to
      */
-    public void handleRound(final ConsensusRound round, final State state) {
+    public void handleRound(final ConsensusRound round, final MerkleRoot state) {
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();

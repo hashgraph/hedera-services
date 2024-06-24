@@ -88,6 +88,26 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
 
     @Nullable
     @Override
+    public String getValue(@NonNull final String propertyName) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        if (!exists(propertyName)) {
+            throw new NoSuchElementException("Property '" + propertyName + "' not defined in configuration");
+        }
+        return propertiesService.getProperty(propertyName);
+    }
+
+    @Nullable
+    @Override
+    public String getValue(@NonNull final String propertyName, @Nullable final String defaultValue) {
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        if (!exists(propertyName)) {
+            return defaultValue;
+        }
+        return propertiesService.getProperty(propertyName);
+    }
+
+    @Nullable
+    @Override
     public List<String> getValues(@NonNull final String propertyName) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         final String rawValue = getValue(propertyName);
@@ -176,26 +196,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             return defaultValue;
         }
         return getValueSet(propertyName, propertyType);
-    }
-
-    @Nullable
-    @Override
-    public String getValue(@NonNull final String propertyName) {
-        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        if (!exists(propertyName)) {
-            throw new NoSuchElementException("Property '" + propertyName + "' not defined in configuration");
-        }
-        return propertiesService.getProperty(propertyName);
-    }
-
-    @Nullable
-    @Override
-    public String getValue(@NonNull final String propertyName, @Nullable final String defaultValue) {
-        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        if (!exists(propertyName)) {
-            return defaultValue;
-        }
-        return propertiesService.getProperty(propertyName);
     }
 
     @NonNull

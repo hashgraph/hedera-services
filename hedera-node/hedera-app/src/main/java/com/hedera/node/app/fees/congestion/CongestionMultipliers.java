@@ -20,26 +20,31 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.annotations.GasThrottleMultiplier;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * An implementation for congestion multipliers that uses two types of multiplier implementation (
- * {@link EntityUtilizationMultiplier} and a {@link ThrottleMultiplier})
+ * {@link UtilizationScaledThrottleMultiplier} and a {@link ThrottleMultiplier})
  * to determine the current congestion multiplier.
  */
+@Singleton
 public class CongestionMultipliers {
-    private final EntityUtilizationMultiplier entityUtilizationMultiplier;
-    private final ThrottleMultiplier throttleMultiplier;
+    private final UtilizationScaledThrottleMultiplier utilizationScaledThrottleMultiplier;
+    private final ThrottleMultiplier gasThrottleMultiplier;
 
+    @Inject
     public CongestionMultipliers(
-            @NonNull final EntityUtilizationMultiplier entityUtilizationMultiplier,
-            @NonNull final ThrottleMultiplier throttleMultiplier) {
-        this.entityUtilizationMultiplier =
-                requireNonNull(entityUtilizationMultiplier, "entityUtilizationMultiplier must not be null");
-        this.throttleMultiplier = requireNonNull(throttleMultiplier, "throttleMultiplier must not be null");
+            @NonNull final UtilizationScaledThrottleMultiplier utilizationScaledThrottleMultiplier,
+            @NonNull @GasThrottleMultiplier final ThrottleMultiplier gasThrottleMultiplier) {
+        this.utilizationScaledThrottleMultiplier =
+                requireNonNull(utilizationScaledThrottleMultiplier, "entityUtilizationMultiplier must not be null");
+        this.gasThrottleMultiplier = requireNonNull(gasThrottleMultiplier, "throttleMultiplier must not be null");
     }
 
     /**
@@ -48,8 +53,8 @@ public class CongestionMultipliers {
      * @param consensusTime the consensus time
      */
     public void updateMultiplier(@NonNull final Instant consensusTime) {
-        throttleMultiplier.updateMultiplier(consensusTime);
-        entityUtilizationMultiplier.updateMultiplier(consensusTime);
+        gasThrottleMultiplier.updateMultiplier(consensusTime);
+        utilizationScaledThrottleMultiplier.updateMultiplier(consensusTime);
     }
 
     /**
@@ -70,8 +75,8 @@ public class CongestionMultipliers {
             @NonNull final HederaFunctionality functionality,
             @NonNull final ReadableStoreFactory storeFactory) {
         return Math.max(
-                throttleMultiplier.currentMultiplier(),
-                entityUtilizationMultiplier.currentMultiplier(body, functionality, storeFactory));
+                gasThrottleMultiplier.currentMultiplier(),
+                utilizationScaledThrottleMultiplier.currentMultiplier(body, functionality, storeFactory));
     }
 
     /**
@@ -81,7 +86,7 @@ public class CongestionMultipliers {
      */
     @NonNull
     public Instant[] entityUtilizationCongestionStarts() {
-        return entityUtilizationMultiplier.congestionLevelStarts();
+        return utilizationScaledThrottleMultiplier.congestionLevelStarts();
     }
 
     /**
@@ -90,8 +95,8 @@ public class CongestionMultipliers {
      * @return the congestion level starts
      */
     @NonNull
-    public Instant[] throttleMultiplierCongestionStarts() {
-        return throttleMultiplier.congestionLevelStarts();
+    public Instant[] gasThrottleMultiplierCongestionStarts() {
+        return gasThrottleMultiplier.congestionLevelStarts();
     }
 
     /**
@@ -99,8 +104,8 @@ public class CongestionMultipliers {
      *
      * @param startTimes the congestion level starts
      */
-    public void resetEntityUtilizationMultiplierStarts(@NonNull final Instant[] startTimes) {
-        entityUtilizationMultiplier.resetCongestionLevelStarts(startTimes);
+    public void resetUtilizationScaledThrottleMultiplierStarts(@NonNull final Instant[] startTimes) {
+        utilizationScaledThrottleMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
     /**
@@ -108,15 +113,15 @@ public class CongestionMultipliers {
      *
      * @param startTimes the congestion level starts
      */
-    public void resetThrottleMultiplierStarts(@NonNull final Instant[] startTimes) {
-        throttleMultiplier.resetCongestionLevelStarts(startTimes);
+    public void resetGasThrottleMultiplierStarts(@NonNull final Instant[] startTimes) {
+        gasThrottleMultiplier.resetCongestionLevelStarts(startTimes);
     }
 
     /**
      * Resets the state of the underlying congestion multipliers.
      */
     public void resetExpectations() {
-        throttleMultiplier.resetExpectations();
-        entityUtilizationMultiplier.resetExpectations();
+        gasThrottleMultiplier.resetExpectations();
+        utilizationScaledThrottleMultiplier.resetExpectations();
     }
 }

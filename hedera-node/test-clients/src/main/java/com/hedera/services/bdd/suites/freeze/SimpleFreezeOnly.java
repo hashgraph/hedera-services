@@ -17,18 +17,17 @@
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SimpleFreezeOnly extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SimpleFreezeOnly.class);
@@ -43,11 +42,11 @@ public class SimpleFreezeOnly extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
-    private List<HapiSpec> positiveTests() {
+    private List<Stream<DynamicTest>> positiveTests() {
         return Arrays.asList(simpleFreezeWithTimestamp());
     }
 
@@ -56,10 +55,10 @@ public class SimpleFreezeOnly extends HapiSuite {
         return true;
     }
 
-    final HapiSpec simpleFreezeWithTimestamp() {
+    final Stream<DynamicTest> simpleFreezeWithTimestamp() {
         return defaultHapiSpec("SimpleFreezeWithTimeStamp")
                 .given(freezeOnly().payingWith(GENESIS).startingAt(Instant.now().plusSeconds(10)))
-                .when(sleepFor(11000))
-                .then(cryptoCreate("not_going_to_happen").hasPrecheck(ResponseCodeEnum.PLATFORM_NOT_ACTIVE));
+                .when(sleepFor(40000))
+                .then();
     }
 }

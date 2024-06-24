@@ -18,33 +18,59 @@ package com.swirlds.platform.internal;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
-    /** an unmodifiable list of consensus events in this round, in consensus order */
+
+    /**
+     * an unmodifiable list of consensus events in this round, in consensus order
+     */
     private final List<EventImpl> consensusEvents;
-    /** the consensus generations when this round reached consensus */
+    /**
+     * the same events that are stored in {@link #consensusEvents} but repackaged for the Consensus Event Stream. since
+     * the CES is something that will be removed as soon as possible, this additional list allows us to decouple the CES
+     * from the rest of the event structure.
+     */
+    private final List<DetailedConsensusEvent> streamedEvents;
+
+    /**
+     * the consensus generations when this round reached consensus
+     */
     private final GraphGenerations generations;
-    /** the non-ancient event window for this round */
-    private final NonAncientEventWindow nonAncientEventWindow;
-    /** The number of application transactions in this round */
+
+    /**
+     * the event window for this round
+     */
+    private final EventWindow eventWindow;
+
+    /**
+     * The number of application transactions in this round
+     */
     private int numAppTransactions = 0;
-    /** A snapshot of consensus at this consensus round */
+
+    /**
+     * A snapshot of consensus at this consensus round
+     */
     private final ConsensusSnapshot snapshot;
-    /** The event that, when added to the hashgraph, caused this round to reach consensus. */
+
+    /**
+     * The event that, when added to the hashgraph, caused this round to reach consensus.
+     */
     private final EventImpl keystoneEvent;
 
     /**
@@ -53,32 +79,44 @@ public class ConsensusRound implements Round {
     private final AddressBook consensusRoster;
 
     /**
+     * True if this round reached consensus during the replaying of the preconsensus event stream.
+     */
+    private final boolean pcesRound;
+
+    /**
      * Create a new instance with the provided consensus events.
      *
-     * @param consensusRoster       the consensus roster for this round
-     * @param consensusEvents       the events in the round, in consensus order
-     * @param keystoneEvent         the event that, when added to the hashgraph, caused this round to reach consensus
-     * @param generations           the consensus generations for this round
-     * @param nonAncientEventWindow the non-ancient event window for this round
-     * @param snapshot              snapshot of consensus at this round
+     * @param consensusRoster the consensus roster for this round
+     * @param consensusEvents the events in the round, in consensus order
+     * @param keystoneEvent   the event that, when added to the hashgraph, caused this round to reach consensus
+     * @param generations     the consensus generations for this round
+     * @param eventWindow     the event window for this round
+     * @param snapshot        snapshot of consensus at this round
+     * @param pcesRound       true if this round reached consensus during the replaying of the preconsensus event
+     *                        stream
      */
     public ConsensusRound(
             @NonNull final AddressBook consensusRoster,
             @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations,
-            @NonNull final NonAncientEventWindow nonAncientEventWindow,
-            @NonNull final ConsensusSnapshot snapshot) {
+            @NonNull final EventWindow eventWindow,
+            @NonNull final ConsensusSnapshot snapshot,
+            final boolean pcesRound) {
 
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
         this.consensusEvents = Collections.unmodifiableList(Objects.requireNonNull(consensusEvents));
         this.keystoneEvent = Objects.requireNonNull(keystoneEvent);
         this.generations = Objects.requireNonNull(generations);
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
+        this.eventWindow = Objects.requireNonNull(eventWindow);
         this.snapshot = Objects.requireNonNull(snapshot);
+        this.pcesRound = pcesRound;
 
-        for (final EventImpl e : consensusEvents) {
+        this.streamedEvents = new ArrayList<>(consensusEvents.size());
+        for (final Iterator<EventImpl> iterator = consensusEvents.iterator(); iterator.hasNext(); ) {
+            final EventImpl e = iterator.next();
             numAppTransactions += e.getNumAppTransactions();
+            streamedEvents.add(new DetailedConsensusEvent(e.getBaseEvent(), snapshot.round(), !iterator.hasNext()));
         }
     }
 
@@ -101,6 +139,13 @@ public class ConsensusRound implements Round {
     }
 
     /**
+     * @return the list of CES events in this round
+     */
+    public @NonNull List<DetailedConsensusEvent> getStreamedEvents() {
+        return streamedEvents;
+    }
+
+    /**
      * @return the consensus generations when this round reached consensus
      */
     public @NonNull GraphGenerations getGenerations() {
@@ -108,10 +153,10 @@ public class ConsensusRound implements Round {
     }
 
     /**
-     * @return the non-ancient event window for this round
+     * @return the event window for this round
      */
-    public @NonNull NonAncientEventWindow getNonAncientEventWindow() {
-        return nonAncientEventWindow;
+    public @NonNull EventWindow getEventWindow() {
+        return eventWindow;
     }
 
     /**
@@ -128,39 +173,60 @@ public class ConsensusRound implements Round {
         return consensusEvents.size();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Iterator<ConsensusEvent> iterator() {
         return new TypedIterator<>(consensusEvents.iterator());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getRoundNum() {
         return snapshot.round();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEmpty() {
         return consensusEvents.isEmpty();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getEventCount() {
         return consensusEvents.size();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public AddressBook getConsensusRoster() {
         return consensusRoster;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public @NonNull Instant getConsensusTimestamp() {
         return snapshot.consensusTimestamp();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isPcesRound() {
+        return pcesRound;
     }
 
     @Override
@@ -189,9 +255,13 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
+        final String eventStrings = consensusEvents.stream()
+                .map(event -> event.getBaseEvent().getDescriptor().toString())
+                .collect(Collectors.joining(","));
+
         return new ToStringBuilder(this)
                 .append("round", snapshot.round())
-                .append("consensus events", EventUtils.toShortStrings(consensusEvents))
+                .append("consensus events", eventStrings)
                 .toString();
     }
 }

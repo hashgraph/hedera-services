@@ -32,12 +32,12 @@ public interface ConfigSource {
 
     /**
      * The default ordinal that is used if an implementation does not provide an ordinal by its own. See {@link
-     * ConfigSource#getOrdinal()}
+     * ConfigSource#getOrdinal()}.
      */
     int DEFAULT_ORDINAL = 100;
 
     /**
-     * Returns a set that contains all names of the properties that are provided by this source
+     * Returns a set that contains all names of the properties that are provided by this source.
      *
      * @return the set of property names
      */
@@ -45,9 +45,9 @@ public interface ConfigSource {
     Set<String> getPropertyNames();
 
     /**
-     * Returns the String value of the property with the given name
+     * Returns the String value of the property with the given name.
      *
-     * @param propertyName
+     * @param propertyName the name of the property
      * @return the string value of the property
      * @throws NoSuchElementException if the property with the given name is not defined in the source
      */

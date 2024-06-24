@@ -17,6 +17,7 @@
 package com.swirlds.merkle.test.tree;
 
 import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
 import static com.swirlds.merkle.test.tree.MerkleBinaryTreeTests.insertIntoTree;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("MerkleTree Internal Node Tests")
+@Tag(TIMING_SENSITIVE)
 class MerkleTreeInternalNodeTests {
 
     /**

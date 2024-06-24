@@ -23,12 +23,14 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isTopLevelTransaction;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.recordBuilderFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.setPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.transfersValue;
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.hapi.streams.ContractActionType;
@@ -36,7 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,6 +46,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -103,13 +106,12 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      *     <li>An existing account.</li>
      * </ol>
      *
-     * @param frame  the frame to start
+     * @param frame the frame to start
      * @param tracer the operation tracer
      */
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-
         // This must be done first as the system contract address range overlaps with system
         // accounts. Note that unlike EVM precompiles, we do allow sending value "to" Hedera
         // system contracts because they sometimes require fees greater than be reasonably
@@ -121,12 +123,25 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return;
         }
 
+        final var evmPrecompile = precompiles.get(codeAddress);
         // Check to see if the code address is a system account and possibly halt
         if (addressChecks.isSystemAccount(codeAddress)) {
-            doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
+            doHaltIfInvalidSystemCall(frame, tracer);
             if (alreadyHalted(frame)) {
                 return;
             }
+
+            if (evmPrecompile == null) {
+                handleNonExtantSystemAccount(frame, tracer);
+
+                return;
+            }
+        }
+
+        // Handle evm precompiles
+        if (evmPrecompile != null) {
+            doExecutePrecompile(evmPrecompile, frame, tracer);
+            return;
         }
 
         // Transfer value to the contract if required and possibly halt
@@ -137,11 +152,13 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             }
         }
 
-        // Handle evm precompiles
-        final var evmPrecompile = precompiles.get(codeAddress);
-        if (evmPrecompile != null) {
-            doExecutePrecompile(evmPrecompile, frame, tracer);
-            return;
+        // For mono-service fidelity, we need to consider called contracts
+        // as a special case eligible for staking rewards
+        if (isTopLevelTransaction(frame)) {
+            final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
+            if (maybeCalledContract instanceof ProxyEvmContract a) {
+                recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
+            }
         }
 
         frame.setState(MessageFrame.State.CODE_EXECUTING);
@@ -151,22 +168,33 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         return featureFlags.isImplicitCreationEnabled(config);
     }
 
+    private void handleNonExtantSystemAccount(
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
+        frame.clearGasRemaining();
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
+    }
+
     private void doExecutePrecompile(
             @NonNull final PrecompiledContract precompile,
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer) {
         final var gasRequirement = precompile.gasRequirement(frame.getInputData());
+        final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
+            result = PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INSUFFICIENT_GAS));
         } else {
             frame.decrementRemainingGas(gasRequirement);
-            final var result = precompile.computePrecompile(frame.getInputData(), frame);
-            tracer.tracePrecompileCall(frame, gasRequirement, result.getOutput());
+            result = precompile.computePrecompile(frame.getInputData(), frame);
             if (result.isRefundGas()) {
                 frame.incrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
         }
+        // We must always call tracePrecompileResult() to ensure the tracer is in a consistent
+        // state, because AbstractMessageProcessor.process() will not invoke the tracer's
+        // tracePostExecution() method unless start() returns with a state of CODE_EXECUTING;
+        // but for a precompile call this never happens.
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
     /**
@@ -174,9 +202,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      * the call to computePrecompile. Thus, the logic for checking for sufficient gas must be done in a different
      * order vs normal precompiles.
      *
-     * @param systemContract    the system contract to execute
-     * @param frame             the current frame
-     * @param tracer            the operation tracer
+     * @param systemContract the system contract to execute
+     * @param frame the current frame
+     * @param tracer the operation tracer
      */
     private void doExecuteSystemContract(
             @NonNull final HederaSystemContract systemContract,
@@ -184,16 +212,16 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final OperationTracer tracer) {
         final var fullResult = systemContract.computeFully(frame.getInputData(), frame);
         final var gasRequirement = fullResult.gasRequirement();
-        tracer.tracePrecompileCall(frame, gasRequirement, fullResult.output());
+        final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
-            doHalt(frame, INSUFFICIENT_GAS);
-            fullResult.recordInsufficientGas();
+            result = PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INSUFFICIENT_GAS));
         } else {
             if (!fullResult.isRefundGas()) {
                 frame.decrementRemainingGas(gasRequirement);
             }
-            finishPrecompileExecution(frame, fullResult.result(), SYSTEM, (ActionSidecarContentTracer) tracer);
+            result = fullResult.result();
         }
+        finishPrecompileExecution(frame, result, SYSTEM, (ActionSidecarContentTracer) tracer);
     }
 
     private void finishPrecompileExecution(
@@ -235,12 +263,8 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     private void doHaltIfInvalidSystemCall(
-            @NonNull final Address codeAddress,
-            @NonNull final MessageFrame frame,
-            @NonNull final OperationTracer operationTracer) {
-        if (precompiles.get(codeAddress) == null) {
-            doHalt(frame, PRECOMPILE_ERROR, operationTracer);
-        } else if (transfersValue(frame)) {
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
+        if (transfersValue(frame)) {
             doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
         }
     }
@@ -257,10 +281,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final ExceptionalHaltReason reason,
             @NonNull final OperationTracer tracer) {
         doHalt(frame, reason, tracer, ForLazyCreation.NO);
-    }
-
-    private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
-        doHalt(frame, reason, null, ForLazyCreation.NO);
     }
 
     private void doHalt(
@@ -284,12 +304,5 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                         frame, new Operation.OperationResult(frame.getRemainingGas(), reason));
             }
         }
-    }
-
-    @Override
-    protected void revert(final MessageFrame frame) {
-        super.revert(frame);
-        // Clear the childRecords from the record builder checkpoint in ProxyWorldUpdater, when revert() is called
-        ((HederaWorldUpdater) frame.getWorldUpdater()).revertChildRecords();
     }
 }

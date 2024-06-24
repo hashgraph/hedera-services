@@ -23,7 +23,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-/** A throttle with milli-TPS resolution that exists in a deterministic timeline. */
+/**
+ * A throttle with milli-TPS resolution that exists in a deterministic timeline.
+ */
 public class DeterministicThrottle implements CongestibleThrottle {
     private static final Instant NEVER = null;
     private static final String NO_NAME = null;
@@ -103,14 +105,14 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return (nominal >= 0) ? Math.min(nominal, limit) : limit;
     }
 
-    public boolean allowInstantaneous(final int n) {
-        return delegate.allowInstantaneous(n);
+    public boolean allowInstantaneous(final int numReqs) {
+        return delegate.allowInstantaneous(numReqs);
     }
 
-    public boolean allow(final int n, final Instant now) {
+    public boolean allow(final int numReqs, final Instant now) {
         final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
         lastDecisionTime = now;
-        return delegate.allow(n, elapsedNanos);
+        return delegate.allow(numReqs, elapsedNanos);
     }
 
     /**
@@ -188,6 +190,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
      *
      * @return the percent usage at the time of the last throttling decision
      */
+    @Override
     public double instantaneousPercentUsed() {
         if (lastDecisionTime == null) {
             return 0.0;
@@ -210,7 +213,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
 
     /* NOTE: The Object methods below are only overridden to improve
     readability of unit tests; Instances of this class are not used
-    	   in hash-based collections */
+           in hash-based collections */
     @Override
     public boolean equals(final Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) {

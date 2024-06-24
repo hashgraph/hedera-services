@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -52,17 +55,19 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -174,6 +179,25 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Account Id with valid header is needed during validate")
+    void validatesQueryIfInvalidAccountHeader() throws Throwable {
+        final var state =
+                MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
+        final var store = new ReadableAccountStoreImpl(readableStates);
+        final AccountID invalidRealmAccountId =
+                AccountID.newBuilder().accountNum(5).realmNum(-1L).build();
+
+        final var query = createGetAccountBalanceQueryWithInvalidHeader(invalidRealmAccountId.accountNumOrThrow());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+    }
+
+    @Test
     @DisplayName("Contract Id is needed during validate")
     void validatesQueryIfInvalidContract() throws Throwable {
         final var state =
@@ -251,9 +275,10 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         assertNull(op.accountID());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("OK response is correctly handled in findResponse")
-    void getsResponseIfOkResponse() {
+    void getsResponseIfOkResponse(boolean balancesInQueriesEnabled) {
         givenValidAccount(accountNum);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -266,7 +291,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
-        given(token1.decimals()).willReturn(100);
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
         final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(asToken(3L), token1)
                 .build();
@@ -279,7 +304,6 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
@@ -303,6 +327,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
@@ -310,12 +335,17 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var accountBalanceResponse = response.cryptogetAccountBalance();
         assertEquals(ResponseCodeEnum.OK, accountBalanceResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
-        assertIterableEquals(getExpectedTokenBalance(3L), accountBalanceResponse.tokenBalances());
+        if (balancesInQueriesEnabled) {
+            assertIterableEquals(getExpectedTokenBalance(3L), accountBalanceResponse.tokenBalances());
+        } else {
+            assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+        }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("check maxRelsPerInfoQuery in TokenConfig is correctly handled")
-    void checkConfigmaxRelsPerInfoQuery() {
+    void checkConfigmaxRelsPerInfoQuery(boolean balancesInQueriesEnabled) {
         givenValidAccount(accountNum);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -328,8 +358,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates1.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
-        given(token1.decimals()).willReturn(100);
-        given(token2.decimals()).willReturn(50);
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token2.decimals()).thenReturn(50); // only needed when balancesInQueriesEnabled is true
         final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(asToken(3L), token1)
                 .value(asToken(4L), token2)
@@ -344,7 +374,6 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
@@ -355,7 +384,6 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .balance(100L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(5L))
                 .previousToken(asToken(3L))
@@ -366,7 +394,6 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .balance(10L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(6L))
                 .previousToken(asToken(4L))
@@ -402,6 +429,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
@@ -409,8 +437,12 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var accountBalanceResponse = response.cryptogetAccountBalance();
         assertEquals(ResponseCodeEnum.OK, accountBalanceResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo.tinybarBalance(), accountBalanceResponse.balance());
-        assertIterableEquals(getExpectedTokenBalances(), accountBalanceResponse.tokenBalances());
-        assertEquals(2, accountBalanceResponse.tokenBalances().size());
+        if (balancesInQueriesEnabled) {
+            assertIterableEquals(getExpectedTokenBalances(), accountBalanceResponse.tokenBalances());
+            assertEquals(2, accountBalanceResponse.tokenBalances().size());
+        } else {
+            assertThat(accountBalanceResponse.tokenBalances()).isEmpty();
+        }
     }
 
     private Account getExpectedInfo() {
@@ -449,6 +481,15 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
                 .accountID(AccountID.newBuilder().accountNum(accountId).build())
                 .header(QueryHeader.newBuilder().build())
+                .build();
+
+        return Query.newBuilder().cryptogetAccountBalance(data).build();
+    }
+
+    private Query createGetAccountBalanceQueryWithInvalidHeader(final long accountId) {
+        final var data = CryptoGetAccountBalanceQuery.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .header((QueryHeader) null)
                 .build();
 
         return Query.newBuilder().cryptogetAccountBalance(data).build();

@@ -25,7 +25,7 @@ import com.swirlds.logging.legacy.payload.ReconnectLoadFailurePayload;
 import com.swirlds.logging.legacy.payload.ReconnectStartPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
@@ -51,7 +51,7 @@ public class ReconnectHelper {
     /** clears all data that is no longer needed since we fell behind */
     private final Clearable clearAll;
     /** supplier of the initial signed state against which to perform a delta based reconnect */
-    private final Supplier<State> workingStateSupplier;
+    private final Supplier<MerkleRoot> workingStateSupplier;
     /** provides the latest signed state round for which we have a supermajority of signatures */
     private final LongSupplier lastCompleteRoundSupplier;
     /** throttles reconnect learner attempts */
@@ -66,7 +66,7 @@ public class ReconnectHelper {
     public ReconnectHelper(
             final Runnable pauseGossip,
             final Clearable clearAll,
-            final Supplier<State> workingStateSupplier,
+            final Supplier<MerkleRoot> workingStateSupplier,
             final LongSupplier lastCompleteRoundSupplier,
             final ReconnectLearnerThrottle reconnectLearnerThrottle,
             final Consumer<SignedState> loadSignedState,

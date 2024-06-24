@@ -18,21 +18,23 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A no-op implementation of a speedometer metric.
  */
 public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements SpeedometerMetric {
 
-    public NoOpSpeedometerMetric(final MetricConfig<?, ?> config) {
+    public NoOpSpeedometerMetric(final @NonNull MetricConfig<?, ?> config) {
         super(config);
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public Double get(final ValueType valueType) {
+    public Double get(final @NonNull ValueType valueType) {
         return 0.0;
     }
 

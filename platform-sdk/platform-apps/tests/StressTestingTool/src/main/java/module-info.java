@@ -5,6 +5,7 @@ module com.swirlds.demo.stress {
     requires com.swirlds.logging;
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core;
+    requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

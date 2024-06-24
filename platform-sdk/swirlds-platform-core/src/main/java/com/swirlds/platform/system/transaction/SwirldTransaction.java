@@ -16,24 +16,17 @@
 
 package com.swirlds.platform.system.transaction;
 
-import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
-
-import com.swirlds.base.utility.ToStringBuilder;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.config.TransactionConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.Objects;
 
 /**
  * A container for an application transaction that contains extra information.
@@ -43,28 +36,33 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * application as one after it does reach consensus.
  */
 public class SwirldTransaction extends ConsensusTransactionImpl implements Comparable<SwirldTransaction> {
+    /** ensures that payload is never null even when constructed with the no-args constructor */
+    private static final OneOf<PayloadOneOfType> DEFAULT_PAYLOAD =
+            new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.EMPTY);
     /** class identifier for the purposes of serialization */
-    private static final long CLASS_ID = 0x9ff79186f4c4db97L;
+    public static final long CLASS_ID = 0x9ff79186f4c4db97L;
     /** current class version */
     private static final int CLASS_VERSION = 1;
 
     private static final String CONTENT_ERROR = "content is null or length is 0";
-    private static final int DEFAULT_SIGNATURE_LIST_SIZE = 5;
 
-    /** A per-transaction read/write lock to ensure thread safety of the signature list */
-    private final ReadWriteLock readWriteLock;
+    /** The data stored as protobuf */
+    private OneOf<PayloadOneOfType> payload = DEFAULT_PAYLOAD;
 
-    /** The content (payload) of the transaction */
-    private byte[] contents;
+    public SwirldTransaction() {}
 
-    /** The list of optional signatures attached to this transaction */
-    private List<TransactionSignature> signatures;
-
-    /** An optional metadata object set by the application */
-    private Object metadata;
-
-    public SwirldTransaction() {
-        this.readWriteLock = new ReentrantReadWriteLock(false);
+    /**
+     * Constructs a new transaction with no associated signatures.
+     *
+     * @param contents
+     * 		the binary content/payload of the Swirld transaction
+     * @throws IllegalArgumentException
+     * 		if the {@code contents} parameter is null or a zero-length array
+     * @deprecated Use {@link #SwirldTransaction(Bytes)} instead
+     */
+    @Deprecated
+    public SwirldTransaction(final byte[] contents) {
+        this(Bytes.wrap(contents.clone()));
     }
 
     /**
@@ -75,12 +73,11 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      * @throws IllegalArgumentException
      * 		if the {@code contents} parameter is null or a zero-length array
      */
-    public SwirldTransaction(final byte[] contents) {
-        if (contents == null || contents.length == 0) {
+    public SwirldTransaction(final Bytes contents) {
+        if (contents == null || contents.length() == 0) {
             throw new IllegalArgumentException(CONTENT_ERROR);
         }
-        this.contents = contents.clone();
-        this.readWriteLock = new ReentrantReadWriteLock(false);
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, contents);
     }
 
     /**
@@ -88,7 +85,9 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeByteArray(contents);
+        final Bytes bytes = getBytes();
+        out.writeInt((int) bytes.length()); // array length
+        bytes.writeTo(out);
     }
 
     /**
@@ -97,246 +96,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
-        this.contents = in.readByteArray(transactionConfig.transactionMaxBytes());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public byte[] getContents() {
-        return contents;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public byte getContents(final int index) {
-        if (contents == null || contents.length == 0) {
-            throw new IllegalArgumentException(CONTENT_ERROR);
-        }
-
-        if (index < 0 || index >= contents.length) {
-            throw new ArrayIndexOutOfBoundsException();
-        }
-
-        return contents[index];
-    }
-
-    /**
-     * Returns the size of the transaction content/payload.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @return the length of the transaction content
-     */
-    public int getLength() {
-        return (contents != null) ? contents.length : 0;
-    }
-
-    /**
-     * Returns the size of the transaction content/payload.
-     *
-     * This method is thread-safe and guaranteed to be atomic in nature.
-     *
-     * @return the length of the transaction content
-     */
-    public int size() {
-        return getLength();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<TransactionSignature> getSignatures() {
-        final Lock readLock = readWriteLock.readLock();
-
-        try {
-            readLock.lock();
-            return (signatures != null) ? new ArrayList<>(signatures) : Collections.emptyList();
-        } finally {
-            readLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength) {
-        add(new TransactionSignature(
-                contents,
-                signatureOffset,
-                signatureLength,
-                publicKeyOffset,
-                publicKeyLength,
-                messageOffset,
-                messageLength));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength,
-            final SignatureType sigType) {
-        add(new TransactionSignature(
-                contents,
-                signatureOffset,
-                signatureLength,
-                publicKeyOffset,
-                publicKeyLength,
-                messageOffset,
-                messageLength,
-                sigType));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void extractSignature(
-            final int signatureOffset,
-            final int signatureLength,
-            final byte[] expandedPublicKey,
-            final int publicKeyOffset,
-            final int publicKeyLength,
-            final int messageOffset,
-            final int messageLength) {
-        add(new TransactionSignature(
-                contents,
-                signatureOffset,
-                signatureLength,
-                expandedPublicKey,
-                publicKeyOffset,
-                publicKeyLength,
-                messageOffset,
-                messageLength));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void add(final TransactionSignature signature) {
-        if (signature == null) {
-            throw new IllegalArgumentException("signature");
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (signatures == null) {
-                signatures = new ArrayList<>(DEFAULT_SIGNATURE_LIST_SIZE);
-            }
-
-            signatures.add(signature);
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void addAll(final TransactionSignature... signatures) {
-        if (signatures == null || signatures.length == 0) {
-            return;
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (this.signatures == null) {
-                this.signatures = new ArrayList<>(signatures.length);
-            }
-
-            this.signatures.addAll(Arrays.asList(signatures));
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean remove(final TransactionSignature signature) {
-        if (signature == null) {
-            return false;
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (signatures == null) {
-                return false;
-            }
-
-            return signatures.remove(signature);
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean removeAll(final TransactionSignature... signatures) {
-        if (signatures == null || signatures.length == 0) {
-            return false;
-        }
-
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (this.signatures == null) {
-                return false;
-            }
-
-            return this.signatures.removeAll(Arrays.asList(signatures));
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void clearSignatures() {
-        final Lock writeLock = readWriteLock.writeLock();
-
-        try {
-            writeLock.lock();
-            if (signatures == null) {
-                return;
-            }
-
-            signatures = null;
-        } finally {
-            writeLock.unlock();
-        }
+        final byte[] contents = in.readByteArray(transactionConfig.transactionMaxBytes());
+        this.payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(contents));
     }
 
     /**
@@ -367,7 +128,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public int hashCode() {
-        return Arrays.hashCode(contents);
+        return getBytes().hashCode();
     }
 
     /**
@@ -408,11 +169,10 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof SwirldTransaction)) {
+        if (!(obj instanceof final SwirldTransaction that)) {
             return false;
         }
-        final SwirldTransaction that = (SwirldTransaction) obj;
-        return Arrays.equals(contents, that.contents);
+        return Objects.equals(payload, that.payload);
     }
 
     /**
@@ -466,7 +226,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
             throw new IllegalArgumentException();
         }
 
-        return Arrays.compare(contents, that.contents);
+        return this.getBytes().compareTo(that.getBytes());
     }
 
     /**
@@ -474,10 +234,7 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("contents", contents)
-                .append("signatures", signatures)
-                .toString();
+        return "payload: " + getBytes().toHex();
     }
 
     /**
@@ -501,7 +258,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public int getSerializedLength() {
-        return getArraySerializedLength(contents);
+        return Integer.BYTES // add the the size of array length field
+                + getSize(); // add the size of the array
     }
 
     /**
@@ -509,30 +267,15 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public int getSize() {
-        return contents == null ? 0 : contents.length;
+        return (int) getBytes().length();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T> T getMetadata() {
-        return (T) metadata;
+    private Bytes getBytes() {
+        return payload.as();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public <T> void setMetadata(final T metadata) {
-        this.metadata = metadata;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isSystem() {
-        return false;
+    public @NonNull OneOf<PayloadOneOfType> getPayload() {
+        return payload;
     }
 }

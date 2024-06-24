@@ -49,14 +49,14 @@ public class WireListSplitter<T> {
             @NonNull final String splitterName,
             @NonNull final String splitterInputName) {
         final TaskScheduler<T> taskScheduler = model.schedulerBuilder(splitterName)
-                .withType(TaskSchedulerType.DIRECT_STATELESS)
+                .withType(TaskSchedulerType.DIRECT_THREADSAFE)
                 .build()
                 .cast();
 
         inputWire = taskScheduler.buildInputWire(splitterInputName);
         outputWire = (StandardOutputWire<T>) taskScheduler.getOutputWire();
 
-        inputWire.bind(list -> {
+        inputWire.bindConsumer(list -> {
             for (final T t : list) {
                 outputWire.forward(t);
             }

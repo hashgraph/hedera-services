@@ -40,12 +40,12 @@ import java.util.stream.Collectors;
 class ConfigDataFactory {
 
     /**
-     * The configuration that is internally used to fill the properties of the config data instances
+     * The configuration that is internally used to fill the properties of the config data instances.
      */
     private final Configuration configuration;
 
     /**
-     * The converter service that is used to convert raw values from the config to custom data types
+     * The converter service that is used to convert raw values from the config to custom data types.
      */
     private final ConverterService converterService;
 

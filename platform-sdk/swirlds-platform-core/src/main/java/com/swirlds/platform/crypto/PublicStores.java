@@ -64,7 +64,8 @@ public record PublicStores(KeyStore sigTrustStore, KeyStore agrTrustStore) {
             Certificate sigCert = allPublic.getCertificate(SIGNING.storeName(name));
             Certificate agrCert = allPublic.getCertificate(AGREEMENT.storeName(name));
 
-            if (Stream.of(sigCert, agrCert).anyMatch(Objects::isNull)) {
+            // the agreement certificate is allowed to be absent. The signing certificate is required.
+            if (Stream.of(sigCert).anyMatch(Objects::isNull)) {
                 throw new KeyLoadingException("Cannot find certificates for: " + name);
             }
 

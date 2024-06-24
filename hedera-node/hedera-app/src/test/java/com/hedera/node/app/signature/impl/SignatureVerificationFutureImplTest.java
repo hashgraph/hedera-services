@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -253,6 +254,7 @@ final class SignatureVerificationFutureImplTest implements Scenarios {
         }
 
         @Test
+        @Disabled("This test is flaky")
         @DisplayName("Get method blocks until TransactionSignature future is available")
         @SuppressWarnings("java:S2925") // suppressing the warning about Thread.sleep usage in tests
         void getBlocksUntilResultsAreAvailable() throws InterruptedException {

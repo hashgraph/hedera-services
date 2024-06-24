@@ -63,39 +63,82 @@ public class OrderedComparison {
             throws IOException {
         final Predicate<String> inclusionTest = maybeInclusionTest == null ? f -> true : maybeInclusionTest;
         final String inclusionDescription = maybeInclusionDescription == null ? "all" : maybeInclusionDescription;
-        System.out.println("Parsing stream @ " + firstStreamDir + "(including " + inclusionDescription + ")");
+        System.out.println("Parsing stream @ " + firstStreamDir + " (including " + inclusionDescription + ")");
         final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir, inclusionTest);
         System.out.println(" ➡️  Read " + firstEntries.size() + " entries");
-        System.out.println("Parsing stream @ " + secondStreamDir + "(including " + inclusionDescription + ")");
+        System.out.println("Parsing stream @ " + secondStreamDir + " (including " + inclusionDescription + ")");
         final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir, inclusionTest);
-        List<RecordStreamEntry> newSecondEntries = getNewSecondRecordStreamEntries(firstEntries, secondEntries);
         System.out.println(" ➡️  Read " + secondEntries.size() + " entries");
-        return diff(firstEntries, newSecondEntries, recordDiffSummarizer);
+        final var compareList = getCompareList(firstEntries, secondEntries);
+        return diff(compareList.firstList, compareList.secondList, recordDiffSummarizer);
     }
 
+    record CompareList(@NonNull List<RecordStreamEntry> firstList, @NonNull List<RecordStreamEntry> secondList) {}
+
     @NonNull
-    private static List<RecordStreamEntry> getNewSecondRecordStreamEntries(
+    private static CompareList getCompareList(
             List<RecordStreamEntry> firstEntries, List<RecordStreamEntry> secondEntries) {
-        List<RecordStreamEntry> ret = new ArrayList<>();
-        RecordStreamEntry firstEntry, secondEntry;
-        int secondIndex = 0;
-        for (RecordStreamEntry entry : firstEntries) {
-            firstEntry = entry;
-            secondEntry = secondEntries.get(secondIndex);
-            if (secondEntry.consensusTime().equals(firstEntry.consensusTime())) {
-                ret.add(secondEntry);
-                secondIndex++;
-            } else {
-                ret.add(new RecordStreamEntry(null, null, firstEntry.consensusTime()));
+        CompareList ret;
+        final List<RecordStreamEntry> firstList = new ArrayList<>();
+        final List<RecordStreamEntry> secondList = new ArrayList<>();
+
+        if (secondEntries.isEmpty() || firstEntries.isEmpty()) {
+            ret = new CompareList(firstEntries, secondEntries);
+        } else {
+            int firstIdx = 0;
+            int secondIdx = 0;
+
+            while (firstIdx < firstEntries.size() && secondIdx < secondEntries.size()) {
+                if (firstEntries
+                        .get(firstIdx)
+                        .consensusTime()
+                        .equals(secondEntries.get(secondIdx).consensusTime())) {
+                    firstList.add(firstEntries.get(firstIdx));
+                    secondList.add(secondEntries.get(secondIdx));
+                    firstIdx++;
+                    secondIdx++;
+                } else if (firstEntries
+                        .get(firstIdx)
+                        .consensusTime()
+                        .isBefore(secondEntries.get(secondIdx).consensusTime())) {
+                    firstList.add(firstEntries.get(firstIdx));
+                    secondList.add(new RecordStreamEntry(
+                            null, null, firstEntries.get(firstIdx).consensusTime()));
+                    firstIdx++;
+                } else {
+                    firstList.add(new RecordStreamEntry(
+                            null, null, secondEntries.get(secondIdx).consensusTime()));
+                    secondList.add(secondEntries.get(secondIdx));
+                    secondIdx++;
+                }
             }
+
+            if (firstIdx < firstEntries.size()) { // j == secondEntries.size()
+                for (int k = firstIdx; k < firstEntries.size(); k++) {
+                    firstList.add(firstEntries.get(k));
+                    secondList.add(new RecordStreamEntry(
+                            null, null, firstEntries.get(k).consensusTime()));
+                }
+            }
+
+            if (secondIdx < secondEntries.size()) { // i == firstEntries.size()
+                for (int k = secondIdx; k < secondEntries.size(); k++) {
+                    firstList.add(new RecordStreamEntry(
+                            null, null, secondEntries.get(k).consensusTime()));
+                    secondList.add(secondEntries.get(k));
+                }
+            }
+
+            ret = new CompareList(firstList, secondList);
         }
+
         return ret;
     }
 
     public interface RecordDiffSummarizer extends BiFunction<TransactionRecord, TransactionRecord, String> {}
 
     private static class UnmatchableException extends Exception {
-        public UnmatchableException(@NonNull final String message) {
+        UnmatchableException(@NonNull final String message) {
             super(message);
         }
     }
@@ -116,8 +159,19 @@ public class OrderedComparison {
                     diffs.add(new DifferingEntries(
                             firstEntry,
                             null,
-                            "No record found at " + firstEntry.consensusTime() + " for transactionID : "
-                                    + firstEntry.txnRecord().getTransactionID()));
+                            "No modular record found at " + firstEntry.consensusTime() + " for transactionID : "
+                                    + firstEntry.txnRecord().getTransactionID() + " transBody : " + firstEntry.body()));
+                    continue;
+                }
+                if (firstEntries.get(i).txnRecord() == null) {
+                    diffs.add(new DifferingEntries(
+                            null,
+                            secondEntries.get(i),
+                            "Additional modular record found at "
+                                    + secondEntries.get(i).consensusTime() + " for transactionID : "
+                                    + secondEntries.get(i).txnRecord().getTransactionID() + " transBody : "
+                                    + secondEntries.get(i).body()
+                                    + "\n -> \n" + secondEntries.get(i).txnRecord()));
                     continue;
                 }
                 final var secondEntry = entryWithMatchableRecord(secondEntries, i, firstEntry);
@@ -168,18 +222,20 @@ public class OrderedComparison {
      * transaction than the entry at the given index.
      *
      * @param entries a list of entries
-     * @param i the index of the entry to match
+     * @param index the index of the entry to match
      * @param entryToMatch the entry to match
      * @return the entry at the given index
      */
     @NonNull
     private static RecordStreamEntry entryWithMatchableRecord(
-            @NonNull final List<RecordStreamEntry> entries, final int i, @NonNull final RecordStreamEntry entryToMatch)
+            @NonNull final List<RecordStreamEntry> entries,
+            final int index,
+            @NonNull final RecordStreamEntry entryToMatch)
             throws UnmatchableException {
-        final var secondEntry = entries.get(i);
+        final var secondEntry = entries.get(index);
         if (!entryToMatch.consensusTime().equals(secondEntry.consensusTime())) {
             throw new UnmatchableException("Entries at position "
-                    + i
+                    + index
                     + " had different consensus times ("
                     + entryToMatch.consensusTime()
                     + " vs "
@@ -188,7 +244,7 @@ public class OrderedComparison {
         }
         if (!entryToMatch.submittedTransaction().equals(secondEntry.submittedTransaction())) {
             throw new UnmatchableException("Entries at position "
-                    + i
+                    + index
                     + " had different transactions ("
                     + entryToMatch.submittedTransaction()
                     + " vs "

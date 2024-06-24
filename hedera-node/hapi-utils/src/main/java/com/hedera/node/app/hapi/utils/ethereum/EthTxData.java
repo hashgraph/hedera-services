@@ -25,6 +25,7 @@ import com.google.common.base.MoreObjects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -41,7 +42,7 @@ public record EthTxData(
         byte[] maxGas,
         long gasLimit,
         byte[] to,
-        BigInteger value,
+        BigInteger value, // weibar, always positive - note that high-bit might be ON in RLP encoding: still positive
         byte[] callData,
         byte[] accessList,
         int recId,
@@ -49,12 +50,27 @@ public record EthTxData(
         byte[] r,
         byte[] s) {
 
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    /**
+     * A "wiebar" is 10⁻¹⁸ of an hbar.  The relationship is weibar : hbar as wei : ether.  Ethereum
+     * transactions come in with transfer amounts in units of weibar.  Elsewhere in Hedera we use
+     * units of tinybar (10⁻⁸ of an hbar), and here is the conversion factor:
+     */
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
 
     // Copy of constants from besu-native, remove when next besu-native publishes
     static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
     static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
     static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
+
+    // EIP155 note support for v = 27|28 cases in unprotected transaction cases
+    static final BigInteger LEGACY_V_BYTE_SIGNATURE_0 = BigInteger.valueOf(27);
+    static final BigInteger LEGACY_V_BYTE_SIGNATURE_1 = BigInteger.valueOf(28);
+
+    // The specific transaction bytes that are used to deploy the Deterministic Deployer contract
+    // see -  https://github.com/Arachnid/deterministic-deployment-proxy?tab=readme-ov-file#deployment-transaction
+    public static final byte[] DETERMINISTIC_DEPLOYER_TRANSACTION = HexFormat.of()
+            .parseHex(
+                    "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222");
 
     public static EthTxData populateEthTxData(byte[] data) {
         try {
@@ -67,6 +83,7 @@ public record EthTxData(
             return switch (rlpItem.asByte()) {
                 case 1 -> populateEip2390EthTxData(decoder.next(), data);
                 case 2 -> populateEip1559EthTxData(decoder.next(), data);
+                case 3 -> null; // We don't currently support Cancun "blob" transactions
                 default -> null;
             };
 
@@ -75,7 +92,7 @@ public record EthTxData(
         }
     }
 
-    public EthTxData replaceCallData(byte[] callData) {
+    public EthTxData replaceCallData(final byte[] newCallData) {
         return new EthTxData(
                 null,
                 type,
@@ -87,7 +104,7 @@ public record EthTxData(
                 gasLimit,
                 to,
                 value,
-                callData,
+                newCallData,
                 accessList,
                 recId,
                 v,
@@ -185,12 +202,17 @@ public record EthTxData(
     }
 
     public long getAmount() {
-        return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
+        return value.divide(WEIBARS_IN_A_TINYBAR).longValueExact();
     }
 
-    public BigInteger getMaxGasAsBigInteger() {
+    public BigInteger getMaxGasAsBigInteger(final long tinybarGasPrice) {
+        long multiple = 1L;
+        if (type == EthTransactionType.LEGACY_ETHEREUM && Arrays.equals(rawTx, DETERMINISTIC_DEPLOYER_TRANSACTION)) {
+            multiple = tinybarGasPrice;
+        }
         return switch (type) {
-            case LEGACY_ETHEREUM, EIP2930 -> new BigInteger(1, gasPrice);
+            case LEGACY_ETHEREUM -> new BigInteger(1, gasPrice).multiply(BigInteger.valueOf(multiple));
+            case EIP2930 -> new BigInteger(1, gasPrice);
             case EIP1559 -> new BigInteger(1, maxGas);
         };
     }
@@ -202,11 +224,12 @@ public record EthTxData(
      * <p>Clearly the latter value would always be un-payable, since the transaction would cost more
      * than the entire hbar supply. We just do this to avoid integral overflow.
      *
-     * @return the effective offered gas price
+     * @param weibarGasPrice the current gas price in weibars
+     * @return the effective offered gas price in tinybars
      */
-    public long effectiveOfferedGasPriceInTinybars() {
-        return BigInteger.valueOf(Long.MAX_VALUE / gasLimit)
-                .min(getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS))
+    public long effectiveOfferedGasPriceInTinybars(final long weibarGasPrice) {
+        return BigInteger.valueOf(Long.MAX_VALUE)
+                .min(getMaxGasAsBigInteger(weibarGasPrice).divide(WEIBARS_IN_A_TINYBAR))
                 .longValueExact();
     }
 
@@ -221,7 +244,7 @@ public record EthTxData(
      */
     public long effectiveTinybarValue() {
         return BigInteger.valueOf(Long.MAX_VALUE)
-                .min(value.divide(WEIBARS_TO_TINYBARS))
+                .min(value.divide(WEIBARS_IN_A_TINYBAR))
                 .longValueExact();
     }
 
@@ -236,11 +259,11 @@ public record EthTxData(
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(final Object other) {
+        if (this == other) return true;
+        if (other == null || getClass() != other.getClass()) return false;
 
-        final EthTxData ethTxData = (EthTxData) o;
+        final EthTxData ethTxData = (EthTxData) other;
 
         return (nonce == ethTxData.nonce)
                 && (gasLimit == ethTxData.gasLimit)
@@ -312,11 +335,13 @@ public record EthTxData(
     }
 
     public boolean matchesChainId(final byte[] hederaChainId) {
-        return Arrays.compare(chainId, hederaChainId) == 0;
+        // first two checks handle the unprotected ethereum transactions
+        // before EIP155 - source: https://eips.ethereum.org/EIPS/eip-155
+        return chainId == null || chainId.length == 0 || Arrays.compare(chainId, hederaChainId) == 0;
     }
 
     @VisibleForTesting
-    public EthTxData replaceTo(byte[] to) {
+    public EthTxData replaceTo(final byte[] newTo) {
         return new EthTxData(
                 null,
                 type,
@@ -326,7 +351,7 @@ public record EthTxData(
                 maxPriorityGas,
                 maxGas,
                 gasLimit,
-                to,
+                newTo,
                 value,
                 callData,
                 accessList,
@@ -348,11 +373,17 @@ public record EthTxData(
         }
 
         byte[] chainId = null;
-        byte[] v = rlpList.get(6).asBytes();
-        BigInteger vBI = new BigInteger(1, v);
+        byte[] val = rlpList.get(6).asBytes();
+        BigInteger vBI = new BigInteger(1, val);
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
+        // https://eips.ethereum.org/EIPS/eip-155
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
+            // after EIP155 the chain id is equal to
+            // CHAIN_ID = (v - {0,1} - 35) / 2
             chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+        } else if (isLegacyUnprotectedEtx(vBI)) {
+            // before EIP155 the chain id is considered equal to 0
+            chainId = new byte[0];
         }
 
         return new EthTxData(
@@ -369,7 +400,7 @@ public record EthTxData(
                 rlpList.get(5).data(), // callData
                 null, // accessList
                 recId,
-                v,
+                val,
                 rlpList.get(7).data(), // r
                 rlpList.get(8).data() // s
                 );
@@ -443,5 +474,11 @@ public record EthTxData(
                 rlpList.get(9).data(), // r
                 rlpList.get(10).data() // s
                 );
+    }
+
+    // before EIP155 the value of v in
+    // (unprotected) ethereum transactions is either 27 or 28
+    private static boolean isLegacyUnprotectedEtx(@NonNull BigInteger vBI) {
+        return vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_0) == 0 || vBI.compareTo(LEGACY_V_BYTE_SIGNATURE_1) == 0;
     }
 }

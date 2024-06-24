@@ -58,9 +58,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -69,7 +68,6 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
@@ -84,6 +82,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.HederaState;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.function.Function;
@@ -118,9 +117,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private QueryDispatcher dispatcher;
-
-    @Mock
-    private HapiOpCounters opCounters;
 
     @Mock(strictness = LENIENT)
     private Codec<Query> queryParser;
@@ -438,6 +434,38 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
+    void testSuccessIfPaymentRequiredAndNotProvided() throws ParseException, PreCheckException {
+        final var queryHeader =
+                QueryHeader.newBuilder().payment((Transaction) null).build();
+        final var query = Query.newBuilder()
+                .fileGetInfo(FileGetInfoQuery.newBuilder().header(queryHeader))
+                .build();
+        when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
+        when(handler.extractHeader(query)).thenReturn(queryHeader);
+        when(dispatcher.getHandler(query)).thenReturn(handler);
+        given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
+        given(handler.requiresNodePayment(any())).willReturn(true);
+        when(handler.findResponse(any(), any()))
+                .thenReturn(Response.newBuilder()
+                        .fileGetInfo(FileGetInfoResponse.newBuilder()
+                                .header(ResponseHeader.newBuilder().build())
+                                .build())
+                        .build());
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
+        final var responseBuffer = newEmptyBuffer();
+
+        // when
+        workflow.handleQuery(requestBuffer, responseBuffer);
+
+        // then
+        final var response = parseResponse(responseBuffer);
+        final var header = response.fileGetInfoOrThrow().headerOrThrow();
+        assertThat(header.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_TX_FEE);
+        assertThat(header.responseType()).isEqualTo(ANSWER_ONLY);
+        assertThat(header.cost()).isZero();
+    }
+
+    @Test
     void testSuccessIfCostOnly() throws ParseException {
         // given
         final var queryHeader =
@@ -484,8 +512,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-        verify(opCounters, never()).countReceived(any());
-        verify(opCounters, never()).countAnswered(any());
     }
 
     @Test
@@ -501,8 +527,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var precheckCode =
                 response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
         assertThat(precheckCode).isEqualTo(NOT_SUPPORTED);
-        verify(opCounters, never()).countReceived(any());
-        verify(opCounters, never()).countAnswered(any());
     }
 
     @Test
@@ -533,7 +557,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
         when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
 
-        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
+        final var requestBytes = CommonPbjConverters.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(dispatcher.getHandler(query)).thenReturn(handler);
         final var responseBuffer = newEmptyBuffer();
@@ -688,7 +712,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         NetworkGetExecutionTimeQuery.newBuilder().header(localQueryHeader))
                 .build();
 
-        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
+        final var requestBytes = CommonPbjConverters.asBytes(localRequestBuffer);
         when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(localQuery);
         when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
         when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);

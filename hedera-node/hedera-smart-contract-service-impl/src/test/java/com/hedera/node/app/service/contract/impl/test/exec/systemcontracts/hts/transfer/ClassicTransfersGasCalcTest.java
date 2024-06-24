@@ -31,12 +31,12 @@ import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalcu
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class ClassicTransfersGasCalcTest extends HtsCallTestBase {
+class ClassicTransfersGasCalcTest extends CallTestBase {
     private static final long PRETEND_CRYPTO_CREATE_TINYBAR_PRICE = 1_234L;
     private static final long PRETEND_CRYPTO_UPDATE_TINYBAR_PRICE = 2_345L;
     private static final long PRETEND_LAZY_CREATION_TINYBAR_PRICE =

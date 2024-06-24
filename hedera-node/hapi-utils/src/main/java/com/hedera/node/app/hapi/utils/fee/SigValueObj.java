@@ -19,7 +19,6 @@ package com.hedera.node.app.hapi.utils.fee;
 public class SigValueObj {
 
     public SigValueObj(int totalSigCount, int payerAcctSigCount, int signatureSize) {
-        super();
         this.totalSigCount = totalSigCount;
         this.payerAcctSigCount = payerAcctSigCount;
         this.signatureSize = signatureSize;

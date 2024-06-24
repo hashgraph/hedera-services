@@ -47,6 +47,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
         return ((double) sum) / count;
     };
 
+    @NonNull
     @Override
     default MetricType getMetricType() {
         return MetricType.ACCUMULATOR;
@@ -55,6 +56,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -63,9 +65,10 @@ public interface IntegerPairAccumulator<T> extends Metric {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     default T get(@NonNull final ValueType valueType) {
-        Objects.requireNonNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         if (valueType == VALUE) {
             return get();
         }
@@ -77,6 +80,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
      *
      * @return the current value
      */
+    @NonNull
     T get();
 
     /**
@@ -110,15 +114,15 @@ public interface IntegerPairAccumulator<T> extends Metric {
      */
     final class Config<T> extends PlatformMetricConfig<IntegerPairAccumulator<T>, Config<T>> {
 
-        private final Class<T> type;
+        private final @NonNull Class<T> type;
 
-        private final BiFunction<Integer, Integer, T> resultFunction;
+        private final @NonNull BiFunction<Integer, Integer, T> resultFunction;
 
-        private final IntBinaryOperator leftAccumulator;
-        private final IntBinaryOperator rightAccumulator;
+        private final @NonNull IntBinaryOperator leftAccumulator;
+        private final @NonNull IntBinaryOperator rightAccumulator;
 
-        private final IntSupplier leftInitializer;
-        private final IntSupplier rightInitializer;
+        private final @NonNull IntSupplier leftInitializer;
+        private final @NonNull IntSupplier rightInitializer;
 
         private static final IntSupplier DEFAULT_INITIALIZER = () -> 0;
 
@@ -140,14 +144,33 @@ public interface IntegerPairAccumulator<T> extends Metric {
                 @NonNull final BiFunction<Integer, Integer, T> resultFunction) {
 
             super(category, name, "%s");
-            this.type = Objects.requireNonNull(type, "type");
-            this.resultFunction = Objects.requireNonNull(resultFunction, "resultFunction");
+            this.type = Objects.requireNonNull(type, "type must not be null");
+            this.resultFunction = Objects.requireNonNull(resultFunction, "resultFunction must not be null");
             this.leftAccumulator = Integer::sum;
             this.rightAccumulator = Integer::sum;
             this.leftInitializer = DEFAULT_INITIALIZER;
             this.rightInitializer = DEFAULT_INITIALIZER;
         }
 
+        /**
+         * Constructor of {@code IntegerPairAccumulator.Config}
+         * <p>
+         * The accumulators are by default set to {@code Integer::sum}.
+         *
+         * @param category       the kind of metric (metrics are grouped or filtered by this)
+         * @param name           a short name for the metric
+         * @param description metric description
+         * @param unit the unit for metric
+         * @param format the format for metric
+         * @param type           the type of the values this {@code IntegerPairAccumulator} returns
+         * @param resultFunction the function that is used to calculate the {@code IntegerAccumulator}'s value.
+         * @param leftAccumulator the leftAccumulator for metric
+         * @param rightAccumulator the rightAccumulator for metric
+         * @param leftInitializer the leftInitializer for metric
+         * @param rightInitializer the rightInitializer for metric
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         */
         private Config(
                 @NonNull final String category,
                 @NonNull final String name,
@@ -163,16 +186,17 @@ public interface IntegerPairAccumulator<T> extends Metric {
 
             super(category, name, description, unit, format);
             this.type = Objects.requireNonNull(type, "type");
-            this.resultFunction = Objects.requireNonNull(resultFunction, "resultFunction");
-            this.leftAccumulator = Objects.requireNonNull(leftAccumulator, "leftAccumulator");
-            this.rightAccumulator = Objects.requireNonNull(rightAccumulator, "rightAccumulator");
-            this.leftInitializer = Objects.requireNonNull(leftInitializer, "leftInitializer");
-            this.rightInitializer = Objects.requireNonNull(rightInitializer, "rightInitializer");
+            this.resultFunction = Objects.requireNonNull(resultFunction, "resultFunction must not be null");
+            this.leftAccumulator = Objects.requireNonNull(leftAccumulator, "leftAccumulator must not be null");
+            this.rightAccumulator = Objects.requireNonNull(rightAccumulator, "rightAccumulator must not be null");
+            this.leftInitializer = Objects.requireNonNull(leftInitializer, "leftInitializer must not be null");
+            this.rightInitializer = Objects.requireNonNull(rightInitializer, "rightInitializer must not be null");
         }
 
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public IntegerPairAccumulator.Config<T> withDescription(@NonNull final String description) {
             return new IntegerPairAccumulator.Config<>(
@@ -192,6 +216,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @Override
         public IntegerPairAccumulator.Config<T> withUnit(@NonNull final String unit) {
             return new IntegerPairAccumulator.Config<>(
@@ -213,7 +238,9 @@ public interface IntegerPairAccumulator<T> extends Metric {
          *
          * @param format the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
+         * @throws NullPointerException     if one of the parameters is {@code null}
+         * @throws IllegalArgumentException if one of the parameters consists only of whitespaces
+         *
          */
         @NonNull
         public IntegerPairAccumulator.Config<T> withFormat(@NonNull final String format) {
@@ -427,6 +454,7 @@ public interface IntegerPairAccumulator<T> extends Metric {
         /**
          * {@inheritDoc}
          */
+        @NonNull
         @SuppressWarnings("unchecked")
         @Override
         public Class<IntegerPairAccumulator<T>> getResultClass() {

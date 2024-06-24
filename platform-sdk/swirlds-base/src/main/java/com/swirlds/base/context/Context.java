@@ -41,13 +41,6 @@ public interface Context {
     AutoCloseable add(@NonNull String key, @NonNull String value);
 
     /**
-     * remove a key-value pair from the context if available.
-     *
-     * @param key the key to remove
-     */
-    void remove(@NonNull String key);
-
-    /**
      * Adds a key-value pair to the context.
      *
      * @param key   the key
@@ -101,6 +94,13 @@ public interface Context {
     default AutoCloseable add(@NonNull String key, boolean value) {
         return add(key, Boolean.toString(value));
     }
+
+    /**
+     * remove a key-value pair from the context if available.
+     *
+     * @param key the key to remove
+     */
+    void remove(@NonNull String key);
 
     /**
      * Returns the global context. The content of the global context is shared by all threads. The global context can be

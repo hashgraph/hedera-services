@@ -21,7 +21,7 @@ import java.io.File;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link File} values in the
- * configuration
+ * configuration.
  */
 public final class FileConverter implements ConfigConverter<File> {
 

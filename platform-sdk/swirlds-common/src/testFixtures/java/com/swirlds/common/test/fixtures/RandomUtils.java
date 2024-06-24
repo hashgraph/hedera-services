@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test.fixtures;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -107,16 +108,16 @@ public class RandomUtils {
      * @return a random hash
      */
     public static @NonNull Hash randomHash(@NonNull final Random random) {
-        return new Hash(randomHashBytes(random), DigestType.SHA_384);
+        return new Hash(randomByteArray(random, DigestType.SHA_384.digestLength()), DigestType.SHA_384);
     }
 
     /**
-     * Generates a byte array with random data that is the same length as a SHA-384 hash
+     * Generates Bytes with random data that is the same length as a SHA-384 hash
      * @param random the random object to use
-     * @return a random byte array
+     * @return random Bytes
      */
-    public static byte[] randomHashBytes(@NonNull final Random random) {
-        return randomByteArray(random, DigestType.SHA_384.digestLength());
+    public static Bytes randomHashBytes(@NonNull final Random random) {
+        return Bytes.wrap(randomByteArray(random, DigestType.SHA_384.digestLength()));
     }
 
     /**
@@ -126,6 +127,15 @@ public class RandomUtils {
      */
     public static @NonNull Signature randomSignature(@NonNull final Random random) {
         return new Signature(SignatureType.RSA, randomByteArray(random, SignatureType.RSA.signatureLength()));
+    }
+
+    /**
+     * Get random signature bytes that is the same length as a RSA signature
+     * @param random the random object to use
+     * @return random signature bytes
+     */
+    public static @NonNull Bytes randomSignatureBytes(@NonNull final Random random) {
+        return Bytes.wrap(randomByteArray(random, SignatureType.RSA.signatureLength()));
     }
 
     /**

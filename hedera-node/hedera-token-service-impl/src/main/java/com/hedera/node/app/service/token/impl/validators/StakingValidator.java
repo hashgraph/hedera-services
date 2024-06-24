@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -35,6 +35,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakingValidator {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakingValidator() {
         // Dagger2
@@ -50,6 +53,7 @@ public class StakingValidator {
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
+     * @param networkInfo            network info
      */
     public void validateStakedIdForCreation(
             final boolean isStakingEnabled,
@@ -83,6 +87,7 @@ public class StakingValidator {
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
+     * @param networkInfo            network info
      */
     public void validateStakedIdForUpdate(
             final boolean isStakingEnabled,
@@ -127,7 +132,9 @@ public class StakingValidator {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             validateTrue(accountStore.getAccountById(requireNonNull(stakedAccountIdInOp)) != null, INVALID_STAKING_ID);
         } else if (stakedIdKind.equals("STAKED_NODE_ID")) {
-            validateTrue(networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)) != null, INVALID_STAKING_ID);
+            requireNonNull(stakedNodeIdInOp);
+            validateTrue(stakedNodeIdInOp >= -1L, INVALID_STAKING_ID);
+            validateTrue(networkInfo.nodeInfo(stakedNodeIdInOp) != null, INVALID_STAKING_ID);
         }
     }
 

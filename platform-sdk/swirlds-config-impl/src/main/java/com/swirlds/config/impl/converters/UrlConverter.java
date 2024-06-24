@@ -22,7 +22,7 @@ import java.net.URL;
 
 /**
  * Concrete {@link ConfigConverter} implementation that provides the support for {@link URL} values in the
- * configuration
+ * configuration.
  */
 public final class UrlConverter implements ConfigConverter<URL> {
 

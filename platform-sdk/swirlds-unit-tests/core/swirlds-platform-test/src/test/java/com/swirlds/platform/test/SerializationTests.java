@@ -22,13 +22,16 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.TransactionUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
+import java.util.Random;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +45,12 @@ public class SerializationTests {
         new TestConfigBuilder().withValue("transactionMaxBytes", 1_000_000).getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
     }
 
     @ParameterizedTest
@@ -53,20 +62,7 @@ public class SerializationTests {
     }
 
     static Stream<Arguments> selfSerializableProvider() {
-        return Stream.of(arguments(
-                RandomEventUtils.randomEventHashedData(
-                        68164523688792345L,
-                        new NodeId(0),
-                        RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED,
-                        TransactionUtils.randomSwirldTransactions(1234321, 10),
-                        null,
-                        null),
-                RandomEventUtils.randomEventHashedData(
-                        68164523688792345L,
-                        new NodeId(0),
-                        RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED,
-                        null,
-                        null,
-                        null)));
+        final Random random = RandomUtils.getRandomPrintSeed();
+        return Stream.of(arguments(new TestingEventBuilder(random).build()));
     }
 }

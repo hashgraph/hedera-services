@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hedera.node.app.spi.workflows.ResourceExhaustedException.validateResource;
+
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -23,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperatio
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,6 +49,7 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     private final ContractsConfig contractsConfig;
     private final IterableStorageManager storageManager;
     private final StorageSizeValidator storageSizeValidator;
+    private final HandleContext context;
 
     private boolean committed = false;
     private List<ContractID> createdContractIds;
@@ -56,12 +62,14 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final IterableStorageManager storageManager,
-            @NonNull final StorageSizeValidator storageSizeValidator) {
+            @NonNull final StorageSizeValidator storageSizeValidator,
+            @NonNull final HandleContext context) {
         super(enhancement, evmFrameStateFactory, null);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
         this.storageManager = Objects.requireNonNull(storageManager);
         this.rentCalculator = Objects.requireNonNull(rentCalculator);
         this.storageSizeValidator = Objects.requireNonNull(storageSizeValidator);
+        this.context = context;
     }
 
     /**
@@ -95,6 +103,15 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // information for the Hedera record
         final var contractChangeSummary = enhancement.operations().summarizeContractChanges();
         createdContractIds = contractChangeSummary.newContractIds();
+
+        if (contractsConfig.enforceCreationThrottle()) {
+            final var creationCapacityIsAvailable =
+                    !context.shouldThrottleNOfUnscaled(createdContractIds.size(), CRYPTO_CREATE);
+            validateResource(creationCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
+        }
+
+        final var childThrottleIsAvailable = context.hasThrottleCapacityForChildTransactions();
+        validateResource(childThrottleIsAvailable, CONSENSUS_GAS_EXHAUSTED);
 
         // If nonces externalization is enabled, we need to capture the updated nonces
         if (contractsConfig.noncesExternalizationEnabled()) {

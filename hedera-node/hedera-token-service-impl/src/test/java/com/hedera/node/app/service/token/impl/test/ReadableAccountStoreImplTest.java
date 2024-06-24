@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -30,8 +32,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableKVState;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,7 +170,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void retriesEcdsaKeyAliasAsEvmAddressWhenMissing() {
+    void doesntRetryEcdsaKeyAliasAsEvmAddressWhenMissingUsingGet() {
         final var aSecp256K1Key = Key.newBuilder()
                 .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
                 .build();
@@ -188,6 +190,30 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
                 .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
                 .build();
         final var result = subject.getAccountById(protoKeyId);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void retriesEcdsaKeyAliasAsEvmAddressWhenMissingUsingGetByAlias() {
+        final var aSecp256K1Key = Key.newBuilder()
+                .ecdsaSecp256k1(Bytes.fromHex("030101010101010101010101010101010101010101010101010101010101010101"))
+                .build();
+        final var evmAddress = EthSigsUtils.recoverAddressFromPubKey(
+                aSecp256K1Key.ecdsaSecp256k1OrThrow().toByteArray());
+
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAliases = emptyReadableAliasStateBuilder()
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
+                .build();
+        given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
+
+        subject = new ReadableAccountStoreImpl(readableStates);
+
+        final var protoKeyId = AccountID.newBuilder()
+                .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
+                .build();
+        final var result = subject.getAliasedAccountById(protoKeyId);
         assertThat(result).isNotNull();
     }
 

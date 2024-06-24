@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
@@ -23,6 +24,9 @@ import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Acco
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
@@ -41,16 +45,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AdjustFungibleTokenChangesStepTest extends StepsBase {
-
     @Override
     @BeforeEach
     public void setUp() {
         super.setUp();
-        givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
+        givenTxn();
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
@@ -62,11 +65,12 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
     void doesTokenBalanceChangesWithoutAllowances() {
         final var receiver = asAccount(tokenReceiver);
         given(handleContext.payer()).willReturn(spenderId);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
 
-        final var senderAccountBefore = writableAccountStore.get(ownerId);
-        final var receiverAccountBefore = writableAccountStore.get(receiver);
+        final var senderAccountBefore = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountBefore = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelBefore = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
         writableTokenRelStore.put(receiverRelBefore
@@ -83,8 +87,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelAfter = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelAfter = writableTokenRelStore.get(receiver, fungibleTokenId);
 
@@ -106,12 +110,13 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(tokenReceiver);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         // payer is spender for allowances
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
 
-        final var senderAccountBefore = writableAccountStore.get(ownerId);
-        final var receiverAccountBefore = writableAccountStore.get(receiver);
+        final var senderAccountBefore = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountBefore = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelBefore = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelBefore = writableTokenRelStore.get(receiver, fungibleTokenId);
         writableTokenRelStore.put(receiverRelBefore
@@ -130,8 +135,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
         // see numPositiveBalances and numOwnedNfts change
-        final var senderAccountAfter = writableAccountStore.get(ownerId);
-        final var receiverAccountAfter = writableAccountStore.get(receiver);
+        final var senderAccountAfter = writableAccountStore.getAliasedAccountById(ownerId);
+        final var receiverAccountAfter = writableAccountStore.getAliasedAccountById(receiver);
         final var senderRelAfter = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelAfter = writableTokenRelStore.get(receiver, fungibleTokenId);
 
@@ -166,6 +171,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(spenderId);
 
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         // payer is spender for allowances
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
@@ -193,6 +199,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
 
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);
         final var tokenRel = writableTokenRelStore.get(tokenReceiverId, fungibleTokenId);
@@ -223,6 +230,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(spenderId);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         final var replacedOp = getReplacedOp();
         adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, spenderId);

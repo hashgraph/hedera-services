@@ -49,6 +49,10 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_GET_INFO;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_GET_INFO;
@@ -74,13 +78,14 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FRO
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_NFTS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -170,6 +175,12 @@ import java.util.function.Function;
  * @param systemUndelete             the permission for {@link HederaFunctionality#SYSTEM_UNDELETE} functionality
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
+ * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
+ *
+ * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
+ * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
+ * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
+ * @param getNodeInfo                   the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -234,7 +245,12 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-59") PermissionedAccountsRange systemDelete,
         @ConfigProperty(defaultValue = "2-60") PermissionedAccountsRange systemUndelete,
         @ConfigProperty(defaultValue = "2-58") PermissionedAccountsRange freeze,
-        @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails) {
+        @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -280,6 +296,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_CREATE, c -> c.scheduleCreate);
         permissionKeys.put(SCHEDULE_DELETE, c -> c.scheduleDelete);
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
+        permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);
@@ -304,6 +321,10 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_GET_ACCOUNT_NFT_INFOS, c -> c.tokenGetAccountNftInfos);
         permissionKeys.put(TOKEN_FEE_SCHEDULE_UPDATE, c -> c.tokenFeeScheduleUpdate);
         permissionKeys.put(UTIL_PRNG, c -> c.utilPrng);
+        permissionKeys.put(NODE_CREATE, c -> c.createNode);
+        permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
+        permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
+        permissionKeys.put(NODE_GET_INFO, c -> c.getNodeInfo);
     }
 
     /**

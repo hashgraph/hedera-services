@@ -20,7 +20,7 @@ import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
-import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -30,8 +30,8 @@ import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -49,6 +49,7 @@ public class FrameUtils {
     public static final String PROPAGATED_CALL_FAILURE_CONTEXT_VARIABLE = "propagatedCallFailure";
     public static final String SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE = "systemContractGasCalculator";
     public static final String PENDING_CREATION_BUILDER_CONTEXT_VARIABLE = "pendingCreationBuilder";
+    private static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -147,6 +148,27 @@ public class FrameUtils {
         return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE));
     }
 
+    /**
+     * Returns true if the given frame has a record builder.
+     *
+     * @param frame the frame to check
+     * @return true if the frame has a record builder
+     */
+    public static boolean isTopLevelTransaction(@NonNull final MessageFrame frame) {
+        return initialFrameOf(frame).hasContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE);
+    }
+
+    /**
+     * Returns a record builder able to track the contracts called in the frame's
+     * EVM transaction.
+     *
+     * @param frame the frame whose EVM transaction we are tracking called contracts in
+     * @return the record builder
+     */
+    public static @NonNull ContractOperationRecordBuilder recordBuilderFor(@NonNull final MessageFrame frame) {
+        return requireNonNull(initialFrameOf(frame).getContextVariable(HAPI_RECORD_BUILDER_CONTEXT_VARIABLE));
+    }
+
     public static @NonNull SystemContractGasCalculator systemContractGasCalculatorOf(
             @NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(SYSTEM_CONTRACT_GAS_CALCULATOR_CONTEXT_VARIABLE);
@@ -232,40 +254,72 @@ public class FrameUtils {
         return false;
     }
 
-    public static boolean unqualifiedDelegateDetected(final MessageFrame frame) {
+    public enum CallType {
+        QUALIFIED_DELEGATE,
+        UNQUALIFIED_DELEGATE,
+        DIRECT_OR_PROXY_REDIRECT,
+    }
+
+    public static CallType callTypeOf(final MessageFrame frame) {
         if (!isDelegateCall(frame)) {
-            return false;
+            return CallType.DIRECT_OR_PROXY_REDIRECT;
         }
-        final Address recipient = frame.getRecipientAddress();
-
-        final var permittedDelegateCallers = contractsConfigOf(frame).permittedDelegateCallers();
-
+        final var recipient = frame.getRecipientAddress();
         // Evaluate whether the recipient is either a token or on the permitted callers list.
         // This determines if we should treat this as a delegate call.
         // We accept delegates if the token redirect contract calls us.
-        if (isToken(frame, recipient)
-                || (isLongZero(recipient)
-                        && permittedDelegateCallers.contains(ConversionUtils.numberOfLongZero(recipient)))) {
-            // make sure we have a parent calling context
-            final var stack = frame.getMessageFrameStack();
-            final var frames = stack.iterator();
-            frames.next();
-            if (!frames.hasNext()) {
-                // Impossible to get here w/o a catastrophic EVM bug
-                return false;
-            }
-            // If the token redirect contract was called via delegate, then it's a delegate
-            return isDelegateCall(frames.next());
+        final CallType viableType;
+        if (isToken(frame, recipient)) {
+            viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
+        } else if (isQualifiedDelegate(recipient, frame)) {
+            viableType = CallType.QUALIFIED_DELEGATE;
+        } else {
+            return CallType.UNQUALIFIED_DELEGATE;
         }
-        return true;
+        // make sure we have a parent calling context
+        return validateParentCallType(frame, viableType);
+    }
+
+    public static CallType callTypeForAccountOf(final MessageFrame frame) {
+        if (!isDelegateCall(frame)) {
+            return CallType.DIRECT_OR_PROXY_REDIRECT;
+        }
+        final var recipient = frame.getRecipientAddress();
+        // Evaluate whether the recipient is a regular account.
+        // This determines if we should treat this as a delegate call.
+        // We accept delegates if the account redirect contract calls us.
+        final CallType viableType;
+        if (isRegularAccount(frame, recipient)) {
+            viableType = CallType.DIRECT_OR_PROXY_REDIRECT;
+            return validateParentCallType(frame, viableType);
+        } else {
+            return CallType.UNQUALIFIED_DELEGATE;
+        }
+    }
+
+    private static CallType validateParentCallType(@NonNull MessageFrame frame, @NonNull CallType viableType) {
+        requireNonNull(frame);
+        requireNonNull(viableType);
+
+        // make sure we have a parent calling context
+        final var stack = frame.getMessageFrameStack();
+        final var frames = stack.iterator();
+        frames.next();
+        if (!frames.hasNext()) {
+            // Impossible to get here w/o a catastrophic EVM bug
+            throw new IllegalStateException("No parent frame for delegate call");
+        }
+        // Even a qualified delegatecall must originate from a non-delegatecall
+        return isDelegateCall(frames.next()) ? CallType.UNQUALIFIED_DELEGATE : viableType;
     }
 
     /**
      * Returns true if the given frame is a call to a contract that must be present based on feature flag settings.
-     * @param frame
+     *
+     * @param frame the current message frame
      * @param address to check for possible grandfathering
-     * @param featureFlags
-     * @return
+     * @param featureFlags current evm module feature flags
+     * @return true if the contract address must be present in the ledger
      */
     public static boolean contractRequired(
             @NonNull final MessageFrame frame,
@@ -283,13 +337,26 @@ public class FrameUtils {
                 // Not a valid numbered contract id
             }
         }
-        return !featureFlags.isAllowCallsToNonContractAccountsEnabled(configOf(frame), maybeGrandfatheredNumber);
+        return !featureFlags.isAllowCallsToNonContractAccountsEnabled(
+                contractsConfigOf(frame), maybeGrandfatheredNumber);
     }
 
     private static boolean isToken(final MessageFrame frame, final Address address) {
         final var account = frame.getWorldUpdater().get(address);
         if (account != null) {
             return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
+        }
+        return false;
+    }
+
+    private static boolean isRegularAccount(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        requireNonNull(frame);
+        requireNonNull(address);
+
+        final var updater = (ProxyWorldUpdater) frame.getWorldUpdater();
+        final var recipient = updater.getHederaAccount(address);
+        if (recipient != null) {
+            return recipient.isRegularAccount();
         }
         return false;
     }
@@ -305,5 +372,10 @@ public class FrameUtils {
 
     private static PendingCreationMetadataRef pendingCreationMetadataRef(@NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(PENDING_CREATION_BUILDER_CONTEXT_VARIABLE);
+    }
+
+    private static boolean isQualifiedDelegate(@NonNull final Address recipient, @NonNull final MessageFrame frame) {
+        return isLongZero(recipient)
+                && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
     }
 }

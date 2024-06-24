@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -50,8 +49,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 // Some of the test cases cannot be converted to use eth calls,
 // since they use admin keys, which are held by the txn payer.
@@ -80,7 +81,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 newAutoRenewAccountMustSignUpdate(),
                 newTreasuryAccountMustSignUpdate(),
@@ -90,7 +91,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-    final HapiSpec selfDenominatedFixedCollectorMustSign() {
+    final Stream<DynamicTest> selfDenominatedFixedCollectorMustSign() {
         final var fcKey = "fcKey";
         final var arKey = AR_KEY;
         final var feeCollector = "feeCollector";
@@ -163,7 +164,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960") // "assertions should not be used in production code" - not production
-    final HapiSpec fractionalFeeCollectorMustSign() {
+    final Stream<DynamicTest> fractionalFeeCollectorMustSign() {
         final var fcKey = "fcKey";
         final var arKey = AR_KEY;
         final var feeCollector = "feeCollector";
@@ -232,7 +233,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                                 })));
     }
 
-    final HapiSpec autoRenewAccountMustSignCreation() {
+    final Stream<DynamicTest> autoRenewAccountMustSignCreation() {
         final var arKey = AR_KEY;
         final var autoRenew = AUTO_RENEW;
         final AtomicReference<Address> autoRenewAlias = new AtomicReference<>();
@@ -292,7 +293,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                                 getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
     }
 
-    final HapiSpec newTreasuryAccountMustSignUpdate() {
+    final Stream<DynamicTest> newTreasuryAccountMustSignUpdate() {
         final var ft = "fungibleToken";
         final var ntKey = "ntKey";
         final var updateTxn = "updateTxn";
@@ -346,7 +347,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                         getTokenInfo(ft).hasTreasury(TOKEN_TREASURY));
     }
 
-    final HapiSpec newAutoRenewAccountMustSignUpdate() {
+    final Stream<DynamicTest> newAutoRenewAccountMustSignUpdate() {
         final var ft = "fungibleToken";
         final var narKey = "narKey";
         final var adminKey = "adminKey";

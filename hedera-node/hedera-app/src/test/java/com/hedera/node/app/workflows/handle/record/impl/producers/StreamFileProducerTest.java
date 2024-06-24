@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records.impl.producers;
+package com.hedera.node.app.workflows.handle.record.impl.producers;
 
 import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_OBJ;
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
@@ -28,6 +28,9 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
+import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
+import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
+import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -108,7 +111,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             final var runningHashes = new RunningHashes(randomBytes(32), null, null, null);
             subject.initRunningHash(runningHashes);
             assertThat(subject.getRunningHash()).isEqualTo(runningHashes.runningHash());
-            assertThat(subject.getNMinus3RunningHash()).isNull();
+            assertThat(subject.getNMinus3RunningHash()).isEqualTo(Bytes.EMPTY);
         }
     }
 
@@ -247,7 +250,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
 
             // Submitting a batch of records only moves the running hash forward once, because it moves forward once
             // PER USER TRANSACTION, not per record.
-            assertThat(subject.getNMinus3RunningHash()).isNull();
+            assertThat(subject.getNMinus3RunningHash()).isEqualTo(Bytes.EMPTY);
 
             final var finalRunningHash = subject.getRunningHash();
             subject.close();

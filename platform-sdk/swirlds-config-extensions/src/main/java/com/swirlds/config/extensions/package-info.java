@@ -16,7 +16,7 @@
  */
 
 /**
- * Extensions for the config API
+ * Extensions for the config API.
  *
  * @see com.swirlds.config.api
  * @see com.swirlds.config.api.Configuration

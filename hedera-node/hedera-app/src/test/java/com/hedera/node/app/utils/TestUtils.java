@@ -18,9 +18,9 @@ package com.hedera.node.app.utils;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
 import java.util.Random;
@@ -48,11 +48,11 @@ public class TestUtils {
         final MetricsConfig metricsConfig =
                 HederaTestConfigBuilder.createConfig().getConfigData(MetricsConfig.class);
 
-        return new DefaultMetrics(
+        return new DefaultPlatformMetrics(
                 new NodeId(DEFAULT_NODE_ID),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 }

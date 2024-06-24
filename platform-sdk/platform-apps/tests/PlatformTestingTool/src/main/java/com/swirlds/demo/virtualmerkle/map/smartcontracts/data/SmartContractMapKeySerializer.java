@@ -21,7 +21,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 /**
  * This class is the serializer for {@link SmartContractMapKey}.
@@ -60,11 +59,6 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
     }
 
     @Override
-    public void serialize(final SmartContractMapKey key, final ByteBuffer buffer) {
-        key.serialize(buffer);
-    }
-
-    @Override
     public SmartContractMapKey deserialize(@NonNull final ReadableSequentialData in) {
         final SmartContractMapKey key = new SmartContractMapKey();
         key.deserialize(in);
@@ -72,20 +66,7 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
     }
 
     @Override
-    public SmartContractMapKey deserialize(final ByteBuffer buffer, final long dataVersion) {
-        final SmartContractMapKey key = new SmartContractMapKey();
-        key.deserialize(buffer);
-        return key;
-    }
-
-    @Override
     public boolean equals(@NonNull final BufferedData buffer, @NonNull final SmartContractMapKey keyToCompare) {
-        return keyToCompare.equals(buffer);
-    }
-
-    @Override
-    @Deprecated
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final SmartContractMapKey keyToCompare) {
         return keyToCompare.equals(buffer);
     }
 }

@@ -25,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
@@ -33,7 +34,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +44,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @DisplayName("TipsetTracker Tests")
 class TipsetTrackerTests {
@@ -59,21 +61,22 @@ class TipsetTrackerTests {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(AncientMode.class)
     @DisplayName("Basic Behavior Test")
-    void basicBehaviorTest() {
+    void basicBehaviorTest(final AncientMode ancientMode) {
         final Random random = getRandomPrintSeed(0);
 
         final int nodeCount = random.nextInt(10, 20);
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                RandomAddressBookBuilder.create(random).withSize(nodeCount).build();
 
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
-        // FUTURE WORK: Expand test to include birth round based ancient threshold.
-        final TipsetTracker tracker =
-                new TipsetTracker(Time.getCurrent(), addressBook, AncientMode.GENERATION_THRESHOLD);
+        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook, ancientMode);
+
+        long birthRound = ConsensusConstants.ROUND_FIRST;
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
@@ -85,9 +88,11 @@ class TipsetTrackerTests {
                 generation = 1;
             }
 
+            birthRound += random.nextLong(0, 3) / 2;
+
             final EventDescriptor selfParent = latestEvents.get(creator);
             final EventDescriptor fingerprint =
-                    new EventDescriptor(randomHash(random), creator, generation, EventConstants.BIRTH_ROUND_UNDEFINED);
+                    new EventDescriptor(randomHash(random), creator, generation, birthRound);
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
@@ -141,17 +146,18 @@ class TipsetTrackerTests {
             assertTipsetEquality(addressBook, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
         }
 
-        // Slowly advance the minimum generation, we should see tipsets disappear as we go.
-        long minimumGenerationNonAncient = 0;
+        // Slowly advance the ancient threshold, we should see tipsets disappear as we go.
+        long ancientThreshold = ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD
+                ? ConsensusConstants.ROUND_FIRST
+                : EventConstants.FIRST_GENERATION;
         while (tracker.size() > 0) {
-            minimumGenerationNonAncient += random.nextInt(1, 5);
-            // FUTURE WORK: change test to use birthRound number instead of minimum generation non-ancient.
-            final NonAncientEventWindow nonAncientEventWindow = new NonAncientEventWindow(
-                    1, minimumGenerationNonAncient, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
-            tracker.setNonAncientEventWindow(nonAncientEventWindow);
-            assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
+            ancientThreshold += random.nextInt(1, 5);
+            final EventWindow eventWindow =
+                    new EventWindow(1, ancientThreshold, 1 /* ignored in this context */, ancientMode);
+            tracker.setEventWindow(eventWindow);
+            assertEquals(eventWindow, tracker.getEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
-                if (fingerprint.getGeneration() < minimumGenerationNonAncient) {
+                if (fingerprint.getAncientIndicator(ancientMode) < ancientThreshold) {
                     assertNull(tracker.getTipset(fingerprint));
                 } else {
                     assertTipsetEquality(addressBook, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));

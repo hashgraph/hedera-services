@@ -17,26 +17,34 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome.ExternalizeAbortResult;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.mono.fees.calculation.contract.txns.ContractCallResourceUsage;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CALL}.
@@ -44,10 +52,15 @@ import javax.inject.Singleton;
 @Singleton
 public class ContractCallHandler implements TransactionHandler {
     private final Provider<TransactionComponent.Factory> provider;
+    private final GasCalculator gasCalculator;
+    private final SmartContractFeeBuilder usageEstimator = new SmartContractFeeBuilder();
 
     @Inject
-    public ContractCallHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
+    public ContractCallHandler(
+            @NonNull final Provider<TransactionComponent.Factory> provider,
+            @NonNull final GasCalculator gasCalculator) {
         this.provider = requireNonNull(provider);
+        this.gasCalculator = requireNonNull(gasCalculator);
     }
 
     @Override
@@ -59,7 +72,10 @@ public class ContractCallHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        outcome.addCallDetailsTo(context.recordBuilder(ContractCallRecordBuilder.class));
+        // (FUTURE) Remove ExternalizeAbortResult.NO, this is only
+        // for mono-service fidelity during differential testing
+        outcome.addCallDetailsTo(
+                context.recordBuilders().getOrCreate(ContractCallRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }
@@ -69,13 +85,25 @@ public class ContractCallHandler implements TransactionHandler {
         // No non-payer signatures to verify
     }
 
+    @Override
+    public void pureChecks(@NonNull TransactionBody txn) throws PreCheckException {
+        final var op = txn.contractCallOrThrow();
+        mustExist(op.contractID(), INVALID_CONTRACT_ID);
+
+        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
+                Bytes.wrap(op.functionParameters().toByteArray()), false);
+        validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+    }
+
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var op = feeContext.body();
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ContractCallResourceUsage(
-                        new SmartContractFeeBuilder())
-                .usageGiven(fromPbj(op), sigValueObj, null));
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj ->
+                        usageEstimator.getContractCallTxFeeMatrices(CommonPbjConverters.fromPbj(op), sigValueObj));
     }
 }

@@ -19,7 +19,6 @@ package com.swirlds.demo.migration.virtual;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.nio.ByteBuffer;
 
 /**
  * A self serializable supplier for AccountVirtualMapValue.
@@ -70,23 +69,9 @@ public class AccountVirtualMapValueSerializer implements ValueSerializer<Account
     }
 
     @Override
-    @Deprecated
-    public void serialize(AccountVirtualMapValue value, ByteBuffer buffer) {
-        value.serialize(buffer);
-    }
-
-    @Override
     public AccountVirtualMapValue deserialize(final ReadableSequentialData in) {
         final AccountVirtualMapValue value = new AccountVirtualMapValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public AccountVirtualMapValue deserialize(ByteBuffer buffer, long version) {
-        final AccountVirtualMapValue value = new AccountVirtualMapValue();
-        value.deserialize(buffer, (int) version);
         return value;
     }
 }

@@ -47,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -56,8 +55,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
 
@@ -83,13 +84,13 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile(),
                 createTokenWithFixedFeeThenTransferAndAssessFee());
     }
 
-    final HapiSpec hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
+    final Stream<DynamicTest> hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
         final var theAccount = "anybody";
         final var token = "Token";
         final var outerContract = "AssociateTryCatch";
@@ -139,7 +140,7 @@ public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    final HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
+    final Stream<DynamicTest> createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
         final var CONTRACT_ADMIN_KEY = "contractAdminKey";
         final var FEE_COLLECTOR = "feeCollector";

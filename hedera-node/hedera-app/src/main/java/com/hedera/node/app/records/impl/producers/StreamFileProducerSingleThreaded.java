@@ -23,9 +23,9 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -124,8 +124,8 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
             throw new IllegalStateException("initRunningHash() must only be called once");
         }
 
-        if (runningHashes.runningHash() == null) {
-            throw new IllegalArgumentException("The initial running hash cannot be null");
+        if (runningHashes.runningHash().equals(Bytes.EMPTY)) {
+            throw new IllegalArgumentException("The initial running hash cannot be empty");
         }
 
         runningHash = runningHashes.runningHash();

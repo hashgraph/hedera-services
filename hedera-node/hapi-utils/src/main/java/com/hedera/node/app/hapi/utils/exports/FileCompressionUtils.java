@@ -23,7 +23,7 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * Minimal utility denoting the compression algorithm used throughout the project and utility
- * methods for reading the compressed files
+ * methods for reading the compressed files.
  */
 public class FileCompressionUtils {
 

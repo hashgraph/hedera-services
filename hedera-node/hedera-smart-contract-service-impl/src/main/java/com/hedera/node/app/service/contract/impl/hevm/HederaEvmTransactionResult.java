@@ -69,7 +69,8 @@ public record HederaEvmTransactionResult(
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges,
         @Nullable ResponseCodeEnum finalStatus,
-        @Nullable ContractActions actions) {
+        @Nullable ContractActions actions,
+        @Nullable Long signerNonce) {
     public HederaEvmTransactionResult {
         requireNonNull(senderId);
         requireNonNull(output);
@@ -222,7 +223,8 @@ public record HederaEvmTransactionResult(
                 requireNonNull(logs),
                 stateChanges,
                 null,
-                actions);
+                actions,
+                null);
     }
 
     /**
@@ -256,7 +258,8 @@ public record HederaEvmTransactionResult(
                 Collections.emptyList(),
                 maybeReadOnlyStateChangesFrom(frame),
                 null,
-                maybeActionsFrom(frame, tracer));
+                maybeActionsFrom(frame, tracer),
+                null);
     }
 
     /**
@@ -285,6 +288,7 @@ public record HederaEvmTransactionResult(
                 Collections.emptyList(),
                 null,
                 null,
+                null,
                 null);
     }
 
@@ -292,22 +296,21 @@ public record HederaEvmTransactionResult(
      * Create a result for a transaction that failed due to validation exceptions.
      *
      * @param senderId the sender of the EVM transaction
-     * @param transaction the transaction object
+     * @param recipientId the recipient of the EVM transaction
      * @param reason   the reason for the failure
      * @return the result
      */
     public static HederaEvmTransactionResult fromAborted(
             @NonNull final AccountID senderId,
-            @NonNull final HederaEvmTransaction transaction,
+            @Nullable ContractID recipientId,
             @NonNull final ResponseCodeEnum reason) {
         requireNonNull(senderId);
-        requireNonNull(transaction);
         requireNonNull(reason);
         return new HederaEvmTransactionResult(
                 0,
                 0,
                 senderId,
-                transaction.contractId(),
+                recipientId,
                 null,
                 Bytes.EMPTY,
                 null,
@@ -315,6 +318,7 @@ public record HederaEvmTransactionResult(
                 List.of(),
                 null,
                 reason,
+                null,
                 null);
     }
 
@@ -331,7 +335,10 @@ public record HederaEvmTransactionResult(
 
     private ContractFunctionResult.Builder asUncommittedFailureResult(@NonNull final String errorMessage) {
         requireNonNull(errorMessage);
-        return ContractFunctionResult.newBuilder().gasUsed(gasUsed).errorMessage(errorMessage);
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .errorMessage(errorMessage)
+                .signerNonce(signerNonce);
     }
 
     private ContractFunctionResult.Builder asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
@@ -345,7 +352,8 @@ public record HederaEvmTransactionResult(
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
-                .errorMessage(null);
+                .errorMessage(null)
+                .signerNonce(signerNonce);
     }
 
     private ContractFunctionResult asSuccessResultForQuery() {
@@ -356,6 +364,7 @@ public record HederaEvmTransactionResult(
                 .contractID(recipientId)
                 .logInfo(pbjLogsFrom(logs))
                 .errorMessage(null)
+                .signerNonce(signerNonce)
                 .build();
     }
 
@@ -403,5 +412,22 @@ public record HederaEvmTransactionResult(
             }
             return asPbjStateChanges(accesses);
         }
+    }
+
+    public HederaEvmTransactionResult withSignerNonce(@Nullable final Long signerNonce) {
+        return new HederaEvmTransactionResult(
+                gasUsed,
+                gasPrice,
+                senderId,
+                recipientId,
+                recipientEvmAddress,
+                output,
+                haltReason,
+                revertReason,
+                logs,
+                stateChanges,
+                finalStatus,
+                actions,
+                signerNonce);
     }
 }

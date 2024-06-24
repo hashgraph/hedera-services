@@ -45,7 +45,7 @@ jobs:
 
       - name: Read Trigger Time
         id: time
-        uses: mikefarah/yq@dd648994340a5d03225d97abf19c9bf1086c3f07 # v4.40.5
+        uses: mikefarah/yq@9adde1ac14bb283b8955d2b0d567bcaf3c69e639 # v4.42.1
         with:
           cmd: yq '.release.branching.execution.time' '${{ env.WORKFLOW_CONFIG_FILE }}'
 
@@ -112,7 +112,7 @@ jobs:
 
       - name: Create Branch
         id: branch
-        uses: peterjgrainger/action-create-branch@08259812c8ebdbf1973747f9297e332fa078d3c1 # v2.4.0
+        uses: peterjgrainger/action-create-branch@10c7d268152480ae859347db45dc69086cef1d9c # v3.0.0
         with:
           branch: refs/heads/${{ needs.check-branch.outputs.branch-name }}
 
@@ -121,7 +121,7 @@ jobs:
         run: echo "short-id=$(echo -n "${{ github.sha }}" | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
 
       - name: Send Slack Notification
-        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
@@ -212,7 +212,7 @@ jobs:
           printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@bf47d102fdb849e755b0b0023ea3e81a44b6f570 # v2.1.2
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           repository: hashgraph/hedera-internal-workflows

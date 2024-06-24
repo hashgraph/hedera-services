@@ -20,22 +20,23 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -231,15 +232,24 @@ class DefaultSignedStateValidatorTests {
                 .collect(Collectors.toList()));
     }
 
+    @NonNull
+    private static AddressBook createAddressBook(@NonNull final Random random, @NonNull final List<Node> nodes) {
+        final AddressBook addressBook = new AddressBook();
+        for (final Node node : nodes.stream().sorted().toList()) {
+            addressBook.add(RandomAddressBuilder.create(random)
+                    .withNodeId(node.id)
+                    .withWeight(node.weight)
+                    .build());
+        }
+        return addressBook;
+    }
+
     @ParameterizedTest
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
-        final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
-        addressBook = new RandomAddressBookGenerator()
-                .setNodeIds(nodeWeights.keySet())
-                .setCustomWeightGenerator(nodeWeights::get)
-                .build();
+        final Randotron randotron = Randotron.create();
+        addressBook = createAddressBook(randotron, nodes);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -306,37 +316,34 @@ class DefaultSignedStateValidatorTests {
 
         final Hash stateHash = randomHash();
 
+        final SignatureVerifier signatureVerifier = (data, signature, key) -> {
+            // a signature with a 0 byte is always invalid
+            // this is set in the nodeSigs() method
+            if (signature.getByte(0) == 0) {
+                return false;
+            }
+            final Hash hash = new Hash(data.toByteArray(), stateHash.getDigestType());
+
+            return hash.equals(stateHash);
+        };
+
         return new RandomSignedStateGenerator()
                 .setRound(ROUND)
                 .setAddressBook(addressBook)
                 .setStateHash(stateHash)
-                .setSignatures(nodeSigs(signingNodes, stateHash))
+                .setSignatures(nodeSigs(signingNodes))
+                .setSignatureVerifier(signatureVerifier)
                 .build();
     }
 
     /**
      * @return a list of the nodes ids in the supplied nodes
      */
-    private Map<NodeId, Signature> nodeSigs(final List<Node> nodes, final Hash stateHash) {
+    private Map<NodeId, Signature> nodeSigs(final List<Node> nodes) {
         final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Node node : nodes) {
-
-            final Signature signature = mock(Signature.class);
-            doAnswer(invocation -> {
-                        if (!node.validSignature) {
-                            // This signature is always invalid
-                            return false;
-                        }
-
-                        final byte[] bytes = invocation.getArgument(0);
-                        final Hash hash = new Hash(bytes, stateHash.getDigestType());
-
-                        return hash.equals(stateHash);
-                    })
-                    .when(signature)
-                    .verifySignature(any(), any());
-
-            signatures.put(node.id, signature);
+            final byte sigValid = node.validSignature ? (byte) 1 : (byte) 0;
+            signatures.put(node.id, new Signature(SignatureType.RSA, new byte[] {sigValid}));
         }
 
         return signatures;
@@ -346,11 +353,16 @@ class DefaultSignedStateValidatorTests {
      * A record representing a simple node that holds its id, amount of weight, and if it signs states with a valid
      * signature.
      */
-    private record Node(NodeId id, long weight, boolean validSignature) {
+    private record Node(NodeId id, long weight, boolean validSignature) implements Comparable<Node> {
 
         @Override
         public String toString() {
             return String.format("NodeId: %s,\tWeight: %s,\tValidSig: %s", id, weight, validSignature);
+        }
+
+        @Override
+        public int compareTo(@NonNull final Node that) {
+            return id.compareTo(that.id);
         }
     }
 }

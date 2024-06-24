@@ -47,6 +47,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(TIMING_SENSITIVE)
 @DisplayName("Async Stream Test")
 class AsyncStreamTest {
     private final Configuration configuration = new TestConfigBuilder()

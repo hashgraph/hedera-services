@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.StateDefinition;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.BDDAssertions;
@@ -49,7 +49,7 @@ class ScheduleServiceImplTest {
     void registersExpectedSchema() {
         final ScheduleServiceImpl subject = new ScheduleServiceImpl();
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
-        subject.registerSchemas(registry, TestSchema.CURRENT_VERSION);
+        subject.registerSchemas(registry);
         Mockito.verify(registry).register(schemaCaptor.capture());
 
         final Schema schema = schemaCaptor.getValue();
@@ -58,8 +58,8 @@ class ScheduleServiceImplTest {
         final List<String> statesList =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().toList();
         BDDAssertions.assertThat(statesToCreate.size()).isEqualTo(3);
-        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY);
-        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY);
-        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY);
+        BDDAssertions.assertThat(statesList.get(0)).isEqualTo(V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
+        BDDAssertions.assertThat(statesList.get(1)).isEqualTo(V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
+        BDDAssertions.assertThat(statesList.get(2)).isEqualTo(V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
     }
 }

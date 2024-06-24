@@ -19,6 +19,7 @@ package com.swirlds.platform.crypto;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
@@ -33,18 +34,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class KeysAndCertsTest {
-    private static final byte[] DATA = {1, 2, 3};
+    private static final byte[] DATA_ARRAY = {1, 2, 3};
+    private static final Bytes DATA_BYTES = Bytes.wrap(DATA_ARRAY);
     private static final PublicKey WRONG_KEY =
             PreGeneratedPublicKeys.getPublicKey(KeyType.RSA, 0).getPublicKey();
 
     private void testSignVerify(final PlatformSigner signer, final PublicKey publicKey) {
-        final Signature signature = signer.sign(DATA);
+        final Signature signature = signer.sign(DATA_ARRAY);
 
         assertTrue(
-                CryptoStatic.verifySignature(DATA, signature.getSignatureBytes(), publicKey),
+                CryptoStatic.verifySignature(DATA_BYTES, signature.getBytes(), publicKey),
                 "verify should be true when using the correct public key");
         assertFalse(
-                CryptoStatic.verifySignature(DATA, signature.getSignatureBytes(), WRONG_KEY),
+                CryptoStatic.verifySignature(DATA_BYTES, signature.getBytes(), WRONG_KEY),
                 "verify should be false when using the incorrect public key");
     }
 

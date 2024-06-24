@@ -38,7 +38,6 @@ import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.SidecarMetadata;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -46,6 +45,7 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -273,14 +273,13 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
             if (gzipOutputStream != null) gzipOutputStream.flush();
             fileOutputStream.flush();
 
+            closeSidecarFileWriter();
             writeFooter(endRunningHash);
 
             outputStream.close();
             bufferedOutputStream.close();
             if (gzipOutputStream != null) gzipOutputStream.close();
             fileOutputStream.close();
-
-            closeSidecarFileWriter();
 
             // write signature file, this tells the uploader that this record file set is complete
             writeSignatureFile(

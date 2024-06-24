@@ -67,6 +67,7 @@ import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
@@ -74,6 +75,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerifi
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.TokenKeyType;
 import com.hedera.node.app.service.contract.impl.exec.utils.PendingCreationMetadataRef;
@@ -81,6 +83,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
@@ -88,6 +91,7 @@ import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -105,6 +109,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -136,6 +141,7 @@ public class TestHelpers {
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
     public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
+    public static final EntitiesConfig DEFAULT_ENTITIES_CONFIG = DEFAULT_CONFIG.getConfigData(EntitiesConfig.class);
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
@@ -145,6 +151,9 @@ public class TestHelpers {
             .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
+    public static final Configuration V2_TRANSFER_DISABLED_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.precompile.atomicCryptoTransfer.enabled", "false")
+            .getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
@@ -224,6 +233,14 @@ public class TestHelpers {
 
     public static final com.esaulpaugh.headlong.abi.Address NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS =
             asHeadlongAddress(asEvmAddress(NON_FUNGIBLE_TOKEN_ID.tokenNum()));
+
+    public static final Account A_DELETED_CONTRACT = Account.newBuilder()
+            .deleted(true)
+            .smartContract(true)
+            .accountId(AccountID.newBuilder()
+                    .accountNum(CALLED_CONTRACT_ID.contractNumOrThrow())
+                    .build())
+            .build();
 
     public static final Token FUNGIBLE_TOKEN = Token.newBuilder()
             .tokenId(FUNGIBLE_TOKEN_ID)
@@ -479,6 +496,7 @@ public class TestHelpers {
     public static final PrecompileContractResult PRECOMPILE_CONTRACT_FAILED_RESULT =
             PrecompiledContract.PrecompileContractResult.halt(
                     org.apache.tuweni.bytes.Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+    public static final Long SIGNER_NONCE = 1L;
 
     public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
             SENDER_ID,
@@ -518,6 +536,19 @@ public class TestHelpers {
             null,
             null);
 
+    public static final HederaEvmTransactionResult SUCCESS_RESULT_WITH_SIGNER_NONCE =
+            HederaEvmTransactionResult.successFrom(
+                            GAS_LIMIT / 2,
+                            Wei.of(NETWORK_GAS_PRICE),
+                            SENDER_ID,
+                            CALLED_CONTRACT_ID,
+                            CALLED_CONTRACT_EVM_ADDRESS,
+                            pbjToTuweniBytes(CALL_DATA),
+                            List.of(BESU_LOG),
+                            null,
+                            null)
+                    .withSignerNonce(SIGNER_NONCE);
+
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
             GAS_LIMIT / 2,
             NETWORK_GAS_PRICE,
@@ -528,6 +559,7 @@ public class TestHelpers {
             INVALID_SIGNATURE,
             null,
             Collections.emptyList(),
+            null,
             null,
             null,
             null);
@@ -597,12 +629,16 @@ public class TestHelpers {
             ContractID.newBuilder().contractNum(1).build(), Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final AccountID OWNER_ID =
             AccountID.newBuilder().accountNum(121212L).build();
+    public static final Account OWNER_ACCOUNT =
+            Account.newBuilder().accountId(OWNER_ID).build();
     public static final Bytes OWNER_ADDRESS = Bytes.fromHex("a213624b8b83a724438159ba7c0d333a2b6b3990");
     public static final com.esaulpaugh.headlong.abi.Address OWNER_HEADLONG_ADDRESS =
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
     public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     public static final AccountID UNAUTHORIZED_SPENDER_ID =
             AccountID.newBuilder().accountNum(999999L).build();
+    public static final Account UNAUTHORIZED_SPENDER_ACCOUNT =
+            Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build();
     public static final AccountID REVOKE_APPROVAL_SPENDER_ID =
             AccountID.newBuilder().accountNum(0L).build();
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
@@ -622,6 +658,10 @@ public class TestHelpers {
 
     public static final Account ALIASED_RECEIVER =
             Account.newBuilder().accountId(RECEIVER_ID).alias(RECEIVER_ADDRESS).build();
+
+    public static final String ADDRESS_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+    public static final String ACCOUNT_CALL_REDIRECT_CONTRACT_BINARY =
+            "6080604052348015600f57600080fd5b50600061016a905077e4cbd3a7fefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
@@ -790,6 +830,10 @@ public class TestHelpers {
         return org.apache.tuweni.bytes.Bytes.wrap(status.protoName().getBytes(StandardCharsets.UTF_8));
     }
 
+    public static org.apache.tuweni.bytes.Bytes ordinalRevertOutputFor(final ResponseCodeEnum status) {
+        return org.apache.tuweni.bytes.Bytes.wrap(UInt256.valueOf(status.protoOrdinal()));
+    }
+
     public static org.apache.tuweni.bytes.Bytes bytesForRedirect(
             final ByteBuffer encodedErcCall, final TokenID tokenId) {
         return bytesForRedirect(encodedErcCall.array(), asLongZeroAddress(tokenId.tokenNum()));
@@ -799,6 +843,21 @@ public class TestHelpers {
         return org.apache.tuweni.bytes.Bytes.concatenate(
                 org.apache.tuweni.bytes.Bytes.wrap(HtsCallAttempt.REDIRECT_FOR_TOKEN.selector()),
                 tokenAddress,
+                org.apache.tuweni.bytes.Bytes.of(subSelector));
+    }
+
+    // Encode given a ByteBuffer and accountId input bytes for a call to a given contract.
+    // Largely, this is used to encode the call to redirectToAccount() proxy contract for testing purposes.
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectAccount(
+            final ByteBuffer encodedCall, final AccountID accountID) {
+        return bytesForRedirectAccount(encodedCall.array(), asLongZeroAddress(accountID.accountNum()));
+    }
+
+    public static org.apache.tuweni.bytes.Bytes bytesForRedirectAccount(
+            final byte[] subSelector, final Address accountAddress) {
+        return org.apache.tuweni.bytes.Bytes.concatenate(
+                org.apache.tuweni.bytes.Bytes.wrap(HasCallAttempt.REDIRECT_FOR_ACCOUNT.selector()),
+                accountAddress,
                 org.apache.tuweni.bytes.Bytes.of(subSelector));
     }
 
@@ -821,5 +880,14 @@ public class TestHelpers {
         given(frame.getMessageFrameStack()).willReturn(stack);
         doReturn(config).when(frame).getContextVariable(CONFIG_CONTEXT_VARIABLE);
         given(frame.getMessageFrameStack()).willReturn(stack);
+    }
+
+    /** Returns the test (mock) processor for all current EVM modules.
+     *
+     * Needs to be updated when a new EVM module is created.
+     */
+    public static Map<HederaEvmVersion, TransactionProcessor> processorsForAllCurrentEvmVersions(
+            @NonNull final TransactionProcessor processor) {
+        return Map.of(HederaEvmVersion.VERSION_046, processor, HederaEvmVersion.VERSION_050, processor);
     }
 }

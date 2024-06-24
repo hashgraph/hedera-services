@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
@@ -27,7 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
-import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -36,9 +34,6 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
@@ -53,17 +48,13 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,22 +62,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Provides common setup for transfer handler tests.
+ */
 @ExtendWith(MockitoExtension.class)
 public class StepsBase extends CryptoTokenHandlerTestBase {
-    @Mock
-    private HederaNumbers hederaNumbers;
-
     protected CryptoTransferRecordBuilder xferRecordBuilder = new FakeCryptoTransferRecordBuilder().create();
     protected CryptoCreateRecordBuilder cryptoCreateRecordBuilder = new FakeCryptoCreateRecordBuilder().create();
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private LongSupplier consensusSecondNow;
-
-    @Mock
-    private GlobalDynamicProperties dynamicProperties;
-
-    @Mock
-    private PropertySource compositeProps;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ConfigProvider configProvider;
@@ -94,9 +76,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
 
-    private AttributeValidator attributeValidator;
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected RecordBuilders recordBuilders;
 
+    @Mock
     protected ExpiryValidator expiryValidator;
+
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
     protected AssociateTokenRecipientsStep associateTokenRecepientsStep;
@@ -114,10 +99,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void baseInternalSetUp(final boolean prepopulateReceiverIds) {
         super.handlerTestBaseInternalSetUp(prepopulateReceiverIds);
-        attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
-        expiryValidator = new StandardizedExpiryValidator(
-                System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         refreshWritableStores();
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
     }
 
     protected final AccountID unknownAliasedId =
@@ -125,21 +108,16 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected final AccountID unknownAliasedId1 =
             AccountID.newBuilder().alias(edKeyAlias.value()).build();
 
-    protected static final Key aPrimitiveKey = Key.newBuilder()
-            .ed25519(Bytes.wrap("01234567890123456789012345678911"))
+    public static final Key AN_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();
-    protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
+    protected static final ProtoBytes edKeyAlias = new ProtoBytes(Key.PROTOBUF.toBytes(AN_ED25519_KEY));
     protected static final byte[] ecdsaKeyBytes =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     protected static final ProtoBytes ecKeyAlias = new ProtoBytes(Bytes.wrap(ecdsaKeyBytes));
-    protected static final ProtoBytes ecEvmAlias =
-            new ProtoBytes(Bytes.fromHex("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
 
     protected static final byte[] evmAddress = unhex("0000000000000000000000000000000000000003");
-    protected static final byte[] create2Address = unhex("0111111111111111111111111111111111defbbb");
     protected static final ProtoBytes mirrorAlias = new ProtoBytes(Bytes.wrap(evmAddress));
-    protected static final ProtoBytes create2Alias = new ProtoBytes(Bytes.wrap(create2Address));
-    protected static final Long mirrorNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
 
     protected TransactionBody asTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         return TransactionBody.newBuilder()
@@ -204,7 +182,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         eq(payerId),
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(cryptoCreateRecordBuilder);
-        given(handleContext.dispatchComputeFees(any(), any())).willReturn(new Fees(1l, 2l, 3l));
+        given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         //        given(handleContext.feeCalculator()).willReturn(fees);
@@ -219,25 +197,27 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
                 .will((invocation) -> {
-                    final var copy = account.copyBuilder()
+                    final var copy = writableAccountStore
+                            .get(hbarReceiverId)
+                            .copyBuilder()
                             .alias(ecKeyAlias.value())
-                            .accountId(AccountID.newBuilder().accountNum(hbarReceiver))
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    final var copy = account.copyBuilder()
+                    final var copy = writableAccountStore
+                            .get(tokenReceiverId)
+                            .copyBuilder()
                             .alias(edKeyAlias.value())
-                            .accountId(AccountID.newBuilder().accountNum(tokenReceiver))
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.recordBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(recordBuilders.getOrCreate(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
+        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
     }
 }

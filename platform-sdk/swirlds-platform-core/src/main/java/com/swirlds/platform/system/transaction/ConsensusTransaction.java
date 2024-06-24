@@ -16,9 +16,16 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.swirlds.platform.system.ReachedConsensus;
+import java.time.Instant;
 
 /**
  * A transaction that has reached consensus.
  */
-public sealed interface ConsensusTransaction extends Transaction, ReachedConsensus permits ConsensusTransactionImpl {}
+public sealed interface ConsensusTransaction extends Transaction permits ConsensusTransactionImpl {
+    /**
+     * Returns the community's consensus timestamp for this item.
+     *
+     * @return the consensus timestamp
+     */
+    Instant getConsensusTimestamp();
+}

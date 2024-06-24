@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -40,58 +42,58 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class CryptoUpdateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
-
+public class CryptoUpdateSuite {
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     public static final String REPEATING_KEY = "repeatingKey";
     public static final String TEST_ACCOUNT = "testAccount";
     public static final String ORIG_KEY = "origKey";
     public static final String UPD_KEY = "updKey";
-
-    public static void main(String... args) {
-        new CryptoUpdateSuite().runSuiteConcurrentWithOverrides(Map.of("spec.autoScheduledTxns", ""));
-    }
 
     private final SigControl twoLevelThresh = SigControl.threshSigs(
             2,
@@ -116,32 +118,17 @@ public class CryptoUpdateSuite extends HapiSuite {
     private final String TARGET_KEY = "twoLevelThreshWithOverlap";
     private final String TARGET_ACCOUNT = "complexKeyAccount";
 
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                updateWithUniqueSigs(),
-                updateWithOverlappingSigs(),
-                updateWithOneEffectiveSig(),
-                canUpdateMemo(),
-                updateFailsWithInsufficientSigs(),
-                cannotSetThresholdNegative(),
-                updateWithEmptyKeyFails(),
-                updateFailsIfMissingSigs(),
-                updateFailsWithContractKey(),
-                updateFailsWithOverlyLongLifetime(),
-                usdFeeAsExpectedCryptoUpdate(),
-                sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
-                updateMaxAutoAssociationsWorks(),
-                updateStakingFieldsWorks());
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(cryptoCreate("user").stakedAccountId("0.0.20").declinedReward(true))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoUpdate("user")
+                        .newStakedAccountId("0.0.21")));
     }
 
     @HapiTest
-    final HapiSpec updateStakingFieldsWorks() {
+    final Stream<DynamicTest> updateStakingFieldsWorks() {
         return defaultHapiSpec("updateStakingFieldsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -153,23 +140,21 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .has(AccountInfoAsserts.accountWith()
                                         .stakedAccountId("0.0.20")
                                         .noStakingNodeId()
-                                        .isDeclinedReward(true))
-                                .logged())
+                                        .isDeclinedReward(true)))
                 .when(
                         cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                         getAccountInfo("user")
                                 .has(AccountInfoAsserts.accountWith()
                                         .noStakedAccountId()
                                         .stakedNodeId(0L)
-                                        .isDeclinedReward(false))
-                                .logged(),
+                                        .isDeclinedReward(false)),
                         cryptoUpdate("user").newStakedNodeId(-1L),
+                        cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
                         getAccountInfo("user")
                                 .has(AccountInfoAsserts.accountWith()
                                         .noStakedAccountId()
                                         .noStakingNodeId()
-                                        .isDeclinedReward(false))
-                                .logged())
+                                        .isDeclinedReward(false)))
                 .then(
                         cryptoUpdate("user")
                                 .key(ADMIN_KEY)
@@ -187,24 +172,38 @@ public class CryptoUpdateSuite extends HapiSuite {
                                         .noStakedAccountId()
                                         .noStakingNodeId()
                                         .isDeclinedReward(true))
-                                .logged());
+                                .logged(),
+                        // For completeness stake back to a node
+                        cryptoUpdate("user").key(ADMIN_KEY).newStakedNodeId(1),
+                        getAccountInfo("user")
+                                .has(AccountInfoAsserts.accountWith()
+                                        .stakedNodeId(1L)
+                                        .isDeclinedReward(true)));
     }
 
     @HapiTest
-    final HapiSpec usdFeeAsExpectedCryptoUpdate() {
+    final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
-        double baseFee = 0.00022;
+        double baseFee = 0.000214;
+        double baseFeeWithExpiry = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
 
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
         final var plusTenTxn = "plusTenTxn";
-        final var allowedPercentDiff = 1.0;
+        final var plusFiveKTxn = "plusFiveKTxn";
+        final var plusFiveKAndOneTxn = "plusFiveKAndOneTxn";
+        final var invalidNegativeTxn = "invalidNegativeTxn";
+        final var validNegativeTxn = "validNegativeTxn";
+        final var allowedPercentDiff = 1.5;
 
         AtomicLong expiration = new AtomicLong();
-        return defaultHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "ledger.maxAutoAssociations")
                 .given(
+                        overridingTwo(
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE, "ledger.maxAutoAssociations", "5000"),
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
                         cryptoCreate("canonicalAccount")
@@ -226,27 +225,68 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
                                 .blankMemo()
                                 .via(baseTxn)),
+                        getAccountInfo("canonicalAccount")
+                                .hasMaxAutomaticAssociations(0)
+                                .logged(),
                         cryptoUpdate("autoAssocTarget")
                                 .payingWith("autoAssocTarget")
                                 .blankMemo()
                                 .maxAutomaticAssociations(1)
                                 .via(plusOneTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(1)
+                                .logged(),
                         cryptoUpdate("autoAssocTarget")
                                 .payingWith("autoAssocTarget")
                                 .blankMemo()
                                 .maxAutomaticAssociations(11)
-                                .via(plusTenTxn))
+                                .via(plusTenTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(11)
+                                .logged(),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(5000)
+                                .via(plusFiveKTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(5000)
+                                .logged(),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(-1000)
+                                .via(invalidNegativeTxn)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(5001)
+                                .via(plusFiveKAndOneTxn)
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        cryptoUpdate("autoAssocTarget")
+                                .payingWith("autoAssocTarget")
+                                .blankMemo()
+                                .maxAutomaticAssociations(-1)
+                                .via(validNegativeTxn),
+                        getAccountInfo("autoAssocTarget")
+                                .hasMaxAutomaticAssociations(-1)
+                                .logged())
                 .then(
-                        validateChargedUsd(baseTxn, baseFee, allowedPercentDiff)
+                        validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusOneTxn, plusOneSlotFee, allowedPercentDiff)
+                        validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusTenTxn, plusTenSlotsFee, allowedPercentDiff)
+                        validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff)
                                 .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
     @HapiTest
-    final HapiSpec updateFailsWithOverlyLongLifetime() {
+    final Stream<DynamicTest> updateFailsWithOverlyLongLifetime() {
         final var smallBuffer = 12_345L;
         final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
         return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
@@ -256,7 +296,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    final Stream<DynamicTest> sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.99";
         String randomAccount = "randomAccount";
         String firstKey = "firstKey";
@@ -282,7 +322,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec canUpdateMemo() {
+    final Stream<DynamicTest> canUpdateMemo() {
         String firstMemo = "First";
         String secondMemo = "Second";
         return defaultHapiSpec("CanUpdateMemo")
@@ -298,7 +338,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithUniqueSigs() {
+    final Stream<DynamicTest> updateWithUniqueSigs() {
         return defaultHapiSpec("UpdateWithUniqueSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -310,7 +350,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithOneEffectiveSig() {
+    final Stream<DynamicTest> updateWithOneEffectiveSig() {
         KeyLabel oneUniqueKey =
                 complex(complex("X", "X", "X", "X", "X", "X", "X"), complex("X", "X", "X", "X", "X", "X", "X"));
         SigControl singleSig = SigControl.threshSigs(
@@ -330,7 +370,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithOverlappingSigs() {
+    final Stream<DynamicTest> updateWithOverlappingSigs() {
         return defaultHapiSpec("UpdateWithOverlappingSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -343,7 +383,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateFailsWithContractKey() {
+    final Stream<DynamicTest> updateFailsWithContractKey() {
         AtomicLong id = new AtomicLong();
         final var CONTRACT = "Multipurpose";
         return defaultHapiSpec(
@@ -365,7 +405,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateFailsWithInsufficientSigs() {
+    final Stream<DynamicTest> updateFailsWithInsufficientSigs() {
         return defaultHapiSpec("UpdateFailsWithInsufficientSigs", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
@@ -378,7 +418,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotSetThresholdNegative() {
+    final Stream<DynamicTest> cannotSetThresholdNegative() {
         return defaultHapiSpec("CannotSetThresholdNegative", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(cryptoCreate(TEST_ACCOUNT))
                 .when()
@@ -386,7 +426,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateFailsIfMissingSigs() {
+    final Stream<DynamicTest> updateFailsIfMissingSigs() {
         SigControl origKeySigs = SigControl.threshSigs(3, ON, ON, SigControl.threshSigs(1, OFF, ON));
         SigControl updKeySigs = SigControl.listSigs(ON, OFF, SigControl.threshSigs(1, ON, OFF, OFF, OFF));
 
@@ -405,7 +445,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec updateWithEmptyKeyFails() {
+    final Stream<DynamicTest> updateWithEmptyKeyFails() {
         SigControl updKeySigs = threshOf(0, 0);
 
         return defaultHapiSpec("updateWithEmptyKeyFails", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -416,8 +456,8 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @HapiTest
-    final HapiSpec updateMaxAutoAssociationsWorks() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
         final int newBadMax = originalMax - 1;
@@ -433,11 +473,13 @@ public class CryptoUpdateSuite extends HapiSuite {
         final String CONTRACT = "Multipurpose";
         final String ADMIN_KEY = "adminKey";
 
-        return defaultHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.allowAutoAssociations", UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
-                        overriding("contracts.allowAutoAssociations", "true"),
+                        overridingTwo(
+                                "contracts.allowAutoAssociations", "true", UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)
@@ -472,13 +514,14 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .newMaxAutomaticAssociations(newBadMax)
                                 .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
                         contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(newGoodMax)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(-2)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)));
     }
 }

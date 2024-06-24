@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Class that provides functionallity to print information about the config
+ * Class that provides functionallity to print information about the config.
  */
 public final class ConfigExport {
 
@@ -53,10 +53,8 @@ public final class ConfigExport {
      * <code>name, value</code>
      * </p>
      *
-     * @param configuration
-     * 		the configuration
-     * @param lineConsumer
-     * 		the line consumer
+     * @param configuration the configuration
+     * @param lineConsumer  the line consumer
      */
     public static void printConfig(
             @NonNull final Configuration configuration, @NonNull final Consumer<String> lineConsumer) {
@@ -91,15 +89,6 @@ public final class ConfigExport {
         });
     }
 
-    private static <T> Set<T> combine(final Collection<T> set1, final Collection<T> set2) {
-        return Stream.concat(set1.stream(), set2.stream()).collect(Collectors.toSet());
-    }
-
-    private static String buildLine(
-            final String name, final Object value, final int maxValueLength, final String suffix) {
-        return name + ", " + value + createSpaces(value.toString(), maxValueLength) + suffix;
-    }
-
     /**
      * Writes information about the config with 1 line per config property to the given stream. The format of one line
      * looks like this:
@@ -107,12 +96,9 @@ public final class ConfigExport {
      * <code>name,value    ([NOT USED IN RECORD])</code>
      * </p>
      *
-     * @param configuration
-     * 		the configuration
-     * @param printStream
-     * 		the OutputStream in that the info should be written
-     * @throws IOException
-     * 		if writing to the stream fails
+     * @param configuration the configuration
+     * @param printStream   the OutputStream in that the info should be written
+     * @throws IOException if writing to the stream fails
      */
     public static void printConfig(@NonNull final Configuration configuration, @NonNull final OutputStream printStream)
             throws IOException {
@@ -121,6 +107,15 @@ public final class ConfigExport {
         final StringBuilder builder = new StringBuilder();
         printConfig(configuration, line -> builder.append(line).append(System.lineSeparator()));
         printStream.write(builder.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static <T> Set<T> combine(final Collection<T> set1, final Collection<T> set2) {
+        return Stream.concat(set1.stream(), set2.stream()).collect(Collectors.toSet());
+    }
+
+    private static String buildLine(
+            final String name, final Object value, final int maxValueLength, final String suffix) {
+        return name + ", " + value + createSpaces(value.toString(), maxValueLength) + suffix;
     }
 
     public static void addConfigContents(

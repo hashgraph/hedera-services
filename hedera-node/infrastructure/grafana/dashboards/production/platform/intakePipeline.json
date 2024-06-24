@@ -7,15 +7,173 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL",
+      "label": "grafanacloud-swirldslabspreproduction-prom",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus",
+      "usage": {
+        "libraryPanels": [
+          {
+            "name": "Platform Status (new)",
+            "uid": "bdcky36wafe9se"
+          }
+        ]
+      }
     }
   ],
-  "__elements": {},
+  "__elements": {
+    "bdcky36wafe9se": {
+      "name": "Platform Status (new)",
+      "uid": "bdcky36wafe9se",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_GRAFANACLOUD-SWIRLDSLABSPREPRODUCTION-PROM-FOR-LIBRARY-PANEL}"
+        },
+        "description": "",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "continuous-GrYlRd"
+            },
+            "custom": {
+              "fillOpacity": 61,
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineWidth": 0,
+              "spanNulls": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "1": {
+                    "color": "super-light-green",
+                    "index": 0,
+                    "text": "STARTING_UP"
+                  },
+                  "2": {
+                    "color": "green",
+                    "index": 1,
+                    "text": "ACTIVE"
+                  },
+                  "4": {
+                    "color": "red",
+                    "index": 2,
+                    "text": "BEHIND"
+                  },
+                  "5": {
+                    "color": "light-blue",
+                    "index": 3,
+                    "text": "FREEZING"
+                  },
+                  "6": {
+                    "color": "dark-blue",
+                    "index": 4,
+                    "text": "FREEZE_COMPLETE"
+                  },
+                  "7": {
+                    "color": "super-light-yellow",
+                    "index": 5,
+                    "text": "REPLAYING_EVENTS"
+                  },
+                  "8": {
+                    "color": "text",
+                    "index": 6,
+                    "text": "OBSERVING"
+                  },
+                  "9": {
+                    "color": "orange",
+                    "index": 7,
+                    "text": "CHECKING"
+                  },
+                  "10": {
+                    "color": "purple",
+                    "index": 8,
+                    "text": "RECONNECT_COMPLETE"
+                  },
+                  "11": {
+                    "color": "#250707",
+                    "index": 9,
+                    "text": "CATASTROPHIC_FAILURE"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unitScale": true
+          },
+          "overrides": []
+        },
+        "libraryPanel": {
+          "name": "Platform Status (new)",
+          "uid": "bdcky36wafe9se"
+        },
+        "options": {
+          "alignValue": "left",
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "mergeValues": true,
+          "rowHeight": 0.9,
+          "showValue": "auto",
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "grafanacloud-prom"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "platform_PlatformStatus{environment=\"$network\", node_id=~\"$NodeID\"}",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "node {{node_id}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Platform Status",
+        "type": "state-timeline"
+      }
+    }
+  },
   "__requires": [
     {
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.4.0-65875"
+      "version": "10.4.0-66955"
     },
     {
       "type": "datasource",
@@ -68,6 +226,44 @@
   ],
   "liveNow": false,
   "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 16,
+      "panels": [],
+      "title": "Platform Status",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 19,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 14,
+      "libraryPanel": {
+        "uid": "bdcky36wafe9se",
+        "name": "Platform Status (new)"
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 15,
+      "panels": [],
+      "type": "row"
+    },
     {
       "datasource": {
         "type": "prometheus",
@@ -124,16 +320,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 21
       },
       "id": 2,
       "options": {
@@ -225,16 +420,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 18,
+        "w": 24,
         "x": 0,
-        "y": 8
+        "y": 30
       },
       "id": 3,
       "options": {
@@ -326,16 +520,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 18,
+        "w": 24,
         "x": 0,
-        "y": 16
+        "y": 38
       },
       "id": 4,
       "options": {
@@ -427,16 +620,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 24
+        "y": 46
       },
       "id": 1,
       "options": {
@@ -528,16 +720,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 32
+        "y": 55
       },
       "id": 5,
       "options": {
@@ -629,16 +820,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 18,
+        "w": 24,
         "x": 0,
-        "y": 40
+        "y": 64
       },
       "id": 6,
       "options": {
@@ -730,16 +920,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 48
+        "y": 72
       },
       "id": 7,
       "options": {
@@ -831,16 +1020,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 18,
+        "w": 24,
         "x": 0,
-        "y": 56
+        "y": 81
       },
       "id": 9,
       "options": {
@@ -932,16 +1120,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 64
+        "y": 89
       },
       "id": 10,
       "options": {
@@ -1033,16 +1220,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 72
+        "y": 98
       },
       "id": 11,
       "options": {
@@ -1134,16 +1320,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 80
+        "y": 107
       },
       "id": 12,
       "options": {
@@ -1235,16 +1420,15 @@
                 "value": 80
               }
             ]
-          },
-          "unitScale": true
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 18,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 88
+        "y": 116
       },
       "id": 8,
       "options": {
@@ -1281,7 +1465,6 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "Platform"
@@ -1340,13 +1523,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "2024-02-09T17:50:36.987Z",
+    "to": "2024-02-11T21:57:23.869Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Intake Pipeline",
   "uid": "c3475af5-4598-4279-a024-494eb4c4d66d",
-  "version": 11,
+  "version": 14,
   "weekStart": ""
 }

@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -162,9 +164,12 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
+        given(recordBuilder.status()).willReturn(SUCCESS);
         subject.finalizeChildRecord(context, HederaFunctionality.CRYPTO_DELETE);
 
-        verify(recordBuilder).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).transferList(TransferList.DEFAULT);
+        BDDMockito.verifyNoMoreInteractions(recordBuilder);
     }
 
     @Test
@@ -315,10 +320,14 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore.put(tokenRel.copyBuilder().frozen(true).build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
+        given(recordBuilder.status()).willReturn(SUCCESS);
 
         subject.finalizeChildRecord(context, HederaFunctionality.CRYPTO_DELETE);
 
         verify(recordBuilder).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).status();
+        BDDMockito.verify(recordBuilder, atMostOnce()).transferList(TransferList.DEFAULT);
+        BDDMockito.verifyNoMoreInteractions(recordBuilder);
     }
 
     @Test
@@ -705,12 +714,17 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         // Make fungible token changes
         final var fungible321Change = token321Rel.balance() - 25;
+        final var fungible654Change = token654Rel.balance() - 1;
         writableTokenRelStore.put(token321Rel.copyBuilder().balance(25).build());
         writableTokenRelStore.put(token321Rel
                 .copyBuilder()
                 .accountId(ACCOUNT_5656_ID)
                 .balance(fungible321Change)
                 .build());
+        writableTokenRelStore.put(
+                token654Rel.copyBuilder().balance(fungible654Change).build());
+        writableTokenRelStore.put(
+                token654Rel.copyBuilder().accountId(ACCOUNT_1212_ID).balance(1).build());
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
 

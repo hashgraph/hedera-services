@@ -18,8 +18,6 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -38,6 +36,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.file.FileGetInfoResponse;
 import com.hedera.hapi.node.file.FileInfo;
@@ -228,8 +227,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     private FileInfo getExpectedSystemInfo() {
-        final var upgradeHash =
-                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
@@ -242,8 +240,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     private FileInfo getExpectedUpgradeInfo() {
-        final var upgradeHash =
-                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileUpgradeFileId.fileNum()).build())
@@ -256,21 +253,17 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     private Query createGetFileInfoQuery(final long fileId) {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = FileGetInfoQuery.newBuilder()
                 .fileID(FileID.newBuilder().fileNum(fileId).build())
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
         return Query.newBuilder().fileGetInfo(data).build();
     }
 
     private Query createGetFileInfoQuery() {
-        final var payment =
-                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = FileGetInfoQuery.newBuilder()
-                .header(QueryHeader.newBuilder().payment(payment).build())
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
         return Query.newBuilder().fileGetInfo(data).build();

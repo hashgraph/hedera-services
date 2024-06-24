@@ -58,5 +58,13 @@ public interface AdvancedTransformation<A, B> {
      * @return the name of this transformer
      */
     @NonNull
-    String getName();
+    String getTransformerName();
+
+    /**
+     * Return the name of the input wire that feeds data into this transformer.
+     *
+     * @return the name of the input wire
+     */
+    @NonNull
+    String getTransformerInputName();
 }

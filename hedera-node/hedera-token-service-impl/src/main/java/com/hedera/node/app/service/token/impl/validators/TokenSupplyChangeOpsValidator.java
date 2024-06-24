@@ -41,7 +41,9 @@ import javax.inject.Inject;
  * Token Burn operations in handle
  */
 public class TokenSupplyChangeOpsValidator {
-
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenSupplyChangeOpsValidator() {
         // Dagger
@@ -52,6 +54,7 @@ public class TokenSupplyChangeOpsValidator {
      *
      * @param fungibleCount the number of fungible tokens to mint
      * @param metaDataList the list of metadata for the NFTs to mint
+     * @param tokensConfig the tokens configuration
      * @throws HandleException if the transaction data is invalid
      */
     public void validateMint(
@@ -70,6 +73,7 @@ public class TokenSupplyChangeOpsValidator {
      *
      * @param fungibleCount the number of fungible tokens to burn
      * @param nftSerialNums the list of NFT serial numbers to burn
+     * @param tokensConfig  the tokens configuration
      * @throws HandleException if the transaction data is invalid
      */
     public void validateBurn(
@@ -119,6 +123,7 @@ public class TokenSupplyChangeOpsValidator {
      *
      * @param fungibleCount the number of fungible tokens to wipe
      * @param nftSerialNums the list of NFT serial numbers to wipe
+     * @param tokensConfig the tokens configuration
      * @throws HandleException if the transaction data is invalid
      */
     public void validateWipe(
@@ -156,10 +161,6 @@ public class TokenSupplyChangeOpsValidator {
      */
     private void validateCounts(
             final int nftCount, final long fungibleCount, final boolean nftsAreEnabled, final long maxBatchSize) {
-        // commented out below, checked with Michael T, nfts.maxBatchSizeMint is not for fungibleCount.
-        //        if (fungibleCount > 0) {
-        //            validateTrue(fungibleCount <= maxBatchSize, BATCH_SIZE_LIMIT_EXCEEDED);
-        //        }
         if (nftCount > 0) {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
         }

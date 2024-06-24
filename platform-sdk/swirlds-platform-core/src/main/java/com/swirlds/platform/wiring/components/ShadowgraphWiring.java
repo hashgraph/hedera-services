@@ -19,7 +19,7 @@ package com.swirlds.platform.wiring.components;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,13 +27,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Wiring for the {@link Shadowgraph}.
  *
- * @param eventInput                 the input wire for events to be added to the shadow graph
- * @param nonExpiredEventWindowInput the input wire for the non-expired event window
- * @param flushRunnable              the runnable to flush the task scheduler
+ * @param eventInput       the input wire for events to be added to the shadow graph
+ * @param eventWindowInput the input wire for the non-expired event window
+ * @param flushRunnable    the runnable to flush the task scheduler
  */
 public record ShadowgraphWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<NonAncientEventWindow> nonExpiredEventWindowInput,
+        @NonNull InputWire<EventWindow> eventWindowInput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -45,8 +45,8 @@ public record ShadowgraphWiring(
     public static ShadowgraphWiring create(@NonNull final TaskScheduler<Void> taskScheduler) {
 
         return new ShadowgraphWiring(
-                taskScheduler.buildInputWire("events to gossip"),
-                taskScheduler.buildInputWire("non-ancient event window"),
+                taskScheduler.buildInputWire("EventImpl"),
+                taskScheduler.buildInputWire("event window"),
                 taskScheduler::flush);
     }
 
@@ -56,8 +56,7 @@ public record ShadowgraphWiring(
      * @param shadowgraph the shadow graph to bind
      */
     public void bind(@NonNull final Shadowgraph shadowgraph) {
-        ((BindableInputWire<EventImpl, Void>) eventInput).bind(shadowgraph::addEvent);
-        ((BindableInputWire<NonAncientEventWindow, Void>) nonExpiredEventWindowInput)
-                .bind(shadowgraph::updateEventWindow);
+        ((BindableInputWire<EventImpl, Void>) eventInput).bindConsumer(shadowgraph::addEvent);
+        ((BindableInputWire<EventWindow, Void>) eventWindowInput).bindConsumer(shadowgraph::updateEventWindow);
     }
 }

@@ -105,19 +105,19 @@ public class BucketThrottle {
         }
     }
 
-    private void validateCapacityForRequested(final long mtps, final long burstPeriodMs) {
-        if (productWouldOverflow(mtps, NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN)) {
+    private void validateCapacityForRequested(final long requestedMtps, final long burstPeriodMs) {
+        if (productWouldOverflow(requestedMtps, NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN)) {
             throw new IllegalArgumentException("Base bucket capacity calculation outside numeric range");
         }
-        final var unscaledCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / 1_000;
+        final var unscaledCapacity = requestedMtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / 1_000;
         if (productWouldOverflow(unscaledCapacity, burstPeriodMs)) {
             throw new IllegalArgumentException("Scaled bucket capacity calculation outside numeric range");
         }
     }
 
-    boolean allow(final int n, final long elapsedNanos) {
+    boolean allow(final int numReqs, final long elapsedNanos) {
         leakFor(elapsedNanos);
-        return allowInstantaneous(n);
+        return allowInstantaneous(numReqs);
     }
 
     /**
@@ -134,11 +134,11 @@ public class BucketThrottle {
         bucket.leak(leakedUnits);
     }
 
-    boolean allowInstantaneous(final int n) {
-        if (productWouldOverflow(n, CAPACITY_UNITS_PER_TXN)) {
+    boolean allowInstantaneous(final int numReqs) {
+        if (productWouldOverflow(numReqs, CAPACITY_UNITS_PER_TXN)) {
             return false;
         }
-        final long requiredUnits = n * CAPACITY_UNITS_PER_TXN;
+        final long requiredUnits = numReqs * CAPACITY_UNITS_PER_TXN;
         if (requiredUnits > bucket.capacityFree()) {
             return false;
         }

@@ -17,12 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers.SPECIAL_REWARD_RECEIVERS;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,7 +37,7 @@ import javax.inject.Singleton;
  * Translates ERC-20 transfer calls to the HTS system contract.
  */
 @Singleton
-public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
+public class Erc20TransfersTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function ERC_20_TRANSFER = new Function("transfer(address,uint256)", ReturnTypes.BOOL);
     public static final Function ERC_20_TRANSFER_FROM =
             new Function("transferFrom(address,address,uint256)", ReturnTypes.BOOL);
@@ -55,7 +56,7 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
     }
 
     @Override
-    public @Nullable HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public @Nullable Call callFrom(@NonNull final HtsCallAttempt attempt) {
         if (isErc20Transfer(attempt.selector())) {
             final var call = Erc20TransfersTranslator.ERC_20_TRANSFER.decodeCall(
                     attempt.input().toArrayUnsafe());
@@ -83,7 +84,8 @@ public class Erc20TransfersTranslator extends AbstractHtsCallTranslator {
                 attempt.defaultVerificationStrategy(),
                 attempt.senderId(),
                 attempt.addressIdConverter(),
-                requiresApproval);
+                requiresApproval,
+                SPECIAL_REWARD_RECEIVERS);
     }
 
     private boolean selectorsInclude(@NonNull final byte[] selector) {

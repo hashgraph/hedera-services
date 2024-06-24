@@ -75,11 +75,9 @@ import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
-import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
@@ -540,7 +538,6 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        GuiModel.getInstance().setAbout(selfId, "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
@@ -548,7 +545,8 @@ public class PlatformTestingToolMain implements SwirldMain {
             state.initControlStructures(this::handleMessageQuorum);
 
             // FUTURE WORK implement mirrorNode
-            final String myName = platform.getSelfAddress().getSelfName();
+            final String myName =
+                    platform.getAddressBook().getAddress(platform.getSelfId()).getSelfName();
 
             // Parameters[0]: JSON file for test config
             String jsonFileName = null;
@@ -672,9 +670,6 @@ public class PlatformTestingToolMain implements SwirldMain {
         }
 
         initAppStat();
-
-        // register RestartCompleteListener
-        registerStateLoadedFromDiskCompleteListener(currentConfig);
 
         registerAccountBalanceExportListener();
 
@@ -975,21 +970,6 @@ public class PlatformTestingToolMain implements SwirldMain {
             final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpirationQueue();
         }
-    }
-
-    /**
-     * once restart is completed, rebuild ExpectedMap based on actual MerkleMaps
-     */
-    private void registerStateLoadedFromDiskCompleteListener(final SuperConfig currentConfig) {
-        // register RestartCompleteListener
-        platform.getNotificationEngine().register(StateLoadedFromDiskCompleteListener.class, (notification) -> {
-            logger.info(
-                    LOGM_DEMO_INFO,
-                    "Notification Received: StateLoadedFromDisk Finished. sequence: {}",
-                    notification.getSequence());
-            ExpectedMapUtils.buildExpectedMapAfterStateLoad(platform, currentConfig);
-            rebuildExpirationQueue(platform);
-        });
     }
 
     /**

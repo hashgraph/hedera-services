@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.comparator;
 
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
@@ -24,6 +25,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import org.assertj.core.api.Assertions;
@@ -106,6 +108,55 @@ class TokenComparatorsTest {
             Assertions.assertThat(TOKEN_TRANSFER_LIST_COMPARATOR.compare(TOKEN_TRANSFER_LIST_1, TOKEN_TRANSFER_LIST_2))
                     .isNegative();
             Assertions.assertThat(TOKEN_TRANSFER_LIST_COMPARATOR.compare(TOKEN_TRANSFER_LIST_2, TOKEN_TRANSFER_LIST_1))
+                    .isPositive();
+        }
+    }
+
+    @Nested
+    class NftTransferComparatorTest {
+        private static final NftTransfer NFT_TRANSFER_LIST_1 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(1111))
+                .receiverAccountID(asAccount(2222))
+                .serialNumber(1)
+                .build();
+        private static final NftTransfer NFT_TRANSFER_LIST_2 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(1111))
+                .receiverAccountID(asAccount(2222))
+                .serialNumber(2)
+                .build();
+        private static final NftTransfer NFT_TRANSFER_LIST_3 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(3333))
+                .receiverAccountID(asAccount(2222))
+                .serialNumber(2)
+                .build();
+        private static final NftTransfer NFT_TRANSFER_LIST_4 = NftTransfer.newBuilder()
+                .senderAccountID(asAccount(1111))
+                .receiverAccountID(asAccount(3333))
+                .serialNumber(2)
+                .build();
+
+        @Test
+        void checkComparisons() {
+            Assertions.assertThatThrownBy(() -> NFT_TRANSFER_COMPARATOR.compare(null, null))
+                    .isInstanceOf(NullPointerException.class);
+            Assertions.assertThatThrownBy(
+                            () -> NFT_TRANSFER_COMPARATOR.compare(NftTransferComparatorTest.NFT_TRANSFER_LIST_1, null))
+                    .isInstanceOf(NullPointerException.class);
+            Assertions.assertThatThrownBy(() -> NFT_TRANSFER_COMPARATOR.compare(null, NFT_TRANSFER_LIST_1))
+                    .isInstanceOf(NullPointerException.class);
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_1, NFT_TRANSFER_LIST_1))
+                    .isZero();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_1, NFT_TRANSFER_LIST_2))
+                    .isNegative();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_2, NFT_TRANSFER_LIST_1))
+                    .isPositive();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_2, NFT_TRANSFER_LIST_3))
+                    .isNegative();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_3, NFT_TRANSFER_LIST_2))
+                    .isPositive();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_2, NFT_TRANSFER_LIST_4))
+                    .isNegative();
+            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_LIST_4, NFT_TRANSFER_LIST_2))
                     .isPositive();
         }
     }

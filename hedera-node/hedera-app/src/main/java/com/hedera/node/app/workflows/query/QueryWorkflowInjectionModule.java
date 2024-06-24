@@ -19,16 +19,17 @@ package com.hedera.node.app.workflows.query;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.state.HederaState;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -62,7 +63,8 @@ public interface QueryWorkflowInjectionModule {
             @NonNull final NetworkAdminHandlers networkHandlers,
             @NonNull final Supplier<ContractHandlers> contractHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
-            @NonNull final TokenHandlers tokenHandlers) {
+            @NonNull final TokenHandlers tokenHandlers,
+            @NonNull final AddressBookHandlers addressBookHandlers) {
         return new QueryHandlers(
                 consensusHandlers.consensusGetTopicInfoHandler(),
                 contractHandlers.get().contractGetBySolidityIDHandler(),
@@ -88,7 +90,8 @@ public interface QueryWorkflowInjectionModule {
                 tokenHandlers.tokenGetInfoHandler(),
                 tokenHandlers.tokenGetAccountNftInfosHandler(),
                 tokenHandlers.tokenGetNftInfoHandler(),
-                tokenHandlers.tokenGetNftInfosHandler());
+                tokenHandlers.tokenGetNftInfosHandler(),
+                addressBookHandlers.nodeGetInfoHandler());
     }
 
     @Provides

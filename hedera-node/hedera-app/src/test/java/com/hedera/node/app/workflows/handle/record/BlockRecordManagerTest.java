@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records;
+package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.BlockRecordService.NAME;
-import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
 import static com.hedera.node.app.records.RecordTestData.BLOCK_NUM;
 import static com.hedera.node.app.records.RecordTestData.ENDING_RUNNING_HASH;
 import static com.hedera.node.app.records.RecordTestData.SIGNER;
@@ -27,7 +25,10 @@ import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_O
 import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
 import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
 import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -35,23 +36,35 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
+import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerConcurrent;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
+import com.swirlds.platform.test.fixtures.state.MapReadableStates;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -179,7 +192,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                 final var block = STARTING_BLOCK + i;
                 for (var record : blockData) {
                     blockRecordManager.startUserTransaction(
-                            fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
+                            fromTimestamp(record.transactionRecord().consensusTimestamp()),
+                            hederaState,
+                            mock(PlatformState.class));
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
@@ -273,7 +288,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                     final var userTransactions = blockData.subList(j, j + batchSize);
                     for (var record : userTransactions) {
                         blockRecordManager.startUserTransaction(
-                                fromTimestamp(record.transactionRecord().consensusTimestamp()), hederaState);
+                                fromTimestamp(record.transactionRecord().consensusTimestamp()),
+                                hederaState,
+                                mock(PlatformState.class));
                         blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
                         transactionCount++;
                         // collect hashes
@@ -289,9 +306,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                                             .getNMinus3RunningHash()
                                             .toHex());
                         } else {
-                            // check nulls as well
+                            // check empty as well
                             assertThat(blockRecordManager.getNMinus3RunningHash())
-                                    .isNull();
+                                    .isEqualTo(Bytes.EMPTY);
                         }
                     }
                     j += batchSize;
@@ -352,6 +369,92 @@ final class BlockRecordManagerTest extends AppTestBase {
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
                 BLOCK_NUM);
+    }
+
+    @Test
+    void isDefaultConsTimeForNullParam() {
+        @SuppressWarnings("ConstantValue")
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(null);
+        //noinspection ConstantValue
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDefaultConsTimeForNullConsensusTimeOfLastHandledTxn() {
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, null, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDefaultConsTimeForTimestampAfterEpoch() {
+        final var timestampAfterEpoch = Timestamp.newBuilder()
+                .seconds(EPOCH.seconds())
+                .nanos(EPOCH.nanos() + 1)
+                .build();
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, timestampAfterEpoch, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isFalse();
+    }
+
+    @Test
+    void isDefaultConsTimeForTimestampAtEpoch() {
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, EPOCH, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isDefaultConsTimeForTimestampBeforeEpoch() {
+        final var timestampBeforeEpoch = Timestamp.newBuilder()
+                .seconds(EPOCH.seconds())
+                .nanos(EPOCH.nanos() - 1)
+                .build();
+        final var result = BlockRecordManagerImpl.isDefaultConsTimeOfLastHandledTxn(
+                new BlockInfo(0, CONSENSUS_TIME, Bytes.EMPTY, timestampBeforeEpoch, false, CONSENSUS_TIME));
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void consTimeOfLastHandledTxnIsSet() {
+        final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, CONSENSUS_TIME, false, EPOCH);
+        final var state = simpleBlockInfoState(blockInfo);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+
+        final var result = subject.consTimeOfLastHandledTxn();
+        Assertions.assertThat(result).isEqualTo(fromTimestamp(CONSENSUS_TIME));
+    }
+
+    @Test
+    void consTimeOfLastHandledTxnIsNotSet() {
+        final var blockInfo = new BlockInfo(0, EPOCH, Bytes.EMPTY, null, false, EPOCH);
+        final var state = simpleBlockInfoState(blockInfo);
+        final var subject =
+                new BlockRecordManagerImpl(app.configProvider(), state, mock(BlockRecordStreamProducer.class));
+
+        final var result = subject.consTimeOfLastHandledTxn();
+        Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));
+    }
+
+    private static HederaState simpleBlockInfoState(final BlockInfo blockInfo) {
+        return new HederaState() {
+            @NonNull
+            @Override
+            public ReadableStates getReadableStates(@NonNull final String serviceName) {
+                return new MapReadableStates(Map.of(
+                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
+                        new ReadableSingletonStateBase<>(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, () -> blockInfo),
+                        RUNNING_HASHES_STATE_KEY,
+                        new ReadableSingletonStateBase<>(RUNNING_HASHES_STATE_KEY, () -> RunningHashes.DEFAULT)));
+            }
+
+            @NonNull
+            @Override
+            public WritableStates getWritableStates(@NonNull String serviceName) {
+                throw new UnsupportedOperationException("Shouldn't be needed for this test");
+            }
+        };
     }
 
     private static Instant fromTimestamp(final Timestamp timestamp) {

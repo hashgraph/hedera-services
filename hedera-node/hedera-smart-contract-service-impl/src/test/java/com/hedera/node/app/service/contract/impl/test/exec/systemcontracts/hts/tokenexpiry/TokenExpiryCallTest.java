@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenexpiry.TokenExpiryCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokenexpiry.TokenExpiryTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenExpiryCallTest extends HtsCallTestBase {
+class TokenExpiryCallTest extends CallTestBase {
     @Test
     void returnsValidTokenExpiryStatusForPresentToken() {
         final var subject = new TokenExpiryCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN);

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.operations;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -125,7 +126,16 @@ class CustomCallCodeOperationTest {
         givenWellKnownFrameWithNoGasCalc(value, to, gas);
         given(frame.getRemainingGas()).willReturn(REQUIRED_GAS);
         given(gasCalculator.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(REQUIRED_GAS);
     }
 }

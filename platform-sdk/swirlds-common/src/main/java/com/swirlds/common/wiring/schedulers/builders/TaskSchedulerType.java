@@ -53,7 +53,7 @@ public enum TaskSchedulerType {
      * <ul>
      * <li>Create a directed graph where vertices are schedulers and edges are wires between schedulers</li>
      * <li>Starting from each vertex, walk over the graph in depth first order. Follow edges that lead to
-     * DIRECT or DIRECT_STATELESS vertices, but do not follow edges that lead into SEQUENTIAL, SEQUENTIAL_THREAD,
+     * DIRECT or DIRECT_THREADSAFE vertices, but do not follow edges that lead into SEQUENTIAL, SEQUENTIAL_THREAD,
      * or CONCURRENT vertices.</li>
      * <li>If a DIRECT vertex is reachable starting from a CONCURRENT vertex, the wiring is illegal.</li>
      * <li>For each vertex with type DIRECT, count the number of unique SEQUENTIAL or SEQUENTIAL_THREAD vertexes that
@@ -65,19 +65,20 @@ public enum TaskSchedulerType {
      */
     DIRECT,
     /**
-     * Similar to {@link #DIRECT} except that work performed by this scheduler is required to be stateless. This means
+     * Similar to {@link #DIRECT} except that work performed by this scheduler is required to be threadsafe. This means
      * that it is safe to concurrently execute multiple instances of the same task, freeing it from the restrictions of
      * {@link #DIRECT}.
      *
      * <p>
-     * There is no enforcement mechanism in the framework to ensure that the task is actually stateless. It is advised
+     * There is no enforcement mechanism in the framework to ensure that the task is actually threadsafe. It is advised
      * that this scheduler type be used with caution, as improper use can lead to can lead to nasty race conditions.
-     *
-     * <p>
-     * In theory, it would be safe to use this task scheduler type for stateful work if the state is protected by the
-     * necessary synchronization mechanisms. However, this pattern is strongly discouraged. A general design philosophy
-     * of the framework is to enable the creation of simple business logic that it does not need to care about threading
-     * and which relies on the framework to ensure that work is scheduled in a thread safe manner.
      */
-    DIRECT_STATELESS
+    DIRECT_THREADSAFE,
+    /**
+     * A scheduler that does nothing. All wires into and out of this scheduler are effectively non-existent at runtime.
+     * Useful for testing and debugging, or for when the ability to toggle a scheduler on/off via configuration is
+     * desired. For a deeper dive into why this is a useful concept, see
+     * <a href='https://www.youtube.com/watch?v=6h58uT_BGV4'>this explanation</a>.
+     */
+    NO_OP
 }

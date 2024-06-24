@@ -19,18 +19,23 @@ package com.swirlds.platform.test.sync;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.utility.Pair;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -77,8 +82,8 @@ public class SyncTestExecutor {
     public SyncTestExecutor(final SyncTestParams params) {
         this.params = params;
         this.ancientMode = params.getAncientMode();
-        this.addressBook = new RandomAddressBookGenerator()
-                .setSize(params.getNumNetworkNodes())
+        this.addressBook = RandomAddressBookBuilder.create(Randotron.create())
+                .withSize(params.getNumNetworkNodes())
                 .build();
 
         factoryConfig = (f) -> {};
@@ -164,7 +169,15 @@ public class SyncTestExecutor {
             random = new Random(params.getCustomSeed());
         }
 
-        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue(
+                                EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                                ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD)
+                        .getOrCreateConfig())
+                .build();
+
+        final EventEmitterFactory factory = new EventEmitterFactory(platformContext, random, addressBook);
 
         factoryConfig.accept(factory);
 
@@ -229,13 +242,13 @@ public class SyncTestExecutor {
                 callerAncientThreshold++;
             }
 
-            caller.updateEventWindow(new NonAncientEventWindow(
+            caller.updateEventWindow(new EventWindow(
                     ancientMode.getGenesisIndicator(),
                     Math.max(ancientMode.getGenesisIndicator(), callerAncientThreshold),
                     Math.max(ancientMode.getGenesisIndicator(), callerExpiredThreshold),
                     ancientMode));
 
-            listener.updateEventWindow(new NonAncientEventWindow(
+            listener.updateEventWindow(new EventWindow(
                     ancientMode.getGenesisIndicator(),
                     Math.max(ancientMode.getGenesisIndicator(), listenerAncientThreshold),
                     Math.max(ancientMode.getGenesisIndicator(), listenerExpiredThreshold),

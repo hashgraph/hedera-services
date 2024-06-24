@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -68,9 +69,16 @@ public interface TransferContext {
      */
     Map<Bytes, AccountID> resolutions();
 
-    // Throw if the fee cannot be charged for whatever reason
+    /**
+     * Charges extra fee to the HAPI payer account in the current transfer context with the given amount
+     * @param amount the amount to charge
+     */
     void chargeExtraFeeToHapiPayer(long amount);
 
+    /**
+     * Returns the handle context of the current transfer context
+     * @return the handle context of the current transfer context
+     */
     HandleContext getHandleContext();
 
     /* ------------------- Needed for building records ------------------- */
@@ -88,4 +96,30 @@ public interface TransferContext {
      * @param assessedCustomFee the assessed custom fee
      */
     void addToAssessedCustomFee(AssessedCustomFee assessedCustomFee);
+
+    /**
+     * Returns the custom fees assessed so far in this transfer context.
+     *
+     * @return the custom fees assessed so far in this transfer context
+     */
+    List<AssessedCustomFee> getAssessedCustomFees();
+
+    /**
+     * Indicates if this transfer context enforces mono-service
+     * restrictions on whether auto-created accounts can pay custom fees
+     * in the same transaction where they are created.
+     *
+     * <p>The default is true for mono-service fidelity. But many (quite
+     * complicated!) unit tests were written before this was enforced; and
+     * they need to be able to turn it off.
+     *
+     * @return whether certain restrictions on custom fees are enforced
+     */
+    boolean isEnforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments();
+
+    /**
+     * Validates hbar allowances for the top-level operation in this transfer context.
+     */
+    // @Future Remove this, only needed for diff testing and has no logical priority.
+    void validateHbarAllowances();
 }

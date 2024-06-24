@@ -22,7 +22,10 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
+import com.swirlds.platform.gossip.sync.config.SyncConfig_;
 import com.swirlds.platform.network.Connection;
 
 /**
@@ -48,8 +51,15 @@ public class Synchronizer {
      */
     public void synchronize(final SyncNode caller, final SyncNode listener) throws Exception {
 
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+        // The original sync tests are incompatible with event filtering and reduced sync event counts.
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(SyncConfig_.FILTER_LIKELY_DUPLICATES, false)
+                .withValue(SyncConfig_.MAX_SYNC_EVENT_COUNT, 0)
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         parallelExecutor.doParallel(
                 () -> {

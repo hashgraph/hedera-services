@@ -20,16 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.ConsensusData;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
-import java.util.Random;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -37,8 +35,13 @@ public class DetailedConsensusEventTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.common.events");
+        registry.registerConstructables("com.swirlds.platform");
+        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        StaticSoftwareVersion.reset();
     }
 
     @Test
@@ -53,24 +56,12 @@ public class DetailedConsensusEventTest {
         }
     }
 
-    @Test
-    public void EventImplGetHashTest() {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
-        EventImpl event = new EventImpl(
-                consensusEvent.getBaseEventHashedData(),
-                consensusEvent.getBaseEventUnhashedData(),
-                consensusEvent.getConsensusData());
-        CryptographyHolder.get().digestSync(consensusEvent);
-        Hash expectedHash = consensusEvent.getHash();
-        CryptographyHolder.get().digestSync(event);
-        assertEquals(expectedHash, event.getHash());
-    }
-
     private DetailedConsensusEvent generateConsensusEvent() {
-        Random random = new Random(68651684861L);
-        BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
-        BaseEventUnhashedData unhashedData = DetGenerateUtils.generateBaseEventUnhashedData(random);
-        ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
-        return new DetailedConsensusEvent(hashedData, unhashedData, consensusData);
+        final Randotron random = Randotron.create(68651684861L);
+        final PlatformEvent platformEvent = new TestingEventBuilder(random)
+                .setConsensusTimestamp(random.nextInstant())
+                .build();
+
+        return new DetailedConsensusEvent(platformEvent, random.nextPositiveLong(), random.nextBoolean());
     }
 }

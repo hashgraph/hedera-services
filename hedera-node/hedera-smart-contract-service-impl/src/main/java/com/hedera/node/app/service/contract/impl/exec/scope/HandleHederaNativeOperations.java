@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -36,11 +35,11 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -51,9 +50,13 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class HandleHederaNativeOperations implements HederaNativeOperations {
     private final HandleContext context;
 
+    @Nullable
+    private final Key maybeEthSenderKey;
+
     @Inject
-    public HandleHederaNativeOperations(@NonNull final HandleContext context) {
+    public HandleHederaNativeOperations(@NonNull final HandleContext context, @Nullable final Key maybeEthSenderKey) {
         this.context = requireNonNull(context);
+        this.maybeEthSenderKey = maybeEthSenderKey;
     }
 
     /**
@@ -61,7 +64,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @NonNull ReadableNftStore readableNftStore() {
-        return context.readableStore(ReadableNftStore.class);
+        return context.storeFactory().readableStore(ReadableNftStore.class);
     }
 
     /**
@@ -69,7 +72,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @NonNull ReadableTokenRelationStore readableTokenRelationStore() {
-        return context.readableStore(ReadableTokenRelationStore.class);
+        return context.storeFactory().readableStore(ReadableTokenRelationStore.class);
     }
 
     /**
@@ -77,7 +80,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @NonNull ReadableTokenStore readableTokenStore() {
-        return context.readableStore(ReadableTokenStore.class);
+        return context.storeFactory().readableStore(ReadableTokenStore.class);
     }
 
     /**
@@ -85,7 +88,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @NonNull ReadableAccountStore readableAccountStore() {
-        return context.readableStore(ReadableAccountStore.class);
+        return context.storeFactory().readableStore(ReadableAccountStore.class);
     }
 
     /**
@@ -93,7 +96,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void setNonce(final long contractNumber, final long nonce) {
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.setNonce(
                 AccountID.newBuilder().accountNum(contractNumber).build(), nonce);
     }
@@ -114,10 +117,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
                     synthTxn, CryptoCreateRecordBuilder.class, null, context.payer());
             childRecordBuilder.memo(LAZY_CREATION_MEMO);
 
-            final var lazyCreateFees = context.dispatchComputeFees(synthTxn, context.payer());
-            final var finalizationFees = getLazyCreationFinalizationFees();
-            childRecordBuilder.transactionFee(lazyCreateFees.totalFee() + finalizationFees.totalFee());
-
             return childRecordBuilder.status();
         } catch (final HandleException e) {
             // It is critically important we don't let HandleExceptions propagate to the workflow because
@@ -134,12 +133,12 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId);
         // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
-        context.newEntityNum();
+        context.entityNumGenerator().newEntityNum();
     }
 
     /**
@@ -152,11 +151,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             final AccountID toEntityId,
             @NonNull final VerificationStrategy strategy) {
         final var to = requireNonNull(getAccount(toEntityId));
-        final var signatureTest = strategy.asSignatureTestIn(context);
+        final var signatureTest = strategy.asSignatureTestIn(context, maybeEthSenderKey);
         if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
             return INVALID_SIGNATURE;
         }
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.transferFromTo(fromEntityId, toEntityId, amount);
         return OK;
     }
@@ -173,15 +172,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
 
     @Override
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
-    }
-
-    private Fees getLazyCreationFinalizationFees() {
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder().key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY));
-        final var synthTxn =
-                TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody).build();
-        return context.dispatchComputeFees(synthTxn, context.payer());
     }
 }

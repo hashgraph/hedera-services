@@ -24,7 +24,7 @@ import java.util.Arrays;
 public record KnownBlockValues(byte[] hash, long number) {
     private static final int KECCAK256_HASH_LENGTH = 32;
 
-    public static KnownBlockValues MISSING_BLOCK_VALUES = new KnownBlockValues(new byte[0], 0);
+    public static final KnownBlockValues MISSING_BLOCK_VALUES = new KnownBlockValues(new byte[0], 0);
 
     public static KnownBlockValues from(final String literal) {
         if (literal.isBlank()) {
@@ -51,14 +51,14 @@ public record KnownBlockValues(byte[] hash, long number) {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(final Object other) {
+        if (this == other) {
             return true;
         }
-        if (o == null || KnownBlockValues.class != o.getClass()) {
+        if (other == null || KnownBlockValues.class != other.getClass()) {
             return false;
         }
-        final var that = (KnownBlockValues) o;
+        final var that = (KnownBlockValues) other;
         return this.number == that.number && Arrays.equals(this.hash, that.hash);
     }
 

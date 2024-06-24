@@ -38,6 +38,7 @@ public interface TokenMintRecordBuilder extends TokenBaseRecordBuilder {
     /**
      * Sets the new total supply of a token
      * @param newTotalSupply the new total supply of a token
+     * @return this builder
      */
     TokenMintRecordBuilder newTotalSupply(final long newTotalSupply);
 

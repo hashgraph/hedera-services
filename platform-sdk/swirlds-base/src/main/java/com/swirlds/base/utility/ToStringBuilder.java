@@ -144,7 +144,8 @@ public class ToStringBuilder {
     }
 
     /**
-     * Format the given class name to remove the package prefix and replace inner class separators with "."
+     * Format the given class name to remove the package prefix and replace inner class separators with a period (".")
+     * character.
      * <p>
      * For example, "com.hedera.services.legacy.core.jproto.JKeyList$JKeyListObject" becomes "JKeyList.JKeyListObject"
      * @param input the class name to format

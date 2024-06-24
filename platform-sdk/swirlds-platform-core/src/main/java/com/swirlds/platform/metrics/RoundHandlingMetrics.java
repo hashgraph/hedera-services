@@ -17,7 +17,7 @@
 package com.swirlds.platform.metrics;
 
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase.IDLE;
+import static com.swirlds.platform.eventhandling.TransactionHandlerPhase.IDLE;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -25,14 +25,14 @@ import com.swirlds.common.metrics.extensions.PhaseTimer;
 import com.swirlds.common.metrics.extensions.PhaseTimerBuilder;
 import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.ConsensusRoundHandlerPhase;
+import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
+import com.swirlds.platform.eventhandling.TransactionHandlerPhase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Provides access to statistics relevant to {@link ConsensusRoundHandler}
+ * Provides access to statistics relevant to {@link DefaultTransactionHandler}
  */
 public class RoundHandlingMetrics {
     private static final LongGauge.Config consensusTimeConfig = new LongGauge.Config(INTERNAL_CATEGORY, "consensusTime")
@@ -54,7 +54,7 @@ public class RoundHandlingMetrics {
             .withUnit("count");
     private final LongGauge eventsPerRound;
 
-    private final PhaseTimer<ConsensusRoundHandlerPhase> roundHandlerPhase;
+    private final PhaseTimer<TransactionHandlerPhase> roundHandlerPhase;
 
     private final Time time;
 
@@ -73,7 +73,7 @@ public class RoundHandlingMetrics {
         eventsPerRound = metrics.getOrCreate(eventsPerRoundConfig);
 
         this.roundHandlerPhase = new PhaseTimerBuilder<>(
-                        platformContext, time, "platform", ConsensusRoundHandlerPhase.class)
+                        platformContext, time, "platform", TransactionHandlerPhase.class)
                 .enableFractionalMetrics()
                 .setInitialPhase(IDLE)
                 .setMetricsNamePrefix("consensus")
@@ -100,11 +100,11 @@ public class RoundHandlingMetrics {
     }
 
     /**
-     * Activate a new phase of the consensus round handler.
+     * Activate a new phase of the transaction handler.
      *
      * @param phase the new phase
      */
-    public void setPhase(@NonNull final ConsensusRoundHandlerPhase phase) {
+    public void setPhase(@NonNull final TransactionHandlerPhase phase) {
         Objects.requireNonNull(phase);
         roundHandlerPhase.activatePhase(phase);
     }

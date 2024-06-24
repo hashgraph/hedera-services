@@ -57,13 +57,6 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
         public static final int ORIGINAL = 1;
     }
 
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-
     private static final FieldDefinition FIELD_TABLECONFIG_HASHVERSION =
             new FieldDefinition("hashVersion", FieldType.UINT32, false, true, false, 1);
     private static final FieldDefinition FIELD_TABLECONFIG_DIGESTTYPEID =
@@ -116,7 +109,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     /**
      * Max number of keys that can be stored in a table.
      */
-    private long maxNumberOfKeys = config.maxNumOfKeys();
+    private long maxNumberOfKeys = 0;
 
     /**
      * Threshold where we switch from storing internal hashes in ram to storing them on disk. If it is 0 then everything
@@ -124,7 +117,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      * we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram and the
      * upper larger less changing layers are on disk.
      */
-    private long hashesRamToDiskThreshold = config.hashesRamToDiskThreshold();
+    private long hashesRamToDiskThreshold = 0;
 
     /**
      * Indicates whether to store indexes on disk or in Java heap/off-heap memory.
@@ -162,6 +155,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             @NonNull final KeySerializer<K> keySerializer,
             final short valueVersion,
             @NonNull final ValueSerializer<V> valueSerializer) {
+        // Mandatory fields
         this.hashVersion = hashVersion;
         this.hashType = hashType;
         this.keyVersion = keyVersion;
@@ -170,14 +164,27 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
         this.valueVersion = valueVersion;
         Objects.requireNonNull(valueSerializer, "Null value serializer");
         this.valueSerializer = valueSerializer;
+
+        // Optional hints, may be set explicitly using setters later. Defaults are loaded from
+        // MerkleDb configuration
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+        maxNumberOfKeys = dbConfig.maxNumOfKeys();
+        hashesRamToDiskThreshold = dbConfig.hashesRamToDiskThreshold();
     }
 
     public MerkleDbTableConfig(final ReadableSequentialData in) {
-        // Defaults
+        // Defaults. If a field is missing in the input, a default protobuf value is used
+        // (zero, false, null, etc.) rather than a default value from MerkleDb config. The
+        // config is used for defaults when a new table config is created, but when an
+        // existing config is loaded, only values from the input must be used (even if some
+        // of them are protobuf default and aren't present)
         hashVersion = 0;
         hashType = DigestType.SHA_384;
         keyVersion = 0;
         valueVersion = 0;
+        preferDiskBasedIndices = false;
+        maxNumberOfKeys = 0;
+        hashesRamToDiskThreshold = 0;
 
         while (in.hasRemaining()) {
             final int tag = in.readVarInt(false);
@@ -208,9 +215,13 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             }
         }
 
+        // Check that all mandatory fields have been loaded from the stream
         Objects.requireNonNull(hashType, "Null or wrong hash type");
         Objects.requireNonNull(keySerializer, "Null or unknown key serializer");
         Objects.requireNonNull(valueSerializer, "Null or unknown value serializer");
+        if (maxNumberOfKeys <= 0) {
+            throw new IllegalArgumentException("Missing or wrong max number of keys");
+        }
     }
 
     public int pbjSizeInBytes() {
@@ -242,11 +253,10 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
                     FIELD_TABLECONFIG_PREFERDISKINDICES, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
             size += ProtoWriterTools.sizeOfVarInt32(1);
         }
-        if (maxNumberOfKeys != 0) {
-            size += ProtoWriterTools.sizeOfTag(
-                    FIELD_TABLECONFIG_MAXNUMBEROFKEYS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-            size += ProtoWriterTools.sizeOfVarInt64(maxNumberOfKeys);
-        }
+        assert maxNumberOfKeys != 0;
+        size += ProtoWriterTools.sizeOfTag(
+                FIELD_TABLECONFIG_MAXNUMBEROFKEYS, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
+        size += ProtoWriterTools.sizeOfVarInt64(maxNumberOfKeys);
         if (hashesRamToDiskThreshold != 0) {
             size += ProtoWriterTools.sizeOfTag(
                     FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
@@ -278,10 +288,9 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_PREFERDISKINDICES);
             out.writeVarInt(1, false);
         }
-        if (maxNumberOfKeys != 0) {
-            ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_MAXNUMBEROFKEYS);
-            out.writeVarLong(maxNumberOfKeys, false);
-        }
+        assert maxNumberOfKeys != 0;
+        ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_MAXNUMBEROFKEYS);
+        out.writeVarLong(maxNumberOfKeys, false);
         if (hashesRamToDiskThreshold != 0) {
             ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_HASHRAMTODISKTHRESHOLD);
             out.writeVarLong(hashesRamToDiskThreshold, false);
@@ -359,7 +368,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     }
 
     /**
-     * Specifies the max number of keys that can be stored in the table.
+     * Specifies the max number of keys that can be stored in the table. Must be greater than zero.
      *
      * @param maxNumberOfKeys
      *      Max number of keys
@@ -367,6 +376,9 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      *      This table config object
      */
     public MerkleDbTableConfig<K, V> maxNumberOfKeys(final long maxNumberOfKeys) {
+        if (maxNumberOfKeys <= 0) {
+            throw new IllegalArgumentException("Max number of keys must be greater than 0");
+        }
         this.maxNumberOfKeys = maxNumberOfKeys;
         return this;
     }
@@ -383,7 +395,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     }
 
     /**
-     * Specifies internal hashes RAM/disk threshold.
+     * Specifies internal hashes RAM/disk threshold. Must be greater or equal to zero.
      *
      * @param hashesRamToDiskThreshold
      *      Internal hashes RAM/disk threshold
@@ -391,6 +403,9 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      *      This table config object
      */
     public MerkleDbTableConfig<K, V> hashesRamToDiskThreshold(final long hashesRamToDiskThreshold) {
+        if (hashesRamToDiskThreshold < 0) {
+            throw new IllegalArgumentException("Hashes RAM/disk threshold must be greater or equal to 0");
+        }
         this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
         return this;
     }

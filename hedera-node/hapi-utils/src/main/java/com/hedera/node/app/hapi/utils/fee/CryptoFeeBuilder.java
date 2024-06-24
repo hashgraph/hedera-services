@@ -38,7 +38,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for crypto create transaction
+     * Creates fee matrices for a crypto create transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -50,8 +50,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
         final var cryptoCreateSize = getCryptoCreateAccountBodyTxSize(cryptoCreate);
         final long bpt = txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
         final long vpt = sigValObj.getTotalSigCount();
-        final long rbs = getCryptoRBS(cryptoCreate, cryptoCreateSize) + calculateRBS(txBody); // TxRecord
-        final var rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
+        final long rbs = getCryptoRbs(cryptoCreate, cryptoCreateSize) + calculateRbs(txBody); // TxRecord
+        final var rbsNetwork = getDefaultRbhNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
         final long bpr = INT_SIZE;
 
@@ -69,7 +69,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for crypto delete transaction
+     * Creates fee matrices for a crypto delete transaction.
      *
      * @param txBody transaction body
      * @param sigValObj signature value object
@@ -81,8 +81,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
         final var bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
         final long vpt = sigValObj.getTotalSigCount();
 
-        final var rbs = calculateRBS(txBody);
-        final var rbsNetwork = getDefaultRBHNetworkSize();
+        final var rbs = calculateRbs(txBody);
+        final var rbsNetwork = getDefaultRbhNetworkSize();
         final var feeMatricesForTx = FeeComponents.newBuilder()
                 .setBpt(bpt)
                 .setVpt(vpt)
@@ -99,13 +99,13 @@ public final class CryptoFeeBuilder extends FeeBuilder {
 
     /**
      * This method calculates total RAM Bytes (product of total bytes that will be stored in memory
-     * and time till account expires)
+     * and time till account expires).
      *
      * @param cryptoCreate the crypto create transaction body
      * @param crCreateSize the size of the crypto create transaction body
      * @return the total RAM Bytes for the given crypto create transaction body
      */
-    private static long getCryptoRBS(final CryptoCreateTransactionBody cryptoCreate, final int crCreateSize) {
+    private static long getCryptoRbs(final CryptoCreateTransactionBody cryptoCreate, final int crCreateSize) {
         final var seconds = cryptoCreate.hasAutoRenewPeriod()
                 ? cryptoCreate.getAutoRenewPeriod().getSeconds()
                 : 0L;
@@ -113,7 +113,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the total bytes in a crypto create transaction body
+     * Calculates the total bytes in a crypto create transaction body.
      *
      * @param cryptoCreate the crypto create transaction body
      * @return the total bytes in the given crypto create transaction body
@@ -127,8 +127,8 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for query (for getting the cost of transaction record
-     * query)
+     * Creates fee matrices for a transaction record cost query (for getting the cost of a transaction record
+     * query).
      *
      * @return fee data
      */
@@ -137,7 +137,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for transaction record query
+     * Creates fee matrices for a transaction record query.
      *
      * @param transRecord transaction record
      * @param responseType response type
@@ -167,7 +167,7 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for account records query
+     * Creates fee matrices for an account records query.
      *
      * @param transRecords list of transaction records
      * @param responseType response type
@@ -201,21 +201,21 @@ public final class CryptoFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * This method returns the fee matrices for query (for getting the cost of account record query)
+     * Creates fee matrices for an account record cost query (for getting the cost of an account record query).
      *
      * @return fee data
      */
     public static FeeData getCostCryptoAccountRecordsQueryFeeMatrices() {
-        return getCostForQueryByIDOnly();
+        return getCostForQueryByIdOnly();
     }
 
     /**
-     * This method returns the fee matrices for query (for getting the cost of account info query)
+     * Creates fee matrices for an account info cost query (for getting the cost of an account info query).
      *
      * @return fee data
      */
     public static FeeData getCostCryptoAccountInfoQueryFeeMatrices() {
-        return getCostForQueryByIDOnly();
+        return getCostForQueryByIdOnly();
     }
 
     private static int getAccountTransactionRecordSize(final TransactionRecord transRecord) {

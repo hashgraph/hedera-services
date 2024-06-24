@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.records;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -33,14 +34,23 @@ import com.hedera.node.app.service.contract.impl.records.ContractOperationRecord
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ContractOperationRecordBuilderTest {
     @Test
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationRecordBuilder() {
+            @Override
+            public void trackExplicitRewardSituation(@NonNull AccountID accountId) {}
+
+            @Override
+            public Set<AccountID> explicitRewardSituationIds() {
+                return Collections.emptySet();
+            }
+
             private long totalFee = 456L;
             private ContractActions actions = null;
             private ContractStateChanges stateChanges = null;
@@ -50,7 +60,7 @@ class ContractOperationRecordBuilderTest {
                 return totalFee;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public TransactionBody transactionBody() {
                 return TransactionBody.DEFAULT;

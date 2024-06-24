@@ -42,7 +42,7 @@ public interface ReadableScheduleStore {
      * @return the schedule with the given id
      */
     @Nullable
-    Schedule get(final @Nullable ScheduleID id);
+    Schedule get(@Nullable ScheduleID id);
 
     /**
      * Get a set of schedules that are "hash equal" to the provided Schedule.
@@ -57,7 +57,7 @@ public interface ReadableScheduleStore {
      *     These may not actually be equal to the provided schedule, and further comparison should be performed.
      */
     @Nullable
-    public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch);
+    List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch);
 
     /**
      * Given a time as seconds since the epoch, find all schedules currently in state that expire at that time.
@@ -70,7 +70,7 @@ public interface ReadableScheduleStore {
      * @return a {@link List<Schedule>} of entries that have expiration times within the requested second.
      */
     @Nullable
-    public List<Schedule> getByExpirationSecond(final long expirationTime);
+    List<Schedule> getByExpirationSecond(final long expirationTime);
 
     /**
      * Returns the number of schedules in state, for use in enforcing creation limits.

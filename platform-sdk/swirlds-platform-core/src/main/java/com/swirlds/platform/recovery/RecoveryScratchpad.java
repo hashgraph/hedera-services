@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery;
 
-import com.swirlds.common.scratchpad.ScratchpadType;
+import com.swirlds.platform.scratchpad.ScratchpadType;
 
 /**
  * Defines the data for the recovery scratchpad.

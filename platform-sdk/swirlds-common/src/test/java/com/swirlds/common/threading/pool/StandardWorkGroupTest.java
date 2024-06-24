@@ -158,10 +158,15 @@ class StandardWorkGroupTest {
     @Test
     void exceptionsPropagatedToListener() throws InterruptedException {
         final AtomicReference<Throwable> caught = new AtomicReference<>();
-        subject = new StandardWorkGroup(getStaticThreadManager(), "groupName", abortCount::incrementAndGet, ex -> {
-            caught.set(ex);
-            return true;
-        });
+        subject = new StandardWorkGroup(
+                getStaticThreadManager(),
+                "groupName",
+                abortCount::incrementAndGet,
+                ex -> {
+                    caught.set(ex);
+                    return true;
+                },
+                true);
 
         final String exceptionMessage = "ExceptionMessage";
         subject.execute("task", () -> {

@@ -31,11 +31,14 @@ import java.util.Optional;
 public class RandomTokenFreeze implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
+    private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(TOKEN_HAS_NO_FREEZE_KEY, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
-    public RandomTokenFreeze(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
+    public RandomTokenFreeze(
+            RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels, ResponseCodeEnum[] customOutcomes) {
         this.tokenRels = tokenRels;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -48,8 +51,10 @@ public class RandomTokenFreeze implements OpProvider {
         var implicitRel = relToFreeze.get();
         var rel = explicit(implicitRel);
         var op = tokenFreeze(rel.getRight(), rel.getLeft())
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                .hasKnownStatusFrom(permissibleOutcomes);
+                .payingWith(rel.getLeft())
+                .signedBy(rel.getLeft())
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 }

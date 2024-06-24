@@ -36,21 +36,22 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,13 +92,13 @@ class TokenServiceApiImplTest {
             .build();
 
     private final WritableKVState<Bytes, AccountID> aliasesState =
-            new MapWritableKVState<>(TokenServiceImpl.ALIASES_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ALIASES_KEY);
     private final WritableKVState<AccountID, Account> accountState =
-            new MapWritableKVState<>(TokenServiceImpl.ACCOUNTS_KEY);
+            new MapWritableKVState<>(V0490TokenSchema.ACCOUNTS_KEY);
     private final WritableStates writableStates = new MapWritableStates(Map.of(
-            TokenServiceImpl.ACCOUNTS_KEY, accountState,
-            TokenServiceImpl.ALIASES_KEY, aliasesState));
-    private final WritableAccountStore accountStore = new WritableAccountStore(writableStates);
+            V0490TokenSchema.ACCOUNTS_KEY, accountState,
+            V0490TokenSchema.ALIASES_KEY, aliasesState));
+    private WritableAccountStore accountStore;
 
     @Mock
     private StakingValidator stakingValidator;
@@ -108,11 +109,16 @@ class TokenServiceApiImplTest {
     @Mock
     private Predicate<CryptoTransferTransactionBody> customFeeTest;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
     private TokenServiceApiImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, stakingValidator, writableStates, customFeeTest);
+        accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
+        subject = new TokenServiceApiImpl(
+                DEFAULT_CONFIG, storeMetricsService, stakingValidator, writableStates, customFeeTest);
     }
 
     @Test
@@ -469,7 +475,8 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", true).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(
+                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
 
             // When we charge network+service fees of 10 tinybars and a node fee of 2 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -499,7 +506,8 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", false).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(
+                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
 
             // When we charge fees of 10 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -527,51 +535,61 @@ class TokenServiceApiImplTest {
                     AccountID.newBuilder().accountNum(12345678L).build();
             assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Payer account does not exist");
+                    .hasMessage("Payer account %s does not exist", unknownAccountId);
         }
 
         @Test
         void missingFundingAccount() {
             // Given a configuration that refers to a funding account that DOES NOT EXIST
-            final var config =
-                    configBuilder.withValue("ledger.fundingAccount", 12345678L).getOrCreateConfig();
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+            final var config = configBuilder
+                    .withValue("ledger.fundingAccount", unknownAccountId.accountNumOrThrow())
+                    .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(
+                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Funding account does not exist");
+                    .hasMessage("Funding account %s does not exist", unknownAccountId);
         }
 
         @Test
         void missingStakingRewardAccount() {
             // Given a configuration that refers to a staking reward account that DOES NOT EXIST
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
             final var config = configBuilder
-                    .withValue("accounts.stakingRewardAccount", 12345678L)
+                    .withValue("accounts.stakingRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(
+                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Staking reward account does not exist");
+                    .hasMessage("Staking reward account %s does not exist", unknownAccountId);
         }
 
         @Test
         void missingNodeRewardAccount() {
             // Given a configuration that refers to a node reward account that DOES NOT EXIST
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
             final var config = configBuilder
-                    .withValue("accounts.nodeRewardAccount", 12345678L)
+                    .withValue("accounts.nodeRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates, customFeeTest);
+            subject = new TokenServiceApiImpl(
+                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Node reward account does not exist");
+                    .hasMessage("Node reward account %s does not exist", unknownAccountId);
         }
 
         @Test
@@ -580,7 +598,11 @@ class TokenServiceApiImplTest {
             fees = new Fees(1000, 100, 0); // more than the 100 the user has
 
             subject = new TokenServiceApiImpl(
-                    configBuilder.getOrCreateConfig(), stakingValidator, writableStates, customFeeTest);
+                    configBuilder.getOrCreateConfig(),
+                    storeMetricsService,
+                    stakingValidator,
+                    writableStates,
+                    customFeeTest);
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
 
             final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));

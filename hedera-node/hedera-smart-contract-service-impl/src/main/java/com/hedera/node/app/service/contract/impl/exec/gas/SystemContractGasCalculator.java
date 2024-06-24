@@ -89,6 +89,15 @@ public class SystemContractGasCalculator {
     }
 
     /**
+     * Returns the gas price for the top-level HAPI operation.
+     *
+     * @return the gas price for the top-level HAPI operation
+     */
+    public long topLevelGasPrice() {
+        return tinybarValues.topLevelTinybarGasPrice();
+    }
+
+    /**
      * Given a dispatch type, returns the canonical gas requirement for that dispatch type.
      * Useful when providing a ballpark gas requirement in the absence of a valid
      * transaction body for the dispatch type.

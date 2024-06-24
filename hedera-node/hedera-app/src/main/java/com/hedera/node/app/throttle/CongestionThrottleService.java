@@ -16,34 +16,15 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema.readThrottleDefinitionsBytes;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.config.data.BootstrapConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-@SuppressWarnings("rawtypes")
 @Singleton
 public class CongestionThrottleService implements Service {
-    private static final Logger log = LogManager.getLogger(CongestionThrottleService.class);
     public static final String NAME = "CongestionThrottleService";
-    public static final String THROTTLE_USAGE_SNAPSHOTS_STATE_KEY = "THROTTLE_USAGE_SNAPSHOTS";
-    public static final String CONGESTION_LEVEL_STARTS_STATE_KEY = "CONGESTION_LEVEL_STARTS";
 
     @NonNull
     @Override
@@ -52,52 +33,7 @@ public class CongestionThrottleService implements Service {
     }
 
     @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry, @NonNull final SemanticVersion version) {
-        registry.register(new Schema(version) {
-            /** {@inheritDoc} */
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of(
-                        StateDefinition.singleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY, ThrottleUsageSnapshots.PROTOBUF),
-                        StateDefinition.singleton(CONGESTION_LEVEL_STARTS_STATE_KEY, CongestionLevelStarts.PROTOBUF));
-            }
-
-            /** {@inheritDoc} */
-            @Override
-            public void migrate(@NonNull final MigrationContext ctx) {
-                log.info("Migrating congestion throttle state");
-                final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
-                byte[] throttleDefinitionsProtoBytes = readThrottleDefinitionsBytes(bootstrapConfig);
-
-                final var throttleDefinitions = Bytes.wrap(throttleDefinitionsProtoBytes);
-                final var throttleManager = new ThrottleManager();
-                throttleManager.update(throttleDefinitions);
-
-                final var handleThrottling = ctx.handleThrottling();
-                handleThrottling.rebuildFor(throttleManager.throttleDefinitions());
-                handleThrottling.applyGasConfig();
-
-                final var tpsThrottleUsageSnapshots = handleThrottling.allActiveThrottles().stream()
-                        .map(DeterministicThrottle::usageSnapshot)
-                        .map(PbjConverter::toPbj)
-                        .toList();
-
-                final var throttleUsageSnapshots = ThrottleUsageSnapshots.newBuilder()
-                        .tpsThrottles(tpsThrottleUsageSnapshots)
-                        .gasThrottle(toPbj(handleThrottling.gasLimitThrottle().usageSnapshot()))
-                        .build();
-
-                final var throttleSnapshotsState = ctx.newStates().getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
-                throttleSnapshotsState.put(throttleUsageSnapshots);
-
-                final var congestionLevelStartsState = ctx.newStates().getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY);
-                congestionLevelStartsState.put(CongestionLevelStarts.DEFAULT);
-
-                log.info("Finished migrating congestion throttle state");
-
-                log.info("BBM: no actions needed for congestion throttle service");
-            }
-        });
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(new V0490CongestionThrottleSchema());
     }
 }

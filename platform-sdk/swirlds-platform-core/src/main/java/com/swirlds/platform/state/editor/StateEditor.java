@@ -19,25 +19,23 @@ package com.swirlds.platform.state.editor;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatNodeType;
 import static com.swirlds.platform.state.editor.StateEditorUtils.formatRoute;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.utility.CommandBuilder;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
-import com.swirlds.platform.state.signed.DeserializedSignedState;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateReference;
+import com.swirlds.platform.state.snapshot.DeserializedSignedState;
+import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
@@ -63,10 +61,9 @@ public class StateEditor {
     @SuppressWarnings("java:S106")
     public StateEditor(final Path statePath) throws IOException {
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
 
-        platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        platformContext = PlatformContext.create(configuration);
 
         final DeserializedSignedState deserializedSignedState =
                 SignedStateFileReader.readStateFile(platformContext, statePath);
@@ -206,9 +203,12 @@ public class StateEditor {
                 signedState.getAndReserve("StateEditor.getSignedStateCopy() 1")) {
             final SignedState newSignedState = new SignedState(
                     platformContext,
+                    CryptoStatic::verifySignature,
                     reservedSignedState.get().getState().copy(),
                     "StateEditor.getSignedStateCopy()",
-                    reservedSignedState.get().isFreezeState());
+                    reservedSignedState.get().isFreezeState(),
+                    false,
+                    false);
 
             signedState.set(newSignedState, "StateEditor.getSignedStateCopy() 2");
 

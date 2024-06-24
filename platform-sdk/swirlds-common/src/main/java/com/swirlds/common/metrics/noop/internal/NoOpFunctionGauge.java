@@ -18,6 +18,7 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.metrics.api.MetricConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A no-op implementation of a function gauge.
@@ -29,7 +30,7 @@ public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements Function
 
     private final T value;
 
-    public NoOpFunctionGauge(final MetricConfig<?, ?> config, final T value) {
+    public NoOpFunctionGauge(final @NonNull MetricConfig<?, ?> config, final @NonNull T value) {
         super(config);
         this.value = value;
     }
@@ -38,6 +39,7 @@ public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements Function
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public T get() {
         return value;
     }
@@ -45,6 +47,7 @@ public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements Function
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public DataType getDataType() {
         return DataType.INT;

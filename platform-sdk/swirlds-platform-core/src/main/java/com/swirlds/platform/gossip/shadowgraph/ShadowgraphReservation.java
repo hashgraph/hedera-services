@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,9 +27,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class ShadowgraphReservation implements AutoCloseable {
 
     /**
-     * The event window that this reservation is for.
+     * The threshold that is being reserved. No event with an ancient indicator greater than or equal to this value may
+     * be expired.
      */
-    private final NonAncientEventWindow eventWindow;
+    private final long reservedThreshold;
 
     /**
      * The number of reservations on this ancient indicator.
@@ -42,10 +40,11 @@ public final class ShadowgraphReservation implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param eventWindow the event window that this reservation is for
+     * @param reservedThreshold the ancient indicator that is being reserved, no event with an ancient indicator greater
+     *                          than or equal to this value may be expired
      */
-    public ShadowgraphReservation(@NonNull final NonAncientEventWindow eventWindow) {
-        this.eventWindow = Objects.requireNonNull(eventWindow);
+    public ShadowgraphReservation(final long reservedThreshold) {
+        this.reservedThreshold = reservedThreshold;
         reservationCount = new AtomicInteger(1);
     }
 
@@ -74,22 +73,12 @@ public final class ShadowgraphReservation implements AutoCloseable {
     }
 
     /**
-     * Get the event window at the time of the reservation.
-     *
-     * @return the event window
-     */
-    @NonNull
-    public NonAncientEventWindow getEventWindow() {
-        return eventWindow;
-    }
-
-    /**
      * Returns the ancient indicator that this instance tracks reservations for. The returned value is always zero or
      * greater.
      *
      * @return the ancient indicator that is reserved
      */
-    public long getReservedIndicator() {
-        return eventWindow.getExpiredThreshold();
+    public long getReservedThreshold() {
+        return reservedThreshold;
     }
 }

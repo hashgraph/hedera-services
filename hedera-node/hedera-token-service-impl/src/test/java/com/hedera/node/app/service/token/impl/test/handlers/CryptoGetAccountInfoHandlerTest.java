@@ -20,11 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.NETWORK_REWARDS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -67,16 +68,16 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -84,6 +85,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -201,9 +204,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("failed response is correctly handled in findResponse")
-    void getsResponseIfFailedResponse() {
+    void getsResponseIfFailedResponse(boolean balancesInQueriesEnabled) {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.INVALID_ACCOUNT_ID)
                 .build();
@@ -212,23 +216,24 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
 
-        setupConfig();
+        setupConfig(balancesInQueriesEnabled);
 
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.cryptoGetInfo();
         assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, op.header().nodeTransactionPrecheckCode());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("fail FAIL_INVALID test")
-    void getsCorrectResponseHeadIfAccountInfoNotFound() {
+    void getsCorrectResponseHeadIfAccountInfoNotFound(boolean balancesInQueriesEnabled) {
         final var responseHeader = getOkResponse();
 
         setupAccountStore();
         setupTokenStore();
         setupTokenRelationStore();
         setupStakingInfoStore();
-        setupConfig();
+        setupConfig(balancesInQueriesEnabled);
 
         final var query = createCryptoGetInfoQuery(4);
         when(context.query()).thenReturn(query);
@@ -238,18 +243,19 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         assertEquals(getFailInvalidResponse(), cryptoGetInfoResponse.header());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("OK response is correctly handled in findResponse")
-    void getsResponseIfOkResponse() {
+    void getsResponseIfOkResponse(boolean balancesInQueriesEnabled) {
         final var responseHeader = getOkResponse();
-        final var expectedInfo = getExpectedAccountInfo();
+        final var expectedInfo = getExpectedAccountInfo(balancesInQueriesEnabled);
 
         account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
-        given(token1.decimals()).willReturn(100);
-        given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenId()).willReturn(asToken(3L));
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token1.symbol()).thenReturn("FOO"); // only needed when balancesInQueriesEnabled is true
+        when(token1.tokenId()).thenReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
@@ -258,7 +264,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
@@ -266,7 +271,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
         setupStakingRewardsStore();
-        setupConfig();
+        setupConfig(balancesInQueriesEnabled);
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
 
@@ -276,21 +281,22 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         assertEquals(expectedInfo, cryptoGetInfoResponse.accountInfo());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("check multiple token relations list")
-    void checkMulitpleTokenRelations() {
+    void checkMulitpleTokenRelations(boolean balancesInQueriesEnabled) {
         final var responseHeader = getOkResponse();
-        final var expectedInfo = getExpectedAccountInfos();
+        final var expectedInfo = getExpectedAccountInfos(balancesInQueriesEnabled);
 
         account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
-        given(token1.decimals()).willReturn(100);
-        given(token2.decimals()).willReturn(50);
-        given(token1.symbol()).willReturn("FOO");
-        given(token2.symbol()).willReturn("BAR");
-        given(token1.tokenId()).willReturn(asToken(3L));
-        given(token2.tokenId()).willReturn(asToken(4L));
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token2.decimals()).thenReturn(50); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token1.symbol()).thenReturn("FOO"); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token2.symbol()).thenReturn("BAR"); // only needed when balancesInQueriesEnabled is true
+        when(token1.tokenId()).thenReturn(asToken(3L));
+        when(token2.tokenId()).thenReturn(asToken(4L));
         setupTokenStore(token1, token2);
 
         final var tokenRelation1 = TokenRelation.newBuilder()
@@ -299,7 +305,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
@@ -310,7 +315,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .balance(100L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(5L))
                 .previousToken(asToken(3L))
@@ -321,7 +325,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .balance(10L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(6L))
                 .previousToken(asToken(4L))
@@ -329,7 +332,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         setupTokenRelationStore(tokenRelation1, tokenRelation2, tokenRelation3);
         setupStakingInfoStore();
         setupStakingRewardsStore();
-        setupConfig();
+        setupConfig(balancesInQueriesEnabled);
 
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -339,13 +342,16 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
         assertEquals(ResponseCodeEnum.OK, cryptoGetInfoResponse.header().nodeTransactionPrecheckCode());
         assertEquals(expectedInfo, cryptoGetInfoResponse.accountInfo());
-        assertEquals(2, cryptoGetInfoResponse.accountInfo().tokenRelationships().size());
+        assertEquals(
+                balancesInQueriesEnabled ? 2 : 0,
+                cryptoGetInfoResponse.accountInfo().tokenRelationships().size());
     }
 
-    @Test
-    void testStakeNumber() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testStakeNumber(boolean balancesInQueriesEnabled) {
         final var responseHeader = getOkResponse();
-        final var expectedInfo = getExpectedAccountInfo2();
+        final var expectedInfo = getExpectedAccountInfo2(balancesInQueriesEnabled);
 
         account = account.copyBuilder()
                 .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
@@ -353,9 +359,9 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         setupAccountStore();
 
-        given(token1.decimals()).willReturn(100);
-        given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenId()).willReturn(asToken(3L));
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token1.symbol()).thenReturn("FOO"); // only needed when balancesInQueriesEnabled is true
+        when(token1.tokenId()).thenReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
@@ -364,7 +370,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
@@ -372,7 +377,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
         setupStakingRewardsStore();
-        setupConfig();
+        setupConfig(balancesInQueriesEnabled);
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
 
@@ -382,11 +387,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         assertEquals(expectedInfo, cryptoGetInfoResponse.accountInfo());
     }
 
-    @Test
-    void testEvmAddressAlias() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testEvmAddressAlias(boolean balancesInQueriesEnabled) {
         final Bytes evmAddress = Bytes.wrap(CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26"));
         final var responseHeader = getOkResponse();
-        final var expectedInfo = getExpectedAccountInfoEvm(evmAddress);
+        final var expectedInfo = getExpectedAccountInfoEvm(balancesInQueriesEnabled);
 
         account = account.copyBuilder()
                 .stakedNodeId(0)
@@ -395,9 +401,9 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         setupAccountStore();
 
-        given(token1.decimals()).willReturn(100);
-        given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenId()).willReturn(asToken(3L));
+        lenient().when(token1.decimals()).thenReturn(100); // only needed when balancesInQueriesEnabled is true
+        lenient().when(token1.symbol()).thenReturn("FOO"); // only needed when balancesInQueriesEnabled is true
+        when(token1.tokenId()).thenReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
@@ -406,7 +412,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
-                .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(asToken(4L))
                 .previousToken(asToken(2L))
@@ -414,7 +419,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
         setupStakingRewardsStore();
-        setupConfig();
+        setupConfig(balancesInQueriesEnabled);
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
 
@@ -476,16 +481,16 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableNetworkStakingRewardsStore.class)).thenReturn(readableRewardsStore);
     }
 
-    private void setupConfig() {
-        final var config = HederaTestConfigBuilder.create()
+    private void setupConfig(boolean balancesInQueriesEnabled) {
+        final var configBuilder = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .withValue("ledger.id", "0x03")
-                .getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled);
+        given(context.configuration()).willReturn(configBuilder.getOrCreateConfig());
     }
 
-    private AccountInfo getExpectedAccountInfo() {
-        return AccountInfo.newBuilder()
+    private AccountInfo getExpectedAccountInfo(boolean balancesInQueriesEnabled) {
+        final var builder = AccountInfo.newBuilder()
                 .key(key)
                 .accountID(id)
                 .receiverSigRequired(true)
@@ -500,13 +505,15 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ethereumNonce(0)
                 .alias(alias.alias())
                 .contractAccountID("0000000000000000000000000000000000000003")
-                .tokenRelationships(getExpectedTokenRelationship())
-                .stakingInfo(getExpectedStakingInfo())
-                .build();
+                .stakingInfo(getExpectedStakingInfo());
+        if (balancesInQueriesEnabled) {
+            builder.tokenRelationships(getExpectedTokenRelationship());
+        }
+        return builder.build();
     }
 
-    private AccountInfo getExpectedAccountInfo2() {
-        return AccountInfo.newBuilder()
+    private AccountInfo getExpectedAccountInfo2(boolean balancesInQueriesEnabled) {
+        final var builder = AccountInfo.newBuilder()
                 .key(key)
                 .accountID(id)
                 .receiverSigRequired(true)
@@ -521,13 +528,15 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ethereumNonce(0)
                 .alias(alias.alias())
                 .contractAccountID("0000000000000000000000000000000000000003")
-                .tokenRelationships(getExpectedTokenRelationship())
-                .stakingInfo(getExpectedStakingInfo2())
-                .build();
+                .stakingInfo(getExpectedStakingInfo2());
+        if (balancesInQueriesEnabled) {
+            builder.tokenRelationships(getExpectedTokenRelationship());
+        }
+        return builder.build();
     }
 
-    private AccountInfo getExpectedAccountInfoEvm(Bytes evmAddress) {
-        return AccountInfo.newBuilder()
+    private AccountInfo getExpectedAccountInfoEvm(boolean balancesInQueriesEnabled) {
+        final var builder = AccountInfo.newBuilder()
                 .key(key)
                 .accountID(id)
                 .receiverSigRequired(true)
@@ -541,13 +550,15 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .maxAutomaticTokenAssociations(10)
                 .ethereumNonce(0)
                 .contractAccountID("6aeb3773ea468a814d954e6dec795bfee7d76e26")
-                .tokenRelationships(getExpectedTokenRelationship())
-                .stakingInfo(getExpectedStakingInfo())
-                .build();
+                .stakingInfo(getExpectedStakingInfo());
+        if (balancesInQueriesEnabled) {
+            builder.tokenRelationships(getExpectedTokenRelationship());
+        }
+        return builder.build();
     }
 
-    private AccountInfo getExpectedAccountInfos() {
-        return AccountInfo.newBuilder()
+    private AccountInfo getExpectedAccountInfos(boolean balancesInQueriesEnabled) {
+        final var builder = AccountInfo.newBuilder()
                 .key(key)
                 .accountID(id)
                 .receiverSigRequired(true)
@@ -562,9 +573,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ethereumNonce(0)
                 .alias(alias.alias())
                 .contractAccountID("0000000000000000000000000000000000000003")
-                .tokenRelationships(getExpectedTokenRelationships())
-                .stakingInfo(getExpectedStakingInfo())
-                .build();
+                .stakingInfo(getExpectedStakingInfo());
+        if (balancesInQueriesEnabled) {
+            builder.tokenRelationships(getExpectedTokenRelationships());
+        }
+        return builder.build();
     }
 
     private List<TokenRelationship> getExpectedTokenRelationship() {

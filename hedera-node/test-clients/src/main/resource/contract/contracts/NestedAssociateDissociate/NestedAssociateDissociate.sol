@@ -3,7 +3,7 @@ pragma solidity ^0.6.12;
 
 import "./HederaTokenService.sol";
 
-contract NestedAssociateDissociateContract is HederaTokenService {
+contract NestedAssociateDissociate is HederaTokenService {
 
     AssociateDissociateContract associateDissociateContract;
 
@@ -17,6 +17,10 @@ contract NestedAssociateDissociateContract is HederaTokenService {
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Dissociate Failed");
         }
+    }
+
+    function associateInternalContractCall(address sender, address tokenAddress) external {
+        associateDissociateContract.tokenAssociate(sender, tokenAddress);
     }
 
     function dissociateAssociateContractCall(address sender, address tokenAddress) external {

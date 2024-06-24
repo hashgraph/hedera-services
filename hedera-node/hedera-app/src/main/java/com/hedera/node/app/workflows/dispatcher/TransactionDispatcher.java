@@ -67,7 +67,6 @@ public class TransactionDispatcher {
      */
     public void dispatchPureChecks(@NonNull final TransactionBody txBody) throws PreCheckException {
         requireNonNull(txBody, "The supplied argument 'txBody' cannot be null!");
-
         try {
             final var handler = getHandler(txBody);
             handler.pureChecks(txBody);
@@ -200,6 +199,7 @@ public class TransactionDispatcher {
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler();
             case TOKEN_PAUSE -> handlers.tokenPauseHandler();
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
+            case TOKEN_UPDATE_NFTS -> handlers.tokenUpdateNftsHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 

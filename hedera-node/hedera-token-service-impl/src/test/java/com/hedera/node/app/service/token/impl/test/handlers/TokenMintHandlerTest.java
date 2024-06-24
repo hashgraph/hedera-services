@@ -30,7 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -41,7 +45,11 @@ import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -185,7 +193,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void rejectsBothAMountAndMetadataFields() throws PreCheckException {
+    void rejectsBothAmountAndMetadataFields() throws PreCheckException {
         final var txn = givenMintTxn(fungibleTokenId, List.of(metadata1), 2L);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         assertThatThrownBy(() -> subject.preHandle(context))
@@ -246,6 +254,29 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED));
     }
 
+    @Test
+    void calculateFeesAddsCorrectFeeComponents() {
+        final var metadata = List.of(metadata1, metadata2);
+        final var txnBody = givenMintTxn(nonFungibleTokenId, metadata, null);
+
+        final var feeCalculator = mock(FeeCalculator.class);
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
+        final var feeContext = mock(FeeContext.class);
+        given(feeContext.body()).willReturn(txnBody);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE))
+                .willReturn(feeCalculator);
+        final var numSigs = 5;
+        given(feeContext.numTxnSignatures()).willReturn(numSigs);
+
+        // We don't need the result of this call since the fee calculator is a mock
+        subject.calculateFees(feeContext);
+        verify(feeCalculator).addVerificationsPerTransaction(numSigs - 1);
+        verify(feeCalculator).addBytesPerTransaction(metadata.size());
+        verify(feeCalculator).addRamByteSeconds(0);
+        verify(feeCalculator).addNetworkRamByteSeconds(0);
+    }
+
     private TransactionBody givenMintTxn(final TokenID tokenId, final List<Bytes> metadata, final Long amount) {
         final var transactionID =
                 TransactionID.newBuilder().accountID(payerId).transactionValidStart(consensusTimestamp);
@@ -266,7 +297,10 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.recordBuilder(TokenMintRecordBuilder.class)).willReturn(recordBuilder);
+
+        final var recordBuilders = mock(RecordBuilders.class);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        lenient().when(recordBuilders.getOrCreate(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

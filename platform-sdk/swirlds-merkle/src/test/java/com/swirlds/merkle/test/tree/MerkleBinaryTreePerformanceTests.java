@@ -16,13 +16,17 @@
 
 package com.swirlds.merkle.test.tree;
 
+import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIMING_SENSITIVE;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.provider.Arguments;
 
 @DisplayName("FCMTree Performance Tests")
+@Tag(TIMING_SENSITIVE)
 class MerkleBinaryTreePerformanceTests extends MerkleBinaryTreeTests {
 
     @Override

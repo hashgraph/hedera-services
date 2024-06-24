@@ -44,17 +44,15 @@ import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.ERCGrantApprovalCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import java.math.BigInteger;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class ERCGrantApprovalCallTest extends HtsCallTestBase {
-
+class ERCGrantApprovalCallTest extends CallTestBase {
     private ERCGrantApprovalCall subject;
 
     @Mock
@@ -90,7 +88,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.FUNGIBLE_COMMON);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
@@ -122,7 +120,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),
@@ -157,7 +155,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
         given(nativeOperations.getToken(NON_FUNGIBLE_TOKEN_ID.tokenNum())).willReturn(token);
@@ -183,7 +181,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         // make sure nft is found
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(nft);
@@ -214,7 +212,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 UNAUTHORIZED_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         // make sure nft is found
         given(nativeOperations.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), 100L)).willReturn(null);
@@ -241,7 +239,7 @@ class ERCGrantApprovalCallTest extends HtsCallTestBase {
                 OWNER_ID,
                 NON_FUNGIBLE_TOKEN_ID,
                 REVOKE_APPROVAL_SPENDER_ID,
-                BigInteger.valueOf(100L),
+                100L,
                 TokenType.NON_FUNGIBLE_UNIQUE);
         given(systemContractOperations.dispatch(
                         any(TransactionBody.class),

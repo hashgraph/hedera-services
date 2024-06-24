@@ -30,45 +30,29 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.systemAccounts;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
+import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ExtCodeHashOperationSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ExtCodeHashOperationSuite.class);
-
-    public static void main(String[] args) {
-        new ExtCodeHashOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class ExtCodeHashOperationSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var expectedAccountHash =
@@ -124,8 +108,30 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                         }));
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
+    @HapiTest
+    final Stream<DynamicTest> testExtCodeHashWithSystemAccounts() {
+        final var contract = "ExtCodeOperationsChecker";
+        final var hashOf = "hashOf";
+        final String account = "account";
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+
+        for (int i = 0; i < systemAccounts.size(); i++) {
+            // add contract call for all accounts in the list
+            opsArray[i] = contractCall(contract, hashOf, mirrorAddrWith(systemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            // add contract call local for all accounts in the list
+            opsArray[systemAccounts.size() + i] = contractCallLocal(
+                            contract, hashOf, mirrorAddrWith(systemAccounts.get(i)))
+                    .has(ContractFnResultAsserts.resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, hashOf, contract),
+                                    ContractFnResultAsserts.isLiteralResult(new Object[] {new byte[32]})));
+        }
+
+        return defaultHapiSpec("testExtCodeHashWithSystemAccounts", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
+                .when()
+                .then(opsArray);
     }
 }

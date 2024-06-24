@@ -20,19 +20,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.scratchpad.Scratchpad;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
-import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
+import com.swirlds.platform.config.StateConfig_;
+import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
 import com.swirlds.platform.test.fixtures.SimpleScratchpad;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,20 +44,23 @@ class IssHandlerTests {
     @Test
     @DisplayName("Other ISS Always Freeze")
     void otherIssAlwaysFreeze() {
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("state.haltOnAnyIss", true).getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, true)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -74,20 +80,23 @@ class IssHandlerTests {
     @Test
     @DisplayName("Other ISS No Action")
     void otherIssNoAction() {
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("state.haltOnAnyIss", false).getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, false)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.OTHER_ISS));
 
@@ -101,21 +110,23 @@ class IssHandlerTests {
     @DisplayName("Self ISS Automated Recovery")
     void selfIssAutomatedRecovery() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.automatedSelfIssRecovery", true)
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, false)
+                .withValue(StateConfig_.AUTOMATED_SELF_ISS_RECOVERY, true)
                 .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -131,21 +142,23 @@ class IssHandlerTests {
     @DisplayName("Self ISS No Action")
     void selfIssNoAction() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.automatedSelfIssRecovery", false)
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, false)
+                .withValue(StateConfig_.AUTOMATED_SELF_ISS_RECOVERY, false)
                 .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -161,21 +174,23 @@ class IssHandlerTests {
     @DisplayName("Self ISS Always Freeze")
     void selfIssAlwaysFreeze() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .withValue("state.automatedSelfIssRecovery", false)
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, true)
+                .withValue(StateConfig_.AUTOMATED_SELF_ISS_RECOVERY, false)
                 .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.SELF_ISS));
 
@@ -197,21 +212,23 @@ class IssHandlerTests {
     @DisplayName("Catastrophic ISS No Action")
     void catastrophicIssNoAction() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.haltOnCatastrophicIss", false)
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, false)
+                .withValue(StateConfig_.HALT_ON_CATASTROPHIC_ISS, false)
                 .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -227,21 +244,23 @@ class IssHandlerTests {
     @DisplayName("Catastrophic ISS Always Freeze")
     void catastrophicIssAlwaysFreeze() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", true)
-                .withValue("state.haltOnCatastrophicIss", false)
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, true)
+                .withValue(StateConfig_.HALT_ON_CATASTROPHIC_ISS, false)
                 .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 
@@ -263,21 +282,23 @@ class IssHandlerTests {
     @DisplayName("Catastrophic ISS Freeze On Catastrophic")
     void catastrophicIssFreezeOnCatastrophic() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("state.haltOnAnyIss", false)
-                .withValue("state.haltOnCatastrophicIss", true)
+                .withValue(StateConfig_.HALT_ON_ANY_ISS, false)
+                .withValue(StateConfig_.HALT_ON_CATASTROPHIC_ISS, true)
                 .getOrCreateConfig();
-        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final AtomicInteger freezeCount = new AtomicInteger();
         final AtomicInteger shutdownCount = new AtomicInteger();
 
-        final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
+        final Consumer<String> haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final Scratchpad<IssScratchpad> simpleScratchpad = new SimpleScratchpad<>();
         final IssHandler handler =
-                new IssHandler(stateConfig, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
+                new DefaultIssHandler(platformContext, haltRequestedConsumer, fatalErrorConsumer, simpleScratchpad);
 
         handler.issObserved(new IssNotification(1234L, IssType.CATASTROPHIC_ISS));
 

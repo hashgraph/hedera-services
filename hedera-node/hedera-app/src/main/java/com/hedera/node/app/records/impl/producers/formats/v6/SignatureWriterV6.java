@@ -31,6 +31,7 @@ import com.swirlds.common.stream.Signer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -107,6 +108,10 @@ final class SignatureWriterV6 {
             logger.debug("signature file saved: {}", sigFilePath);
             // flush
             fileOut.flush();
+        } catch (final FileAlreadyExistsException ignore) {
+            // This is part of normal operations, as a reconnected node will very commonly
+            // re-create an existing record stream file while REPLAYING_EVENTS
+            logger.info("Skipping signature file for {} as it already exists", recordFilePath);
         } catch (final IOException e) {
             logger.error("Fail to generate signature file for {}", recordFilePath, e);
             throw new UncheckedIOException(e);

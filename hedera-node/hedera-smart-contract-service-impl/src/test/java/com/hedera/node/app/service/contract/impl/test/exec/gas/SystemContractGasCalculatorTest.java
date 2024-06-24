@@ -74,4 +74,10 @@ class SystemContractGasCalculatorTest {
         given(tinybarValues.childTransactionTinybarGasPrice()).willReturn(2L);
         assertEquals(6L, subject.gasCostInTinybars(3L));
     }
+
+    @Test
+    void delegatesTopLevelGasPrice() {
+        given(tinybarValues.topLevelTinybarGasPrice()).willReturn(123L);
+        assertEquals(123L, subject.topLevelGasPrice());
+    }
 }

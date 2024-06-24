@@ -36,7 +36,7 @@ public interface Configuration {
     String EMPTY_LIST = "[]";
 
     /**
-     * Returns a {@link Stream} of all available property names
+     * Returns a {@link Stream} of all available property names.
      *
      * @return the stream of all property names
      */
@@ -59,7 +59,7 @@ public interface Configuration {
      * @throws NoSuchElementException if the property does not exist.
      */
     @Nullable
-    String getValue(@NonNull final String propertyName) throws NoSuchElementException;
+    String getValue(@NonNull String propertyName) throws NoSuchElementException;
 
     /**
      * Returns the {@link String} value of the property with the given name or the given default value if the property
@@ -70,7 +70,7 @@ public interface Configuration {
      * @return the value of the property or the given default value if the property does not exist
      */
     @Nullable
-    String getValue(@NonNull final String propertyName, @Nullable String defaultValue);
+    String getValue(@NonNull String propertyName, @Nullable String defaultValue);
 
     /**
      * Returns the value of the property with the given name.
@@ -103,11 +103,11 @@ public interface Configuration {
             throws IllegalArgumentException;
 
     /**
-     * Returns a {@link List} of string elements of the property with the given name
+     * Returns a {@link List} of string elements of the property with the given name.
      *
      * @param propertyName the name of the property
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
+     * @throws NoSuchElementException   if the property does not exist
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
@@ -115,7 +115,7 @@ public interface Configuration {
     List<String> getValues(@NonNull String propertyName);
 
     /**
-     * Returns a {@link List} of string elements of the property with the given name or the given default {@link List}
+     * Returns a {@link List} of string elements of the property with the given name or the given default {@link List}.
      *
      * @param propertyName the name of the property
      * @param defaultValue the default {@link List}
@@ -127,13 +127,13 @@ public interface Configuration {
     List<String> getValues(@NonNull String propertyName, @Nullable List<String> defaultValue);
 
     /**
-     * Returns a {@link List} of elements of the property with the given name
+     * Returns a {@link List} of elements of the property with the given name.
      *
      * @param propertyName the name of the property
      * @param propertyType the type of the elements
      * @param <T>          the generic type of the elements
      * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
+     * @throws NoSuchElementException   if the property does not exist
      * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
      *                                  or the given type
      */
@@ -142,7 +142,7 @@ public interface Configuration {
             throws NoSuchElementException, IllegalArgumentException;
 
     /**
-     * Returns a {@link List} of elements of the property with the given name or the given default {@link List}
+     * Returns a {@link List} of elements of the property with the given name or the given default {@link List}.
      *
      * @param propertyName the name of the property
      * @param propertyType the type of the elements
@@ -157,7 +157,7 @@ public interface Configuration {
             throws IllegalArgumentException;
 
     /**
-     * Returns a {@link Set} of string elements of the property with the given name
+     * Returns a {@link Set} of string elements of the property with the given name.
      *
      * @param propertyName the name of the property
      * @return a {@link Set} of elements of the property with the given name
@@ -169,7 +169,7 @@ public interface Configuration {
     Set<String> getValueSet(@NonNull String propertyName);
 
     /**
-     * Returns a {@link Set} of string elements of the property with the given name or the given default {@link Set}
+     * Returns a {@link Set} of string elements of the property with the given name or the given default {@link Set}.
      *
      * @param propertyName the name of the property
      * @param defaultValue the default {@link Set}
@@ -181,7 +181,7 @@ public interface Configuration {
     Set<String> getValueSet(@NonNull String propertyName, @Nullable Set<String> defaultValue);
 
     /**
-     * Returns a {@link Set} of elements of the property with the given name
+     * Returns a {@link Set} of elements of the property with the given name.
      *
      * @param propertyName the name of the property
      * @param propertyType the type of the elements
@@ -196,7 +196,7 @@ public interface Configuration {
             throws NoSuchElementException, IllegalArgumentException;
 
     /**
-     * Returns a {@link Set} of elements of the property with the given name or the given default {@link Set}
+     * Returns a {@link Set} of elements of the property with the given name or the given default {@link Set}.
      *
      * @param propertyName the name of the property
      * @param propertyType the type of the elements

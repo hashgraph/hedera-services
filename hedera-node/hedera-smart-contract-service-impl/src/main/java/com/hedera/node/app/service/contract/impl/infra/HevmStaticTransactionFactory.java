@@ -30,6 +30,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -84,6 +85,36 @@ public class HevmStaticTransactionFactory {
                 0L,
                 null,
                 null);
+    }
+
+    /**
+     * Given a {@link Query} and an {@link Exception},
+     * create and return a {@link HederaEvmTransaction} containing the exception and gas limit
+     *
+     * @param query the {@link ContractCallLocalQuery} to convert
+     * @param exception the {@link Exception} to wrap
+     * @return the implied {@link HederaEvmTransaction}
+     */
+    @NonNull
+    public HederaEvmTransaction fromHapiQueryException(
+            @NonNull final Query query, @NonNull final HandleException exception) {
+        final var op = query.contractCallLocalOrThrow();
+        final var senderId = op.hasSenderId() ? op.senderIdOrThrow() : payerId;
+        // For mono-service fidelity, allow calls using 0.0.X id even to contracts with a priority EVM address
+        final var targetId = asPriorityId(op.contractIDOrThrow(), context.createStore(ReadableAccountStore.class));
+        return new HederaEvmTransaction(
+                senderId,
+                null,
+                targetId,
+                NOT_APPLICABLE,
+                op.functionParameters(),
+                null,
+                0L,
+                op.gas(),
+                1L,
+                0L,
+                null,
+                exception);
     }
 
     private void assertValidCall(@NonNull final ContractCallLocalQuery body) {

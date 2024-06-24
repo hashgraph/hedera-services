@@ -26,19 +26,15 @@ import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.threading.futures.StandardFuture;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.legacy.LogMarker;
-import java.nio.ByteBuffer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -80,131 +76,23 @@ public class CryptoEngine implements Cryptography {
     private final EcdsaSecp256k1VerificationProvider ecdsaSecp256k1VerificationProvider;
 
     /**
-     * The verification provider used to delegate signature verification of {@link TransactionSignature} instances to
-     * either the {@code ed25519VerificationProvider} or {@code ecdsaSecp256k1VerificationProvider} as apropos.
-     */
-    private final DelegatingVerificationProvider delegatingVerificationProvider;
-
-    /**
-     * The intake dispatcher instance that handles asynchronous signature verification
-     */
-    private volatile IntakeDispatcher<TransactionSignature, DelegatingVerificationProvider, AsyncVerificationHandler>
-            verificationDispatcher;
-
-    /**
-     * the {@link ConcurrentLinkedQueue} instance of {@link TransactionSignature} waiting for verification
-     */
-    private volatile Queue<List<TransactionSignature>> verificationQueue;
-
-    /**
-     * the current configuration settings
-     */
-    private volatile CryptoConfig config;
-
-    /**
      * a pre-computed {@link Map} of each algorithm's {@code null} hash value.
      */
     private Map<DigestType, Hash> nullHashes;
 
     /**
-     * Responsible for creating and managing all threads and threading resources used by this utility.
+     * Constructor.
      */
-    private final ThreadManager threadManager;
-
-    /**
-     * Constructs a new {@link CryptoEngine} using the provided settings.
-     *
-     * @param threadManager responsible for managing thread lifecycles
-     * @param config        the initial config to be used
-     */
-    public CryptoEngine(final ThreadManager threadManager, final CryptoConfig config) {
-        this.threadManager = threadManager;
-        this.config = config;
+    public CryptoEngine() {
         this.digestProvider = new DigestProvider();
 
         this.ed25519VerificationProvider = new Ed25519VerificationProvider();
         this.ecdsaSecp256k1VerificationProvider = new EcdsaSecp256k1VerificationProvider();
-        this.delegatingVerificationProvider =
-                new DelegatingVerificationProvider(ed25519VerificationProvider, ecdsaSecp256k1VerificationProvider);
 
         this.serializationDigestProvider = new SerializationDigestProvider();
         this.runningHashProvider = new RunningHashProvider();
 
-        applySettings();
         buildNullHashes();
-    }
-
-    /**
-     * Supplier implementation for {@link AsyncVerificationHandler}.
-     *
-     * @param provider  the required {@link OperationProvider} to be used while performing the cryptographic
-     *                  transformations
-     * @param workItems the {@link List} of items to be processed by the created {@link AsyncOperationHandler}
-     *                  implementation
-     * @return an {@link AsyncOperationHandler} implementation
-     */
-    private static AsyncVerificationHandler verificationHandler(
-            final OperationProvider<TransactionSignature, Void, Boolean, ?, SignatureType> provider,
-            final List<TransactionSignature> workItems) {
-        return new AsyncVerificationHandler(workItems, provider);
-    }
-
-    /**
-     * Efficiently builds a {@link TransactionSignature} instance from the supplied components.
-     *
-     * @param data          the original contents that the signature should be verified against
-     * @param signature     the signature to be verified
-     * @param publicKey     the public key required to validate the signature
-     * @param signatureType the type of signature to be verified
-     * @return a {@link TransactionSignature} containing the provided components
-     */
-    private static TransactionSignature wrap(
-            final byte[] data, final byte[] signature, final byte[] publicKey, final SignatureType signatureType) {
-        if (data == null || data.length == 0) {
-            throw new IllegalArgumentException("data");
-        }
-
-        if (signature == null || signature.length == 0) {
-            throw new IllegalArgumentException("signature");
-        }
-
-        if (publicKey == null || publicKey.length == 0) {
-            throw new IllegalArgumentException("publicKey");
-        }
-
-        final ByteBuffer buffer = ByteBuffer.allocate(data.length + signature.length + publicKey.length);
-        final int sigOffset = data.length;
-        final int pkOffset = sigOffset + signature.length;
-
-        buffer.put(data).put(signature).put(publicKey);
-
-        return new TransactionSignature(
-                buffer.array(), sigOffset, signature.length, pkOffset, publicKey.length, 0, data.length, signatureType);
-    }
-
-    /**
-     * Common private utility method for performing synchronous digest computations.
-     *
-     * @param message  the message contents to be hashed
-     * @param provider the underlying provider to be used
-     * @param future   the {@link Future} to be associated with the {@link Message}
-     * @return the cryptographic hash for the given message contents
-     */
-    private static Hash digestSyncInternal(
-            final Message message, final DigestProvider provider, final StandardFuture<Void> future) {
-        final Hash hash;
-
-        try {
-            hash = provider.compute(message, message.getDigestType());
-            message.setHash(hash);
-        } catch (final NoSuchAlgorithmException ex) {
-            message.setFuture(future);
-            throw new CryptographyException(ex, LogMarker.EXCEPTION);
-        }
-
-        message.setFuture(future);
-
-        return hash;
     }
 
     /**
@@ -234,37 +122,18 @@ public class CryptoEngine implements Cryptography {
     }
 
     /**
-     * Getter for the current configuration settings used by the {@link CryptoEngine}.
-     *
-     * @return the current configuration settings
-     */
-    public synchronized CryptoConfig getSettings() {
-        return config;
-    }
-
-    /**
-     * Setter to allow the configuration settings to be updated at runtime.
-     *
-     * @param config the configuration settings
-     */
-    public synchronized void setSettings(final CryptoConfig config) {
-        this.config = config;
-        applySettings();
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
     public Hash digestSync(final byte[] message, final DigestType digestType) {
-        return digestSyncInternal(message, digestType, digestProvider);
+        return new Hash(digestSyncInternal(message, digestType, digestProvider), digestType);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Hash digestSync(final SelfSerializable serializable, final DigestType digestType) {
+    public byte[] digestBytesSync(final SelfSerializable serializable, final DigestType digestType) {
         try {
             return serializationDigestProvider.compute(serializable, digestType);
         } catch (final NoSuchAlgorithmException ex) {
@@ -279,7 +148,8 @@ public class CryptoEngine implements Cryptography {
     public Hash digestSync(
             final SerializableHashable serializableHashable, final DigestType digestType, final boolean setHash) {
         try {
-            final Hash hash = serializationDigestProvider.compute(serializableHashable, digestType);
+            final byte[] bytes = serializationDigestProvider.compute(serializableHashable, digestType);
+            final Hash hash = new Hash(bytes, digestType);
             if (setHash) {
                 serializableHashable.setHash(hash);
             }
@@ -287,6 +157,12 @@ public class CryptoEngine implements Cryptography {
         } catch (final NoSuchAlgorithmException ex) {
             throw new CryptographyException(ex, LogMarker.EXCEPTION);
         }
+    }
+
+    @NonNull
+    @Override
+    public byte[] digestBytesSync(@NonNull final byte[] message, @NonNull final DigestType digestType) {
+        return digestSyncInternal(message, digestType, digestProvider);
     }
 
     /**
@@ -306,18 +182,6 @@ public class CryptoEngine implements Cryptography {
     @Override
     public Hash getNullHash(final DigestType digestType) {
         return nullHashes.get(digestType);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void verifyAsync(final List<TransactionSignature> signatures) {
-        final boolean added = verificationQueue.add(signatures);
-        if (!added) {
-            // This should never happen, since the queue is unbounded
-            throw new RuntimeException("Unable to add to the verification queue");
-        }
     }
 
     /**
@@ -384,36 +248,6 @@ public class CryptoEngine implements Cryptography {
             throw new CryptographyException(e, LogMarker.EXCEPTION);
         }
     }
-
-    /**
-     * Applies any changes in the {@link CryptoEngine} settings by stopping the {@link IntakeDispatcher} threads,
-     * applying the changes, and relaunching the {@link IntakeDispatcher} threads.
-     */
-    protected synchronized void applySettings() {
-        // Cleanup existing (if applicable) background threads
-        if (this.verificationDispatcher != null) {
-            this.verificationDispatcher.shutdown();
-            this.verificationDispatcher = null;
-        }
-
-        // Resize the dispatcher queues
-        final Queue<List<TransactionSignature>> oldVerifierQueue = this.verificationQueue;
-        this.verificationQueue = new ConcurrentLinkedQueue<>();
-
-        if (oldVerifierQueue != null && oldVerifierQueue.size() > 0) {
-            this.verificationQueue.addAll(oldVerifierQueue);
-        }
-
-        // Launch new background threads with the new settings
-        this.verificationDispatcher = new IntakeDispatcher<>(
-                threadManager,
-                TransactionSignature.class,
-                this.verificationQueue,
-                this.delegatingVerificationProvider,
-                config.computeCpuVerifierThreadCount(),
-                CryptoEngine::verificationHandler);
-    }
-
     /**
      * Common private utility method for performing synchronous digest computations.
      *
@@ -422,7 +256,10 @@ public class CryptoEngine implements Cryptography {
      * @param provider   the underlying provider to be used
      * @return the cryptographic hash for the given message contents
      */
-    private Hash digestSyncInternal(final byte[] message, final DigestType digestType, final DigestProvider provider) {
+    private @NonNull byte[] digestSyncInternal(
+            @NonNull final byte[] message,
+            @NonNull final DigestType digestType,
+            @NonNull final DigestProvider provider) {
         try {
             return provider.compute(message, digestType);
         } catch (final NoSuchAlgorithmException ex) {
