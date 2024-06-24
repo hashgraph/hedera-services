@@ -63,6 +63,7 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
 
     protected TokenAirdropsHandler subject;
     protected TokenAirdropValidator validator;
+    protected AssetsLoader assetsLoader;
 
     @Mock
     private AssetsLoader assetsLoader;
@@ -70,6 +71,7 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        assetsLoader = new AssetsLoader();
         validator = new TokenAirdropValidator();
         subject = new TokenAirdropsHandler(validator, assetsLoader);
     }
