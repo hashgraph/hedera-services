@@ -187,10 +187,13 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
                             memo.ifPresent(builder::setMemo);
                             contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
                             lifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryNowFor(spec, s)));
-                            expiry.ifPresentOrElse(
-                                    t -> builder.setExpirationTime(
-                                            Timestamp.newBuilder().setSeconds(t).build()),
-                                    () -> builder.setExpirationTime(defaultExpiryNowFor(spec)));
+                            if (lifetime.isEmpty()) {
+                                expiry.ifPresentOrElse(
+                                        t -> builder.setExpirationTime(Timestamp.newBuilder()
+                                                .setSeconds(t)
+                                                .build()),
+                                        () -> builder.setExpirationTime(defaultExpiryNowFor(spec)));
+                            }
                         });
         return b -> {
             expiryUsed.set(opBody.getExpirationTime());
