@@ -203,6 +203,8 @@ public final class Hedera implements SwirldMain {
      */
     private PlatformStatus platformStatus = STARTING_UP;
 
+    private Metrics metrics;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -336,7 +338,7 @@ public final class Hedera implements SwirldMain {
             throw new IllegalStateException("Platform should never change once set");
         }
         this.platform = requireNonNull(platform);
-        final var metrics = platform.getContext().getMetrics();
+        this.metrics = platform.getContext().getMetrics();
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -696,6 +698,7 @@ public final class Hedera implements SwirldMain {
                 .servicesRegistry(servicesRegistry)
                 .instantSource(instantSource)
                 .contractServiceImpl(contractServiceImpl)
+                .metrics(metrics)
                 .build();
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);

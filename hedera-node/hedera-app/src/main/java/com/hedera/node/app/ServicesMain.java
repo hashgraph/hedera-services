@@ -32,8 +32,10 @@ import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -175,10 +177,15 @@ public class ServicesMain implements SwirldMain {
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
-        final PlatformBuilder builder =
+        final PlatformBuilder platformBuilder =
                 PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
 
-        builder.withConfiguration(buildConfiguration());
+        // Add additional configuration to the platform
+        final Configuration configuration = buildConfiguration();
+        platformBuilder.withConfiguration(configuration);
+
+        platformBuilder.withCryptography(CryptographyFactory.create());
+        platformBuilder.withTime(Time.getCurrent());
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -203,7 +210,7 @@ public class ServicesMain implements SwirldMain {
         // whose object graph roots include the Ingest, PreHandle, Handle, and Query workflows;
         // as well as other infrastructure components that need to be initialized or accessed
         // at specific points in the Swirlds application lifecycle.
-        final Platform platform = builder.build();
+        final Platform platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
