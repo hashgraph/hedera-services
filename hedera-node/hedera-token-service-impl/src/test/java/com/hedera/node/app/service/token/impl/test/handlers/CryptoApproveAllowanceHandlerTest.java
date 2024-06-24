@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -226,7 +227,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenAllowances(List.of())
                 .approveForAllNftAllowances(List.of())
                 .build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,
@@ -470,7 +471,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .tokenAllowances(List.of())
                 .approveForAllNftAllowances(List.of())
                 .build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,
@@ -607,8 +608,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(feeCtx.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(feeCtx.payer()).willReturn(payerId);
 
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
         given(feeCalc.addRamByteSeconds(anyLong())).willReturn(feeCalc);
         // The fees wouldn't be free in this scenario, but we don't care about the actual return
@@ -636,8 +639,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(feeCtx.payer())
                 .willReturn(AccountID.newBuilder().accountNum(Long.MAX_VALUE).build());
 
+        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
+        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
         given(feeCalc.addRamByteSeconds(anyLong())).willReturn(feeCalc);
         // The fees wouldn't be free in this scenario, but we don't care about the actual return

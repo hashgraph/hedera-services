@@ -60,7 +60,6 @@ module com.hedera.node.test.clients {
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.contract.impl;
-    requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;

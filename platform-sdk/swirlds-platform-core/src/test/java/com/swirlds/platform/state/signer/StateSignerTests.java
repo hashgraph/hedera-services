@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +32,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import org.junit.jupiter.api.Test;
 
 public class StateSignerTests {
@@ -50,7 +50,7 @@ public class StateSignerTests {
         final StateSigner stateSigner = new DefaultStateSigner(platformSigner);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
-        final ConsensusTransactionImpl signatureTransaction = stateSigner.signState(reservedSignedState);
+        final StateSignaturePayload signatureTransaction = stateSigner.signState(reservedSignedState);
         assertTrue(reservedSignedState.isClosed());
         assertNull(signatureTransaction);
     }
@@ -72,10 +72,9 @@ public class StateSignerTests {
         final StateSigner stateSigner = new DefaultStateSigner(platformSigner);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
-        final ConsensusTransactionImpl signatureTransaction = stateSigner.signState(reservedSignedState);
+        final StateSignaturePayload payload = stateSigner.signState(reservedSignedState);
         assertTrue(reservedSignedState.isClosed());
-
-        final StateSignaturePayload payload = signatureTransaction.getPayload().as();
+        assertNotNull(payload);
         assertArrayEquals(payload.signature().toByteArray(), signature.getSignatureBytes());
     }
 }

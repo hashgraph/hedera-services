@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.signature.impl;
 
-import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
+import static com.hedera.node.app.hapi.utils.MiscCryptoUtils.extractEvmAddressFromDecompressedECDSAKey;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TestKeyInfo;

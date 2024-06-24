@@ -23,8 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_K
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_SUPPLY_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,8 +44,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -55,13 +53,13 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -88,24 +86,14 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
-    private PreHandleContext preHandleContext;
-
-    @Mock(strictness = LENIENT)
     private ConfigProvider configProvider;
-
-    @Mock(strictness = LENIENT)
-    private PropertySource compositeProps;
-
-    @Mock(strictness = LENIENT)
-    private GlobalDynamicProperties dynamicProperties;
-
-    @Mock(strictness = LENIENT)
-    private HandleContext context;
 
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
     private AttributeValidator attributeValidator;
+
     private TokenUpdateNftsHandler subject;
     private TransactionBody txn;
     private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
@@ -123,28 +111,23 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     private void setUpTxnContext() {
         attributeValidator = new AttributeValidatorImpl(handleContext);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(compositeProps.getLongProperty("entities.maxLifetime")).willReturn(7200000L);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(50);
-        given(dynamicProperties.maxAutoRenewDuration()).willReturn(3000000L);
-        given(dynamicProperties.minAutoRenewDuration()).willReturn(10L);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
 
-    private HandleContext mockContext(TransactionBody txn) {
-        given(context.body()).willReturn(txn);
-        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-        given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
-        given(context.configuration()).willReturn(configuration);
-        return context;
+    private void mockContext(TransactionBody txn) {
+        given(handleContext.body()).willReturn(txn);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(handleContext.configuration()).willReturn(configuration);
     }
 
     private HandleContext keyMockContext(TransactionBody txn) {
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
         return handleContext;
     }
 
@@ -289,9 +272,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
                         TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
-        final var context = mockContext(txn);
+        mockContext(txn);
 
-        Assertions.assertThatThrownBy(() -> subject.handle(context))
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_NFT_ID));
     }
@@ -322,9 +305,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(
                         TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
-        final var context = mockContext(txn);
+        mockContext(txn);
 
-        Assertions.assertThatThrownBy(() -> subject.handle(context))
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
     }
@@ -337,10 +320,13 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var txnBody =
                 new TokenUpdateNftBuilder().newNftUpdateTransactionBody(TOKEN_123, metadata1, serialNumbers.get(1));
         final var feeCalculator = mock(FeeCalculator.class);
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeContext = mock(FeeContext.class);
 
         given(feeContext.body()).willReturn(txnBody);
-        given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE))
+                .willReturn(feeCalculator);
         given(feeCalculator.addBytesPerTransaction(1L)).willReturn(feeCalculator);
         subject.calculateFees(feeContext);
 

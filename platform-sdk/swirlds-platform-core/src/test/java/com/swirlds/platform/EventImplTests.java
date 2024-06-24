@@ -18,10 +18,13 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
+import static com.swirlds.platform.util.PayloadUtils.isSystemPayload;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -57,14 +60,14 @@ public class EventImplTests {
                 createEventImpl(new TestingEventBuilder(random).setTransactions(data.transactions()), null, null);
 
         final Iterator<ConsensusTransaction> iter = event.consensusTransactionIterator();
-        final Set<ConsensusTransaction> transactionSet = new HashSet<>();
+        final Set<OneOf<PayloadOneOfType>> transactionSet = new HashSet<>();
         while (iter.hasNext()) {
-            transactionSet.add(iter.next());
+            transactionSet.add(iter.next().getPayload());
         }
 
         verifyTransactionIterator(data, transactionSet);
         assertEquals(
-                data.transactions.length - data.systemIndices.size(),
+                data.transactions.size() - data.systemIndices.size(),
                 event.getNumAppTransactions(),
                 "The number of application transactions is incorrect.");
     }
@@ -79,29 +82,30 @@ public class EventImplTests {
 
         final Iterator<Transaction> iter = event.transactionIterator();
 
-        final Set<Transaction> transactionSet = new HashSet<>();
+        final Set<OneOf<PayloadOneOfType>> transactionSet = new HashSet<>();
         while (iter.hasNext()) {
-            transactionSet.add(iter.next());
+            transactionSet.add(iter.next().getPayload());
         }
 
         verifyTransactionIterator(data, transactionSet);
         assertEquals(
-                data.transactions.length - data.systemIndices.size(),
+                data.transactions.size() - data.systemIndices.size(),
                 event.getNumAppTransactions(),
                 "The number of application transactions is incorrect.");
     }
 
     private void verifyTransactionIterator(
-            final TransactionData data, final Set<? extends Transaction> transactionSet) {
-        for (int i = 0; i < data.transactions.length; i++) {
-            final Transaction t = data.transactions[i];
+            final TransactionData data, final Set<OneOf<PayloadOneOfType>> transactionSet) {
+        for (int i = 0; i < data.transactions.size(); i++) {
+            final OneOf<PayloadOneOfType> t = data.transactions.get(i);
+            final boolean isSystem = isSystemPayload(t);
             if (data.systemIndices.contains(i)) {
-                assertTrue(t.isSystem(), String.format("Transaction at index %d should be iterated", i));
+                assertTrue(isSystem, String.format("Transaction at index %d should be iterated", i));
                 assertFalse(
                         transactionSet.contains(t),
                         String.format("Iterated transactions should include system transaction %s", t));
             } else {
-                assertFalse(t.isSystem(), String.format("Transaction at index %d should not be iterated", i));
+                assertFalse(isSystem, String.format("Transaction at index %d should not be iterated", i));
                 assertTrue(
                         transactionSet.contains(t),
                         String.format("Iterated transactions should not include system transaction %s", t));
@@ -111,15 +115,15 @@ public class EventImplTests {
 
     private TransactionData mixedTransactions() {
         final int numTransactions = 10_000;
-        final ConsensusTransactionImpl[] mixedTransactions = new ConsensusTransactionImpl[numTransactions];
+        final List<OneOf<PayloadOneOfType>> mixedTransactions = new ArrayList<>();
         final List<Integer> systemIndices = new ArrayList<>();
 
         for (int i = 0; i < numTransactions; i++) {
             if (random.nextBoolean()) {
-                mixedTransactions[i] = TransactionUtils.incrementingSystemTransaction();
+                mixedTransactions.add(i, TransactionUtils.incrementingSystemTransaction());
                 systemIndices.add(i);
             } else {
-                mixedTransactions[i] = TransactionUtils.incrementingSwirldTransaction();
+                mixedTransactions.add(i, TransactionUtils.incrementingSwirldTransaction());
             }
         }
         return new TransactionData(mixedTransactions, systemIndices);
@@ -128,12 +132,12 @@ public class EventImplTests {
     @Test
     @DisplayName("consensusReached() propagates consensus data to all transactions")
     void testConsensusReached() {
-        final ConsensusTransactionImpl[] mixedTransactions = new ConsensusTransactionImpl[5];
-        mixedTransactions[0] = TransactionUtils.incrementingSystemTransaction();
-        mixedTransactions[1] = TransactionUtils.incrementingSwirldTransaction();
-        mixedTransactions[2] = TransactionUtils.incrementingSystemTransaction();
-        mixedTransactions[3] = TransactionUtils.incrementingSwirldTransaction();
-        mixedTransactions[4] = TransactionUtils.incrementingSystemTransaction();
+        final List<OneOf<PayloadOneOfType>> mixedTransactions = List.of(
+                TransactionUtils.incrementingSystemTransaction(),
+                TransactionUtils.incrementingSwirldTransaction(),
+                TransactionUtils.incrementingSystemTransaction(),
+                TransactionUtils.incrementingSwirldTransaction(),
+                TransactionUtils.incrementingSystemTransaction());
 
         final Instant eventConsTime = Instant.now();
         final EventImpl event = createEventImpl(
@@ -145,15 +149,16 @@ public class EventImplTests {
 
         event.getBaseEvent().setConsensusTimestampsOnPayloads();
 
-        for (int i = 0; i < mixedTransactions.length; i++) {
+        final ConsensusTransactionImpl[] transactions = event.getTransactions();
+        for (int i = 0; i < transactions.length; i++) {
             final Instant transConsTime = eventConsTime.plusNanos(i * MIN_TRANS_TIMESTAMP_INCR_NANOS);
             assertEquals(
                     transConsTime,
-                    mixedTransactions[i].getConsensusTimestamp(),
+                    transactions[i].getConsensusTimestamp(),
                     "Consensus timestamp does not match the expected value based on transaction index and event "
                             + "consensus time.");
         }
     }
 
-    private record TransactionData(ConsensusTransactionImpl[] transactions, List<Integer> systemIndices) {}
+    private record TransactionData(List<OneOf<PayloadOneOfType>> transactions, List<Integer> systemIndices) {}
 }
