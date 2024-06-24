@@ -124,8 +124,8 @@ The `SignatureSchema` defines the type of Curve and which Group of the Pairing i
 
 ```
 `Share`: An abstract concept having a unique identifier and an owner
-|_  `PrivateShare`: Represents a share owned by the executor of the scheme. Contains a secret value (EC Private key) used for signing.
-|_  `PublicShare`: Represents a share in the system. It contains public information that can be used to validate each signature and, when combined, to validate aggregate signatures.   
+|-  `PrivateShare`: Represents a share owned by the executor of the scheme. Contains a secret value (EC Private key) used for signing.
+|-  `PublicShare`: Represents a share in the system. It contains public information that can be used to validate each signature and, when combined, to validate aggregate signatures.   
 ```
 
 #####  Bootstrap Stage
@@ -330,7 +330,7 @@ In this option, all iterations and "business logic" of groth21 implementation is
 ###### `TssService`
 **Description**: This class handles all tss specific operations.
 
-**Link**: [TssMessage.java](tss-option1%2FTssMessage.java)
+**Link**: [TssService.java](tss-option1%2FTssService.java)
 
 ###### `TssParticipantDirectory`
 **Description**: This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares. 
@@ -379,7 +379,7 @@ In this option, all iterations and "business logic" of groth21 implementation is
           .build(signatureScheme);
    
    //One can then query the directory
-   int n = directory.getTotalNumberOfShares();
+   int n = participantDirectory.getTotalNumberOfShares();
    List<TssShareId> privateShares = directory.getOwnedSharesIds();
    List<TssShareId> shareIds = directory.getShareIds();
 ```
@@ -565,14 +565,29 @@ This module provides cryptography primitives to create EC PublicKeys, EC Private
 
 ##### Public API
 ###### `SignatureSchema`
+**Link**: [SignatureSchema.java](signature-lib%2FSignatureSchema.java)
+
 **Description**: A pairings signature scheme can be implemented with different types of curves and group assignment configurations.
 For example, two different configurations might consist of a BLS_12_381 curve using G1 of the pairing to generate public key elements or G2 for the same purpose.
 ###### `PairingPrivateKey`
+**Link**: [PairingPrivateKey.java](signature-lib%2FPairingPrivateKey.java)
+
 **Description**: A private key generated using the pairings API
+
 ###### `PairingPublicKey`
+**Link**: [PairingPublicKey.java](signature-lib%2FPairingPublicKey.java)
+
 **Description**: A public key generated using the pairings API
 ###### `PairingSignature`
+**Link**: [PairingSignature.java](signature-lib%2FPairingSignature.java)
+
 **Description**: A signature generated with the private key that can be verified with the public key
+
+###### `GroupAssignment`
+**Link**: [GroupAssignment.java](signature-lib%2FGroupAssignment.java)
+
+**Description**: An enum to clarify which group public keys and signatures are in, for a given SignatureSchema
+
 
 ##### Implementation Note
 The serialization of the elements in this module adds a byte to represent the combination of Curve type and group assignment.
@@ -671,38 +686,38 @@ This API will expose general arithmetic operations to work with Bilinear Pairing
 This module will be a multilanguage module following the structure:
 ```
  swirlds-crypto-pairings-impl-X
- |_src
-    |_main
-    | |_java
-    | | |_com...
-    | |_rust
-    |   |_...
-    |_test
-      |_java
-      | |_com...
-      |_rust
-        |_...
+ |-src
+    |-main
+    | |-java
+    | | |-com...
+    | |-rust
+    |   |-...
+    |-test
+      |-java
+      | |-com...
+      |-rust
+        |-...
 ```
 Support for release engineering will be needed.
 This module should include Cargo for compiling rust source to binary files,
 It should be built in a way that the rust code is compiled for every supported architecture and only after that, packaged into the jar following the structure:
 ```
- |_WEB-INF
-    |_arch64
-      |_macos
-        |_lib.dylib
-    |_amd64
-      |_macos
-        |_lib.dylib
-      |_linux
-        |_lib.so
-      |_windows
-        |_lib.dll
-    |_x86
-      |_linux
-        |_lib.so
-      |_windows
-        |_lib.dll
+ |-WEB-INF
+    |-arch64
+      |-macos
+        |-lib.dylib
+    |-amd64
+      |-macos
+        |-lib.dylib
+      |-linux
+        |-lib.so
+      |-windows
+        |-lib.dll
+    |-x86
+      |-linux
+        |-lib.so
+      |-windows
+        |-lib.dll
 ```
 It will unzip and load the correct library packaged inside the jar and access it using JNI calls.
 The API interface is through JNI. Once built, this should become a runtime dependency.
@@ -731,22 +746,22 @@ The native libraries will be accessed assuming the following structure in the mo
 
 ```
  native-library-client.jar
- |_WEB-INF
-    |_arch64
-      |_macos
-        |_libhedera_bls_jni.dylib
-    |_amd64
-      |_macos
-        |_libhedera_bls_jni.dylib
-      |_linux
-        |_libhedera_bls_jni.so
-      |_windows
-        |_libhedera_bls_jni.dll
-    |_x86
-      |_linux
-        |_libhedera_bls_jni.so
-      |_windows
-        |_libhedera_bls_jni.dll
+ |-WEB-INF
+    |-arch64
+      |-macos
+        |-libhedera_bls_jni.dylib
+    |-amd64
+      |-macos
+        |-libhedera_bls_jni.dylib
+      |-linux
+        |-libhedera_bls_jni.so
+      |-windows
+        |-libhedera_bls_jni.dll
+    |-x86
+      |-linux
+        |-libhedera_bls_jni.so
+      |-windows
+        |-libhedera_bls_jni.dll
   ...
 ```
 
@@ -788,7 +803,7 @@ class AnySystemReferencedClass{
 }
 ```
 The method will fail with a runtime exception if no description matches the current system architecture.
-
+The result of this invocation will be that the library will be packaged from the contained jar in the expected structure into a temporal folder and loaded into memory.   
 
 ## Test Plan
 Since cryptographic code is often difficult to test due to its complexity and the lack of a test oracle,
