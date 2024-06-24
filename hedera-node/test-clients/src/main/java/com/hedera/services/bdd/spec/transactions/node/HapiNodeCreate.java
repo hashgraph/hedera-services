@@ -116,11 +116,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     @Override
     protected long feeFor(@NonNull final HapiSpec spec, @NonNull final Transaction txn, final int numPayerKeys)
             throws Throwable {
-        return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
+        return spec.fees().forActivityBasedOp(HederaFunctionality.NodeCreate, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        // temp till we decide about the logic
+        // TODO issue #13670
+        // This is a placeholder implementation until the actual fee estimation is implemented.
         return FeeData.newBuilder()
                 .setNodedata(FeeComponents.newBuilder().setBpr(0))
                 .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
@@ -145,6 +146,8 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
+        // TODO issue #13981
+        // Need to add adminKey also as a signer
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
     }
 

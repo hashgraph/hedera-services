@@ -78,7 +78,8 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
-        // temp till we decide about the logic
+        // TODO issue #13670
+        // This is a placeholder implementation until the actual fee estimation is implemented.
         return FeeData.newBuilder()
                 .setNodedata(FeeComponents.newBuilder().setBpr(0))
                 .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
