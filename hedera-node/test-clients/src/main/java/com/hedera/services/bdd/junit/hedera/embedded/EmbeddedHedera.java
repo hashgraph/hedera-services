@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
@@ -37,6 +36,7 @@ import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeServiceMigrator;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -80,12 +80,10 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -93,7 +91,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -136,7 +133,7 @@ public class EmbeddedHedera {
 
     public EmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
-        addressBook = loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
+        addressBook = WorkingDirUtils.loadAddressBook(node.getExternalPath(ADDRESS_BOOK));
         nodeIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .collect(toMap(EmbeddedHedera::accountIdOf, Address::getNodeId));
         accountIds = stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
@@ -521,20 +518,6 @@ public class EmbeddedHedera {
 
     private boolean isFree(@NonNull final Query query) {
         return query.hasCryptogetAccountBalance() || query.hasTransactionGetReceipt();
-    }
-
-    private static AddressBook loadAddressBook(@NonNull final Path path) {
-        requireNonNull(path);
-        final var configFile = loadConfigFile(path.toAbsolutePath());
-        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
-                .withSize(1)
-                .withRealKeysEnabled(true)
-                .build();
-        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
-        final var addressBook = configFile.getAddressBook();
-        return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
-                .map(address -> address.copySetSigCert(sigCert))
-                .toList());
     }
 
     private static TransactionResponse parseTransactionResponse(@NonNull final BufferedData responseBuffer) {

@@ -133,6 +133,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
@@ -182,6 +183,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -448,6 +450,10 @@ public class UtilVerbs {
 
     public static WaitForMarkerFileOp waitForMf(@NonNull final MarkerFile markerFile, @NonNull final Duration timeout) {
         return new WaitForMarkerFileOp(NodeSelector.allNodes(), markerFile, timeout);
+    }
+
+    public static ConfigTxtValidationOp validateAddressBooks(@NonNull final Consumer<AddressBook> bookValidator) {
+        return new ConfigTxtValidationOp(NodeSelector.allNodes(), bookValidator);
     }
 
     /**

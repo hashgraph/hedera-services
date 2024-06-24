@@ -63,8 +63,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EntityNumber;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -117,7 +115,7 @@ public class TxnUtils {
     public static final int BYTES_4K = 4 * (1 << 10);
 
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
-    private static final Pattern PORT_LITERAL_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern NUMERIC_LITERAL_PATTERN = Pattern.compile("\\d+");
 
     public static Key EMPTY_THRESHOLD_KEY =
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
@@ -194,8 +192,8 @@ public class TxnUtils {
         return ID_LITERAL_PATTERN.matcher(s).matches();
     }
 
-    public static boolean isPortLiteral(final String s) {
-        return PORT_LITERAL_PATTERN.matcher(s).matches();
+    public static boolean isNumericLiteral(final String s) {
+        return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
 
     public static AccountID asId(final String s, final HapiSpec lookupSpec) {
@@ -243,7 +241,7 @@ public class TxnUtils {
     }
 
     public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
-        return isIdLiteral(s)
+        return isNumericLiteral(s)
                 ? asEntityNumber(s).getNumber()
                 : lookupSpec.registry().getNodeId(s).getNumber();
     }

@@ -34,6 +34,7 @@ public record ChannelStubs(
         @NonNull NetworkServiceGrpc.NetworkServiceBlockingStub networkSvcStubs,
         @NonNull ScheduleServiceGrpc.ScheduleServiceBlockingStub scheduleSvcStubs,
         @NonNull SmartContractServiceGrpc.SmartContractServiceBlockingStub scSvcStubs,
+        @NonNull AddressBookServiceGrpc.AddressBookServiceBlockingStub addressBookSvcStubs,
         @NonNull UtilServiceGrpc.UtilServiceBlockingStub utilSvcStubs) {
 
     public ChannelStubs {
@@ -70,6 +71,7 @@ public record ChannelStubs(
                 NetworkServiceGrpc.newBlockingStub(channel),
                 ScheduleServiceGrpc.newBlockingStub(channel),
                 SmartContractServiceGrpc.newBlockingStub(channel),
+                AddressBookServiceGrpc.newBlockingStub(channel),
                 UtilServiceGrpc.newBlockingStub(channel));
     }
 }

@@ -16,8 +16,13 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
+import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -31,6 +36,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
@@ -258,5 +264,19 @@ public class WorkingDirUtils {
         if (!f.exists() && !f.mkdirs()) {
             throw new IllegalStateException("Failed to create directory: " + f.getAbsolutePath());
         }
+    }
+
+    public static AddressBook loadAddressBook(@NonNull final Path path) {
+        requireNonNull(path);
+        final var configFile = loadConfigFile(path.toAbsolutePath());
+        final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
+                .withSize(1)
+                .withRealKeysEnabled(true)
+                .build();
+        final var sigCert = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+        final var addressBook = configFile.getAddressBook();
+        return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
+                .map(address -> address.copySetSigCert(sigCert))
+                .toList());
     }
 }
