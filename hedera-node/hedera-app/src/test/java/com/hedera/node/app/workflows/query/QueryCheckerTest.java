@@ -119,6 +119,9 @@ class QueryCheckerTest extends AppTestBase {
         assertThatThrownBy(() -> new QueryChecker(
                         authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null, dispatcher))
                 .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("ConstantConditions")

@@ -2413,12 +2413,15 @@ public class CryptoTransferSuite {
                         }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        // create account with maxAutomaticAssociations set to 0
-                        cryptoCreate("testAccount").key(hollowAccountKey).alias(hollowAccountAlias.get()),
-                        // Verify there is no auto association
+                        // create account with maxAutomaticAssociations set to -1
+                        cryptoCreate("testAccount")
+                                .key(hollowAccountKey)
+                                .maxAutomaticTokenAssociations(-1)
+                                .alias(hollowAccountAlias.get()),
+                        // Verify maxAutomaticAssociations is set to -1 and there is no auto association
                         getAccountInfo("testAccount")
                                 .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(accountWith().key(hollowAccountKey)),
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1)),
                         // Delete the hollow account
                         cryptoDelete("testAccount").hasKnownStatus(SUCCESS),
                         // Create hollow account with 2 token transfers
@@ -2437,6 +2440,7 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .hasToken(relationshipWith(tokenA))
                                 .hasToken(relationshipWith(tokenB))
+                                .hasMaxAutomaticAssociations(-1)
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
@@ -2446,9 +2450,9 @@ public class CryptoTransferSuite {
                                 .payingWith(hollowAccountKey)
                                 .signedBy(hollowAccountKey, TREASURY)
                                 .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)),
-                        // Verify hollow account completion
+                        // Verify hollow account completion and keep max automatic associations to -1
                         getAliasedAccountInfo(hollowAccountKey)
-                                .has(accountWith().key(hollowAccountKey))
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
                 .then(validateChargedUsdWithChilds(
                         transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
@@ -2511,15 +2515,15 @@ public class CryptoTransferSuite {
                         mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata2"))),
                         mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata3"))),
                         mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata4"))),
-                        // create account with maxAutomaticAssociations set to 2
+                        // create hollow account with maxAutomaticAssociations set to -1
                         cryptoCreate("testAccount")
                                 .key(hollowAccountKey)
-                                .maxAutomaticTokenAssociations(2)
+                                .maxAutomaticTokenAssociations(-1)
                                 .alias(hollowAccountAlias.get()),
-                        // Verify maxAutomaticAssociations is set to 2 and there is no auto association
+                        // Verify maxAutomaticAssociations is set to -1 and there is no auto association
                         getAccountInfo("testAccount")
                                 .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(2)),
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1)),
                         // Delete the hollow account
                         cryptoDelete("testAccount").hasKnownStatus(SUCCESS),
                         // Create hollow account
@@ -2538,11 +2542,12 @@ public class CryptoTransferSuite {
                                 .payingWith(TREASURY)
                                 .signedBy(TREASURY)
                                 .via(transferTokenAAndBToHollowAccountTxn),
-                        // Verify there is an auto association to NFT1 and NFT2
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT1 and
                         // NFT2
                         getAliasedAccountInfo(hollowAccountKey)
                                 .hasToken(relationshipWith(tokenA))
                                 .hasToken(relationshipWith(tokenB))
+                                .hasMaxAutomaticAssociations(-1)
                                 .hasAlreadyUsedAutomaticAssociations(2)
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
@@ -2554,7 +2559,7 @@ public class CryptoTransferSuite {
                                 .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)),
                         // Verify hollow account completion
                         getAliasedAccountInfo(hollowAccountKey)
-                                .has(accountWith().key(hollowAccountKey))
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
                 .then(validateChargedUsdWithChilds(
                         transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
@@ -2636,6 +2641,7 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(CAROL)
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN))
                                 .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))
+                                .hasMaxAutomaticAssociations(-1)
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(CAROL, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
@@ -2731,13 +2737,15 @@ public class CryptoTransferSuite {
                                 .payingWith(ALICE)
                                 .signedBy(ALICE)
                                 .via(transferTokensToHollowAccountsTxn),
-                        // Verify there is an auto association to FT
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to FT
                         getAliasedAccountInfo(BOB)
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN))
+                                .hasMaxAutomaticAssociations(-1)
                                 .has(accountWith().hasEmptyKey()),
-                        // Verify there is an auto association to NFT
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT
                         getAliasedAccountInfo(CAROL)
                                 .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))
+                                .hasMaxAutomaticAssociations(-1)
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(CAROL, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
