@@ -771,6 +771,12 @@ lib folder is organized in subfolders by the platform identifier, as returned by
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
 
 ##### Public API
+###### `OSs`
+**Description**: An enum class listing all supported os.
+
+###### `Archs`
+**Description**: An enum class listing all supported architectures.
+
 ###### `LibraryDescriptionEntry`
 **Description**: Given that the compilation of a native library produces files with different names under different OS and architectures, we need a way to assemble a catalog for all possible forms our library will take.
 
@@ -778,12 +784,12 @@ A record of 3 elements that defines the name of the binary file of the library t
 
 **Example**:
 ```java
-    new LibraryDescriptionEntry("macos", "aarch64", "libhedera_bls_jni.dylib");
+    new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib");
 ```
 ###### `LibraryDescription`
 **Description**: A description of the library in all possible systems.
 ```java
-    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry("macos", "aarch64", "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry("linux", "amd64", "libhedera_bls_jni.so"), ...);
+    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry(OSs.LINUX,  Archs.AMD_64, "libhedera_bls_jni.so"), ...);
 ```
 If the library name is the same for all system architectures with the only change of the extension, one can configure:
 ```java
