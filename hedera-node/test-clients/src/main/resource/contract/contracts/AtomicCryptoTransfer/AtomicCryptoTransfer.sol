@@ -18,7 +18,7 @@ contract CryptoTransferV2 is HederaTokenService {
         IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
         (bool success, bytes memory result) = precompileAddress.delegatecall(abi.encodeWithSignature("cryptoTransfer(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])", transferList, tokenTransfers));
         if (!success) {
-            revert ("Crypto Transfer Failed");
+            revert ("Crypto Transfer Failed As Expected");
         }
     }
 

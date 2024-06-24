@@ -23,7 +23,7 @@ contract HRC632Contract is HederaAccountService {
     function hbarApproveDelegateCall(address owner, address spender, int256 amount) external {
         (bool success, bytes memory result) = precompileAddress.delegatecall(abi.encodeWithSignature("hbarApproveCall(address,address,int256)", owner, spender, amount));
         if (!success) {
-            revert ("hbarApprove() Failed");
+            revert ("hbarApprove() Failed As Expected");
         }
     }
 
