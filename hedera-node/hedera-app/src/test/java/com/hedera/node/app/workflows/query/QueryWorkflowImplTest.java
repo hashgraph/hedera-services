@@ -58,9 +58,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -118,9 +117,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private QueryDispatcher dispatcher;
-
-    @Mock
-    private HapiOpCounters opCounters;
 
     @Mock(strictness = LENIENT)
     private Codec<Query> queryParser;
@@ -516,8 +512,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
-        verify(opCounters, never()).countReceived(any());
-        verify(opCounters, never()).countAnswered(any());
     }
 
     @Test
@@ -533,8 +527,6 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var precheckCode =
                 response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
         assertThat(precheckCode).isEqualTo(NOT_SUPPORTED);
-        verify(opCounters, never()).countReceived(any());
-        verify(opCounters, never()).countAnswered(any());
     }
 
     @Test
@@ -565,7 +557,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                 .build();
         when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(query);
 
-        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
+        final var requestBytes = CommonPbjConverters.asBytes(localRequestBuffer);
         when(handler.extractHeader(query)).thenReturn(queryHeader);
         when(dispatcher.getHandler(query)).thenReturn(handler);
         final var responseBuffer = newEmptyBuffer();
@@ -725,7 +717,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                         NetworkGetExecutionTimeQuery.newBuilder().header(localQueryHeader))
                 .build();
 
-        final var requestBytes = PbjConverter.asBytes(localRequestBuffer);
+        final var requestBytes = CommonPbjConverters.asBytes(localRequestBuffer);
         when(queryParser.parseStrict((ReadableSequentialData) notNull())).thenReturn(localQuery);
         when(networkHandler.extractHeader(localQuery)).thenReturn(localQueryHeader);
         when(dispatcher.getHandler(localQuery)).thenReturn(networkHandler);

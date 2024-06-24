@@ -87,7 +87,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECO
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -179,11 +179,12 @@ import java.util.function.Function;
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
  * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
  * @param tokenReject                the permission for {@link HederaFunctionality#TOKEN_REJECT} functionality
+ * @param tokenAirdrop               the permission for {@link HederaFunctionality#TOKEN_AIRDROP} functionality
  *
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
  * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
- * @param getNodeInfo                   the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
+ * @param getNodeInfo                  the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -251,6 +252,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
@@ -303,7 +305,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
         permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
-        permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrops);
+        permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrop);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);

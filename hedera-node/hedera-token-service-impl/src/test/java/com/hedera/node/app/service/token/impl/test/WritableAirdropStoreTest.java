@@ -166,7 +166,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
 
         final var readNft = subject.getForModify(nftAirdropId);
         assertThat(nftAirdropId).isNotNull();
-        assertThat(nftValue).isEqualTo(readNft);
+        assertThat(readNft).isNull();
     }
 
     @Test

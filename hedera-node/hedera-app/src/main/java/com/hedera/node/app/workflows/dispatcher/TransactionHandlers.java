@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -118,4 +121,7 @@ public record TransactionHandlers(
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull TokenAirdropsHandler tokenAirdropsHandler,
-        @NonNull UtilPrngHandler utilPrngHandler) {}
+        @NonNull UtilPrngHandler utilPrngHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler) {}

@@ -96,7 +96,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Returns the {@link PendingAirdropValue} with the given airdrop id.
+     * Returns the {@link PendingAirdropValue} with the given airdrop id. If the airdrop contains only NFT return {@code null}.
      * If no such airdrop exists, returns {@code null}
      *
      * @param airdropId - the id of the airdrop, which value should be retrieved
@@ -106,6 +106,9 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     @Nullable
     public PendingAirdropValue getForModify(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
+        if (airdropId.hasNonFungibleToken()) {
+            return null;
+        }
         return airdropState.getForModify(airdropId);
     }
 }

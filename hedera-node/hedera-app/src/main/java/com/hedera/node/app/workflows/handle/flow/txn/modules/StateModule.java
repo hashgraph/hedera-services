@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.state.HederaState;
@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface StateModule {
     @Provides
     @UserTxnScope
-    static HederaState provideHederaState(WorkingStateAccessor workingStateAccessor) {
+    static HederaState provideHederaState(@NonNull final WorkingStateAccessor workingStateAccessor) {
         return workingStateAccessor.getHederaState();
     }
 
@@ -44,7 +44,7 @@ public interface StateModule {
 
     @Provides
     @UserTxnScope
-    static ReadableStoreFactory provideReadableStoreFactory(SavepointStackImpl stack) {
+    static ReadableStoreFactory provideReadableStoreFactory(@NonNull final SavepointStackImpl stack) {
         return new ReadableStoreFactory(stack);
     }
 }

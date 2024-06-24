@@ -17,8 +17,8 @@
 package com.hedera.node.app.workflows.handle;
 
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,7 +59,9 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
     }
 
     @Override
-    public boolean hasChildRecords() {
+    public boolean hasChildOrPrecedingRecords() {
+        // Since this is only used for a scheduled dispatch, we should not deduct any changes from this transaction
+        // So always return false.
         return false;
     }
 

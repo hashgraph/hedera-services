@@ -39,10 +39,12 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,17 +62,19 @@ public class QueryChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
+    private final TransactionDispatcher dispatcher;
     private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
+     * @param authorizer            the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     * {@link HederaFunctionality#CRYPTO_TRANSFER}.
-     * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks if the payer has enough
-     * @param expiryValidation the {@link ExpiryValidation} that checks if an account is expired
-     * @param feeManager the {@link FeeManager} that calculates the fees
+     *                              {@link HederaFunctionality#CRYPTO_TRANSFER}.
+     * @param solvencyPreCheck      the {@link SolvencyPreCheck} that checks if the payer has enough
+     * @param expiryValidation      the {@link ExpiryValidation} that checks if an account is expired
+     * @param feeManager            the {@link FeeManager} that calculates the fees
+     * @param dispatcher
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -80,12 +84,14 @@ public class QueryChecker {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
             @NonNull final FeeManager feeManager,
-            ExchangeRateManager exchangeRateManager) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
+        this.dispatcher = requireNonNull(dispatcher);
         this.exchangeRateManager = exchangeRateManager;
     }
 
@@ -133,7 +139,7 @@ public class QueryChecker {
 
         // FUTURE: Currently we check the solvency twice: once with and once without service fees (in IngestChecker)
         // https://github.com/hashgraph/hedera-services/issues/8356
-        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), false);
+        solvencyPreCheck.checkSolvency(txInfo, payer, new Fees(transferTxnFee, 0, 0), WorkflowCheck.NOT_INGEST);
 
         if (transfers.isEmpty()) {
             throw new PreCheckException(INVALID_ACCOUNT_AMOUNTS);
@@ -228,7 +234,8 @@ public class QueryChecker {
                 // Signatures aren't applicable to queries
                 exchangeRateManager,
                 state,
-                -1);
+                -1,
+                dispatcher);
         return cryptoTransferHandler.calculateFees(feeContext).totalFee();
     }
 }

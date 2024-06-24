@@ -24,9 +24,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,7 +39,7 @@ import java.time.Instant;
  * Simple implementation of {@link FeeContext} without any addition functionality.
  *
  * <p>This class is intended to be used during ingest. In the handle-workflow we use
- * {@link com.hedera.node.app.workflows.handle.HandleContextImpl}, which also implements{@link FeeContext}
+ * {@link com.hedera.node.app.workflows.handle.flow.DispatchHandleContext}, which also implements{@link FeeContext}
  */
 public class FeeContextImpl implements FeeContext {
     private final Instant consensusTime;
@@ -56,13 +59,14 @@ public class FeeContextImpl implements FeeContext {
     /**
      * Constructor of {@code FeeContextImpl}
      *
-     * @param consensusTime the approximation of consensus time used during ingest
-     * @param txInfo the {@link TransactionInfo} of the transaction
-     * @param payerKey the {@link Key} of the payer
-     * @param payerId the {@link AccountID} of the payer
-     * @param feeManager the {@link FeeManager} to generate a {@link FeeCalculator}
-     * @param storeFactory the {@link ReadableStoreFactory} to create readable stores
-     * @param numSignatures the number of signatures in the transaction
+     * @param consensusTime         the approximation of consensus time used during ingest
+     * @param txInfo                the {@link TransactionInfo} of the transaction
+     * @param payerKey              the {@link Key} of the payer
+     * @param payerId               the {@link AccountID} of the payer
+     * @param feeManager            the {@link FeeManager} to generate a {@link FeeCalculator}
+     * @param storeFactory          the {@link ReadableStoreFactory} to create readable stores
+     * @param numSignatures         the number of signatures in the transaction
+     * @param transactionDispatcher the {@link TransactionDispatcher} to dispatch child transactions
      */
     public FeeContextImpl(
             @NonNull final Instant consensusTime,
@@ -75,7 +79,8 @@ public class FeeContextImpl implements FeeContext {
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final HederaState state,
-            final int numSignatures) {
+            final int numSignatures,
+            final TransactionDispatcher transactionDispatcher) {
         this.consensusTime = consensusTime;
         this.txInfo = txInfo;
         this.payerKey = payerKey;
@@ -86,6 +91,7 @@ public class FeeContextImpl implements FeeContext {
         this.authorizer = authorizer;
         this.exchangeRateManager = exchangeRateManager;
         this.numSignatures = numSignatures;
+        this.transactionDispatcher = transactionDispatcher;
         this.state = state;
     }
 
@@ -101,8 +107,7 @@ public class FeeContextImpl implements FeeContext {
     }
 
     @NonNull
-    @Override
-    public FeeCalculator feeCalculator(@NonNull SubType subType) {
+    private FeeCalculator createFeeCalculator(@NonNull SubType subType) {
         // For mono-service compatibility, we treat the sig map size as the number of verifications
         final var numVerifications = txInfo.signatureMap().sigPair().size();
         final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(txInfo.signatureMap());
@@ -116,6 +121,12 @@ public class FeeContextImpl implements FeeContext {
                 subType,
                 false,
                 storeFactory);
+    }
+
+    @NonNull
+    @Override
+    public FeeCalculatorFactory feeCalculatorFactory() {
+        return this::createFeeCalculator;
     }
 
     @NonNull
@@ -139,6 +150,13 @@ public class FeeContextImpl implements FeeContext {
     @Override
     public int numTxnSignatures() {
         return numSignatures;
+    }
+
+    @Override
+    public Fees dispatchComputeFees(
+            @NonNull final TransactionBody childTxBody, @NonNull final AccountID syntheticPayerId) {
+        return transactionDispatcher.dispatchComputeFees(new ChildFeeContextImpl(
+                feeManager, this, childTxBody, syntheticPayerId, true, authorizer, storeFactory, consensusTime));
     }
 
     @NonNull

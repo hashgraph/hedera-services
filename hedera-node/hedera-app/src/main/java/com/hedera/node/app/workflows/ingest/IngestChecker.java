@@ -53,13 +53,14 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -227,9 +228,10 @@ public final class IngestChecker {
                 authorizer,
                 exchangeRateManager,
                 state,
-                numSigs);
+                numSigs,
+                dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);
 
         return txInfo;
     }

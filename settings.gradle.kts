@@ -51,8 +51,6 @@ include(":app-service-file", "hedera-node/hedera-file-service")
 
 include(":app-service-file-impl", "hedera-node/hedera-file-service-impl")
 
-include(":app-service-mono", "hedera-node/hedera-mono-service")
-
 include(":app-service-network-admin", "hedera-node/hedera-network-admin-service")
 
 include(":app-service-network-admin-impl", "hedera-node/hedera-network-admin-service-impl")
@@ -159,7 +157,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.51.0"
+val hapiProtoVersion = "0.52.0"
 
 
 dependencyResolutionManagement {

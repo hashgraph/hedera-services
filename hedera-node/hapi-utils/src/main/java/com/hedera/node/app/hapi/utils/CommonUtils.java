@@ -39,6 +39,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
@@ -219,6 +222,9 @@ public final class CommonUtils {
             case UTIL_PRNG -> UtilPrng;
             case TOKEN_UPDATE_NFTS -> TokenUpdateNfts;
             case TOKENAIRDROP -> TokenAirdrop;
+            case NODECREATE -> NodeCreate;
+            case NODEDELETE -> NodeDelete;
+            case NODEUPDATE -> NodeUpdate;
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
     }

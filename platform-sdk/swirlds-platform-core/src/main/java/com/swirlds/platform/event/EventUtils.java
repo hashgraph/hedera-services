@@ -64,7 +64,7 @@ public final class EventUtils {
      * @param transactionIndex index of the transaction in this event
      * @return timestamp of the given index transaction
      */
-    public static @NonNull Instant getTransactionTime(@NonNull final GossipEvent event, final int transactionIndex) {
+    public static @NonNull Instant getTransactionTime(@NonNull final PlatformEvent event, final int transactionIndex) {
         if (event.getConsensusTimestamp() == null) {
             throw new IllegalArgumentException("Event is not a consensus event");
         }
@@ -81,7 +81,7 @@ public final class EventUtils {
      * @param event the event to get the transaction time from
      * @return timestamp of the last transaction
      */
-    public static @NonNull Instant getLastTransTime(@NonNull final GossipEvent event) {
+    public static @NonNull Instant getLastTransTime(@NonNull final PlatformEvent event) {
         if (event.getConsensusTimestamp() == null) {
             throw new IllegalArgumentException("Event is not a consensus event");
         }

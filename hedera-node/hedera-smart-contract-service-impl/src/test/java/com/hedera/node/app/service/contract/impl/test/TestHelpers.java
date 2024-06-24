@@ -91,6 +91,7 @@ import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -140,6 +141,7 @@ public class TestHelpers {
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
     public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
+    public static final EntitiesConfig DEFAULT_ENTITIES_CONFIG = DEFAULT_CONFIG.getConfigData(EntitiesConfig.class);
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
@@ -149,6 +151,9 @@ public class TestHelpers {
             .getOrCreateConfig();
     public static final Configuration DEV_CHAIN_ID_CONFIG =
             HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
+    public static final Configuration V2_TRANSFER_DISABLED_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.precompile.atomicCryptoTransfer.enabled", "false")
+            .getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =

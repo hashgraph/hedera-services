@@ -54,7 +54,7 @@ public class ReadableAirdropStoreImpl implements ReadableAirdropStore {
     /** {@inheritDoc} */
     @Override
     @Nullable
-    public PendingAirdropValue getFungibleAirdropAmount(@NonNull final PendingAirdropId airdropId) {
+    public PendingAirdropValue get(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
         if (airdropId.hasNonFungibleToken()) {
             return null;

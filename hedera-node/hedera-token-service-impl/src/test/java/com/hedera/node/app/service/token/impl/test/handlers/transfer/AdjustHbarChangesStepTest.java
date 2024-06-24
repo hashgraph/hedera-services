@@ -16,12 +16,16 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -45,7 +49,6 @@ class AdjustHbarChangesStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
@@ -55,6 +58,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         writableAccountStore.put(
                 tokenReceiverAccount.copyBuilder().tinybarBalance(10000L).build());
         givenStoresAndConfig(handleContext);
+        givenTxn();
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
@@ -66,6 +70,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
     void doesHbarBalanceChangesWithoutAllowances() {
         final var receiver = asAccount(hbarReceiver);
         given(handleContext.payer()).willReturn(spenderId);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep = new AdjustHbarChangesStep(replacedOp, payerId);
 
@@ -94,6 +99,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(hbarReceiver);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep =
                 new AdjustHbarChangesStep(replacedOp, txn.transactionIDOrThrow().accountIDOrThrow());
@@ -134,6 +140,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(hbarReceiver);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep =
                 new AdjustHbarChangesStep(replacedOp, txn.transactionIDOrThrow().accountIDOrThrow());
@@ -164,6 +171,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(hbarReceiver);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep =
                 new AdjustHbarChangesStep(replacedOp, txn.transactionIDOrThrow().accountIDOrThrow());
