@@ -122,7 +122,7 @@ See https://hips.hedera.com/hip/hip-16 and https://hips.hedera.com/hip/hip-372 f
 ---
 
 ## Hollow Accounts
-**Hollow Accounts**: An account that has been created with an account number and alias but lacks an account key. This term is specifically used to describe accounts generated through the Auto Account Creation feature, which allows applications to create user accounts instantly, even without an internet connection, by assigning an account alias. See also [Account Aliases](#account-aliases), https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583. 
+**Hollow Accounts**: An account that has been created with an account number and alias but lacks an account key. This term is specifically used to describe accounts are auto-created by doing a CryptoTransfer to an alias that is of EVM address size, which allows applications to create user accounts instantly, even without an internet connection, by assigning an account alias. See also [Account Aliases](#account-aliases), https://hips.hedera.com/hip/hip-32 and https://hips.hedera.com/hip/hip-583. 
 
 ---
 
