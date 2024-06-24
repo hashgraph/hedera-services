@@ -51,6 +51,6 @@ public record TssMessage(
      * @return the byte array representation of the message
      */
     public byte[] toBytes() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Implementation should be provided but not defined in the proposal");
     }
 }
