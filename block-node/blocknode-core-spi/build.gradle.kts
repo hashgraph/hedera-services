@@ -16,5 +16,5 @@
 
 plugins {
     id("com.hedera.gradle.blocknode")
-    id("com.hedera.gradle.blocknode-publish")
+    // id("com.hedera.gradle.blocknode-publish")
 }
