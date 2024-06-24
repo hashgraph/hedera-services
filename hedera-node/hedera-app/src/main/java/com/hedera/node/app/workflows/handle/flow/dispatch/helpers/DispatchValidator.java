@@ -26,6 +26,7 @@ import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.Dispatc
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.NOT_INGEST;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerDuplicateErrorReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerUniqueValidationReport;
@@ -140,7 +141,7 @@ public class DispatchValidator {
                     duplicateStatus == DuplicateStatus.NO_DUPLICATE
                             ? dispatch.fees()
                             : dispatch.fees().withoutServiceComponent(),
-                    WorkflowCheck.NOT_INGEST,
+                    NOT_INGEST,
                     (dispatch.txnCategory() == USER || dispatch.txnCategory() == SCHEDULED)
                             ? CHECK_OFFERED_FEE
                             : SKIP_OFFERED_FEE_CHECK);
@@ -287,5 +288,13 @@ public class DispatchValidator {
          * The payer cannot pay the service fee, we charge all fees except service fees.
          */
         UNABLE_TO_PAY_SERVICE_FEE
+    }
+
+    /**
+     * Enumerates whether the workflow is an ingest or not ingest workflow.
+     */
+    public enum WorkflowCheck {
+        INGEST,
+        NOT_INGEST
     }
 }

@@ -28,6 +28,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVING_NODE_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.NOT_INGEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -59,7 +60,6 @@ import com.hedera.node.app.validation.ExpiryValidation;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.WorkflowCheck;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -266,7 +266,7 @@ class QueryCheckerTest extends AppTestBase {
                     ALICE.accountID(), send(ALICE.accountID(), amount), receive(nodeSelfAccountId, amount));
             doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, amount))
                     .when(solvencyPreCheck)
-                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), WorkflowCheck.NOT_INGEST);
+                    .checkSolvency(txInfo, ALICE_ACCOUNT, new Fees(amount, 0, 0), NOT_INGEST);
 
             // then
             assertThatThrownBy(() -> checker.validateAccountBalances(store, txInfo, ALICE_ACCOUNT, 0, amount))

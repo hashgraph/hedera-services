@@ -30,10 +30,10 @@ import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.Dispatc
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.NOT_INGEST;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.successReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.WorkflowCheck.NOT_INGEST;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
