@@ -1130,23 +1130,26 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             @NonNull final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
             boolean isReconnect)
             throws IOException {
-        // If both dirty/deleted leaves streams are empty, no new data files should be created
-        boolean startedWriting = false;
-
-        // Iterate over leaf records
+        // If both streams are empty, no new data files should be created. One simple way to
+        // check emptiness is to use iterators. The streams aren't processed in parallel anyway
         final Iterator<VirtualLeafRecord<K, V>> dirtyIterator = dirtyLeaves
                 .sorted(Comparator.comparingLong(VirtualLeafRecord::getPath))
                 .iterator();
+        final Iterator<VirtualLeafRecord<K, V>> deletedIterator = deletedLeaves.iterator();
+
+        if (!dirtyIterator.hasNext() && !deletedIterator.hasNext()) {
+            // Nothing to do
+            return;
+        }
+
+        pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
+        if (!isLongKeyMode) {
+            objectKeyToPath.startWriting();
+        }
+
+        // Iterate over leaf records
         while (dirtyIterator.hasNext()) {
             final VirtualLeafRecord<K, V> leafRecord = dirtyIterator.next();
-            // Start writing, if not started yet
-            if (!startedWriting) {
-                pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
-                if (!isLongKeyMode) {
-                    objectKeyToPath.startWriting();
-                }
-                startedWriting = true;
-            }
             final long path = leafRecord.getPath();
             // Update key to path index
             if (isLongKeyMode) {
@@ -1169,20 +1172,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // cache the record
             invalidateReadCache(leafRecord.getKey());
         }
-        ;
 
         // Iterate over leaf records to delete
-        final Iterator<VirtualLeafRecord<K, V>> deletedIterator = deletedLeaves.iterator();
         while (deletedIterator.hasNext()) {
             final VirtualLeafRecord<K, V> leafRecord = deletedIterator.next();
-            // Start writing, if not started yet
-            if (!startedWriting) {
-                pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
-                if (!isLongKeyMode) {
-                    objectKeyToPath.startWriting();
-                }
-                startedWriting = true;
-            }
             final long path = leafRecord.getPath();
             // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
             // deletedLeaves stream have been moved to different paths in the tree. This is good
@@ -1214,18 +1207,15 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // delete the record from the cache
             invalidateReadCache(leafRecord.getKey());
         }
-        ;
 
-        if (startedWriting) {
-            // end writing
-            final DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();
-            statisticsUpdater.setFlushLeavesStoreFileSize(pathToKeyValueReader);
-            compactionCoordinator.compactPathToKeyValueAsync();
-            if (!isLongKeyMode) {
-                final DataFileReader<Bucket<K>> objectKeyToPathReader = objectKeyToPath.endWriting();
-                statisticsUpdater.setFlushLeafKeysStoreFileSize(objectKeyToPathReader);
-                compactionCoordinator.compactDiskStoreForObjectKeyToPathAsync();
-            }
+        // end writing
+        final DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();
+        statisticsUpdater.setFlushLeavesStoreFileSize(pathToKeyValueReader);
+        compactionCoordinator.compactPathToKeyValueAsync();
+        if (!isLongKeyMode) {
+            final DataFileReader<Bucket<K>> objectKeyToPathReader = objectKeyToPath.endWriting();
+            statisticsUpdater.setFlushLeafKeysStoreFileSize(objectKeyToPathReader);
+            compactionCoordinator.compactDiskStoreForObjectKeyToPathAsync();
         }
     }
 
