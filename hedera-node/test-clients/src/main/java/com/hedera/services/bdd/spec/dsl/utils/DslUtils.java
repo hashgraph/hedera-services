@@ -16,11 +16,12 @@
 
 package com.hedera.services.bdd.spec.dsl.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
@@ -43,7 +44,7 @@ public class DslUtils {
     public static final Key PBJ_IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     public static final com.hederahashgraph.api.proto.java.Key PROTO_IMMUTABILITY_SENTINEL_KEY =
-            PbjConverter.fromPbj(PBJ_IMMUTABILITY_SENTINEL_KEY);
+            fromPbj(PBJ_IMMUTABILITY_SENTINEL_KEY);
 
     /**
      * Substitutes spec entities with their EVM applicable types in the given arguments, as follows:

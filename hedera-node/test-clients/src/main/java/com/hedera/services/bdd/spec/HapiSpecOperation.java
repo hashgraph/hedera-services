@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
@@ -35,10 +36,10 @@ import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
@@ -116,8 +117,6 @@ public abstract class HapiSpecOperation implements SpecOperation {
 
     protected boolean useTls = false;
     protected HapiSpecSetup.TxnProtoStructure txnProtoStructure = HapiSpecSetup.TxnProtoStructure.ALTERNATE;
-    protected boolean useRandomNode = false;
-    protected boolean unavailableNode = false;
     protected Set<HederaFunctionality> skipIfAutoScheduling = Collections.emptySet();
     protected Optional<ByteString> expectedLedgerId = Optional.empty();
     protected Optional<Integer> hardcodedNumPayerKeys = Optional.empty();
@@ -199,7 +198,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
         if (nodeSupplier.isPresent()) {
             node = Optional.of(nodeSupplier.get().get());
         } else {
-            if (useRandomNode || spec.setup().nodeSelector() == HapiSpecSetup.NodeSelection.RANDOM) {
+            if (spec.setup().nodeSelector() == HapiSpecSetup.NodeSelection.RANDOM) {
                 node = Optional.of(randomNodeFrom(spec));
             } else {
                 node = Optional.of(spec.setup().defaultNode());
@@ -231,8 +230,8 @@ public abstract class HapiSpecOperation implements SpecOperation {
     }
 
     private AccountID randomNodeFrom(final HapiSpec spec) {
-        final List<NodeConnectInfo> nodes = spec.setup().nodes();
-        return nodes.get(r.nextInt(nodes.size())).getAccount();
+        final List<HederaNode> nodes = spec.targetNetworkOrThrow().nodes();
+        return fromPbj(nodes.get(r.nextInt(nodes.size())).getAccountId());
     }
 
     public Optional<Throwable> execFor(final HapiSpec spec) {
@@ -249,10 +248,6 @@ public abstract class HapiSpecOperation implements SpecOperation {
                 updateStateOf(spec);
             }
         } catch (final Throwable t) {
-            if (unavailableNode && t.getMessage().startsWith("UNAVAILABLE")) {
-                log.info("Node {} is unavailable as expected!", HapiPropertySource.asAccountString(node.get()));
-                return Optional.empty();
-            }
             if (verboseLoggingOn) {
                 String message = MessageFormat.format("{0}{1} failed", spec.logPrefix(), this);
                 log.warn(message, t);
@@ -263,12 +258,6 @@ public abstract class HapiSpecOperation implements SpecOperation {
             return Optional.of(t);
         }
 
-        if (unavailableNode) {
-            final String message = String.format(
-                    "Node %s is NOT unavailable as expected!!!", HapiPropertySource.asAccountString(node.get()));
-            log.error(message);
-            return Optional.of(new RuntimeException(message));
-        }
         return Optional.empty();
     }
 

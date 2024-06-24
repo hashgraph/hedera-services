@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -23,7 +24,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static java.util.stream.Collectors.joining;
 
-import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.junit.support.validators.BalanceReconciliationValidator;
@@ -92,7 +92,7 @@ public class StreamValidationOp extends UtilOp {
     private static Optional<RecordStreamAccess.Data> readMaybeStreamDataFor(@NonNull final HapiSpec spec) {
         RecordStreamAccess.Data data = null;
         final var streamLocs = spec.getNetworkNodes().stream()
-                .map(HederaNode::getRecordStreamPath)
+                .map(node -> node.getExternalPath(STREAMS_DIR))
                 .map(Path::toAbsolutePath)
                 .map(Object::toString)
                 .toList();

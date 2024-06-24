@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
@@ -43,9 +43,8 @@ import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -70,25 +69,17 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     private NodeCreateRecordBuilder recordBuilder;
 
     @Mock
+    private StoreFactory storeFactory;
+
+    @Mock
     private ReadableAccountStore accountStore;
-
-    @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
-    private FeeAccumulator feeAccumulator;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     private TransactionBody txn;
     private NodeCreateHandler subject;
 
-    private AddressBookValidator addressBookValidator;
-
     @BeforeEach
     void setUp() {
-        addressBookValidator = new AddressBookValidator();
+        final var addressBookValidator = new AddressBookValidator();
         subject = new NodeCreateHandler(addressBookValidator);
     }
 
@@ -97,7 +88,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void accountIdCannotNull() {
         txn = new NodeCreateBuilder().build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -105,7 +96,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void accountIdNeedSet() {
         txn = new NodeCreateBuilder().withAccountId(AccountID.DEFAULT).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -113,7 +104,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void accountIdCannotAlias() {
         txn = new NodeCreateBuilder().withAccountId(alias).build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_NODE_ACCOUNT_ID).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -124,7 +115,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withGossipEndpoint(List.of())
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_GOSSIP_ENDPOINT).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_ENDPOINT);
     }
 
     @Test
@@ -136,7 +127,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withServiceEndpoint(List.of())
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_SERVICE_ENDPOINT).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_SERVICE_ENDPOINT);
     }
 
     @Test
@@ -148,7 +139,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withServiceEndpoint(List.of(endpoint2))
                 .build();
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(INVALID_GOSSIP_CAE_CERTIFICATE).isEqualTo(msg.responseCode());
+        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Test
@@ -172,7 +163,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.maxNumber", 1L)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         assertEquals(1, writableStore.sizeOfState());
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -190,8 +182,9 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.nodeMaxDescriptionUtf8Bytes", 10)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID, msg.getStatus());
@@ -440,10 +433,13 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.maxServiceEndpoint", 3)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        final var recordBuilders = mock(RecordBuilders.class);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
         given(accountStore.contains(accountId)).willReturn(true);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
         final var createdNode = writableStore.get(4L);
@@ -473,9 +469,10 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withValue("nodes.maxGossipEndpoint", 2)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         given(accountStore.contains(accountId)).willReturn(true);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
     }
 
     private class NodeCreateBuilder {
