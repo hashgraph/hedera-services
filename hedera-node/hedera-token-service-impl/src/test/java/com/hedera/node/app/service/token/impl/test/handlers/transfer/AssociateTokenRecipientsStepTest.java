@@ -34,7 +34,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -55,9 +55,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Mock
     private ExpiryValidator expiryValidator;
-
     @Mock
     private TokenServiceApi tokenServiceApi;
+    @Mock
+    private RecordBuilders recordBuilders;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -76,8 +77,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     }
 
     @Test
-    void associatesTokenRecipients() {
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+    void associatesTokenRecepients() {
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
@@ -93,7 +93,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Test
     void autoAssociateWithDispatchComputeFees() {
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
         final var modifiedConfiguration = HederaTestConfigBuilder.create()
                 .withValue("entities.unlimitedAutoAssociationsEnabled", true)
                 .getOrCreateConfig();

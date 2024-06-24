@@ -91,6 +91,7 @@ public class PrivilegesVerifier {
                     txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
             case CRYPTO_DELETE -> checkEntityDelete(
                     txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
+            case NODE_CREATE, NODE_DELETE -> checkNodeChange(payerId);
             default -> SystemPrivilege.UNNECESSARY;
         };
     }
@@ -134,6 +135,10 @@ public class PrivilegesVerifier {
 
     private boolean hasFeeSchedulePrivilige(@NonNull final AccountID accountID) {
         return accountID.accountNumOrThrow() == accountsConfig.feeSchedulesAdmin() || isSuperUser(accountID);
+    }
+
+    private boolean hasNodeChangePrivilige(@NonNull final AccountID accountID) {
+        return accountID.accountNumOrThrow() == accountsConfig.nodeAdmin() || isSuperUser(accountID);
     }
 
     private SystemPrivilege checkFreeze(@NonNull final AccountID accountID) {
@@ -210,6 +215,10 @@ public class PrivilegesVerifier {
                 return isTreasury(targetId) ? UNAUTHORIZED : UNNECESSARY;
             }
         }
+    }
+
+    private SystemPrivilege checkNodeChange(@NonNull final AccountID payerId) {
+        return hasNodeChangePrivilige(payerId) ? AUTHORIZED : UNAUTHORIZED;
     }
 
     private SystemPrivilege checkEntityDelete(final long entityNum) {

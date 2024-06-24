@@ -40,6 +40,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -50,6 +51,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -62,8 +64,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -116,7 +116,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final TransactionDispatcher dispatcher;
     private final RecordCache recordCache;
     private final NetworkInfo networkInfo;
-    private final SingleTransactionRecordBuilderImpl recordBuilder;
+    private final RecordBuilders recordBuilders;
     private final Provider<ChildDispatchComponent.Factory> childDispatchProvider;
     private final ChildDispatchFactory childDispatchFactory;
     private final Dispatch currentDispatch;
@@ -143,7 +143,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final RecordBuilders recordBuilders,
             @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchProvider,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final Dispatch parentDispatch,
@@ -173,7 +173,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.dispatcher = requireNonNull(dispatcher);
         this.recordCache = requireNonNull(recordCache);
         this.networkInfo = requireNonNull(networkInfo);
-        this.recordBuilder = requireNonNull(recordBuilder);
+        this.recordBuilders = requireNonNull(recordBuilders);
     }
 
     @NonNull
@@ -357,9 +357,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public <T> T recordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(recordBuilder, recordBuilderClass);
+    public RecordBuilders recordBuilders() {
+        return recordBuilders;
     }
 
     @Override
@@ -488,34 +487,15 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childCallback,
                 childSyntheticPayerId,
                 customizer,
-                TransactionCategory.CHILD,
+                CHILD,
                 SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
                 false);
     }
 
     @NonNull
     @Override
-    public <T> T addChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = currentDispatch.recordListBuilder().addChild(configuration(), CHILD);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @NonNull
-    @Override
-    public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
-        final var result = currentDispatch.recordListBuilder().addRemovableChild(configuration());
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @NonNull
-    @Override
     public SavepointStack savepointStack() {
         return stack;
-    }
-
-    @Override
-    public void revertRecordsFrom(@NonNull final RecordListCheckPoint recordListCheckPoint) {
-        currentDispatch.recordListBuilder().revertChildrenFrom(recordListCheckPoint);
     }
 
     @Override
@@ -570,25 +550,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public RecordListCheckPoint createRecordListCheckPoint() {
-        final var precedingRecordBuilders = currentDispatch.recordListBuilder().precedingRecordBuilders();
-        final var childRecordBuilders = currentDispatch.recordListBuilder().childRecordBuilders();
-
-        SingleTransactionRecordBuilder lastFollowing = null;
-        SingleTransactionRecordBuilder firstPreceding = null;
-
-        if (!precedingRecordBuilders.isEmpty()) {
-            firstPreceding = precedingRecordBuilders.get(precedingRecordBuilders.size() - 1);
-        }
-        if (!childRecordBuilders.isEmpty()) {
-            lastFollowing = childRecordBuilders.get(childRecordBuilders.size() - 1);
-        }
-
-        return new RecordListCheckPoint(firstPreceding, lastFollowing);
-    }
-
-    @NonNull
-    @Override
     public Map<AccountID, Long> dispatchPaidRewards() {
         return dispatchPaidRewards == null ? emptyMap() : dispatchPaidRewards;
     }
@@ -623,15 +584,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             }
             paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
         }
-        return castRecordBuilder(childDispatch.recordBuilder(), recordBuilderClass);
-    }
-
-    private static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
-        if (!recordBuilderClass.isInstance(recordBuilder)) {
-            throw new IllegalArgumentException("Not a valid record builder class");
-        }
-        return recordBuilderClass.cast(recordBuilder);
+        return RecordBuildersImpl.castRecordBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

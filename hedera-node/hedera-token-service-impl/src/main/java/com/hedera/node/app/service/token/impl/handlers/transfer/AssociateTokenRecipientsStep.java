@@ -198,7 +198,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 tokenApi.chargeNetworkFee(
                         topLevelPayer,
                         fees.nodeFee() + fees.networkFee() + fees.serviceFee(),
-                        handleContext.recordBuilder(FeeRecordBuilder.class));
+                        handleContext.recordBuilders().getOrCreate(FeeRecordBuilder.class));
             }
 
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);

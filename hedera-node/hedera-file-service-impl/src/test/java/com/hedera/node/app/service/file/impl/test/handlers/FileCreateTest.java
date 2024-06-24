@@ -53,6 +53,7 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -90,6 +91,9 @@ class FileCreateTest extends FileTestBase {
 
     @Mock
     private CreateFileRecordBuilder recordBuilder;
+
+    @Mock
+    private RecordBuilders recordBuilders;
 
     @Mock
     private FileOpsUsage fileOpsUsage;
@@ -207,7 +211,8 @@ class FileCreateTest extends FileTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
-        given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
@@ -240,7 +245,8 @@ class FileCreateTest extends FileTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
-        given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
