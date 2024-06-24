@@ -104,7 +104,9 @@ public class DefaultBirthRoundMigrationShim implements BirthRoundMigrationShim {
     @Override
     @NonNull
     public PlatformEvent migrateEvent(@NonNull final PlatformEvent event) {
-        if (HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(event.getSoftwareVersion(), firstVersionInBirthRoundMode.getPbjSemanticVersion()) < 0) {
+        if (HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                        event.getSoftwareVersion(), firstVersionInBirthRoundMode.getPbjSemanticVersion())
+                < 0) {
             // The event was created before the birth round mode was enabled.
             // We need to migrate the event's birth round.
 

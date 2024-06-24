@@ -52,7 +52,6 @@ public final class StaticSoftwareVersion {
         semanticVersion = softwareVersion.getPbjSemanticVersion();
     }
 
-
     /**
      * Reset this object. Required for testing.
      */

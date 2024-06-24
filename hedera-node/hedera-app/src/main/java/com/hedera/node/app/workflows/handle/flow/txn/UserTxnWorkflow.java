@@ -162,6 +162,8 @@ public class UserTxnWorkflow {
      */
     private boolean isOlderSoftwareEvent() {
         return this.initTrigger != EVENT_STREAM_RECOVERY
-                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(version, userTxn.platformEvent().getSoftwareVersion()) > 0;
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                                version, userTxn.platformEvent().getSoftwareVersion())
+                        > 0;
     }
 }

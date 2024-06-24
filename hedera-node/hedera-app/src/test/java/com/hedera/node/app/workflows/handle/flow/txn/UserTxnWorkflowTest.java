@@ -74,8 +74,10 @@ class UserTxnWorkflowTest {
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO =
             new TransactionInfo(Transaction.DEFAULT, TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
-    private static final SemanticVersion PREVIOUS_VERSION = SemanticVersion.newBuilder().major(99).build();
-    private static final SemanticVersion CURRENT_VERSION = SemanticVersion.newBuilder().major(100).build();
+    private static final SemanticVersion PREVIOUS_VERSION =
+            SemanticVersion.newBuilder().major(99).build();
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().major(100).build();
     private static final SingleTransactionRecord FAKE_RECORD = new SingleTransactionRecord(
             Transaction.DEFAULT,
             TransactionRecord.DEFAULT,
