@@ -91,7 +91,7 @@ public class TokenRejectSuite {
 
     private static final String MULTI_KEY = "multiKey";
 
-    private static final String TOKEN_REJECT_ENABLED_PROPERTY = "tokens.reject.enabled";
+    public static final String TOKEN_REJECT_ENABLED_PROPERTY = "tokens.reject.enabled";
 
     @HapiTest
     final Stream<DynamicTest> tokenRejectWorksAndAvoidsCustomFees() {
