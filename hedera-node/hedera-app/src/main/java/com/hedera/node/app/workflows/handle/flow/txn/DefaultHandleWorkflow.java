@@ -79,7 +79,9 @@ public class DefaultHandleWorkflow {
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         expireSchedules(userTxn);
 
-        logUserTxn(userTxn);
+        if (logger.isDebugEnabled()) {
+            logUserTxn(userTxn);
+        }
 
         final var userDispatch = userTxn.userDispatchProvider().get().create();
         hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
