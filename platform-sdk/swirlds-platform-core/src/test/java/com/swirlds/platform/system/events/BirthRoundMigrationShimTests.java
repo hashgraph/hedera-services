@@ -25,7 +25,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -37,19 +37,19 @@ import org.junit.jupiter.api.Test;
 class BirthRoundMigrationShimTests {
 
     @NonNull
-    private GossipEvent buildEvent(
+    private PlatformEvent buildEvent(
             @NonNull final Random random,
             @NonNull final SoftwareVersion softwareVersion,
             final long generation,
             final long birthRound) {
 
         final NodeId creatorId = new NodeId(random.nextLong(1, 10));
-        final GossipEvent selfParent = new TestingEventBuilder(random)
+        final PlatformEvent selfParent = new TestingEventBuilder(random)
                 .setCreatorId(creatorId)
                 .setBirthRound(random.nextLong(birthRound - 2, birthRound + 1)) /* realistic range */
                 .build();
 
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setSoftwareVersion(softwareVersion)
                 .setCreatorId(creatorId)
                 .setBirthRound(birthRound)
@@ -85,7 +85,7 @@ class BirthRoundMigrationShimTests {
 
         for (int i = 0; i < 100; i++) {
             final long birthRound = random.nextLong(100, 1000);
-            final GossipEvent event = buildEvent(
+            final PlatformEvent event = buildEvent(
                     random,
                     new BasicSoftwareVersion(
                             firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
@@ -128,7 +128,7 @@ class BirthRoundMigrationShimTests {
 
         for (int i = 0; i < 100; i++) {
             final long birthRound = random.nextLong(100, 1000);
-            final GossipEvent event = buildEvent(
+            final PlatformEvent event = buildEvent(
                     random,
                     new BasicSoftwareVersion(
                             firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
@@ -142,9 +142,9 @@ class BirthRoundMigrationShimTests {
             assertEquals(lastRoundBeforeBirthRoundMode, event.getBirthRound());
 
             // The hash of the event should not have changed
-            event.getHashedData().invalidateHash();
+            event.invalidateHash();
             new StatefulEventHasher().hashEvent(event);
-            assertEquals(originalHash, event.getHashedData().getHash());
+            assertEquals(originalHash, event.getHash());
         }
     }
 
@@ -170,7 +170,7 @@ class BirthRoundMigrationShimTests {
 
         for (int i = 0; i < 100; i++) {
             final long birthRound = random.nextLong(100, 1000);
-            final GossipEvent event = buildEvent(
+            final PlatformEvent event = buildEvent(
                     random,
                     new BasicSoftwareVersion(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(0, 10)),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(-100, 100),
@@ -185,7 +185,7 @@ class BirthRoundMigrationShimTests {
             // The hash of the event should not have changed
             event.invalidateHash();
             new StatefulEventHasher().hashEvent(event);
-            assertEquals(originalHash, event.getHashedData().getHash());
+            assertEquals(originalHash, event.getHash());
         }
     }
 }

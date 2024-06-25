@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -65,7 +65,7 @@ public class NodeUpdateHandler implements TransactionHandler {
             validateFalsePreCheck(!accountId.hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
         }
         if (op.hasGossipCaCertificate())
-            validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CAE_CERTIFICATE);
+            validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Override
@@ -80,13 +80,14 @@ public class NodeUpdateHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
-        final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
 
         final var existingNode = nodeStore.get(op.nodeId());
         validateFalse(existingNode == null, INVALID_NODE_ID);
         if (op.hasAccountId()) {
-            final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
+            final var accountId = op.accountIdOrThrow();
             validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
         }
         if (op.hasDescription()) addressBookValidator.validateDescription(op.description(), nodeConfig);

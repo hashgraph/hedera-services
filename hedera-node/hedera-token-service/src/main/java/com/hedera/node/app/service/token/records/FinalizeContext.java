@@ -43,11 +43,12 @@ public interface FinalizeContext extends ChildFinalizeContext {
     Configuration configuration();
 
     /**
-     * Indicates whether or not the transaction has any child records.
+     * Indicates whether the transaction has any child or preceding records.
+     * This is true only for the user transaction that triggered the dispatch.
      *
-     * @return {@code true} if the transaction has child records; otherwise {@code false}
+     * @return {@code true} if the transaction has child ore preceding records; otherwise {@code false}
      */
-    boolean hasChildRecords();
+    boolean hasChildOrPrecedingRecords();
 
     /**
      * This method can be used to iterate over all child records.

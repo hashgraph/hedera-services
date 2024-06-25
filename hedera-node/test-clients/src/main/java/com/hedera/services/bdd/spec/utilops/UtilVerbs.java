@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
@@ -53,6 +54,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -80,6 +82,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
@@ -112,6 +116,8 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -149,12 +155,14 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -182,6 +190,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -207,6 +216,8 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
+    private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
+            EnumSet.of(SHARED_HAPI_TEST_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -287,11 +298,15 @@ public class UtilVerbs {
     }
 
     public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.of(SHARED_HAPI_TEST_NETWORK), ops);
+        return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
     }
 
     public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(SHARED_HAPI_TEST_NETWORK)), ops);
+        return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
+    }
+
+    public static NetworkTypeFilterOp ifNotEmbeddedTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(EMBEDDED_NETWORK)), ops);
     }
 
     public static EnvFilterOp ifCi(@NonNull final HapiSpecOperation... ops) {
@@ -580,6 +595,15 @@ public class UtilVerbs {
 
     public static BalanceSnapshot balanceSnapshot(String name, String forAccount) {
         return new BalanceSnapshot(forAccount, name);
+    }
+
+    public static MutateAccountOp mutateAccount(
+            @NonNull final String name, @NonNull final Consumer<Account.Builder> mutation) {
+        return new MutateAccountOp(name, mutation);
+    }
+
+    public static MutateNodeOp mutateNode(@NonNull final String name, @NonNull final Consumer<Node.Builder> mutation) {
+        return new MutateNodeOp(name, mutation);
     }
 
     public static BalanceSnapshot balanceSnapshot(Function<HapiSpec, String> nameFn, String forAccount) {
@@ -979,8 +1003,6 @@ public class UtilVerbs {
                 Thread.sleep(20000);
                 return;
             }
-            opLog.info("Sleeping so not to spoil/fail the fee initializations on other" + " clients...");
-            Thread.sleep(10000);
             opLog.info("Reducing fee for {}...", functions);
             var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
             allRunFor(spec, query);
@@ -1324,6 +1346,56 @@ public class UtilVerbs {
         return withOpContext((spec, ctxLog) -> {
             ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
             CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt, false, OptionalLong.of(0L)));
+        });
+    }
+
+    /**
+     * Returns a {@link CustomSpecAssert} that asserts that the provided contract creation has the
+     * expected maxAutoAssociations value.
+     *
+     * @param txn the contract create transaction which resulted in contract creation.
+     * @param creationNum the index of the contract creation in the transaction. If we have nested contract create, the top-level contract creation is at index 0.
+     * @param maxAutoAssociations the expected maxAutoAssociations value.
+     * @return a {@link CustomSpecAssert}
+     */
+    public static CustomSpecAssert assertCreationMaxAssociations(
+            final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCreateResult);
+    }
+
+    /**
+     * Returns a {@link CustomSpecAssert} that asserts that the provided contract creation has the
+     * expected maxAutoAssociations value.
+     *
+     * @param txn the contract call transaction which resulted in contract creation.
+     * @param creationNum the index of the contract creation in the transaction.
+     * @param maxAutoAssociations the expected maxAutoAssociations value.
+     * @return a {@link CustomSpecAssert}
+     */
+    public static CustomSpecAssert assertCreationViaCallMaxAssociations(
+            final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCallResult);
+    }
+
+    private static CustomSpecAssert assertCreationMaxAssociationsCommon(
+            final String txn,
+            final int creationNum,
+            final int maxAutoAssociations,
+            final Function<TransactionRecord, ContractFunctionResult> resultExtractor) {
+        return assertionsHold((spec, opLog) -> {
+            final var op = getTxnRecord(txn);
+            allRunFor(spec, op);
+            final var creationResult = resultExtractor.apply(op.getResponseRecord());
+            final var createdIds = creationResult.getCreatedContractIDsList().stream()
+                    .sorted(Comparator.comparing(ContractID::getContractNum))
+                    .toList();
+            final var accDetails = getContractInfo(CommonUtils.hex(
+                            asEvmAddress(createdIds.get(creationNum).getContractNum())))
+                    .has(contractWith().maxAutoAssociations(maxAutoAssociations))
+                    .logged();
+            allRunFor(spec, accDetails);
         });
     }
 

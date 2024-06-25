@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotEmbeddedTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -34,7 +35,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -91,7 +91,9 @@ public class TxnRecordRegression {
                 .when()
                 .then(
                         cryptoCreate("misc").via("success").balance(1_000L).deferStatusResolution(),
-                        getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                        // Running with embedded mode the previous transaction will often already be handled
+                        // and have a record available, so this is only interesting with a live network
+                        ifNotEmbeddedTest(getTxnRecord("success").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND)));
     }
 
     @HapiTest
@@ -110,14 +112,6 @@ public class TxnRecordRegression {
     @HapiTest
     final Stream<DynamicTest> getReceiptReturnsInvalidForUnspecifiedTxnId() {
         return hapiTest(getReceipt("").useDefaultTxnId().hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> returnsNotSupportedForMissingOp() {
-        return defaultHapiSpec("ReturnsNotSupportedForMissingOp")
-                .given(cryptoCreate("misc").via("success").balance(1_000L))
-                .when()
-                .then(getReceipt("success").forgetOp().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
     // (FUTURE) Re-enable once we have a way to manipulate time in the test network

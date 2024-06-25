@@ -19,14 +19,12 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
@@ -35,9 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
@@ -52,15 +48,15 @@ import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSignatureWaiversImpl;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -73,7 +69,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -96,12 +91,6 @@ class FileAppendHandlerTest extends FileTestBase {
     protected Account payerAccount;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    FeeCalculator feeCalculator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private FeeAccumulator feeAccumulator;
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
     private FileSignatureWaiversImpl waivers;
 
     protected Configuration testConfig;
@@ -114,12 +103,6 @@ class FileAppendHandlerTest extends FileTestBase {
         testConfig = HederaTestConfigBuilder.createConfig();
         when(preHandleContext.configuration()).thenReturn(testConfig);
         when(handleContext.configuration()).thenReturn(testConfig);
-        when(handleContext.feeCalculator(any(SubType.class))).thenReturn(feeCalculator);
-        when(feeCalculator.calculate()).thenReturn(Fees.FREE);
-        when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
-        when(feeCalculator.addStorageBytesSeconds(anyLong())).thenReturn(feeCalculator);
-        when(handleContext.feeAccumulator()).thenReturn(feeAccumulator);
-        when(feeCalculator.legacyCalculate(any())).thenReturn(Fees.FREE);
     }
 
     @Test
@@ -213,8 +196,6 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         assertFailsWith(FILE_DELETED, () -> subject.handle(handleContext));
@@ -233,9 +214,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
@@ -253,9 +232,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         // expect:
         subject.handle(handleContext);
@@ -281,9 +258,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -304,9 +279,7 @@ class FileAppendHandlerTest extends FileTestBase {
                         .build())
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -331,7 +304,7 @@ class FileAppendHandlerTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
+        given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
 
         subject.handle(handleContext);
         final var iterator = writableUpgradeStates.iterator();
@@ -360,9 +333,8 @@ class FileAppendHandlerTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates, testConfig, mock(StoreMetricsService.class));
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
-        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
@@ -375,8 +347,6 @@ class FileAppendHandlerTest extends FileTestBase {
                 .build();
 
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(true);
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
     }
@@ -395,8 +365,10 @@ class FileAppendHandlerTest extends FileTestBase {
         final var feeCtx = mock(FeeContext.class);
         given(feeCtx.body()).willReturn(txBody);
 
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(notNull())).willReturn(feeCalc);
         given(feeCtx.configuration()).willReturn(testConfig);
         given(feeCtx.readableStore(ReadableFileStore.class)).willReturn(readableStore);
         given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);

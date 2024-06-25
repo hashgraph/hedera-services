@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
