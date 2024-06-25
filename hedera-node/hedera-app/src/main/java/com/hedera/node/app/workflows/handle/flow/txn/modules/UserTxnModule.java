@@ -20,8 +20,10 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
@@ -116,4 +118,8 @@ public interface UserTxnModule {
     static ReadableStoreFactory provideReadableStoreFactory(@NonNull final SavepointStackImpl stack) {
         return new ReadableStoreFactory(stack);
     }
+
+    @Binds
+    @UserTxnScope
+    ThrottleAdviser bindThrottleAdviser(@NonNull AppThrottleAdviser throttleAdviser);
 }
