@@ -27,16 +27,16 @@ import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -152,26 +152,11 @@ public interface HandleContext {
     ExchangeRateInfo exchangeRateInfo();
 
     /**
-     * Consumes and returns the next entity number, for use by handlers that create entities.
+     * Returns an {@link EntityNumGenerator} that can be used to generate entity numbers.
      *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
+     * @return the entity number generator
      */
-    long newEntityNum();
-
-    /**
-     * Peeks at the next entity number, for use by handlers that create entities.
-     *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
-     */
-    long peekAtNewEntityNum();
+    EntityNumGenerator entityNumGenerator();
 
     /**
      * Returns the validator for attributes of entities created or updated by handlers.
@@ -203,53 +188,12 @@ public interface HandleContext {
             throws PreCheckException;
 
     /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
+     * Returns the {@link KeyVerifier} which can be used to verify signatures.
      *
-     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param key the key to get the verification for
-     * @return the verification for the given key
-     * @throws NullPointerException if {@code key} is {@code null}
+     * @return the {@link KeyVerifier}
      */
     @NonNull
-    SignatureVerification verificationFor(@NonNull Key key);
-
-    /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
-     * Additionally, the VerificationAssistant provided may modify the result for "primitive", "Contract ID", or
-     * "Delegatable Contract ID" keys, and will be called to observe and reply for each such key as it is processed.
-     *
-     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param key the key to get the verification for
-     * @param callback a VerificationAssistant callback function that will observe each "primitive", "Contract ID", or
-     * "Delegatable Contract ID" key and return a boolean indicating if the given key should be considered valid.
-     * @return the verification for the given key
-     */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
-
-    /**
-     * Gets the {@link SignatureVerification} for the given hollow account.
-     *
-     * <p>The signatures of required accounts are guaranteed to be verified. Optional accounts may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param evmAlias The evm alias to lookup verification for.
-     * @return the verification for the given hollow account.
-     * @throws NullPointerException if {@code evmAlias} is {@code null}
-     */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
+    KeyVerifier keyVerifier();
 
     /**
      * Checks whether the current transaction is a privileged transaction and the payer has sufficient rights.
@@ -512,24 +456,12 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
-     * given function at the given time. (The time matters because we want to consider how much
-     * will have leaked between now and that time.)
+     * Returns the {@link ThrottleAdviser} for this transaction, which provides information about throttles.
      *
-     * @param n the number of the given function
-     * @param function the function
-     * @return true if the system should throttle the given number of the given function
-     * at the instant for which throttling should be calculated
+     * @return the {@link ThrottleAdviser} for this transaction
      */
-    boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
-
-    /**
-     * For each following child transaction consumes the capacity
-     * required for that child transaction in the consensus throttle buckets.
-     *
-     * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
-     */
-    boolean hasThrottleCapacityForChildTransactions();
+    @NonNull
+    ThrottleAdviser throttleAdviser();
 
     /**
      * A stack of savepoints.

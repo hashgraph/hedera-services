@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.Message;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -48,6 +49,9 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -325,6 +329,31 @@ public class TxnFactory {
                 .setShardID(setup.defaultShard())
                 .setContents(ByteString.copyFrom(setup.defaultFileContents()))
                 .setExpirationTime(defaultExpiry());
+    }
+
+    public Consumer<NodeCreateTransactionBody.Builder> defaultDefNodeCreateTransactionBody() {
+        return builder -> builder.setAccountId(setup.defaultPayer())
+                .addGossipEndpoint(setup.defaultGossipEndpointInternal())
+                .addGossipEndpoint(setup.defaultGossipEndpointExternal())
+                .addServiceEndpoint(setup.defaultServiceEndpoint())
+                .setGossipCaCertificate(ByteString.copyFrom(setup.defaultGossipCaCertificate()));
+    }
+
+    public Consumer<NodeUpdateTransactionBody.Builder> defaultDefNodeUpdateTransactionBody() {
+        return builder -> {
+            var gossipCaCertificateValue = BytesValue.newBuilder()
+                    .setValue(ByteString.copyFrom(setup.defaultGossipCaCertificate()))
+                    .build();
+            builder.setAccountId(setup.defaultPayer())
+                    .addGossipEndpoint(setup.defaultGossipEndpointInternal())
+                    .addGossipEndpoint(setup.defaultGossipEndpointExternal())
+                    .addServiceEndpoint(setup.defaultServiceEndpoint())
+                    .setGossipCaCertificate(gossipCaCertificateValue);
+        };
+    }
+
+    public Consumer<NodeDeleteTransactionBody.Builder> defaultDefNodeDeleteTransactionBody() {
+        return builder -> {};
     }
 
     public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {

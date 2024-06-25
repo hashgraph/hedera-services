@@ -17,6 +17,7 @@
 package com.hedera.node.app.services;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
@@ -56,6 +57,8 @@ public class ServiceScopeLookup {
     @NonNull
     public String getServiceName(@NonNull final TransactionBody txBody) {
         return switch (txBody.data().kind()) {
+            case NODE_CREATE, NODE_UPDATE, NODE_DELETE -> AddressBookService.NAME;
+
             case CONSENSUS_CREATE_TOPIC,
                     CONSENSUS_UPDATE_TOPIC,
                     CONSENSUS_DELETE_TOPIC,

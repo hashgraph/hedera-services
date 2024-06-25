@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.throttle;
 
-import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
@@ -33,7 +32,6 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -48,11 +46,9 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -166,12 +162,12 @@ public class ThrottleServiceManager {
         } else {
             hapiThrottleSnapshots = new ArrayList<>();
             for (final var throttle : hapiThrottles) {
-                hapiThrottleSnapshots.add(toPbj(throttle.usageSnapshot()));
+                hapiThrottleSnapshots.add(throttle.usageSnapshot());
             }
         }
 
         final var gasThrottle = backendThrottle.gasLimitThrottle();
-        final var gasThrottleSnapshot = toPbj(gasThrottle.usageSnapshot());
+        final var gasThrottleSnapshot = gasThrottle.usageSnapshot();
 
         final WritableSingletonState<ThrottleUsageSnapshots> throttleSnapshots =
                 serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
@@ -221,10 +217,12 @@ public class ThrottleServiceManager {
     }
 
     private void resetThrottlesFromUsageSnapshots(@NonNull final ReadableStates serviceStates) {
-        final var usageSnapshots = UsageSnapshots.from(serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY));
-        safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.hapiUsageSnapshots());
-        if (usageSnapshots.gasUsageSnapshot() != null) {
-            backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasUsageSnapshot());
+        final ReadableSingletonState<ThrottleUsageSnapshots> usageSnapshotsState =
+                serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
+        final var usageSnapshots = requireNonNull(usageSnapshotsState.get());
+        safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.tpsThrottles());
+        if (usageSnapshots.hasGasThrottle()) {
+            backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
         }
     }
 
@@ -255,22 +253,6 @@ public class ThrottleServiceManager {
         }
     }
 
-    private record UsageSnapshots(
-            List<DeterministicThrottle.UsageSnapshot> hapiUsageSnapshots,
-            @Nullable DeterministicThrottle.UsageSnapshot gasUsageSnapshot) {
-        static UsageSnapshots from(
-                @NonNull final ReadableSingletonState<ThrottleUsageSnapshots> throttleUsageSnapshots) {
-            final var sourceSnapshots = requireNonNull(throttleUsageSnapshots.get());
-            return new UsageSnapshots(
-                    sourceSnapshots.tpsThrottles().stream()
-                            .map(CommonPbjConverters::fromPbj)
-                            .toList(),
-                    Optional.ofNullable(sourceSnapshots.gasThrottle())
-                            .map(CommonPbjConverters::fromPbj)
-                            .orElse(null));
-        }
-    }
-
     private static @NonNull List<Timestamp> translateToList(@NonNull final Instant[] levelStartTimes) {
         final List<Timestamp> list = new ArrayList<>(levelStartTimes.length);
         for (final var startTime : levelStartTimes) {
@@ -280,7 +262,7 @@ public class ThrottleServiceManager {
     }
 
     private static void safeResetThrottles(
-            final List<DeterministicThrottle> throttles, final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+            final List<DeterministicThrottle> throttles, final List<ThrottleUsageSnapshot> snapshots) {
         // No-op if we don't have a snapshot for every throttle
         if (throttles.size() != snapshots.size()) {
             return;
@@ -303,8 +285,7 @@ public class ThrottleServiceManager {
     }
 
     private static void resetUnconditionally(
-            final List<DeterministicThrottle> throttles,
-            final List<DeterministicThrottle.UsageSnapshot> knownCompatible) {
+            final List<DeterministicThrottle> throttles, final List<ThrottleUsageSnapshot> knownCompatible) {
         for (int i = 0, n = knownCompatible.size(); i < n; i++) {
             throttles.get(i).resetUsageTo(knownCompatible.get(i));
         }

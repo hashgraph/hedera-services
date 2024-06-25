@@ -178,8 +178,7 @@ public class HapiUtils {
             HederaFunctionality.TOKEN_GET_NFT_INFOS,
             HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS,
             HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
-            HederaFunctionality.GET_ACCOUNT_DETAILS,
-            HederaFunctionality.NODE_GET_INFO);
+            HederaFunctionality.GET_ACCOUNT_DETAILS);
 
     public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
         return switch (txn.data().kind()) {
@@ -264,7 +263,6 @@ public class HapiUtils {
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
-            case NODE_GET_INFO -> HederaFunctionality.NODE_GET_INFO;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
