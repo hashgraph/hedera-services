@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers;
+package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.asTxn;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.consensusTime;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
+import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.consensusTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 
@@ -58,7 +52,6 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -66,19 +59,15 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import java.util.Collections;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -203,121 +192,6 @@ class ChildDispatchFactoryTest {
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager);
-    }
-
-    @Test
-    void testCreateChildDispatch() throws PreCheckException {
-        mainSetup();
-        // Create the child dispatch
-        subject.createChildDispatch(
-                txBody,
-                callback,
-                payerId,
-                category,
-                customizer,
-                reversingBehavior,
-                recordListBuilder,
-                configuration,
-                savepointStack,
-                readableStoreFactory,
-                creatorInfo,
-                platformState,
-                CONTRACT_CALL,
-                throttleAdviser);
-        final var expectedPreHandleResult = new PreHandleResult(
-                null,
-                null,
-                SO_FAR_SO_GOOD,
-                OK,
-                null,
-                Collections.emptySet(),
-                null,
-                Collections.emptySet(),
-                null,
-                null,
-                0);
-
-        verify(dispatcher).dispatchPureChecks(txBody);
-        verify(dispatcher).dispatchPreHandle(any());
-
-        // TODO
-    }
-
-    @Test
-    void scheduleDispatchComputesFeesAsTopLevel() throws PreCheckException {
-        mainSetup();
-        // Create the child dispatch
-        subject.createChildDispatch(
-                txBody,
-                callback,
-                payerId,
-                HandleContext.TransactionCategory.SCHEDULED,
-                customizer,
-                reversingBehavior,
-                recordListBuilder,
-                configuration,
-                savepointStack,
-                readableStoreFactory,
-                creatorInfo,
-                platformState,
-                CONTRACT_CALL,
-                throttleAdviser);
-        final var expectedPreHandleResult = new PreHandleResult(
-                null,
-                null,
-                SO_FAR_SO_GOOD,
-                OK,
-                null,
-                Collections.emptySet(),
-                null,
-                Collections.emptySet(),
-                null,
-                null,
-                0);
-
-        verify(dispatcher).dispatchPureChecks(txBody);
-        verify(dispatcher).dispatchPreHandle(any());
-
-        // TODO
-    }
-
-    @Test
-    void failsToCreateDispatchIfPreHandleException() throws PreCheckException {
-        mainSetup();
-        willThrow(new PreCheckException(PAYER_ACCOUNT_DELETED))
-                .given(dispatcher)
-                .dispatchPreHandle(any());
-        subject.createChildDispatch(
-                txBody,
-                callback,
-                payerId,
-                category,
-                customizer,
-                reversingBehavior,
-                recordListBuilder,
-                configuration,
-                savepointStack,
-                readableStoreFactory,
-                creatorInfo,
-                platformState,
-                CONTRACT_CALL,
-                throttleAdviser);
-        final var expectedPreHandleResult = new PreHandleResult(
-                null,
-                null,
-                PRE_HANDLE_FAILURE,
-                PAYER_ACCOUNT_DELETED,
-                null,
-                Collections.emptySet(),
-                null,
-                Collections.emptySet(),
-                null,
-                null,
-                0);
-        verify(dispatcher).dispatchPureChecks(txBody);
-        verify(dispatcher).dispatchPreHandle(any());
-
-        // TODO
     }
 
     @Test

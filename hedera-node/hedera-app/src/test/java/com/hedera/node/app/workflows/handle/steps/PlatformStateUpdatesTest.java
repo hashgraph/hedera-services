@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_UPGRADE;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
@@ -32,7 +32,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;

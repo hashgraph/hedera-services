@@ -134,6 +134,73 @@ public class ChildDispatchFactory {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
+    /**
+     * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
+     * transaction.
+     *
+     * @param txBody the transaction body
+     * @param callback the key verifier for child dispatch
+     * @param syntheticPayerId the synthetic payer id
+     * @param category the transaction category
+     * @param customizer the externalized record customizer
+     * @param reversingBehavior the reversing behavior
+     * @param recordListBuilder the record list builder
+     * @param config the configuration
+     * @param stack the savepoint stack
+     * @param readableStoreFactory the readable store factory
+     * @param creatorInfo the node info of the creator
+     * @param platformState the platform state
+     * @param topLevelFunction the top level functionality
+     * @return the child dispatch
+     */
+    public Dispatch createChildDispatch(
+            @NonNull final TransactionBody txBody,
+            @Nullable final Predicate<Key> callback,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final Configuration config,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final NodeInfo creatorInfo,
+            @NonNull final PlatformState platformState,
+            @NonNull final HederaFunctionality topLevelFunction,
+            @NonNull final ThrottleAdviser throttleAdviser) {
+        final var preHandleResult =
+                dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
+        final var childTxnInfo = getTxnInfoFrom(txBody);
+        final var recordBuilder = recordBuilderFactory.recordBuilderFor(
+                childTxnInfo, recordListBuilder, config, category, reversingBehavior, customizer);
+        final var childStack = new SavepointStackImpl(stack.peek());
+        return newChildDispatch(
+                recordBuilder,
+                childTxnInfo,
+                syntheticPayerId,
+                category,
+                childStack,
+                preHandleResult,
+                getKeyVerifier(callback),
+                recordBuilder.consensusNow(),
+                creatorInfo,
+                config,
+                platformState,
+                recordListBuilder,
+                topLevelFunction,
+                throttleAdviser,
+                authorizer,
+                networkInfo,
+                feeManager,
+                recordCache,
+                dispatchProcessor,
+                blockRecordManager,
+                serviceScopeLookup,
+                storeMetricsService,
+                exchangeRateManager,
+                dispatcher);
+    }
+
     private RecordDispatch newChildDispatch(
             // @ChildDispatchScope
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
@@ -239,73 +306,6 @@ public class ChildDispatchFactory {
             case CHILD -> Fees.FREE;
             case USER -> throw new IllegalStateException("Should not dispatch child with user transaction category");
         };
-    }
-
-    /**
-     * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
-     * transaction.
-     *
-     * @param txBody the transaction body
-     * @param callback the key verifier for child dispatch
-     * @param syntheticPayerId the synthetic payer id
-     * @param category the transaction category
-     * @param customizer the externalized record customizer
-     * @param reversingBehavior the reversing behavior
-     * @param recordListBuilder the record list builder
-     * @param config the configuration
-     * @param stack the savepoint stack
-     * @param readableStoreFactory the readable store factory
-     * @param creatorInfo the node info of the creator
-     * @param platformState the platform state
-     * @param topLevelFunction the top level functionality
-     * @return the child dispatch
-     */
-    public Dispatch createChildDispatch(
-            @NonNull final TransactionBody txBody,
-            @Nullable final Predicate<Key> callback,
-            @NonNull final AccountID syntheticPayerId,
-            @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final Configuration config,
-            @NonNull final SavepointStackImpl stack,
-            @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final NodeInfo creatorInfo,
-            @NonNull final PlatformState platformState,
-            @NonNull final HederaFunctionality topLevelFunction,
-            @NonNull final ThrottleAdviser throttleAdviser) {
-        final var preHandleResult =
-                dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
-        final var childTxnInfo = getTxnInfoFrom(txBody);
-        final var recordBuilder = recordBuilderFactory.recordBuilderFor(
-                childTxnInfo, recordListBuilder, config, category, reversingBehavior, customizer);
-        final var childStack = new SavepointStackImpl(stack.peek());
-        return newChildDispatch(
-                recordBuilder,
-                childTxnInfo,
-                syntheticPayerId,
-                category,
-                childStack,
-                preHandleResult,
-                getKeyVerifier(callback),
-                recordBuilder.consensusNow(),
-                creatorInfo,
-                config,
-                platformState,
-                recordListBuilder,
-                topLevelFunction,
-                throttleAdviser,
-                authorizer,
-                networkInfo,
-                feeManager,
-                recordCache,
-                dispatchProcessor,
-                blockRecordManager,
-                serviceScopeLookup,
-                storeMetricsService,
-                exchangeRateManager,
-                dispatcher);
     }
 
     /**

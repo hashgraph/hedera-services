@@ -83,7 +83,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HandleDaggerWorkflowModuleTest {
+class HandleWorkflowModuleTest {
     @Mock
     private NetworkAdminHandlers networkAdminHandlers;
 

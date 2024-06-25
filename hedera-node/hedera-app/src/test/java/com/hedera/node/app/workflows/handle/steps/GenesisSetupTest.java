@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.record;
+package com.hedera.node.app.workflows.handle.steps;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import java.time.Instant;
 import java.util.SortedSet;
 import java.util.TreeSet;
