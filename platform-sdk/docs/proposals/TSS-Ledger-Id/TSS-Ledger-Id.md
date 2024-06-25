@@ -64,21 +64,31 @@ Dependencies on the TSS-Roster
 
 Impacts to Services Team
 
-* The app will need to specify how many shares are assigned to each node when it sets a new consensus roster.
-* Services will need to invoke the new ledger signing API to sign a block.
-    * This API is asynchronous and will return a future that returns the ledger signature when it is ready.
-* The HAPI transactions for add/update of consensus node in the address book must support a required EC public key.
+* TSS-Roster Proposal
+  * Services will adopt the new address book / roster life-cycle
+  * If the persistent EC Key for nodes is integrated at this stage, 
+    * The HAPI transactions for add/update of consensus node in the address book must support a required EC public key. 
+* TSS-Ledger-Id Proposal
+  * The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate 
+    roster to have enough key material generated. 
+  * Services will need to know / detect when the candidate roster fails to be adopted due to not having enough key 
+    material generated. 
+* TSS-Block-Signing Proposal
+  * Services will need to invoke the new ledger signing API to sign a block.
+      * This API is asynchronous and will return a future that returns the ledger signature when it is ready.
+
 
 Impacts to DevOps Team
 
 * Each consensus node will need a new private long term EC key in addition to the existing RSA key.
-    * EC Key generation will have to happen before a node can join the network.
+      * EC Key generation will have to happen before a node can join the network.
 * A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the consensus roster containing the new node.
 
 Implications Of Completion
 
 * The consensus nodes will be able to create ledger signatures for use in block proofs.
+* TSS-Block-Signing becomes unblocked for development.
 
 ### Requirements
 
@@ -164,6 +174,11 @@ time through multiple rounds of consensus to complete. This requires saving incr
 that the process can resume from any point if a node or the network restarts. Switching to the next consensus roster
 cannot happen until that roster has enough nodes able to recover a threshold number of shares so that an aggregation of
 node signatures can generate the ledger signature.
+
+TODO: Add description of determination of weights on nodes.
+* max weight
+* numShares(node) := ceiling(N* weight(node) / max weight)
+* 
 
 ##### Elliptic Curve Decisions
 
@@ -314,7 +329,8 @@ The value associated with a TSS_MESSAGE key is the pair (ShareId, TssMessage)
 
 The value associated with a TSS_VOTE key is a bit vector with the following interpretation
 
-* The order of bits from least significant bit to most significant bit corresponds to the numeric order of share ids
+* The order of bits from the least significant bit to the most significant bit corresponds to the numeric order of
+  share ids
   from least to greatest.
 * If a bit is set to 1, then the TssMessage for the corresponding ShareId was valid and contributed to a successful
   reconstruction of the ledger id.
@@ -328,7 +344,7 @@ Lifecycle Invariants
 3. Every roster that has become active after the TSS Genesis process must have sufficient key material to be
    able to recover the ledger id.
 
-#### New Wiring Components
+#### New or Updated Components
 
 The following are new components in the system:
 
@@ -336,6 +352,12 @@ The following are new components in the system:
 2. TSS Message Creator (Wired)
 3. TSS Message Validator (Wired)
 4. TSS Key Manager (Wired)
+5. TSS Signing Manager (Wired)
+6. Roster Initializer (Not Wired)
+
+The following components are removed from the system:
+
+1. AddressBookInitializer
 
 ##### TSS State Manager
 
@@ -351,6 +373,7 @@ Responsibilities:
         - don’t insert multiple messages for the same node
         - don’t insert any messages if voting window has closed
     - if inserted into the TSS data map, ensure that the message is forwarded to the TSS Message Validator
+    - if it is a self TSS message, forward the message to the TSS Message creator.
 2. Handle `TssVote` system transactions
     - handled in consensus order
     - insert into TSS data map if it is legal to do so
@@ -364,7 +387,7 @@ Responsibilities:
 3. Detect when a new candidate roster is set.
     - update the pending roster hash in the platform state
     - inform the TSS message creator that there is a new candidate roster
-    - inform the TSS message validator that there is a new roster
+    - inform the TSS message validator that there is a new candidate roster
 4. Update Metrics
     - indicate whether there is a candidate roster
     - the current number of TSS messages collected for the candidate roster
@@ -373,42 +396,165 @@ Responsibilities:
 5. On First Round After Restart (After PCES Replay and Reconnect)
     - if there is no candidate roster, take no action
     - if voting is closed, take no action
-    - if this node’s TSSMessage is not recorded in the TSSData map, send a message to the TSS message creator (so it can
-      resubmit the node’s TSS message)
+    - if this node’s TSSMessages are not recorded in the TSSData map, send a message to the TSS message creator (so
+      it can resubmit the node’s TSS message)
     - if this node’s vote is not recorded in the TSS data map, inform the TSS message validator that we still need to do
       validation.
 
 ##### TSS Message Creator
 
-The TSS message creator is responsible for generating a node’s TSSMessage. This runs as its own asynchronous thread
+The TSS message creator is responsible for generating a node’s TSSMessages. This runs as its own asynchronous thread
 since this may be a computationally expensive operation.
 
-The TSS message creator gets input from the TSS state manager in the form of a candidate roster that we need to generate
-a TSS message for. The TSS manager should generate the TSS manager on its own thread, and then submit a system
-transaction containing that message when finished.
+Internal Elements:
+
+1. TSS Message Manager
+2. active roster field
+3. candidate roster field
+
+Inputs:
+
+1. Active Roster
+2. Candidate Roster
+3. Self TSS Message
+4. Voting Closed Notification
+
+Input Invariants:
+
+1. Self TSS Messages must be received after the candidate roster is set.
+2. The candidate roster is not set if the voting is already closed.
+
+On Active Roster:
+
+1. Set this roster as the active roster.
+    1. If the candidate roster is set and the candidate roster is not the active roster, then (re)start the TSS Message
+       Manager with the active roster and candidate roster.
+    2. If the candidate roster is set and the candidate roster is the active roster, then clear the candidate roster,
+       clear the TTS Message List, and stop the TSS Message Manager
+
+On Candidate Roster:
+
+1. If the internal candidate roster is set and equal to the input candidate roster, do nothing.
+2. else, set the internal candidate roster.
+3. if the active roster is set, (re)start the TSS Message Manager with the active roster and candidate roster.
+
+On Self TSS Message:
+
+1. If the TSS Message Manager is active, forward the message to the TSS Message Manager.
+2. else log an error indicating that the TSS Message was received before the candidate roster was set.
+
+On Voting Closed Notification:
+
+1. Stop the TSS Message Manager.
+
+TSS Message Manager:
+
+1. Keep a list of Self TSS Messages that have been received.
+2. On Start:
+    1. Wait the configured time period to receive any previously sent Self TSS Messages (relevant for restarts)
+    2. For each share assigned to this node in the active roster that we do not have a Self TSS message for, generate a
+       TSS Message from the share for the candidate roster and submit a system transaction with the TSS Message.
+    3. If a TSS Message does not come back through consensus within a configured time period, resubmit the TSS Message.
+        * There is a restart problem here with forgetting about the previously received TSS messages
+            * Bad solution 1: Wait for a replay of TSS Messages stored in the state.
+            * Bad solution 2: Resend TSS Messages anyway until the new messages are received.
+            * Bad Solution 3: Require initialization phase where the TSS Message Creator is initialized with self-TSS
+              Messages in state.
+3. On TSS Message:
+    1. stop resending the TSS Message that matches the one we received and added to the internal list.
 
 ##### TSS Message Validator
 
 The TSS message validator is responsible for validating TSS messages and for submitting votes as to the validity of the
-candidate roster.
+candidate roster. The TSS message validator gets its input from the TSS state manager in the form of a candidate roster
+that we want to adopt, and as a sequence of TSS messages that have reached consensus.
 
-The TSS message validator gets its input from the TSS state manager in the form of a candidate roster that we want to
-adopt, and as a sequence of TSS messages that have reached consensus.
+Internal Elements:
 
-For each TSS message, the TSS validator will do validation on its own thread.
+1. active roster field
+2. candidate roster field
+3. TSS Message list
+4. vote bit vector
 
-- For each valid TSS message, it will add to the sum of the weight of all valid TSS messages (using the weighting in the
-  active roster). If it ever accumulates enough valid shares to meet the appropriate threshold, it submits a “yes” vote
-  via system transaction.
-- For each invalid TSS message, it will maintain a running sum (same as with valid messages). If there are enough
-  invalid TSS messages received such that it is impossible to reach the needed valid threshold, it submits a “no” vote
-  via a system transaction.
+Inputs:
 
-In order to compute our private key and the public keys, we must know which TSS messages are valid or invalid. Since
-this takes a lot of time to do, it is to our advantage to make TSS message validity survive node restarts. As we
-validate TSS messages, we should record that information on disk. When we start up, we should read this data back out.
+1. Active Roster
+2. Candidate Roster
+3. TSS Message
+
+Input Invariants
+
+1. TSS Messages for the candidate roster must be received after the candidate roster is set.
+
+On Active Roster:
+
+1. Set the active roster.
+2. If the candidate roster is set and equals active roster, clear the candidate roster and the TSS Message List.
+3. else, Validate the TSS Message List
+
+On Candidate Roster:
+
+1. If the input candidate roster is equal to the active roster, do nothing.
+2. If the input candidate roster is equal to the internal candidate roster, do nothing.
+3. Set the internal candidate roster, clear the TSS Message List.
+
+On TSS Message:
+
+1. If the vote bit vector is passing for a yes vote, do nothing.
+2. If the vote bit vector has already recorded a yes or no for the share in the TSS Message, report duplicate in
+   metrics, do nothing else.
+3. append the TSS Message to the TSS Message List.
+4. If the active and candidate rosters are set, validate the TSS Message List
+
+Validate TSS Message List:
+
+1. For the votes already cast in the vote vector
+    1. sum all the yes votes into a total count.
+    2. If the count is greater than or equal to the threshold in the candidate roster, do nothing and return.  
+2. For each TSS message in the TSS Message list
+    1. If the TSS Message has a yes entry in the vote vector, do nothing.
+    2. otherwise, validate the message.
+    3. If the message is valid, update the vote vector and increment the count of yes votes.
+    4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the 
+       vote vector as a system transaction and exit the validation process.
 
 ##### TSS Key Manager
+ TODO:  Separate out the computation of the shares into the TSS Key Manager. 
+##### TSS Signing Manager
+
+The TSS Signing Manager is responsible for computing a node's private shares from the TSS Messages and for 
+generating ledger signatures on messages.  The Signing manager operates on its own thread. 
+
+Public API:
+1. Future<PairingSignature> signMessage(byte[] message) throws NotReadyException
+
+Internal Elements: 
+1. active roster
+2. active private shares
+3. active public shares
+4. current round
+5. latest roster round
+6. Map<round, roster> roundRosterMap
+7. Map<round, Pair(private shares, public shares)> roundSharesMap
+8. Map<Message Hash, List<PairingSignature>> messageSignaturesMap
+9. Map<Message Hash, Future<PairingSignature>> messageSignatureFuturesMap
+
+Inputs:
+1. roster key material: Triple(round, active roster, TSS Messages for active roster)
+2. TssSignatureMessage
+3. EventWindow
+
+Input Invariants:
+1. TssSignatureMessages received must be for previous signMessage(byte[] message) calls. 
+
+On Roster Key Material:
+1. update the roundRosterMap  with the roster. 
+2. computeShares(TSS Messages) 
+
+On TssSignatureMessage: 
+1. get the hash of the message the signature is for. 
+2. if the message hash is not a key in the messageSignaturesMap, do nothing. 
+
 
 The TSS key manager is special logic that only runs when the system starts up.  (When DAB phase 3 is implemented,
 this will happen whenever the active consensus roster is updated.)
@@ -422,6 +568,7 @@ this will happen whenever the active consensus roster is updated.)
   round following the upgrade)
     - similar to the restart case, we must block if we have not yet validated TSS messages
 
+##### Roster Initializer
 
 ### Core Behaviors
 
