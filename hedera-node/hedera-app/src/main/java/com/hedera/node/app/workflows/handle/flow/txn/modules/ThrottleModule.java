@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.blocknode.grpc.api;
+package com.hedera.node.app.workflows.handle.flow.txn.modules;
 
-public interface DummyGrpcApi {
-    void doSomething();
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
+import com.hedera.node.app.throttle.AppThrottleAdviser;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
+import dagger.Binds;
+import dagger.Module;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+/**
+ * The module that provides the throttle dependencies in UserTxnScope.
+ */
+@Module
+public interface ThrottleModule {
+
+    @Binds
+    @UserTxnScope
+    ThrottleAdviser bindThrottleAdviser(@NonNull AppThrottleAdviser throttleAdviser);
 }
