@@ -128,6 +128,7 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
                 tokenHandlers.tokenRejectHandler(),
+                tokenHandlers.tokenCancelAirdropHandler(),
                 addressBookHandlers.nodeCreateHandler(),
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),

@@ -56,7 +56,8 @@ public final class TokenServiceDefinition implements RpcServiceDefinition {
             new RpcMethodDefinition<>("pauseToken", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("updateNfts", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("rejectToken", Transaction.class, TransactionResponse.class),
-            new RpcMethodDefinition<>("unpauseToken", Transaction.class, TransactionResponse.class));
+            new RpcMethodDefinition<>("unpauseToken", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("cancelAirdrop", Transaction.class, TransactionResponse.class));
 
     private TokenServiceDefinition() {
         // Forbid instantiation
