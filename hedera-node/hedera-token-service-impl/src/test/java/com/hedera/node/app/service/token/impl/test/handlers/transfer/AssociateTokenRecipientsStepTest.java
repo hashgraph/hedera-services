@@ -21,6 +21,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -29,11 +31,13 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +55,9 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Mock
     private ExpiryValidator expiryValidator;
+
+    @Mock
+    private TokenServiceApi tokenServiceApi;
 
     @Mock
     private RecordBuilders recordBuilders;
@@ -72,7 +79,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     }
 
     @Test
-    void associatesTokenRecepients() {
+    void associatesTokenRecipients() {
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
@@ -84,6 +91,22 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
+    }
+
+    @Test
+    void autoAssociateWithDispatchComputeFees() {
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        final var modifiedConfiguration = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", true)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.doIn(transferContext);
+
+        verify(handleContext, times(2)).dispatchComputeFees(any(), any(), any());
+        verify(tokenServiceApi, times(2)).chargeNetworkFee(any(), anyLong(), any());
     }
 
     void givenValidTxn() {
@@ -105,7 +128,6 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
     }
 
     private AccountAmount adjustFrom(AccountID account, long amount) {

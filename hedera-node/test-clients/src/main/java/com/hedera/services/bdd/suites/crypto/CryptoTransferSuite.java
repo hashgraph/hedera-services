@@ -18,12 +18,14 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -89,10 +91,12 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChilds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
@@ -112,13 +116,12 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -151,10 +154,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -170,14 +175,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
 public class CryptoTransferSuite {
-    private static final Logger LOG = LogManager.getLogger(CryptoTransferSuite.class);
     private static final String OWNER = "owner";
     private static final String OTHER_OWNER = "otherOwner";
     private static final String SPENDER = "spender";
@@ -1553,6 +1555,63 @@ public class CryptoTransferSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> autoAssociateTokensHappyPath() {
+        final String tokenA = "tokenA";
+        final String tokenB = "tokenB";
+        final String firstUser = "firstUser";
+        final String secondUser = "secondUser";
+        final String tokenAcreateTxn = "tokenACreate";
+        final String tokenBcreateTxn = "tokenBCreate";
+        final String transferToFU = "transferToFU";
+        final String transferToSU = "transferToSU";
+        return propertyPreservingHapiSpec("autoAssociateTokensHappyPath")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(firstUser).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(secondUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(10))
+                .when(
+                        tokenCreate(tokenA)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(Long.MAX_VALUE)
+                                .treasury(firstUser)
+                                .via(tokenAcreateTxn),
+                        getTxnRecord(tokenAcreateTxn)
+                                .hasNewTokenAssociation(tokenA, firstUser)
+                                .logged(),
+                        tokenCreate(tokenB)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(firstUser)
+                                .via(tokenBcreateTxn),
+                        getTxnRecord(tokenBcreateTxn)
+                                .hasNewTokenAssociation(tokenB, firstUser)
+                                .logged(),
+                        mintToken(
+                                tokenB,
+                                List.of(ByteString.copyFromUtf8("metadata1"), ByteString.copyFromUtf8("metadata2"))),
+                        // Transfer fungible token
+                        cryptoTransfer(moving(1, tokenA).between(firstUser, secondUser))
+                                .signedBy(firstUser)
+                                .payingWith(firstUser)
+                                .via(transferToFU),
+                        getTxnRecord(transferToFU)
+                                .hasNewTokenAssociation(tokenA, secondUser)
+                                .logged(),
+                        // Transfer NFT
+                        cryptoTransfer(movingUnique(tokenB, 1).between(firstUser, secondUser))
+                                .signedBy(firstUser)
+                                .payingWith(firstUser)
+                                .via(transferToSU),
+                        getTxnRecord(transferToSU)
+                                .hasNewTokenAssociation(tokenB, secondUser)
+                                .logged())
+                .then();
+    }
+
+    @HapiTest
     final Stream<DynamicTest> baseCryptoTransferFeeChargedAsExpected() {
         final var expectedHbarXferPriceUsd = 0.0001;
         final var expectedHtsXferPriceUsd = 0.001;
@@ -2305,28 +2364,38 @@ public class CryptoTransferSuite {
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> createHollowAccountWithFtTransferAndCompleteIt() {
         final var tokenA = "tokenA";
+        final var tokenB = "tokenB";
         final var hollowAccountKey = "hollowAccountKey";
-        final var transferTokenAAndBToHollowAccountTxn = "transferTokenAToHollowAccountTxn";
         final AtomicReference<TokenID> tokenIdA = new AtomicReference<>();
+        final AtomicReference<TokenID> tokenIdB = new AtomicReference<>();
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
+        final var transferTokenAAndBToHollowAccountTxn = "transferTokenAAndBToHollowAccountTxn";
+        final double expectedCreateHollowAccountFee = 0.0472956012;
+        final double transferFee = 0.00189;
+        final double expectedFeeForOneAssociation = 0.05;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + transferFee + 2 * expectedFeeForOneAssociation;
 
-        return defaultHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
+        return propertyPreservingHapiSpec("createHollowAccountWithFtTransferAndCompleteIt")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        // Create FT1
                         tokenCreate(tokenA)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(10L)
                                 .treasury(TREASURY),
-                        // Mint NFTs
-                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
-                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata2"))),
+                        // Create FT2
+                        tokenCreate(tokenB)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(10L)
+                                .treasury(TREASURY),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             final var treasuryAccountId = registry.getAccountID(TREASURY);
@@ -2339,32 +2408,359 @@ public class CryptoTransferSuite {
                                     .toByteArray();
                             final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                             hollowAccountAlias.set(evmAddressBytes);
-                            tokenIdA.set(registry.getTokenID(A_TOKEN));
+                            tokenIdA.set(registry.getTokenID(tokenA));
+                            tokenIdB.set(registry.getTokenID(tokenB));
                         }))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        // Create hollow account
+                        // create account with maxAutomaticAssociations set to -1
+                        cryptoCreate("testAccount")
+                                .key(hollowAccountKey)
+                                .maxAutomaticTokenAssociations(-1)
+                                .alias(hollowAccountAlias.get()),
+                        // Verify maxAutomaticAssociations is set to -1 and there is no auto association
+                        getAccountInfo("testAccount")
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1)),
+                        // Delete the hollow account
+                        cryptoDelete("testAccount").hasKnownStatus(SUCCESS),
+                        // Create hollow account with 2 token transfers
                         cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
-                                        .setToken(tokenIdA.get())
-                                        .addNftTransfers(ocWith(
-                                                accountId(treasuryAlias.get()),
-                                                accountId(hollowAccountAlias.get()),
-                                                1L))))
+                                                .setToken(tokenIdA.get())
+                                                .addTransfers(aaWith(treasuryAlias.get(), -1))
+                                                .addTransfers(aaWith(hollowAccountAlias.get(), +1)))
+                                        .addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdB.get())
+                                                .addTransfers(aaWith(treasuryAlias.get(), -1))
+                                                .addTransfers(aaWith(hollowAccountAlias.get(), +1))))
                                 .payingWith(TREASURY)
                                 .signedBy(TREASURY)
                                 .via(transferTokenAAndBToHollowAccountTxn),
-                        // Verify hollow account creation
+                        // Verify there is an auto association to FT1 and FT2
                         getAliasedAccountInfo(hollowAccountKey)
                                 .hasToken(relationshipWith(tokenA))
+                                .hasToken(relationshipWith(tokenB))
+                                .hasMaxAutomaticAssociations(-1)
                                 .has(accountWith().hasEmptyKey())
                                 .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
                         cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowAccountKey)),
                         // Send transfer to complete the hollow account
+                        cryptoTransfer(moving(1, tokenA).between(hollowAccountKey, TREASURY))
+                                .payingWith(hollowAccountKey)
+                                .signedBy(hollowAccountKey, TREASURY)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)),
+                        // Verify hollow account completion and keep max automatic associations to -1
+                        getAliasedAccountInfo(hollowAccountKey)
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
+                                .hasAlreadyUsedAutomaticAssociations(2))))
+                .then(validateChargedUsdWithChilds(
+                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
+        final var tokenA = "tokenA";
+        final var tokenB = "tokenB";
+        final var hollowAccountKey = "hollowAccountKey";
+        final var transferTokenAAndBToHollowAccountTxn = "transferTokenAToHollowAccountTxn";
+        final AtomicReference<TokenID> tokenIdA = new AtomicReference<>();
+        final AtomicReference<TokenID> tokenIdB = new AtomicReference<>();
+        final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
+        final double expectedCreateHollowAccountFee = 0.0472956012;
+        final double transferFee = 0.00189;
+        final double expectedFeeForOneAssociation = 0.05;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + transferFee + 2 * expectedFeeForOneAssociation;
+
+        return propertyPreservingHapiSpec("createHollowAccountWithNftTransferAndCompleteIt")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                        // Create NFT1
+                        tokenCreate(tokenA)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        // Create NFT2
+                        tokenCreate(tokenB)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TREASURY),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var treasuryAccountId = registry.getAccountID(TREASURY);
+                            treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
+
+                            // Save the alias for the hollow account
+                            final var ecdsaKey = spec.registry()
+                                    .getKey(hollowAccountKey)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                            hollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(tokenA));
+                            tokenIdB.set(registry.getTokenID(tokenB));
+                        }))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Mint all NFTs
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata1"))),
+                        mintToken(tokenA, List.of(ByteString.copyFromUtf8("metadata2"))),
+                        mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata3"))),
+                        mintToken(tokenB, List.of(ByteString.copyFromUtf8("metadata4"))),
+                        // create hollow account with maxAutomaticAssociations set to -1
+                        cryptoCreate("testAccount")
+                                .key(hollowAccountKey)
+                                .maxAutomaticTokenAssociations(-1)
+                                .alias(hollowAccountAlias.get()),
+                        // Verify maxAutomaticAssociations is set to -1 and there is no auto association
+                        getAccountInfo("testAccount")
+                                .hasAlreadyUsedAutomaticAssociations(0)
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1)),
+                        // Delete the hollow account
+                        cryptoDelete("testAccount").hasKnownStatus(SUCCESS),
+                        // Create hollow account
+                        cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdA.get())
+                                                .addNftTransfers(ocWith(
+                                                        accountId(treasuryAlias.get()),
+                                                        accountId(hollowAccountAlias.get()),
+                                                        1L)))
+                                        .addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdB.get())
+                                                .addNftTransfers(ocWith(
+                                                        accountId(treasuryAlias.get()),
+                                                        accountId(hollowAccountAlias.get()),
+                                                        1L))))
+                                .payingWith(TREASURY)
+                                .signedBy(TREASURY)
+                                .via(transferTokenAAndBToHollowAccountTxn),
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT1 and
+                        // NFT2
+                        getAliasedAccountInfo(hollowAccountKey)
+                                .hasToken(relationshipWith(tokenA))
+                                .hasToken(relationshipWith(tokenB))
+                                .hasMaxAutomaticAssociations(-1)
+                                .hasAlreadyUsedAutomaticAssociations(2)
+                                .has(accountWith().hasEmptyKey())
+                                .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id)),
+                        // Transfer some hbars to the hollow account so that it could pay the next transaction
+                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(TREASURY, hollowAccountKey)),
                         cryptoTransfer(movingUnique(tokenA, 1L).between(hollowAccountKey, TREASURY))
                                 .payingWith(hollowAccountKey)
                                 .signedBy(hollowAccountKey, TREASURY)
-                                .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)))))
-                .then(getAliasedAccountInfo(hollowAccountKey).has(accountWith().key(hollowAccountKey)));
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey)),
+                        // Verify hollow account completion
+                        getAliasedAccountInfo(hollowAccountKey)
+                                .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
+                                .hasAlreadyUsedAutomaticAssociations(2))))
+                .then(validateChargedUsdWithChilds(
+                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> createHollowAccountWithMultipleSendersAndCompleteIt() {
+        final var ALICE = "ALICE";
+        final var BOB = "BOB";
+        final var CAROL = "CAROL";
+        final var DAVE = "DAVE";
+        final var transfersToHollowAccountTxn = "transfersToHollowAccountTxn";
+        final AtomicReference<TokenID> tokenIdA = new AtomicReference<>();
+        final AtomicReference<TokenID> tokenIdB = new AtomicReference<>();
+        final AtomicReference<ByteString> aliceAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> bobAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> carolHollowAccountAlias = new AtomicReference<>();
+        final double expectedCreateHollowAccountFee = 0.0472956012;
+        final double transferFee = 0.00189;
+        final double expectedFeeForOneAssociation = 0.05;
+        final double expectedCryptoTransferAndAssociationUsd =
+                expectedCreateHollowAccountFee + 2 * transferFee + 2 * expectedFeeForOneAssociation;
+
+        return propertyPreservingHapiSpec("createHollowAccountWithMultipleSendersAndCompleteIt")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ALICE).balance(10_000 * ONE_MILLION_HBARS),
+                        cryptoCreate(BOB).balance(10_000 * ONE_MILLION_HBARS),
+                        newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(DAVE).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS),
+                        // Create fungible token
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(ALICE),
+                        // Create NFT
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(BOB),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            aliceAlias.set(ByteString.copyFrom(asSolidityAddress(registry.getAccountID(ALICE))));
+                            bobAlias.set(ByteString.copyFrom(asSolidityAddress(registry.getAccountID(BOB))));
+
+                            // Save the alias for the hollow account
+                            final var ecdsaKey = spec.registry()
+                                    .getKey(CAROL)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                            carolHollowAccountAlias.set(evmAddressBytes);
+                            tokenIdA.set(registry.getTokenID(FUNGIBLE_TOKEN));
+                            tokenIdB.set(registry.getTokenID(NON_FUNGIBLE_TOKEN));
+                        }))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Mint the NFT
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("metadata1"))),
+                        // Transfer both tokens to hollow account with different senders.
+                        cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdA.get())
+                                                .addTransfers(aaWith(aliceAlias.get(), -1))
+                                                .addTransfers(aaWith(carolHollowAccountAlias.get(), +1)))
+                                        .addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdB.get())
+                                                .addNftTransfers(ocWith(
+                                                        accountId(bobAlias.get()),
+                                                        accountId(carolHollowAccountAlias.get()),
+                                                        1L))))
+                                .payingWith(ALICE)
+                                .signedBy(ALICE, BOB)
+                                .via(transfersToHollowAccountTxn),
+                        // Verify the auto associations to the fungible token and the NFT in the hollow account
+                        getAliasedAccountInfo(CAROL)
+                                .hasToken(relationshipWith(FUNGIBLE_TOKEN))
+                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))
+                                .hasMaxAutomaticAssociations(-1)
+                                .has(accountWith().hasEmptyKey())
+                                .exposingIdTo(id -> spec.registry().saveAccountId(CAROL, id)),
+                        // Transfer some hbars to the hollow account so that it could pay the next transaction
+                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(BOB, CAROL)),
+                        // Send transfer to complete the hollow account
+                        cryptoTransfer(moving(1, FUNGIBLE_TOKEN).between(CAROL, DAVE))
+                                .payingWith(CAROL)
+                                .signedBy(CAROL, DAVE)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL)),
+                        // Verify Dave received the transfer
+                        getAccountInfo(DAVE).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
+                        // Verify the hollow account is completed
+                        getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
+                .then(validateChargedUsdWithChilds(
+                        transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> createHollowAccountWithMultipleReceiversAndCompleteIt() {
+        final var ALICE = "ALICE";
+        final var BOB = "BOB";
+        final var CAROL = "CAROL";
+        final var DAVE = "DAVE";
+        final var transferTokensToHollowAccountsTxn = "transferTokensToHollowAccountsTxn";
+        final AtomicReference<TokenID> tokenIdA = new AtomicReference<>();
+        final AtomicReference<TokenID> tokenIdB = new AtomicReference<>();
+        final AtomicReference<ByteString> aliceAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> bobHollowAccountAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> carolHollowAccountAlias = new AtomicReference<>();
+        final double expectedCreateHollowAccountFee = 0.0472956012;
+        final double transferFee = 0.00189;
+        final double expectedFeeForOneAssociation = 0.05;
+        final double expectedCryptoTransferAndAssociationUsd =
+                2 * expectedCreateHollowAccountFee + transferFee + 2 * expectedFeeForOneAssociation;
+
+        return propertyPreservingHapiSpec("createHollowAccountWithMultipleReceiversAndCompleteIt")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        cryptoCreate(ALICE).balance(1_000 * ONE_MILLION_HBARS),
+                        newKeyNamed(BOB).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(DAVE).balance(1_000 * ONE_MILLION_HBARS).maxAutomaticTokenAssociations(1),
+                        // Create FT
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(10L)
+                                .treasury(ALICE),
+                        // Create NFT
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey(ALICE)
+                                .treasury(ALICE),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            aliceAlias.set(ByteString.copyFrom(asSolidityAddress(registry.getAccountID(ALICE))));
+
+                            // Save the alias for the hollow account
+                            final var ecdsaKeyBob = spec.registry()
+                                    .getKey(BOB)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var evmAddressBytesBob = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKeyBob));
+                            bobHollowAccountAlias.set(evmAddressBytesBob);
+
+                            // Save the alias for the hollow account
+                            final var ecdsaKeyCarol = spec.registry()
+                                    .getKey(CAROL)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var evmAddressBytesCarol =
+                                    ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKeyCarol));
+                            carolHollowAccountAlias.set(evmAddressBytesCarol);
+                            tokenIdA.set(spec.registry().getTokenID(FUNGIBLE_TOKEN));
+                            tokenIdB.set(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN));
+                        }))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Mint the NFT
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("metadata1"))),
+                        // Create the hollow accounts
+                        cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdA.get())
+                                                .addTransfers(aaWith(aliceAlias.get(), -1))
+                                                .addTransfers(aaWith(bobHollowAccountAlias.get(), +1)))
+                                        .addTokenTransfers(TokenTransferList.newBuilder()
+                                                .setToken(tokenIdB.get())
+                                                .addNftTransfers(ocWith(
+                                                        accountId(aliceAlias.get()),
+                                                        accountId(carolHollowAccountAlias.get()),
+                                                        1L))))
+                                .payingWith(ALICE)
+                                .signedBy(ALICE)
+                                .via(transferTokensToHollowAccountsTxn),
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to FT
+                        getAliasedAccountInfo(BOB)
+                                .hasToken(relationshipWith(FUNGIBLE_TOKEN))
+                                .hasMaxAutomaticAssociations(-1)
+                                .has(accountWith().hasEmptyKey()),
+                        // Verify maxAutomaticAssociations is set to -1 and there is an auto association to NFT
+                        getAliasedAccountInfo(CAROL)
+                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN))
+                                .hasMaxAutomaticAssociations(-1)
+                                .has(accountWith().hasEmptyKey())
+                                .exposingIdTo(id -> spec.registry().saveAccountId(CAROL, id)),
+                        // Transfer some hbars to the hollow account so that it could pay the next transaction
+                        cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(ALICE, CAROL)),
+                        // Send transfer to complete the hollow account
+                        cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                        .between(CAROL, DAVE))
+                                .payingWith(CAROL)
+                                .signedBy(CAROL)
+                                .sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL)),
+                        // Verify Dave received the transfer
+                        getAccountInfo(DAVE).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)),
+                        // Verify the hollow account is completed
+                        getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
+                .then(validateChargedUsdWithChilds(
+                        transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd));
     }
 }

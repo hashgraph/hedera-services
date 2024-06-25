@@ -39,11 +39,16 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody.Builder;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -177,6 +182,25 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateTrue(validAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
+
+            final var unlimitedAutoAssociations =
+                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+            if (unlimitedAutoAssociations) {
+                final var topLevelPayer = handleContext.payer();
+                final var syntheticCreation = TransactionBody.newBuilder()
+                        .tokenAssociate(
+                                new Builder().account(account.accountId()).tokens(token.tokenId()));
+                final var fees = handleContext.dispatchComputeFees(
+                        syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
+
+                final var storeFactory = handleContext.storeFactory();
+                final var tokenApi = storeFactory.serviceApi(TokenServiceApi.class);
+                tokenApi.chargeNetworkFee(
+                        topLevelPayer,
+                        fees.nodeFee() + fees.networkFee() + fees.serviceFee(),
+                        handleContext.recordBuilders().getOrCreate(FeeRecordBuilder.class));
+            }
+
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
             return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {

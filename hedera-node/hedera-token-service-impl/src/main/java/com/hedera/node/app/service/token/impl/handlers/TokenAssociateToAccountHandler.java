@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
@@ -36,7 +37,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -200,14 +200,25 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         requireNonNull(feeContext);
         final var body = feeContext.body();
         final var op = body.tokenAssociateOrThrow();
-        final var accountId = op.accountOrThrow();
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var account = readableAccountStore.getAccountById(accountId);
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(DEFAULT);
+        final var unlimitedAutoAssociations =
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
 
-        return feeContext
-                .feeCalculatorFactory()
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
+        if (unlimitedAutoAssociations) {
+            calculator.resetUsage();
+            calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+
+            final var newAssociationsCount = op.tokens().size();
+            calculator.addBytesPerTransaction(newAssociationsCount);
+            return calculator.calculate();
+        } else {
+            final var accountId = op.accountOrThrow();
+            final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+            final var account = readableAccountStore.getAccountById(accountId);
+
+            return calculator.legacyCalculate(
+                    sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
+        }
     }
 
     private FeeData usageGiven(

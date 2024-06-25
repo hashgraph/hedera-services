@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -40,10 +42,13 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -62,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.associations.AssociationsTranslator;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -674,5 +680,117 @@ public class AssociatePrecompileV2SecurityModelSuite {
                         emptyChildRecordsCheck("associateStaticcallFungibleTxn", CONTRACT_REVERT_EXECUTED),
                         emptyChildRecordsCheck("associateCallcodeFungibleTxn", CONTRACT_REVERT_EXECUTED),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(FUNGIBLE_TOKEN));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> associateSingleTokenWithDelegateContractKeyValidateFees() {
+        final double expectedFeeForOneAssociation = 0.0621609828;
+        final double expectedFeeForTwoAssociations = 0.1222927572;
+
+        return propertyPreservingHapiSpec("associateSingleTokenWithDelegateContractKeyValidateFees")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
+                        newKeyNamed(FREEZE_KEY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY)
+                                .supplyKey(TOKEN_TREASURY),
+                        tokenCreate(FROZEN_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .freezeKey(FREEZE_KEY)
+                                .freezeDefault(true)
+                                .adminKey(TOKEN_TREASURY)
+                                .supplyKey(TOKEN_TREASURY),
+                        tokenCreate(UNFROZEN_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .freezeDefault(false)
+                                .adminKey(TOKEN_TREASURY)
+                                .supplyKey(TOKEN_TREASURY),
+                        uploadInitCode(ASSOCIATE_CONTRACT, MINT_TOKEN_CONTRACT),
+                        contractCreate(MINT_TOKEN_CONTRACT),
+                        contractCreate(ASSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(CONTRACT_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_CONTRACT))),
+                        cryptoUpdate(SIGNER).key(CONTRACT_KEY),
+                        tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        // Test Case 1: Account paying and signing a fungible TOKEN ASSOCIATE TRANSACTION,
+                        // when signer has a threshold key
+                        // associating ACCOUNT to the token
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        contractCall(
+                                        ASSOCIATE_CONTRACT,
+                                        "tokenAssociate",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))))
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .via("fungibleTokenAssociate")
+                                .gas(750_000L)
+                                .hasKnownStatus(SUCCESS),
+                        // Test Case 2: Account paying and signing a non fungible TOKEN ASSOCIATE TRANSACTION,
+                        // when signer has a threshold key
+                        // associating ACCOUNT to the token
+                        // SIGNER → call → CONTRACT A → call → HTS
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY).signedByPayerAnd(TOKEN_TREASURY),
+                        contractCall(
+                                        ASSOCIATE_CONTRACT,
+                                        "tokenAssociate",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .via("nonFungibleTokenAssociate")
+                                .gas(750_000L)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_CONTRACT,
+                                        "tokensAssociate",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        new Address[] {
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FROZEN_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(UNFROZEN_TOKEN))),
+                                        })
+                                .signedBy(SIGNER)
+                                .payingWith(SIGNER)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .via("multipleTokensAssociate")
+                                .gas(1_600_000L)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FUNGIBLE_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable)),
+                        validateChargedUsd("fungibleTokenAssociate", expectedFeeForOneAssociation),
+                        validateChargedUsd("nonFungibleTokenAssociate", expectedFeeForOneAssociation),
+                        validateChargedUsd("multipleTokensAssociate", expectedFeeForTwoAssociations));
     }
 }
